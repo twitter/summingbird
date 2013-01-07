@@ -1,15 +1,16 @@
 ## Summingbird [![Build Status](https://secure.travis-ci.org/twitter/summingbird.png)](http://travis-ci.org/twitter/summingbird)
 
-Automatic Batch/Realtime Aggregation.
+Streaming MapReduce on [Storm](https://github.com/nathanmarz/storm) and [Scalding](https://github.com/twitter/scalding).
 
 ## Maven
 
-Current version is 0.0.1. groupid="com.twitter" artifact=summingbird_2.9.2".
+Current version is `0.1.0`. groupid=`"com.twitter"` artifact=`summingbird_2.9.2"`.
 
 ## Authors
 
 * Oscar Boykin <https://twitter.com/posco>
 * Sam Ritchie <https://twitter.com/sritchie>
+* Ashutosh Singhal <https://twitter.com/daashu>
 
 ## License
 
