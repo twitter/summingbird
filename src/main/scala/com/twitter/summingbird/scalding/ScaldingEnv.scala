@@ -7,7 +7,7 @@ import com.twitter.summingbird.util.KryoRegistrationHelper
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
-import java.util.{ Map => JMap }
+import java.util.{ HashMap => JHashMap, Map => JMap }
 
 import ConfigBijection.fromJavaMap
 
@@ -34,7 +34,7 @@ extends Env(jobName) {
 
     // TODO: Deal with duplication here with the lift between this
     // code and SummingbirdKryoHadoop
-    val jConf: JMap[String,AnyRef] = fromJavaMap.invert(new Configuration)
+    val jConf: JMap[String,AnyRef] = new JHashMap(fromJavaMap.invert(new Configuration))
     KryoRegistrationHelper.registerBijections(jConf, flatMappedBuilder.eventCodecPairs)
 
     // Register key and value types. All extensions of either of these

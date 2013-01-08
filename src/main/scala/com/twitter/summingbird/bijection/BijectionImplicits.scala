@@ -15,10 +15,9 @@ object BijectionImplicits {
 // TODO: Move to algebird.
 
 class BijectionEnrichment[T,U](bij: Bijection[T,U]) extends java.io.Serializable {
-  def lift(monoid: Monoid[T]) = new Monoid[U] {
-    override lazy val zero = bij(monoid.zero)
-    override def plus(x: U, y: U) = {
-      bij(monoid.plus(bij.invert(x), bij.invert(y)))
+  def liftMonoid(implicit monoid: Monoid[T]): Monoid[U] = new Monoid[U] {
+      override lazy val zero = bij(monoid.zero)
+      override def plus(x: U, y: U) =
+        bij(monoid.plus(bij.invert(x), bij.invert(y)))
     }
-  }
 }
