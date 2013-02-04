@@ -16,21 +16,15 @@
 
 package com.twitter.summingbird.batch
 
-import com.twitter.scalding.{ Hours, Minutes, Seconds, Millisecs }
+import com.twitter.scalding.Hours
 
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
 
-object BatcherProperties extends Properties("Batcher") {
+object ScaldingBatcherProperties extends Properties("ScaldingBatcher") {
 
   def batchIdIdentity[Time](batcher : Batcher[Time]) =
     { (b : BatchID) => batcher.batchOf(batcher.earliestTimeOf(b)) }
-
-  property("UnitBatcher should always return the same batch") = {
-    val batcher = UnitBatcher[Int](Int.MinValue)
-    val ident = batchIdIdentity(batcher)
-    forAll { batchID: BatchID => ident(batchID) == BatchID(0) }
-  }
 
   val secondsBatcher = SecondsDurationBatcher(Hours(24))
 
@@ -60,7 +54,7 @@ object BatcherProperties extends Properties("Batcher") {
     }
 
   property("MilliSecondsDurationBatcher should batch correctly") =
-    check { millis: Long =>
+    forAll { millis: Long =>
       (millis > 0) ==> {
         val hourIndex: Long = millis / 1000 / 60 / 60
         milliBatcher.batchOf(millis) == BatchID(hourIndex)
@@ -68,7 +62,7 @@ object BatcherProperties extends Properties("Batcher") {
     }
 
   property("MilliSecondsDurationBatcher correctly roundtrip Longs") =
-    check { millis: Long =>
+    forAll { millis: Long =>
       milliBatcher.timeToMillis(millis) == millis
     }
 }

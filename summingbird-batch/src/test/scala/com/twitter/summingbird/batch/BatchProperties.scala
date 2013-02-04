@@ -16,8 +16,6 @@
 
 package com.twitter.summingbird.batch
 
-import com.twitter.scalding.{ Hours, Minutes, Seconds, Millisecs }
-
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
 

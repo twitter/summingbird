@@ -16,59 +16,16 @@
 
 package com.twitter.summingbird.batch
 
-import com.twitter.scalding.{ Hours, Minutes, Seconds, Millisecs }
-
-import org.scalacheck.{ Arbitrary, Properties }
+import org.scalacheck.Properties
 import org.scalacheck.Prop._
 
 object BatcherProperties extends Properties("Batcher") {
+  val batcher = UnitBatcher[Int](Int.MinValue)
 
-  def batchIdIdentity[Time](batcher : Batcher[Time]) =
-    { (b : BatchID) => batcher.batchOf(batcher.earliestTimeOf(b)) }
-
-  property("UnitBatcher should always return the same batch") = {
-    val batcher = UnitBatcher[Int](Int.MinValue)
-    val ident = batchIdIdentity(batcher)
-    forAll { batchID: BatchID => ident(batchID) == BatchID(0) }
-  }
-
-  val secondsBatcher = SecondsDurationBatcher(Hours(24))
-
-  property("SecondsDurationBatcher should know the ordering on Ints") =
-    forAll { (a: Int, b: Int) =>
-      secondsBatcher.timeComparator.compare(a, b) == a.compare(b)
-    }
-
-  property("SecondsDurationBatcher should batch correctly") =
-    forAll { seconds: Int =>
-      (seconds > 0) ==> {
-        val dayIndex = seconds / 60 / 60 / 24
-        secondsBatcher.batchOf(seconds) == BatchID(dayIndex)
-      }
-    }
-
-  property("SecondsDurationBatcher should convert ints to longs") =
-    forAll { i: Int =>
-      (i >= 0) ==> (secondsBatcher.timeToMillis(i) == (i.toLong * 1000L))
-    }
-
-  val milliBatcher = MillisecondsDurationBatcher(Hours(1))
-
-  property("MilliSecondsDurationBatcher should know the ordering on Longs") =
-    forAll { (a: Int, b: Int) =>
-      milliBatcher.timeComparator.compare(a, b) == a.compare(b)
-    }
-
-  property("MilliSecondsDurationBatcher should batch correctly") =
-    check { millis: Long =>
-      (millis > 0) ==> {
-        val hourIndex: Long = millis / 1000 / 60 / 60
-        milliBatcher.batchOf(millis) == BatchID(hourIndex)
-      }
-    }
-
-  property("MilliSecondsDurationBatcher correctly roundtrip Longs") =
-    check { millis: Long =>
-      milliBatcher.timeToMillis(millis) == millis
+  property("UnitBatcher should always return the same batch") =
+    forAll { l: Long =>
+      val batchID = BatchID(l)
+      val roundTripped = batcher.batchOf(batcher.earliestTimeOf(batchID))
+      roundTripped == BatchID(0)
     }
 }
