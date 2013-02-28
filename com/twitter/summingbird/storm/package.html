@@ -1,0 +1,246 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>com.twitter.summingbird.storm</title>
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+    
+        </head>
+        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a></p>
+        <h1>storm</h1>
+      </div>
+
+      <h4 class="signature" id="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">storm</span>
+      </span>
+      </h4>
+      
+      <div class="fullcommenttop" id="comment"></div>
+    
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input accesskey="/" type="text" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div class="types members" id="types">
+              <h3>Type Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.storm.BufferingBolt" data-isabs="true">
+      <a id="BufferingBolt:BufferingBolt[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BufferingBolt.html"><span class="name">BufferingBolt</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends IRichBolt</span>
+      </span>
+      </h4>
+      <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.ConcurrentSinkBolt" data-isabs="false">
+      <a id="ConcurrentSinkBolt:ConcurrentSinkBolt[StoreType, Key, Value]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ConcurrentSinkBolt.html"><span class="name">ConcurrentSinkBolt</span></a><span class="tparams">[<span name="StoreType">StoreType &lt;: Store[StoreType, (Key, BatchID), Value]</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends SinkBolt[StoreType, Key, Value]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Extension of SinkBolt that allows concurrent writes from multiIncrement.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.DecoderBolt" data-isabs="false">
+      <a id="DecoderBolt:DecoderBolt[Key]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DecoderBolt.html"><span class="name">DecoderBolt</span></a><span class="tparams">[<span name="Key">Key</span>]</span><span class="result"> extends BaseBasicBolt</span>
+      </span>
+      </h4>
+      <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapBolt" data-isabs="false">
+      <a id="FlatMapBolt:FlatMapBolt[Event, Time, Key, Value]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatMapBolt.html"><span class="name">FlatMapBolt</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends BufferingBolt[Map[(Key, BatchID), Value]]</span>
+      </span>
+      </h4>
+      <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation" data-isabs="true">
+      <a id="FlatMapOperation:FlatMapOperation[Event, Key, Value]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatMapOperation.html"><span class="name">FlatMapOperation</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends Serializable with Closeable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt" data-isabs="false">
+      <a id="SinkBolt:SinkBolt[StoreType, Key, Value]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SinkBolt.html"><span class="name">SinkBolt</span></a><span class="tparams">[<span name="StoreType">StoreType &lt;: Store[StoreType, (Key, BatchID), Value]</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends BufferingBolt[Map[(Key, BatchID), Value]]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">The SinkBolt takes two related options: CacheSize and MaxWaitingFutures.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.StormEnv" data-isabs="false">
+      <a id="StormEnv:StormEnv"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StormEnv.html"><span class="name">StormEnv</span></a><span class="params">(<span name="jobName">jobName: String</span>, <span name="args">args: Args</span>)</span><span class="result"> extends Env with Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Storm-specific extension to Env.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.StormMetric" data-isabs="false">
+      <a id="StormMetric:StormMetric[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StormMetric.html"><span class="name">StormMetric</span></a><span class="tparams">[<span name="T">T &lt;: IMetric</span>]</span><span class="params">(<span name="metric">metric: T</span>, <span name="name">name: String</span>, <span name="interval">interval: Duration</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Necessary info for registering a metric in storm
+&quot;interval&quot; is period over which the metric will be aggregated
+</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SummingbirdKryoFactory" data-isabs="false">
+      <a id="SummingbirdKryoFactory:SummingbirdKryoFactory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SummingbirdKryoFactory.html"><span class="name">SummingbirdKryoFactory</span></a><span class="result"> extends ScalaKryoFactory</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div class="values members" id="values">
+              <h3>Value Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.storm.ConfigBijection" data-isabs="false">
+      <a id="ConfigBijection:ConfigBijection"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ConfigBijection$.html"><span class="name">ConfigBijection</span></a><span class="result"> extends Bijection[Map[String, AnyRef], Config]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Converts a scala map to and from a storm Config instance.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation" data-isabs="false">
+      <a id="FlatMapOperation:FlatMapOperation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatMapOperation$.html"><span class="name">FlatMapOperation</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SummingbirdKryoFactory" data-isabs="false">
+      <a id="SummingbirdKryoFactory:SummingbirdKryoFactory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SummingbirdKryoFactory$.html"><span class="name">SummingbirdKryoFactory</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.scheme" data-isabs="false">
+      <a id="scheme:scheme"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="scheme/package.html"><span class="name">scheme</span></a>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.store" data-isabs="false">
+      <a id="store:store"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="store/package.html"><span class="name">store</span></a>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>
