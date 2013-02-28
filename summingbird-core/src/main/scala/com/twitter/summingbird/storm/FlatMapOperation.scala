@@ -1,18 +1,18 @@
 /*
- * Copyright 2013 Twitter Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+Copyright 2013 Twitter, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package com.twitter.summingbird.storm
 
@@ -48,11 +48,15 @@ object FlatMapOperation {
     new FlatMapOperation[Event, Key, (Value, Option[Joined])] {
       override def apply(e: Event) =
         fm.apply(e).flatMap { trav: TraversableOnce[(Key, Value)] =>
-          val resultList = trav.toList // Can't go through this twice
+          val resultList = trav.toSeq // Can't go through this twice
           val keySet: Set[Key] = resultList.map { _._1 }.toSet
           // Do the lookup
-          store.multiGet(keySet).map { mres: Map[Key, Joined] =>
-            resultList.map { case (k,v) => (k, (v, mres.get(k))) }
+          store.multiGet(keySet).flatMap { mres: Map[Key, Future[Option[Joined]]] =>
+            Future.collect {
+              resultList.map { case (k, v) =>
+                mres(k).map { k -> (v, _) }
+              }
+            }.map { _.toMap }
           }
         }
 

@@ -1,22 +1,22 @@
 /*
- * Copyright 2013 Twitter Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+Copyright 2013 Twitter, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.scalding.{ Args, RichDate, DateOps, DateRange, Tool => STool }
+import com.twitter.scalding.{Tool => STool, _}
 import com.twitter.summingbird.Env
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.util.KryoRegistrationHelper
@@ -28,8 +28,9 @@ import java.util.{ HashMap => JHashMap, Map => JMap }
 import ConfigBijection.fromJavaMap
 
 /**
- *  @author Oscar Boykin
- *  @author Sam Ritchie
+ * @author Oscar Boykin
+ * @author Sam Ritchie
+ * @author Ashu Singhal
  */
 
 // TODO: Add documentation later describing command-line
@@ -61,8 +62,7 @@ extends Env(jobName) {
 
   override lazy val args = {
     // pull out any hadoop specific args
-    Args((new GenericOptionsParser(config, inargs))
-      .getRemainingArgs)
+    Args(new GenericOptionsParser(new Configuration, inargs).getRemainingArgs)
   }
 
   // Summingbird's Scalding mode needs some way to figure out the very
@@ -110,6 +110,10 @@ extends Env(jobName) {
     }
 
     // Now actually run (by building the scalding job):
-    ToolRunner.run(finalConf, hadoopTool, inargs);
+    try {
+      ToolRunner.run(finalConf, hadoopTool, inargs);
+    } catch {
+      case ise: InvalidSourceException => println("Job data not ready: " + ise.getMessage)
+    }
   }
 }

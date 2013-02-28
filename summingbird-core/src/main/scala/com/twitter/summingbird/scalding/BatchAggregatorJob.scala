@@ -1,18 +1,18 @@
 /*
- * Copyright 2013 Twitter Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+Copyright 2013 Twitter, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package com.twitter.summingbird.scalding
 
@@ -23,9 +23,6 @@ import com.twitter.summingbird.builder.CompletedBuilder
 import com.twitter.summingbird.scalding.store.BatchReadableStore
 
 /**
- *  @author Oscar Boykin
- *  @author Sam Ritchie
- *
  * Scalding job representing the batch computation of the
  * Summingbird workflow.
  *
@@ -40,6 +37,10 @@ import com.twitter.summingbird.scalding.store.BatchReadableStore
  * figure out which batches of data to source for the next run. Because
  * the BatchAggregatorJob manages its own state, the user can run this job
  * in a `while(true)` loop without worrying about data corruption.
+ *
+ * @author Oscar Boykin
+ * @author Sam Ritchie
+ * @author Ashu Singhal
  */
 
 class BatchAggregatorJob[T,K: Ordering,V: Monoid](@transient bldr: CompletedBuilder[_,T,K,V],
@@ -47,6 +48,8 @@ class BatchAggregatorJob[T,K: Ordering,V: Monoid](@transient bldr: CompletedBuil
                                                   monoidIsCommutative: Boolean)
 extends ScaldingJob(env.args) {
   import TDsl._
+
+  override def name = env.jobName
 
   override def config(implicit mode: Mode) = {
     // Replace Scalding's default implementation of

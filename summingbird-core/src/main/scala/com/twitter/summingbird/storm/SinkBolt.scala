@@ -1,18 +1,18 @@
 /*
- * Copyright 2013 Twitter Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+Copyright 2013 Twitter, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package com.twitter.summingbird.storm
 
@@ -54,8 +54,9 @@ import java.util.{ Map => JMap }
  * The allowed latency before a future is forced is equal to
  * (MaxWaitingFutures * execute latency).
  *
- *  @author Oscar Boykin
- *  @author Sam Ritchie
+ * @author Oscar Boykin
+ * @author Sam Ritchie
+ * @author Ashu Singhal
  */
 
 class SinkBolt[StoreType <: Store[StoreType, (Key,BatchID), Value], Key, Value: Monoid]
@@ -126,6 +127,8 @@ extends BufferingBolt[Map[(Key, BatchID), Value]](cacheSize) {
     store.update(k) { oldV =>
       Monoid.nonZeroOption(oldV.map { Monoid.plus(_,v) } getOrElse v)
     }
+    .onSuccess { _ => successHandlerBox.get.handlerFn() }
+    .handle { exceptionHandlerBox.get.handlerFn.andThen { _ => store } }
   }
 
   protected def multiIncrement(store: StoreType, items: Map[(Key,BatchID),Value]): Future[StoreType] =
@@ -133,36 +136,30 @@ extends BufferingBolt[Map[(Key, BatchID), Value]](cacheSize) {
       storeFuture.flatMap { increment(_, pair) }
     }
 
-  protected def incStore(item: ((Key,BatchID), Value), callback: Future[StoreType] => Future[StoreType]) {
-    futureQueue.flatMapLast { s => callback(increment(s, item)) }
+  protected def incStore(item: ((Key,BatchID), Value)) {
+    futureQueue.flatMapLast { increment(_, item) }
   }
 
-  protected def multiIncStore(optItems: Option[Map[(Key,BatchID),Value]],
-                              callback: Future[StoreType] => Future[StoreType]) {
-    optItems match {
-      case Some(items) => futureQueue.flatMapLast { s => callback(multiIncrement(s, items)) }
-      case None => futureQueue.transformLast { callback(_) }
+  protected def multiIncStore(optItems: Option[Map[(Key,BatchID),Value]]) {
+    futureQueue.flatMapLast { store =>
+      optItems match {
+        case Some(items) => multiIncrement(store, items)
+        case None => Future.value(store)
+      }
     }
   }
 
   override def execute(tuple: Tuple) {
-    def handleSuccessAndFailure(storeFuture: Future[StoreType]): Future[StoreType] =
-      storeFuture
-        .onSuccess { _ =>
-          successHandlerBox.get.handlerFn()
-          collector.ack(tuple)
-        }
-        .rescue { exceptionHandlerBox.get.handlerFn.andThen { _ => storeFuture } }
-
     if(tuple.getSourceComponent == DRPC_DECODER)
       executeDRPC(tuple)
     else {
       val pair = unpack(tuple)
       cacheCount match {
-        case Some(_) => multiIncStore(buffer(Map(pair)), handleSuccessAndFailure)
-        case None => incStore(pair, handleSuccessAndFailure)
+        case Some(_) => multiIncStore(buffer(Map(pair)))
+        case None => incStore(pair)
       }
     }
+    collector.ack(tuple)
   }
 
   override def declareOutputFields(dec : OutputFieldsDeclarer) {

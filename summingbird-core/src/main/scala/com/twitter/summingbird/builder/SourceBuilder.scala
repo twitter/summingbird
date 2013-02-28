@@ -1,18 +1,18 @@
 /*
- * Copyright 2013 Twitter Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License. You may obtain
- * a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+Copyright 2013 Twitter, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package com.twitter.summingbird.builder
 
@@ -33,8 +33,9 @@ import com.twitter.summingbird.storm.{FlatMapOperation => StormFlatMap, StormEnv
 import com.twitter.summingbird.scalding.{FlatMapOperation => ScaldingFlatMap, ScaldingEnv}
 
 /**
- *  @author Oscar Boykin
- *  @author Sam Ritchie
+ * @author Oscar Boykin
+ * @author Sam Ritchie
+ * @author Ashu Singhal
  */
 
 // The SourceBuilder is the first level of the expansion.
@@ -64,16 +65,16 @@ extends java.io.Serializable {
   }
 
   def map[Key: Manifest, Val: Manifest](fn: (Event) => (Key,Val)) =
-    flatMap {e : Event => Some(fn(e)) }
+    flatMap[Key, Val] {e : Event => List[(Key, Val)](fn(e)) }
 
   def flatMap[Key: Manifest, Val: Manifest]
   (fn : (Event) => TraversableOnce[(Key,Val)])  =
-    flatMapBuilder(new FunctionFlatMapper(fn))
+    flatMapBuilder[Key, Val](new FunctionFlatMapper[Event, Key, Val](fn))
 
   def flatMapBuilder[Key: Manifest, Val: Manifest](newFlatMapper: FlatMapper[Event,Key,Val])
     : SingleFlatMappedBuilder[Event,Time,Key,Val] = {
-    val storm = StormFlatMap(newFlatMapper)
-    val scalding = ScaldingFlatMap(newFlatMapper)
+    val storm = StormFlatMap[Event, Key, Val](newFlatMapper)
+    val scalding = ScaldingFlatMap[Event, Key, Val](newFlatMapper)
     new SingleFlatMappedBuilder[Event,Time,Key,Val](this, storm, scalding)
   }
 

@@ -1,10 +1,13 @@
+package summingbird
+
 import sbt._
 import Keys._
+import sbtgitflow.ReleasePlugin._
 
 object SummingbirdBuild extends Build {
-  val sharedSettings = Project.defaultSettings ++ Seq(
+  val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.0.1",
+    version := "0.0.1-SNAPSHOT",
     scalaVersion := "2.9.2",
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
@@ -21,7 +24,11 @@ object SummingbirdBuild extends Build {
 
     parallelExecution in Test := true,
 
-    scalacOptions ++= Seq("-unchecked", "-deprecation"),
+    scalacOptions ++= Seq(
+      "-unchecked",
+      "-deprecation",
+      "-Yresolve-term-conflict:package"
+    ),
 
     // Publishing options:
     publishMavenStyle := true,
@@ -64,24 +71,26 @@ object SummingbirdBuild extends Build {
           <url>http://twitter.com/sritchie</url>
         </developer>
         <developer>
-          <id>oscar</id>
+          <id>asinghal</id>
           <name>Ashutosh Singhal</name>
           <url>http://twitter.com/daashu</url>
         </developer>
       </developers>)
   )
 
-  val bijectionVersion = "0.2.1"
-  val storehausVersion = "0.0.1"
-
   lazy val summingbird = Project(
     id = "summingbird",
-    base = file(".")
+    base = file("."),
+    settings = sharedSettings ++ DocGen.publishSettings
     ).settings(
     test := { }
   ).aggregate(summingbirdCore,
               summingbirdBatch,
               summingbirdClient)
+
+  val bijectionVersion = "0.2.1"
+  val storehausVersion = "0.0.4"
+  lazy val algebirdCore = "com.twitter" %% "algebird-core" % "0.1.9"
 
   lazy val summingbirdBatch = Project(
     id = "summingbird-batch",
@@ -90,7 +99,7 @@ object SummingbirdBuild extends Build {
   ).settings(
     name := "summingbird-batch",
     libraryDependencies ++= Seq(
-      "com.twitter" %% "algebird" % "0.1.7",
+      algebirdCore,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" % "util-core" % "5.3.15"
     )
@@ -103,9 +112,10 @@ object SummingbirdBuild extends Build {
   ).settings(
     name := "summingbird-client",
     libraryDependencies ++= Seq(
-      "com.twitter" %% "algebird" % "0.1.7",
+      algebirdCore,
       "com.twitter" %% "bijection-core" % bijectionVersion,
-      "com.twitter" %% "storehaus-core" % storehausVersion
+      "com.twitter" %% "storehaus-core" % storehausVersion,
+      "com.twitter" %% "storehaus-algebra" % storehausVersion
     )
   ).dependsOn(summingbirdBatch)
 
@@ -117,12 +127,12 @@ object SummingbirdBuild extends Build {
     name := "summingbird-core",
     libraryDependencies ++= Seq(
       "backtype" % "dfs-datastores" % "1.2.0",
-      "com.twitter" %% "algebird" % "0.1.7",
+      algebirdCore,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "bijection-json" % bijectionVersion,
-      "com.twitter" %% "chill" % "0.1.3",
-      "com.twitter" %% "scalding" % "0.8.2",
-      "com.twitter" %% "scalding-commons" % "0.1.1",
+      "com.twitter" %% "chill" % "0.1.4",
+      "com.twitter" %% "scalding" % "0.8.3",
+      "com.twitter" %% "scalding-commons" % "0.1.2",
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "tormenta" % "0.2.1",
       "com.twitter" % "util-core" % "5.3.15",
