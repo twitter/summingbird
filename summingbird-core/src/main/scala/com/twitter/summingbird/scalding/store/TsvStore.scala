@@ -45,7 +45,7 @@ class TsvStore[Key, Value](path: String) extends BatchStore[Key, Value] {
     (implicit fd : FlowDef, mode : Mode) {
     import Dsl._
     import TDsl._
-    p.write(('key, 'value), Tsv(path))
+    p.toPipe(('key, 'value)).write(Tsv(path))
   }
 
   override def commit(batchid : BatchID, env : ScaldingEnv) { }

@@ -33,8 +33,8 @@ class SummingbirdKryoHadoop extends KryoHadoop {
   override def decorateKryo(newK: Kryo) {
     super.decorateKryo(newK)
     val m = fromJavaMap.invert(getConf)
-    registerBijections(newK, m)
-    registerBijectionDefaults(newK, m)
+    registerInjections(newK, m)
+    registerInjectionDefaults(newK, m)
     registerKryoClasses(newK, m)
   }
 }

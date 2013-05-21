@@ -39,12 +39,12 @@ case class StormEnv(override val jobName: String, override val args: Args) exten
     config.setKryoFactory(classOf[SummingbirdKryoFactory])
 
     // Register codec pairs for all time and event types.
-    KryoRegistrationHelper.registerBijections(config, flatMappedBuilder.eventCodecPairs)
+    KryoRegistrationHelper.registerInjections(config, flatMappedBuilder.eventCodecPairs)
 
     // Register key and value types. All extensions of either of these
     // types will be caught by the registered codec.
     val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
-    KryoRegistrationHelper.registerBijectionDefaults(config, codecPairs)
+    KryoRegistrationHelper.registerInjectionDefaults(config, codecPairs)
 
     // Reasonable default settings for Summingbird storm
     // jobs. Override these by implementing `transformConfig` in

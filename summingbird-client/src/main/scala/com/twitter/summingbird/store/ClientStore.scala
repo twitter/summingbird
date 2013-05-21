@@ -17,9 +17,9 @@ limitations under the License.
 package com.twitter.summingbird.store
 
 import com.twitter.algebird.{ Monoid, Semigroup, SeqMonoid }
+import com.twitter.algebird.util.UtilAlgebras._
 import com.twitter.bijection.Pivot
-import com.twitter.storehaus.ReadableStore
-import com.twitter.storehaus.algebra.Algebras
+import com.twitter.storehaus.{ FutureCollector, FutureOps, ReadableStore }
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
 import com.twitter.util.{ Future, Return, Throw, Try }
 
@@ -32,53 +32,35 @@ import com.twitter.util.{ Future, Return, Throw, Try }
  */
 
 object ClientStore {
-  def apply[T: Batcher, K, V: Monoid]
-  (onlineStore: ReadableStore[(K, BatchID), V], batchesToKeep: Int): ClientStore[T, K, V] =
-    apply(ReadableStore.empty[K, (BatchID, V)], onlineStore, batchesToKeep)
+  def apply[K, V](onlineStore: ReadableStore[(K, BatchID), V], batchesToKeep: Int)
+    (implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
+    apply(ReadableStore.empty, onlineStore, batchesToKeep)
 
   // If no online store exists, supply an empty store and instruct the
   // client to keep a single batch.
-  def apply[T: Batcher, K, V: Monoid]
-  (offlineStore: ReadableStore[K, (BatchID, V)]): ClientStore[T, K, V] =
-    apply(offlineStore, ReadableStore.empty[(K, BatchID), V], 1)
+  def apply[K, V](offlineStore: ReadableStore[K, (BatchID, V)])
+    (implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
+    apply(offlineStore, ReadableStore.empty, 1)
 
-  def apply[T, K, V](offlineStore: ReadableStore[K, (BatchID, V)],
-                     onlineStore: ReadableStore[(K, BatchID), V],
-                     batchesToKeep: Int)
-  (implicit batcher: Batcher[T], monoid: Monoid[V]): ClientStore[T, K, V] =
-    new ClientStore[T, K, V](offlineStore, onlineStore, batcher, monoid, batchesToKeep)
+  def defaultOnlineKeyFilter[K] = (k: K) => true
+
+  def apply[K, V](
+    offlineStore: ReadableStore[K, (BatchID, V)],
+    onlineStore: ReadableStore[(K, BatchID), V],
+    batchesToKeep: Int,
+    onlineKeyFilter: K => Boolean = defaultOnlineKeyFilter[K]
+  )(implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
+    new ClientStore[K, V](offlineStore, onlineStore, batcher, monoid, batchesToKeep, onlineKeyFilter)
 }
 
-class MissingBatchException(msg: String) extends RuntimeException(msg)
-
 object MergeOperations {
-  import Algebras._ // import Future monoid
-
-  /**
-   * Returns true if every pair in the sequence returns true
-   * for areConsecutive, false otherwise.
-   */
-  def isSequential[T](seq: Seq[T])(areConsecutive: (T, T) => Boolean): Boolean =
-    seq.sliding(2).forall { l =>
-      l match {
-        case Seq(a, b) => areConsecutive(a, b)
-        case Seq(_) | Seq() => true
-      }
-    }
-
-  // TODO: Once we upgrade past util 6, replace this with Future.const.
-  def const[T](result: Try[T]): Future[T] =
-    result match {
-      case Return(v) => Future.value(v)
-      case Throw(throwable) => Future.exception(throwable)
-    }
+  // TODO: the check here on sequential batch IDs was fucked. we should be checking that the batch
+  // layer is not more than batchesToKeep behind. the manner of doing that on a per-key basis
+  // will change in storehaus 0.3, so add in that check during the upgrade.
 
   def sortedSum[V: Semigroup](opts: Seq[Option[(BatchID, V)]]): Try[Option[(BatchID, V)]] = {
     val sorted = opts.flatten.sortBy {  _._1 }
-    if (isSequential(sorted) { (pair1, pair2) => pair1._1.next == pair2._1 })
-      Return(Semigroup.sumOption(sorted))
-    else
-      Throw(new MissingBatchException("Missing BatchIDs: " + sorted.map { _._1 }.mkString(", ")))
+    Return(Semigroup.sumOption(sorted))
   }
 
   /**
@@ -90,55 +72,67 @@ object MergeOperations {
   def collect[T, U](seq: Seq[(T, Future[U])]): Future[Seq[(T, U)]] =
     Future.collect(seq map { case (t, futureU) => futureU map { (t, _) } })
 
-  // TODO (sritchie): Not sure why, but this isn't coming in from the
-  // companion object. Try deleting on algebird 0.1.9 upgrade.
-  implicit def seqMonoid[V]: Monoid[Seq[V]] = new SeqMonoid[V]
-
   def mergeResults[K, V: Monoid](m1: Map[K, Future[Seq[Option[(BatchID, V)]]]],
                                  m2: Map[K, Future[Seq[Option[(BatchID, V)]]]])
   : Map[K, Future[Option[(BatchID, V)]]] =
-    Monoid.plus(m1, m2) mapValues { _.flatMap { opts => const(sortedSum(opts)) } }
+    Monoid.plus(m1, m2) mapValues { _.flatMap { opts => Future.const(sortedSum(opts)) } }
 
   def dropBatches[K, V](m: Map[K, Future[Option[(BatchID, V)]]]): Map[K, Future[Option[V]]] =
     m mapValues { _.map { _.map { _._2 } } }
 }
 
-class ClientStore[T, K, V](offlineStore: ReadableStore[K, (BatchID, V)],
-                           onlineStore: ReadableStore[(K, BatchID), V],
-                           batcher: Batcher[T],
-                           monoid: Monoid[V],
-                           batchesToKeep: Int)
-extends ReadableStore[K, V] {
+class ClientStore[K, V](
+  offlineStore: ReadableStore[K, (BatchID, V)],
+  onlineStore: ReadableStore[(K, BatchID), V],
+  batcher: Batcher,
+  monoid: Monoid[V],
+  batchesToKeep: Int,
+  onlineKeyFilter: K => Boolean
+) extends ReadableStore[K, V] {
   import MergeOperations._
+
+  type FOpt[T] = Future[Option[T]]
 
   implicit val implicitMonoid: Monoid[V] = monoid
 
-  protected def defaultInit(nowBatch: BatchID = batcher.currentBatch): Option[(BatchID, V)] =
-    Some((nowBatch - (batchesToKeep - 1), Monoid.zero[V]))
+  /**
+    * If offlineStore has no return value for some key,
+    * defaultOfflineReturn usees batchesToKeep to calculate a
+    * reasonable beginning batchID from which to start querying the
+    * onlineStore.
+    */
+  protected def defaultOfflineReturn(nowBatch: BatchID): Option[(BatchID, V)] =
+    Some(nowBatch - (batchesToKeep - 1), Monoid.zero[V])
 
-  protected def expand(init: Option[(BatchID, V)], nowBatch: BatchID = batcher.currentBatch)
-  : Iterable[(BatchID, V)] = {
-    val (initBatch,initV) = Monoid.plus(defaultInit(nowBatch), init).get
+  protected def expand(offlineReturn: Option[(BatchID, V)], nowBatch: BatchID): Iterable[(BatchID, V)] = {
+    val (initBatch,initV) = Monoid.plus(defaultOfflineReturn(nowBatch), offlineReturn).get
     BatchID.range(initBatch, nowBatch)
       .map { batchID => (batchID, initV) }
       .toIterable
   }
 
-  protected def generateOnlineKeys(ks: Seq[K], nowBatch: BatchID)(lookup: K => Future[Option[(BatchID, V)]])
-  : Future[Set[(K, BatchID)]] = {
-    val futures: Seq[Future[(K, Iterable[(BatchID, V)])]] =
-      ks.map { k: K => lookup(k) map { (k -> expand(_, nowBatch)) } }
-    for (collected <- Future.collect(futures);
-         inverted: Iterable[((K, BatchID), V)] = pivot.invert(collected.toMap))
-    yield inverted.map { pair: ((K, BatchID), V) => pair._1 }.toSet
+  protected def generateOnlineKeys[K1 <: K](ks: Seq[K1], nowBatch: BatchID)(lookup: K1 => FOpt[(BatchID, V)]): Future[Set[(K1, BatchID)]] = {
+    val futures: Seq[Future[(K1, Iterable[(BatchID, V)])]] =
+      ks.map { k: K1 => lookup(k) map { (k -> expand(_, nowBatch)) } }
+    for {
+      collected <- FutureCollector.bestEffort(futures)
+      inverted: Iterable[((K1, BatchID), V)] = pivot.invert(collected.toMap)
+    } yield inverted.map { pair: ((K1, BatchID), V) => pair._1 }.toSet
   }
 
   /**
    * Pivots each BatchID out of the key and into the Value's future.
    */
-  protected def pivotBatches(m: Map[(K, BatchID), Future[Option[V]]]): Map[K, Future[Seq[Option[(BatchID, V)]]]] =
+  protected def pivotBatches[K1 <: K](m: Map[(K1, BatchID), FOpt[V]]): Map[K1, Future[Seq[Option[(BatchID, V)]]]] =
     pivot(m).mapValues { it =>
       collect(it.toSeq).map { _.map { case (batchID, optV) => optV map { (batchID, _) } } }
+    }
+
+  def decrementOfflineBatch[K1 <: K](m: Map[K1, FOpt[(BatchID, V)]]): Map[K1, Future[Seq[Option[(BatchID, V)]]]] =
+    m.mapValues { futureOptV =>
+      futureOptV.map { optV =>
+        Seq(optV.map { case (batchID, v) => (batchID.prev, v) })
+      }
     }
 
   /**
@@ -162,12 +156,25 @@ extends ReadableStore[K, V] {
    *   vs a defined future.
    * - Drop the final BatchID off of all successfully aggregated values (since this BatchID
    *   will be the current batch in all successful cases).
+   *
+   * The onlineKeyFilter allows only a subset of the keys to be fetched from the realtime layer.
+   * This is a useful optimization in, for example, time series data, where many of the keys
+   * that are fetched are historical and therefore only need to be fetched from batch.
+   *
+   * TODO: This filter needs to be generalized correctly, and is probably incorrect at the level
+   * of just supplying a boolean function. For example, in most cases a function K => T would
+   * help tie in batching logic more easily.
    */
-  override def multiGet(ks: Set[K]): Future[Map[K, Future[Option[V]]]] =
-    for (offlineResult: Map[K, Future[Option[(BatchID, V)]]] <- offlineStore.multiGet(ks);
-         liftedOffline = offlineResult mapValues { _.map { Seq(_) } };
-         onlineKeys <- generateOnlineKeys(ks.toSeq, batcher.currentBatch)(offlineResult);
-         onlineResult: Map[(K, BatchID), Future[Option[V]]]  <- onlineStore.multiGet(onlineKeys);
-         liftedOnline: Map[K, Future[Seq[Option[(BatchID, V)]]]] = pivotBatches(onlineResult))
-    yield dropBatches(mergeResults(liftedOffline, liftedOnline))
+
+  override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, FOpt[V]] = {
+    val offlineResult: Map[K1, FOpt[(BatchID, V)]] = offlineStore.multiGet(ks)
+    val liftedOffline = decrementOfflineBatch(offlineResult)
+    val possibleOnlineKeys = ks.filter(onlineKeyFilter)
+    val m: Future[Map[K1, FOpt[V]]] = for (
+      onlineKeys <- generateOnlineKeys(possibleOnlineKeys.toSeq, batcher.currentBatch)(offlineResult);
+      onlineResult: Map[(K1, BatchID), FOpt[V]] = onlineStore.multiGet(onlineKeys);
+      liftedOnline: Map[K1, Future[Seq[Option[(BatchID, V)]]]] = pivotBatches(onlineResult)
+    ) yield dropBatches(mergeResults(liftedOffline, liftedOnline))
+    FutureOps.liftFutureValues(ks, m)
+  }
 }

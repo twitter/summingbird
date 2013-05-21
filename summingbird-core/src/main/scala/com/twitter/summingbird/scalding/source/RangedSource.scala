@@ -18,6 +18,7 @@ package com.twitter.summingbird.scalding.source
 
 import cascading.flow.FlowDef
 import com.twitter.scalding.{ Mode, Mappable, DateRange, RichDate, Hours }
+import java.util.Date
 
 /**
  * @author Oscar Boykin
@@ -30,16 +31,21 @@ import com.twitter.scalding.{ Mode, Mappable, DateRange, RichDate, Hours }
 // one hour behind and three hours forward to account for the delay in
 // log grouping.
 
-trait RangedSource[Event,Time] extends ScaldingSource[Event,Time] {
-  def dateOf(t: Time): RichDate
+object RangedSource {
+  def apply[Event](fn: DateRange => Mappable[Event]) =
+    new RangedSource[Event] {
+      def rangedSource(range: DateRange) = fn(range)
+    }
+}
+
+trait RangedSource[Event] extends ScaldingSource[Event] {
   def rangedSource(range: DateRange): Mappable[Event]
 
-  override def source(lower: Time, upper: Time)
-  (implicit flow: FlowDef, mode: Mode) = {
+  override def source(lower: Date, upper: Date)(implicit flow: FlowDef, mode: Mode) = {
     // Source one hour behind and three hours forward to compensate
     // for the delay introduced by Twitter's log-grouping.
-    val lo = dateOf(lower) - Hours(1)
-    val hi = dateOf(upper) + Hours(1)
+    val lo = new RichDate(lower) - Hours(1)
+    val hi = new RichDate(upper) + Hours(1)
     rangedSource(DateRange(lo, hi))
   }
 }

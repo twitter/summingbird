@@ -20,7 +20,7 @@ import backtype.storm.topology.base._
 import backtype.storm.topology._
 import backtype.storm.task.TopologyContext
 import backtype.storm.tuple._
-import com.twitter.bijection.Bijection
+import com.twitter.bijection.Injection
 import com.twitter.chill.MeatLocker
 import com.twitter.summingbird.Constants
 import com.twitter.summingbird.batch.BatchID
@@ -34,13 +34,13 @@ import com.twitter.summingbird.batch.BatchID
 // RPC keys come in as strings. This bolt decodes that string into a
 // Key, which is then routed to the sink for proper fulfillment of the
 // RPC call.
-class DecoderBolt[Key](@transient rpc: Bijection[(Key, BatchID), String]) extends BaseBasicBolt {
+class DecoderBolt[Key](@transient rpc: Injection[(Key, BatchID), String]) extends BaseBasicBolt {
   import Constants._
 
   val rpcBijection = MeatLocker(rpc)
 
   override def execute(tuple: Tuple, collector: BasicOutputCollector) {
-    val (key, batchID) = rpcBijection.get.invert(tuple.getString(0))
+    val (key, batchID) = rpcBijection.get.invert(tuple.getString(0)).get // TODO better error handling here
     val returnInfo = tuple.getString(1)
 
     collector.emit(new Values(key.asInstanceOf[AnyRef],

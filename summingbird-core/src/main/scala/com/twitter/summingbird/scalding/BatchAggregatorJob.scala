@@ -17,10 +17,14 @@ limitations under the License.
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.Monoid
-import com.twitter.scalding.{ Job => ScaldingJob, TDsl, TypedPipe, IterableSource, Mode }
-import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.builder.CompletedBuilder
-import com.twitter.summingbird.scalding.store.BatchReadableStore
+import com.twitter.bijection.{ Bijection, ImplicitBijection }
+import com.twitter.bijection.algebird.BijectedMonoid
+import com.twitter.scalding.{ Job => ScaldingJob, _ }
+import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.builder.FlatMappedBuilder
+import com.twitter.summingbird.scalding.store._
+
+import java.util.Date
 
 /**
  * Scalding job representing the batch computation of the
@@ -43,69 +47,160 @@ import com.twitter.summingbird.scalding.store.BatchReadableStore
  * @author Ashu Singhal
  */
 
-class BatchAggregatorJob[T,K: Ordering,V: Monoid](@transient bldr: CompletedBuilder[_,T,K,V],
-                                                  @transient env: ScaldingEnv,
-                                                  monoidIsCommutative: Boolean)
+class BatchAggregatorJob[K: Ordering, V: Monoid](
+  @transient bldr: FlatMappedBuilder[K,V],
+  @transient env: ScaldingEnv,
+  batcher: Batcher,
+  @transient offlineStore: BatchStore[K, (BatchID, V)],
+  monoidIsCommutative: Boolean,
+  @transient intermediateStore: Option[IntermediateStore[K, V]])
 extends ScaldingJob(env.args) {
   import TDsl._
+  import Dsl._
 
+  /**
+    * Set the job name in the Hadoop JobTracker to the Summingbird job
+    * name. (Without this override every job shows up as
+    * "BatchAggregatorJob".)
+    */
   override def name = env.jobName
 
-  override def config(implicit mode: Mode) = {
-    // Replace Scalding's default implementation of
-    // cascading.kryo.KryoSerialization with Summingbird's custom
-    // extension. SummingbirdKryoHadoop performs every registration in
-    // KryoHadoop, then registers event, time, key and value codecs
-    // using chill's BijectiveSerializer.
-    val entries =
-      (ioSerializations ++
-       List("com.twitter.summingbird.scalding.SummingbirdKryoHadoop")).mkString(",")
-    super.config(mode) ++ Map("io.serializations" -> entries)
+  /**
+    * Replace Scalding's default implementation of
+    *  cascading.kryo.KryoSerialization with Summingbird's custom
+    * extension. SummingbirdKryoHadoop performs every registration in
+    * KryoHadoop, then registers event, time, key and value codecs
+    * using chill's BijectiveSerializer.
+    */
+  override def config(implicit mode: Mode) =
+    super.config(mode) ++ Map(
+      "io.serializations" ->
+        (ioSerializations ++ List(classOf[SummingbirdKryoHadoop].getName)).mkString(",")
+    )
+
+  /**
+    * Performs a "sum" on the grouped pipe and filters out all
+    * zeros. If the supplied Monoid is an instance of
+    * BijectedMonoid[U, V], the method will extract the underlying
+    * Monoid[U], convert all values over to U, run the monoid and
+    * convert back before returning the TypedPipe. This should help
+    * with latency in almost all cases that use a BijectedMonoid.
+    */
+  def sum[U](pipe: Grouped[K, V]): TypedPipe[(K, V)] =
+    unpackBijectedMonoid[U].map { case (bijection, monoid) =>
+      implicit val m: Monoid[U] = monoid
+      pipe.mapValues(bijection.invert(_))
+        .sum
+        .filter { case (_, u) => Monoid.isNonZero(u) }
+        .map { case (k, u) => k -> bijection(u) }
+    }.getOrElse {
+      pipe.sum // over the V.
+        .filter { case (k, v) => Monoid.isNonZero(v) }
+    }
+
+  /**
+    * If the supplied implicit Monoid[V] is an instance of
+    * BijectedMonoid[U, V], Returns the backing Bijection[U, V] and
+    * Monoid[U]; else None.
+    *
+    * TODO: Make the referenced fields on
+    * com.twitter.bijection.algebird.Bijected{Monoid,Semigroup,Ring,Group}
+    * into vals and remove the reflection here.
+    */
+  def unpackBijectedMonoid[U]: Option[(Bijection[U, V], Monoid[U])] = {
+    implicitly[Monoid[V]] match {
+      case m: BijectedMonoid[_, _] => {
+        def getField[F: ClassManifest](fieldName: String): F = {
+          val f = classOf[BijectedMonoid[_, _]].getDeclaredField(fieldName)
+          f.setAccessible(true)
+          implicitly[ClassManifest[F]]
+            .erasure.asInstanceOf[Class[F]].cast(f.get(m))
+        }
+        Some((
+          getField[ImplicitBijection[U, V]]("bij").bijection,
+          getField[Monoid[U]]("monoid")
+        ))
+      }
+      case _ => None
+    }
   }
 
-  val batcher = bldr.batcher
-  val offlineStore = bldr.store.offlineStore
-  implicit val tord: Ordering[T] = new Ordering[T] with java.io.Serializable {
-    override def compare(l: T, r: T) = batcher.timeComparator.compare(l,r)
-  }
-
-  val (oldBatchIdUpperBound, latestAggregated): (BatchID, TypedPipe[(K,V)]) =
+  /**
+    * latestAggregated is a TypedPipe representing existing
+    * Summingbird dataset of key-value pairs. oldBatchIdUpperBound is
+    * the BatchID just after the maximum BatchID of the key-value
+    * pairs inside of latestAggregated. That is to say, the current
+    * delta will process events from BatchID equal to
+    * oldBatchIdUpperBound.
+    */
+  val (oldBatchIdUpperBound, latestAggregated): (BatchID, TypedPipe[(K, V)]) =
     env.startBatch(batcher)
       .map { id => BatchReadableStore.empty[K,V](id).readLatest(env) }
       .getOrElse {
-        val (batchID, pipe) = offlineStore.readLatest(env)
+      val (batchID, pipe) = offlineStore.readLatest(env)
         (batchID, pipe map { case (k,(b,v)) => (k, v) })
       }
 
-  // This is before all the stuff we add in, so add a None time:
-  val latestWithTime: TypedPipe[(Option[T],K,V)] =
-    latestAggregated.map { case (k, v) => (None : Option[T], k, v) }
+  /**
+    * New key-value pairs from the current batch's run.
+    */
+  val delta: TypedPipe[(Long, K, V)] = bldr.getFlatMappedPipe(batcher, oldBatchIdUpperBound, env)
 
-  val grouped = (bldr.flatMappedBuilder.getFlatMappedPipe(batcher, oldBatchIdUpperBound, env)
-    .map[(Option[T],K,V)] { case (t, k, v) => (Some(t), k, v) } //lift T to Option[T] to get correct sorting
-      ++ latestWithTime)
-    .groupBy { _._2 } // key
-    .withReducers(env.reducers)
-
-  val maybeSorted =
-    if (monoidIsCommutative)
-      grouped
-    else
-      grouped.sortBy { _._1 } // time (None, which is in latestWithTime, comes first)
-
-  val summed = maybeSorted
-    .mapValues { tkv => tkv._3 } // keep just the V
-    .sum // over the V.
-    .filter { case (k, v) => Monoid.isNonZero(v) }
+  /**
+    * Now begins the actual scalding job.
+    *
+    * The job merges in new data as an incremental update to some
+    * existing dataset. Because the existing data is pre-aggregated,
+    * we don't have times for any of the key-value pairs. If the
+    * Monoid[V] is not commutative, this is cause for concern; how do
+    * we ensure that old data always appears before new data in the
+    * sort?
+    *
+    * We solve this by sorting on Option[Long] instead of Long,
+    * tagging all old data with None and lifting every timestamp in
+    * new key-value pairs up to Some(timestamp). Because None <
+    * Some(x), the data will be sorted correctly.
+    */
+  val mergedPairs =
+    if (monoidIsCommutative) {
+      (latestAggregated ++ delta.map { case (_, k, v) => (k, v) })
+        .group
+        .withReducers(env.reducers)
+    } else {
+      (latestAggregated.map { case (k, v) => (None : Option[Long], k, v) }
+        ++ delta.map[(Option[Long],K,V)] { case (t, k, v) => (Some(t), k, v) })
+        .groupBy { case (_, k, _) => k }
+        .withReducers(env.reducers)
+        .sortBy { case (optT, _, _) => optT }
+        .mapValues { case (_, _, v) => v }
+    }
 
   val newBatchID = oldBatchIdUpperBound + env.batches
-  val finalPipe = summed map { case (k, v) => (k, (newBatchID, v)) }
+  val finalPipe = sum(mergedPairs)
+    .map { case (k, v) => (k, (newBatchID, v)) }
 
-  // Write it out:
+  // Write the new aggregated dataset out to the offlineStore:
   offlineStore.write(env, finalPipe)
 
+  /**
+   * If the job has been configured to do so, then store intermediate data so
+   * other jobs can join against it in the future. This stores the tuple
+   * (Long, K, V) for each batch in a file. With this value one can compute
+   * the value of K at some time.
+   */
+  intermediateStore.foreach {store =>
+    (1 to env.batches).foreach { i =>
+      val currentBatch = oldBatchIdUpperBound + i
+      val a = delta.filter {case (l, k, v) => batcher.batchOf(new Date(l)) == currentBatch }
+      store.dump(env, a, oldBatchIdUpperBound + i)
+    }
+  }
+
+  /**
+    * Commit the new upper bound into the offlineStore so we can recover
+    * the oldBatchIdUpperBound on the next run.
+    */
   override def next = {
-    // Write the batch upper bound, so we can recover the oldBatchIdUpperBound next time
     offlineStore.commit(newBatchID, env)
     None
   }

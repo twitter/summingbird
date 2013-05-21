@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.util
 
-import com.twitter.bijection.{ Base64String, Bijection, Bufferable }
+import com.twitter.bijection.{ Base64String, Bufferable, Injection }
 import com.twitter.summingbird.batch.BatchID
 
 /**
@@ -26,39 +26,40 @@ import com.twitter.summingbird.batch.BatchID
  */
 
 // TODO: We might be able to handle this with bijection-json.
-object RpcBijection {
-  import Bijection.connect
-  import Bufferable.{ bijectionOf, viaBijection }
+object RpcInjection {
+  import Injection.connect
+  import Bufferable.{ injectionOf, viaInjection }
 
-  implicit val unwrap = Base64String.unwrap
-
-  def of[T](implicit bijection: Bijection[T, Array[Byte]])
-  : Bijection[T, String] =
+  def of[T](implicit bijection: Injection[T, Array[Byte]])
+  : Injection[T, String] =
     connect[T, Array[Byte], Base64String, String]
 
-  def batchPair[K](implicit bijection: Bijection[K, Array[Byte]])
-  : Bijection[(K, BatchID), String] = {
+  def batchPair[K](implicit bijection: Injection[K, Array[Byte]])
+  : Injection[(K, BatchID), String] = {
     val SEP = ":"
 
-    implicit val pairBijection: Bijection[(String, String), String] =
-      new Bijection[(String, String), String] {
+    implicit val pairInjection: Injection[(String, String), String] =
+      new Injection[(String, String), String] {
         override def apply(pair: (String, String)) = pair._1 + SEP + pair._2
         override def invert(s: String) = {
           val parts = s.split(SEP)
-          (parts(0), parts(1))
+          if (parts.size == 2) {
+            Some((parts(0), parts(1)))
+          }
+          else {
+            None
+          }
         }
       }
-    implicit val kBijection: Bijection[K, String] = of[K]
+    implicit val kInjection: Injection[K, String] = of[K]
 
     connect[(K, BatchID), (String, String), String]
   }
 
-  def option[V](implicit bijection: Bijection[V, Array[Byte]])
-  : Bijection[Option[V], String] = {
-    implicit val vBuf: Bufferable[V] =
-      viaBijection[V, Array[Byte]]
-    implicit val optBij: Bijection[Option[V], Array[Byte]] =
-      bijectionOf[Option[V]]
+  def option[V](implicit injection: Injection[V, Array[Byte]])
+  : Injection[Option[V], String] = {
+    implicit val vBuf: Bufferable[V] = viaInjection[V, Array[Byte]]
+    implicit val optBij: Injection[Option[V], Array[Byte]] = injectionOf[Option[V]]
     connect[Option[V], Array[Byte], Base64String, String]
   }
 }

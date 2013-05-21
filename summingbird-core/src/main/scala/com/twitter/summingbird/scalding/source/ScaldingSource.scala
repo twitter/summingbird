@@ -23,6 +23,7 @@ import com.twitter.summingbird.scalding.ScaldingEnv
 import com.twitter.summingbird.source.OfflineSource
 
 import com.twitter.scalding.Mappable
+import java.util.Date
 
 /**
  * A ScaldingSource is an OfflineSource implemented in terms of bounds on Time,
@@ -33,7 +34,7 @@ import com.twitter.scalding.Mappable
  * @author Ashu Singhal
  */
 
-trait ScaldingSource[Event,Time] extends OfflineSource[Event,Time] {
+trait ScaldingSource[Event] extends OfflineSource[Event] {
   import Dsl._
   import TDsl._
 
@@ -51,14 +52,14 @@ trait ScaldingSource[Event,Time] extends OfflineSource[Event,Time] {
   // each side of the bound. We don't currently have a better way of
   // sourcing Events by time range. The more conservative should pull
   // in more slop hours.)
-  def source(lower: Time, upper: Time)
-  (implicit flow: FlowDef, mode: Mode): Mappable[Event]
+  def source(lower: Date, upper: Date)(implicit flow: FlowDef, mode: Mode): Mappable[Event]
 
   // scaldingSource implemented in terms of the source method
   // above. Note that events outside the range defined by "lower" and
   // "upper" are filtered out here, so slop is okay and encouraged.
-  override def scaldingSource(batcher: Batcher[Time], lowerBound: BatchID, env: ScaldingEnv)
-  (implicit flow: FlowDef, mode: Mode) = {
+  override def scaldingSource(batcher: Batcher, lowerBound: BatchID, env: ScaldingEnv)
+    (timeOf: Event => Date)
+    (implicit flow: FlowDef, mode: Mode) = {
     val lowerTime = batcher.earliestTimeOf(lowerBound)
     val upperBound = lowerBound + env.batches
     val upperTime = batcher.earliestTimeOf(upperBound)

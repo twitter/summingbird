@@ -17,23 +17,14 @@ limitations under the License.
 package com.twitter.summingbird.storm
 
 import backtype.storm.task.{ OutputCollector, TopologyContext }
-import backtype.storm.topology.OutputFieldsDeclarer
+import backtype.storm.topology.{ IRichBolt, OutputFieldsDeclarer }
 import backtype.storm.tuple.{ Fields, Tuple, Values }
-
-import com.twitter.algebird.Monoid
-import com.twitter.bijection.Bijection
+import com.twitter.bijection.Injection
 import com.twitter.chill.MeatLocker
 import com.twitter.summingbird.Constants
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.builder.{
-  MaxWaitingFutures,
-  OnlineExceptionHandler,
-  OnlineSuccessHandler,
-  SinkStormMetrics
-}
-import com.twitter.storehaus.Store
-import com.twitter.summingbird.util.{ CacheSize, FutureQueue }
-import com.twitter.util.Future
+import com.twitter.summingbird.builder.{ OnlineExceptionHandler, OnlineSuccessHandler, SinkStormMetrics }
+import com.twitter.storehaus.algebra.MergeableStore
 
 import java.util.{ Map => JMap }
 
@@ -59,37 +50,19 @@ import java.util.{ Map => JMap }
  * @author Ashu Singhal
  */
 
-class SinkBolt[StoreType <: Store[StoreType, (Key,BatchID), Value], Key, Value: Monoid]
-(@transient store: StoreType,
- @transient rpc: Bijection[Option[Value], String],
- @transient successHandler: OnlineSuccessHandler,
- @transient exceptionHandler: OnlineExceptionHandler,
- cacheSize: CacheSize,
- maxWaitingFutures: MaxWaitingFutures,
- metrics: SinkStormMetrics)
-extends BufferingBolt[Map[(Key, BatchID), Value]](cacheSize) {
+class SinkBolt[Key, Value](
+  storeSupplier: () => MergeableStore[(Key,BatchID), Value],
+  @transient rpc: Injection[Option[Value], String],
+  @transient successHandler: OnlineSuccessHandler,
+  @transient exceptionHandler: OnlineExceptionHandler,
+  metrics: SinkStormMetrics) extends BaseBolt(metrics.metrics) {
   import Constants._
 
-  val storeBox = MeatLocker(store)
+  lazy val store = storeSupplier.apply
 
-  // This FutureQueue maintains some number of potentially realized
-  // futures -- once the queue fills up, every addition with += calls
-  // "apply" on the future and drops it off of the queue. This logic
-  // allows the SinkBolt to push back against a store that's going
-  // particularly slow. For stores that respond very quickly to "+"
-  // calls, by the time "apply" is called on the Future[StoreType] the
-  // request will already have been completed.
-  var futureQueue: FutureQueue[StoreType] = null
-
-  val rpcBijection = MeatLocker(rpc)
+  val rpcInjection = MeatLocker(rpc)
   val exceptionHandlerBox = MeatLocker(exceptionHandler)
   val successHandlerBox = MeatLocker(successHandler)
-
-  override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
-    super.prepare(conf, context, oc)
-    futureQueue = FutureQueue[StoreType](Future.value(storeBox.get), maxWaitingFutures.get)
-    metrics.metrics().foreach { _.register(context) }
-  }
 
   def executeDRPC(tuple: Tuple) {
     val key = tuple.getValue(0).asInstanceOf[Key]
@@ -98,20 +71,18 @@ extends BufferingBolt[Map[(Key, BatchID), Value]](cacheSize) {
     // This is just a read, we need the return info to do this properly
     val returnInfo = tuple.getString(2)
 
-    futureQueue.last foreach { store =>
-      store.get((key, batchID))
-        .map { rpcBijection.get(_) }
-        .onSuccess { optVStr =>
-          // TODO: Add exceptionHandlerBox and successHandlerBox for RPC
-          // calls.
-          collector.emit(RPC_STREAM, new Values(optVStr, returnInfo))
-        }
+    // TODO: Add exceptionHandlerBox and successHandlerBox for RPC
+    // calls.
+    store.get((key, batchID))
+      .map { rpcInjection.get(_) }
+      .onSuccess { optVStr =>
+      onCollector { _.emit(RPC_STREAM, new Values(optVStr, returnInfo)) }
     }
   }
 
   // TODO: Think about how we could compose bolts using an implicit
-  // Bijection[T,Tuple] This is really just the invert function.
-  // The problem is that Storm emits Values and receives Tuples.
+  // Injection[T,Tuple] This is really just the invert function.  The
+  // problem is that Storm emits Values and receives Tuples.
   def unpack(tuple: Tuple) = {
     val batchID = tuple.getValue(0).asInstanceOf[BatchID]
     val key = tuple.getValue(1).asInstanceOf[Key]
@@ -119,53 +90,19 @@ extends BufferingBolt[Map[(Key, BatchID), Value]](cacheSize) {
     ((key, batchID), value)
   }
 
-  // TODO: Remove these next two functions once AggregatingStore is merged:
-  // https://github.com/twitter/storehaus/pull/16
-
-  protected def increment(store: StoreType, item: ((Key,BatchID), Value)): Future[StoreType] = {
-    val (k,v) = item
-    store.update(k) { oldV =>
-      Monoid.nonZeroOption(oldV.map { Monoid.plus(_,v) } getOrElse v)
-    }
-    .onSuccess { _ => successHandlerBox.get.handlerFn() }
-    .handle { exceptionHandlerBox.get.handlerFn.andThen { _ => store } }
-  }
-
-  protected def multiIncrement(store: StoreType, items: Map[(Key,BatchID),Value]): Future[StoreType] =
-    items.foldLeft(Future.value(store)) { (storeFuture, pair) =>
-      storeFuture.flatMap { increment(_, pair) }
-    }
-
-  protected def incStore(item: ((Key,BatchID), Value)) {
-    futureQueue.flatMapLast { increment(_, item) }
-  }
-
-  protected def multiIncStore(optItems: Option[Map[(Key,BatchID),Value]]) {
-    futureQueue.flatMapLast { store =>
-      optItems match {
-        case Some(items) => multiIncrement(store, items)
-        case None => Future.value(store)
-      }
-    }
-  }
-
   override def execute(tuple: Tuple) {
-    if(tuple.getSourceComponent == DRPC_DECODER)
-      executeDRPC(tuple)
-    else {
-      val pair = unpack(tuple)
-      cacheCount match {
-        case Some(_) => multiIncStore(buffer(Map(pair)))
-        case None => incStore(pair)
-      }
+    tuple.getSourceComponent match {
+      case DRPC_DECODER => executeDRPC(tuple)
+      case _ => store.merge(unpack(tuple))
+          .onSuccess { _ => successHandlerBox.get.handlerFn() }
+          .handle(exceptionHandlerBox.get.handlerFn)
     }
-    collector.ack(tuple)
+    onCollector { _.ack(tuple) }
   }
 
   override def declareOutputFields(dec : OutputFieldsDeclarer) {
     dec.declareStream(RPC_STREAM, new Fields(VALUE_FIELD, RETURN_INFO))
   }
 
-  override def cleanup { futureQueue.last.foreach { _.close } }
-  override val getComponentConfiguration = null
+  override def cleanup { store.close }
 }

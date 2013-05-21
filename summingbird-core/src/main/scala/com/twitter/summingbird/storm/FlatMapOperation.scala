@@ -37,27 +37,27 @@ trait FlatMapOperation[Event,Key,Value] extends Serializable with Closeable { se
 }
 
 object FlatMapOperation {
-  def apply[Event, Key, Value](fm: FlatMapper[Event, Key, Value]):
-    FlatMapOperation[Event, Key, Value] = new FlatMapOperation[Event, Key, Value] {
-      def apply(e: Event) = Future.value(fm.encode(e))
-      override def close { fm.cleanup }
-    }
+  def apply[Event, Key, Value](fmSupplier: => FlatMapper[Event, Key, Value]):
+      FlatMapOperation[Event, Key, Value] = new FlatMapOperation[Event, Key, Value] {
+    lazy val fm = fmSupplier
+    def apply(e: Event) = Future.value(fm.encode(e))
+    override def close { fm.cleanup }
+  }
 
-  def combine[Event,Key,Value,Joined](fm: FlatMapOperation[Event, Key, Value],
-    store: ReadableStore[Key, Joined]): FlatMapOperation[Event, Key, (Value, Option[Joined])] =
+  def combine[Event,Key,Value,Joined](fmSupplier: => FlatMapOperation[Event, Key, Value],
+    storeSupplier: () => ReadableStore[Key, Joined]): FlatMapOperation[Event, Key, (Value, Option[Joined])] =
     new FlatMapOperation[Event, Key, (Value, Option[Joined])] {
+      lazy val fm = fmSupplier
+      lazy val store = storeSupplier()
       override def apply(e: Event) =
         fm.apply(e).flatMap { trav: TraversableOnce[(Key, Value)] =>
           val resultList = trav.toSeq // Can't go through this twice
           val keySet: Set[Key] = resultList.map { _._1 }.toSet
           // Do the lookup
-          store.multiGet(keySet).flatMap { mres: Map[Key, Future[Option[Joined]]] =>
-            Future.collect {
-              resultList.map { case (k, v) =>
-                mres(k).map { k -> (v, _) }
-              }
-            }.map { _.toMap }
-          }
+          val mres: Map[Key, Future[Option[Joined]]] = store.multiGet(keySet)
+          Future.collect {
+            resultList.map { case (k, v) => mres(k).map { k -> (v, _) } }
+          }.map { _.toMap }
         }
 
       override def close {

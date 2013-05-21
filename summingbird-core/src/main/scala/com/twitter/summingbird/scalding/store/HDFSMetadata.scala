@@ -16,12 +16,14 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding.store
 
-import backtype.hadoop.datastores.{ VersionedStore => BacktypeVersionedStore }
-import com.twitter.bijection.json.{ JsonBijection, JsonNodeBijection }
+import com.backtype.hadoop.datastores.{ VersionedStore => BacktypeVersionedStore }
+import com.twitter.bijection.json.{ JsonInjection, JsonNodeInjection }
 import java.io.{ DataOutputStream, DataInputStream }
 import org.apache.hadoop.io.WritableUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{ FileSystem, Path }
+import scala.collection.JavaConverters._
+import scala.util.control.Exception.allCatch
 
 /**
  * @author Oscar Boykin
@@ -53,39 +55,93 @@ import org.apache.hadoop.fs.{ FileSystem, Path }
 object HDFSMetadata {
   val METADATA_FILE = "_summingbird.json"
 
-  def versionedStore(conf: Configuration, rootPath: String): BacktypeVersionedStore = {
+  def apply(conf: Configuration, rootPath: String): HDFSMetadata =
+    new HDFSMetadata(conf, rootPath)
+
+  /** Get from the most recent version */
+  def get[T: JsonNodeInjection](conf: Configuration, path: String): Option[T] =
+    apply(conf, path)
+      .mostRecentVersion
+      .flatMap { _.get[T] }
+
+  /** Put to the most recent version */
+  def put[T: JsonNodeInjection](conf: Configuration, path: String, obj: Option[T]) =
+    apply(conf, path)
+      .mostRecentVersion
+      .get.put(obj)
+}
+
+/** Class to access metadata for a single versioned output directory
+ * @param rootPath the base root path to where versions of a single output are stored
+ */
+class HDFSMetadata(conf: Configuration, rootPath: String) {
+  protected val versionedStore: BacktypeVersionedStore = {
     val fs = FileSystem.get(conf)
     new BacktypeVersionedStore(fs, rootPath)
   }
 
-  def createVersion(conf: Configuration, rootPath: String): String =
-    versionedStore(conf, rootPath).createVersion
+  /** path to a specific version WHETHER OR NOT IT EXISTS
+   */
+  private def pathOf(version: Long): Path =
+    new Path(versionedStore.versionPath(version), HDFSMetadata.METADATA_FILE)
 
-  def getPath(conf: Configuration, rootPath: String): Option[Path] = {
-    val vs = versionedStore(conf, rootPath)
-    Option(vs.mostRecentVersionPath) map { new Path(_, METADATA_FILE) }
-  }
+  /** The greatest version number that has been completed on disk
+   */
+  def mostRecentVersion: Option[HDFSVersionMetadata] =
+    Option(versionedStore.mostRecentVersion)
+      .map { jlong => new HDFSVersionMetadata(jlong.longValue, conf, pathOf(jlong.longValue)) }
 
-  def get[T: JsonNodeBijection](conf: Configuration, path: String): Option[T] = {
-    getPath(conf, path)
-      .map { p =>
-        val fs = FileSystem.get(conf)
-        val is = new DataInputStream(fs.open(p))
-        val ret = JsonBijection.fromString[T](WritableUtils.readString(is))
-        is.close
-        ret
-      }
-  }
+  /** Find the newest version that satisfies a predicate */
+  def find[T: JsonNodeInjection](fn: (T) => Boolean): Option[(T, HDFSVersionMetadata)] =
+    select(fn).headOption
 
-  def put[T: JsonNodeBijection](conf: Configuration, path: String, obj: Option[T]) {
-    val meta = obj
-      .map { JsonBijection.toString[T].apply(_) }
-      .getOrElse("")
+  /** select all versions that satisfy a predicate */
+  def select[T: JsonNodeInjection](fn: (T) => Boolean): Iterable[(T, HDFSVersionMetadata)] =
+    for { v <- versions
+          hmd = apply(v)
+          it <- hmd.get[T] if fn(it) } yield (it, hmd)
 
+  /** This touches the filesystem once on each call, newest to oldest
+   * This relies on dfs-datastore doing the sorting, which it does last we checked
+   */
+  def versions: Stream[Long] =
+    versionedStore.getAllVersions.asScala.toStream.map { _.longValue }
+
+  /** Refer to a specific version, even if it does not exist on disk */
+  def apply(version: Long): HDFSVersionMetadata =
+    new HDFSVersionMetadata(version, conf, pathOf(version))
+
+  /** Get a version's metadata IF it exists on disk */
+  def get(version: Long): Option[HDFSVersionMetadata] =
+    versions.find { _ == version }.map { apply(_) }
+}
+
+/** Refers to a specific version on disk. Allows reading and writing metadata to specific locations
+ */
+class HDFSVersionMetadata private[store] (val version: Long, conf: Configuration, path: Path) {
+  private def getString: Option[String] =
+    allCatch.opt {
+      val fs = FileSystem.get(conf)
+      val is = new DataInputStream(fs.open(path))
+      val str = WritableUtils.readString(is)
+      is.close
+      str
+    }
+  /** get an item from the metadata file. If there is any failure, you get None.
+   */
+  def get[T: JsonNodeInjection]: Option[T] =
+    getString.flatMap { JsonInjection.fromString[T](_) }
+
+  private def putString(str: String) {
     val fs = FileSystem.get(conf)
-    val metaPath = getPath(conf, path).get
-    val os = new DataOutputStream(fs.create(metaPath))
-    WritableUtils.writeString(os, meta)
+    val os = new DataOutputStream(fs.create(path))
+    WritableUtils.writeString(os, str)
     os.close
   }
+
+  /** Put a new meta-data file, or overwrite on HDFS */
+  def put[T: JsonNodeInjection](obj: Option[T]) = putString {
+    obj.map { JsonInjection.toString[T].apply(_) }
+      .getOrElse("")
+    }
 }

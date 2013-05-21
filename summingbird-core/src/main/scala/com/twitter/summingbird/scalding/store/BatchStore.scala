@@ -21,7 +21,6 @@ import cascading.flow.FlowDef
 import com.twitter.scalding.{ Dsl, Mode, TDsl, TypedPipe, IterableSource }
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.scalding.ScaldingEnv
-import com.twitter.util.Future
 
 import java.io.Serializable
 
@@ -53,11 +52,4 @@ trait BatchStore[K,V] extends BatchReadableStore[K,V] with Serializable {
   def write(env: ScaldingEnv, p: TypedPipe[(K,V)])
   (implicit fd: FlowDef, mode: Mode): Unit
   def commit(batchId: BatchID, env: ScaldingEnv): Unit
-}
-
-class EmptyBatchStore[K, V] extends BatchStore[K, V] {
-  val empty = BatchReadableStore.empty[K,V](BatchID(0))
-  override def readLatest(env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode) = empty.readLatest(env)
-  def write(env: ScaldingEnv, p: TypedPipe[(K,V)])(implicit fd: FlowDef, mode: Mode) { }
-  def commit(batchId: BatchID, env: ScaldingEnv) { }
 }

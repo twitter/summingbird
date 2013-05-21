@@ -32,24 +32,24 @@ import com.twitter.summingbird.util.CacheSize
 import scala.util.Random
 
 /**
- * SingleFlatMappedBuilder is the abstract class used
- * to transform an EventSource into a FlatMappedBuilder. These
- * guys can be fed into MergedFlatMappedBuilder instances
- * to combine with other event sources.
+ * SingleFlatMappedBuilder is the abstract class used to transform an
+ * EventSource into a FlatMappedBuilder. These guys can be fed into
+ * MergedFlatMappedBuilder instances to combine with other event
+ * sources.
  *
  * @author Oscar Boykin
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
 
-class SingleFlatMappedBuilder[Event,Time,Key,Value]
-(sourceBuilder: SourceBuilder[Event, Time],
- stormFm: StormFlatMap[Event, Key, Value],
- scaldingFm: ScaldingFlatMap[Event, Key, Value],
- flatMapParallelism: FlatMapParallelism = Constants.DEFAULT_FM_PARALLELISM,
- flatMapCacheSize: CacheSize = Constants.DEFAULT_FM_CACHE,
- stormMetrics: FlatMapStormMetrics = Constants.DEFAULT_FM_STORM_METRICS)
-extends FlatMappedBuilder[Time,Key,Value] {
+class SingleFlatMappedBuilder[Event,Key,Value](
+  sourceBuilder: SourceBuilder[Event],
+  stormFm: StormFlatMap[Event, Key, Value],
+  scaldingFm: ScaldingFlatMap[Event, Key, Value],
+  flatMapParallelism: FlatMapParallelism = Constants.DEFAULT_FM_PARALLELISM,
+  flatMapCacheSize: CacheSize = Constants.DEFAULT_FM_CACHE,
+  stormMetrics: FlatMapStormMetrics = Constants.DEFAULT_FM_STORM_METRICS)
+    extends FlatMappedBuilder[Key,Value] {
   import Constants._
 
   /** Use this with named params for easy copying.
@@ -59,12 +59,9 @@ extends FlatMappedBuilder[Time,Key,Value] {
     parallelism: FlatMapParallelism = flatMapParallelism,
     cacheSize: CacheSize = flatMapCacheSize,
     stormMetrics: FlatMapStormMetrics = stormMetrics,
-    source: SourceBuilder[Event, Time] = sourceBuilder):
-    SingleFlatMappedBuilder[Event, Time, K2, V2] =
+    source: SourceBuilder[Event] = sourceBuilder):
+    SingleFlatMappedBuilder[Event, K2, V2] =
       new SingleFlatMappedBuilder(source, storm, scalding, parallelism, cacheSize, stormMetrics)
-
-  // TODO this should probably not be here, just call through with sourceBuilders
-  override val eventCodecPairs = sourceBuilder.eventCodecPairs
 
   override val sourceBuilders = List(sourceBuilder)
 
@@ -75,7 +72,7 @@ extends FlatMappedBuilder[Time,Key,Value] {
     // The monoid here must be of the right type or we are screwed anyway, the builder
     // ensures this:
     implicit val monoid: Monoid[Value] = env.builder.monoid.asInstanceOf[Monoid[Value]]
-    implicit val batcher: Batcher[Time] = env.builder.batcher.asInstanceOf[Batcher[Time]]
+    implicit val batcher: Batcher = env.builder.batcher
     tb.setBolt(flatMapName(suffix),
                new FlatMapBolt(stormFm, flatMapCacheSize, stormMetrics),
                flatMapParallelism.parHint)
@@ -86,24 +83,22 @@ extends FlatMappedBuilder[Time,Key,Value] {
     groupBySumBolt.fieldsGrouping(flatMapName(suffix), new Fields(AGG_KEY))
 
   override def flatMapBuilder[Key2, Val2](newFlatMapper:
-    FlatMapper[(Key,Value),Key2,Val2]): FlatMappedBuilder[Time, Key2, Val2] = {
+    FlatMapper[(Key,Value),Key2,Val2]): FlatMappedBuilder[Key2, Val2] = {
 
     val newStorm = stormFm.andThen(StormFlatMap(newFlatMapper))
     val newScalding = scaldingFm.andThen(ScaldingFlatMap(newFlatMapper))
     copy(newStorm, newScalding)
   }
 
-  override def getFlatMappedPipe(batcher: Batcher[Time], lowerb: BatchID, env: ScaldingEnv)
-  (implicit fd: FlowDef, mode: Mode): TypedPipe[(Time,Key,Value)] = {
+  override def getFlatMappedPipe(batcher: Batcher, lowerb: BatchID, env: ScaldingEnv)
+  (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long,Key,Value)] = {
     val src = sourceBuilder.getFlatMappedPipe(batcher, lowerb, env)
-    scaldingFm(env, src).map { case (t, (k,v)) => (t,k,v) }
+    scaldingFm(src).map { case (t, (k,v)) => (t,k,v) }
   }
 
-  def leftJoin[JoinedValue](service: CompoundService[Key, JoinedValue]):
-    FlatMappedBuilder[Time,Key,(Value, Option[JoinedValue])] = {
-
-    val newStorm = StormFlatMap.combine(stormFm, service)
-    val newScalding = ScaldingFlatMap.combine(scaldingFm, service)
+  def leftJoin[JoinedValue](service: CompoundService[Key, JoinedValue]): FlatMappedBuilder[Key,(Value, Option[JoinedValue])] = {
+    val newStorm = StormFlatMap.combine(stormFm, service.online)
+    val newScalding = ScaldingFlatMap.combine(scaldingFm, service.offline)
     copy(newStorm, newScalding)
   }
 

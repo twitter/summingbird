@@ -20,14 +20,17 @@ import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.{ Fields, Tuple, Values }
 
-import com.twitter.algebird.Monoid
+import com.twitter.algebird.{ Monoid, SummingQueue }
 import com.twitter.chill.MeatLocker
 import com.twitter.summingbird.Constants
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
 import com.twitter.summingbird.builder.FlatMapStormMetrics
+import com.twitter.storehaus.algebra.MergeableStore
 
-import java.util.{ Map => JMap }
+import MergeableStore.enrich
+
+import java.util.{ Date, Map => JMap }
 
 /**
  * @author Oscar Boykin
@@ -35,66 +38,37 @@ import java.util.{ Map => JMap }
  * @author Ashu Singhal
  */
 
-class FlatMapBolt[Event,Time,Key,Value](@transient fm: FlatMapOperation[Event,Key,Value],
-                                        cacheSize: CacheSize,
-                                        metrics: FlatMapStormMetrics)
-(implicit monoid: Monoid[Value], batcher: Batcher[Time])
-extends BufferingBolt[Map[(Key, BatchID), Value]](cacheSize) {
-  val flatMapBox = MeatLocker(fm)
-
-  // TODO: Once this issue's fixed
-  // (https://github.com/twitter/tormenta/issues/1), emit scala
-  // tuples directly.
-
-  protected def emitMap(m: Map[(Key,BatchID),Value]) {
-    toCollector { coll =>
-      m foreach { case ((k,batchID),v) =>
-        coll.emit(new Values(batchID.asInstanceOf[AnyRef], // BatchID
-                             k.asInstanceOf[AnyRef], // Key
-                             v.asInstanceOf[AnyRef])) // Value
-      }
-    }
-  }
+class FlatMapBolt[Event, Key, Value](
+  flatMapBox: FlatMapOperation[Event, Key, Value],
+  cacheSize: CacheSize,
+  metrics: FlatMapStormMetrics)
+  (implicit monoid: Monoid[Value], batcher: Batcher) extends BaseBolt(metrics.metrics) {
+  var collectorMergeable: MergeableStore[(Key, BatchID), Value] = null
 
   override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
     super.prepare(conf, context, oc)
-    metrics.metrics().foreach { _.register(context) }
-  }
-
-  def cachedExecute(pairs: TraversableOnce[(Key,Value)], batchID: BatchID) {
-    val pairMaps: TraversableOnce[Map[(Key,BatchID),Value]] =
-      pairs flatMap { case (k,v) => buffer( Map((k, batchID) -> v) ) }
-
-    emitMap(Monoid.sum(pairMaps))
-  }
-
-  def uncachedExecute(pairs: TraversableOnce[(Key,Value)], batchID: BatchID) {
-    // TODO: Because the bolt has persistent state, we can have the
-    // bolt sample the stream and evaluate if this foldLeft is needed
-    // (and remove it if unnecessary).
-    val toEmit =
-      pairs.foldLeft(Monoid.zero[Map[(Key, BatchID), Value]]) { (acc, pair) =>
-        val (k,v) = pair
-        Monoid.plus(acc, Map((k,batchID) -> v))
-      }
-    emitMap(toEmit)
+    onCollector { collector =>
+      collectorMergeable =
+        new CollectorMergeableStore[Key, Value](collector)
+          .withSummer { m =>
+          implicit val monoid: Monoid[Value] = m
+          SummingQueue(cacheSize.size.getOrElse(0))
+        }
+    }
   }
 
   override def execute(tuple: Tuple) {
     // TODO: We need to get types down into the IRichSpout so we can validate this.
-    val (event,time) = tuple.getValue(0).asInstanceOf[(Event,Time)]
+    val (event, time) = tuple.getValue(0).asInstanceOf[(Event, Date)]
     val batchID = batcher.batchOf(time)
-    flatMapBox.get.apply(event) foreach { pairs =>
-      if (cacheCount.isDefined)
-        cachedExecute(pairs, batchID)
-      else
-        uncachedExecute(pairs, batchID)
-
-      // TODO: Think about whether we want to ack tuples when they're
-      // actually processed, vs always acking them here. This will
-      // complicate the logic of the cached case (as we'll have to track
-      // the tuple -> kv mapping.
-      collector.ack(tuple)
+    // the flat map function returns a future
+    // each resulting key value pair is merged into the output once the future completes
+    // the input tuple is acked once the future completes
+    flatMapBox.apply(event).foreach { pairs =>
+      pairs.foreach { case (k, v) =>
+        onCollector { _ => collectorMergeable.merge((k, batchID) -> v) }
+      }
+      onCollector { _.ack(tuple) }
     }
   }
 
@@ -103,6 +77,5 @@ extends BufferingBolt[Map[(Key, BatchID), Value]](cacheSize) {
     declarer.declare(new Fields(AGG_BATCH, AGG_KEY, AGG_VALUE))
   }
 
-  override def cleanup { flatMapBox.get.close }
-  override val getComponentConfiguration = null
+  override def cleanup { flatMapBox.close }
 }

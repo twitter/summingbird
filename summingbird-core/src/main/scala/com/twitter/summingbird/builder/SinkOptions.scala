@@ -17,6 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.builder
 
 import com.twitter.summingbird.storm.StormMetric
+import com.twitter.summingbird.scalding.store.IntermediateStore
 
 /**
  * @author Oscar Boykin
@@ -33,15 +34,6 @@ sealed trait SinkOption extends Serializable
 // the store. The default sink parallelism is 5.
 
 case class SinkParallelism(parHint: Int) extends SinkOption
-
-// MaxWaitingFutures is the maximum number of key-value pairs that the
-// SinkBolt in Storm will process before starting to force the
-// futures. For example, setting MaxWaitingFutures(100) means that if
-// a key-value pair is added to the OnlineStore and the (n - 100)th
-// write has not completed, Storm will block before moving on to the
-// next key-value pair.
-
-case class MaxWaitingFutures(get: Int) extends SinkOption
 
 // RpcParallelism controls the number of processes Storm allocates to
 // the Rpc Return bolts. The default rpc parallelism is 10.
@@ -71,3 +63,6 @@ class SinkStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]]) exten
 // True if the Monoid is commutative, false otherwise.
 
 case class MonoidIsCommutative(isCommutative: Boolean) extends SinkOption
+
+// If not blank, it is the HDFS path to store the intermediate data.
+case class StoreIntermediateData[K, V](store: Option[IntermediateStore[K, V]]) extends SinkOption

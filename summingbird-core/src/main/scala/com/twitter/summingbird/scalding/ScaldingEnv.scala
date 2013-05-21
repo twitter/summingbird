@@ -16,14 +16,14 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.scalding.{Tool => STool, _}
+import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird.Env
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.util.KryoRegistrationHelper
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
-import java.util.{ HashMap => JHashMap, Map => JMap }
+import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
 
 import ConfigBijection.fromJavaMap
 
@@ -52,11 +52,11 @@ extends Env(jobName) {
     // TODO: Deal with duplication here with the lift between this
     // code and SummingbirdKryoHadoop
     val jConf: JMap[String,AnyRef] = new JHashMap(fromJavaMap.invert(new Configuration))
-    KryoRegistrationHelper.registerBijections(jConf, flatMappedBuilder.eventCodecPairs)
+    KryoRegistrationHelper.registerInjections(jConf, flatMappedBuilder.eventCodecPairs)
 
     // Register key and value types. All extensions of either of these
-    // types will be caught by the registered bijection.
-    KryoRegistrationHelper.registerBijectionDefaults(jConf, codecPairs)
+    // types will be caught by the registered injection.
+    KryoRegistrationHelper.registerInjectionDefaults(jConf, codecPairs)
     fromJavaMap(jConf)
   }
 
@@ -65,6 +65,8 @@ extends Env(jobName) {
     Args(new GenericOptionsParser(new Configuration, inargs).getRemainingArgs)
   }
 
+  lazy val tz = TimeZone.getTimeZone("UTC")
+
   // Summingbird's Scalding mode needs some way to figure out the very
   // first batch to grab. This particular implementation gets the
   // --start-time option from the command line, asks the batcher for
@@ -72,12 +74,15 @@ extends Env(jobName) {
   // initial batch to process. All runs after the first batch
   // (incremental updates) will use the batch of the previous run as
   // the starting batch, rendering this unnecessary.
-  def startBatch[Time](batcher: Batcher[Time]): Option[BatchID] =
+  def startBatch[Time](batcher: Batcher): Option[BatchID] =
     if (args.boolean("initial-run"))
       Some(args("start-time"))
-        .map { opt => batcher.batchOf(batcher.parseTime(opt)) }
-    else
-      None
+        .map { dateString =>
+        val millis = DateOps.stringToRichDate(dateString)(tz).timestamp
+        batcher.batchOf(new Date(millis))
+      }
+      else
+        None
 
   // The number of batches to process in this particular run. Imagine
   // a batch size of one hour; For big recomputations, one might want

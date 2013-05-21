@@ -17,7 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.scalding.store
 
 import cascading.flow.FlowDef
-import com.twitter.bijection.Bijection
+import com.twitter.bijection.Injection
 import com.twitter.scalding.{ TypedPipe, Mode, Dsl, TDsl }
 import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.summingbird.batch.BatchID
@@ -33,8 +33,7 @@ import com.twitter.summingbird.scalding.ScaldingEnv
  */
 
 object VersionedStore {
-  def apply[Key, Value](rootPath: String)
-  (implicit bijection: Bijection[(Key, Value), (Array[Byte], Array[Byte])]) =
+  def apply[Key, Value](rootPath: String)(implicit injection: Injection[(Key, Value), (Array[Byte], Array[Byte])]) =
     new VersionedStore[Key, Value](VersionedKeyValSource[Key, Value](rootPath))
 
   def apply[Key, Value](source: => VersionedKeyValSource[Key, Value]) =
@@ -69,7 +68,7 @@ class VersionedStore[Key, Value](source: => VersionedKeyValSource[Key, Value]) e
 
   def write(env: ScaldingEnv, p: TypedPipe[(Key,Value)])
   (implicit fd: FlowDef, mode: Mode) {
-    p.write((0,1), source)
+    p.toPipe((0,1)).write(source)
   }
 
   def commit(batchID: BatchID, env: ScaldingEnv) {

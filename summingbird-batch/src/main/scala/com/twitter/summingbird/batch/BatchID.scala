@@ -16,8 +16,8 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import com.twitter.bijection.Bijection
 import com.twitter.algebird.Monoid
+import com.twitter.bijection.{ Bijection, Injection }
 import scala.collection.Iterator.iterate
 
 /**
@@ -52,14 +52,14 @@ object BatchID {
     override def plus(l: BatchID, r: BatchID) = if (l >= r) l else r
   }
 
-  implicit val batchID2String: Bijection[BatchID, String] =
-    Bijection.build[BatchID,String] { _.toString } { BatchID(_) }
+  implicit val batchID2String: Injection[BatchID, String] =
+    Injection.buildCatchInvert[BatchID,String] { _.toString } { BatchID(_) }
 
   implicit val batchID2Long: Bijection[BatchID, Long] =
     Bijection.build[BatchID,Long] { _.id } { BatchID(_) }
 
-  implicit val batchID2Bytes: Bijection[BatchID, Array[Byte]] =
-    Bijection.connect[BatchID, Long, Array[Byte]]
+  implicit val batchID2Bytes: Injection[BatchID, Array[Byte]] =
+    Injection.connect[BatchID, Long, Array[Byte]]
 }
 
 class BatchID(val id: Long) extends Ordered[BatchID] with java.io.Serializable {

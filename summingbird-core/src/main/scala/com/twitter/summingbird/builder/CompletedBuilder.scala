@@ -20,18 +20,21 @@ import backtype.storm.drpc.ReturnResults
 import backtype.storm.generated.StormTopology
 import backtype.storm.topology.TopologyBuilder
 import backtype.storm.tuple.Fields
-import com.twitter.algebird.Monoid
-import com.twitter.bijection.Bijection
-import com.twitter.chill.{ BijectionPair, MeatLocker }
+import com.twitter.algebird.{ Monoid, Semigroup, SummingQueue }
+import com.twitter.bijection.{Bijection, Injection, ImplicitBijection}
+import com.twitter.chill.{ InjectionPair, MeatLocker }
 import com.twitter.scalding.{ Job => ScaldingJob }
-import com.twitter.storehaus.{ ConcurrentMutableStore, Store }
+import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.{ Constants, Env }
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
 import com.twitter.summingbird.scalding.{ ScaldingEnv, BatchAggregatorJob }
+import com.twitter.summingbird.scalding.store.IntermediateStore
 import com.twitter.summingbird.store.CompoundStore
-import com.twitter.summingbird.storm.{ ConcurrentSinkBolt, DecoderBolt, StormEnv, SinkBolt }
-import com.twitter.summingbird.util.{ CacheSize, RpcBijection }
+import com.twitter.summingbird.storm.{ DecoderBolt, StormEnv, SinkBolt }
+import com.twitter.summingbird.util.{ CacheSize, RpcInjection }
 import com.twitter.tormenta.ScalaInterop
+
+import MergeableStore.enrich
 
 /**
  * @author Oscar Boykin
@@ -44,55 +47,58 @@ import com.twitter.tormenta.ScalaInterop
 // summingbird is ready to generate scalding and storm
 // implementations.
 
-class CompletedBuilder[StoreType <: Store[StoreType, (Key, BatchID), Value],
-                       Time:Batcher,
-                       Key:Manifest:Ordering,
-                       Value:Manifest:Monoid]
-(val flatMappedBuilder: FlatMappedBuilder[Time,Key,Value],
- @transient tempStore: CompoundStore[StoreType, Key, Value],
- @transient keyCodec: Bijection[Key,Array[Byte]],
- @transient valCodec: Bijection[Value,Array[Byte]],
- sinkCacheSize: CacheSize = Constants.DEFAULT_SINK_CACHE,
- sinkWaitingFutures: MaxWaitingFutures = Constants.DEFAULT_MAX_WAITING_SINK_FUTURES,
- sinkParallelism: SinkParallelism = Constants.DEFAULT_SINK_PARALLELISM,
- decoderParallelism: DecoderParallelism = Constants.DEFAULT_DECODER_PARALLELISM,
- rpcParallelism: RpcParallelism = Constants.DEFAULT_RPC_PARALLELISM,
- successHandler: OnlineSuccessHandler = Constants.DEFAULT_ONLINE_SUCCESS_HANDLER,
- exceptionHandler: OnlineExceptionHandler = Constants.DEFAULT_ONLINE_EXCEPTION_HANDLER,
- sinkMetrics: SinkStormMetrics = Constants.DEFAULT_SINK_STORM_METRICS,
- monoidIsCommutative: MonoidIsCommutative = Constants.DEFAULT_MONOID_IS_COMMUTATIVE)
-extends java.io.Serializable {
+object CompletedBuilder {
+  def injectionPair[T: Manifest](injection: Injection[T, Array[Byte]]) =
+    InjectionPair(manifest[T].erasure.asInstanceOf[Class[T]], injection)
+}
+
+class CompletedBuilder[Key: Manifest: Ordering, Value: Manifest: Monoid](
+  val flatMappedBuilder: FlatMappedBuilder[Key,Value],
+  @transient tempStore: CompoundStore[Key, Value],
+  @transient keyCodec: Injection[Key,Array[Byte]],
+  @transient valCodec: Injection[Value,Array[Byte]],
+  val batcher: Batcher,
+  sinkCacheSize: CacheSize = Constants.DEFAULT_SINK_CACHE,
+  sinkParallelism: SinkParallelism = Constants.DEFAULT_SINK_PARALLELISM,
+  decoderParallelism: DecoderParallelism = Constants.DEFAULT_DECODER_PARALLELISM,
+  rpcParallelism: RpcParallelism = Constants.DEFAULT_RPC_PARALLELISM,
+  successHandler: OnlineSuccessHandler = Constants.DEFAULT_ONLINE_SUCCESS_HANDLER,
+  exceptionHandler: OnlineExceptionHandler = Constants.DEFAULT_ONLINE_EXCEPTION_HANDLER,
+  sinkMetrics: SinkStormMetrics = Constants.DEFAULT_SINK_STORM_METRICS,
+  monoidIsCommutative: MonoidIsCommutative = Constants.DEFAULT_MONOID_IS_COMMUTATIVE,
+  intermediateStore: StoreIntermediateData[Key, Value] = StoreIntermediateData[Key, Value](None)
+) extends java.io.Serializable {
+  import CompletedBuilder.injectionPair
 
   protected val storeBox = MeatLocker(tempStore)
   def store = storeBox.copy
   def monoid: Monoid[Value] = implicitly[Monoid[Value]]
-  def batcher: Batcher[Time] = implicitly[Batcher[Time]]
 
-  val keyCodecPair =
-    BijectionPair(manifest[Key].erasure.asInstanceOf[Class[Key]], keyCodec)
-  val valueCodecPair =
-    BijectionPair(manifest[Value].erasure.asInstanceOf[Class[Value]], valCodec)
+  val keyCodecPair = injectionPair(keyCodec)
+  val valueCodecPair = injectionPair(valCodec)
 
   /**
    * Use this with named params for easy copying.
    */
-  def copy(fmb: FlatMappedBuilder[Time, Key, Value] = flatMappedBuilder,
-           store: CompoundStore[StoreType, Key, Value] = tempStore,
-           kBijection: Bijection[Key,Array[Byte]] = keyCodec,
-           vBijection: Bijection[Value,Array[Byte]] = valCodec,
-           cacheSize: CacheSize = sinkCacheSize,
-           waitingFutures: MaxWaitingFutures = sinkWaitingFutures,
-           sinkPar: SinkParallelism = sinkParallelism,
-           decoderPar: DecoderParallelism = decoderParallelism,
-           rpcPar: RpcParallelism = rpcParallelism,
-           succHandler: OnlineSuccessHandler = successHandler,
-           excHandler: OnlineExceptionHandler = exceptionHandler,
-           metrics: SinkStormMetrics = sinkMetrics,
-           commutative: MonoidIsCommutative = monoidIsCommutative)
-  : CompletedBuilder[StoreType, Time, Key, Value] =
-    new CompletedBuilder(fmb, store, kBijection, vBijection,
-                         cacheSize, waitingFutures, sinkPar, decoderPar, rpcPar,
-                         succHandler, excHandler, metrics, commutative)
+  def copy(
+    fmb: FlatMappedBuilder[Key, Value] = flatMappedBuilder,
+    store: CompoundStore[Key, Value] = tempStore,
+    kInjection: Injection[Key,Array[Byte]] = keyCodec,
+    vInjection: Injection[Value,Array[Byte]] = valCodec,
+    longBatcher: Batcher = batcher,
+    cacheSize: CacheSize = sinkCacheSize,
+    sinkPar: SinkParallelism = sinkParallelism,
+    decoderPar: DecoderParallelism = decoderParallelism,
+    rpcPar: RpcParallelism = rpcParallelism,
+    succHandler: OnlineSuccessHandler = successHandler,
+    excHandler: OnlineExceptionHandler = exceptionHandler,
+    metrics: SinkStormMetrics = sinkMetrics,
+    commutative: MonoidIsCommutative = monoidIsCommutative,
+    intermediate: StoreIntermediateData[Key, Value] = intermediateStore
+  ): CompletedBuilder[Key, Value] =
+    new CompletedBuilder(fmb, store, kInjection, vInjection, longBatcher,
+      cacheSize, sinkPar, decoderPar, rpcPar,
+      succHandler, excHandler, metrics, commutative, intermediate)
 
   // Set the cache size used in the online flatmap step.
   def set(size: CacheSize)(implicit env: Env) = {
@@ -103,7 +109,6 @@ extends java.io.Serializable {
 
   def set(opt: SinkOption)(implicit env: Env) = {
     val cb = opt match {
-      case waiting: MaxWaitingFutures => copy(waitingFutures = waiting)
       case par: SinkParallelism => copy(sinkPar = par)
       case par: DecoderParallelism => copy(decoderPar = par)
       case par: RpcParallelism => copy(rpcPar = par)
@@ -111,6 +116,7 @@ extends java.io.Serializable {
       case handler: OnlineExceptionHandler => copy(excHandler = handler)
       case newMetrics: SinkStormMetrics => copy(metrics = newMetrics)
       case comm: MonoidIsCommutative => copy(commutative = comm)
+      case inter: StoreIntermediateData[Key, Value] => copy(intermediate = inter)
     }
     env.builder = cb
     cb
@@ -138,28 +144,28 @@ extends java.io.Serializable {
     // -> Key and emits the decoded Key. The SinkBolt uses this stream
     // to return Values for DRPC requests.
     topologyBuilder.setBolt(DRPC_DECODER,
-                            new DecoderBolt(RpcBijection.batchPair(keyCodec)),
+                            new DecoderBolt(RpcInjection.batchPair(keyCodec)),
                             decoderParallelism.parHint)
       .shuffleGrouping(DRPC_SPOUT)
 
     // Attach the SinkBolt, used to route key-value pairs into the
     // Summingbird sink and to look up values for DRPC requests.
+    val sinkBolt = new SinkBolt[Key, Value](
+      // TODO: Is this correct?
+      { () =>
+        store.onlineSupplier().withSummer { m =>
+          implicit val innerM: Semigroup[Value] = m
+          SummingQueue[Map[(Key, BatchID), Value]](sinkCacheSize.size.getOrElse(0))
+        }
+      },
+      RpcInjection.option(valCodec),
+      successHandler, exceptionHandler, sinkMetrics
+    )
 
-    val sinkBolt =
-      store.onlineStore match {
-        case store: ConcurrentMutableStore[StoreType, (Key, BatchID), Value] =>
-          new ConcurrentSinkBolt[StoreType, Key, Value](store.asInstanceOf[StoreType], RpcBijection.option(valCodec),
-                                                        successHandler, exceptionHandler,
-                                                        sinkCacheSize, sinkWaitingFutures, sinkMetrics)
-        case store: Store[StoreType, (Key, BatchID), Value] =>
-          new SinkBolt[StoreType, Key, Value](store.asInstanceOf[StoreType], RpcBijection.option(valCodec),
-                                              successHandler, exceptionHandler,
-                                              sinkCacheSize, sinkWaitingFutures, sinkMetrics)
-      }
-    flatMappedBuilder.attach(topologyBuilder.setBolt(GROUP_BY_SUM,
-                                                     sinkBolt,
-                                                     sinkParallelism.parHint)
-      .fieldsGrouping(DRPC_DECODER, new Fields(AGG_KEY)), "-root")
+    flatMappedBuilder.attach(
+      topologyBuilder.setBolt(GROUP_BY_SUM, sinkBolt, sinkParallelism.parHint)
+        .fieldsGrouping(DRPC_DECODER, new Fields(AGG_KEY)),
+      "-root")
 
     // DRPC return bolt provided by storm.
     topologyBuilder.setBolt(RPC_RETURN, new ReturnResults, rpcParallelism.parHint)
@@ -169,6 +175,6 @@ extends java.io.Serializable {
   }
 
   def buildScalding(env : ScaldingEnv) : ScaldingJob =
-    // TODO: Do we just pass in the offlineSink?
-    new BatchAggregatorJob[Time,Key,Value](this, env, monoidIsCommutative.isCommutative)
+    new BatchAggregatorJob[Key, Value](flatMappedBuilder, env, batcher, store.offlineStore, monoidIsCommutative.isCommutative,
+      intermediateStore.store)
 }

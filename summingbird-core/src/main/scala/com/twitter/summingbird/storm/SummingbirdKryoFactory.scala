@@ -36,8 +36,8 @@ class SummingbirdKryoFactory extends ScalaKryoFactory {
 
   override def preRegister(k: Kryo, conf: JMap[_,_]) {
     super.preRegister(k, conf)
-    registerBijections(k, conf)
-    registerBijectionDefaults(k, conf)
+    registerInjections(k, conf)
+    registerInjectionDefaults(k, conf)
     registerKryoClasses(k, conf)
     k.setRegistrationRequired(false) // TODO: Is this necessary?
   }
