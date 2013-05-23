@@ -136,10 +136,12 @@ extends ScaldingJob(env.args) {
   val (oldBatchIdUpperBound, latestAggregated): (BatchID, TypedPipe[(K, V)]) =
     env.startBatch(batcher)
       .map { id => BatchReadableStore.empty[K,V](id).readLatest(env) }
-      .getOrElse {
-      val (batchID, pipe) = offlineStore.readLatest(env)
-        (batchID, pipe map { case (k,(b,v)) => (k, v) })
+      .orElse {
+        for {
+          (batchID, pipe) <- offlineStore.readLatest(env)
+        } yield (batchID, pipe map { case (k,(b,v)) => (k, v) })
       }
+      .getOrElse(sys.error("Not the initial batch, and no previous batch"))
 
   /**
     * New key-value pairs from the current batch's run.
@@ -183,13 +185,13 @@ extends ScaldingJob(env.args) {
   offlineStore.write(env, finalPipe)
 
   /**
-   * If the job has been configured to do so, then store intermediate data so
-   * other jobs can join against it in the future. This stores the tuple
-   * (Long, K, V) for each batch in a file. With this value one can compute
-   * the value of K at some time.
+   * If the job has been configured to do so, then store intermediate
+   * data so other jobs can join against it in the future. This stores
+   * the tuple (Long, K, V) for each batch in a file. With this value
+   * one can compute the value of K at some time.
    */
   intermediateStore.foreach {store =>
-    (1 to env.batches).foreach { i =>
+    (0 until env.batches).foreach { i =>
       val currentBatch = oldBatchIdUpperBound + i
       val a = delta.filter {case (l, k, v) => batcher.batchOf(new Date(l)) == currentBatch }
       store.dump(env, a, oldBatchIdUpperBound + i)

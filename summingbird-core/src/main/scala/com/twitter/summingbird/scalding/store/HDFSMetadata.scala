@@ -91,6 +91,9 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
     Option(versionedStore.mostRecentVersion)
       .map { jlong => new HDFSVersionMetadata(jlong.longValue, conf, pathOf(jlong.longValue)) }
 
+  /** Create a new version number that is greater than all previous */
+  def newVersion: Long = versionedStore.newVersion
+
   /** Find the newest version that satisfies a predicate */
   def find[T: JsonNodeInjection](fn: (T) => Boolean): Option[(T, HDFSVersionMetadata)] =
     select(fn).headOption
@@ -102,7 +105,8 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
           it <- hmd.get[T] if fn(it) } yield (it, hmd)
 
   /** This touches the filesystem once on each call, newest to oldest
-   * This relies on dfs-datastore doing the sorting, which it does last we checked
+   * This relies on dfs-datastore doing the sorting, which it does
+   * last we checked
    */
   def versions: Stream[Long] =
     versionedStore.getAllVersions.asScala.toStream.map { _.longValue }

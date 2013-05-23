@@ -66,7 +66,7 @@ class CompletedBuilder[Key: Manifest: Ordering, Value: Manifest: Monoid](
   exceptionHandler: OnlineExceptionHandler = Constants.DEFAULT_ONLINE_EXCEPTION_HANDLER,
   sinkMetrics: SinkStormMetrics = Constants.DEFAULT_SINK_STORM_METRICS,
   monoidIsCommutative: MonoidIsCommutative = Constants.DEFAULT_MONOID_IS_COMMUTATIVE,
-  intermediateStore: StoreIntermediateData[Key, Value] = StoreIntermediateData[Key, Value](None)
+  val intermediateStore: StoreIntermediateData[Key, Value] = StoreIntermediateData[Key, Value](None)
 ) extends java.io.Serializable {
   import CompletedBuilder.injectionPair
 
@@ -175,6 +175,9 @@ class CompletedBuilder[Key: Manifest: Ordering, Value: Manifest: Monoid](
   }
 
   def buildScalding(env : ScaldingEnv) : ScaldingJob =
-    new BatchAggregatorJob[Key, Value](flatMappedBuilder, env, batcher, store.offlineStore, monoidIsCommutative.isCommutative,
-      intermediateStore.store)
+    new BatchAggregatorJob[Key, Value](
+      flatMappedBuilder, env, batcher, store.offlineStore,
+      monoidIsCommutative.isCommutative,
+      intermediateStore.store
+    )
 }

@@ -96,7 +96,8 @@ class SingleFlatMappedBuilder[Event,Key,Value](
     scaldingFm(src).map { case (t, (k,v)) => (t,k,v) }
   }
 
-  def leftJoin[JoinedValue](service: CompoundService[Key, JoinedValue]): FlatMappedBuilder[Key,(Value, Option[JoinedValue])] = {
+  def leftJoin[JoinedValue](service: CompoundService[Key, JoinedValue])
+      : FlatMappedBuilder[Key,(Value, Option[JoinedValue])] = {
     val newStorm = StormFlatMap.combine(stormFm, service.online)
     val newScalding = ScaldingFlatMap.combine(scaldingFm, service.offline)
     copy(newStorm, newScalding)

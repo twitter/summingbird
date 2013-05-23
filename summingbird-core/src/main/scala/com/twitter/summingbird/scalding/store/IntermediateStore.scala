@@ -26,7 +26,12 @@ trait IntermediateStore[K, V] extends Serializable {
    * batch.
    */
   def read(env: ScaldingEnv, batch: BatchID)
-  (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long, K, V)]
+    (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long, K, V)]
+
+  def read(env: ScaldingEnv, batches: Iterable[BatchID])
+    (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long, K, V)] =
+    batches.map { read(env, _) }
+      .reduce(_ ++ _)
 
   /*
    * The batcher to use when computing the BatchID to read.

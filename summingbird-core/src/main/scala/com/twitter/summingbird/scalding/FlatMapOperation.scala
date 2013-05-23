@@ -26,12 +26,12 @@ import java.io.Serializable
 
 // Represents the logic in the flatMap offline
 trait FlatMapOperation[Event,Key,Value] extends Serializable { self =>
-  def apply[Time](timeEv: TypedPipe[(Time, Event)])
-    (implicit fd: FlowDef, mode: Mode): TypedPipe[(Time, (Key, Value))]
+  def apply(timeEv: TypedPipe[(Long, Event)])
+    (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long, (Key, Value))]
 
   def andThen[K2,V2](fmo: FlatMapOperation[(Key,Value), K2, V2]): FlatMapOperation[Event,K2,V2] =
     new FlatMapOperation[Event,K2,V2] {
-      def apply[Time](timeEv: TypedPipe[(Time, Event)])(implicit fd: FlowDef, mode: Mode) =
+      def apply(timeEv: TypedPipe[(Long, Event)])(implicit fd: FlowDef, mode: Mode) =
         fmo(self(timeEv))
     }
 }
@@ -39,9 +39,9 @@ trait FlatMapOperation[Event,Key,Value] extends Serializable { self =>
 object FlatMapOperation {
   def apply[Event, Key, Value](fm: FlatMapper[Event, Key, Value]): FlatMapOperation[Event, Key, Value] =
     new FlatMapOperation[Event, Key, Value] {
-      def apply[Time](timeEv: TypedPipe[(Time, Event)])
-        (implicit fd: FlowDef, mode: Mode): TypedPipe[(Time, (Key, Value))] = {
-        timeEv.flatMap { case (t: Time, e: Event) =>
+      def apply(timeEv: TypedPipe[(Long, Event)])
+        (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long, (Key, Value))] = {
+        timeEv.flatMap { case (t: Long, e: Event) =>
             // TODO remove toList when scalding supports TraversableOnce
             fm.encode(e).map { (t, _) }.toList
         }
@@ -53,8 +53,8 @@ object FlatMapOperation {
     service: OfflineService[Key, Joined]
   ): FlatMapOperation[Event, Key, (Value, Option[Joined])] =
     new FlatMapOperation[Event, Key, (Value, Option[Joined])] {
-      def apply[Time](timeEv: TypedPipe[(Time, Event)])
-        (implicit fd: FlowDef, mode: Mode): TypedPipe[(Time, (Key, (Value, Option[Joined])))] = {
+      def apply(timeEv: TypedPipe[(Long, Event)])
+        (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long, (Key, (Value, Option[Joined])))] = {
         val kvPipe = fm.apply(timeEv).map { case (t, (k,v)) => (t,k,v) }
         service.leftJoin(kvPipe).map { case (t,k,v) => (t,(k,v)) }
       }

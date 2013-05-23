@@ -16,6 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
+import scala.collection.immutable.SortedSet
 import java.util.{ Comparator, Date }
 import java.util.concurrent.TimeUnit
 import java.io.Serializable
@@ -76,6 +77,28 @@ trait Batcher extends Serializable {
 
   /** Returns the current BatchID. */
   def currentBatch: BatchID = batchOf(new Date())
+
+  /**
+    * Returns the sequence of BatchIDs that the supplied `other`
+    * batcher would need to fetch to fully enclose the supplied
+    * `batchID`.
+    */
+  def enclosedBy(batchID: BatchID, other: Batcher): Iterable[BatchID] = {
+    val earliestInclusive = earliestTimeOf(batchID)
+    val latestInclusive = new Date(earliestTimeOf(batchID.next).getTime - 1L)
+    BatchID.range(
+      other.batchOf(earliestInclusive),
+      other.batchOf(latestInclusive)
+    ).toList
+  }
+
+  def enclosedBy(extremities: (BatchID, BatchID), other: Batcher): Iterable[BatchID] = {
+    val (bottom, top) = extremities
+    SortedSet(
+      BatchID.range(bottom, top).toSeq
+        .flatMap(enclosedBy(_, other)):_*
+    )
+  }
 }
 
 /**
