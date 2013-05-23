@@ -36,8 +36,10 @@ object BatchReadableStore {
 
   def empty[K,V](batchID: BatchID): BatchReadableStore[K,V] =
     new BatchReadableStore[K,V] {
-      override def readLatest(env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode): (BatchID, TypedPipe[(K,V)]) =
-        (batchID, mappableToTypedPipe(IterableSource(Seq[(K,V)]())))
+      override def readLatest(env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode) =
+        Some((batchID, mappableToTypedPipe(IterableSource(Seq[(K,V)]()))))
+      override def read(batchId: BatchID, env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode) = None
+      override def availableBatches(env: ScaldingEnv) = Iterable.empty[BatchID]
     }
 }
 
@@ -45,7 +47,12 @@ trait BatchReadableStore[K, V] extends Serializable {
   // Return the previous upper bound batchId and the pipe covering this range
   // NONE of the items from the returned batchID should be present in the TypedPipe
   def readLatest(env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode)
-  : (BatchID, TypedPipe[(K,V)])
+  : Option[(BatchID, TypedPipe[(K,V)])]
+
+  /** Read a specific version if it is available */
+  def read(batchId: BatchID, env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode): Option[TypedPipe[(K,V)]]
+
+  def availableBatches(env: ScaldingEnv): Iterable[BatchID]
 }
 
 trait BatchStore[K,V] extends BatchReadableStore[K,V] with Serializable {

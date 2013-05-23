@@ -19,7 +19,6 @@ package com.twitter.summingbird.service
 import com.twitter.util.Future
 
 import com.twitter.storehaus.ReadableStore
-import com.twitter.summingbird.scalding.ScaldingEnv
 
 import com.twitter.scalding.{Mode, TypedPipe}
 import cascading.flow.FlowDef
@@ -35,16 +34,20 @@ import java.io.Serializable
   */
 
 trait OfflineService[Key, JoinedValue] extends Serializable {
-  def leftJoin[Time,Value](pipe: TypedPipe[(Time, Key, Value)])
-    (implicit fd: FlowDef, mode: Mode): TypedPipe[(Time, Key, (Value, Option[JoinedValue]))]
+  def leftJoin[Value](pipe: TypedPipe[(Long, Key, Value)])
+    (implicit fd: FlowDef, mode: Mode)
+      : TypedPipe[(Long, Key, (Value, Option[JoinedValue]))]
 }
 
 class EmptyOfflineService[K, JoinedV] extends OfflineService[K, JoinedV] {
-  def leftJoin[T, V](pipe: TypedPipe[(T, K, V)])(implicit fd: FlowDef, mode: Mode) =
+  def leftJoin[V](pipe: TypedPipe[(Long, K, V)])(implicit fd: FlowDef, mode: Mode) =
     pipe.map { case (t, k, v) => (t, k, (v, None: Option[JoinedV])) }
 }
 
-case class CompoundService[Key, Joined](offline: OfflineService[Key, Joined], online: () => ReadableStore[Key, Joined])
+case class CompoundService[Key, Joined](
+  offline: OfflineService[Key, Joined],
+  online: () => ReadableStore[Key, Joined]
+)
 
 object CompoundService {
   def fromOffline[K, J](offline: OfflineService[K, J]): CompoundService[K, J] =

@@ -22,6 +22,7 @@ import com.twitter.scalding.{ TypedPipe, Mode, Dsl, TDsl }
 import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.scalding.ScaldingEnv
+import scala.util.control.Exception.allCatch
 
 /**
  * Scalding implementation of the batch read and write components
@@ -34,10 +35,7 @@ import com.twitter.summingbird.scalding.ScaldingEnv
 
 object VersionedStore {
   def apply[Key, Value](rootPath: String)(implicit injection: Injection[(Key, Value), (Array[Byte], Array[Byte])]) =
-    new VersionedStore[Key, Value](VersionedKeyValSource[Key, Value](rootPath))
-
-  def apply[Key, Value](source: => VersionedKeyValSource[Key, Value]) =
-    new VersionedStore[Key, Value](source)
+    new VersionedStore[Key, Value](rootPath)
 }
 
 // TODO: it looks like when we get the mappable/directory this happens
@@ -46,32 +44,57 @@ object VersionedStore {
 // meta-data and open the Mappable.
 // The source parameter is pass-by-name to avoid needing the hadoop
 // Configuration object when running the storm job.
-class VersionedStore[Key, Value](source: => VersionedKeyValSource[Key, Value]) extends BatchStore[Key, Value] {
+class VersionedStore[Key, Value](rootPath: String)(implicit injection: Injection[(Key, Value), (Array[Byte], Array[Byte])])  extends BatchStore[Key, Value] {
   import Dsl._
   import TDsl._
 
   // ## Batch-write Components
 
-  // TODO: the "orElse" logic already exists in the
-  // BatchAggregatorJob. Remove it from here.
-  def prevUpperBound(env: ScaldingEnv): BatchID =
-    HDFSMetadata.get[String](env.config, source.path)
-      .map { BatchID(_) }
-      .orElse(env.startBatch(env.builder.batcher))
-      .get
+  def prevUpperBound(env: ScaldingEnv): Option[(BatchID, Long)] =
+    HDFSMetadata(env.config, rootPath)
+      .find { str: String => allCatch.opt(BatchID(str)).isDefined }
+      .map { case (str, hdfsVersion) => (BatchID(str), hdfsVersion.version) }
 
-  // TODO: Note that source is EMPTY if the BatchID doesn't
-  // exist. We should really be returning an option of the
-  // BatchID, TypedPipe pair.
-  def readLatest(env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode): (BatchID, TypedPipe[(Key,Value)]) =
-    (prevUpperBound(env), source)
+  protected def readVersion(v: Long) =
+    VersionedKeyValSource(rootPath, sourceVersion=Some(v))
+
+  override def readLatest(env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode)
+      : Option[(BatchID, TypedPipe[(Key,Value)])] =
+    prevUpperBound(env).map { case (bid, version) =>
+      (bid, readVersion(version))
+    }
+
+  /**
+    * Read the version aggregated up to the supplied batchID.
+    */
+  override def read(batchId: BatchID, env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode) =
+    HDFSMetadata(env.config, rootPath)
+      .find { bstr: String => BatchID(bstr) == batchId }
+      .map { case (bstr, hdfsVersion) => readVersion(hdfsVersion.version) }
+
+  override def availableBatches(env: ScaldingEnv): Iterable[BatchID] =
+    HDFSMetadata(env.config, rootPath)
+      .select { s: String => true }
+      .map { case (batchString, _) => BatchID(batchString) }
+
+  protected var sinkVersion: Option[Long] = None
+  // Make sure we only allocate a version once
+  def getSinkVersion(env: ScaldingEnv): Long =
+    sinkVersion.getOrElse {
+      val v = HDFSMetadata(env.config, rootPath).newVersion
+      sinkVersion = Some(v)
+      v
+    }
 
   def write(env: ScaldingEnv, p: TypedPipe[(Key,Value)])
   (implicit fd: FlowDef, mode: Mode) {
-    p.toPipe((0,1)).write(source)
+    p.toPipe((0,1))
+      .write(VersionedKeyValSource(rootPath, sinkVersion=Some(getSinkVersion(env))))
   }
 
   def commit(batchID: BatchID, env: ScaldingEnv) {
-    HDFSMetadata.put(env.config, source.path, Some(batchID.toString))
+    HDFSMetadata(env.config, rootPath)
+      .apply(getSinkVersion(env))
+      .put(Some(batchID.toString))
   }
 }
