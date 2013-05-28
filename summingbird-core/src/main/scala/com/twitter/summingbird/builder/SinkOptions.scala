@@ -50,6 +50,11 @@ case class DecoderParallelism(parHint: Int) extends SinkOption
 
 case class OnlineSuccessHandler(handlerFn: Unit => Unit) extends SinkOption
 
+// Kryo serialization problems have been observed with using OnlineSuccessHandler. This enables
+// easy disabling of the handler.
+// TODO: remove once we know what the hell is going on with this
+case class IncludeSuccessHandler(get: Boolean) extends SinkOption
+
 case class OnlineExceptionHandler(handlerFn: PartialFunction[Throwable, Unit])
     extends SinkOption
 
@@ -66,3 +71,12 @@ case class MonoidIsCommutative(isCommutative: Boolean) extends SinkOption
 
 // If not blank, it is the HDFS path to store the intermediate data.
 case class StoreIntermediateData[K, V](store: Option[IntermediateStore[K, V]]) extends SinkOption
+
+// MaxWaitingFutures is the maximum number of key-value pairs that the
+// SinkBolt in Storm will process before starting to force the
+// futures. For example, setting MaxWaitingFutures(100) means that if
+// a key-value pair is added to the OnlineStore and the (n - 100)th
+// write has not completed, Storm will block before moving on to the
+// next key-value pair.
+// TODO: look into removing this due to the possibility of deadlock with the sink's cache
+case class MaxWaitingFutures(get: Int) extends SinkOption

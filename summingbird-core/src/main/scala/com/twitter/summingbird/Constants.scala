@@ -34,8 +34,8 @@ object Constants {
 
   val DEFAULT_FM_PARALLELISM = FlatMapParallelism(5)
   val DEFAULT_FM_SHARDS = FlatMapShards(0)
-  val DEFAULT_FM_CACHE = CacheSize(0)
   val DEFAULT_FM_STORM_METRICS = FlatMapStormMetrics(None)
+  val DEFAULT_FM_CACHE = CacheSize(0)
   val DEFAULT_RPC_PARALLELISM = RpcParallelism(1)
   val DEFAULT_DECODER_PARALLELISM = DecoderParallelism(1)
   val DEFAULT_SINK_PARALLELISM = SinkParallelism(5)
@@ -44,4 +44,5 @@ object Constants {
   val DEFAULT_SINK_CACHE = CacheSize(0)
   val DEFAULT_SINK_STORM_METRICS = SinkStormMetrics(None)
   val DEFAULT_MONOID_IS_COMMUTATIVE = MonoidIsCommutative(false)
+  val DEFAULT_MAX_WAITING_FUTURES = MaxWaitingFutures(10)
 }
