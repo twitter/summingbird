@@ -93,7 +93,7 @@ class SingleFlatMappedBuilder[Event,Key,Value](
   override def getFlatMappedPipe(batcher: Batcher, lowerb: BatchID, env: ScaldingEnv)
   (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long,Key,Value)] = {
     val src = sourceBuilder.getFlatMappedPipe(batcher, lowerb, env)
-    scaldingFm(src).map { case (t, (k,v)) => (t,k,v) }
+    scaldingFm(src)(fd, mode, env).map { case (t, (k,v)) => (t,k,v) }
   }
 
   def leftJoin[JoinedValue](service: CompoundService[Key, JoinedValue])
