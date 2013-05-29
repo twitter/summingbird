@@ -23,7 +23,6 @@ import com.twitter.algebird.Monoid
 import com.twitter.bijection.Injection
 import com.twitter.chill.InjectionPair
 import com.twitter.scalding.{TypedPipe, Mode}
-import com.twitter.storehaus.Store
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.{Env, FlatMapper, FunctionFlatMapper}
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
@@ -32,6 +31,7 @@ import com.twitter.summingbird.scalding.store.BatchStore
 import com.twitter.summingbird.store.CompoundStore
 import com.twitter.summingbird.storm.StormEnv
 import com.twitter.summingbird.service.CompoundService
+import com.twitter.summingbird.sink.CompoundSink
 
 import java.io.Serializable
 
@@ -60,6 +60,9 @@ abstract class FlatMappedBuilder[Key, Value] extends Serializable {
   def attach(groupBySumBolt: BoltDeclarer, suffix: String): BoltDeclarer
   def getFlatMappedPipe(batcher: Batcher, lowerb: BatchID, env: ScaldingEnv)
     (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long,Key,Value)]
+
+  def write[Written](sink: CompoundSink[Written])(conversion: ((Key,Value)) => TraversableOnce[Written]):
+      FlatMappedBuilder[Key, Value]
 
   // Sources of many event types might create the same key-value pairs, so we use a List.
   def eventCodecPairs: List[InjectionPair[_]] = sourceBuilders.map { _.eventCodecPair }
