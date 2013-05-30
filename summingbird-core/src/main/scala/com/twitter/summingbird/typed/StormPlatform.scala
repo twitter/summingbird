@@ -20,6 +20,7 @@ import backtype.storm.tuple.Fields
 import backtype.storm.{Config, StormSubmitter}
 import backtype.storm.generated.StormTopology
 import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
+import com.twitter.algebird.Monoid
 import com.twitter.bijection.Injection
 import com.twitter.chill.InjectionPair
 import com.twitter.storehaus.ReadableStore
@@ -35,8 +36,10 @@ import com.twitter.summingbird.storm.{FMBolt, FinalFlatMapBolt, FlatMapOperation
 import com.twitter.summingbird.util.{CacheSize, KryoRegistrationHelper}
 import com.twitter.tormenta.spout.ScalaSpout
 
-case class StormSerialization[T](injectionPair: InjectionPair[T])
-    extends Serialization[Storm, T]
+case class StormSerialization[T](injectionPair: InjectionPair[T]) extends Serialization[Storm, T]
+
+sealed trait StormStore[K, V] extends Store[Storm, K, V]
+case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V]) extends StormStore[K, V]
 
 sealed trait StormService[K, V] extends Service[Storm, K, V]
 case class StoreWrapper[K, V](store: () => ReadableStore[K, V]) extends StormService[K, V]
@@ -59,6 +62,13 @@ class StormOptions(opts: Map[Class[_], Any] = Map.empty) {
 object Storm {
   val SINK_ID = "sinkId"
 
+  def retrieveSummer[K, V](paths: List[Producer[Storm, _]]): Option[Summer[Storm, K, V]] =
+    paths match {
+      case Nil => None
+      case (node: Summer[Storm, K, V]) :: _ => Some(node)
+      case _ :: tail => retrieveSummer(tail)
+    }
+
   def source[T](spout: ScalaSpout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
     Producer.source[Storm, T, ScalaSpout[T]](spout)
@@ -72,8 +82,7 @@ object Storm {
 
 }
 
-class Storm(jobName: String, options: Map[String, StormOptions])
-    extends Platform[Storm] {
+class Storm(jobName: String, options: Map[String, StormOptions]) extends Platform[Storm] {
   import Storm.SINK_ID
 
   val END_SUFFIX = "end"
@@ -94,18 +103,33 @@ class Storm(jobName: String, options: Map[String, StormOptions])
 
   def buildTopology[T](
     topoBuilder: TopologyBuilder,
-    producer: Producer[Storm, T],
+    outerProducer: Producer[Storm, T],
     toSchedule: List[Either[() => ReadableStore[_, _], FlatMapOperation[_, _]]],
+    path: List[Producer[Storm, _]],
     suffix: String,
     id: Option[String])
-    (implicit batcher: Batcher, config: Config): List[String] = {
+    (implicit config: Config): List[String] = {
+
+    def recurse[T, U](
+      producer: Producer[Storm, U],
+      topoBuilder: TopologyBuilder = topoBuilder,
+      outerProducer: Producer[Storm, T] = outerProducer,
+      toSchedule: List[Either[() => ReadableStore[_, _], FlatMapOperation[_, _]]] = toSchedule,
+      path: List[Producer[Storm, _]] = path,
+      suffix: String = suffix,
+      id: Option[String] = id) =
+      buildTopology(topoBuilder, producer, toSchedule, outerProducer :: path, suffix, id)
 
     def suffixOf[T](xs: List[T], suffix: String): String =
       if (xs.isEmpty) suffix else FM_CONSTANT + suffix
 
-    producer match {
-      case IdentityKeyedProducer(producer) => buildTopology(topoBuilder, producer, toSchedule, suffix, id)
-      case NamedProducer(producer, newId)  => buildTopology(topoBuilder, producer, toSchedule, suffix, Some(newId))
+    outerProducer match {
+      case Summer(producer, _, _, _, _, _, _) => {
+        assert(path.isEmpty, "Only a single Summer is supported at this time.")
+        recurse(producer)
+      }
+      case IdentityKeyedProducer(producer) => recurse(producer)
+      case NamedProducer(producer, newId)  => recurse(producer, id = Some(newId))
       case Source(source, ser, timeOf) => {
         // Register this source's serialization in the config.
         KryoRegistrationHelper.registerInjections(
@@ -116,6 +140,10 @@ class Storm(jobName: String, options: Map[String, StormOptions])
         val spout = source.asInstanceOf[ScalaSpout[T]]
         val stormSpout = spout.getSpout { scheme =>
           scheme.map { t =>
+            val batcher =
+              Storm.retrieveSummer(path).map { s: Summer[Storm, _, _] => s.batcher }
+                .getOrElse(sys.error("No summer found!"))
+
             val batch = batcher.batchOf(new java.util.Date(timeOf(t)))
             (batch.id, t)
           }
@@ -128,12 +156,12 @@ class Storm(jobName: String, options: Map[String, StormOptions])
         val operations = if (toSchedule.isEmpty) List(Right(ident)) else toSchedule
 
         // Attach a FlatMapBolt after this source.
-        scheduleFlatMapper(topoBuilder, parents, suffix, id, operations)
+        scheduleFlatMapper(topoBuilder, parents, path, suffix, id, operations)
       }
 
       case FlatMappedProducer(producer, op) => {
         val newOp = FlatMapOperation(op)
-        buildTopology(topoBuilder, producer, Right(newOp) :: toSchedule, suffix, id)
+        recurse(producer, toSchedule = Right(newOp) :: toSchedule)
       }
 
       case LeftJoinedProducer(producer, svc) => {
@@ -141,16 +169,16 @@ class Storm(jobName: String, options: Map[String, StormOptions])
           svc.asInstanceOf[StormService[_, _]] match {
             case StoreWrapper(storeSupplier) => storeSupplier
           }
-        buildTopology(topoBuilder, producer, Left(newService) :: toSchedule, suffix, id)
+        recurse(producer, toSchedule = Left(newService) :: toSchedule)
       }
 
       case MergedProducer(l, r) => {
         val leftSuffix = "L-" + suffixOf(toSchedule, suffix)
         val rightSuffix = "R-" + suffixOf(toSchedule, suffix)
-        val leftNodes  = buildTopology(topoBuilder, l, List.empty, leftSuffix, id)
-        val rightNodes = buildTopology(topoBuilder, r, List.empty, rightSuffix, id)
+        val leftNodes  = recurse(l, toSchedule = List.empty, suffix = leftSuffix)
+        val rightNodes = recurse(r, toSchedule = List.empty, suffix = rightSuffix)
         val parents = leftNodes ++ rightNodes
-        scheduleFlatMapper(topoBuilder, parents, suffix, id, toSchedule)
+        scheduleFlatMapper(topoBuilder, parents, path, suffix, id, toSchedule)
       }
 
       case TeedProducer(l, streamSink) => sys.error("Not yet implemented.")
@@ -162,7 +190,7 @@ class Storm(jobName: String, options: Map[String, StormOptions])
   def serviceOperation[K, V, W](store: () => ReadableStore[_, _]) =
     FlatMapOperation.combine(ident[(K, V)], store.asInstanceOf[() => ReadableStore[K, W]])
 
-  def combine[K, V, W](op: FlatMapOperation[_, (K, V)], store: () => ReadableStore[_, _]): FlatMapOperation[_, _] =
+  def combine[T, K, V, W](op: FlatMapOperation[T, (K, V)], store: () => ReadableStore[_, _]): FlatMapOperation[_, _] =
     FlatMapOperation.combine(
       op,
       store.asInstanceOf[() => ReadableStore[K, W]]
@@ -188,6 +216,7 @@ class Storm(jobName: String, options: Map[String, StormOptions])
   def scheduleFlatMapper(
     topoBuilder: TopologyBuilder,
     parents: List[String],
+    path: List[Producer[Storm, _]],
     suffix: String,
     id: Option[String],
     toSchedule: List[Either[() => ReadableStore[_, _], FlatMapOperation[_, _]]])
@@ -195,6 +224,7 @@ class Storm(jobName: String, options: Map[String, StormOptions])
     toSchedule match {
       case Nil => parents
       case head :: tail => {
+        val summer = Storm.retrieveSummer(path).getOrElse(sys.error("A Summer is required."))
         val boltName = FM_CONSTANT + suffix
         val operation = foldOperations(head, tail)
         val metrics = getOrElse(id, DEFAULT_FM_STORM_METRICS)
@@ -203,7 +233,7 @@ class Storm(jobName: String, options: Map[String, StormOptions])
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
             getOrElse(id, DEFAULT_FM_CACHE),
             getOrElse(id, DEFAULT_FM_STORM_METRICS)
-          )(builder.monoid, batcher)
+          )(summer.monoid.asInstanceOf[Monoid[Any]], summer.batcher)
         else
           new FMBolt(operation, metrics)
 
@@ -233,22 +263,25 @@ class Storm(jobName: String, options: Map[String, StormOptions])
     */
   def populate[K, V](
     topologyBuilder: TopologyBuilder,
-    builder: Completed[Storm, K, V])(implicit config: Config) = {
-    implicit val batcher = builder.batcher
-    implicit val monoid = builder.monoid
+    summer: Summer[Storm, K, V])(implicit config: Config) = {
+    implicit val batcher = summer.batcher
+    implicit val monoid  = summer.monoid
 
     // Register the K and V serializations in the config.
     KryoRegistrationHelper.registerInjectionDefaults(
       config,
       List(
-        builder.kSer.asInstanceOf[StormSerialization[K]].injectionPair,
-        builder.vSer.asInstanceOf[StormSerialization[V]].injectionPair
+        summer.kSer.asInstanceOf[StormSerialization[K]].injectionPair,
+        summer.vSer.asInstanceOf[StormSerialization[V]].injectionPair
       ))
 
-    val parents = buildTopology(topologyBuilder, builder.producer,
-      List.empty, END_SUFFIX, None)
+    val parents = buildTopology(topologyBuilder, summer.producer,
+      List.empty, List.empty, END_SUFFIX, None)
     // TODO: Add wrapping case classes for memstore, etc, as in MemP.
-    val supplier = builder.store.asInstanceOf[() => MergeableStore[(K, BatchID), V]]
+    val supplier = summer.store.asInstanceOf[StormStore[K, V]] match {
+      case MergeableStoreSupplier(contained) => contained
+    }
+
     val idOpt = Some(SINK_ID)
     val sinkBolt = new SinkBolt[K, V](
       supplier,
@@ -272,7 +305,7 @@ class Storm(jobName: String, options: Map[String, StormOptions])
     List(GROUP_BY_SUM)
   }
 
-  def run[K, V](completed: Completed[Storm, K, V]): Unit = {
+  def run[K, V](completed: Summer[Storm, K, V]): Unit = {
     val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
     populate(topologyBuilder, completed)

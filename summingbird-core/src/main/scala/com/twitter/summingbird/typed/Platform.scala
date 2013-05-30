@@ -86,14 +86,14 @@ case class FlatMappedProducer[P, T, U](producer: Producer[P, T], fn: T => Traver
 case class MergedProducer[P, T](l: Producer[P, T], r: Producer[P, T]) extends Producer[P, T]
 case class TeedProducer[P, T](l: Producer[P, T], r: StreamSink[P, T]) extends Producer[P, T]
 
-case class Completed[P, K, V](
+case class Summer[P, K, V](
   producer: KeyedProducer[P, K, V],
   store: Store[P, K, V],
   kSer: Serialization[P, K],
   vSer: Serialization[P, V],
   ord: Ordering[K],
   monoid: Monoid[V],
-  batcher: Batcher)
+  batcher: Batcher) extends KeyedProducer[P, K, V]
 
 trait KeyedProducer[P, K, V] extends Producer[P, (K, V)] {
   def leftJoin[RightV](service: Service[P, K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
@@ -107,8 +107,8 @@ trait KeyedProducer[P, K, V] extends Producer[P, (K, V)] {
     implicit kSer: Serialization[P, K],
     vSer: Serialization[P, V],
     ord: Ordering[K],
-    monoid: Monoid[V],
-    batcher: Batcher): Completed[P, K, V] = Completed(this, store, kSer, vSer, ord, monoid, batcher)
+    monoid: Monoid[V], // TODO: Semigroup?
+    batcher: Batcher): Summer[P, K, V] = Summer(this, store, kSer, vSer, ord, monoid, batcher)
 }
 
 case class IdentityKeyedProducer[P, K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
@@ -118,5 +118,5 @@ case class LeftJoinedProducer[P, K, V, JoinedV](
   joined: Service[P, K, JoinedV]) extends KeyedProducer[P, K, (V, Option[JoinedV])]
 
 trait Platform[P <: Platform[P]] {
-  def run[K, V](completed: Completed[P, K, V]): Unit
+  def run[K, V](completed: Summer[P, K, V]): Unit
 }

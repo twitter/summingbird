@@ -72,6 +72,8 @@ class SinkBolt[Key, Value: Monoid](
 
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
+  override val fields = None
+
   override def prepare(
     conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
     super.prepare(conf, context, oc)

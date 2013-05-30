@@ -56,12 +56,13 @@ class MemP extends Platform[MemP] {
           (k, (v, service.get(k)))
         }
       }
+      case Summer(producer, _, _, _, _, _, _) => toIterator(producer)
     }
   }
 
-  def run[K, V](builder: Completed[MemP, K, V]): Unit = {
+  def run[K, V](builder: Summer[MemP, K, V]): Unit = {
     val memStore = builder.store.asInstanceOf[MemoryStore[K, V]]
-    toIterator(builder.producer).foreach(memStore.put(_))
+    toIterator(builder).foreach(memStore.put(_))
   }
 }
 
@@ -71,7 +72,7 @@ object TestJobRunner {
   def testJob[P <: Platform[P]](
     source: Producer[P, Int],
     store: Store[P, Int, Int])
-    (implicit ser: Serialization[P, Int]): Completed[P, Int, Int] =
+    (implicit ser: Serialization[P, Int]): Summer[P, Int, Int] =
     source
       .flatMap { x: Int => Some(x, x + 10) }
       .sumByKey(store)

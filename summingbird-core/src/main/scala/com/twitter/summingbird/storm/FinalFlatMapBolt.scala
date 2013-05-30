@@ -48,7 +48,7 @@ class FinalFlatMapBolt[Event, Key, Value](
 
   override val fields = {
     import Constants._
-    new Fields(AGG_BATCH, AGG_KEY, AGG_VALUE)
+    Some(new Fields(AGG_BATCH, AGG_KEY, AGG_VALUE))
   }
 
   override def prepare(

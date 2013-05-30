@@ -31,7 +31,7 @@ class FMBolt[T](
 
   def toValues(id: Long, item: Any): Values = new Values((id, item))
 
-  override val fields = new Fields("pair")
+  override val fields = Some(new Fields("pair"))
 
   override def execute(tuple: Tuple) {
     val (batch, t) = tuple.getValue(0).asInstanceOf[(Long, T)]
@@ -43,4 +43,6 @@ class FMBolt[T](
       ack(tuple)
     }
   }
+
+  override def cleanup { flatMapOp.close }
 }

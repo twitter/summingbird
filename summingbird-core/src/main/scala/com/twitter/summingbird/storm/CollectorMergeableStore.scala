@@ -40,9 +40,9 @@ import com.twitter.util.Future
 class CollectorMergeableStore[K, V](collector: OutputCollector)
   (override implicit val monoid: Monoid[V])
     extends MergeableStore[(K, Long), V] {
-  override def get(k: (K, BatchID)) =
+  override def get(k: (K, Long)) =
     sys.error("Gets out of a CollectorMergeableStore are not supported.")
-  override def put(pair: ((K, BatchID), Option[V])) =
+  override def put(pair: ((K, Long), Option[V])) =
     sys.error("Puts into a CollectorMergeableStore are not supported.")
 
   override def merge(pair: ((K, Long), V)) = {

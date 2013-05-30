@@ -18,7 +18,7 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.IRichBolt
-import backtype.storm.topology.OutputFieldsGetter
+import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.{ Fields, Tuple }
 import java.util.{ Map => JMap }
 
@@ -36,7 +36,7 @@ abstract class BaseBolt(
   /**
     * The fields this bolt plans on returning.
     */
-  def fields: Fields
+  def fields: Option[Fields]
 
   private var collector: OutputCollector = null
 
@@ -56,9 +56,11 @@ abstract class BaseBolt(
     metrics().foreach { _.register(context) }
   }
 
-  override def declareOutputFields(declarer: OutputFieldsGetter) {
-    declarer.declare(fields)
+  override def declareOutputFields(declarer: OutputFieldsDeclarer) {
+    fields.foreach(declarer.declare(_))
   }
 
   override val getComponentConfiguration = null
+
+  override def cleanup { }
 }
