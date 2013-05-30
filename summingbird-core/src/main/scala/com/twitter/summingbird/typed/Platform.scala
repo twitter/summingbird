@@ -30,12 +30,13 @@ trait Store[P, K, V] extends StreamSink[P, (K, V)]
 trait Serialization[P, T]
 
 object TimeExtractor {
-  implicit def ignore[T]: TimeExtractor[T] = new TimeExtractor[T] {
-    def apply(t: T) = 0L
-  }
+  def apply(fn: T => Long): TimeExtractor[T] =
+    new TimeExtractor[T] {
+      override def apply(t: T) = fn(t)
+    }
 }
 
-trait TimeExtractor[T] extends (T => Long)
+trait TimeExtractor[T] extends (T => Long) with java.io.Serializable
 
 object Producer {
   /**

@@ -275,8 +275,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
         summer.vSer.asInstanceOf[StormSerialization[V]].injectionPair
       ))
 
-    val parents = buildTopology(topologyBuilder, summer.producer,
-      List.empty, List.empty, END_SUFFIX, None)
+    val parents = buildTopology(topologyBuilder, summer, List.empty, List.empty, END_SUFFIX, None)
     // TODO: Add wrapping case classes for memstore, etc, as in MemP.
     val supplier = summer.store.asInstanceOf[StormStore[K, V]] match {
       case MergeableStoreSupplier(contained) => contained
@@ -305,10 +304,10 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     List(GROUP_BY_SUM)
   }
 
-  def run[K, V](completed: Summer[Storm, K, V]): Unit = {
+  def run[K, V](summer: Summer[Storm, K, V]): Unit = {
     val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
-    populate(topologyBuilder, completed)
+    populate(topologyBuilder, summer)
     StormSubmitter.submitTopology(
       "summingbird_" + jobName,
       new Config,
