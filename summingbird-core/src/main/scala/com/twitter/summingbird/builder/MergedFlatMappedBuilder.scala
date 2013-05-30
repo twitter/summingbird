@@ -28,6 +28,7 @@ import com.twitter.summingbird.batch.{ Batcher, BatchID }
 
 import com.twitter.summingbird.scalding.ScaldingEnv
 import com.twitter.summingbird.service.CompoundService
+import com.twitter.summingbird.sink.CompoundSink
 import com.twitter.summingbird.storm.StormEnv
 
 /**
@@ -67,4 +68,8 @@ class MergedFlatMappedBuilder[Key,Value](left: FlatMappedBuilder[Key,Value], rig
 
   override def leftJoin[JoinedValue](service: CompoundService[Key, JoinedValue]) =
     new MergedFlatMappedBuilder(left.leftJoin(service), right.leftJoin(service))
+
+  def write[Written](sink: CompoundSink[Written])(conversion: ((Key, Value)) => TraversableOnce[Written]):
+      FlatMappedBuilder[Key, Value] =
+    new MergedFlatMappedBuilder(left.write(sink)(conversion), right.write(sink)(conversion))
 }
