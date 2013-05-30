@@ -11,8 +11,7 @@ object SummingbirdBuild extends Build {
     scalaVersion := "2.9.2",
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
-      "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
-      "org.scalatest" %% "scalatest" % "2.0.M6-SNAP19" % "test"
+      "org.scala-tools.testing" %% "specs" % "1.6.9" % "test"
     ),
 
     resolvers ++= Seq(
