@@ -30,7 +30,7 @@ trait Store[P, K, V] extends StreamSink[P, (K, V)]
 trait Serialization[P, T]
 
 object TimeExtractor {
-  def apply(fn: T => Long): TimeExtractor[T] =
+  def apply[T](fn: T => Long): TimeExtractor[T] =
     new TimeExtractor[T] {
       override def apply(t: T) = fn(t)
     }
