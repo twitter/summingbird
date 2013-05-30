@@ -7,7 +7,7 @@ import sbtgitflow.ReleasePlugin._
 object SummingbirdBuild extends Build {
   val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.0.2",
+    version := "0.0.3",
     scalaVersion := "2.9.2",
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
