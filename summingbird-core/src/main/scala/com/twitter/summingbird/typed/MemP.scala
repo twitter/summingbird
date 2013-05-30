@@ -32,7 +32,7 @@ trait MemoryService[K, V] extends Service[MemP, K, V] {
 
 object MemP {
   implicit def ser[T]: Serialization[MemP, T] = new Serialization[MemP, T] { }
-  implicit def toSource[T](iterator: Iterator[T]): Producer[MemP, T] =
+  implicit def toSource[T](iterator: Iterator[T])(implicit te: TimeExtractor[T]): Producer[MemP, T] =
     Producer.source[MemP, T, Iterator[T]](iterator)
 }
 
@@ -68,6 +68,9 @@ class MemP extends Platform[MemP] {
 
 object TestJobRunner {
   implicit val batcher = Batcher.ofHours(1)
+
+  // This is dangerous, obviously.
+  implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
 
   def testJob[P <: Platform[P]](
     source: Producer[P, Int],
