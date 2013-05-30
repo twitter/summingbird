@@ -54,7 +54,7 @@ class MergedFlatMappedBuilder[Key,Value](left: FlatMappedBuilder[Key,Value], rig
     right.attach(ldec, suffix + "-R")
   }
 
-  override def flatMapBuilder[Key2,Val2](newFlatMapper: FlatMapper[(Key,Value),Key2,Val2]): FlatMappedBuilder[Key2, Val2] =
+  override def flatMapBuilder[Key2,Val2](newFlatMapper: FlatMapper[(Key, Value), (Key2, Val2)]): FlatMappedBuilder[Key2, Val2] =
     new MergedFlatMappedBuilder(left.flatMapBuilder(newFlatMapper),
       right.flatMapBuilder(newFlatMapper))
 

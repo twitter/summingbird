@@ -12,7 +12,7 @@ object SummingbirdBuild extends Build {
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
       "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
-      "org.scalatest" %% "scalatest" % "1.6.1" % "test"
+      "org.scalatest" %% "scalatest" % "2.0.M6-SNAP19" % "test"
     ),
 
     resolvers ++= Seq(

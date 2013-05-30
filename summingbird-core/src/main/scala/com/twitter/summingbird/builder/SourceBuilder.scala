@@ -67,11 +67,11 @@ class SourceBuilder[Event](
 
   def flatMap[Key: Manifest, Val: Manifest]
   (fn : (Event) => TraversableOnce[(Key,Val)])  =
-    flatMapBuilder[Key, Val](new FunctionFlatMapper[Event, Key, Val](fn))
+    flatMapBuilder[Key, Val](new FunctionFlatMapper[Event, (Key, Val)](fn))
 
-  def flatMapBuilder[Key: Manifest, Val: Manifest](newFlatMapper: FlatMapper[Event,Key,Val])
+  def flatMapBuilder[Key: Manifest, Val: Manifest](newFlatMapper: FlatMapper[Event, (Key, Val)])
       : SingleFlatMappedBuilder[Event, Key, Val] = {
-    val storm = StormFlatMap[Event, Key, Val](newFlatMapper)
+    val storm = StormFlatMap[Event, (Key, Val)](newFlatMapper)
     val scalding = ScaldingFlatMap[Event, Key, Val](newFlatMapper)
     new SingleFlatMappedBuilder[Event, Key, Val](this, storm, scalding)
   }

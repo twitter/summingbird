@@ -137,11 +137,10 @@ extends ScaldingJob(env.args) {
     env.startBatch(batcher)
       .map { id => BatchReadableStore.empty[K,V](id).readLatest(env) }
       .orElse {
-        for {
-          (batchID, pipe) <- offlineStore.readLatest(env)
-        } yield (batchID, pipe map { case (k,(b,v)) => (k, v) })
-      }
-      .getOrElse(sys.error("Not the initial batch, and no previous batch"))
+      for {
+        (batchID, pipe) <- offlineStore.readLatest(env)
+      } yield (batchID, pipe map { case (k, (b, v)) => (k, v) })
+    }.getOrElse(sys.error("Not the initial batch, and no previous batch"))
 
   /**
     * New key-value pairs from the current batch's run.

@@ -21,11 +21,12 @@ import backtype.storm.tuple.Tuple
 import com.twitter.algebird.{Monoid, SummingQueue}
 import com.twitter.chill.MeatLocker
 import com.twitter.storehaus.algebra.MergeableStore
+import com.twitter.summingbird.Constants
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.builder._
 import com.twitter.summingbird.util.{CacheSize, FutureQueue}
 import com.twitter.util.Future
-import java.util.{Map => JMap}
+import java.util.{ Map => JMap }
 
 /**
   * The SinkBolt takes two related options: CacheSize and MaxWaitingFutures.
@@ -71,27 +72,32 @@ class SinkBolt[Key, Value: Monoid](
 
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
-  override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
+  override def prepare(
+    conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
     super.prepare(conf, context, oc)
     // see IncludeSuccessHandler for why this is needed
-    successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
+    successHandlerOpt = if (includeSuccessHandler.get)
+      Some(successHandlerBox.get)
+    else
+      None
   }
 
   // TODO: Think about how we could compose bolts using an implicit
   // Injection[T,Tuple] This is really just the invert function.  The
   // problem is that Storm emits Values and receives Tuples.
   def unpack(tuple: Tuple) = {
-    val batchID = tuple.getValue(0).asInstanceOf[BatchID]
+    val id = tuple.getLong(0)
     val key = tuple.getValue(1).asInstanceOf[Key]
     val value = tuple.getValue(2).asInstanceOf[Value]
-    ((key, batchID), value)
+    ((key, BatchID(id)), value)
   }
 
   override def execute(tuple: Tuple) {
     // See MaxWaitingFutures for a todo around simplifying this.
     buffer(Map(unpack(tuple))).foreach { pairs =>
       val futures = pairs.map { pair =>
-        val mergeFuture = store.merge(pair).handle { exceptionHandlerBox.get.handlerFn }
+        val mergeFuture = store.merge(pair)
+          .handle(exceptionHandlerBox.get.handlerFn)
 
         for (handler <- successHandlerOpt)
           mergeFuture.onSuccess { _ => handler.handlerFn() }

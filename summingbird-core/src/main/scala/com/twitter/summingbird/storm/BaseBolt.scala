@@ -18,6 +18,8 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.IRichBolt
+import backtype.storm.topology.OutputFieldsGetter
+import backtype.storm.tuple.{ Fields, Tuple }
 import java.util.{ Map => JMap }
 
 /**
@@ -27,19 +29,35 @@ import java.util.{ Map => JMap }
  * @author Ashu Singhal
  */
 
-abstract class BaseBolt[Key, Value](
+abstract class BaseBolt(
   metrics: () => TraversableOnce[StormMetric[_]]) extends IRichBolt {
   class Mutex extends java.io.Serializable
+
+  /**
+    * The fields this bolt plans on returning.
+    */
+  def fields: Fields
 
   private var collector: OutputCollector = null
 
   val mutex = new Mutex
-  def onCollector[U](fn: OutputCollector => U): U = mutex.synchronized { fn(collector) }
+  def onCollector[U](fn: OutputCollector => U): U =
+    mutex.synchronized { fn(collector) }
 
-  override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
-    // There is no need for a mutex here because this called once on start
+  def ack(tuple: Tuple) { onCollector { _.ack(tuple) } }
+
+  override def prepare(
+    conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
+    /**
+      * No need for a mutex here because this called once on
+      * start
+      */
     collector = oc
     metrics().foreach { _.register(context) }
+  }
+
+  override def declareOutputFields(declarer: OutputFieldsGetter) {
+    declarer.declare(fields)
   }
 
   override val getComponentConfiguration = null

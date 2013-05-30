@@ -38,14 +38,21 @@ import java.util.{ Date, Map => JMap }
  * @author Ashu Singhal
  */
 
-class FlatMapBolt[Event, Key, Value](
-  flatMapBox: FlatMapOperation[Event, Key, Value],
+class FinalFlatMapBolt[Event, Key, Value](
+  flatMapOp: FlatMapOperation[Event, (Key, Value)],
   cacheSize: CacheSize,
   metrics: FlatMapStormMetrics)
-  (implicit monoid: Monoid[Value], batcher: Batcher) extends BaseBolt(metrics.metrics) {
-  var collectorMergeable: MergeableStore[(Key, BatchID), Value] = null
+  (implicit monoid: Monoid[Value], batcher: Batcher)
+    extends BaseBolt(metrics.metrics) {
+  var collectorMergeable: MergeableStore[(Key, Long), Value] = null
 
-  override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
+  override val fields = {
+    import Constants._
+    new Fields(AGG_BATCH, AGG_KEY, AGG_VALUE)
+  }
+
+  override def prepare(
+    conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
     super.prepare(conf, context, oc)
     onCollector { collector =>
       collectorMergeable =
@@ -58,24 +65,21 @@ class FlatMapBolt[Event, Key, Value](
   }
 
   override def execute(tuple: Tuple) {
-    // TODO: We need to get types down into the IRichSpout so we can validate this.
-    val (event, time) = tuple.getValue(0).asInstanceOf[(Event, Date)]
-    val batchID = batcher.batchOf(time)
-    // the flat map function returns a future
-    // each resulting key value pair is merged into the output once the future completes
-    // the input tuple is acked once the future completes
-    flatMapBox.apply(event).foreach { pairs =>
+    val (id, event) = tuple.getValue(0).asInstanceOf[(Long, Event)]
+    /**
+      * the flatMap function returns a future.
+      *
+      *  each resulting key value pair is merged into the output once
+      * the future completes the input tuple is acked once the future
+      * completes.
+      */
+    flatMapOp.apply(event).foreach { pairs =>
       pairs.foreach { case (k, v) =>
-        onCollector { _ => collectorMergeable.merge((k, batchID) -> v) }
+        onCollector { _ => collectorMergeable.merge((k, id) -> v) }
       }
-      onCollector { _.ack(tuple) }
+      ack(tuple)
     }
   }
 
-  override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    import Constants._
-    declarer.declare(new Fields(AGG_BATCH, AGG_KEY, AGG_VALUE))
-  }
-
-  override def cleanup { flatMapBox.close }
+  override def cleanup { flatMapOp.close }
 }

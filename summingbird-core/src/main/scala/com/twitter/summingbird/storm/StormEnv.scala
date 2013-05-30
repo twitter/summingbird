@@ -39,7 +39,8 @@ case class StormEnv(override val jobName: String, override val args: Args) exten
     config.setKryoFactory(classOf[SummingbirdKryoFactory])
 
     // Register codec pairs for all time and event types.
-    KryoRegistrationHelper.registerInjections(config, flatMappedBuilder.eventCodecPairs)
+    KryoRegistrationHelper.registerInjections(
+      config, flatMappedBuilder.eventCodecPairs)
 
     // Register key and value types. All extensions of either of these
     // types will be caught by the registered codec.

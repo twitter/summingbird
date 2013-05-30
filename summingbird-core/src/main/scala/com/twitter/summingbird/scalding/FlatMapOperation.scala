@@ -25,7 +25,7 @@ import com.twitter.summingbird.service.OfflineService
 import java.io.Serializable
 
 // Represents the logic in the flatMap offline
-trait FlatMapOperation[Event,Key,Value] extends Serializable { self =>
+trait FlatMapOperation[Event, Key, Value] extends Serializable { self =>
   def apply(timeEv: TypedPipe[(Long, Event)])
     (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv): TypedPipe[(Long, (Key, Value))]
 
@@ -38,13 +38,13 @@ trait FlatMapOperation[Event,Key,Value] extends Serializable { self =>
 }
 
 object FlatMapOperation {
-  def apply[Event, Key, Value](fm: FlatMapper[Event, Key, Value]): FlatMapOperation[Event, Key, Value] =
+  def apply[Event, Key, Value](fm: FlatMapper[Event, (Key, Value)]): FlatMapOperation[Event, Key, Value] =
     new FlatMapOperation[Event, Key, Value] {
       def apply(timeEv: TypedPipe[(Long, Event)])
         (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv): TypedPipe[(Long, (Key, Value))] = {
         timeEv.flatMap { case (t: Long, e: Event) =>
             // TODO remove toList when scalding supports TraversableOnce
-            fm.encode(e).map { (t, _) }.toList
+          fm.encode(e).map { (t, _) }.toList
         }
       }
     }

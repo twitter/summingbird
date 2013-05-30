@@ -27,7 +27,7 @@ import com.twitter.summingbird.batch.{ Batcher, BatchID }
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.scalding.{ScaldingEnv, FlatMapOperation => ScaldingFlatMap }
 import com.twitter.summingbird.service.CompoundService
-import com.twitter.summingbird.storm.{ StormEnv, FlatMapBolt, FlatMapOperation => StormFlatMap }
+import com.twitter.summingbird.storm.{ StormEnv, FinalFlatMapBolt, FlatMapOperation => StormFlatMap }
 import com.twitter.summingbird.util.CacheSize
 import scala.util.Random
 
@@ -44,7 +44,7 @@ import scala.util.Random
 
 class SingleFlatMappedBuilder[Event,Key,Value](
   sourceBuilder: SourceBuilder[Event],
-  stormFm: StormFlatMap[Event, Key, Value],
+  stormFm: StormFlatMap[Event, (Key, Value)],
   scaldingFm: ScaldingFlatMap[Event, Key, Value],
   flatMapParallelism: FlatMapParallelism = Constants.DEFAULT_FM_PARALLELISM,
   flatMapCacheSize: CacheSize = Constants.DEFAULT_FM_CACHE,
@@ -54,7 +54,7 @@ class SingleFlatMappedBuilder[Event,Key,Value](
 
   /** Use this with named params for easy copying.
    */
-  def copy[K2,V2](storm: StormFlatMap[Event, K2, V2],
+  def copy[K2,V2](storm: StormFlatMap[Event, (K2, V2)],
     scalding: ScaldingFlatMap[Event, K2, V2],
     parallelism: FlatMapParallelism = flatMapParallelism,
     cacheSize: CacheSize = flatMapCacheSize,
@@ -74,7 +74,7 @@ class SingleFlatMappedBuilder[Event,Key,Value](
     implicit val monoid: Monoid[Value] = env.builder.monoid.asInstanceOf[Monoid[Value]]
     implicit val batcher: Batcher = env.builder.batcher
     tb.setBolt(flatMapName(suffix),
-               new FlatMapBolt(stormFm, flatMapCacheSize, stormMetrics),
+               new FinalFlatMapBolt(stormFm, flatMapCacheSize, stormMetrics),
                flatMapParallelism.parHint)
       .shuffleGrouping(spoutName)
   }
@@ -82,8 +82,7 @@ class SingleFlatMappedBuilder[Event,Key,Value](
   override def attach(groupBySumBolt: BoltDeclarer, suffix: String) =
     groupBySumBolt.fieldsGrouping(flatMapName(suffix), new Fields(AGG_KEY))
 
-  override def flatMapBuilder[Key2, Val2](newFlatMapper:
-    FlatMapper[(Key,Value),Key2,Val2]): FlatMappedBuilder[Key2, Val2] = {
+  override def flatMapBuilder[Key2, Val2](newFlatMapper: FlatMapper[(Key,Value), (Key2,Val2)]): FlatMappedBuilder[Key2, Val2] = {
 
     val newStorm = stormFm.andThen(StormFlatMap(newFlatMapper))
     val newScalding = scaldingFm.andThen(ScaldingFlatMap(newFlatMapper))

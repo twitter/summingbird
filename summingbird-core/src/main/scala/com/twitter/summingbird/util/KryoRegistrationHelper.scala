@@ -17,8 +17,9 @@ limitations under the License.
 package com.twitter.summingbird.util
 
 import com.esotericsoftware.kryo.Kryo
-import com.twitter.bijection.{ Base64String, Bijection }
-import com.twitter.chill.{ InjectionPair, KryoBijection, KryoSerializer }
+import com.twitter.bijection.CastInjection
+import com.twitter.bijection.{ Base64String, Bijection, Injection }
+import com.twitter.chill.{ InjectionPair, KryoInjection, KryoSerializer }
 import com.twitter.tormenta.serialization.ScalaKryoFactory
 
 import java.util.{ HashMap, Map => JMap }
@@ -39,45 +40,68 @@ object KryoRegistrationHelper {
   val INJECTION_PAIRS = "summingbird.injection.pairs"
   val INJECTION_DEFAULT_PAIRS = "summingbird.injection.pairs.default"
   val CLASS_REGISTRATIONS = "summingbird.class.registrations"
+  val SEPARATOR = ":"
 
-  // TODO: can we store type params in here too and prevent the cast?
-  def getConfValue[T](conf: JMap[_,_], key: String): Option[T] = {
-    val ret = conf.get(key).asInstanceOf[T]
-    if (ret != null)
-      Some(ret)
-    else
-      None
-  }
-
-  val base64KryoBijection: Bijection[AnyRef, String] =
-    KryoBijection
-      .andThen(implicitly[Bijection[Array[Byte],Base64String]])
+  // TODO: KryoInjection should be Any -> Bytes
+  val base64KryoInjection: Injection[AnyRef, String] =
+    KryoInjection
+      .andThen(Bijection.connect[Array[Byte],Base64String])
       .andThen(Base64StringUnwrap)
 
-  def registerInjections(conf: JMap[String,AnyRef], pairs: Iterable[InjectionPair[_]]) {
-    conf.put(INJECTION_PAIRS, base64KryoBijection(pairs))
+  // TODO: can we store type params in here too and prevent the cast?
+  def getConfValue[T](conf: JMap[_, _], key: String): Option[T] =
+    Option(conf.get(key).asInstanceOf[T])
+
+  def getAll[T](conf: JMap[_, _], key: String): Option[Iterable[T]] =
+    getConfValue[String](conf, key)
+      .map(_.split(SEPARATOR))
+      .map { _.flatMap(base64KryoInjection.invert(_).asInstanceOf[Option[T]]) }
+
+  def append(conf: JMap[String, AnyRef], key: String, entry: String) {
+    val newV = List(getConfValue[String](conf, key).getOrElse(""), entry)
+      .mkString(SEPARATOR)
+    conf.put(key, newV)
   }
 
+  def appendAll(conf: JMap[String, AnyRef], k: String, items: TraversableOnce[AnyRef]) {
+    items.foreach { item =>
+      append(conf, k, base64KryoInjection(item))
+    }
+  }
+
+  /**
+    * Injections for specific classes.
+    */
+  def resetInjections(conf: JMap[String, AnyRef]) { conf.remove(INJECTION_PAIRS) }
+  def registerInjections(conf: JMap[String, AnyRef], pairs: TraversableOnce[InjectionPair[_]]) {
+    appendAll(conf, INJECTION_PAIRS, pairs)
+  }
   def getRegisteredInjections(conf: JMap[_,_]): Option[Iterable[InjectionPair[_]]] =
-    getConfValue[String](conf, INJECTION_PAIRS)
-      .map { base64KryoBijection.invert(_).asInstanceOf[Iterable[InjectionPair[_]]] }
+    getAll(conf, INJECTION_PAIRS)
 
-  def registerInjectionDefaults(conf: JMap[String,AnyRef], pairs: Iterable[InjectionPair[_]]) {
-    conf.put(INJECTION_DEFAULT_PAIRS, base64KryoBijection(pairs))
+  /**
+    * Injections for subclasses.
+    */
+  def resetInjectionDefaults(conf: JMap[_, _]) { conf.remove(INJECTION_PAIRS) }
+  def registerInjectionDefaults(conf: JMap[String,AnyRef], pairs: TraversableOnce[InjectionPair[_]]) {
+    appendAll(conf, INJECTION_DEFAULT_PAIRS, pairs)
   }
-
   def getRegisteredInjectionDefaults(conf: JMap[_,_]): Option[Iterable[InjectionPair[_]]] =
-    getConfValue[String](conf, INJECTION_DEFAULT_PAIRS)
-      .map { base64KryoBijection.invert(_).asInstanceOf[Iterable[InjectionPair[_]]] }
+    getAll(conf, INJECTION_DEFAULT_PAIRS)
 
-  def registerClasses(conf: JMap[String,AnyRef], klasses: Iterable[Class[_]]) {
-    conf.put(CLASS_REGISTRATIONS, base64KryoBijection(klasses))
+  /**
+    * Registration for classes.
+    */
+  def resetClasses(conf: JMap[_, _]) { conf.remove(CLASS_REGISTRATIONS) }
+  def registerClasses(conf: JMap[String, AnyRef], klasses: TraversableOnce[Class[_]]) {
+    appendAll(conf, CLASS_REGISTRATIONS, klasses)
   }
-
   def getRegisteredClasses(conf: JMap[_,_]): Option[Iterable[Class[_]]] =
-    getConfValue[String](conf, CLASS_REGISTRATIONS)
-      .map { base64KryoBijection.invert(_).asInstanceOf[Iterable[Class[_]]] }
+    getAll(conf, CLASS_REGISTRATIONS)
 
+  /**
+    * Actual Kryo registration.
+    */
   def registerInjections(k: Kryo, conf: JMap[_,_]) {
     getRegisteredInjections(conf)
       .foreach { KryoSerializer.registerInjections(k, _) }

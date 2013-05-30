@@ -157,10 +157,12 @@ class CompletedBuilder[Key: Manifest: Ordering, Value: Manifest: Monoid](
     // Attach the SinkBolt, used to route key-value pairs into the
     // Summingbird sink and to look up values for DRPC requests.
     val sinkBolt = new SinkBolt[Key, Value](
-      // TODO: look into adding back the withSummer logic and removing the cache inside the sink
-      // the fix must have appropriate behavior related to the FutureQueue
+      // TODO: look into adding back the withSummer logic and removing
+      // the cache inside the sink.
+
+      // the fix must have appropriate behavior related to the
+      // FutureQueue
       { () => store.onlineSupplier() },
-      RpcInjection.option(valCodec),
       successHandler, exceptionHandler, sinkCacheSize, sinkMetrics, maxWaitingFutures,
       includeSuccessHandler
     )

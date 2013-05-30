@@ -16,49 +16,31 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.topology.BasicOutputCollector
-import backtype.storm.topology.OutputFieldsDeclarer
-import backtype.storm.topology.base.BaseBasicBolt
 import backtype.storm.tuple.{Fields, Tuple, Values}
 import com.twitter.storehaus.algebra.MergeableStore.enrich
-
 import com.twitter.summingbird.Constants._
+import com.twitter.summingbird.builder.FlatMapStormMetrics
 
 /**
   * building flatMapBolt back up from the beginning.
-  *
-  * @author Oscar Boykin
-  * @author Sam Ritchie
-  * @author Ashu Singhal
   */
 
-class FMBolt[T](fn: T => TraversableOnce[Any]) extends BaseBasicBolt {
-  def toValues(id: Long, item: Any): Values =
-    new Values((id, item))
+class FMBolt[T](
+  flatMapOp: FlatMapOperation[T, _],
+  metrics: FlatMapStormMetrics) extends BaseBolt(metrics.metrics) {
 
-  def fields: Fields = new Fields("pair")
+  def toValues(id: Long, item: Any): Values = new Values((id, item))
 
-  override def execute(tuple: Tuple, collector: BasicOutputCollector) {
+  override val fields = new Fields("pair")
+
+  override def execute(tuple: Tuple) {
     val (batch, t) = tuple.getValue(0).asInstanceOf[(Long, T)]
-    fn(t).foreach { item =>
-      collector.emit(toValues(batch, item))
+
+    flatMapOp(t).foreach { items =>
+      items.foreach { u =>
+        onCollector(_.emit(toValues(batch, u)))
+      }
+      ack(tuple)
     }
   }
-
-  override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    declarer.declare(fields)
-  }
-}
-
-class PairedBolt[T](fn: T => TraversableOnce[(Any, Any)]) extends FMBolt[T](fn) {
-  override def toValues(id: Long, pair: (Any, Any)) = {
-    val (k, v) = pair
-    new Values(
-      id.asInstanceOf[AnyRef],
-      k.asInstanceOf[AnyRef],
-      v.asInstanceOf[AnyRef]
-    )
-  }
-
-  override val fields = new Fields(AGG_BATCH, AGG_KEY, AGG_VALUE)
 }

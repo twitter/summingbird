@@ -50,11 +50,11 @@ abstract class FlatMappedBuilder[Key, Value] extends Serializable {
 
   def sourceBuilders: List[SourceBuilder[_]]
 
-  def flatMapBuilder[Key2,Val2](newFlatMapper: FlatMapper[(Key,Value),Key2,Val2])
+  def flatMapBuilder[Key2,Val2](newFlatMapper: FlatMapper[(Key, Value), (Key2, Val2)])
     : FlatMappedBuilder[Key2, Val2]
 
   def leftJoin[JoinedValue](service: CompoundService[Key, JoinedValue]):
-      FlatMappedBuilder[Key,(Value, Option[JoinedValue])]
+      FlatMappedBuilder[Key, (Value, Option[JoinedValue])]
 
   def addToTopo(env: StormEnv, tb: TopologyBuilder, suffix: String): Unit
   def attach(groupBySumBolt: BoltDeclarer, suffix: String): BoltDeclarer
