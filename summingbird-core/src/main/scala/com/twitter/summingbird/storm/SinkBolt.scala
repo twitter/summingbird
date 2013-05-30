@@ -19,12 +19,15 @@ package com.twitter.summingbird.storm
 import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.{ IRichBolt, OutputFieldsDeclarer }
 import backtype.storm.tuple.{ Fields, Tuple, Values }
+import com.twitter.algebird.{SummingQueue, Monoid}
 import com.twitter.bijection.Injection
 import com.twitter.chill.MeatLocker
 import com.twitter.summingbird.Constants
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.builder.{ OnlineExceptionHandler, OnlineSuccessHandler, SinkStormMetrics }
+import com.twitter.summingbird.builder._
+import com.twitter.summingbird.util.{FutureQueue, CacheSize}
 import com.twitter.storehaus.algebra.MergeableStore
+import com.twitter.util.Future
 
 import java.util.{ Map => JMap }
 
@@ -50,19 +53,35 @@ import java.util.{ Map => JMap }
  * @author Ashu Singhal
  */
 
-class SinkBolt[Key, Value](
-  storeSupplier: () => MergeableStore[(Key,BatchID), Value],
-  @transient rpc: Injection[Option[Value], String],
-  @transient successHandler: OnlineSuccessHandler,
-  @transient exceptionHandler: OnlineExceptionHandler,
-  metrics: SinkStormMetrics) extends BaseBolt(metrics.metrics) {
+class SinkBolt[Key, Value: Monoid](
+    storeSupplier: () => MergeableStore[(Key,BatchID), Value],
+    @transient rpc: Injection[Option[Value], String],
+    @transient successHandler: OnlineSuccessHandler,
+    @transient exceptionHandler: OnlineExceptionHandler,
+    cacheSize: CacheSize,
+    metrics: SinkStormMetrics,
+    maxWaitingFutures: MaxWaitingFutures,
+    includeSuccessHandler: IncludeSuccessHandler) extends BaseBolt(metrics.metrics) {
   import Constants._
 
   lazy val store = storeSupplier.apply
 
+  // See MaxWaitingFutures for a todo around removing this.
+  lazy val cacheCount = cacheSize.size
+  lazy val buffer = SummingQueue[Map[(Key, BatchID), Value]](cacheCount.getOrElse(1))
+  lazy val futureQueue = FutureQueue(Future.Unit, maxWaitingFutures.get)
+
   val rpcInjection = MeatLocker(rpc)
   val exceptionHandlerBox = MeatLocker(exceptionHandler)
   val successHandlerBox = MeatLocker(successHandler)
+
+  var successHandlerOpt: Option[OnlineSuccessHandler] = null
+
+  override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
+    super.prepare(conf, context, oc)
+    // see IncludeSuccessHandler for why this is needed
+    successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
+  }
 
   def executeDRPC(tuple: Tuple) {
     val key = tuple.getValue(0).asInstanceOf[Key]
@@ -93,9 +112,18 @@ class SinkBolt[Key, Value](
   override def execute(tuple: Tuple) {
     tuple.getSourceComponent match {
       case DRPC_DECODER => executeDRPC(tuple)
-      case _ => store.merge(unpack(tuple))
-          .onSuccess { _ => successHandlerBox.get.handlerFn() }
-          .handle(exceptionHandlerBox.get.handlerFn)
+      case _ =>
+        // See MaxWaitingFutures for a todo around simplifying this.
+        buffer(Map(unpack(tuple))).foreach { pairs =>
+          val futures = pairs.map { pair =>
+            val mergeFuture = store.merge(pair).handle { exceptionHandlerBox.get.handlerFn }
+
+            for (handler <- successHandlerOpt) mergeFuture.onSuccess { _ => handler.handlerFn() }
+
+            mergeFuture
+          }.toList
+          futureQueue += Future.collect(futures).unit
+        }
     }
     onCollector { _.ack(tuple) }
   }

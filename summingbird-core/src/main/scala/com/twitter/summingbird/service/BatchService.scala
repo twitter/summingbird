@@ -161,12 +161,12 @@ class BatchService[K, JoinedV](
   otherStore: BatchReadableStore[K, (BatchID, JoinedV)],
   deltaStore: IntermediateStore[K, JoinedV],
   otherBatcher: Batcher)
-  (implicit env: ScaldingEnv, kOrd: Ordering[K], batcher: Batcher, monoid: Monoid[JoinedV])
+  (implicit kOrd: Ordering[K], batcher: Batcher, monoid: Monoid[JoinedV])
     extends OfflineService[K, JoinedV] {
   import BatchService._
 
   override def leftJoin[V](pipe: TypedPipe[(Long, K, V)])
-    (implicit fd: FlowDef, mode: Mode) = {
+    (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv) = {
     import TDsl._
 
     val thisBuilder = env.builder

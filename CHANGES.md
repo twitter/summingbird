@@ -1,5 +1,9 @@
 # summingbird #
 
+## 0.0.3
+
+* Ability to tee out data.
+
 ## 0.0.2
 
 * PresentingStore

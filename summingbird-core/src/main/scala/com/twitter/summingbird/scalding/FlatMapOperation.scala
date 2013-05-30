@@ -21,18 +21,20 @@ import cascading.flow.FlowDef
 import com.twitter.scalding.{Mode, TypedPipe}
 import com.twitter.summingbird.FlatMapper
 import com.twitter.summingbird.service.OfflineService
+import com.twitter.summingbird.sink.OfflineSink
 
 import java.io.Serializable
 
 // Represents the logic in the flatMap offline
 trait FlatMapOperation[Event,Key,Value] extends Serializable { self =>
   def apply(timeEv: TypedPipe[(Long, Event)])
-    (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long, (Key, Value))]
+    (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv): TypedPipe[(Long, (Key, Value))]
 
   def andThen[K2,V2](fmo: FlatMapOperation[(Key,Value), K2, V2]): FlatMapOperation[Event,K2,V2] =
     new FlatMapOperation[Event,K2,V2] {
-      def apply(timeEv: TypedPipe[(Long, Event)])(implicit fd: FlowDef, mode: Mode) =
-        fmo(self(timeEv))
+      def apply(timeEv: TypedPipe[(Long, Event)])
+        (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv) =
+          fmo(self(timeEv))
     }
 }
 
@@ -40,7 +42,7 @@ object FlatMapOperation {
   def apply[Event, Key, Value](fm: FlatMapper[Event, Key, Value]): FlatMapOperation[Event, Key, Value] =
     new FlatMapOperation[Event, Key, Value] {
       def apply(timeEv: TypedPipe[(Long, Event)])
-        (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long, (Key, Value))] = {
+        (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv): TypedPipe[(Long, (Key, Value))] = {
         timeEv.flatMap { case (t: Long, e: Event) =>
             // TODO remove toList when scalding supports TraversableOnce
             fm.encode(e).map { (t, _) }.toList
@@ -54,9 +56,28 @@ object FlatMapOperation {
   ): FlatMapOperation[Event, Key, (Value, Option[Joined])] =
     new FlatMapOperation[Event, Key, (Value, Option[Joined])] {
       def apply(timeEv: TypedPipe[(Long, Event)])
-        (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long, (Key, (Value, Option[Joined])))] = {
+        (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv):
+          TypedPipe[(Long, (Key, (Value, Option[Joined])))] = {
         val kvPipe = fm.apply(timeEv).map { case (t, (k,v)) => (t,k,v) }
         service.leftJoin(kvPipe).map { case (t,k,v) => (t,(k,v)) }
+      }
+    }
+
+  def write[Event, Key, Value, Written](
+    fm: FlatMapOperation[Event, Key, Value],
+    sink: OfflineSink[Written],
+    conversion: ((Key, Value)) => TraversableOnce[Written]
+  ): FlatMapOperation[Event, Key, Value] =
+    new FlatMapOperation[Event, Key, Value] {
+      def apply(timeEv: TypedPipe[(Long, Event)])
+        (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv):
+          TypedPipe[(Long, (Key, Value))] = {
+        val encoded = fm(timeEv)
+        sink.write(encoded.flatMap {
+          // TODO remove toList when scalding supports TraversableOnce
+          case (time, pair) => conversion(pair).toList
+        })
+        encoded
       }
     }
 }

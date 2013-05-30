@@ -66,7 +66,9 @@ class CompletedBuilder[Key: Manifest: Ordering, Value: Manifest: Monoid](
   exceptionHandler: OnlineExceptionHandler = Constants.DEFAULT_ONLINE_EXCEPTION_HANDLER,
   sinkMetrics: SinkStormMetrics = Constants.DEFAULT_SINK_STORM_METRICS,
   monoidIsCommutative: MonoidIsCommutative = Constants.DEFAULT_MONOID_IS_COMMUTATIVE,
-  val intermediateStore: StoreIntermediateData[Key, Value] = StoreIntermediateData[Key, Value](None)
+  val intermediateStore: StoreIntermediateData[Key, Value] = StoreIntermediateData[Key, Value](None),
+  maxWaitingFutures: MaxWaitingFutures = Constants.DEFAULT_MAX_WAITING_FUTURES,
+  includeSuccessHandler: IncludeSuccessHandler = IncludeSuccessHandler(true)
 ) extends java.io.Serializable {
   import CompletedBuilder.injectionPair
 
@@ -94,11 +96,13 @@ class CompletedBuilder[Key: Manifest: Ordering, Value: Manifest: Monoid](
     excHandler: OnlineExceptionHandler = exceptionHandler,
     metrics: SinkStormMetrics = sinkMetrics,
     commutative: MonoidIsCommutative = monoidIsCommutative,
-    intermediate: StoreIntermediateData[Key, Value] = intermediateStore
+    intermediate: StoreIntermediateData[Key, Value] = intermediateStore,
+    futures: MaxWaitingFutures = maxWaitingFutures,
+    includeHandler: IncludeSuccessHandler = includeSuccessHandler
   ): CompletedBuilder[Key, Value] =
     new CompletedBuilder(fmb, store, kInjection, vInjection, longBatcher,
       cacheSize, sinkPar, decoderPar, rpcPar,
-      succHandler, excHandler, metrics, commutative, intermediate)
+      succHandler, excHandler, metrics, commutative, intermediate, futures, includeHandler)
 
   // Set the cache size used in the online flatmap step.
   def set(size: CacheSize)(implicit env: Env) = {
@@ -117,6 +121,8 @@ class CompletedBuilder[Key: Manifest: Ordering, Value: Manifest: Monoid](
       case newMetrics: SinkStormMetrics => copy(metrics = newMetrics)
       case comm: MonoidIsCommutative => copy(commutative = comm)
       case inter: StoreIntermediateData[Key, Value] => copy(intermediate = inter)
+      case futures: MaxWaitingFutures => copy(futures = futures)
+      case includeHander: IncludeSuccessHandler => copy(includeHandler = includeHander)
     }
     env.builder = cb
     cb
@@ -151,15 +157,12 @@ class CompletedBuilder[Key: Manifest: Ordering, Value: Manifest: Monoid](
     // Attach the SinkBolt, used to route key-value pairs into the
     // Summingbird sink and to look up values for DRPC requests.
     val sinkBolt = new SinkBolt[Key, Value](
-      // TODO: Is this correct?
-      { () =>
-        store.onlineSupplier().withSummer { m =>
-          implicit val innerM: Semigroup[Value] = m
-          SummingQueue[Map[(Key, BatchID), Value]](sinkCacheSize.size.getOrElse(0))
-        }
-      },
+      // TODO: look into adding back the withSummer logic and removing the cache inside the sink
+      // the fix must have appropriate behavior related to the FutureQueue
+      { () => store.onlineSupplier() },
       RpcInjection.option(valCodec),
-      successHandler, exceptionHandler, sinkMetrics
+      successHandler, exceptionHandler, sinkCacheSize, sinkMetrics, maxWaitingFutures,
+      includeSuccessHandler
     )
 
     flatMappedBuilder.attach(

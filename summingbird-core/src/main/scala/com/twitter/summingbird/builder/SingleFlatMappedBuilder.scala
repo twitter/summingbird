@@ -21,15 +21,14 @@ import backtype.storm.topology.BoltDeclarer
 import backtype.storm.tuple.Fields
 import cascading.flow.FlowDef
 import com.twitter.algebird.Monoid
-import com.twitter.scalding.{ TypedPipe, TDsl, Dsl, Mode }
+import com.twitter.scalding.{ TypedPipe, Mode }
 import com.twitter.summingbird.{ Constants, FlatMapper }
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
-import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.scalding.{ScaldingEnv, FlatMapOperation => ScaldingFlatMap }
 import com.twitter.summingbird.service.CompoundService
+import com.twitter.summingbird.sink.CompoundSink
 import com.twitter.summingbird.storm.{ StormEnv, FlatMapBolt, FlatMapOperation => StormFlatMap }
 import com.twitter.summingbird.util.CacheSize
-import scala.util.Random
 
 /**
  * SingleFlatMappedBuilder is the abstract class used to transform an
@@ -93,7 +92,13 @@ class SingleFlatMappedBuilder[Event,Key,Value](
   override def getFlatMappedPipe(batcher: Batcher, lowerb: BatchID, env: ScaldingEnv)
   (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long,Key,Value)] = {
     val src = sourceBuilder.getFlatMappedPipe(batcher, lowerb, env)
-    scaldingFm(src).map { case (t, (k,v)) => (t,k,v) }
+    scaldingFm(src)(fd, mode, env).map { case (t, (k,v)) => (t,k,v) }
+  }
+
+  def write[Written](sink: CompoundSink[Written])(conversion: ((Key,Value)) => TraversableOnce[Written]) = {
+    val newStorm = StormFlatMap.write(stormFm, sink.online, conversion)
+    val newScalding = ScaldingFlatMap.write(scaldingFm, sink.offline, conversion)
+    copy(newStorm, newScalding)
   }
 
   def leftJoin[JoinedValue](service: CompoundService[Key, JoinedValue])
