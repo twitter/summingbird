@@ -135,7 +135,7 @@ extends ScaldingJob(env.args) {
     */
   val (oldBatchIdUpperBound, latestAggregated): (BatchID, TypedPipe[(K, V)]) =
     env.startBatch(batcher)
-      .map { id => BatchReadableStore.empty[K,V](id).readLatest(env) }
+      .flatMap { id => BatchReadableStore.empty[K,V](id).readLatest(env) }
       .orElse {
         for {
           (batchID, pipe) <- offlineStore.readLatest(env)
