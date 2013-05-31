@@ -18,6 +18,7 @@ package com.twitter.summingbird.storm
 
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird.FlatMapper
+import com.twitter.summingbird.sink.OnlineSink
 import com.twitter.util.Future
 import java.io.{ Closeable, Serializable }
 
@@ -65,4 +66,17 @@ object FlatMapOperation {
         store.close
       }
     }
+
+  def write[Event, Key, Value, Written](fmSupplier: => FlatMapOperation[Event, (Key, Value)],
+      sinkSupplier: () => OnlineSink[Written], conversion: ((Key, Value)) => TraversableOnce[Written]) =
+      new FlatMapOperation[Event, (Key, Value)] {
+        lazy val fm = fmSupplier
+        lazy val sink = sinkSupplier()
+
+        override def apply(e: Event) =
+          fm.apply(e).flatMap { pairs =>
+            val writes = pairs.flatMap { pair => conversion(pair).map { sink.write _ } }
+            Future.collect(writes.toList).map { _ => pairs }
+          }
+      }
 }

@@ -21,6 +21,7 @@ import cascading.flow.FlowDef
 import com.twitter.scalding.{Mode, TypedPipe}
 import com.twitter.summingbird.FlatMapper
 import com.twitter.summingbird.service.OfflineService
+import com.twitter.summingbird.sink.OfflineSink
 
 import java.io.Serializable
 
@@ -59,6 +60,24 @@ object FlatMapOperation {
           TypedPipe[(Long, (Key, (Value, Option[Joined])))] = {
         val kvPipe = fm.apply(timeEv).map { case (t, (k,v)) => (t,k,v) }
         service.leftJoin(kvPipe).map { case (t,k,v) => (t,(k,v)) }
+      }
+    }
+
+  def write[Event, Key, Value, Written](
+    fm: FlatMapOperation[Event, Key, Value],
+    sink: OfflineSink[Written],
+    conversion: ((Key, Value)) => TraversableOnce[Written]
+  ): FlatMapOperation[Event, Key, Value] =
+    new FlatMapOperation[Event, Key, Value] {
+      def apply(timeEv: TypedPipe[(Long, Event)])
+        (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv):
+          TypedPipe[(Long, (Key, Value))] = {
+        val encoded = fm(timeEv)
+        sink.write(encoded.flatMap {
+          // TODO remove toList when scalding supports TraversableOnce
+          case (time, pair) => conversion(pair).toList
+        })
+        encoded
       }
     }
 }

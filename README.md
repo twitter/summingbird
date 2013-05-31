@@ -4,7 +4,7 @@ Streaming MapReduce on [Storm](https://github.com/nathanmarz/storm) and [Scaldin
 
 ## Maven
 
-Current version is `0.0.2`. groupid=`"com.twitter"` artifact=`summingbird-core_2.9.2"`.
+Current version is `0.0.3`. groupid=`"com.twitter"` artifact=`summingbird-core_2.9.2"`.
 
 ## Authors
 
