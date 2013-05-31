@@ -29,8 +29,7 @@ import java.util.{ Map => JMap }
  * @author Ashu Singhal
  */
 
-abstract class BaseBolt(
-  metrics: () => TraversableOnce[StormMetric[_]]) extends IRichBolt {
+abstract class BaseBolt(metrics: () => TraversableOnce[StormMetric[_]]) extends IRichBolt {
   class Mutex extends java.io.Serializable
 
   /**

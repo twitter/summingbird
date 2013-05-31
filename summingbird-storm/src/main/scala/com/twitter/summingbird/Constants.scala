@@ -33,7 +33,6 @@ object Constants {
   val RPC_RETURN = "rpcReturn"
 
   val DEFAULT_FM_PARALLELISM = FlatMapParallelism(5)
-  val DEFAULT_FM_SHARDS = FlatMapShards(0)
   val DEFAULT_FM_STORM_METRICS = FlatMapStormMetrics(None)
   val DEFAULT_FM_CACHE = CacheSize(0)
   val DEFAULT_RPC_PARALLELISM = RpcParallelism(1)

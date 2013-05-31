@@ -111,6 +111,8 @@ class CompletedBuilder[Key: Manifest: Ordering, Value: Manifest: Monoid](
     cb
   }
 
+  def set(inter: StoreIntermediateData[Key, Value]) = copy(intermediate = inter)
+
   def set(opt: SinkOption)(implicit env: Env) = {
     val cb = opt match {
       case par: SinkParallelism => copy(sinkPar = par)
@@ -120,7 +122,6 @@ class CompletedBuilder[Key: Manifest: Ordering, Value: Manifest: Monoid](
       case handler: OnlineExceptionHandler => copy(excHandler = handler)
       case newMetrics: SinkStormMetrics => copy(metrics = newMetrics)
       case comm: MonoidIsCommutative => copy(commutative = comm)
-      case inter: StoreIntermediateData[Key, Value] => copy(intermediate = inter)
       case futures: MaxWaitingFutures => copy(futures = futures)
       case includeHander: IncludeSuccessHandler => copy(includeHandler = includeHander)
     }

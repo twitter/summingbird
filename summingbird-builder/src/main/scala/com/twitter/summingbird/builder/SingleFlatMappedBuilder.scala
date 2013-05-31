@@ -110,12 +110,15 @@ class SingleFlatMappedBuilder[Event,Key,Value](
   // Set the cache size used in the online flatmap step.
   def set(size: CacheSize) = copy(stormFm, scaldingFm, cacheSize = size)
 
+  def set(fsh: FlatMapShards) =
+    copy(stormFm, scaldingFm, source = sourceBuilder.set(fsh))
+
   def set(opt: FlatMapOption) =
     opt match {
-      // Set the number of processes assigned to this flatmapper in the
-      // online flatmap step.
+      // Set the number of processes assigned to this flatmapper in
+      // the online flatmap step.
       case fmp: FlatMapParallelism => copy(stormFm, scaldingFm, parallelism = fmp)
-      case fsh: FlatMapShards => copy(stormFm, scaldingFm, source = sourceBuilder.set(fsh))
-      case metrics: FlatMapStormMetrics => copy(stormFm, scaldingFm, stormMetrics = metrics)
+      case metrics: FlatMapStormMetrics =>
+        copy(stormFm, scaldingFm, stormMetrics = metrics)
     }
 }

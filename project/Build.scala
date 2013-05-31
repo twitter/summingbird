@@ -87,7 +87,9 @@ object SummingbirdBuild extends Build {
   ).aggregate(
     summingbirdCore,
     summingbirdBatch,
-    summingbirdClient
+    summingbirdClient,
+    summingbirdStorm,
+    summingbirdBuilder
   )
 
   val dfsDatastoresVersion = "1.3.4"
@@ -131,17 +133,22 @@ object SummingbirdBuild extends Build {
     settings = sharedSettings
   ).settings(
     name := "summingbird-core",
-    libraryDependencies ++= Seq(
-      "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
-      "com.backtype" % "dfs-datastores-cascading" % dfsDatastoresVersion,
+    libraryDependencies ++=  Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
-      "com.twitter" %% "algebird-util" % algebirdVersion,
+      "com.twitter" %% "chill" % chillVersion
+    )
+  ).dependsOn(summingbirdBatch)
+
+  lazy val summingbirdStorm = Project(
+    id = "summingbird-storm",
+    base = file("summingbird-storm"),
+    settings = sharedSettings
+  ).settings(
+    name := "summingbird-storm",
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
-      "com.twitter" %% "bijection-algebird" % bijectionVersion,
-      "com.twitter" %% "bijection-json" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
-      "com.twitter" %% "scalding-core" % scaldingVersion,
-      "com.twitter" %% "scalding-commons" % "0.2.0",
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "tormenta" % "0.4.0",
@@ -150,5 +157,23 @@ object SummingbirdBuild extends Build {
       "storm" % "storm-kafka" % "0.9.0-wip6-scala292-multischeme",
       "storm" % "storm-kestrel" % "0.9.0-wip5-multischeme"
     )
-  ).dependsOn(summingbirdBatch)
+  ).dependsOn(summingbirdCore)
+
+  lazy val summingbirdBuilder = Project(
+    id = "summingbird-builder",
+    base = file("summingbird-builder"),
+    settings = sharedSettings
+  ).settings(
+    name := "summingbird-builder",
+    libraryDependencies ++= Seq(
+      "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
+      "com.backtype" % "dfs-datastores-cascading" % dfsDatastoresVersion,
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "algebird-util" % algebirdVersion,
+      "com.twitter" %% "bijection-json" % bijectionVersion,
+      "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" %% "scalding-core" % scaldingVersion,
+      "com.twitter" %% "scalding-commons" % "0.2.0"
+    )
+  ).dependsOn(summingbirdCore, summingbirdStorm)
 }

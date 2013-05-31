@@ -17,7 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.builder
 
 import com.twitter.summingbird.storm.StormMetric
-import com.twitter.summingbird.scalding.store.IntermediateStore
 
 /**
  * @author Oscar Boykin
@@ -69,14 +68,12 @@ class SinkStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]]) exten
 
 case class MonoidIsCommutative(isCommutative: Boolean) extends SinkOption
 
-// If not blank, it is the HDFS path to store the intermediate data.
-case class StoreIntermediateData[K, V](store: Option[IntermediateStore[K, V]]) extends SinkOption
-
 // MaxWaitingFutures is the maximum number of key-value pairs that the
 // SinkBolt in Storm will process before starting to force the
 // futures. For example, setting MaxWaitingFutures(100) means that if
 // a key-value pair is added to the OnlineStore and the (n - 100)th
 // write has not completed, Storm will block before moving on to the
-// next key-value pair.
-// TODO: look into removing this due to the possibility of deadlock with the sink's cache
+// next key-value pair.  TODO: look into removing this due to the
+// possibility of deadlock with the sink's cache
+
 case class MaxWaitingFutures(get: Int) extends SinkOption

@@ -17,7 +17,6 @@
 package com.twitter.summingbird
 
 import com.twitter.chill.ClosureCleaner
-import com.twitter.summingbird.util.CacheSize
 
 /**
   * @author Oscar Boykin

@@ -47,7 +47,7 @@ class SourceBuilder[Event](
   val eventSource: EventSource[Event],
   timeOf: Event => Date,
   predOption: Option[(Event) => Boolean] = None,
-  flatMapShards: FlatMapShards = Constants.DEFAULT_FM_SHARDS)
+  flatMapShards: FlatMapShards = FlatMapShards(0))
   (implicit eventMf: Manifest[Event], eventCodec: Injection[Event, Array[Byte]])
     extends Serializable {
   import Constants._

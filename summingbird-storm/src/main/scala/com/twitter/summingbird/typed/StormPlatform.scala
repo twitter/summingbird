@@ -19,7 +19,7 @@ package com.twitter.summingbird.typed
 import backtype.storm.tuple.Fields
 import backtype.storm.{Config, StormSubmitter}
 import backtype.storm.generated.StormTopology
-import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
+import backtype.storm.topology.{ BoltDeclarer, TopologyBuilder }
 import com.twitter.algebird.Monoid
 import com.twitter.bijection.Injection
 import com.twitter.chill.InjectionPair
@@ -30,10 +30,8 @@ import com.twitter.summingbird.Constants._
 import com.twitter.summingbird.FunctionFlatMapper
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.builder.{FlatMapOption, FlatMapParallelism, IncludeSuccessHandler, SinkOption, SinkParallelism}
-import com.twitter.summingbird.scalding.BatchAggregatorJob
-import com.twitter.summingbird.scalding.store.IntermediateStore
 import com.twitter.summingbird.storm.{FMBolt, FinalFlatMapBolt, FlatMapOperation, SinkBolt, SummingbirdKryoFactory}
-import com.twitter.summingbird.util.{CacheSize, KryoRegistrationHelper}
+import com.twitter.summingbird.util.{ CacheSize, KryoRegistrationHelper }
 import com.twitter.tormenta.spout.ScalaSpout
 
 case class StormSerialization[T](injectionPair: InjectionPair[T]) extends Serialization[Storm, T]
