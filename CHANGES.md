@@ -1,5 +1,9 @@
 # summingbird #
 
+## 0.0.4
+
+* fix compiler-induced bug in BatchAggregatorJob.
+
 ## 0.0.3
 
 * Ability to tee out data.
