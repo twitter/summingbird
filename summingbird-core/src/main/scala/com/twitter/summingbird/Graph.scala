@@ -1,42 +1,24 @@
 /*
-Copyright 2013 Twitter, Inc.
+ Copyright 2013 Twitter, Inc.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+ http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
 
-package com.twitter.summingbird.typed
+package com.twitter.summingbird
 
 /** Monoid stands alone. */
 import com.twitter.algebird.Monoid
 import com.twitter.summingbird.batch.Batcher
-
-trait Service[P, K, V]
-trait StreamSink[P, T]
-trait Store[P, K, V] extends StreamSink[P, (K, V)]
-
-/**
-  * Could be an Injection, or nothing for in-memory.
-  */
-trait Serialization[P, T]
-
-object TimeExtractor {
-  def apply[T](fn: T => Long): TimeExtractor[T] =
-    new TimeExtractor[T] {
-      override def apply(t: T) = fn(t)
-    }
-}
-
-trait TimeExtractor[T] extends (T => Long) with java.io.Serializable
 
 object Producer {
   /**
@@ -51,7 +33,7 @@ object Producer {
 }
 
 /**
-  * A Producer is a leaf in our tree, able to generate new items and
+  * A Producer is a node in our tree, able to generate new items and
   * have operations applied to it. In Storm, this might be an
   * in-progress TopologyBuilder.
   */
@@ -63,29 +45,24 @@ sealed trait Producer[P, T] {
     * TODOS:
     * - This needs to push through to a proper Monad, not just TO.
     */
-  def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
+  def flatMap[U](fn: FlatMapper[T, U]): Producer[P, U] =
     this match {
       // formerFn had to produce T, even though we don't know what
       // its input type was.
       case FlatMappedProducer(former, formerFn) =>
         FlatMappedProducer[P, Any, U](former, (formerFn(_).flatMap(fn)))
-      case _ => FlatMappedProducer[P, T, U](this, fn)
+      case other => FlatMappedProducer[P, T, U](other, fn)
     }
-  def tee(sink: StreamSink[P, T]): Producer[P, T] = TeedProducer(this, sink)
 }
 
-case class Source[P, T, S](
-  source: S,
-  serialization: Serialization[P, T],
-  timeOf: TimeExtractor[T]) extends Producer[P, T]
+case class Source[P, T, S](source: S, serialization: Serialization[P, T], timeOf: TimeExtractor[T])
+    extends Producer[P, T]
 
 case class NamedProducer[P, T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
-case class FlatMappedProducer[P, T, U](producer: Producer[P, T], fn: T => TraversableOnce[U])
-    extends Producer[P, U]
+case class FlatMappedProducer[P, T, U](producer: Producer[P, T], fm: FlatMapper[T, U]) extends Producer[P, U]
 
 case class MergedProducer[P, T](l: Producer[P, T], r: Producer[P, T]) extends Producer[P, T]
-case class TeedProducer[P, T](l: Producer[P, T], r: StreamSink[P, T]) extends Producer[P, T]
 
 case class Summer[P, K, V](
   producer: KeyedProducer[P, K, V],
@@ -114,10 +91,5 @@ trait KeyedProducer[P, K, V] extends Producer[P, (K, V)] {
 
 case class IdentityKeyedProducer[P, K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
 
-case class LeftJoinedProducer[P, K, V, JoinedV](
-  left: KeyedProducer[P, K, V],
-  joined: Service[P, K, JoinedV]) extends KeyedProducer[P, K, (V, Option[JoinedV])]
-
-trait Platform[P <: Platform[P]] {
-  def run[K, V](completed: Summer[P, K, V]): Unit
-}
+case class LeftJoinedProducer[P, K, V, JoinedV](left: KeyedProducer[P, K, V], joined: Service[P, K, JoinedV])
+    extends KeyedProducer[P, K, (V, Option[JoinedV])]

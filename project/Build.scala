@@ -108,8 +108,7 @@ object SummingbirdBuild extends Build {
     name := "summingbird-batch",
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
-      "com.twitter" %% "bijection-core" % bijectionVersion,
-      "com.twitter" % "util-core" % utilVersion
+      "com.twitter" %% "bijection-core" % bijectionVersion
     )
   )
 
@@ -153,9 +152,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "tormenta" % "0.4.0",
       "com.twitter" % "util-core" % utilVersion,
-      "storm" % "storm" % "0.9.0-wip15",
-      "storm" % "storm-kafka" % "0.9.0-wip6-scala292-multischeme",
-      "storm" % "storm-kestrel" % "0.9.0-wip5-multischeme"
+      "storm" % "storm" % "0.9.0-wip15"
     )
   ).dependsOn(summingbirdCore)
 

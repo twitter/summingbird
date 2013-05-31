@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.typed
+package com.twitter.summingbird.storm
 
 import backtype.storm.tuple.Fields
 import backtype.storm.{Config, StormSubmitter}
@@ -30,7 +30,6 @@ import com.twitter.summingbird.Constants._
 import com.twitter.summingbird.FunctionFlatMapper
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.builder.{FlatMapOption, FlatMapParallelism, IncludeSuccessHandler, SinkOption, SinkParallelism}
-import com.twitter.summingbird.storm.{FMBolt, FinalFlatMapBolt, FlatMapOperation, SinkBolt, SummingbirdKryoFactory}
 import com.twitter.summingbird.util.{ CacheSize, KryoRegistrationHelper }
 import com.twitter.tormenta.spout.ScalaSpout
 
