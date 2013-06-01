@@ -17,7 +17,6 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.storehaus.ReadableStore
-import com.twitter.summingbird.FlatMapper
 import com.twitter.summingbird.sink.OnlineSink
 import com.twitter.util.Future
 import java.io.{ Closeable, Serializable }
@@ -39,10 +38,9 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable { self =>
 }
 
 object FlatMapOperation {
-  def apply[T, U](fmSupplier: => FlatMapper[T, U]): FlatMapOperation[T, U] =
+  def apply[T, U](fm: T => TraversableOnce[U]): FlatMapOperation[T, U] =
     new FlatMapOperation[T, U] {
-      lazy val fm = fmSupplier
-      def apply(t: T) = Future.value(fm.encode(t))
+      def apply(t: T) = Future.value(fm(t))
     }
 
   def combine[T, K, V, JoinedV](fmSupplier: => FlatMapOperation[T, (K, V)],

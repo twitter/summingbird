@@ -132,10 +132,7 @@ object SummingbirdBuild extends Build {
     settings = sharedSettings
   ).settings(
     name := "summingbird-core",
-    libraryDependencies ++=  Seq(
-      "com.twitter" %% "algebird-core" % algebirdVersion,
-      "com.twitter" %% "chill" % chillVersion
-    )
+    libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   ).dependsOn(summingbirdBatch)
 
   lazy val summingbirdStorm = Project(

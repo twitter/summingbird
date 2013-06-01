@@ -44,8 +44,10 @@ sealed trait Producer[P, T] {
   /**
     * TODOS:
     * - This needs to push through to a proper Monad, not just TO.
+    * - Special-case T => Option[U] as a new type of node. These nodes
+    *   can be optimized when attached to sources.
     */
-  def flatMap[U](fn: FlatMapper[T, U]): Producer[P, U] =
+  def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
     this match {
       // formerFn had to produce T, even though we don't know what
       // its input type was.
@@ -60,7 +62,7 @@ case class Source[P, T, S](source: S, serialization: Serialization[P, T], timeOf
 
 case class NamedProducer[P, T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
-case class FlatMappedProducer[P, T, U](producer: Producer[P, T], fm: FlatMapper[T, U]) extends Producer[P, U]
+case class FlatMappedProducer[P, T, U](producer: Producer[P, T], fn: T => TraversableOnce[U]) extends Producer[P, U]
 
 case class MergedProducer[P, T](l: Producer[P, T], r: Producer[P, T]) extends Producer[P, T]
 

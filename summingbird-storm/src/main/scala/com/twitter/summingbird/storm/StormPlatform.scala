@@ -27,11 +27,11 @@ import com.twitter.storehaus.ReadableStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.Constants._
-import com.twitter.summingbird.FunctionFlatMapper
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.builder.{FlatMapOption, FlatMapParallelism, IncludeSuccessHandler, SinkOption, SinkParallelism}
 import com.twitter.summingbird.util.{ CacheSize, KryoRegistrationHelper }
 import com.twitter.tormenta.spout.ScalaSpout
+import com.twitter.summingbird._
 
 case class StormSerialization[T](injectionPair: InjectionPair[T]) extends Serialization[Storm, T]
 
@@ -177,12 +177,10 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
         val parents = leftNodes ++ rightNodes
         scheduleFlatMapper(topoBuilder, parents, path, suffix, id, toSchedule)
       }
-
-      case TeedProducer(l, streamSink) => sys.error("Not yet implemented.")
     }
   }
 
-  def ident[T] = FlatMapOperation(new FunctionFlatMapper[T, T](t => Some(t)))
+  def ident[T] = FlatMapOperation { t: T => Some(t) }
 
   def serviceOperation[K, V, W](store: () => ReadableStore[_, _]) =
     FlatMapOperation.combine(ident[(K, V)], store.asInstanceOf[() => ReadableStore[K, W]])
