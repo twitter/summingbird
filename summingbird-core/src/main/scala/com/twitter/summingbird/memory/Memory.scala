@@ -39,6 +39,7 @@ class Memory extends Platform[Memory] {
       case NamedProducer(producer, _) => toIterator(producer)
       case IdentityKeyedProducer(producer) => toIterator(producer)
       case Source(source, _, _) => source.asInstanceOf[Iterator[T]]
+      case OptionMappedProducer(producer, fn) => toIterator(producer).flatMap { fn(_).iterator }
       case FlatMappedProducer(producer, fn) => toIterator(producer).flatMap(fn)
       case MergedProducer(l, r) => toIterator(l) ++ toIterator(r)
       case LeftJoinedProducer(producer, svc) => {

@@ -156,6 +156,12 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
         scheduleFlatMapper(topoBuilder, parents, path, suffix, id, operations)
       }
 
+      case OptionMappedProducer(producer, op) => {
+        // TODO: we should always push this to the spout
+        val newOp = FlatMapOperation(op andThen { _.iterator })
+        recurse(producer, toSchedule = Right(newOp) :: toSchedule)
+      }
+
       case FlatMappedProducer(producer, op) => {
         val newOp = FlatMapOperation(op)
         recurse(producer, toSchedule = Right(newOp) :: toSchedule)

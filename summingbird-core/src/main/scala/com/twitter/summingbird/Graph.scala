@@ -41,12 +41,14 @@ sealed trait Producer[P, T] {
   def name(id: String): Producer[P, T] = NamedProducer(this, id)
   def merge(r: Producer[P, T]): Producer[P, T] = MergedProducer(this, r)
 
-  /**
-    * TODOS:
-    * - This needs to push through to a proper Monad, not just TO.
-    * - Special-case T => Option[U] as a new type of node. These nodes
-    *   can be optimized when attached to sources.
-    */
+  def filter(fn: T => Boolean): Producer[P, T] =
+    // Enforce using the OptionMapped here:
+    flatMap[T, Option[T]] { Some(_).filter(fn) }
+
+  def map[U](fn: T => U): Producer[P, U] =
+    // Enforce using the OptionMapped here:
+    flatMap[U, Some[U]] { t => Some(fn(t)) }
+
   def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
     this match {
       // formerFn had to produce T, even though we don't know what
@@ -55,12 +57,31 @@ sealed trait Producer[P, T] {
         FlatMappedProducer[P, Any, U](former, (formerFn(_).flatMap(fn)))
       case other => FlatMappedProducer[P, T, U](other, fn)
     }
+
+  def flatMap[U, O](fn: T => O)(implicit ev: O <:< Option[U]): Producer[P, U] = {
+    // ev has not been serializable in the past, casting is safe:
+    val optFn = fn.asInstanceOf[T => Option[U]]
+    this match {
+      case OptionMappedProducer(former, formerFn) =>
+        OptionMappedProducer[P, Any, U](former, (formerFn(_).flatMap(optFn)))
+      // If we have already flatMapped to Traversable, compose with that:
+      case FlatMappedProducer(former, formerFn) =>
+        FlatMappedProducer[P, Any, U](former,
+          (formerFn(_).flatMap(optFn andThen Option.option2Iterable)))
+      case other => OptionMappedProducer[P, T, U](other, optFn)
+    }
+  }
 }
 
 case class Source[P, T, S](source: S, serialization: Serialization[P, T], timeOf: TimeExtractor[T])
     extends Producer[P, T]
 
 case class NamedProducer[P, T](producer: Producer[P, T], id: String) extends Producer[P, T]
+
+/** Represents filters and maps which may be optimized differently
+ * Note that "option-mapping" is closed under composition and hence useful to call out
+ */
+case class OptionMappedProducer[P, T, U](producer: Producer[P, T], fn: T => Option[U]) extends Producer[P, U]
 
 case class FlatMappedProducer[P, T, U](producer: Producer[P, T], fn: T => TraversableOnce[U]) extends Producer[P, U]
 
