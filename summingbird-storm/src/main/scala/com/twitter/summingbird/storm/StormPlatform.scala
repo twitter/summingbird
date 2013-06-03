@@ -23,11 +23,10 @@ import backtype.storm.topology.{ BoltDeclarer, TopologyBuilder }
 import com.twitter.algebird.Monoid
 import com.twitter.bijection.Injection
 import com.twitter.chill.InjectionPair
-import com.twitter.storehaus.ReadableStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.Constants._
-import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.builder.{FlatMapOption, FlatMapParallelism, IncludeSuccessHandler, SinkOption, SinkParallelism}
 import com.twitter.summingbird.util.{ CacheSize, KryoRegistrationHelper }
 import com.twitter.tormenta.spout.ScalaSpout
@@ -39,32 +38,13 @@ sealed trait StormStore[K, V] extends Store[Storm, K, V]
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V]) extends StormStore[K, V]
 
 sealed trait StormService[K, V] extends Service[Storm, K, V]
-case class StoreWrapper[K, V](store: () => ReadableStore[K, V]) extends StormService[K, V]
-
-/**
-  * intra-graph options.
-  */
-class StormOptions(opts: Map[Class[_], Any] = Map.empty) {
-  def set(opt: SinkOption) = new StormOptions(opts + (opt.getClass -> opt))
-  def set(opt: FlatMapOption) = new StormOptions(opts + (opt.getClass -> opt))
-  def set(opt: CacheSize) = new StormOptions(opts + (opt.getClass -> opt))
-
-  def get[T: Manifest]: Option[T] =
-    opts.get(manifest[T].erasure).asInstanceOf[Option[T]]
-
-  def getOrElse[T: Manifest](default: T): T =
-    opts.getOrElse(manifest[T].erasure, default).asInstanceOf[T]
-}
+case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 object Storm {
   val SINK_ID = "sinkId"
 
-  def retrieveSummer[K, V](paths: List[Producer[Storm, _]]): Option[Summer[Storm, K, V]] =
-    paths match {
-      case Nil => None
-      case (node: Summer[Storm, K, V]) :: _ => Some(node)
-      case _ :: tail => retrieveSummer(tail)
-    }
+  def retrieveSummer(paths: List[Producer[Storm, _]]): Option[Summer[Storm, _, _]] =
+    paths.collectFirst { case s: Summer[Storm, _, _] => s }
 
   def source[T](spout: ScalaSpout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
@@ -101,17 +81,23 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
   def buildTopology[T](
     topoBuilder: TopologyBuilder,
     outerProducer: Producer[Storm, T],
-    toSchedule: List[Either[() => ReadableStore[_, _], FlatMapOperation[_, _]]],
+    toSchedule: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]],
     path: List[Producer[Storm, _]],
     suffix: String,
     id: Option[String])
     (implicit config: Config): List[String] = {
 
-    def recurse[T, U](
+    /**
+      * Helper method for recursively calling this same function with
+      * all of its arguments set, by default, to the current call's
+      * supplied parameters. (Note that this recursion will loop
+      * infinitely if called directly with no changed parameters.)
+      */
+    def recurse[U](
       producer: Producer[Storm, U],
       topoBuilder: TopologyBuilder = topoBuilder,
       outerProducer: Producer[Storm, T] = outerProducer,
-      toSchedule: List[Either[() => ReadableStore[_, _], FlatMapOperation[_, _]]] = toSchedule,
+      toSchedule: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]] = toSchedule,
       path: List[Producer[Storm, _]] = path,
       suffix: String = suffix,
       id: Option[String] = id) =
@@ -121,7 +107,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
       if (xs.isEmpty) suffix else FM_CONSTANT + suffix
 
     outerProducer match {
-      case Summer(producer, _, _, _, _, _, _) => {
+      case Summer(producer, _, _, _, _, _) => {
         assert(path.isEmpty, "Only a single Summer is supported at this time.")
         recurse(producer)
       }
@@ -136,21 +122,14 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
         val spoutName = "spout-" + suffixOf(toSchedule, suffix)
         val spout = source.asInstanceOf[ScalaSpout[T]]
         val stormSpout = spout.getSpout { scheme =>
-          scheme.map { t =>
-            val batcher =
-              Storm.retrieveSummer(path).map { s: Summer[Storm, _, _] => s.batcher }
-                .getOrElse(sys.error("No summer found!"))
-
-            val batch = batcher.batchOf(new java.util.Date(timeOf(t)))
-            (batch.id, t)
-          }
+          scheme.map { t => (timeOf(t), t) }
         }
         topoBuilder.setSpout(spoutName, stormSpout, spout.parallelism)
         val parents = List(spoutName)
 
         // The current planner requires a layer of flatMapBolts, even
         // if calling sumByKey directly on a source.
-        val operations = if (toSchedule.isEmpty) List(Right(ident)) else toSchedule
+        val operations = if (toSchedule.isEmpty) List(Right(FlatMapOperation.identity)) else toSchedule
 
         // Attach a FlatMapBolt after this source.
         scheduleFlatMapper(topoBuilder, parents, path, suffix, id, operations)
@@ -186,20 +165,24 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     }
   }
 
-  def ident[T] = FlatMapOperation { t: T => Some(t) }
+  /**
+    * Only exists because of the crazy casts we needed.
+    */
+  private def serviceOperation[K, V, W](store: StoreFactory[_, _]) =
+    FlatMapOperation.combine(FlatMapOperation.identity[(K, V)], store.asInstanceOf[StoreFactory[K, W]])
 
-  def serviceOperation[K, V, W](store: () => ReadableStore[_, _]) =
-    FlatMapOperation.combine(ident[(K, V)], store.asInstanceOf[() => ReadableStore[K, W]])
-
-  def combine[T, K, V, W](op: FlatMapOperation[T, (K, V)], store: () => ReadableStore[_, _]): FlatMapOperation[_, _] =
+  /**
+    * Only exists because of the crazy casts we needed.
+    */
+  private def combine[T, K, V, W](op: FlatMapOperation[T, (K, V)], store: StoreFactory[_, _]): FlatMapOperation[_, _] =
     FlatMapOperation.combine(
       op,
-      store.asInstanceOf[() => ReadableStore[K, W]]
+      store.asInstanceOf[StoreFactory[K, W]]
     )
 
-  def foldOperations(
-    head: Either[() => ReadableStore[_, _], FlatMapOperation[_, _]],
-    tail: List[Either[() => ReadableStore[_, _], FlatMapOperation[_, _]]]) = {
+  private def foldOperations(
+    head: Either[StoreFactory[_, _], FlatMapOperation[_, _]],
+    tail: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]]) = {
     val operation = head match {
       case Left(store) => serviceOperation(store)
       case Right(op) => op
@@ -214,18 +197,19 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
   // TODO: This function is returning the Node ID; replace string
   // programming with a world where the "id" is actually the path to
   // that node from the root.
-  def scheduleFlatMapper(
+  private def scheduleFlatMapper(
     topoBuilder: TopologyBuilder,
     parents: List[String],
     path: List[Producer[Storm, _]],
     suffix: String,
     id: Option[String],
-    toSchedule: List[Either[() => ReadableStore[_, _], FlatMapOperation[_, _]]])
+    toSchedule: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]])
       : List[String] = {
     toSchedule match {
       case Nil => parents
       case head :: tail => {
-        val summer = Storm.retrieveSummer(path).getOrElse(sys.error("A Summer is required."))
+        val summer = Storm.retrieveSummer(path)
+          .getOrElse(sys.error("A Summer is required."))
         val boltName = FM_CONSTANT + suffix
         val operation = foldOperations(head, tail)
         val metrics = getOrElse(id, DEFAULT_FM_STORM_METRICS)
@@ -236,7 +220,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
             getOrElse(id, DEFAULT_FM_STORM_METRICS)
           )(summer.monoid.asInstanceOf[Monoid[Any]], summer.batcher)
         else
-          new FMBolt(operation, metrics)
+          new IntermediateFlatMapBolt(operation, metrics)
 
         val parallelism = getOrElse(id, DEFAULT_FM_PARALLELISM)
         val declarer = topoBuilder.setBolt(boltName, bolt, parallelism.parHint)
@@ -247,22 +231,12 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     }
   }
 
-  def baseConfig = {
-    val config = new Config
-    config.setFallBackOnJavaSerialization(false)
-    config.setKryoFactory(classOf[SummingbirdKryoFactory])
-    config.setMaxSpoutPending(1000)
-    config.setNumAckers(12)
-    config.setNumWorkers(12)
-    config
-  }
-
   /**
     * TODO: Completed is really still a producer. We can submit
     * topologies at the completed nodes, but otherwise they can
     * continue to flatMap, etc.
     */
-  def populate[K, V](
+  private def populate[K, V](
     topologyBuilder: TopologyBuilder,
     summer: Summer[Storm, K, V])(implicit config: Config) = {
     implicit val batcher = summer.batcher
@@ -303,6 +277,23 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
     }
     List(GROUP_BY_SUM)
+  }
+
+  /**
+    * The following operations are public.
+    */
+
+  /**
+    * Base storm config instances used by the Storm platform.
+    */
+  def baseConfig = {
+    val config = new Config
+    config.setFallBackOnJavaSerialization(false)
+    config.setKryoFactory(classOf[SummingbirdKryoFactory])
+    config.setMaxSpoutPending(1000)
+    config.setNumAckers(12)
+    config.setNumWorkers(12)
+    config
   }
 
   def run[K, V](summer: Summer[Storm, K, V]): Unit = {

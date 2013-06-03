@@ -88,10 +88,10 @@ class SinkBolt[Key, Value: Monoid](
   // Injection[T,Tuple] This is really just the invert function.  The
   // problem is that Storm emits Values and receives Tuples.
   def unpack(tuple: Tuple) = {
-    val id = tuple.getLong(0)
+    val id = tuple.getValue(0).asInstanceOf[BatchID]
     val key = tuple.getValue(1).asInstanceOf[Key]
     val value = tuple.getValue(2).asInstanceOf[Value]
-    ((key, BatchID(id)), value)
+    ((key, id), value)
   }
 
   override def execute(tuple: Tuple) {
