@@ -44,7 +44,7 @@ class FinalFlatMapBolt[Event, Key, Value](
   metrics: FlatMapStormMetrics)
   (implicit monoid: Monoid[Value], batcher: Batcher)
     extends BaseBolt(metrics.metrics) {
-  var collectorMergeable: MergeableStore[(Key, Long), Value] = null
+  var collectorMergeable: MergeableStore[(Key, BatchID), Value] = null
 
   override val fields = {
     import Constants._
@@ -65,7 +65,9 @@ class FinalFlatMapBolt[Event, Key, Value](
   }
 
   override def execute(tuple: Tuple) {
-    val (id, event) = tuple.getValue(0).asInstanceOf[(Long, Event)]
+    val (time, event) = tuple.getValue(0).asInstanceOf[(Long, Event)]
+    val batchID = batcher.batchOf(new Date(time))
+
     /**
       * the flatMap function returns a future.
       *
@@ -75,7 +77,7 @@ class FinalFlatMapBolt[Event, Key, Value](
       */
     flatMapOp.apply(event).foreach { pairs =>
       pairs.foreach { case (k, v) =>
-        onCollector { _ => collectorMergeable.merge((k, id) -> v) }
+        onCollector { _ => collectorMergeable.merge((k, batchID) -> v) }
       }
       ack(tuple)
     }

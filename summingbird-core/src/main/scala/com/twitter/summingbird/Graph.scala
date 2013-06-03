@@ -64,14 +64,13 @@ case class NamedProducer[P, T](producer: Producer[P, T], id: String) extends Pro
 
 case class FlatMappedProducer[P, T, U](producer: Producer[P, T], fn: T => TraversableOnce[U]) extends Producer[P, U]
 
-case class MergedProducer[P, T](l: Producer[P, T], r: Producer[P, T]) extends Producer[P, T]
+case class MergedProducer[P, T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
 
 case class Summer[P, K, V](
   producer: KeyedProducer[P, K, V],
   store: Store[P, K, V],
   kSer: Serialization[P, K],
   vSer: Serialization[P, V],
-  ord: Ordering[K],
   monoid: Monoid[V],
   batcher: Batcher) extends KeyedProducer[P, K, V]
 
@@ -86,9 +85,8 @@ trait KeyedProducer[P, K, V] extends Producer[P, (K, V)] {
   def sumByKey(store: Store[P, K, V])(
     implicit kSer: Serialization[P, K],
     vSer: Serialization[P, V],
-    ord: Ordering[K],
     monoid: Monoid[V], // TODO: Semigroup?
-    batcher: Batcher): Summer[P, K, V] = Summer(this, store, kSer, vSer, ord, monoid, batcher)
+    batcher: Batcher): Summer[P, K, V] = Summer(this, store, kSer, vSer, monoid, batcher)
 }
 
 case class IdentityKeyedProducer[P, K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]

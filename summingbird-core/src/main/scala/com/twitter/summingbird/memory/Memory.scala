@@ -47,7 +47,7 @@ class Memory extends Platform[Memory] {
           (k, (v, service.get(k)))
         }
       }
-      case Summer(producer, _, _, _, _, _, _) => toIterator(producer)
+      case Summer(producer, _, _, _, _, _) => toIterator(producer)
     }
   }
 

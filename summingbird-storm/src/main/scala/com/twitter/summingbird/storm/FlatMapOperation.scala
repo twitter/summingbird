@@ -37,7 +37,12 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable { self =>
     }
 }
 
+// TODO: Use ClosureCleaner on the functions we pass into
+// FlatMapOperation.
+
 object FlatMapOperation {
+  def identity[T] = FlatMapOperation { t: T => Some(t) }
+
   def apply[T, U](fm: T => TraversableOnce[U]): FlatMapOperation[T, U] =
     new FlatMapOperation[T, U] {
       def apply(t: T) = Future.value(fm(t))

@@ -16,8 +16,8 @@ limitations under the License.
 
 package com.twitter.summingbird
 
-trait Service[P, K, V]
-trait Store[P, K, V]
+trait Service[P, -K, +V]
+trait Store[P, -K, V]
 
 /**
   * Could be an Injection, or nothing for in-memory.
