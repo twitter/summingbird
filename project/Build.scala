@@ -89,6 +89,7 @@ object SummingbirdBuild extends Build {
     summingbirdBatch,
     summingbirdClient,
     summingbirdStorm,
+    summingbirdScalding,
     summingbirdBuilder
   )
 
@@ -153,12 +154,12 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(summingbirdCore)
 
-  lazy val summingbirdBuilder = Project(
-    id = "summingbird-builder",
-    base = file("summingbird-builder"),
+  lazy val summingbirdScalding = Project(
+    id = "summingbird-scalding",
+    base = file("summingbird-scalding"),
     settings = sharedSettings
   ).settings(
-    name := "summingbird-builder",
+    name := "summingbird-scalding",
     libraryDependencies ++= Seq(
       "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
       "com.backtype" % "dfs-datastores-cascading" % dfsDatastoresVersion,
@@ -169,5 +170,17 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "scalding-core" % scaldingVersion,
       "com.twitter" %% "scalding-commons" % "0.2.0"
     )
-  ).dependsOn(summingbirdCore, summingbirdStorm)
+  ).dependsOn(summingbirdCore)
+
+  lazy val summingbirdBuilder = Project(
+    id = "summingbird-builder",
+    base = file("summingbird-builder"),
+    settings = sharedSettings
+  ).settings(
+    name := "summingbird-builder"
+  ).dependsOn(
+    summingbirdCore,
+    summingbirdStorm,
+    summingbirdScalding
+  )
 }
