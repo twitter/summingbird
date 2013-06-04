@@ -21,6 +21,9 @@ import com.twitter.algebird.Monoid
 import com.twitter.summingbird.batch.Batcher
 
 object Producer {
+  def retrieveSummer[P](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
+    paths.collectFirst { case s: Summer[P, _, _] => s }
+
   /**
     * Begin from some base representation. An iterator for in-memory,
     * for example.

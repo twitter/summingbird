@@ -43,9 +43,6 @@ case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K,
 object Storm {
   val SINK_ID = "sinkId"
 
-  def retrieveSummer(paths: List[Producer[Storm, _]]): Option[Summer[Storm, _, _]] =
-    paths.collectFirst { case s: Summer[Storm, _, _] => s }
-
   def source[T](spout: ScalaSpout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
     Producer.source[Storm, T, ScalaSpout[T]](spout)
@@ -122,7 +119,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
         val spoutName = "spout-" + suffixOf(toSchedule, suffix)
         val spout = source.asInstanceOf[ScalaSpout[T]]
         val stormSpout = spout.getSpout { scheme =>
-          scheme.map { t => (timeOf(t), t) }
+          scheme.map { t => (timeOf(t).getTime, t) }
         }
         topoBuilder.setSpout(spoutName, stormSpout, spout.parallelism)
         val parents = List(spoutName)
@@ -208,7 +205,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     toSchedule match {
       case Nil => parents
       case head :: tail => {
-        val summer = Storm.retrieveSummer(path)
+        val summer = Producer.retrieveSummer(path)
           .getOrElse(sys.error("A Summer is required."))
         val boltName = FM_CONSTANT + suffix
         val operation = foldOperations(head, tail)
