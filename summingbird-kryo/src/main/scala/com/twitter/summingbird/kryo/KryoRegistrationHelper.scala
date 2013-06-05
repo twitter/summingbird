@@ -14,15 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.util
+package com.twitter.summingbird.kryo
 
 import com.esotericsoftware.kryo.Kryo
 import com.twitter.bijection.CastInjection
 import com.twitter.bijection.{ Base64String, Bijection, Injection }
 import com.twitter.chill.{ InjectionPair, KryoInjection, KryoSerializer }
-import com.twitter.tormenta.serialization.ScalaKryoFactory
 
 import java.util.{ HashMap, Map => JMap }
+
+// TODO Move this to chill
 
 /**
  * @author Oscar Boykin

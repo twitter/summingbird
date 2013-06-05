@@ -98,7 +98,7 @@ case class Summer[P, K, V](
   monoid: Monoid[V],
   batcher: Batcher) extends KeyedProducer[P, K, V]
 
-trait KeyedProducer[P, K, V] extends Producer[P, (K, V)] {
+sealed trait KeyedProducer[P, K, V] extends Producer[P, (K, V)] {
   def leftJoin[RightV](service: Service[P, K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
     LeftJoinedProducer(this, service)
 

@@ -28,7 +28,8 @@ import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.Constants._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.builder.{FlatMapOption, FlatMapParallelism, IncludeSuccessHandler, SinkOption, SinkParallelism}
-import com.twitter.summingbird.util.{ CacheSize, KryoRegistrationHelper }
+import com.twitter.summingbird.util.CacheSize
+import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.tormenta.spout.ScalaSpout
 import com.twitter.summingbird._
 
@@ -119,7 +120,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
         val spoutName = "spout-" + suffixOf(toSchedule, suffix)
         val spout = source.asInstanceOf[ScalaSpout[T]]
         val stormSpout = spout.getSpout { scheme =>
-          scheme.map { t => (timeOf(t).getTime, t) }
+          scheme.map { t => (timeOf(t), t) }
         }
         topoBuilder.setSpout(spoutName, stormSpout, spout.parallelism)
         val parents = List(spoutName)
