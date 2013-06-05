@@ -32,8 +32,6 @@ import com.twitter.summingbird.util.{ CacheSize, KryoRegistrationHelper }
 import com.twitter.tormenta.spout.ScalaSpout
 import com.twitter.summingbird._
 
-case class StormSerialization[T](injectionPair: InjectionPair[T]) extends Serialization[Storm, T]
-
 sealed trait StormStore[K, V] extends Store[Storm, K, V]
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V]) extends StormStore[K, V]
 
@@ -49,14 +47,6 @@ object Storm {
   def source[T](spout: ScalaSpout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
     Producer.source[Storm, T, ScalaSpout[T]](spout)
-
-  // TODO: Add an unapply that pulls the spout out of the source,
-  // casting appropriately.
-  implicit def ser[T](implicit inj: Injection[T, Array[Byte]], mf: Manifest[T])
-      : Serialization[Storm, T] = {
-    StormSerialization(InjectionPair(mf.erasure.asInstanceOf[Class[T]], inj))
-  }
-
 }
 
 class Storm(jobName: String, options: Map[String, StormOptions]) extends Platform[Storm] {
@@ -107,18 +97,13 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
       if (xs.isEmpty) suffix else FM_CONSTANT + suffix
 
     outerProducer match {
-      case Summer(producer, _, _, _, _, _) => {
+      case Summer(producer, _, _, _) => {
         assert(path.isEmpty, "Only a single Summer is supported at this time.")
         recurse(producer)
       }
       case IdentityKeyedProducer(producer) => recurse(producer)
       case NamedProducer(producer, newId)  => recurse(producer, id = Some(newId))
-      case Source(source, ser, timeOf) => {
-        // Register this source's serialization in the config.
-        KryoRegistrationHelper.registerInjections(
-          config,
-          Some(ser.asInstanceOf[StormSerialization[T]].injectionPair)
-        )
+      case Source(source, timeOf) => {
         val spoutName = "spout-" + suffixOf(toSchedule, suffix)
         val spout = source.asInstanceOf[ScalaSpout[T]]
         val stormSpout = spout.getSpout { scheme =>
@@ -241,14 +226,6 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     summer: Summer[Storm, K, V])(implicit config: Config) = {
     implicit val batcher = summer.batcher
     implicit val monoid  = summer.monoid
-
-    // Register the K and V serializations in the config.
-    KryoRegistrationHelper.registerInjectionDefaults(
-      config,
-      List(
-        summer.kSer.asInstanceOf[StormSerialization[K]].injectionPair,
-        summer.vSer.asInstanceOf[StormSerialization[V]].injectionPair
-      ))
 
     val parents = buildTopology(topologyBuilder, summer, List.empty, List.empty, END_SUFFIX, None)
     // TODO: Add wrapping case classes for memstore, etc, as in MemP.

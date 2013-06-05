@@ -25,8 +25,8 @@ object Producer {
     * Begin from some base representation. An iterator for in-memory,
     * for example.
     */
-  def source[P, T, S](s: S)(implicit ser: Serialization[P, T], timeOf: TimeExtractor[T]): Producer[P, T] =
-    Source[P, T, S](s, ser, timeOf)
+  def source[P, T, S](s: S)(implicit timeOf: TimeExtractor[T]): Producer[P, T] =
+    Source[P, T, S](s, timeOf)
 
   implicit def toKeyed[P, K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer)
@@ -73,8 +73,7 @@ sealed trait Producer[P, T] {
   }
 }
 
-case class Source[P, T, S](source: S, serialization: Serialization[P, T], timeOf: TimeExtractor[T])
-    extends Producer[P, T]
+case class Source[P, T, S](source: S, timeOf: TimeExtractor[T]) extends Producer[P, T]
 
 case class NamedProducer[P, T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
@@ -90,8 +89,6 @@ case class MergedProducer[P, T](left: Producer[P, T], right: Producer[P, T]) ext
 case class Summer[P, K, V](
   producer: KeyedProducer[P, K, V],
   store: Store[P, K, V],
-  kSer: Serialization[P, K],
-  vSer: Serialization[P, V],
   monoid: Monoid[V],
   batcher: Batcher) extends KeyedProducer[P, K, V]
 
@@ -104,10 +101,8 @@ trait KeyedProducer[P, K, V] extends Producer[P, (K, V)] {
     * with flatMap, etc.
     */
   def sumByKey(store: Store[P, K, V])(
-    implicit kSer: Serialization[P, K],
-    vSer: Serialization[P, V],
-    monoid: Monoid[V], // TODO: Semigroup?
-    batcher: Batcher): Summer[P, K, V] = Summer(this, store, kSer, vSer, monoid, batcher)
+    implicit monoid: Monoid[V], // TODO: Semigroup?
+    batcher: Batcher): Summer[P, K, V] = Summer(this, store, monoid, batcher)
 }
 
 case class IdentityKeyedProducer[P, K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
