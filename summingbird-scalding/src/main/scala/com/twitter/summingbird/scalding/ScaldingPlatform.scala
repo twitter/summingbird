@@ -29,8 +29,6 @@ import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
 import cascading.flow.FlowDef
 import com.twitter.scalding.Mode
 
-case class ScaldingSerialization[T](injectionPair: InjectionPair[T]) extends Serialization[Scalding, T]
-
 // TODO this functionality should be in algebird
 sealed trait Commutativity extends java.io.Serializable
 object NonCommutative extends Commutativity
@@ -125,10 +123,6 @@ trait ScaldingService[K, V] extends Service[Scalding, K, V] {
 }
 
 object Scalding {
-  implicit def ser[T](implicit inj: Injection[T, Array[Byte]], mf: Manifest[T]): Serialization[Scalding, T] = {
-    ScaldingSerialization(InjectionPair(mf.erasure.asInstanceOf[Class[T]], inj))
-  }
-
   def source[T](factory: PipeFactory[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
     Producer.source[Scalding, T, PipeFactory[T]](factory)
@@ -143,7 +137,7 @@ class Scalding(jobName: String, batchID: BatchID, inargs: Array[String]) extends
     */
 
   private def buildSummer[K, V](summer: Summer[Scalding, K, V], id: Option[String]): PipeFactory[(K, V)] = {
-    val Summer(producer, store, kSer, vSer, monoid, batcher) = summer
+    val Summer(producer, store, monoid, batcher) = summer
     val sstore = store.asInstanceOf[ScaldingStore[K, V]]
     // The scala compiler gets confused if we don't capture this in a val:
     // [error] /Users/oscarb/workspace/summingbird/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingPlatform.scala:158: com.twitter.summingbird.scalding.ScaldingStore[K,V] does not take parameters
@@ -169,10 +163,10 @@ class Scalding(jobName: String, batchID: BatchID, inargs: Array[String]) extends
   def buildFlow[T](producer: Producer[Scalding, T], id: Option[String]): PipeFactory[T] = {
 
     producer match {
-      case Source(src, _, _) => src.asInstanceOf[PipeFactory[T]]
+      case Source(src, _) => src.asInstanceOf[PipeFactory[T]]
       case IdentityKeyedProducer(producer) => buildFlow(producer, id)
       case NamedProducer(producer, newId)  => buildFlow(producer, id = Some(newId))
-      case summer@Summer(producer, store, kSer, vSer, monoid, batcher) => buildSummer(summer, id)
+      case summer@Summer(producer, store, monoid, batcher) => buildSummer(summer, id)
       case joiner@LeftJoinedProducer(producer, svc) => buildJoin(joiner, id)
       case OptionMappedProducer(producer, op) => buildFlow(producer, id).map { tp =>
         tp.flatMap { case (time, item) => op(item).map { (time, _) } }
@@ -219,9 +213,9 @@ class PipeFactoryJob[T](override val name: String, batchID: BatchID, pf: PipeFac
   /*
     * Replace Scalding's default implementation of
     *  cascading.kryo.KryoSerialization with Summingbird's custom
-    * extension. SummingbirdKryoHadoop performs every registration in
-    * KryoHadoop, then registers event, time, key and value codecs
-    * using chill's BijectiveSerializer.
+    *  extension. SummingbirdKryoHadoop performs every registration in
+    *  KryoHadoop, then registers event, time, key and value codecs
+    *  using chill's BijectiveSerializer.
     */
   override def config(implicit mode: Mode) =
     super.config(mode) ++ Map(
