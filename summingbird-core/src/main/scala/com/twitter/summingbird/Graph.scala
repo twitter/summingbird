@@ -28,8 +28,8 @@ object Producer {
     * Begin from some base representation. An iterator for in-memory,
     * for example.
     */
-  def source[P <: Platform[P], T](s: P#Source[T])(implicit ser: Serialization[P, T], timeOf: TimeExtractor[T]): Producer[P, T] =
-    Source[P, T](s, ser, timeOf)
+  def source[P <: Platform[P], T](s: P#Source[T])(implicit manifest: Manifest[T], timeOf: TimeExtractor[T]): Producer[P, T] =
+    Source[P, T](s, manifest, timeOf)
 
   implicit def toKeyed[P <: Platform[P], K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer)
@@ -44,11 +44,11 @@ sealed trait Producer[P, T] {
   def name(id: String): Producer[P, T] = NamedProducer(this, id)
   def merge(r: Producer[P, T]): Producer[P, T] = MergedProducer(this, r)
 
-  def filter(fn: T => Boolean): Producer[P, T] =
+  def filter(fn: T => Boolean)(implicit mf: Manifest[T]): Producer[P, T] =
     // Enforce using the OptionMapped here:
     flatMap[T, Option[T]] { Some(_).filter(fn) }
 
-  def map[U](fn: T => U): Producer[P, U] =
+  def map[U](fn: T => U)(implicit mf: Manifest[U]): Producer[P, U] =
     // Enforce using the OptionMapped here:
     flatMap[U, Some[U]] { t => Some(fn(t)) }
 
@@ -61,22 +61,22 @@ sealed trait Producer[P, T] {
       case other => FlatMappedProducer[P, T, U](other, fn)
     }
 
-  def flatMap[U, O](fn: T => O)(implicit ev: O <:< Option[U]): Producer[P, U] = {
+  def flatMap[U, O](fn: T => O)(implicit ev: O <:< Option[U], manifest: Manifest[U]): Producer[P, U] = {
     // ev has not been serializable in the past, casting is safe:
     val optFn = fn.asInstanceOf[T => Option[U]]
     this match {
-      case OptionMappedProducer(former, formerFn) =>
-        OptionMappedProducer[P, Any, U](former, (formerFn(_).flatMap(optFn)))
+      case OptionMappedProducer(former, formerFn, _) =>
+        OptionMappedProducer[P, Any, U](former, (formerFn(_).flatMap(optFn)), manifest)
       // If we have already flatMapped to Traversable, compose with that:
       case FlatMappedProducer(former, formerFn) =>
         FlatMappedProducer[P, Any, U](former,
           (formerFn(_).flatMap(optFn andThen Option.option2Iterable)))
-      case other => OptionMappedProducer[P, T, U](other, optFn)
+      case other => OptionMappedProducer[P, T, U](other, optFn, manifest)
     }
   }
 }
 
-case class Source[P <: Platform[P], T](source: P#Source[T], serialization: Serialization[P, T], timeOf: TimeExtractor[T])
+case class Source[P <: Platform[P], T](source: P#Source[T], manifest: Manifest[T], timeOf: TimeExtractor[T])
     extends Producer[P, T]
 
 case class NamedProducer[P, T](producer: Producer[P, T], id: String) extends Producer[P, T]
@@ -84,7 +84,7 @@ case class NamedProducer[P, T](producer: Producer[P, T], id: String) extends Pro
 /** Represents filters and maps which may be optimized differently
  * Note that "option-mapping" is closed under composition and hence useful to call out
  */
-case class OptionMappedProducer[P, T, U](producer: Producer[P, T], fn: T => Option[U]) extends Producer[P, U]
+case class OptionMappedProducer[P, T, U](producer: Producer[P, T], fn: T => Option[U], manifest: Manifest[U]) extends Producer[P, U]
 
 case class FlatMappedProducer[P, T, U](producer: Producer[P, T], fn: T => TraversableOnce[U]) extends Producer[P, U]
 
@@ -93,8 +93,6 @@ case class MergedProducer[P, T](left: Producer[P, T], right: Producer[P, T]) ext
 case class Summer[P <: Platform[P], K, V](
   producer: KeyedProducer[P, K, V],
   store: P#Store[K, V],
-  kSer: Serialization[P, K],
-  vSer: Serialization[P, V],
   monoid: Monoid[V],
   batcher: Batcher) extends KeyedProducer[P, K, V]
 
@@ -107,10 +105,8 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
     * with flatMap, etc.
     */
   def sumByKey(store: P#Store[K, V])(
-    implicit kSer: Serialization[P, K],
-    vSer: Serialization[P, V],
-    monoid: Monoid[V], // TODO: Semigroup?
-    batcher: Batcher): Summer[P, K, V] = Summer(this, store, kSer, vSer, monoid, batcher)
+    implicit monoid: Monoid[V], // TODO: Semigroup?
+    batcher: Batcher): Summer[P, K, V] = Summer(this, store, monoid, batcher)
 }
 
 case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
