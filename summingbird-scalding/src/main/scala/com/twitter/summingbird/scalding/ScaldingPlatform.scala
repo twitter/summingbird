@@ -131,10 +131,12 @@ object Scalding {
 
   def source[T](factory: PipeFactory[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
-    Producer.source[Scalding, T, PipeFactory[T]](factory)
+    Producer.source[Scalding, T](factory)
 }
 
 class Scalding(jobName: String, batchID: BatchID, inargs: Array[String]) extends Platform[Scalding] {
+  type Source[T] = PipeFactory[T]
+
   /**
     * run(Summer(producer, store))
     *
@@ -169,7 +171,7 @@ class Scalding(jobName: String, batchID: BatchID, inargs: Array[String]) extends
   def buildFlow[T](producer: Producer[Scalding, T], id: Option[String]): PipeFactory[T] = {
 
     producer match {
-      case Source(src, _, _) => src.asInstanceOf[PipeFactory[T]]
+      case Source(src, _, _) => src
       case IdentityKeyedProducer(producer) => buildFlow(producer, id)
       case NamedProducer(producer, newId)  => buildFlow(producer, id = Some(newId))
       case summer@Summer(producer, store, kSer, vSer, monoid, batcher) => buildSummer(summer, id)

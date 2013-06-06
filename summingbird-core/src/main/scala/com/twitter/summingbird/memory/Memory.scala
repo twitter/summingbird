@@ -30,15 +30,16 @@ trait MemoryService[K, V] extends Service[Memory, K, V] {
 object Memory {
   implicit def ser[T]: Serialization[Memory, T] = new Serialization[Memory, T] { }
   implicit def toSource[T](iterator: Iterator[T])(implicit te: TimeExtractor[T]): Producer[Memory, T] =
-    Producer.source[Memory, T, Iterator[T]](iterator)
+    Producer.source[Memory, T](iterator)
 }
 
 class Memory extends Platform[Memory] {
+  type Source[T] = Iterator[T]
   def toIterator[T, K, V](producer: Producer[Memory, T]): Iterator[T] = {
     producer match {
       case NamedProducer(producer, _) => toIterator(producer)
       case IdentityKeyedProducer(producer) => toIterator(producer)
-      case Source(source, _, _) => source.asInstanceOf[Iterator[T]]
+      case Source(source, _, _) => source
       case OptionMappedProducer(producer, fn) => toIterator(producer).flatMap { fn(_).iterator }
       case FlatMappedProducer(producer, fn) => toIterator(producer).flatMap(fn)
       case MergedProducer(l, r) => toIterator(l) ++ toIterator(r)
