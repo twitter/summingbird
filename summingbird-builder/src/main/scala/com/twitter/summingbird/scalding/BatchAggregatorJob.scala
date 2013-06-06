@@ -145,7 +145,8 @@ extends ScaldingJob(env.args) {
   /**
     * New key-value pairs from the current batch's run.
     */
-  val delta: TypedPipe[(Long, K, V)] = bldr.getFlatMappedPipe(batcher, oldBatchIdUpperBound, env)
+  val delta: TypedPipe[(Long, K, V)] =
+    bldr.getFlatMappedPipe(batcher, oldBatchIdUpperBound, env)
 
   /**
     * Now begins the actual scalding job.

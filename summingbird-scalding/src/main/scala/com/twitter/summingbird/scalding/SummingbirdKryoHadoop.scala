@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding
 
 import com.esotericsoftware.kryo.Kryo
 import com.twitter.scalding.serialization.KryoHadoop
-import com.twitter.summingbird.util.KryoRegistrationHelper
+import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.summingbird.scalding.ConfigBijection.fromJavaMap
 
 /**
