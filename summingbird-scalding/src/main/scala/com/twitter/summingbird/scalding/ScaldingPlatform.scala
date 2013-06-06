@@ -163,7 +163,6 @@ class Scalding(jobName: String, batchID: BatchID, inargs: Array[String]) extends
   }
 
   def buildFlow[T](producer: Producer[Scalding, T], id: Option[String]): PipeFactory[T] = {
-
     producer match {
       case Source(src, _, _) => src
       case IdentityKeyedProducer(producer) => buildFlow(producer, id)
