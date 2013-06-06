@@ -19,11 +19,11 @@ package com.twitter.summingbird.memory
 import com.twitter.summingbird._
 import batch.Batcher
 
-trait MemoryStore[K, V] extends Store[Memory, K, V] {
+trait MemoryStore[-K, V] {
   def put(pair: (K, V)): Unit
 }
 
-trait MemoryService[K, V] extends Service[Memory, K, V] {
+trait MemoryService[-K, +V] {
   def get(k: K): Option[V]
 }
 
@@ -35,6 +35,8 @@ object Memory {
 
 class Memory extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
+  type Store[-K, V] = MemoryStore[K, V]
+  type Service[-K, +V] = MemoryService[K, V]
 
   def toIterator[T, K, V](producer: Producer[Memory, T]): Iterator[T] = {
     producer match {
@@ -44,18 +46,16 @@ class Memory extends Platform[Memory] {
       case OptionMappedProducer(producer, fn) => toIterator(producer).flatMap { fn(_).iterator }
       case FlatMappedProducer(producer, fn) => toIterator(producer).flatMap(fn)
       case MergedProducer(l, r) => toIterator(l) ++ toIterator(r)
-      case LeftJoinedProducer(producer, svc) => {
-        val service = svc.asInstanceOf[MemoryService[K, V]]
-        toIterator(producer.asInstanceOf[Producer[Memory, (K, V)]]).map { case (k, v) =>
+      case LeftJoinedProducer(producer, service) =>
+        toIterator(producer).map { case (k, v) =>
           (k, (v, service.get(k)))
         }
-      }
       case Summer(producer, _, _, _, _, _) => toIterator(producer)
     }
   }
 
   def run[K, V](builder: Summer[Memory, K, V]): Unit = {
-    val memStore = builder.store.asInstanceOf[MemoryStore[K, V]]
+    val memStore = builder.store
     toIterator(builder).foreach(memStore.put(_))
   }
 }
@@ -66,7 +66,7 @@ object TestJobRunner {
   // This is dangerous, obviously.
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
 
-  def testJob[P <: Platform[P]](source: Producer[P, Int], store: Store[P, Int, Int])
+  def testJob[P <: Platform[P]](source: Producer[P, Int], store: P#Store[Int, Int])
     (implicit ser: Serialization[P, Int]): Summer[P, Int, Int] =
     source
       .flatMap { x: Int => Some(x, x + 10) }
