@@ -67,26 +67,15 @@ trait ScaldingStore[K, V] extends Store[Scalding, K, V] {
     reducers: Int = -1)(implicit flowdef: FlowDef, mode: Mode, sg: Semigroup[V]): KeyValuePipe[K, V] = {
 
     writeDeltas(batchID, delta)
-   /**
-    * The job merges in new data as an incremental update to some
-    * existing dataset. Because the existing data is pre-aggregated,
-    * we don't have times for any of the key-value pairs. If the
-    * Monoid[V] is not commutative, this is cause for concern; how do
-    * we ensure that old data always appears before new data in the
-    * sort?
-    *
-    * We solve this by sorting on Option[Long] instead of Long,
-    * tagging all old data with None and lifting every timestamp in
-    * new key-value pairs up to Some(timestamp). Because None <
-    * Some(x), the data will be sorted correctly.
-    */
+
     implicit val ord: Ordering[K] = ordering
 
+    //Convert to a Grouped by "swapping" Time and K
     def toGrouped(items: KeyValuePipe[K, V]): Grouped[K, (Long, V)] =
       items.groupBy { case (_, (k, _)) => k }
         .mapValues { case (t, (_, v)) => (t, v) }
         .withReducers(reducers)
-
+    //Unswap the Time and K
     def toKVPipe(tp: TypedPipe[(K, (Long, V))]): KeyValuePipe[K, V] =
       tp.map { case (k, (t, v)) => (t, (k, v)) }
 
@@ -103,7 +92,7 @@ trait ScaldingStore[K, V] extends Store[Scalding, K, V] {
       val (tr, vr) = right
       (tl max tr, Semigroup.plus(vl, vr))
     }
-
+    // could be empty, in which case scalding will do nothing here
     writeLast(batchID, toKVPipe(maybeSorted.reduce(redFn)))
 
     // Make the incremental stream
@@ -116,6 +105,7 @@ trait ScaldingStore[K, V] extends Store[Scalding, K, V] {
       .mapValueStream { _.flatten /* unbox the option */ }
       .toTypedPipe
     )
+    // could be empty, in which case scalding will do nothing here
     writeStream(batchID, stream)
     stream
   }
