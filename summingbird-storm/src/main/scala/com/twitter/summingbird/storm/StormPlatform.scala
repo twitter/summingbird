@@ -35,10 +35,10 @@ import com.twitter.summingbird._
 
 case class StormSerialization[T](injectionPair: InjectionPair[T]) extends Serialization[Storm, T]
 
-sealed trait StormStore[K, V] extends Store[Storm, K, V]
+sealed trait StormStore[-K, V]
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V]) extends StormStore[K, V]
 
-sealed trait StormService[K, V] extends Service[Storm, K, V]
+sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 object Storm {
@@ -61,6 +61,8 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
   import Storm.SINK_ID
 
   type Source[T] = ScalaSpout[T]
+  type Store[-K, V] = StormStore[K, V]
+  type Service[-K, +V] = StormService[K, V]
 
   val END_SUFFIX = "end"
   val FM_CONSTANT = "flatMap-"
@@ -146,10 +148,9 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
       }
 
       case LeftJoinedProducer(producer, svc) => {
-        val newService =
-          svc.asInstanceOf[StormService[_, _]] match {
-            case StoreWrapper(storeSupplier) => storeSupplier
-          }
+        val newService = svc match {
+          case StoreWrapper(storeSupplier) => storeSupplier
+        }
         recurse(producer, toSchedule = Left(newService) :: toSchedule)
       }
 
@@ -170,15 +171,6 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
   private def serviceOperation[K, V, W](store: StoreFactory[_, _]) =
     FlatMapOperation.combine(FlatMapOperation.identity[(K, V)], store.asInstanceOf[StoreFactory[K, W]])
 
-  /**
-    * Only exists because of the crazy casts we needed.
-    */
-  private def combine[T, K, V, W](op: FlatMapOperation[T, (K, V)], store: StoreFactory[_, _]): FlatMapOperation[_, _] =
-    FlatMapOperation.combine(
-      op,
-      store.asInstanceOf[StoreFactory[K, W]]
-    )
-
   private def foldOperations(
     head: Either[StoreFactory[_, _], FlatMapOperation[_, _]],
     tail: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]]) = {
@@ -186,9 +178,11 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
       case Left(store) => serviceOperation(store)
       case Right(op) => op
     }
-
     tail.foldLeft(operation.asInstanceOf[FlatMapOperation[Any, Any]]) {
-      case (acc, Left(store)) => combine(acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]], store).asInstanceOf[FlatMapOperation[Any, Any]]
+      case (acc, Left(store)) => FlatMapOperation.combine(
+        acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
+        store.asInstanceOf[StoreFactory[Any, Any]]
+      ).asInstanceOf[FlatMapOperation[Any, Any]]
       case (acc, Right(op)) => acc.andThen(op.asInstanceOf[FlatMapOperation[Any, Any]])
     }
   }
@@ -251,7 +245,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
 
     val parents = buildTopology(topologyBuilder, summer, List.empty, List.empty, END_SUFFIX, None)
     // TODO: Add wrapping case classes for memstore, etc, as in MemP.
-    val supplier = summer.store.asInstanceOf[StormStore[K, V]] match {
+    val supplier = summer.store match {
       case MergeableStoreSupplier(contained) => contained
     }
 
