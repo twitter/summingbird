@@ -17,7 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.storm
 
 import com.esotericsoftware.kryo.Kryo
-import com.twitter.summingbird.util.KryoRegistrationHelper
+import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.tormenta.serialization.ScalaKryoFactory
 import java.util.{ Map => JMap }
 

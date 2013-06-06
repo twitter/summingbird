@@ -88,6 +88,7 @@ object SummingbirdBuild extends Build {
     summingbirdCore,
     summingbirdBatch,
     summingbirdClient,
+    summingbirdKryo,
     summingbirdStorm,
     summingbirdScalding,
     summingbirdBuilder
@@ -136,6 +137,18 @@ object SummingbirdBuild extends Build {
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   ).dependsOn(summingbirdBatch)
 
+  lazy val summingbirdKryo = Project(
+    id = "summingbird-kryo",
+    base = file("summingbird-kryo"),
+    settings = sharedSettings
+  ).settings(
+    name := "summingbird-kryo",
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "chill" % chillVersion
+    )
+  )
+
   lazy val summingbirdStorm = Project(
     id = "summingbird-storm",
     base = file("summingbird-storm"),
@@ -152,7 +165,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" % "util-core" % utilVersion,
       "storm" % "storm" % "0.9.0-wip15"
     )
-  ).dependsOn(summingbirdCore)
+  ).dependsOn(summingbirdCore, summingbirdKryo)
 
   lazy val summingbirdScalding = Project(
     id = "summingbird-scalding",
@@ -170,7 +183,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "scalding-core" % scaldingVersion,
       "com.twitter" %% "scalding-commons" % "0.2.0"
     )
-  ).dependsOn(summingbirdCore)
+  ).dependsOn(summingbirdCore, summingbirdKryo)
 
   lazy val summingbirdBuilder = Project(
     id = "summingbird-builder",

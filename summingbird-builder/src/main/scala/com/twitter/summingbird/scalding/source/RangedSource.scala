@@ -41,7 +41,8 @@ object RangedSource {
 trait RangedSource[Event] extends ScaldingSource[Event] {
   def rangedSource(range: DateRange): Mappable[Event]
 
-  override def source(lower: Date, upper: Date)(implicit flow: FlowDef, mode: Mode) = {
+  override def source(lower: Date, upper: Date)
+    (implicit flow: FlowDef, mode: Mode) = {
     // Source one hour behind and three hours forward to compensate
     // for the delay introduced by Twitter's log-grouping.
     val lo = new RichDate(lower) - Hours(1)

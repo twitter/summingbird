@@ -28,7 +28,8 @@ import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.Constants._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.builder.{FlatMapOption, FlatMapParallelism, IncludeSuccessHandler, SinkOption, SinkParallelism}
-import com.twitter.summingbird.util.{ CacheSize, KryoRegistrationHelper }
+import com.twitter.summingbird.util.CacheSize
+import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.tormenta.spout.ScalaSpout
 import com.twitter.summingbird._
 
@@ -40,9 +41,6 @@ case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K,
 
 object Storm {
   val SINK_ID = "sinkId"
-
-  def retrieveSummer(paths: List[Producer[Storm, _]]): Option[Summer[Storm, _, _]] =
-    paths.collectFirst { case s: Summer[Storm, _, _] => s }
 
   def source[T](spout: ScalaSpout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
@@ -193,7 +191,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     toSchedule match {
       case Nil => parents
       case head :: tail => {
-        val summer = Storm.retrieveSummer(path)
+        val summer = Producer.retrieveSummer(path)
           .getOrElse(sys.error("A Summer is required."))
         val boltName = FM_CONSTANT + suffix
         val operation = foldOperations(head, tail)
