@@ -28,7 +28,6 @@ trait MemoryService[K, V] extends Service[Memory, K, V] {
 }
 
 object Memory {
-  implicit def ser[T]: Serialization[Memory, T] = new Serialization[Memory, T] { }
   implicit def toSource[T](iterator: Iterator[T])(implicit te: TimeExtractor[T]): Producer[Memory, T] =
     Producer.source[Memory, T, Iterator[T]](iterator)
 }
@@ -38,7 +37,7 @@ class Memory extends Platform[Memory] {
     producer match {
       case NamedProducer(producer, _) => toIterator(producer)
       case IdentityKeyedProducer(producer) => toIterator(producer)
-      case Source(source, _, _) => source.asInstanceOf[Iterator[T]]
+      case Source(source, _) => source.asInstanceOf[Iterator[T]]
       case OptionMappedProducer(producer, fn) => toIterator(producer).flatMap { fn(_).iterator }
       case FlatMappedProducer(producer, fn) => toIterator(producer).flatMap(fn)
       case MergedProducer(l, r) => toIterator(l) ++ toIterator(r)
@@ -48,7 +47,7 @@ class Memory extends Platform[Memory] {
           (k, (v, service.get(k)))
         }
       }
-      case Summer(producer, _, _, _, _, _) => toIterator(producer)
+      case Summer(producer, _, _, _) => toIterator(producer)
     }
   }
 
@@ -64,8 +63,7 @@ object TestJobRunner {
   // This is dangerous, obviously.
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
 
-  def testJob[P <: Platform[P]](source: Producer[P, Int], store: Store[P, Int, Int])
-    (implicit ser: Serialization[P, Int]): Summer[P, Int, Int] =
+  def testJob[P <: Platform[P]](source: Producer[P, Int], store: Store[P, Int, Int]): Summer[P, Int, Int] =
     source
       .flatMap { x: Int => Some(x, x + 10) }
       .sumByKey(store)
