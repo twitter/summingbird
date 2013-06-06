@@ -46,7 +46,7 @@ object Storm {
 
   def source[T](spout: ScalaSpout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
-    Producer.source[Storm, T, ScalaSpout[T]](spout)
+    Producer.source[Storm, T](spout)
 
   // TODO: Add an unapply that pulls the spout out of the source,
   // casting appropriately.
@@ -59,6 +59,8 @@ object Storm {
 
 class Storm(jobName: String, options: Map[String, StormOptions]) extends Platform[Storm] {
   import Storm.SINK_ID
+
+  type Source[T] = ScalaSpout[T]
 
   val END_SUFFIX = "end"
   val FM_CONSTANT = "flatMap-"
@@ -111,14 +113,13 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
       }
       case IdentityKeyedProducer(producer) => recurse(producer)
       case NamedProducer(producer, newId)  => recurse(producer, id = Some(newId))
-      case Source(source, ser, timeOf) => {
+      case Source(spout, ser, timeOf) => {
         // Register this source's serialization in the config.
         KryoRegistrationHelper.registerInjections(
           config,
           Some(ser.asInstanceOf[StormSerialization[T]].injectionPair)
         )
         val spoutName = "spout-" + suffixOf(toSchedule, suffix)
-        val spout = source.asInstanceOf[ScalaSpout[T]]
         val stormSpout = spout.getSpout { scheme =>
           scheme.map { t => (timeOf(t), t) }
         }

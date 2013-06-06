@@ -29,6 +29,9 @@ trait Serialization[P, T]
   */
 
 trait Platform[P <: Platform[P]] {
+  // The type of the inputs for this platform
+  type Source[_]
+
   // TODO add type Service, Store, Serialization to remove casts.
   def run[K, V](completed: Summer[P, K, V]): Unit
 }
