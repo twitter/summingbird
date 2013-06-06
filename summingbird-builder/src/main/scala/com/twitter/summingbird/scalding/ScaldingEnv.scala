@@ -19,7 +19,7 @@ package com.twitter.summingbird.scalding
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird.Env
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
-import com.twitter.summingbird.util.KryoRegistrationHelper
+import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser

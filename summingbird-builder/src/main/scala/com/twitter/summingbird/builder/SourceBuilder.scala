@@ -110,9 +110,13 @@ class SourceBuilder[Event](
     //import TDsl._
     //import Dsl._
 
-    val inputPipe = eventSource.offline.get.scaldingSource(batcher, lowerb, env)(timeOf)
-    val filteredPipe = predOption.map { fn => inputPipe.filter { fn } }
-      .getOrElse(inputPipe)
+    val inputPipe =
+      eventSource.offline.get
+        .scaldingSource(batcher, lowerb, env)(timeOf)
+
+    val filteredPipe =
+      predOption.map { fn => inputPipe.filter { fn } }
+        .getOrElse(inputPipe)
 
     // Sharding is a kind of parallelism on the source done to get around Hadoop issues:
     val shards = flatMapShards.count

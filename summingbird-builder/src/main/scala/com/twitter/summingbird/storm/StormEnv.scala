@@ -19,7 +19,7 @@ package com.twitter.summingbird.storm
 import backtype.storm.{ Config, StormSubmitter }
 import com.twitter.scalding.Args
 import com.twitter.summingbird.Env
-import com.twitter.summingbird.util.KryoRegistrationHelper
+import com.twitter.summingbird.kryo.KryoRegistrationHelper
 
 /**
  * Storm-specific extension to Env. StormEnv handles storm-specific configuration
