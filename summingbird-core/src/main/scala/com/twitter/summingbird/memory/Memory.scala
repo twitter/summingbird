@@ -29,17 +29,18 @@ trait MemoryService[K, V] extends Service[Memory, K, V] {
 
 object Memory {
   implicit def ser[T]: Serialization[Memory, T] = new Serialization[Memory, T] { }
-  implicit def toSource[T](iterator: Iterator[T])(implicit te: TimeExtractor[T]): Producer[Memory, T] =
-    Producer.source[Memory, T](iterator)
+  implicit def toSource[T](traversable: TraversableOnce[T])(implicit te: TimeExtractor[T]): Producer[Memory, T] =
+    Producer.source[Memory, T](traversable)
 }
 
 class Memory extends Platform[Memory] {
-  type Source[T] = Iterator[T]
+  type Source[T] = TraversableOnce[T]
+
   def toIterator[T, K, V](producer: Producer[Memory, T]): Iterator[T] = {
     producer match {
       case NamedProducer(producer, _) => toIterator(producer)
       case IdentityKeyedProducer(producer) => toIterator(producer)
-      case Source(source, _, _) => source
+      case Source(source, _, _) => source.toIterator
       case OptionMappedProducer(producer, fn) => toIterator(producer).flatMap { fn(_).iterator }
       case FlatMappedProducer(producer, fn) => toIterator(producer).flatMap(fn)
       case MergedProducer(l, r) => toIterator(l) ++ toIterator(r)
@@ -76,6 +77,6 @@ object TestJobRunner {
       def put(i: (K, V)) = println(i)
     }
     val mem = new Memory
-    mem.run(testJob[Memory](Iterator(1,2,3), storeFn))
+    mem.run(testJob[Memory](List(1,2,3), storeFn))
   }
 }
