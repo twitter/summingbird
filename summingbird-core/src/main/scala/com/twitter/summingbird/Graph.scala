@@ -21,7 +21,7 @@ import com.twitter.algebird.Monoid
 import com.twitter.summingbird.batch.Batcher
 
 object Producer {
-  def retrieveSummer[P](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
+  def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
     paths.collectFirst { case s: Summer[P, _, _] => s }
 
   /**
@@ -31,7 +31,7 @@ object Producer {
   def source[P <: Platform[P], T](s: P#Source[T])(implicit ser: Serialization[P, T], timeOf: TimeExtractor[T]): Producer[P, T] =
     Source[P, T](s, ser, timeOf)
 
-  implicit def toKeyed[P, K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
+  implicit def toKeyed[P <: Platform[P], K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer)
 }
 
@@ -90,30 +90,30 @@ case class FlatMappedProducer[P, T, U](producer: Producer[P, T], fn: T => Traver
 
 case class MergedProducer[P, T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
 
-case class Summer[P, K, V](
+case class Summer[P <: Platform[P], K, V](
   producer: KeyedProducer[P, K, V],
-  store: Store[P, K, V],
+  store: P#Store[K, V],
   kSer: Serialization[P, K],
   vSer: Serialization[P, V],
   monoid: Monoid[V],
   batcher: Batcher) extends KeyedProducer[P, K, V]
 
-sealed trait KeyedProducer[P, K, V] extends Producer[P, (K, V)] {
-  def leftJoin[RightV](service: Service[P, K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
+sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
+  def leftJoin[RightV](service: P#Service[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
     LeftJoinedProducer(this, service)
 
   /**
     * TODO: This could return a KeyedProducer, and we could keep going
     * with flatMap, etc.
     */
-  def sumByKey(store: Store[P, K, V])(
+  def sumByKey(store: P#Store[K, V])(
     implicit kSer: Serialization[P, K],
     vSer: Serialization[P, V],
     monoid: Monoid[V], // TODO: Semigroup?
     batcher: Batcher): Summer[P, K, V] = Summer(this, store, kSer, vSer, monoid, batcher)
 }
 
-case class IdentityKeyedProducer[P, K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
+case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
 
-case class LeftJoinedProducer[P, K, V, JoinedV](left: KeyedProducer[P, K, V], joined: Service[P, K, JoinedV])
+case class LeftJoinedProducer[P <: Platform[P], K, V, JoinedV](left: KeyedProducer[P, K, V], joined: P#Service[K, JoinedV])
     extends KeyedProducer[P, K, (V, Option[JoinedV])]

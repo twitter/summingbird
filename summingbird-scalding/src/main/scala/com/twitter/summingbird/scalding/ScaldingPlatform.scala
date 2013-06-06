@@ -36,7 +36,7 @@ sealed trait Commutativity extends java.io.Serializable
 object NonCommutative extends Commutativity
 object Commutative extends Commutativity
 
-trait ScaldingStore[K, V] extends Store[Scalding, K, V] {
+trait ScaldingStore[K, V] {
 
   def ordering: Ordering[K]
 
@@ -111,7 +111,7 @@ trait ScaldingStore[K, V] extends Store[Scalding, K, V] {
   }
 }
 
-trait ScaldingService[K, V] extends Service[Scalding, K, V] {
+trait ScaldingService[K, V] {
   def ordering: Ordering[K]
   /** Reads the key log for this batch
    * May include keys from previous batches if those keys have not been updated
@@ -136,6 +136,8 @@ object Scalding {
 
 class Scalding(jobName: String, batchID: BatchID, inargs: Array[String]) extends Platform[Scalding] {
   type Source[T] = PipeFactory[T]
+  type Store[K, V] = ScaldingStore[K, V]
+  type Service[K, V] = ScaldingService[K, V]
 
   /**
     * run(Summer(producer, store))
@@ -146,13 +148,12 @@ class Scalding(jobName: String, batchID: BatchID, inargs: Array[String]) extends
 
   private def buildSummer[K, V](summer: Summer[Scalding, K, V], id: Option[String]): PipeFactory[(K, V)] = {
     val Summer(producer, store, kSer, vSer, monoid, batcher) = summer
-    val sstore = store.asInstanceOf[ScaldingStore[K, V]]
     // The scala compiler gets confused if we don't capture this in a val:
     // [error] /Users/oscarb/workspace/summingbird/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingPlatform.scala:158: com.twitter.summingbird.scalding.ScaldingStore[K,V] does not take parameters
     val pf = { (b: BatchID, fd: FlowDef, mode: Mode) =>
       val inPipe: KeyValuePipe[K, V] = buildFlow(producer, id).apply(b, fd, mode)
       // TODO get the options for this id to get Commutative and reducers
-      sstore.merge(b, inPipe, Commutative)(fd, mode, monoid)
+      store.merge(b, inPipe, Commutative)(fd, mode, monoid)
     }
     pf
   }
@@ -160,10 +161,9 @@ class Scalding(jobName: String, batchID: BatchID, inargs: Array[String]) extends
   private def buildJoin[K, V, JoinedV](joined: LeftJoinedProducer[Scalding, K, V, JoinedV],
     id: Option[String]): PipeFactory[(K, (V, Option[JoinedV]))] = {
     val LeftJoinedProducer(left, service) = joined
-    val sservice = service.asInstanceOf[ScaldingService[K, JoinedV]]
     val pf = { (b: BatchID, fd: FlowDef, mode: Mode) =>
       val inPipe: KeyValuePipe[K, V] = buildFlow(left, id).apply(b, fd, mode)
-      sservice.lookup(b, inPipe)(fd, mode)
+      service.lookup(b, inPipe)(fd, mode)
     }
     pf
   }
