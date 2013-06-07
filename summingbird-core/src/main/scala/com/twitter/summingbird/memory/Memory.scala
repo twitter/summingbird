@@ -49,13 +49,15 @@ class Memory extends Platform[Memory] {
         toIterator(producer).map { case (k, v) =>
           (k, (v, service.get(k)))
         }
-      case Summer(producer, _, _, _) => toIterator(producer)
+      case Summer(producer, store, monoid) => toIterator(producer).map { it =>
+        store.put(it)
+        it // TODO actually sum
+      }
     }
   }
 
-  def run[K, V](builder: Summer[Memory, K, V]): Unit = {
-    val memStore = builder.store
-    toIterator(builder).foreach(memStore.put(_))
+  def run[T](builder: Producer[Memory, T]): Unit = {
+    toIterator(builder).foreach { it => it /* just go through the whole thing */ }
   }
 }
 

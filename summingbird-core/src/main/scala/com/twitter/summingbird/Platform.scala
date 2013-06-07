@@ -16,14 +16,6 @@ limitations under the License.
 
 package com.twitter.summingbird
 
-trait Service[P, -K, +V]
-trait Store[P, -K, V]
-
-/**
-  * Could be an Injection, or nothing for in-memory.
-  */
-trait Serialization[P, T]
-
 /**
   * Base trait for summingbird compilers.
   */
@@ -34,6 +26,5 @@ trait Platform[P <: Platform[P]] {
   type Store[_, _]
   type Service[_, _]
 
-  // TODO add type Service, Store, Serialization to remove casts.
-  def run[K, V](completed: Summer[P, K, V]): Unit
+  def run[T](completed: Producer[P, T]): Unit
 }

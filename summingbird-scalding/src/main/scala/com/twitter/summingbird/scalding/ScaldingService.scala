@@ -22,6 +22,8 @@ import cascading.flow.FlowDef
 
 trait ScaldingService[K, V] {
   implicit def ordering: Ordering[K]
+  // The batcher that describes this service
+  def batcher: Batcher
   /** Reads the key log for this batch
    * May include keys from previous batches if those keys have not been updated
    * since
