@@ -29,106 +29,33 @@ import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
 import cascading.flow.FlowDef
 import com.twitter.scalding.Mode
 
-// TODO this functionality should be in algebird
-sealed trait Commutativity extends java.io.Serializable
-object NonCommutative extends Commutativity
-object Commutative extends Commutativity
-
-trait ScaldingStore[K, V] {
-
-  def ordering: Ordering[K]
-
-  def writeDeltas(batchID: BatchID, delta: KeyValuePipe[K, V])(implicit flowdef: FlowDef, mode: Mode): Unit
-
-  /** Optionally write out the stream of output values (for use as a service)
-   */
-  def writeStream(batchID: BatchID, scanned: KeyValuePipe[K, V])(implicit flowdef: FlowDef, mode: Mode): Unit
-  /** Write the stream which only has the last value for each key
-   */
-  def writeLast(batchID: BatchID, scanned: KeyValuePipe[K, V])(implicit flowdef: FlowDef, mode: Mode): Unit
-
-  /** Read the latest value for the keys
-   * Each key appears at most once
-   * May include keys from previous batches if those keys have not been updated
-   */
-  def readLatestBefore(batchID: BatchID)(implicit flowdef: FlowDef, mode: Mode): KeyValuePipe[K, V]
-
-  /**
-    * Accepts deltas along with their timestamps, returns triples of
-    * (time, K, V(aggregated up to the time)).
-    *
-    * Same return as lookup on a ScaldingService.
-    */
-  def merge(batchID: BatchID,
-    delta: KeyValuePipe[K, V],
-    commutativity: Commutativity,
-    reducers: Int = -1)(implicit flowdef: FlowDef, mode: Mode, sg: Semigroup[V]): KeyValuePipe[K, V] = {
-
-    writeDeltas(batchID, delta)
-
-    implicit val ord: Ordering[K] = ordering
-
-    //Convert to a Grouped by "swapping" Time and K
-    def toGrouped(items: KeyValuePipe[K, V]): Grouped[K, (Long, V)] =
-      items.groupBy { case (_, (k, _)) => k }
-        .mapValues { case (t, (_, v)) => (t, v) }
-        .withReducers(reducers)
-    //Unswap the Time and K
-    def toKVPipe(tp: TypedPipe[(K, (Long, V))]): KeyValuePipe[K, V] =
-      tp.map { case (k, (t, v)) => (t, (k, v)) }
-
-    val grouped: Grouped[K, (Long, V)] = toGrouped(readLatestBefore(batchID) ++ delta)
-
-    val sorted = grouped.sortBy { _._1 } // sort by time
-    val maybeSorted = commutativity match {
-      case Commutative => grouped // order does not matter
-      case NonCommutative => sorted
-    }
-
-    val redFn: (((Long, V), (Long, V)) => (Long, V)) = { (left, right) =>
-      val (tl, vl) = left
-      val (tr, vr) = right
-      (tl max tr, Semigroup.plus(vl, vr))
-    }
-    // could be empty, in which case scalding will do nothing here
-    writeLast(batchID, toKVPipe(maybeSorted.reduce(redFn)))
-
-    // Make the incremental stream
-    val stream = toKVPipe(sorted.scanLeft(None: Option[(Long, V)]) { (old, item) =>
-        old match {
-          case None => Some(item)
-          case Some(prev) => Some(redFn(prev, item))
-        }
-      }
-      .mapValueStream { _.flatten /* unbox the option */ }
-      .toTypedPipe
-    )
-    // could be empty, in which case scalding will do nothing here
-    writeStream(batchID, stream)
-    stream
-  }
-}
-
-trait ScaldingService[K, V] {
-  def ordering: Ordering[K]
-  /** Reads the key log for this batch
-   * May include keys from previous batches if those keys have not been updated
-   * since
-   */
-  def readStream(batchID: BatchID)(implicit flowdef: FlowDef, mode: Mode): KeyValuePipe[K, V]
-
-  /** TODO Move the time join logic here
-   */
-  def lookup[W](batchID: BatchID, getKeys: KeyValuePipe[K, W])(implicit flowdef: FlowDef, mode: Mode): KeyValuePipe[K, (W, Option[V])]
-}
-
 object Scalding {
   def source[T](factory: PipeFactory[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
     Producer.source[Scalding, T](factory)
 }
 
-class Scalding(jobName: String, batchID: BatchID, inargs: Array[String]) extends Platform[Scalding] {
+trait Executor {
+  def run(config: Map[String, AnyRef], inargs: Array[String], cons: (Args) => Job): Unit
+}
+
+class StandardRunner extends Executor {
+  def run(config: Map[String, AnyRef], inargs: Array[String], con: (Args) => Job) {
+    val hadoopTool: STool = {
+      val tool = new STool
+      tool.setJobConstructor(con)
+      tool
+    }
+    ToolRunner.run(ConfigBijection.fromMap(config), hadoopTool, inargs)
+  }
+}
+
+// TODO
+class TestRunner extends Executor {
+  def run(config: Map[String, AnyRef], inargs: Array[String], con: (Args) => Job) { }
+}
+
+class Scalding(jobName: String, batchID: BatchID, inargs: Array[String], runner: Executor) extends Platform[Scalding] {
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
   type Service[K, V] = ScaldingService[K, V]
@@ -188,19 +115,15 @@ class Scalding(jobName: String, batchID: BatchID, inargs: Array[String]) extends
   def baseConfig = new Configuration
 
   def config: Map[String, AnyRef] = sys.error("TODO, set up the kryo serializers")
-
   def run[K, V](summer: Summer[Scalding, K, V]): Unit = {
     val pf = buildFlow(summer, None)
 
-    val hadoopTool: STool = {
-      val tool = new STool
-      tool.setJobConstructor { jobArgs => new PipeFactoryJob(jobName, batchID, pf, { () => () }, jobArgs) }
-      tool
+    val constructor = { (jobArgs : Args) =>
+      new PipeFactoryJob(jobName, batchID, pf, { () => () }, jobArgs)
     }
-
     // Now actually run (by building the scalding job):
     try {
-      ToolRunner.run(ConfigBijection.fromMap(config), hadoopTool, inargs);
+      runner.run(config, inargs, constructor)
     } catch {
       case ise: InvalidSourceException => println("Job data not ready: " + ise.getMessage)
     }
@@ -211,7 +134,7 @@ class PipeFactoryJob[T](override val name: String, batchID: BatchID, pf: PipeFac
 
   // Build the flowDef:
   pf.apply(batchID, implicitly[FlowDef], implicitly[Mode])
-  /*
+  /* TODO can't this be handled outside by setting up the conf we pass to ToolRunner?
     * Replace Scalding's default implementation of
     *  cascading.kryo.KryoSerialization with Summingbird's custom
     * extension. SummingbirdKryoHadoop performs every registration in
