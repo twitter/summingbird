@@ -93,8 +93,7 @@ case class MergedProducer[P, T](left: Producer[P, T], right: Producer[P, T]) ext
 case class Summer[P <: Platform[P], K, V](
   producer: KeyedProducer[P, K, V],
   store: P#Store[K, V],
-  monoid: Monoid[V],
-  batcher: Batcher) extends KeyedProducer[P, K, V]
+  monoid: Monoid[V]) extends KeyedProducer[P, K, V]
 
 sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def leftJoin[RightV](service: P#Service[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
@@ -103,10 +102,9 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   /**
     * TODO: This could return a KeyedProducer, and we could keep going
     * with flatMap, etc.
+    * TODO: Semigroup?
     */
-  def sumByKey(store: P#Store[K, V])(
-    implicit monoid: Monoid[V], // TODO: Semigroup?
-    batcher: Batcher): Summer[P, K, V] = Summer(this, store, monoid, batcher)
+  def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] = Summer(this, store, monoid)
 }
 
 case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
