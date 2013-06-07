@@ -22,7 +22,7 @@ import com.twitter.scalding.{ TypedPipe, TDsl, Mode }
 import com.twitter.summingbird.AbstractJob
 import com.twitter.summingbird.builder.CompletedBuilder
 import com.twitter.summingbird.scalding.ScaldingEnv
-import com.twitter.summingbird.scalding.store.{ BatchReadableStore, IntermediateStore }
+import com.twitter.summingbird.scalding.store.{BatchStore, BatchReadableStore, IntermediateStore}
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 
 import java.io.Serializable
@@ -93,7 +93,7 @@ object BatchService extends Serializable {
     * Monoid.zero; else, the service will return Some(joinedV).
     *
     */
-  def timeJoin[T, K, V, JoinedV](left: TypedPipe[(T, K, V)], right: TypedPipe[(T, K, JoinedV)])
+  def timeJoin[T, K, V, JoinedV](left: TypedPipe[(T, K, V)], right: TypedPipe[(T, K, JoinedV)], reducers: Int)
     (implicit kOrd: Ordering[K], tOrd: Ordering[T], monoid: Monoid[JoinedV])
       : TypedPipe[(T, K, (V, Option[JoinedV]))] = {
     val joined: TypedPipe[(K, (Option[JoinedV], Option[(T, V, Option[JoinedV])]))] =
@@ -101,7 +101,8 @@ object BatchService extends Serializable {
         .++(right.map { case (t, k, joinedV) => (t, k, Right(joinedV): Either[V, JoinedV]) })
         .map { case (t, k, either) => (k, (t, either)) }
         .group
-        .sortBy { _._2 }
+        .withReducers(reducers)
+        .sortBy[T] { _._1 }
     /**
       * Grouping by K leaves values of (T, Either[V, JoinedV]). Sort
       * by time and scanLeft. The iterator will now represent pairs of
@@ -149,6 +150,16 @@ object BatchService extends Serializable {
       (t, v, optJoined) <- optV
     } yield (t, k, (v, optJoined))
   }
+
+  // TODO: this seems to be generally useful. put it somewhere else during the scalding/storm/builder code splitting.
+  def getFirstBatchID(offlineStore: BatchStore[_, _])
+      (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv, batcher: Batcher) =
+    env.startBatch(batcher)
+      .orElse {
+        for {
+          (batchID, _) <- offlineStore.readLatest(env)
+        } yield batchID
+      }
 }
 
 /**
@@ -172,7 +183,7 @@ class BatchService[K, JoinedV](
     val thisBuilder = env.builder
 
     (for {
-      (lastProcessed, _) <- thisBuilder.store.offlineStore.readLatest(env)
+      lastProcessed <- getFirstBatchID(thisBuilder.store.offlineStore)
       extremities = (lastProcessed, lastProcessed + env.batches - 1)
       requiredDeltas = batcher.enclosedBy(extremities, otherBatcher)
       otherAggregatedUpTo: BatchID <- otherStore.availableBatches(env).find(_ <= requiredDeltas.min)
@@ -180,7 +191,7 @@ class BatchService[K, JoinedV](
       remainingBatches = BatchID.range(otherAggregatedUpTo, requiredDeltas.last).toList
       aggWithoutBatch = aggregated.map { case (k, (_, v)) => (k, v) }
       deltaPipe = rollingDeltas[K, JoinedV](aggWithoutBatch, deltaStore, remainingBatches)
-    } yield timeJoin(pipe, deltaPipe))
+    } yield timeJoin(pipe, deltaPipe, env.reducers))
       .getOrElse(sys.error("Not enough data available for a time-based join."))
   }
 }
