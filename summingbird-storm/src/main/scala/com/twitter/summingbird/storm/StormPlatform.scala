@@ -33,10 +33,10 @@ import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.tormenta.spout.ScalaSpout
 import com.twitter.summingbird._
 
-case class StormSerialization[T](injectionPair: InjectionPair[T]) extends Serialization[Storm, T]
-
-sealed trait StormStore[-K, V]
-case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V]) extends StormStore[K, V]
+sealed trait StormStore[-K, V] {
+  def batcher: Batcher
+}
+case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
 sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
@@ -101,7 +101,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
       if (xs.isEmpty) suffix else FM_CONSTANT + suffix
 
     outerProducer match {
-      case Summer(producer, _, _, _) => {
+      case Summer(producer, _, _) => {
         assert(path.isEmpty, "Only a single Summer is supported at this time.")
         recurse(producer)
       }
@@ -198,7 +198,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
             getOrElse(id, DEFAULT_FM_CACHE),
             getOrElse(id, DEFAULT_FM_STORM_METRICS)
-          )(summer.monoid.asInstanceOf[Monoid[Any]], summer.batcher)
+          )(summer.monoid.asInstanceOf[Monoid[Any]], summer.store.batcher)
         else
           new IntermediateFlatMapBolt(operation, metrics)
 
@@ -219,13 +219,12 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
   private def populate[K, V](
     topologyBuilder: TopologyBuilder,
     summer: Summer[Storm, K, V])(implicit config: Config) = {
-    implicit val batcher = summer.batcher
     implicit val monoid  = summer.monoid
 
     val parents = buildTopology(topologyBuilder, summer, List.empty, List.empty, END_SUFFIX, None)
     // TODO: Add wrapping case classes for memstore, etc, as in MemP.
     val supplier = summer.store match {
-      case MergeableStoreSupplier(contained) => contained
+      case MergeableStoreSupplier(contained, _) => contained
     }
 
     val idOpt = Some(SINK_ID)
@@ -268,10 +267,11 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     config
   }
 
-  def run[K, V](summer: Summer[Storm, K, V]): Unit = {
+  def run[T](summer: Producer[Storm, T]): Unit = {
     val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
-    populate(topologyBuilder, summer)
+    // TODO support topologies that don't end with a sum
+    populate(topologyBuilder, summer.asInstanceOf[Summer[Storm,Any,Any]])
     StormSubmitter.submitTopology(
       "summingbird_" + jobName,
       new Config,

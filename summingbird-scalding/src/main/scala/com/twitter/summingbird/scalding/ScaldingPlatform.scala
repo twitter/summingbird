@@ -68,7 +68,7 @@ class Scalding(jobName: String, batchID: BatchID, inargs: Array[String], runner:
     */
 
   private def buildSummer[K, V](summer: Summer[Scalding, K, V], id: Option[String]): PipeFactory[(K, V)] = {
-    val Summer(producer, store, monoid, batcher) = summer
+    val Summer(producer, store, monoid) = summer
     // The scala compiler gets confused if we don't capture this in a val:
     // [error] /Users/oscarb/workspace/summingbird/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingPlatform.scala:158: com.twitter.summingbird.scalding.ScaldingStore[K,V] does not take parameters
     val pf = { (b: BatchID, fd: FlowDef, mode: Mode) =>
@@ -94,7 +94,7 @@ class Scalding(jobName: String, batchID: BatchID, inargs: Array[String], runner:
       case Source(src, _, _) => src
       case IdentityKeyedProducer(producer) => buildFlow(producer, id)
       case NamedProducer(producer, newId)  => buildFlow(producer, id = Some(newId))
-      case summer@Summer(producer, store, monoid, batcher) => buildSummer(summer, id)
+      case summer@Summer(producer, store, monoid) => buildSummer(summer, id)
       case joiner@LeftJoinedProducer(producer, svc) => buildJoin(joiner, id)
       case OptionMappedProducer(producer, op, manifest) => buildFlow(producer, id).map { tp =>
         tp.flatMap { case (time, item) => op(item).map { (time, _) } }
@@ -115,7 +115,7 @@ class Scalding(jobName: String, batchID: BatchID, inargs: Array[String], runner:
   def baseConfig = new Configuration
 
   def config: Map[String, AnyRef] = sys.error("TODO, set up the kryo serializers")
-  def run[K, V](summer: Summer[Scalding, K, V]): Unit = {
+  def run[T](summer: Producer[Scalding, T]): Unit = {
     val pf = buildFlow(summer, None)
 
     val constructor = { (jobArgs : Args) =>

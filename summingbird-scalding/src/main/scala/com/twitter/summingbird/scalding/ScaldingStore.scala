@@ -28,6 +28,8 @@ object Commutative extends Commutativity
 
 trait ScaldingStore[K, V] {
   implicit def ordering: Ordering[K]
+  /** The batcher for this store */
+  def batcher: Batcher
 
   def writeDeltas(batchID: BatchID, delta: KeyValuePipe[K, V])(implicit flowdef: FlowDef, mode: Mode): Unit
 
