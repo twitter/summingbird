@@ -86,7 +86,7 @@ extends IntermediateStore[K, V] {
 }
 
 class BytesWritableBijection extends Bijection[BytesWritable, Array[Byte]] {
-  // Does not copy the byte array for performance. Not safe to use in general
-  override def apply(a: BytesWritable) = a.getBytes
+  // using take avoids the copy but also avoids returning back padded bytes
+  override def apply(a: BytesWritable) = a.getBytes.take(a.getLength)
   override def invert(a: Array[Byte]) = new BytesWritable(a)
 }
