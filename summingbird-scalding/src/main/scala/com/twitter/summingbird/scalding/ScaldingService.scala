@@ -24,11 +24,16 @@ trait ScaldingService[K, V] {
   implicit def ordering: Ordering[K]
   // The batcher that describes this service
   def batcher: Batcher
+  // A static, or write-once service can  potentially optimize this without writing the (K, V) stream out
+  def lookup[W](lowerIn: BatchID, upperEx: BatchID, getKeys: FlowToPipe[(K, W)]): PipeFactory[(K, (W, Option[V]))]
+}
+
+trait MaterializedService[K, V] extends ScaldingService[K, V] {
   /** Reads the key log for this batch
    * May include keys from previous batches if those keys have not been updated
    * since
    */
   def readStream(batchID: BatchID)(implicit flowdef: FlowDef, mode: Mode): KeyValuePipe[K, V]
-
-  def lookup[W](batchID: BatchID, getKeys: KeyValuePipe[K, W])(implicit flowdef: FlowDef, mode: Mode): KeyValuePipe[K, (W, Option[V])]
+  def lookup[W](lowerIn: BatchID, upperEx: BatchID, getKeys: KeyValuePipe[K, W])(implicit flowdef: FlowDef, mode: Mode): Try[KeyValuePipe[K, (W, Option[V])]] =
+    sys.error("TODO: this can be implemented as the lookup join, if you have materialized the K,V stream")
 }
