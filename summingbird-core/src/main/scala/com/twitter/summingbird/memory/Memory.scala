@@ -16,16 +16,9 @@
 
 package com.twitter.summingbird.memory
 
+import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
-import batch.Batcher
-
-trait MemoryStore[-K, V] {
-  def put(pair: (K, V)): Unit
-}
-
-trait MemoryService[-K, +V] {
-  def get(k: K): Option[V]
-}
+import collection.mutable.{ Map => MutableMap }
 
 object Memory {
   implicit def toSource[T](traversable: TraversableOnce[T])(implicit te: TimeExtractor[T], mf: Manifest[T]): Producer[Memory, T] =
@@ -34,8 +27,8 @@ object Memory {
 
 class Memory extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
-  type Store[-K, V] = MemoryStore[K, V]
-  type Service[-K, +V] = MemoryService[K, V]
+  type Store[K, V] = MutableMap[K, V]
+  type Service[-K, +V] = (K => Option[V])
 
   def toIterator[T, K, V](producer: Producer[Memory, T]): Iterator[T] = {
     producer match {
@@ -47,36 +40,19 @@ class Memory extends Platform[Memory] {
       case MergedProducer(l, r) => toIterator(l) ++ toIterator(r)
       case LeftJoinedProducer(producer, service) =>
         toIterator(producer).map { case (k, v) =>
-          (k, (v, service.get(k)))
+          (k, (v, service(k)))
         }
-      case Summer(producer, store, monoid) => toIterator(producer).map { it =>
-        store.put(it)
-        it // TODO actually sum
-      }
+      case Summer(producer, store, monoid) =>
+        toIterator(producer).map { case pair@(k, deltaV) =>
+          val newV = store.get(k)
+            .map { monoid.plus(_, deltaV) }
+            .getOrElse(deltaV)
+          store.update(k, newV)
+          pair
+        }
     }
   }
-
-  def run[T](builder: Producer[Memory, T]): Unit = {
+  def run[T](builder: Producer[Memory, T]) {
     toIterator(builder).foreach { it => it /* just go through the whole thing */ }
-  }
-}
-
-object TestJobRunner {
-  implicit val batcher = Batcher.ofHours(1)
-
-  // This is dangerous, obviously.
-  implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
-
-  def testJob[P <: Platform[P]](source: Producer[P, Int], store: P#Store[Int, Int]): Summer[P, Int, Int] =
-    source
-      .flatMap { x: Int => Some(x, x + 10) }
-      .sumByKey(store)
-
-  def runInMemory {
-    def storeFn[K, V] = new MemoryStore[K, V] {
-      def put(i: (K, V)) = println(i)
-    }
-    val mem = new Memory
-    mem.run(testJob[Memory](List(1,2,3), storeFn))
   }
 }
