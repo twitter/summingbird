@@ -18,7 +18,6 @@ package com.twitter.summingbird
 
 /** Monoid stands alone. */
 import com.twitter.algebird.Monoid
-import com.twitter.summingbird.batch.Batcher
 
 object Producer {
   def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
