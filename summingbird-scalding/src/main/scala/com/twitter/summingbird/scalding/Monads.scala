@@ -57,41 +57,50 @@ object EitherM {
 }
 
 // A Monad combinator here could be used, but it would make the code even more unreadable (for now)
-class StateWithFailure[S,F,+T](fn: S => Either[F, (S, T)]) {
+sealed trait StateWithFailure[S,F,+T] {
   def join[U](that: StateWithFailure[S,F,U], mergeErr: (F,F) => F, mergeState: (S,S) => S):
-  StateWithFailure[S,F,(T,U)] = { (requested: S) => {
-      ((run(requested), that.run(requested)) match {
+  // TODO: deep joins could blow the stack, not yet using trampoline here
+  StateWithFailure[S,F,(T,U)] = StateFn( { (requested: S) =>
+      (run(requested), that.run(requested)) match {
         case (Right((s1, r1)), Right((s2, r2))) => Right((mergeState(s1, s2), (r1, r2)))
         case (Left(err1), Left(err2)) => Left(mergeErr(err1, err2)) // Our earlier is not ready
         case (Left(err), _) => Left(err)
         case (_, Left(err)) => Left(err)
-      }) : Either[F, (S, (T, U))]
+      }
+    })
+
+  def apply(state: S): Either[F, (S, T)] = run(state)
+  def run(state: S): Either[F, (S, T)] = {
+    @annotation.tailrec
+    def loop(st: StateWithFailure[S, F, Any], stack: List[Any =>  StateWithFailure[S, F, Any]]): Any = {
+      st match {
+        case StateFn(fn) => stack match {
+          case head :: tailStack => loop(head(fn(state)), tailStack)
+          case Nil => fn(state) // recursion ends
+        }
+        case FlatMappedState(st, next) => loop(st, next :: stack)
+      }
     }
+    loop(this, Nil).asInstanceOf[Either[F, (S, T)]]
   }
-  def apply(state: S): Either[F, (S, T)] = fn(state)
-  def run(state: S): Either[F, (S, T)] = fn(state)
 
   def flatMap[U](next: T => StateWithFailure[S,F,U]): StateWithFailure[S,F,U] =
-    StateWithFailure( (requested: S) =>
-      run(requested).right.flatMap { case (available, result) =>
-        next(result).run(available)
-      }
-    )
+    FlatMappedState(this, next)
+
   def map[U](fn: (T) => U): StateWithFailure[S,F,U] =
-    StateWithFailure( (requested: S) =>
-      run(requested).right.map { case (available, result) =>
-        (available, fn(result))
-      }
-    )
+    FlatMappedState(this, { (t: T) => StateWithFailure.const(fn(t)) })
 }
 
-/**
- * If the graphs get really big we might need to trampoline:
- * http://apocalisp.wordpress.com/2011/10/26/tail-call-elimination-in-scala-monads/
- */
+final case class StateFn[S,F,T](fn: S => Either[F, (S, T)]) extends StateWithFailure[S,F,T]
+final case class FlatMappedState[S,F,T,U](start: StateWithFailure[S,F,T], fn: T => StateWithFailure[S, F, U]) extends StateWithFailure[S,F,U]
+
 object StateWithFailure {
-  def getState[S,F]: StateWithFailure[S,F,S] = { (state: S) => Right(state, state) }
-  def putState[S,F](newState: S): StateWithFailure[S,F,Unit] = { (_: S) => Right(newState, ()) }
+  def getState[S,F]: StateWithFailure[S,F,S] = StateFn({ (state: S) => Right(state, state) })
+  def putState[S,F](newState: S): StateWithFailure[S,F,Unit] = StateFn({ (_: S) => Right(newState, ()) })
+
+  def const[S,F,T](t: T): StateWithFailure[S,F,T] = StateFn({ (state: S) => Right(state, t) })
+  def lazyVal[S,F,T](t: => T): StateWithFailure[S,F,T] = StateFn({ (state: S) => Right(state, t) })
+  def failure[S,F](f: F): StateWithFailure[S,F,Nothing] = StateFn({ (state: S) => Left(f) })
 
   class ConstantStateMaker[S] {
     def apply[F, T](either: Either[F, T]): StateWithFailure[S, F, T] =
@@ -104,24 +113,23 @@ object StateWithFailure {
   def fromEither[S] = new ConstantStateMaker[S]
   class FunctionLifter[S] {
     def apply[I, F, T](fn: I => Either[F, T]): (I => StateWithFailure[S, F, T]) = { (i: I) =>
-      StateWithFailure({ (s: S) => fn(i).right.map { (s, _) } })
+      StateFn({ (s: S) => fn(i).right.map { (s, _) } })
     }
   }
   // TODO this should move to Monad and work for any Monad
   def toKleisli[S] = new FunctionLifter[S]
 
-  implicit def apply[S, F, T](fn: S => Either[F, (S, T)]): StateWithFailure[S,F,T] = new StateWithFailure(fn)
+  implicit def apply[S, F, T](fn: S => Either[F, (S, T)]): StateWithFailure[S,F,T] = StateFn(fn)
   implicit def monad[S,F]: Monad[({type Result[T] = StateWithFailure[S, F, T]})#Result] =
     new StateFMonad[F,S]
 
   class StateFMonad[F,S] extends Monad[({type Result[T] = StateWithFailure[S, F, T]})#Result] {
     def apply[T](const: T) = { (s: S) => Right((s, const)) }
     def flatMap[T,U](earlier: StateWithFailure[S,F,T])(next: T => StateWithFailure[S,F,U]) = earlier.flatMap(next)
-    override def map[T,U](earlier: StateWithFailure[S,F,T])(fn: (T) => U) = earlier.map(fn)
   }
 }
 
-// A simple trampoline implementation which we may copy for the State monad
+// A simple trampoline implementation which we copied for the State monad
 sealed trait Trampoline[+A] {
   def map[B](fn: A => B): Trampoline[B]
   def flatMap[B](fn: A => Trampoline[B]): Trampoline[B]
@@ -151,13 +159,15 @@ final case class FlatMapped[C, A](start: Trampoline[C], fn: C => Trampoline[A]) 
 }
 
 object Trampoline {
+  val unit: Trampoline[Unit] = Done(())
   def apply[A](a: A): Trampoline[A] = Done(a)
+  def lazyVal[A](a: => A): Trampoline[A] = FlatMapped(unit, { (u:Unit) => Done(a) })
   /**
    * Use this to call to another trampoline returning function
    * you break the effect of this if you directly recursively call a Trampoline
    * returning function
    */
-  def call[A](layzee: => Trampoline[A]): Trampoline[A] = FlatMapped(Done(()), { (u:Unit) => layzee })
+  def call[A](layzee: => Trampoline[A]): Trampoline[A] = FlatMapped(unit, { (u:Unit) => layzee })
   implicit val Monad: Monad[Trampoline] = new Monad[Trampoline] {
     def apply[A](a: A) = Done(a)
     def flatMap[A, B](start: Trampoline[A])(fn: A => Trampoline[B]) = start.flatMap(fn)
