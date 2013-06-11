@@ -120,3 +120,61 @@ object StateWithFailure {
     override def map[T,U](earlier: StateWithFailure[S,F,T])(fn: (T) => U) = earlier.map(fn)
   }
 }
+
+// A simple trampoline implementation which we may copy for the State monad
+sealed trait Trampoline[+A] {
+  def map[B](fn: A => B): Trampoline[B]
+  def flatMap[B](fn: A => Trampoline[B]): Trampoline[B]
+  /**
+   * get triggers the computation which is run exactly once
+   */
+  def get: A
+}
+
+final case class Done[A](override val get: A) extends Trampoline[A] {
+  def map[B](fn: A => B) = Done(fn(get))
+  def flatMap[B](fn: A => Trampoline[B]) = FlatMapped(this, fn)
+}
+
+final case class FlatMapped[C, A](start: Trampoline[C], fn: C => Trampoline[A]) extends Trampoline[A] {
+  private val finished = new java.util.concurrent.atomic.AtomicReference[AnyRef](null)
+  def map[B](fn: A => B) = FlatMapped(this, { (a: A) => Done(fn(a)) })
+  def flatMap[B](fn: A => Trampoline[B]) = FlatMapped(this, fn)
+  def get = {
+    val res = finished.get
+    (if(res == null) {
+      val computed = Trampoline.run(this).asInstanceOf[AnyRef]
+      if (finished.compareAndSet(null, computed)) computed else finished.get
+    }
+    else res).asInstanceOf[A]
+  }
+}
+
+object Trampoline {
+  def apply[A](a: A): Trampoline[A] = Done(a)
+  /**
+   * Use this to call to another trampoline returning function
+   * you break the effect of this if you directly recursively call a Trampoline
+   * returning function
+   */
+  def call[A](layzee: => Trampoline[A]): Trampoline[A] = FlatMapped(Done(()), { (u:Unit) => layzee })
+  implicit val Monad: Monad[Trampoline] = new Monad[Trampoline] {
+    def apply[A](a: A) = Done(a)
+    def flatMap[A, B](start: Trampoline[A])(fn: A => Trampoline[B]) = start.flatMap(fn)
+  }
+  // This triggers evaluation. Will reevaluate every time. Prefer .get
+  def run[A](tramp: Trampoline[A]): A = {
+    @annotation.tailrec
+    def loop(start: Trampoline[Any], stack: List[(Any) => Trampoline[Any]]): Any = {
+      start match {
+        case Done(a) => stack match {
+          case next :: tail => loop(next(a), tail)
+          case Nil => a
+        }
+        case FlatMapped(item, fn) => loop(item, fn :: stack)
+      }
+    }
+    // Sorry for the cast, but it is tough to get the types right without a lot of wrapping
+    loop(tramp, Nil).asInstanceOf[A]
+  }
+}
