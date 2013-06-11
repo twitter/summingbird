@@ -24,4 +24,12 @@ import org.scalacheck.Arbitrary
 object Generators {
   implicit val batchIdArb: Arbitrary[BatchID] =
     Arbitrary { Arbitrary.arbitrary[Long].map { BatchID(_) } }
+
+  implicit def intervalArb[T:Arbitrary:Ordering]: Arbitrary[Interval[T]] =
+    Arbitrary {
+      for {
+        l <- Arbitrary.arbitrary[T]
+        u <- Arbitrary.arbitrary[T]
+      } yield Interval.leftClosedRightOpen(l, u)
+    }
 }
