@@ -37,8 +37,8 @@ object MonadLaws extends Properties("Monad") {
 
   property("get/swap") = forAll { (i: Int) =>
     val fn = for {
-      start <- StateWithError.getState[Int, String]
-      oldState <- StateWithError.swapState[Int, String](start * 2)
+      start <- StateWithError.getState[Int]
+      oldState <- StateWithError.swapState[Int](start * 2)
     } yield oldState
 
     fn(i) == Right((2 * i, i))
@@ -46,11 +46,42 @@ object MonadLaws extends Properties("Monad") {
 
   property("State behaves correctly") = forAll { (in: Int, head: Long, fns: List[(Int) => Either[String, (Int, Long)]]) =>
     val mons = fns.map { StateWithError(_) }
-    val comp = mons.foldLeft(StateWithError.const[Int, String, Long](head)) { (old, fn) =>
-      old.flatMap( x => fn) // just bind
+    val init = StateWithError.const[Int, Long](head) : StateWithError[Int,String,Long]
+    val comp = mons.foldLeft(init) { (old, fn) =>
+      old.flatMap { x => fn } // just bind
     }
     comp(in) == (fns.foldLeft(Right((in, head)): Either[String, (Int, Long)]) { (oldState, fn) =>
       oldState.right.flatMap { case (s, v) => fn(s) }
     })
   }
+
+  class MutableBox(var item: Int) {
+    def inc(v: Int) = { item += v }
+  }
+
+  property("Reader behaves correctly") = forAll { (initialEnv: Int, fns: List[(Int) => Int]) =>
+    // Set up the mutable variable to feed to the readers:
+    val m1 = new MutableBox(initialEnv)
+    val m2 = new MutableBox(initialEnv)
+
+    val readers = fns.map { fn =>
+      Reader { (m: MutableBox) =>
+        val toInc = fn(m.item)
+        m.inc(toInc)
+      }
+    }
+    // Now apply them all:
+    val bigReader = readers.foldLeft(Reader.const(()) : Reader[MutableBox, Unit]) { (oldr, thisR) =>
+      oldr.flatMap { x => thisR } // just sequence them
+    }
+    // apply:
+    val result = bigReader(m1)
+
+    // This should be the same as this loop:
+    fns.foreach { fn =>
+      m2.inc(fn(m2.item))
+    }
+    m1.item == m2.item
+  }
+
 }

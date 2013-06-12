@@ -23,10 +23,10 @@ import com.twitter.algebird.Monad
  * mutable APIs (like storm or cascading), but retain the ability
  * to compose carefully.
  */
-sealed trait StateWithError[S,F,+T] {
-  def join[U](that: StateWithError[S,F,U], mergeErr: (F,F) => F, mergeState: (S,S) => S):
+sealed trait StateWithError[S,+F,+T] {
+  def join[F1 >: F, U](that: StateWithError[S,F1,U], mergeErr: (F1,F1) => F1, mergeState: (S,S) => S):
   // TODO: deep joins could blow the stack, not yet using trampoline here
-  StateWithError[S,F,(T,U)] = StateFn( { (requested: S) =>
+  StateWithError[S,F1,(T,U)] = StateFn( { (requested: S) =>
       (run(requested), that.run(requested)) match {
         case (Right((s1, r1)), Right((s2, r2))) => Right((mergeState(s1, s2), (r1, r2)))
         case (Left(err1), Left(err2)) => Left(mergeErr(err1, err2)) // Our earlier is not ready
@@ -39,7 +39,7 @@ sealed trait StateWithError[S,F,+T] {
 
   def run(state: S): Either[F, (S, T)]
 
-  def flatMap[U](next: T => StateWithError[S,F,U]): StateWithError[S,F,U] =
+  def flatMap[F1 >: F, U](next: T => StateWithError[S,F1,U]): StateWithError[S,F1,U] =
     FlatMappedState(this, next)
 
   def map[U](fn: (T) => U): StateWithError[S,F,U] =
@@ -75,12 +75,12 @@ final case class FlatMappedState[S,F,T,U](start: StateWithError[S,F,T], fn: T =>
 }
 
 object StateWithError {
-  def getState[S,F]: StateWithError[S,F,S] = StateFn({ (state: S) => Right(state, state) })
-  def putState[S,F](newState: S): StateWithError[S,F,Unit] = StateFn({ (_: S) => Right(newState, ()) })
-  def swapState[S,F](newState: S): StateWithError[S,F,S] = StateFn({ (old: S) => Right(newState, old) })
+  def getState[S]: StateWithError[S,Nothing,S] = StateFn({ (state: S) => Right(state, state) })
+  def putState[S](newState: S): StateWithError[S,Nothing,Unit] = StateFn({ (_: S) => Right(newState, ()) })
+  def swapState[S](newState: S): StateWithError[S,Nothing,S] = StateFn({ (old: S) => Right(newState, old) })
 
-  def const[S,F,T](t: T): StateWithError[S,F,T] = StateFn({ (state: S) => Right(state, t) })
-  def lazyVal[S,F,T](t: => T): StateWithError[S,F,T] = StateFn({ (state: S) => Right(state, t) })
+  def const[S,T](t: T): StateWithError[S,Nothing,T] = StateFn({ (state: S) => Right(state, t) })
+  def lazyVal[S,T](t: => T): StateWithError[S,Nothing,T] = StateFn({ (state: S) => Right(state, t) })
   def failure[S,F](f: F): StateWithError[S,F,Nothing] = StateFn({ (state: S) => Left(f) })
 
   /**
