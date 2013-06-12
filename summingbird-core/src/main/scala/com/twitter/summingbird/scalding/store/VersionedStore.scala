@@ -36,7 +36,7 @@ import scala.util.control.Exception.allCatch
 object VersionedStore {
   def apply[Key, Value](rootPath: String, versionsToKeep: Int = VersionedKeyValSource.defaultVersionsToKeep)
       (implicit injection: Injection[(Key, Value), (Array[Byte], Array[Byte])]) =
-    new VersionedStore[Key, Value](rootPath)
+    new VersionedStore[Key, Value](rootPath, versionsToKeep)
 }
 
 // TODO: it looks like when we get the mappable/directory this happens
@@ -91,7 +91,11 @@ class VersionedStore[Key, Value](rootPath: String, versionsToKeep: Int)(
   def write(env: ScaldingEnv, p: TypedPipe[(Key,Value)])
   (implicit fd: FlowDef, mode: Mode) {
     p.toPipe((0,1))
-      .write(VersionedKeyValSource(rootPath, sinkVersion=Some(getSinkVersion(env)), versionsToKeep=versionsToKeep))
+      .write(VersionedKeyValSource(rootPath,
+          sourceVersion=None,
+          sinkVersion=Some(getSinkVersion(env)),
+          maxFailures=0,
+          versionsToKeep=versionsToKeep))
   }
 
   def commit(batchID: BatchID, env: ScaldingEnv) {
