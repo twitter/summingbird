@@ -29,9 +29,11 @@ trait ScaldingService[K, V] {
 }
 
 trait MaterializedService[K, V] extends ScaldingService[K, V] {
-  /** Reads the key log for this batch
-   * May include keys from previous batches if those keys have not been updated
-   * since
+  /** Reads the key log for this batch. By key log we mean a log of time, key and value when the key was written
+   * to. This is an associative operation and sufficient to scedule the service.
+   *
+   * May include keys from previous batches, since we need to be able to look back in time to the most recent
+   * value for each key that exists.
    */
   def readStream(batchID: BatchID)(implicit flowdef: FlowDef, mode: Mode): KeyValuePipe[K, V]
   def lookup[W](lowerIn: BatchID, upperEx: BatchID, getKeys: KeyValuePipe[K, W])(implicit flowdef: FlowDef, mode: Mode): Try[KeyValuePipe[K, (W, Option[V])]] =

@@ -23,7 +23,7 @@ package object scalding {
    */
   type FlowInput = (FlowDef, Mode)
   /** This is a function that modifies a flow to return T
-   * generally T will be som ekind of TypedPipe
+   * generally T will be some kind of TypedPipe
    */
   type FlowProducer[+T] = Reader[FlowInput, T]
   /** We so commonly talk about producing TimedPipe we define this

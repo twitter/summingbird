@@ -35,6 +35,7 @@ object Scalding {
   def source[T](factory: PipeFactory[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
     Producer.source[Scalding, T](factory)
+    // TODO: remove TimeExtractor from Source, move to summingbirdbatch, it's not needed here
 }
 
 trait Executor {
@@ -103,7 +104,7 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
 
   def buildFlow[T](producer: Producer[Scalding, T], id: Option[String]): PipeFactory[T] = {
     producer match {
-      case Source(src, _, _) => src // TODO add the time of the sources
+      case Source(src, manifest, timeExtractor) => src // Time is added when we create the Source object
       case IdentityKeyedProducer(producer) => buildFlow(producer, id)
       case NamedProducer(producer, newId)  => buildFlow(producer, id = Some(newId))
       case summer@Summer(producer, store, monoid) => buildSummer(summer, id)
@@ -163,12 +164,18 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
   }
 }
 
+/** Build a scalding job that tries to run for the given interval of time. It may run for less than this interval,
+ * but if it cannot move forward at all, it will fail.
+ */
 class PipeFactoryJob[T](override val name: String, times: Interval[Time], pf: PipeFactory[T], onSuccess: Function0[Unit], args: Args) extends Job(args) {
 
   // Build the flowDef:
   pf((times, implicitly[Mode])) match {
     case Left(failures) =>
-       failures.foreach { println(_) } // TODO this should be better
+       // TODO this should be better
+       // We could compute the earliest time we could possibly run, and then return
+       // that to reschedule, for one thing. But we are smart, we can make it much better.
+       failures.foreach { println(_) }
        sys.error("Couldn't schedule: \n" + failures.mkString("\n"))
     // TODO, maybe log the upper bound of the time
     case Right(((timeSpanWeRun, mode), flowToPipe)) => flowToPipe((implicitly[FlowDef], mode))
