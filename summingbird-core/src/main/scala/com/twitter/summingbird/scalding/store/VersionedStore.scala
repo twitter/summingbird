@@ -34,8 +34,9 @@ import scala.util.control.Exception.allCatch
  */
 
 object VersionedStore {
-  def apply[Key, Value](rootPath: String)(implicit injection: Injection[(Key, Value), (Array[Byte], Array[Byte])]) =
-    new VersionedStore[Key, Value](rootPath)
+  def apply[Key, Value](rootPath: String, versionsToKeep: Int = VersionedKeyValSource.defaultVersionsToKeep)
+      (implicit injection: Injection[(Key, Value), (Array[Byte], Array[Byte])]) =
+    new VersionedStore[Key, Value](rootPath, versionsToKeep)
 }
 
 // TODO: it looks like when we get the mappable/directory this happens
@@ -44,7 +45,8 @@ object VersionedStore {
 // meta-data and open the Mappable.
 // The source parameter is pass-by-name to avoid needing the hadoop
 // Configuration object when running the storm job.
-class VersionedStore[Key, Value](rootPath: String)(implicit injection: Injection[(Key, Value), (Array[Byte], Array[Byte])])  extends BatchStore[Key, Value] {
+class VersionedStore[Key, Value](rootPath: String, versionsToKeep: Int)(
+    implicit injection: Injection[(Key, Value), (Array[Byte], Array[Byte])])  extends BatchStore[Key, Value] {
   import Dsl._
   import TDsl._
 
@@ -89,7 +91,11 @@ class VersionedStore[Key, Value](rootPath: String)(implicit injection: Injection
   def write(env: ScaldingEnv, p: TypedPipe[(Key,Value)])
   (implicit fd: FlowDef, mode: Mode) {
     p.toPipe((0,1))
-      .write(VersionedKeyValSource(rootPath, sinkVersion=Some(getSinkVersion(env))))
+      .write(VersionedKeyValSource(rootPath,
+          sourceVersion=None,
+          sinkVersion=Some(getSinkVersion(env)),
+          maxFailures=0,
+          versionsToKeep=versionsToKeep))
   }
 
   def commit(batchID: BatchID, env: ScaldingEnv) {
