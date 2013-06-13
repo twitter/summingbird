@@ -134,7 +134,9 @@ object StormLaws extends Properties("Storm") {
     cluster.submitTopology("testJob", storm.baseConfig, topo)
 
     // Wait until the topology processes all elements.
-    while (globalState(id).placed.get < (original.size * parallelism)) { }
+    while (globalState(id).placed.get < (original.size * parallelism)) {
+      Thread.sleep(10)
+    }
 
     cluster.shutdown
 
