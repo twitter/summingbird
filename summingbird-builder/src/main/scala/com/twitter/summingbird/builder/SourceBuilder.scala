@@ -47,7 +47,8 @@ class SourceBuilder[Event](
   val eventSource: EventSource[Event],
   timeOf: Event => Date,
   predOption: Option[(Event) => Boolean] = None,
-  flatMapShards: FlatMapShards = FlatMapShards(0))
+  flatMapShards: FlatMapShards = FlatMapShards(0),
+  spoutParallelism: SpoutParallelism = SpoutParallelism(5))
   (implicit eventMf: Manifest[Event], eventCodec: Injection[Event, Array[Byte]])
     extends Serializable {
   import Constants._
@@ -59,7 +60,7 @@ class SourceBuilder[Event](
       predOption.map { old => { (e: Event) => old(e) && newPred(e) } }
         .orElse(Some(newPred))
 
-    new SourceBuilder(eventSource, timeOf, newPredicate)
+    new SourceBuilder(eventSource, timeOf, newPredicate, flatMapShards, spoutParallelism)
   }
 
   def map[Key: Manifest, Val: Manifest](fn: (Event) => (Key,Val)) =
@@ -93,15 +94,13 @@ class SourceBuilder[Event](
       *
       * TODO: Would it make more sense to assign a BatchID here?
       */
-    val filteredSpout = scalaSpout
-      .getSpout { scheme =>
-        predOption
-          .map { scheme filter _ }
-          .getOrElse { scheme }
-          .map { e => (e, timeOf(e)) }
-      }
+    val filteredSpout =
+      predOption.map(scalaSpout.filter(_))
+        .getOrElse(scalaSpout)
+        .map { e => (e, timeOf(e)) }
+        .getSpout
 
-    tb.setSpout(spoutName, filteredSpout, scalaSpout.parallelism)
+    tb.setSpout(spoutName, filteredSpout, spoutParallelism.parHint)
     spoutName
   }
 
@@ -138,5 +137,10 @@ class SourceBuilder[Event](
   // Set the number of reducers used to shard out the EventSource
   // flatmapper in the offline flatmap step.
   def set(fms: FlatMapShards): SourceBuilder[Event] =
-    new SourceBuilder(eventSource, timeOf, predOption, fms)
+    new SourceBuilder(eventSource, timeOf, predOption, fms, spoutParallelism)
+
+  // Set the number of reducers used to shard out the EventSource
+  // flatmapper in the offline flatmap step.
+  def set(spoutPar: SpoutParallelism): SourceBuilder[Event] =
+    new SourceBuilder(eventSource, timeOf, predOption, flatMapShards, spoutPar)
 }
