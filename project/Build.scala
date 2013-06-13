@@ -161,12 +161,12 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "chill" % chillVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
-      "com.twitter" %% "tormenta" % "0.4.0",
+      "com.twitter" %% "tormenta-core" % "0.5.0-SNAPSHOT",
       "com.twitter" % "util-core" % utilVersion,
       "storm" % "storm" % "0.9.0-wip15"
     )
   ).dependsOn(
-    summingbirdCore,
+    summingbirdCore % "test->test;compile->compile",
     summingbirdBatch,
     summingbirdKryo
   )

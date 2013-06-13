@@ -16,6 +16,10 @@
 
 package com.twitter.summingbird.storm
 
+import backtype.storm.LocalCluster
+import backtype.storm.Testing
+import backtype.storm.testing.CompleteTopologyParam
+import backtype.storm.testing.MockedSources
 import backtype.storm.tuple.Fields
 import backtype.storm.{Config, StormSubmitter}
 import backtype.storm.generated.StormTopology
@@ -30,12 +34,13 @@ import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.builder.{FlatMapOption, FlatMapParallelism, IncludeSuccessHandler, SinkOption, SinkParallelism}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
-import com.twitter.tormenta.spout.ScalaSpout
+import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird._
 
 sealed trait StormStore[-K, V] {
   def batcher: Batcher
 }
+
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
 sealed trait StormService[-K, +V]
@@ -44,7 +49,10 @@ case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K,
 object Storm {
   val SINK_ID = "sinkId"
 
-  def source[T](spout: ScalaSpout[T])
+  def apply(jobName: String, options: Map[String, StormOptions] = Map.empty): Storm =
+    new Storm(jobName, options)
+
+  def source[T](spout: Spout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
     Producer.source[Storm, T](spout)
 }
@@ -52,7 +60,7 @@ object Storm {
 class Storm(jobName: String, options: Map[String, StormOptions]) extends Platform[Storm] {
   import Storm.SINK_ID
 
-  type Source[T] = ScalaSpout[T]
+  type Source[+T] = Spout[T]
   type Store[-K, V] = StormStore[K, V]
   type Service[-K, +V] = StormService[K, V]
 
@@ -109,15 +117,17 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
       case NamedProducer(producer, newId)  => recurse(producer, id = Some(newId))
       case Source(spout, manifest, timeOf) => {
         val spoutName = "spout-" + suffixOf(toSchedule, suffix)
-        val stormSpout = spout.getSpout { scheme =>
-          scheme.map { t => (timeOf(t), t) }
-        }
-        topoBuilder.setSpout(spoutName, stormSpout, spout.parallelism)
+        val stormSpout = spout.map { t => (timeOf(t), t) }.getSpout
+        val parallelism = getOrElse(id, DEFAULT_SPOUT_PARALLELISM).parHint
+        topoBuilder.setSpout(spoutName, stormSpout, parallelism)
         val parents = List(spoutName)
 
         // The current planner requires a layer of flatMapBolts, even
         // if calling sumByKey directly on a source.
-        val operations = if (toSchedule.isEmpty) List(Right(FlatMapOperation.identity)) else toSchedule
+        val operations =
+          if (toSchedule.isEmpty)
+            List(Right(FlatMapOperation.identity))
+          else toSchedule
 
         // Attach a FlatMapBolt after this source.
         scheduleFlatMapper(topoBuilder, parents, path, suffix, id, operations)
@@ -267,15 +277,18 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     config
   }
 
-  def run[T](summer: Producer[Storm, T]): Unit = {
+  def buildTopology[T](summer: Producer[Storm, T]): StormTopology = {
     val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
+
     // TODO support topologies that don't end with a sum
     populate(topologyBuilder, summer.asInstanceOf[Summer[Storm,Any,Any]])
-    StormSubmitter.submitTopology(
-      "summingbird_" + jobName,
-      new Config,
-      topologyBuilder.createTopology
-    )
+    topologyBuilder.createTopology
+  }
+
+  def run[T](summer: Producer[Storm, T]): Unit = {
+    val topologyName = "summingbird_" + jobName
+    val topology = buildTopology(summer)
+    StormSubmitter.submitTopology(topologyName, baseConfig, topology)
   }
 }
