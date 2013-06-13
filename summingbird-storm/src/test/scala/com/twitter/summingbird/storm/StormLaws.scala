@@ -26,6 +26,7 @@ import com.twitter.tormenta.spout.TraversableSpout
 import com.twitter.util.Future
 import java.util.{Collections, HashMap, Map => JMap, UUID}
 import java.util.concurrent.atomic.AtomicInteger
+import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
 import scala.collection.JavaConverters._
@@ -35,6 +36,9 @@ import scala.collection.mutable.{ArrayBuffer, HashMap => MutableHashMap, Map => 
   * Tests for Summingbird's Storm planner.
   */
 
+/**
+  * State required to perform a single Storm test run.
+  */
 case class TestState[T, K, V](
   store: JMap[(K, BatchID), Option[V]] = Collections.synchronizedMap(new HashMap[(K, BatchID), Option[V]]()),
   used: ArrayBuffer[T] = new ArrayBuffer[T] with SynchronizedBuffer[T],
@@ -59,15 +63,20 @@ object StormLaws extends Properties("Storm") {
     }
   }
 
-  // This is dangerous, obviously. The Memory platform graphs tested
-  // here don't perform any batching, so the actual time extraction
-  // isn't needed.
+  // This is dangerous, obviously. The Storm platform graphs tested
+  // here use the UnitBatcher, so the actual time extraction isn't
+  // needed.
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
 
   def createGlobalState[T, K, V] =
     new MutableHashMap[String, TestState[T, K, V]] with SynchronizedMap[String, TestState[T, K, V]]
 
-  def wrap[T](supplier: => TraversableOnce[T])(onNext: T => Unit): Iterator[T] =
+  /**
+    * Returns a serializable iterator that wraps the supplied
+    * TraversableOnce[T]. Every time "next" is accessed, the supplied
+    * side-effect onNext is called with the item to be returned.
+    */
+  def toIterator[T](supplier: => TraversableOnce[T])(onNext: T => Unit): Iterator[T] =
     new Iterator[T] with java.io.Serializable {
       lazy val iterator = supplier.toIterator
       override def hasNext = iterator.hasNext
@@ -80,9 +89,15 @@ object StormLaws extends Properties("Storm") {
 
   import com.twitter.summingbird.Constants.DEFAULT_SPOUT_PARALLELISM
 
+  /**
+    * Global state shared by all tests.
+    */
   val globalState = createGlobalState[Int, Int, Int]
-  val storm = Storm("scalaCheckJob")
 
+  /**
+    * Returns a MergeableStore that routes get, put and merge calls
+    * through to the backing store in the proper globalState entry.
+    */
   def testingStore(id: String)(onMerge: () => Unit) =
     new MergeableStore[(Int, BatchID), Int] with java.io.Serializable {
       val monoid = implicitly[Monoid[Int]]
@@ -107,20 +122,25 @@ object StormLaws extends Properties("Storm") {
       }
     }
 
+  /**
+    * The function tested below. We can't generate a function with
+    * ScalaCheck, as we need to know the number of tuples that the
+    * flatMap will produce.
+    */
   val testFn = { i: Int => List((i -> i)) }
 
-  def cycle[T](seq: Seq[T]): Stream[T] =
-    seq match {
-      case Nil => Stream.empty
-      case other => Stream.from(0).flatten(_ => seq)
-    }
+  val storm = Storm("scalaCheckJob")
 
-  def runOnce(original: List[Int]): (Stream[Int], Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
+  /**
+    * Perform a single run of TestGraphs.singleStepJob using the
+    * supplied list of integers and the testFn defined above.
+    */
+  def runOnce(original: List[Int]): (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
     val id = UUID.randomUUID.toString
     globalState += (id -> TestState())
 
     val cluster = new LocalCluster()
-    val items = wrap(original)(globalState(id).used += _)
+    val items = toIterator(original)(globalState(id).used += _)
 
     val job = TestGraphs.singleStepJob[Storm, Int, Int, Int](
       Storm.source(new TraversableSpout(items)),
@@ -137,20 +157,15 @@ object StormLaws extends Properties("Storm") {
     while (globalState(id).placed.get < (original.size * parallelism)) {
       Thread.sleep(10)
     }
-
     cluster.shutdown
-
-    val totalElems = parallelism * original.size
-    val replicatedInput = cycle(original).take(totalElems)
-
-    (replicatedInput, testFn, globalState(id))
+    (testFn, globalState(id))
   }
 
   property("StormPlatform matches Scala for single step jobs") =
     forAll { original: List[Int] =>
-      val (input, fn, returnedState) = runOnce(original)
+      val (fn, returnedState) = runOnce(original)
       Equiv[Map[Int, Int]].equiv(
-        TestGraphs.singleStepInScala(input)(fn),
+        TestGraphs.singleStepInScala(returnedState.used.toList)(fn),
         returnedState.store.asScala.toMap.collect { case ((k, batchID), Some(v)) => (k, v) }
       )
     }

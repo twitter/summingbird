@@ -101,6 +101,7 @@ object SummingbirdBuild extends Build {
   val storehausVersion = "0.4.0"
   val utilVersion = "6.3.0"
   val chillVersion = "0.2.3"
+  val tormentaVersion = "0.5.0"
 
   lazy val summingbirdBatch = Project(
     id = "summingbird-batch",
@@ -161,7 +162,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "chill" % chillVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
-      "com.twitter" %% "tormenta-core" % "0.5.0-SNAPSHOT",
+      "com.twitter" %% "tormenta-core" % tormentaVersion,
       "com.twitter" % "util-core" % utilVersion,
       "storm" % "storm" % "0.9.0-wip15"
     )
