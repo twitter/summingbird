@@ -22,7 +22,7 @@ import com.twitter.storehaus.JMapStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
-import com.twitter.tormenta.spout.TraversableSpout
+import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
 import java.util.{Collections, HashMap, Map => JMap, UUID}
 import java.util.concurrent.atomic.AtomicInteger
@@ -143,7 +143,7 @@ object StormLaws extends Properties("Storm") {
     val items = toIterator(original)(globalState(id).used += _)
 
     val job = TestGraphs.singleStepJob[Storm, Int, Int, Int](
-      Storm.source(new TraversableSpout(items)),
+      Storm.source(Spout.fromTraversable(items)),
       MergeableStoreSupplier(() => testingStore(id)(() => globalState(id).placed.incrementAndGet), Batcher.unit)
     )(testFn)
 
