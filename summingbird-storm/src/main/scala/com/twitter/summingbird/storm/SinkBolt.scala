@@ -64,7 +64,7 @@ class SinkBolt[Key, Value: Monoid](
 
   // See MaxWaitingFutures for a todo around removing this.
   lazy val cacheCount = cacheSize.size
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), Value]](cacheCount.getOrElse(1))
+  lazy val buffer = SummingQueue[Map[(Key, BatchID), Value]](cacheCount.getOrElse(0))
   lazy val futureQueue = FutureQueue(Future.Unit, maxWaitingFutures.get)
 
   val exceptionHandlerBox = MeatLocker(exceptionHandler)

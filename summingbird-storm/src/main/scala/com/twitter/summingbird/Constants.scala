@@ -32,6 +32,7 @@ object Constants {
   val GROUP_BY_SUM = "groupBySum"
   val RPC_RETURN = "rpcReturn"
 
+  val DEFAULT_SPOUT_PARALLELISM = SpoutParallelism(5)
   val DEFAULT_FM_PARALLELISM = FlatMapParallelism(5)
   val DEFAULT_FM_STORM_METRICS = FlatMapStormMetrics(None)
   val DEFAULT_FM_CACHE = CacheSize(0)

@@ -28,6 +28,8 @@ import com.twitter.summingbird.storm.StormMetric
 
 sealed trait FlatMapOption extends java.io.Serializable
 
+case class SpoutParallelism(parHint: Int) extends FlatMapOption
+
 case class FlatMapParallelism(parHint: Int) extends FlatMapOption
 
 // This stupidity is necessary because val parameters can't be
