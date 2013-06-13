@@ -23,7 +23,7 @@ import com.twitter.chill.InjectionPair
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird._
 import com.twitter.summingbird.monad.StateWithError
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
+import com.twitter.summingbird.batch._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
@@ -58,13 +58,6 @@ class TestRunner extends Executor {
   def run(config: Map[String, AnyRef], inargs: Array[String], con: (Args) => Job) { }
 }
 
-object PipeBatcher {
-  // Return the batches completely covered by this pipe
-  // as a subset of the given time interval
-  // or fail if we cannot return at least one
-  def asBatchRange(batcher: Batcher): PlannerOutput[(BatchID, BatchID)] = sys.error("TODO")
-}
-
 class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String], runner: Executor) extends Platform[Scalding] {
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
@@ -85,7 +78,7 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
       // First see what range our input can supply:
       input <- buildFlow(producer, id)
       // Now batch that range into complete batches
-      batchInterval <- PipeBatcher.asBatchRange(store.batcher)
+      batchInterval <- TimeSpanBatcher.asBatchRange(store.batcher)
       // TODO: plumb the options through, don't just put -1 and NonCommutative
       result <- store.merge(batchInterval._1, batchInterval._2, input, monoid, NonCommutative, -1)
     } yield result
@@ -97,7 +90,7 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
     // Work with the StateWithError monad
     for {
       input <- buildFlow(left, id)
-      batchInterval <- PipeBatcher.asBatchRange(service.batcher)
+      batchInterval <- TimeSpanBatcher.asBatchRange(service.batcher)
       result <- service.lookup(batchInterval._1, batchInterval._2, input)
     } yield result
   }

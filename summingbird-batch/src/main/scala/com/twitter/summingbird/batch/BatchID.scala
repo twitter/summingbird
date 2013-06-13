@@ -47,6 +47,9 @@ object BatchID {
   def range(start: BatchID, end: BatchID): Iterator[BatchID] =
     iterate(start)(_.next).takeWhile(_ <= end)
 
+  val Max = BatchID(Long.MaxValue)
+  val Min = BatchID(Long.MinValue)
+
   implicit val monoid: Monoid[BatchID] = new Monoid[BatchID] {
     override val zero = BatchID(Long.MinValue)
     override def plus(l: BatchID, r: BatchID) = if (l >= r) l else r

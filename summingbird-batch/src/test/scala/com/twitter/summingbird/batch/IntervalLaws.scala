@@ -27,8 +27,12 @@ object IntervalLaws extends Properties("Interval") {
 
   property("[batch, batch.next) contains itself") =
     forAll { batch: BatchID => Interval.leftClosedRightOpen(batch, batch.next).contains(batch) }
+
   property("[batch, batch.next) does not contain next") =
     forAll { batch: BatchID => ! Interval.leftClosedRightOpen(batch, batch.next).contains(batch.next) }
+
+  property("[x, x) is empty") =
+    forAll { x : Int => Interval.leftClosedRightOpen(x, x) == Empty[Int]() }
 
   property("If an intersection contains, both of the intervals contain") =
     forAll { (item: Long, i1: Interval[Long], i2: Interval[Long]) =>
