@@ -17,12 +17,11 @@
 package com.twitter.summingbird.storm
 
 import backtype.storm.LocalCluster
-import com.twitter.algebird.MapAlgebra
-import com.twitter.algebird.Monoid
+import com.twitter.algebird.{MapAlgebra, Monoid}
 import com.twitter.storehaus.JMapStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.tormenta.spout.TraversableSpout
 import com.twitter.util.Future
 import java.util.{Collections, HashMap, Map => JMap, UUID}
@@ -30,9 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
 import scala.collection.JavaConverters._
-import scala.collection.mutable.{Map => MutableMap, HashMap => MutableHashMap, SynchronizedBuffer, SynchronizedMap}
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.JavaConverters._
+import scala.collection.mutable.{ArrayBuffer, HashMap => MutableHashMap, Map => MutableMap, SynchronizedBuffer, SynchronizedMap}
 
 /**
   * Tests for Summingbird's Storm planner.
