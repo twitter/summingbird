@@ -97,8 +97,6 @@ class SinkBolt[Key, Value: Monoid](
   override def execute(tuple: Tuple) {
     // See MaxWaitingFutures for a todo around simplifying this.
     buffer(Map(unpack(tuple))).foreach { pairs =>
-      println("ADDING MY SHIT!" + pairs)
-      pairs.foreach { case (k, v) => println("STOREV: " + k + store.get(k).get) }
       val futures = pairs.map { pair =>
         val mergeFuture = store.merge(pair)
           .handle(exceptionHandlerBox.get.handlerFn)
