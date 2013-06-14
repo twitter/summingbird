@@ -23,7 +23,7 @@ import com.twitter.scalding.Mode
 import com.twitter.scalding.TypedPipe
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
 import com.twitter.summingbird.scalding.ScaldingEnv
-import com.twitter.tormenta.spout.ScalaSpout
+import com.twitter.tormenta.spout.Spout
 
 import java.util.Date
 
@@ -55,5 +55,5 @@ trait OfflineSource[Event] extends Serializable {
   def scaldingSource(batcher: Batcher, lowerb: BatchID, env: ScaldingEnv)(timeOf: Event => Date)
     (implicit flow: FlowDef, mode: Mode): TypedPipe[Event]
 
-  def ++(spout: ScalaSpout[Event])(implicit mf: Manifest[Event]) = EventSource(this, spout)
+  def ++(spout: Spout[Event])(implicit mf: Manifest[Event]) = EventSource(this, spout)
 }
