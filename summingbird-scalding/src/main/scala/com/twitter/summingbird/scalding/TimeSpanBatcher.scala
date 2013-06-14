@@ -20,38 +20,33 @@ import com.twitter.summingbird.monad.StateWithError
 import com.twitter.summingbird.batch._
 
 object TimeSpanBatcher {
-  // Return the batches completely covered by this pipe
-  // as a subset of the given time interval
-  // or fail if we cannot return at least one
-  def asBatchRange(batcher: Batcher): PlannerOutput[(BatchID, BatchID)] =
-    StateWithError[FactoryInput, List[FailureReason], (BatchID, BatchID)]({ in: FactoryInput =>
-      def truncateDown(ts: Time): (Time, BatchID) = {
+  /**
+   * Return the Interval of BatchIDs such that all the input times are
+   * covered by these batches. DOES NOT change the Interval[Time]
+   * Empty input is considered a failure
+   */
+  def coveringSet(batcher: Batcher): PlannerOutput[Interval[BatchID]] =
+    StateWithError[FactoryInput, List[FailureReason], Interval[BatchID]]({ in: FactoryInput =>
+      def truncateDown(ts: Time): BatchID =
+        batcher.batchOf(new java.util.Date(ts))
+
+      def truncateUp(ts: Time): BatchID = {
         val batch = batcher.batchOf(new java.util.Date(ts))
-        (batcher.earliestTimeOf(batch).getTime, batch)
-      }
-      def truncateUp(ts: Time): (Time, BatchID) = {
-        val batch = batcher.batchOf(new java.util.Date(ts))
-        val up = if(batcher.earliestTimeOf(batch).getTime != ts) batch.next else batch
-        (batcher.earliestTimeOf(up).getTime, up)
+        if(batcher.earliestTimeOf(batch).getTime != ts) batch.next else batch
       }
 
       val (timeSpan, mode) = in
       timeSpan match {
         case Empty() => Left(List("Empty timespan into Batcher:" + batcher.toString))
-        case Universe() => Right(((Universe(), mode), (BatchID.Min, BatchID.Max)))
+        case Universe() => Right((in, Universe()))
         case ExclusiveUpper(upper) =>
-          val (upperTime, upperBatch) = truncateDown(upper)
-          Right(((ExclusiveUpper(upperTime), mode), (BatchID.Min, upperBatch)))
+          Right((in, ExclusiveUpper(truncateUp(upper))))
         case InclusiveLower(lower) =>
-          val (lowerTime, lowerBatch) = truncateUp(lower)
-          Right(((InclusiveLower(lowerTime), mode), (lowerBatch, BatchID.Max)))
+          Right((in, InclusiveLower(truncateDown(lower))))
         case interval@Intersection(InclusiveLower(l), ExclusiveUpper(u)) =>
-          val (upperTime, upperBatch) = truncateDown(u)
-          val (lowerTime, lowerBatch) = truncateUp(l)
-          Interval.leftClosedRightOpen(lowerTime, upperTime) match {
-            case Empty() => Left(List("Timespan is not a full batch: " + interval.toString + " batcher:"  + batcher.toString))
-            case result => Right(((result, mode), (lowerBatch, upperBatch)))
-          }
+          val upperBatch = truncateUp(u)
+          val lowerBatch = truncateDown(l)
+          Right((in, Interval.leftClosedRightOpen(lowerBatch, upperBatch)))
       }
   })
 }

@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.scalding.{Mode, TypedPipe, Grouped}
 import cascading.flow.FlowDef
@@ -35,8 +35,7 @@ trait ScaldingStore[K, V] {
     *
     * Same return as lookup on a ScaldingService.
     */
-  def merge(lowerIn: BatchID, upperEx: BatchID,
-    delta: FlowToPipe[(K, V)],
+  def merge(delta: PipeFactory[(K, V)],
     sg: Semigroup[V],
     commutativity: Commutativity,
     reducers: Int): PipeFactory[(K, V)]
