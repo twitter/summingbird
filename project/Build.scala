@@ -205,4 +205,20 @@ object SummingbirdBuild extends Build {
     summingbirdStorm,
     summingbirdScalding
   )
+
+  lazy val summingbirdExample = Project(
+    id = "summingbird-example",
+    base = file("summingbird-example"),
+    settings = sharedSettings
+  ).settings(
+    name := "summingbird-example",
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "bijection-netty" % bijectionVersion,
+      "com.twitter" %% "tormenta-twitter" % tormentaVersion,
+      "com.twitter" %% "storehaus-memcache" % storehausVersion
+    )
+  ).dependsOn(
+    summingbirdCore,
+    summingbirdStorm
+  )
 }
