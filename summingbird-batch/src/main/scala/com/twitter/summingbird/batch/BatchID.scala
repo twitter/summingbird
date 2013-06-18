@@ -57,16 +57,16 @@ object BatchID {
         val (rmin, rmax, rcnt) = right
         (lmin min rmin, lmax max rmax, lcnt + rcnt)
       }
-      .map { case (min, max, cnt) =>
-        if ((min + cnt) == max) {
-          Interval.leftClosedRightOpen(min, max.next)
+      .flatMap { case (min, max, cnt) =>
+        if ((min + cnt) == (max + 1L)) {
+          Some(Interval.leftClosedRightOpen(min, max.next))
         }
         else {
           // These batches are not contiguous, not an interval
-          Empty[BatchID]()
+          None
         }
       }
-      .orElse(Some(Empty()))
+      .orElse(Some(Empty())) // there was nothing it iter
 
   /** Returns all the BatchIDs that are contained in the interval
    */
