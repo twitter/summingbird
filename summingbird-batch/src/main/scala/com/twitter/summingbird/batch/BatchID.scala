@@ -49,7 +49,7 @@ object BatchID {
       def iterator = iterate(start)(_.next).takeWhile(_ <= end)
     }
 
-  def asInterval(iter: TraversableOnce[BatchID]): Option[Interval[BatchID]] =
+  def toInterval(iter: TraversableOnce[BatchID]): Option[Interval[BatchID]] =
     iter
       .map { b => (b, b, 1L) }
       .reduceOption { (left, right) =>
@@ -70,7 +70,7 @@ object BatchID {
 
   /** Returns all the BatchIDs that are contained in the interval
    */
-  def asIterable(interval: Interval[BatchID]): Iterable[BatchID] =
+  def toIterable(interval: Interval[BatchID]): Iterable[BatchID] =
     interval match {
       case Empty() => Iterable.empty
       case Universe() => range(Min, Max)

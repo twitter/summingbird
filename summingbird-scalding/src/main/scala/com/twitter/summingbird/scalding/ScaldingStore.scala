@@ -86,7 +86,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
 
       val (timeSpan, mode) = in
       val batchInterval = batcher.cover(timeSpan.as[Interval[JDate]])
-      val coveringBatches = BatchID.asIterable(batchInterval)
+      val coveringBatches = BatchID.toIterable(batchInterval)
       val batchStreams = coveringBatches.map { bid => (bid, readStream(bid, mode)) }
 
       // This data is already on disk and will not be recomputed
@@ -121,7 +121,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
                 .right
                 .flatMap { case ((availableInput, innerm), deltaFlow2Pipe) =>
                   val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput)
-                  val batchesWeCanBuildIt = BatchID.asIterable(batchesWeCanBuild)
+                  val batchesWeCanBuildIt = BatchID.toIterable(batchesWeCanBuild)
                   // Check that deltas needed can actually be loaded going back to the first new batch
                   if (batchesWeCanBuildIt.headOption != Some(firstDeltaBatch)) {
                     Left(List("Cannot load an entire initial batch: " + firstDeltaBatch.toString
@@ -141,7 +141,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
         if (flows.isEmpty)
           Left(List("Zero batches requested, should never occur: " + timeSpan.toString))
         else {
-          val available = batchToTime(BatchID.asInterval(batches).get) && timeSpan
+          val available = batchToTime(BatchID.toInterval(batches).get) && timeSpan
           val merged = Scalding.limitTimes(available, flows.reduce(Scalding.merge(_, _)))
           Right(((available, mode), merged))
         }
