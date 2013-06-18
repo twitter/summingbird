@@ -43,9 +43,48 @@ object BatchID {
   /**
    * Returns an Iterator[BatchID] containing the range
    * `[startBatch, endBatch]` (inclusive).
+   * TODO make this return an Iterable by making the iterator
+   * as below. Not safe to pass iterators around
    */
   def range(start: BatchID, end: BatchID): Iterator[BatchID] =
     iterate(start)(_.next).takeWhile(_ <= end)
+
+  def asInterval(iter: TraversableOnce[BatchID]): Option[Interval[BatchID]] =
+    iter
+      .map { b => (b, b, 1L) }
+      .reduceOption { (left, right) =>
+        val (lmin, lmax, lcnt) = left
+        val (rmin, rmax, rcnt) = right
+        (lmin min rmin, lmax max rmax, lcnt + rcnt)
+      }
+      .map { case (min, max, cnt) =>
+        if ((min + cnt) == max) {
+          Interval.leftClosedRightOpen(min, max.next)
+        }
+        else {
+          // These batches are not contiguous, not an interval
+          Empty[BatchID]()
+        }
+      }
+      .orElse(Some(Empty()))
+
+  /** Returns all the BatchIDs that are contained in the interval
+   */
+  def asIterable(interval: Interval[BatchID]): Iterable[BatchID] =
+    interval match {
+      case Empty() => Iterable.empty
+      case Universe() => new Iterable[BatchID] {
+        def iterator = range(Min, Max)
+      }
+      case ExclusiveUpper(upper) => new Iterable[BatchID] {
+        def iterator = range(Min, upper.prev)
+      }
+      case InclusiveLower(lower) => new Iterable[BatchID] {
+        def iterator = range(lower, Max)
+      }
+      case Intersection(InclusiveLower(l), ExclusiveUpper(u)) =>
+        new Iterable[BatchID] { def iterator = range(l, u.prev) }
+    }
 
   val Max = BatchID(Long.MaxValue)
   val Min = BatchID(Long.MinValue)
@@ -72,6 +111,7 @@ class BatchID(val id: Long) extends Ordered[BatchID] with java.io.Serializable {
   def -(cnt: Long) = new BatchID(id - cnt)
   def compare(b: BatchID) = id.compareTo(b.id)
   def max(b: BatchID) = if (this >= b) this else b
+  def min(b: BatchID) = if (this < b) this else b
   override lazy val toString = "BatchID." + id.toString
 
   override def hashCode: Int = id.hashCode

@@ -36,6 +36,12 @@ object Scalding {
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
     Producer.source[Scalding, T](factory)
     // TODO: remove TimeExtractor from Source, move to summingbirdbatch, it's not needed here
+
+  def limitTimes[T](range: Interval[Time], in: FlowToPipe[T]): FlowToPipe[T] =
+    in.map { pipe => pipe.filter { case (time, _) => range(time) } }
+
+  def merge[T](left: FlowToPipe[T], right: FlowToPipe[T]): FlowToPipe[T] =
+    for { l <- left; r <- right } yield (l ++ r)
 }
 
 trait Executor {
@@ -69,9 +75,6 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
     * - command line runner gives us the # of batches we want to run.
     * - the store needs to give us the current maximum batch.
     */
-
-  def limitTimes[T](range: Interval[Time], in: TimedPipe[T]): TimedPipe[T] =
-    in.filter { case (time, _) => range(time) }
 
   private def buildSummer[K, V](summer: Summer[Scalding, K, V], id: Option[String]): PipeFactory[(K, V)] = {
     val Summer(producer, store, monoid) = summer
@@ -124,20 +127,14 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
           }
         }
       case MergedProducer(l, r) => {
-        def merge[T](leftRight: (FlowToPipe[T], FlowToPipe[T])) =
-          for {
-            pipe1 <- leftRight._1
-            pipe2 <- leftRight._2
-          } yield pipe1 ++ pipe2
-
         for {
           // concatenate errors (++) and find the intersection (&&) of times
           leftAndRight <- buildFlow(l, id).join(buildFlow(r, id),
             { (lerr: List[FailureReason], rerr: List[FailureReason]) => lerr ++ rerr },
             { case ((tsl, leftFM), (tsr, _)) => (tsl && tsr, leftFM) })
-          merged = merge(leftAndRight)
+          merged = Scalding.merge(leftAndRight._1, leftAndRight._2)
           maxAvailable <- StateWithError.getState // read the latest state, which is the time
-        } yield merged.map { limitTimes(maxAvailable._1, _) }
+        } yield Scalding.limitTimes(maxAvailable._1, merged)
       }
     }
   }

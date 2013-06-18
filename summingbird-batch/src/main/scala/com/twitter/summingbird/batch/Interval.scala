@@ -26,16 +26,25 @@ sealed trait Interval[T] extends (T => Boolean) with java.io.Serializable {
   def intersect(that: Interval[T]): Interval[T]
   def apply(t: T) = contains(t)
   def &&(that: Interval[T]) = intersect(that)
+
+  /** Map the Interval with a non-decreasing function.
+   * If you use a non-monotonic function (like x^2)
+   * then the result is meaningless.
+   * TODO: It might be good to have types for these properties in algebird.
+   */
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U]
 }
 
 case class Universe[T]() extends Interval[T] {
   def contains(t: T): Boolean = true
   def intersect(that: Interval[T]): Interval[T] = that
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U] = Universe()
 }
 
 case class Empty[T]() extends Interval[T] {
   def contains(t: T): Boolean = false
   def intersect(that: Interval[T]): Interval[T] = this
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U] = Empty()
 }
 
 object Interval extends java.io.Serializable {
@@ -58,6 +67,7 @@ case class InclusiveLower[T](lower: T)(implicit val ordering: Ordering[T]) exten
     case lb@InclusiveLower(thatlb) => if (lb.ordering.gt(lower, thatlb)) this else that
     case Intersection(thatL, thatU) => (this && thatL) && thatU
   }
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U] = InclusiveLower(fn(lower))
 }
 case class ExclusiveUpper[T](upper: T)(implicit val ordering: Ordering[T]) extends Interval[T] with Upper[T] {
   def contains(t: T): Boolean = ordering.lt(t, upper)
@@ -70,6 +80,7 @@ case class ExclusiveUpper[T](upper: T)(implicit val ordering: Ordering[T]) exten
       if (ub.ordering.lt(upper, thatub)) this else that
     case Intersection(thatL, thatU) => thatL && (this && thatU)
   }
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U] = ExclusiveUpper(fn(upper))
 }
 
 case class Intersection[T](lower: Lower[T], upper: Upper[T]) extends Interval[T] {
@@ -78,4 +89,6 @@ case class Intersection[T](lower: Lower[T], upper: Upper[T]) extends Interval[T]
     case Intersection(thatL, thatU) => (lower && thatL) && (upper && thatU)
     case _ => (lower && that) && (upper && that)
   }
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U] =
+    lower.mapNonDecreasing(fn) && upper.mapNonDecreasing(fn)
 }

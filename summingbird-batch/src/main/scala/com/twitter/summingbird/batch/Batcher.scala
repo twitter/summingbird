@@ -72,11 +72,48 @@ trait Batcher extends Serializable {
   /** Returns the batch into which the supplied Date is bucketed. */
   def batchOf(t: Date): BatchID
 
+  private def truncateDown(ts: Date): BatchID = batchOf(ts)
+
+  private def truncateUp(ts: Date): BatchID = {
+    val batch = batchOf(ts)
+    if(earliestTimeOf(batch) != ts) batch.next else batch
+  }
+
+  /** Return the largest interval of batches completely covered by
+   * the interval of time.
+   */
+  def batchesCoveredBy(interval: Interval[Date]): Interval[BatchID] =
+    interval match {
+      case Empty() => Empty()
+      case Universe() => Universe()
+      case ExclusiveUpper(upper) => ExclusiveUpper(truncateDown(upper))
+      case InclusiveLower(lower) => InclusiveLower(truncateUp(lower))
+      case Intersection(InclusiveLower(l), ExclusiveUpper(u)) =>
+        val upperBatch = truncateDown(u)
+        val lowerBatch = truncateUp(l)
+        Interval.leftClosedRightOpen(lowerBatch, upperBatch)
+    }
+
   /** Returns the (inclusive) earliest time of the supplied batch. */
   def earliestTimeOf(batch: BatchID): Date
 
   /** Returns the current BatchID. */
   def currentBatch: BatchID = batchOf(new Date())
+
+  /** What batches are needed to cover the given interval
+   * or: for all t in interval, batchOf(t) is in the result
+   */
+  def cover(interval: Interval[Date]): Interval[BatchID] =
+    interval match {
+      case Empty() => Empty()
+      case Universe() => Universe()
+      case ExclusiveUpper(upper) => ExclusiveUpper(truncateUp(upper))
+      case InclusiveLower(lower) => InclusiveLower(truncateDown(lower))
+      case Intersection(InclusiveLower(l), ExclusiveUpper(u)) =>
+        val upperBatch = truncateUp(u)
+        val lowerBatch = truncateDown(l)
+        Interval.leftClosedRightOpen(lowerBatch, upperBatch)
+    }
 
   /**
     * Returns the sequence of BatchIDs that the supplied `other`

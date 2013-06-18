@@ -17,9 +17,15 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
+import com.twitter.summingbird.monad.{StateWithError, EitherMonad}
 import com.twitter.algebird.{Monoid, Semigroup}
+import com.twitter.bijection.{Injection, Bijection, Conversion}
 import com.twitter.scalding.{Mode, TypedPipe, Grouped}
 import cascading.flow.FlowDef
+
+import java.util.{Date => JDate}
+
+import Conversion.asMethod
 
 // TODO this functionality should be in algebird
 sealed trait Commutativity extends java.io.Serializable
@@ -27,8 +33,6 @@ object NonCommutative extends Commutativity
 object Commutative extends Commutativity
 
 trait ScaldingStore[K, V] {
-  /** The batcher for this store */
-  def batcher: Batcher
   /**
     * Accepts deltas along with their timestamps, returns triples of
     * (time, K, V(aggregated up to the time)).
@@ -39,6 +43,103 @@ trait ScaldingStore[K, V] {
     sg: Semigroup[V],
     commutativity: Commutativity,
     reducers: Int): PipeFactory[(K, V)]
+}
+
+trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
+  /** The batcher for this store */
+  def batcher: Batcher
+
+  /** If this full stream (result of a merge) for this batch is already materialized, return it
+   */
+  def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, V)]]
+
+  /** Get the most recent last batch and the ID (strictly less than the input ID)
+   * The "Last" is the stream with only the oldest value for each key, within the batch
+   * combining the last from batchID and the deltas from batchID.next you get the stream
+   * for batchID.next
+   */
+  def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowToPipe[(K, V)])]
+
+  /** we are guaranteed to have sufficient input and deltas to cover these batches
+   */
+  private def mergeBatched(input: FlowToPipe[(K,V)], batches: Iterable[BatchID],
+    deltas: FlowToPipe[(K,V)], sg: Semigroup[V],
+    commutativity: Commutativity, reducers: Int): List[(BatchID, FlowToPipe[(K,V)])] = {
+    sys.error("TODO")
+  }
+
+  final override def merge(delta: PipeFactory[(K, V)],
+    sg: Semigroup[V],
+    commutativity: Commutativity,
+    reducers: Int): PipeFactory[(K, V)] = StateWithError({ in: FactoryInput =>
+
+      implicit val t2dBij = Bijection.build { bint: Interval[Time] =>
+        bint.mapNonDecreasing { new JDate(_) } } { bint: Interval[JDate] =>
+        bint.mapNonDecreasing { _.getTime }
+      }
+
+      val (timeSpan, mode) = in
+      val batchInterval = batcher.cover(timeSpan.as[Interval[JDate]])
+      val coveringBatches = BatchID.asIterable(batchInterval)
+      val batchStreams = coveringBatches.map { bid => (bid, readStream(bid, mode)) }
+
+      val alreadyPresent = batchStreams
+        .takeWhile { _._2.isDefined }
+        .collect { case (batch, Some(flow)) => (batch, flow) }
+
+      val batchesToBuild = batchStreams
+          .dropWhile { _._2.isDefined }
+          .map { _._1 }
+          .toList match {
+            case Nil => None
+            case list => Some((list.min, list.max))
+          }
+
+      def batchToTime(bint: Interval[BatchID]): Interval[Time] =
+        bint.mapNonDecreasing { batcher.earliestTimeOf(_).getTime }
+
+      val maybeBuilt: Option[Try[List[(BatchID, FlowToPipe[(K,V)])]]] = batchesToBuild
+        .map { case (firstNewBatch, lastNewBatch) =>
+          readLast(firstNewBatch, mode)
+            .right
+            .flatMap { case (actualLast, input) =>
+              val firstDeltaBatch = actualLast.next
+              // Compute the times we need to read of the deltas
+              val deltaBatches = Interval.leftClosedRightOpen(firstDeltaBatch, lastNewBatch.next)
+              val deltaTimes = batchToTime(deltaBatches)
+              // Read the delta stream for the needed times
+              delta((deltaTimes, mode))
+                .right
+                .flatMap { case ((availableInput, innerm), deltaFlow2Pipe) =>
+                  val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput)
+                  val batchesWeCanBuildIt = BatchID.asIterable(batchesWeCanBuild)
+                  if (batchesWeCanBuildIt.headOption != Some(firstDeltaBatch)) {
+                    Left(List("Cannot load an entire batch: " + firstDeltaBatch.toString
+                      + " of deltas at: " + this.toString))
+                  }
+                  else
+                    Right(mergeBatched(input, batchesWeCanBuildIt, deltaFlow2Pipe, sg, commutativity, reducers))
+                }
+            }
+        }
+
+      def mergePresentAndBuilt(optBuilt: List[(BatchID, FlowToPipe[(K,V)])]): Try[((Interval[Time], Mode), FlowToPipe[(K,V)])] = {
+        val (batches, flows) = (alreadyPresent ++ optBuilt).unzip
+        if (flows.isEmpty)
+          Left(List("Zero batches requested, should never occur: " + timeSpan.toString))
+        else {
+          val available = batchToTime(BatchID.asInterval(batches).get) && timeSpan
+          val merged = Scalding.limitTimes(available, flows.reduce(Scalding.merge(_, _)))
+          Right(((available, mode), merged))
+        }
+      }
+
+      maybeBuilt match {
+        case None => mergePresentAndBuilt(Nil)
+        case Some(Left(err)) => if (alreadyPresent.isEmpty) Left(err) else mergePresentAndBuilt(Nil)
+        case Some(Right(built)) => mergePresentAndBuilt(built)
+      }
+    })
 }
 
 //trait MaterializedScaldingStore[K, V] extends ScaldingStore[K, V] {
