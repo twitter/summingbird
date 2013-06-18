@@ -23,7 +23,7 @@ import com.twitter.chill.InjectionPair
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird._
 import com.twitter.summingbird.monad.StateWithError
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
+import com.twitter.summingbird.batch._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
@@ -36,6 +36,12 @@ object Scalding {
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
     Producer.source[Scalding, T](factory)
     // TODO: remove TimeExtractor from Source, move to summingbirdbatch, it's not needed here
+
+  def limitTimes[T](range: Interval[Time], in: FlowToPipe[T]): FlowToPipe[T] =
+    in.map { pipe => pipe.filter { case (time, _) => range(time) } }
+
+  def merge[T](left: FlowToPipe[T], right: FlowToPipe[T]): FlowToPipe[T] =
+    for { l <- left; r <- right } yield (l ++ r)
 }
 
 trait Executor {
@@ -58,13 +64,6 @@ class TestRunner extends Executor {
   def run(config: Map[String, AnyRef], inargs: Array[String], con: (Args) => Job) { }
 }
 
-object PipeBatcher {
-  // Return the batches completely covered by this pipe
-  // as a subset of the given time interval
-  // or fail if we cannot return at least one
-  def asBatchRange(batcher: Batcher): PlannerOutput[(BatchID, BatchID)] = sys.error("TODO")
-}
-
 class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String], runner: Executor) extends Platform[Scalding] {
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
@@ -79,29 +78,30 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
 
   private def buildSummer[K, V](summer: Summer[Scalding, K, V], id: Option[String]): PipeFactory[(K, V)] = {
     val Summer(producer, store, monoid) = summer
-
-    // Work with the StateWithError monad
-    for {
-      // First see what range our input can supply:
-      input <- buildFlow(producer, id)
-      // Now batch that range into complete batches
-      batchInterval <- PipeBatcher.asBatchRange(store.batcher)
-      // TODO: plumb the options through, don't just put -1 and NonCommutative
-      result <- store.merge(batchInterval._1, batchInterval._2, input, monoid, NonCommutative, -1)
-    } yield result
+    /*
+     * The store may already have materialized values, so we don't need the whole
+     * input history, but to produce NEW batches, we may need some input.
+     * So, we pass the full PipeFactory to to the store so it can request only
+     * the time ranges that it needs.
+     */
+    // TODO: plumb the options through, don't just put -1 and NonCommutative
+    store.merge(buildFlow(producer, id), monoid, NonCommutative, -1)
   }
 
   private def buildJoin[K, V, JoinedV](joined: LeftJoinedProducer[Scalding, K, V, JoinedV],
     id: Option[String]): PipeFactory[(K, (V, Option[JoinedV]))] = {
     val LeftJoinedProducer(left, service) = joined
-    // Work with the StateWithError monad
-    for {
-      input <- buildFlow(left, id)
-      batchInterval <- PipeBatcher.asBatchRange(service.batcher)
-      result <- service.lookup(batchInterval._1, batchInterval._2, input)
-    } yield result
+    /**
+     * There is no point loading more from the left than the service can
+     * join with, so we pass in the left PipeFactory so that the service
+     * can compute how wuch it can actually handle and only load that much
+     */
+    service.lookup(buildFlow(left, id))
   }
 
+  /** Return a PipeFactory that can cover as much as possible of the time range requested,
+   * but the output state gives the actual, non-empty, interval that can be produced
+   */
   def buildFlow[T](producer: Producer[Scalding, T], id: Option[String]): PipeFactory[T] = {
     producer match {
       case Source(src, manifest, timeExtractor) => src // Time is added when we create the Source object
@@ -113,6 +113,7 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
         // Map in two monads here, first state then reader
         buildFlow(producer, id).map { flowP =>
           flowP.map { typedPipe =>
+            // TODO make Function1 instances outside to avoid the closure + serialization issues
             typedPipe.flatMap { case (time, item) => op(item).map { (time, _) }.toIterable }
           }
         }
@@ -121,24 +122,19 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
         buildFlow(producer, id).map { flowP =>
           flowP.map { typedPipe =>
             // TODO remove toIterable in scalding 0.9.0
+            // TODO make Function1 instances outside to avoid the closure + serialization issues
             typedPipe.flatMap { case (time, item) => op(item).toIterable.view.map { (time, _) } }
           }
         }
       case MergedProducer(l, r) => {
-        def mergeFlows[T](ts: Interval[Time], left: FlowToPipe[T], right: FlowToPipe[T]) =
-          for {
-            pipe1 <- left
-            pipe2 <- right
-            // The times of each pipe might not be the same
-          } yield ((pipe1 ++ pipe2).filter { case (time, _) => ts(time) })
-
         for {
           // concatenate errors (++) and find the intersection (&&) of times
           leftAndRight <- buildFlow(l, id).join(buildFlow(r, id),
             { (lerr: List[FailureReason], rerr: List[FailureReason]) => lerr ++ rerr },
             { case ((tsl, leftFM), (tsr, _)) => (tsl && tsr, leftFM) })
+          merged = Scalding.merge(leftAndRight._1, leftAndRight._2)
           maxAvailable <- StateWithError.getState // read the latest state, which is the time
-        } yield mergeFlows(maxAvailable._1, leftAndRight._1, leftAndRight._2)
+        } yield Scalding.limitTimes(maxAvailable._1, merged)
       }
     }
   }

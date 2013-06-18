@@ -108,7 +108,6 @@ class ClientStore[K, V](
     val (initBatch,initV) = Monoid.plus(defaultOfflineReturn(nowBatch), offlineReturn).get
     BatchID.range(initBatch, nowBatch)
       .map { batchID => (batchID, initV) }
-      .toIterable
   }
 
   protected def generateOnlineKeys[K1 <: K](ks: Seq[K1], nowBatch: BatchID)(lookup: K1 => FOpt[(BatchID, V)]): Future[Set[(K1, BatchID)]] = {

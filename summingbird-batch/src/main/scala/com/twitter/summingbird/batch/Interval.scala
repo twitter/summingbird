@@ -16,63 +16,83 @@
 
 package com.twitter.summingbird.batch
 
+import com.twitter.algebird.Monoid
+
 // TODO this is clearly more general than summingbird, and should be extended to be a ring (add union, etc...)
 
 /** Represents a single interval on a T with an Ordering
  */
-sealed trait Interval[-T] extends (T => Boolean) with java.io.Serializable {
+sealed trait Interval[T] extends (T => Boolean) with java.io.Serializable {
   def contains(t: T): Boolean
 
-  def intersect[U <: T](that: Interval[U]): Interval[U]
+  def intersect(that: Interval[T]): Interval[T]
   def apply(t: T) = contains(t)
-  def &&[U <: T](that: Interval[U]) = intersect(that)
+  def &&(that: Interval[T]) = intersect(that)
+
+  /** Map the Interval with a non-decreasing function.
+   * If you use a non-monotonic function (like x^2)
+   * then the result is meaningless.
+   * TODO: It might be good to have types for these properties in algebird.
+   */
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U]
 }
 
-case object Universe extends Interval[Any] {
-  def contains(t: Any): Boolean = true
-  def intersect[U <: Any](that: Interval[U]): Interval[U] = that
+case class Universe[T]() extends Interval[T] {
+  def contains(t: T): Boolean = true
+  def intersect(that: Interval[T]): Interval[T] = that
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U] = Universe()
 }
 
-case object Empty extends Interval[Any] {
-  def contains(t: Any): Boolean = false
-  def intersect[U <: Any](that: Interval[U]): Interval[U] = this
+case class Empty[T]() extends Interval[T] {
+  def contains(t: T): Boolean = false
+  def intersect(that: Interval[T]): Interval[T] = this
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U] = Empty()
 }
 
 object Interval extends java.io.Serializable {
+  implicit def monoid[T]: Monoid[Interval[T]] = Monoid.from[Interval[T]](Universe[T]()) { _ && _ }
+
   def leftClosedRightOpen[T:Ordering](lower: T, upper: T): Interval[T] =
     InclusiveLower(lower) && ExclusiveUpper(upper)
 }
 
 // Marker traits to keep lower on the left in Intersection
-trait Lower[-T] extends Interval[T]
-trait Upper[-T] extends Interval[T]
+sealed trait Lower[T] extends Interval[T]
+sealed trait Upper[T] extends Interval[T]
 
 // TODO ExclusiveLower, InclusiveUpper and unit tests
 case class InclusiveLower[T](lower: T)(implicit val ordering: Ordering[T]) extends Interval[T] with Lower[T] {
   def contains(t: T): Boolean = ordering.lteq(lower, t)
-  def intersect[U <: T](that: Interval[U]): Interval[U] = that match {
-    case Universe => this
-    case Empty => that
-    case ub@ExclusiveUpper(upper) => if (ub.ordering.lteq(upper, lower)) Empty else Intersection[U](this, ub)
+  def intersect(that: Interval[T]): Interval[T] = that match {
+    case Universe() => this
+    case Empty() => that
+    case ub@ExclusiveUpper(upper) =>
+      if (ub.ordering.lteq(upper, lower)) Empty() else Intersection[T](this, ub)
     case lb@InclusiveLower(thatlb) => if (lb.ordering.gt(lower, thatlb)) this else that
     case Intersection(thatL, thatU) => (this && thatL) && thatU
   }
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U] = InclusiveLower(fn(lower))
 }
 case class ExclusiveUpper[T](upper: T)(implicit val ordering: Ordering[T]) extends Interval[T] with Upper[T] {
   def contains(t: T): Boolean = ordering.lt(t, upper)
-  def intersect[U <: T](that: Interval[U]): Interval[U] = that match {
-    case Universe => this
-    case Empty => that
-    case lb@InclusiveLower(lower) => if (lb.ordering.lteq(upper, lower)) Empty else Intersection[U](lb, this)
-    case ub@ExclusiveUpper(thatub) => if (ub.ordering.lt(upper, thatub)) this else that
+  def intersect(that: Interval[T]): Interval[T] = that match {
+    case Universe() => this
+    case Empty() => that
+    case lb@InclusiveLower(lower) =>
+      if (lb.ordering.lteq(upper, lower)) Empty() else Intersection[T](lb, this)
+    case ub@ExclusiveUpper(thatub) =>
+      if (ub.ordering.lt(upper, thatub)) this else that
     case Intersection(thatL, thatU) => thatL && (this && thatU)
   }
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U] = ExclusiveUpper(fn(upper))
 }
 
 case class Intersection[T](lower: Lower[T], upper: Upper[T]) extends Interval[T] {
   def contains(t: T): Boolean = lower.contains(t) && upper.contains(t)
-  def intersect[U <: T](that: Interval[U]): Interval[U] = that match {
+  def intersect(that: Interval[T]): Interval[T] = that match {
     case Intersection(thatL, thatU) => (lower && thatL) && (upper && thatU)
     case _ => (lower && that) && (upper && that)
   }
+  def mapNonDecreasing[U:Ordering](fn: T => U): Interval[U] =
+    lower.mapNonDecreasing(fn) && upper.mapNonDecreasing(fn)
 }
