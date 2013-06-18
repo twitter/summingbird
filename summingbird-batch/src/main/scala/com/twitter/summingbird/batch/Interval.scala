@@ -16,6 +16,8 @@
 
 package com.twitter.summingbird.batch
 
+import com.twitter.algebird.Monoid
+
 // TODO this is clearly more general than summingbird, and should be extended to be a ring (add union, etc...)
 
 /** Represents a single interval on a T with an Ordering
@@ -48,13 +50,15 @@ case class Empty[T]() extends Interval[T] {
 }
 
 object Interval extends java.io.Serializable {
+  implicit def monoid[T]: Monoid[Interval[T]] = Monoid.from[Interval[T]](Universe[T]()) { _ && _ }
+
   def leftClosedRightOpen[T:Ordering](lower: T, upper: T): Interval[T] =
     InclusiveLower(lower) && ExclusiveUpper(upper)
 }
 
 // Marker traits to keep lower on the left in Intersection
-trait Lower[T] extends Interval[T]
-trait Upper[T] extends Interval[T]
+sealed trait Lower[T] extends Interval[T]
+sealed trait Upper[T] extends Interval[T]
 
 // TODO ExclusiveLower, InclusiveUpper and unit tests
 case class InclusiveLower[T](lower: T)(implicit val ordering: Ordering[T]) extends Interval[T] with Lower[T] {
