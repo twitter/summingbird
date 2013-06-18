@@ -43,11 +43,11 @@ object BatchID {
   /**
    * Returns an Iterator[BatchID] containing the range
    * `[startBatch, endBatch]` (inclusive).
-   * TODO make this return an Iterable by making the iterator
-   * as below. Not safe to pass iterators around
    */
-  def range(start: BatchID, end: BatchID): Iterator[BatchID] =
-    iterate(start)(_.next).takeWhile(_ <= end)
+  def range(start: BatchID, end: BatchID): Iterable[BatchID] =
+    new Iterable[BatchID] {
+      def iterator = iterate(start)(_.next).takeWhile(_ <= end)
+    }
 
   def asInterval(iter: TraversableOnce[BatchID]): Option[Interval[BatchID]] =
     iter
@@ -73,17 +73,10 @@ object BatchID {
   def asIterable(interval: Interval[BatchID]): Iterable[BatchID] =
     interval match {
       case Empty() => Iterable.empty
-      case Universe() => new Iterable[BatchID] {
-        def iterator = range(Min, Max)
-      }
-      case ExclusiveUpper(upper) => new Iterable[BatchID] {
-        def iterator = range(Min, upper.prev)
-      }
-      case InclusiveLower(lower) => new Iterable[BatchID] {
-        def iterator = range(lower, Max)
-      }
-      case Intersection(InclusiveLower(l), ExclusiveUpper(u)) =>
-        new Iterable[BatchID] { def iterator = range(l, u.prev) }
+      case Universe() => range(Min, Max)
+      case ExclusiveUpper(upper) => range(Min, upper.prev)
+      case InclusiveLower(lower) => range(lower, Max)
+      case Intersection(InclusiveLower(l), ExclusiveUpper(u)) => range(l, u.prev)
     }
 
   val Max = BatchID(Long.MaxValue)
