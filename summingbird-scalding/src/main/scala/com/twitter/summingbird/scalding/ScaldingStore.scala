@@ -61,13 +61,19 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
   def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowToPipe[(K, V)])]
 
   /** we are guaranteed to have sufficient input and deltas to cover these batches
+   * and that the batches are given in order
    */
   private def mergeBatched(input: FlowToPipe[(K,V)], batches: Iterable[BatchID],
     deltas: FlowToPipe[(K,V)], sg: Semigroup[V],
-    commutativity: Commutativity, reducers: Int): List[(BatchID, FlowToPipe[(K,V)])] = {
+    commutativity: Commutativity, reducers: Int): FlowToPipe[(K,V)] = {
     sys.error("TODO")
   }
 
+  /** instances of this trait MAY NOT change the logic here. This always follows the rule
+   * that we look for existing data (avoiding reading deltas in that case), then we fall
+   * back to the last checkpointed output by calling readLast. In that case, we compute the
+   * results by rolling forward
+   */
   final override def merge(delta: PipeFactory[(K, V)],
     sg: Semigroup[V],
     commutativity: Commutativity,
@@ -83,11 +89,13 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
       val coveringBatches = BatchID.asIterable(batchInterval)
       val batchStreams = coveringBatches.map { bid => (bid, readStream(bid, mode)) }
 
-      val alreadyPresent = batchStreams
+      // This data is already on disk and will not be recomputed
+      val existing = batchStreams
         .takeWhile { _._2.isDefined }
         .collect { case (batch, Some(flow)) => (batch, flow) }
 
-      val batchesToBuild = batchStreams
+      // Maybe an inclusive interval of batches to build
+      val batchesToBuild: Option[(BatchID, BatchID)] = batchStreams
           .dropWhile { _._2.isDefined }
           .map { _._1 }
           .toList match {
@@ -98,7 +106,8 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
       def batchToTime(bint: Interval[BatchID]): Interval[Time] =
         bint.mapNonDecreasing { batcher.earliestTimeOf(_).getTime }
 
-      val maybeBuilt: Option[Try[List[(BatchID, FlowToPipe[(K,V)])]]] = batchesToBuild
+      // If there are any new batches to build, try to build as many as possible
+      val maybeBuilt: Option[Try[(Iterable[BatchID], FlowToPipe[(K,V)])]] = batchesToBuild
         .map { case (firstNewBatch, lastNewBatch) =>
           readLast(firstNewBatch, mode)
             .right
@@ -113,18 +122,22 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
                 .flatMap { case ((availableInput, innerm), deltaFlow2Pipe) =>
                   val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput)
                   val batchesWeCanBuildIt = BatchID.asIterable(batchesWeCanBuild)
+                  // Check that deltas needed can actually be loaded going back to the first new batch
                   if (batchesWeCanBuildIt.headOption != Some(firstDeltaBatch)) {
-                    Left(List("Cannot load an entire batch: " + firstDeltaBatch.toString
+                    Left(List("Cannot load an entire initial batch: " + firstDeltaBatch.toString
                       + " of deltas at: " + this.toString))
                   }
                   else
-                    Right(mergeBatched(input, batchesWeCanBuildIt, deltaFlow2Pipe, sg, commutativity, reducers))
+                    Right((batchesWeCanBuildIt, mergeBatched(input, batchesWeCanBuildIt, deltaFlow2Pipe, sg, commutativity, reducers)))
                 }
             }
         }
 
-      def mergePresentAndBuilt(optBuilt: List[(BatchID, FlowToPipe[(K,V)])]): Try[((Interval[Time], Mode), FlowToPipe[(K,V)])] = {
-        val (batches, flows) = (alreadyPresent ++ optBuilt).unzip
+      def mergeExistingAndBuilt(optBuilt: Option[(Iterable[BatchID], FlowToPipe[(K,V)])]): Try[((Interval[Time], Mode), FlowToPipe[(K,V)])] = {
+        val (aBatches, aFlows) = existing.unzip
+        val flows = aFlows ++ (optBuilt.map { _._2 })
+        val batches = aBatches ++ (optBuilt.map { _._1 }.getOrElse(Iterable.empty))
+
         if (flows.isEmpty)
           Left(List("Zero batches requested, should never occur: " + timeSpan.toString))
         else {
@@ -135,9 +148,9 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
       }
 
       maybeBuilt match {
-        case None => mergePresentAndBuilt(Nil)
-        case Some(Left(err)) => if (alreadyPresent.isEmpty) Left(err) else mergePresentAndBuilt(Nil)
-        case Some(Right(built)) => mergePresentAndBuilt(built)
+        case None => mergeExistingAndBuilt(None)
+        case Some(Left(err)) => if (existing.isEmpty) Left(err) else mergeExistingAndBuilt(None)
+        case Some(Right(built)) => mergeExistingAndBuilt(Some(built))
       }
     })
 }
