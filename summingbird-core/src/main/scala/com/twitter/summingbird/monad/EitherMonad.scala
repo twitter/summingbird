@@ -30,4 +30,6 @@ object EitherMonad {
       self.right.map(fn)
   }
   implicit def monad[L]: Monad[({type RightT[R] = Either[L,R]})#RightT] = new Error[L]
+
+  def assert[L](truth: Boolean, failure: => L): Either[L,Unit] = if(truth) Right(()) else Left(failure)
 }
