@@ -25,6 +25,8 @@ trait Platform[P <: Platform[P]] {
   type Source[_]
   type Store[_, _]
   type Service[_, _]
+  type Plan
 
-  def run[T](completed: Producer[P, T]): Unit
+  def plan[T](completed: Producer[P, T]): Plan
+  def run(plan: Plan): Unit
 }

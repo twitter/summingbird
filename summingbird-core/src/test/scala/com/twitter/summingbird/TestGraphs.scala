@@ -86,9 +86,10 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     val currentStore = store()
     // Use the supplied platform to execute the source into the
     // supplied store.
-    platform.run {
+    val plan = platform.plan {
       TestGraphs.singleStepJob(sourceMaker(items), currentStore)(fn)
     }
+    platform.run(plan)
     val lookupFn = toLookupFn(currentStore)
     MapAlgebra.sumByKey(items.flatMap(fn)).forall { case (k, v) =>
       lookupFn(k).exists(Equiv[V].equiv(v, _))
@@ -112,9 +113,10 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     forAll { (items: List[T], preJoinFn: T => List[(K, U)], postJoinFn: ((K, (U, Option[JoinedU]))) => List[(K, V)]) =>
       val currentStore = store()
 
-      platform.run {
+      val plan = platform.plan {
         TestGraphs.leftJoinJob(sourceMaker(items), service, currentStore)(preJoinFn)(postJoinFn)
       }
+      platform.run(plan)
       val serviceFn = serviceToFn(service)
       val lookupFn = toLookupFn(currentStore)
 

@@ -154,7 +154,7 @@ object StatusStreamer {
     )
 
   def buildTopology = {
-    new Storm("wordCountJob", Map.empty).buildTopology {
+    new Storm("wordCountJob", Map.empty).plan {
       wordCountJob[Storm](
         Storm.source(TwitterSpout(Util.streamFactory)),
         MergeableStoreSupplier[String, Long](() => mergeableStore, batcher)
