@@ -63,7 +63,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
   type Source[+T] = Spout[T]
   type Store[-K, V] = StormStore[K, V]
   type Service[-K, +V] = StormService[K, V]
-  type Plan = StormTopology
+  type Plan[T] = StormTopology
 
   val END_SUFFIX = "end"
   val FM_CONSTANT = "flatMap-"
