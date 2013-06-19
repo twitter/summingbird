@@ -68,7 +68,7 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
   type Service[K, V] = ScaldingService[K, V]
-
+  type Plan[T] = PipeFactory[T]
   /**
     * run(Summer(producer, store))
     *
@@ -145,9 +145,11 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
   def baseConfig = new Configuration
 
   def config: Map[String, AnyRef] = sys.error("TODO, set up the kryo serializers")
-  def run[T](summer: Producer[Scalding, T]): Unit = {
-    val pf = buildFlow(summer, None)
 
+  def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] =
+    buildFlow(prod, None)
+
+  def run(pf: PipeFactory[_]): Unit = {
     val constructor = { (jobArgs : Args) =>
       new PipeFactoryJob(jobName, timeSpan, pf, { () => () }, jobArgs)
     }

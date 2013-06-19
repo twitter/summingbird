@@ -29,6 +29,7 @@ class Memory extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]
   type Service[-K, +V] = (K => Option[V])
+  type Plan[T] = Iterator[T]
 
   def toIterator[T, K, V](producer: Producer[Memory, T]): Iterator[T] = {
     producer match {
@@ -52,7 +53,10 @@ class Memory extends Platform[Memory] {
         }
     }
   }
-  def run[T](builder: Producer[Memory, T]) {
-    toIterator(builder).foreach { it => it /* just go through the whole thing */ }
+  def plan[T](prod: Producer[Memory, T]): Iterator[T] =
+    toIterator(prod)
+
+  def run(iter: Iterator[_]) {
+    iter.foreach { it => it /* just go through the whole thing */ }
   }
 }

@@ -63,6 +63,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
   type Source[+T] = Spout[T]
   type Store[-K, V] = StormStore[K, V]
   type Service[-K, +V] = StormService[K, V]
+  type Plan[T] = StormTopology
 
   val END_SUFFIX = "end"
   val FM_CONSTANT = "flatMap-"
@@ -277,7 +278,7 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     config
   }
 
-  def buildTopology[T](summer: Producer[Storm, T]): StormTopology = {
+  def plan[T](summer: Producer[Storm, T]): StormTopology = {
     val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
 
@@ -286,9 +287,8 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     topologyBuilder.createTopology
   }
 
-  def run[T](summer: Producer[Storm, T]): Unit = {
+  def run(topology: StormTopology): Unit = {
     val topologyName = "summingbird_" + jobName
-    val topology = buildTopology(summer)
     StormSubmitter.submitTopology(topologyName, baseConfig, topology)
   }
 }
