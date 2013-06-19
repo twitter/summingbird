@@ -147,7 +147,7 @@ object StormLaws extends Properties("Storm") {
       MergeableStoreSupplier(() => testingStore(id)(() => globalState(id).placed.incrementAndGet), Batcher.unit)
     )(testFn)
 
-    val topo = storm.buildTopology(job)
+    val topo = storm.plan(job)
     val parallelism = DEFAULT_SPOUT_PARALLELISM.parHint
 
     // Submit the topology locally.
