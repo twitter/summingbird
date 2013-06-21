@@ -17,7 +17,7 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
-import com.twitter.summingbird.monad.{StateWithError, EitherMonad}
+import com.twitter.summingbird.monad.{StateWithError, Reader}
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.bijection.{Injection, Bijection, Conversion}
 import com.twitter.scalding.{Mode, TypedPipe, Grouped}
@@ -49,6 +49,8 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
   /** The batcher for this store */
   def batcher: Batcher
 
+  implicit def ordering[K]: Ordering[K]
+
   /** If this full stream (result of a merge) for this batch is already materialized, return it
    */
   def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, V)]]
@@ -60,13 +62,89 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
    */
   def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowToPipe[(K, V)])]
 
+  /** Instances may choose to write out the last or just compute it from the stream */
+  def writeLast(batchID: BatchID, lastVals: KeyValuePipe[K, V])(implicit flowDef: FlowDef, mode: Mode): Unit = { }
+
+  /** Instances may choose to write out materialized streams
+   * by implementing this. This is what readStream returns.
+   */
+  def writeStream(batchID: BatchID, stream: KeyValuePipe[K, V])(implicit flowDef: FlowDef, mode: Mode): Unit = { }
+
   /** we are guaranteed to have sufficient input and deltas to cover these batches
    * and that the batches are given in order
    */
-  private def mergeBatched(input: FlowToPipe[(K,V)], batches: Iterable[BatchID],
+  private def mergeBatched(input: FlowToPipe[(K,V)], batches: List[BatchID],
     deltas: FlowToPipe[(K,V)], sg: Semigroup[V],
     commutativity: Commutativity, reducers: Int): FlowToPipe[(K,V)] = {
-    sys.error("TODO")
+
+    //Convert to a Grouped by "swapping" Time and K
+    def toGrouped(items: KeyValuePipe[K, V]): Grouped[K, (Long, V)] =
+      items.groupBy { case (_, (k, _)) => k }
+        .mapValues { case (t, (_, v)) => (t, v) }
+        .withReducers(reducers)
+
+    //Unswap the Time and K
+    def toKVPipe(tp: TypedPipe[(K, (Long, V))]): KeyValuePipe[K, V] =
+      tp.map { case (k, (t, v)) => (t, (k, v)) }
+
+    // Return the items in this batch in ._1 and not in a future batch in ._2
+    def split(b: BatchID, items: KeyValuePipe[K, V]): (KeyValuePipe[K, V], KeyValuePipe[K, V]) =
+      (items.filter { tkv => batcher.batchOf(new java.util.Date(tkv._1)) == b },
+      items.filter { tkv => batcher.batchOf(new java.util.Date(tkv._1)) > b })
+
+    Reader[FlowInput, KeyValuePipe[K, V]] { (flowMode: (FlowDef, Mode)) =>
+      implicit val flowDef = flowMode._1
+      implicit val mode = flowMode._2
+
+      @annotation.tailrec
+      def sumThem(head: BatchID,
+        rest: List[BatchID],
+        lastSummed: KeyValuePipe[K, V],
+        restDeltas: KeyValuePipe[K, V],
+        acc: List[KeyValuePipe[K, V]]): KeyValuePipe[K, V] = {
+        val (theseDeltas, nextDeltas) = split(head, restDeltas)
+
+        val grouped: Grouped[K, (Long, V)] = toGrouped(lastSummed ++ theseDeltas)
+
+        val sorted = grouped.sortBy { _._1 } // sort by time
+        val maybeSorted = commutativity match {
+          case Commutative => grouped // order does not matter
+          case NonCommutative => sorted
+        }
+
+        val redFn: (((Long, V), (Long, V)) => (Long, V)) = { (left, right) =>
+          val (tl, vl) = left
+          val (tr, vr) = right
+          (tl max tr, sg.plus(vl, vr))
+        }
+        val nextSummed = toKVPipe(maybeSorted.reduce(redFn))
+        // could be an empty method, in which case scalding will do nothing here
+        writeLast(head, nextSummed)
+
+        // Make the incremental stream
+        val stream = toKVPipe(sorted.scanLeft(None: Option[(Long, V)]) { (old, item) =>
+            old match {
+              case None => Some(item)
+              case Some(prev) => Some(redFn(prev, item))
+            }
+          }
+          .mapValueStream { _.flatten /* unbox the option */ }
+          .toTypedPipe
+        )
+        // could be empty, in which case scalding will do nothing here
+        writeStream(head, stream)
+        rest match {
+          // When there is no more, merge them all:
+          case Nil => (stream :: acc).reduce { _ ++ _ }
+          case nextHead :: nextTail =>
+            sumThem(nextHead, nextTail, nextSummed, nextDeltas, stream :: acc)
+        }
+      }
+      val latestSummed = input(flowMode)
+      val incoming = deltas(flowMode)
+      // This will throw if there is not one batch, but that should never happen and is a failure
+      sumThem(batches.head, batches.tail, latestSummed, incoming, Nil)
+    }
   }
 
   /** instances of this trait MAY NOT change the logic here. This always follows the rule
@@ -128,7 +206,8 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
                       + " of deltas at: " + this.toString))
                   }
                   else
-                    Right((batchesWeCanBuildIt, mergeBatched(input, batchesWeCanBuildIt, deltaFlow2Pipe, sg, commutativity, reducers)))
+                    Right((batchesWeCanBuildIt,
+                      mergeBatched(input, batchesWeCanBuildIt.toList, deltaFlow2Pipe, sg, commutativity, reducers)))
                 }
             }
         }
@@ -154,82 +233,3 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
       }
     })
 }
-
-//trait MaterializedScaldingStore[K, V] extends ScaldingStore[K, V] {
-//  implicit def ordering: Ordering[K]
-//
-//  def writeDeltas(batchID: BatchID, delta: KeyValuePipe[K, V])(implicit flowdef: FlowDef, mode: Mode): Unit
-//
-//  /** Optionally write out the stream of output values (for use as a service)
-//   */
-//  def writeStream(batchID: BatchID, scanned: KeyValuePipe[K, V])(implicit flowdef: FlowDef, mode: Mode): Unit
-//  /** Write the stream which only has the last value for each key
-//   */
-//  def writeLast(batchID: BatchID, scanned: KeyValuePipe[K, V])(implicit flowdef: FlowDef, mode: Mode): Unit
-//
-//  /** Read the latest value for the keys
-//   * Each key appears at most once
-//   * May include keys from previous batches if those keys have not been updated
-//   */
-//  def readLatestBefore(batchID: BatchID)(implicit flowdef: FlowDef, mode: Mode): Try[KeyValuePipe[K, V]]
-//
-//  /**
-//    * Accepts deltas along with their timestamps, returns triples of
-//    * (time, K, V(aggregated up to the time)).
-//    *
-//    * Same return as lookup on a ScaldingService.
-//    */
-//  def merge(lowerIn: BatchID, upperEx: BatchID,
-//    delta: PipeFactory[(K, V)],
-//    sg: Semigroup[V],
-//    commutativity: Commutativity,
-//    reducers: Int): PipeFactory[(K, V)] = {
-//
-//    //Convert to a Grouped by "swapping" Time and K
-//    def toGrouped(items: KeyValuePipe[K, V]): Grouped[K, (Long, V)] =
-//      items.groupBy { case (_, (k, _)) => k }
-//        .mapValues { case (t, (_, v)) => (t, v) }
-//        .withReducers(reducers)
-//    //Unswap the Time and K
-//    def toKVPipe(tp: TypedPipe[(K, (Long, V))]): KeyValuePipe[K, V] =
-//      tp.map { case (k, (t, v)) => (t, (k, v)) }
-//
-//    PipeFactory[(K,V)] { case (time, (flowDef, mode)) =>
-//
-//      readLatestBefore(lowerIn)(flowDef, mode).right.map { latestSummed =>
-//        // TODO: Filter the delta to make sure these are only for this batch
-//        writeDeltas(batchID, delta)
-//
-//        val grouped: Grouped[K, (Long, V)] = toGrouped(latestSummed ++ delta)
-//
-//        val sorted = grouped.sortBy { _._1 } // sort by time
-//        val maybeSorted = commutativity match {
-//          case Commutative => grouped // order does not matter
-//          case NonCommutative => sorted
-//        }
-//
-//        val redFn: (((Long, V), (Long, V)) => (Long, V)) = { (left, right) =>
-//          val (tl, vl) = left
-//          val (tr, vr) = right
-//          (tl max tr, Semigroup.plus(vl, vr))
-//        }
-//        // could be empty, in which case scalding will do nothing here
-//        writeLast(batchID, toKVPipe(maybeSorted.reduce(redFn)))
-//
-//        // Make the incremental stream
-//        val stream = toKVPipe(sorted.scanLeft(None: Option[(Long, V)]) { (old, item) =>
-//            old match {
-//              case None => Some(item)
-//              case Some(prev) => Some(redFn(prev, item))
-//            }
-//          }
-//          .mapValueStream { _.flatten /* unbox the option */ }
-//          .toTypedPipe
-//        )
-//        // could be empty, in which case scalding will do nothing here
-//        writeStream(batchID, stream)
-//        stream
-//      }
-//    }
-//  }
-//}
