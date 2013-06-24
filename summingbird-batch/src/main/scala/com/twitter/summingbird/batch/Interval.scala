@@ -22,7 +22,7 @@ import com.twitter.algebird.Monoid
 
 /** Represents a single interval on a T with an Ordering
  */
-sealed trait Interval[T] extends (T => Boolean) with java.io.Serializable {
+sealed trait Interval[T] extends java.io.Serializable {
   def contains(t: T): Boolean
 
   def intersect(that: Interval[T]): Interval[T]

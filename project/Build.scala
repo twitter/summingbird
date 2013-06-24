@@ -189,7 +189,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "scalding-commons" % "0.2.0"
     )
   ).dependsOn(
-    summingbirdCore,
+    summingbirdCore % "test->test;compile->compile",
     summingbirdBatch,
     summingbirdKryo
   )

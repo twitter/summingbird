@@ -18,11 +18,9 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.{Monoid, Semigroup, Monad}
 import com.twitter.algebird.Monad.operators // map/flatMap for monads
-import com.twitter.bijection.Injection
-import com.twitter.chill.InjectionPair
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird._
-import com.twitter.summingbird.monad.StateWithError
+import com.twitter.summingbird.monad.{StateWithError, Reader}
 import com.twitter.summingbird.batch._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
@@ -31,11 +29,44 @@ import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
 import cascading.flow.FlowDef
 import com.twitter.scalding.Mode
 
+import scala.util.control.Exception.allCatch
+
 object Scalding {
-  def source[T](factory: PipeFactory[T])
-    (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
-    Producer.source[Scalding, T](factory)
-    // TODO: remove TimeExtractor from Source, move to summingbirdbatch, it's not needed here
+  def sourceFromMappable[T](factory: (DateRange) => Mappable[T])
+    (implicit manifest: Manifest[T], timeOf: TimeExtractor[T]): Producer[Scalding, T] = {
+    val sourcePipeFactory: PipeFactory[T] = StateWithError[(Interval[Time], Mode), List[FailureReason], FlowToPipe[T]]{
+      (timeMode: (Interval[Time], Mode)) => {
+        val (timeSpan, mode) = timeMode
+
+        val timeSpanAsDateRange: Either[List[FailureReason], DateRange] =
+          timeSpan match {
+            case Intersection(InclusiveLower(low), ExclusiveUpper(up)) =>
+              Right(DateRange(RichDate(low), RichDate(up - 1L))) // these are inclusive until 0.9.0
+            case _ => Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString))
+          }
+
+        timeSpanAsDateRange.right.flatMap { dr =>
+          val mappable = factory(dr)
+          // Check that this input is available:
+          (allCatch.either(mappable.validateTaps(mode)) match {
+            case Left(x) => Left(List(x.toString))
+            case Right(()) => Right(())
+          })
+          .right.map { (_:Unit) =>
+            (timeMode, Reader { (fdM: (FlowDef, Mode)) =>
+              TypedPipe.from(mappable)(fdM._1, fdM._2, mappable.converter) // converter is removed in 0.9.0
+                .flatMap { t =>
+                  // Todo: get the closure out of here for serialization safety
+                  val time = timeOf(t)
+                  if(timeSpan(time)) Some((time, t)) else None
+                }
+            })
+          }
+        }
+      }
+    }
+    Producer.source[Scalding, T](sourcePipeFactory)
+  }
 
   def limitTimes[T](range: Interval[Time], in: FlowToPipe[T]): FlowToPipe[T] =
     in.map { pipe => pipe.filter { case (time, _) => range(time) } }
@@ -44,27 +75,7 @@ object Scalding {
     for { l <- left; r <- right } yield (l ++ r)
 }
 
-trait Executor {
-  def run(config: Map[String, AnyRef], inargs: Array[String], cons: (Args) => Job): Unit
-}
-
-class StandardRunner extends Executor {
-  def run(config: Map[String, AnyRef], inargs: Array[String], con: (Args) => Job) {
-    val hadoopTool: STool = {
-      val tool = new STool
-      tool.setJobConstructor(con)
-      tool
-    }
-    ToolRunner.run(ConfigBijection.fromMap(config), hadoopTool, inargs)
-  }
-}
-
-// TODO
-class TestRunner extends Executor {
-  def run(config: Map[String, AnyRef], inargs: Array[String], con: (Args) => Job) { }
-}
-
-class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String], runner: Executor) extends Platform[Scalding] {
+class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode) extends Platform[Scalding] {
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
   type Service[K, V] = ScaldingService[K, V]
@@ -104,7 +115,7 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
    */
   def buildFlow[T](producer: Producer[Scalding, T], id: Option[String]): PipeFactory[T] = {
     producer match {
-      case Source(src, manifest, timeExtractor) => src // Time is added when we create the Source object
+      case Source(src, manifest) => src
       case IdentityKeyedProducer(producer) => buildFlow(producer, id)
       case NamedProducer(producer, newId)  => buildFlow(producer, id = Some(newId))
       case summer@Summer(producer, store, monoid) => buildSummer(summer, id)
@@ -139,61 +150,24 @@ class Scalding(jobName: String, timeSpan: Interval[Time], inargs: Array[String],
     }
   }
 
-  /**
-    * Base hadoop config instances used by the Scalding platform.
-    */
-  def baseConfig = new Configuration
-
-  def config: Map[String, AnyRef] = sys.error("TODO, set up the kryo serializers")
+  def config: Map[AnyRef, AnyRef] = Map.empty
+    //sys.error("TODO, set up the kryo serializers")
 
   def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] =
     buildFlow(prod, None)
 
   def run(pf: PipeFactory[_]): Unit = {
-    val constructor = { (jobArgs : Args) =>
-      new PipeFactoryJob(jobName, timeSpan, pf, { () => () }, jobArgs)
+    pf((timeSpan, mode)) match {
+      case Left(errs) =>
+        println("ERROR")
+        errs.foreach { println(_) }
+      case Right(((ts, mode), flowDefMutator)) =>
+        val flowDef = new FlowDef
+        flowDef.setName(jobName)
+        val outputPipe = flowDefMutator((flowDef, mode))
+        // Now we have a populated flowDef, time to let Cascading do it's thing:
+        mode.newFlowConnector(config).connect(flowDef).complete
+        // TODO log that we have completed all of ts, and should start at the upperbound
     }
-    // Now actually run (by building the scalding job):
-    try {
-      runner.run(config, inargs, constructor)
-    } catch {
-      case ise: InvalidSourceException => println("Job data not ready: " + ise.getMessage)
-    }
-  }
-}
-
-/** Build a scalding job that tries to run for the given interval of time. It may run for less than this interval,
- * but if it cannot move forward at all, it will fail.
- */
-class PipeFactoryJob[T](override val name: String, times: Interval[Time], pf: PipeFactory[T], onSuccess: Function0[Unit], args: Args) extends Job(args) {
-
-  // Build the flowDef:
-  pf((times, implicitly[Mode])) match {
-    case Left(failures) =>
-       // TODO this should be better
-       // We could compute the earliest time we could possibly run, and then return
-       // that to reschedule, for one thing. But we are smart, we can make it much better.
-       failures.foreach { println(_) }
-       sys.error("Couldn't schedule: \n" + failures.mkString("\n"))
-    // TODO, maybe log the upper bound of the time
-    case Right(((timeSpanWeRun, mode), flowToPipe)) => flowToPipe((implicitly[FlowDef], mode))
-  }
-
-  /* TODO can't this be handled outside by setting up the conf we pass to ToolRunner?
-    * Replace Scalding's default implementation of
-    *  cascading.kryo.KryoSerialization with Summingbird's custom
-    * extension. SummingbirdKryoHadoop performs every registration in
-    * KryoHadoop, then registers event, time, key and value codecs
-    * using chill's BijectiveSerializer.
-    */
-  override def config(implicit mode: Mode) =
-    super.config(mode) ++ Map(
-      "io.serializations" ->
-        (ioSerializations ++ List(classOf[SummingbirdKryoHadoop].getName)).mkString(",")
-    )
-
-  override def next = {
-    onSuccess.apply()
-    None
   }
 }

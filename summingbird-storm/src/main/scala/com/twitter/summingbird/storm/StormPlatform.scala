@@ -53,14 +53,16 @@ object Storm {
     new Storm(jobName, options)
 
   def source[T](spout: Spout[T])
-    (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) =
-    Producer.source[Storm, T](spout)
+    (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) = {
+      val mappedSpout = spout.map { t => (timeOf(t), t) }
+      Producer.source[Storm, T](mappedSpout)
+    }
 }
 
 class Storm(jobName: String, options: Map[String, StormOptions]) extends Platform[Storm] {
   import Storm.SINK_ID
 
-  type Source[+T] = Spout[T]
+  type Source[+T] = Spout[(Long, T)]
   type Store[-K, V] = StormStore[K, V]
   type Service[-K, +V] = StormService[K, V]
   type Plan[T] = StormTopology
@@ -116,9 +118,9 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
       }
       case IdentityKeyedProducer(producer) => recurse(producer)
       case NamedProducer(producer, newId)  => recurse(producer, id = Some(newId))
-      case Source(spout, manifest, timeOf) => {
+      case Source(mappedSpout, manifest) => {
         val spoutName = "spout-" + suffixOf(toSchedule, suffix)
-        val stormSpout = spout.map { t => (timeOf(t), t) }.getSpout
+        val stormSpout = mappedSpout.getSpout
         val parallelism = getOrElse(id, DEFAULT_SPOUT_PARALLELISM).parHint
         topoBuilder.setSpout(spoutName, stormSpout, parallelism)
         val parents = List(spoutName)
