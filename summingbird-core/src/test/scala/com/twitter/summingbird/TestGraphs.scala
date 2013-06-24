@@ -29,7 +29,7 @@ import org.scalacheck.Prop._
 object TestGraphs {
   def singleStepInScala[T, K, V: Monoid]
     (source: TraversableOnce[T])
-    (fn: T => TraversableOnce[(K, V)]) =
+    (fn: T => TraversableOnce[(K, V)]): Map[K, V] =
     MapAlgebra.sumByKey(
       source.flatMap(fn)
     )

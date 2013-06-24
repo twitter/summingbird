@@ -27,8 +27,8 @@ object Producer {
     * Begin from some base representation. An iterator for in-memory,
     * for example.
     */
-  def source[P <: Platform[P], T](s: P#Source[T])(implicit manifest: Manifest[T], timeOf: TimeExtractor[T]): Producer[P, T] =
-    Source[P, T](s, manifest, timeOf)
+  def source[P <: Platform[P], T](s: P#Source[T])(implicit manifest: Manifest[T]): Producer[P, T] =
+    Source[P, T](s, manifest)
 
   implicit def toKeyed[P <: Platform[P], K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer)
@@ -75,7 +75,7 @@ sealed trait Producer[P, T] {
   }
 }
 
-case class Source[P <: Platform[P], T](source: P#Source[T], manifest: Manifest[T], timeOf: TimeExtractor[T])
+case class Source[P <: Platform[P], T](source: P#Source[T], manifest: Manifest[T])
     extends Producer[P, T]
 
 case class NamedProducer[P, T](producer: Producer[P, T], id: String) extends Producer[P, T]

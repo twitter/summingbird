@@ -21,7 +21,7 @@ import com.twitter.summingbird._
 import collection.mutable.{ Map => MutableMap }
 
 object Memory {
-  implicit def toSource[T](traversable: TraversableOnce[T])(implicit te: TimeExtractor[T], mf: Manifest[T]): Producer[Memory, T] =
+  implicit def toSource[T](traversable: TraversableOnce[T])(implicit mf: Manifest[T]): Producer[Memory, T] =
     Producer.source[Memory, T](traversable)
 }
 
@@ -35,7 +35,7 @@ class Memory extends Platform[Memory] {
     producer match {
       case NamedProducer(producer, _) => toIterator(producer)
       case IdentityKeyedProducer(producer) => toIterator(producer)
-      case Source(source, _, _) => source.toIterator
+      case Source(source, _) => source.toIterator
       case OptionMappedProducer(producer, fn, mf) => toIterator(producer).flatMap { fn(_).iterator }
       case FlatMappedProducer(producer, fn) => toIterator(producer).flatMap(fn)
       case MergedProducer(l, r) => toIterator(l) ++ toIterator(r)
