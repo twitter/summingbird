@@ -49,11 +49,11 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
   /** The batcher for this store */
   def batcher: Batcher
 
-  implicit def ordering[K]: Ordering[K]
+  implicit def ordering: Ordering[K]
 
   /** If this full stream (result of a merge) for this batch is already materialized, return it
    */
-  def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, V)]]
+  def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, V)]] = None
 
   /** Get the most recent last batch and the ID (strictly less than the input ID)
    * The "Last" is the stream with only the oldest value for each key, within the batch
@@ -180,7 +180,6 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
             case Nil => None
             case list => Some((list.min, list.max))
           }
-
       def batchToTime(bint: Interval[BatchID]): Interval[Time] =
         bint.mapNonDecreasing { batcher.earliestTimeOf(_).getTime }
 
