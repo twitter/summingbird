@@ -71,10 +71,7 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
              * we will deal with that when we do the join (by filtering first,
              * then grouping on (key, batchID) to parallelize.
              */
-            val batchToServ = existing.toMap
-            val blist = BatchID.toIterable(bInt).map { b => (b, batchToServ(b)) }
-            val lookedUp = batchedLookup(available, getFlow, blist)
-            ((available, outM), lookedUp)
+            ((available, outM), batchedLookup(available, getFlow, existing))
           }
       }
     })
