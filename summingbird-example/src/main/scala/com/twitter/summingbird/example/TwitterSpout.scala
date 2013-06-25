@@ -30,7 +30,8 @@ import twitter4j._
 /**
   * Storm Spout implementation for Twitter's streaming API.
   *
-  * TODO: Replace with tormenta's version on the next publish.
+  * TODO: Replace with tormenta's version on the next publish (after
+  * https://github.com/twitter/tormenta/pull/30 is merged)
   *
   * @author Sam Ritchie
   */
@@ -85,9 +86,9 @@ class TwitterSpout[+T](factory: TwitterStreamFactory, limit: Int, fieldName: Str
   def onEmpty: Unit = Time.sleep(50)
 
   override def nextTuple {
-    Option(queue.poll).map(fn).flatten match {
-      case Nil => onEmpty
-      case items => items.foreach { item =>
+    Option(queue.poll).map(fn) match {
+      case None => onEmpty
+      case Some(items) => items.foreach { item =>
         collector.emit(new Values(item.asInstanceOf[AnyRef]))
       }
     }
