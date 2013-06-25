@@ -29,4 +29,5 @@ trait Platform[P <: Platform[P]] {
 
   def plan[T](completed: Producer[P, T]): Plan[T]
   def run(plan: Plan[_]): Unit
+  def run(completed: Producer[P, _]): Unit = run(plan(completed))
 }

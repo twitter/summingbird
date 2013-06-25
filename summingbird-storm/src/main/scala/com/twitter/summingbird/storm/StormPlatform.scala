@@ -41,6 +41,11 @@ sealed trait StormStore[-K, V] {
   def batcher: Batcher
 }
 
+object MergeableStoreSupplier {
+  def apply[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+    MergeableStoreSupplier(() => store, batcher)
+}
+
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
 sealed trait StormService[-K, +V]
@@ -49,17 +54,20 @@ case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K,
 object Storm {
   val SINK_ID = "sinkId"
 
-  def apply(jobName: String, options: Map[String, StormOptions] = Map.empty): Storm =
-    new Storm(jobName, options)
+  def local(name: String, options: Map[String, StormOptions] = Map.empty) =
+    new LocalStorm(name, options)
 
-  def source[T](spout: Spout[T])
+  def apply(options: Map[String, StormOptions] = Map.empty): Storm =
+    new Storm(options)
+
+  implicit def source[T](spout: Spout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) = {
-      val mappedSpout = spout.map { t => (timeOf(t), t) }
-      Producer.source[Storm, T](mappedSpout)
-    }
+    val mappedSpout = spout.map { t => (timeOf(t), t) }
+    Producer.source[Storm, T](mappedSpout)
+  }
 }
 
-class Storm(jobName: String, options: Map[String, StormOptions]) extends Platform[Storm] {
+abstract class Storm(options: Map[String, StormOptions]) extends Platform[Storm] {
   import Storm.SINK_ID
 
   type Source[+T] = Spout[(Long, T)]
@@ -288,9 +296,20 @@ class Storm(jobName: String, options: Map[String, StormOptions]) extends Platfor
     populate(topologyBuilder, summer.asInstanceOf[Summer[Storm,Any,Any]])
     topologyBuilder.createTopology
   }
+}
 
+class RemoteStorm(jobName: String, options: Map[String, StormOptions]) extends Storm(options) {
   def run(topology: StormTopology): Unit = {
     val topologyName = "summingbird_" + jobName
     StormSubmitter.submitTopology(topologyName, baseConfig, topology)
+  }
+}
+
+class LocalStorm(jobName: String, options: Map[String, StormOptions]) extends Storm(options) {
+  lazy val localCluster = new LocalCluster
+
+  def run(topology: StormTopology): Unit = {
+    val topologyName = "summingbird_" + jobName
+    localCluster.submitTopology(topologyName, baseConfig, topology)
   }
 }
