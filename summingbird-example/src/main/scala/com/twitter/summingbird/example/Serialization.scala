@@ -18,7 +18,6 @@ package com.twitter.summingbird.example
 
 import com.twitter.bijection.{ Bufferable, Injection }
 import com.twitter.summingbird.batch.BatchID
-import scala.util.control.Exception.allCatch
 import twitter4j.Status
 import twitter4j.json.DataObjectFactory
 
@@ -44,8 +43,8 @@ object Serialization {
     * and Scalding will process into Strings.
     */
   implicit val statusCodec: Injection[Status, String] =
-    Injection.build[Status, String](DataObjectFactory.getRawJSON(_))(
-      json => allCatch.opt(DataObjectFactory.createStatus(json))
+    Injection.buildCatchInvert[Status, String](DataObjectFactory.getRawJSON(_))(
+      json => DataObjectFactory.createStatus(json)
     )
 
   /**
