@@ -16,26 +16,63 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
 import com.twitter.scalding.{Mode, TypedPipe}
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
+import com.twitter.summingbird.monad.{StateWithError, Reader}
 import cascading.flow.FlowDef
 
 trait ScaldingService[K, V] {
-  implicit def ordering: Ordering[K]
-  // The batcher that describes this service
-  def batcher: Batcher
   // A static, or write-once service can  potentially optimize this without writing the (K, V) stream out
   def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))]
 }
 
-trait MaterializedService[K, V] extends ScaldingService[K, V] {
+trait BatchedService[K, V] extends ScaldingService[K, V] {
+  // The batcher that describes this service
+  def batcher: Batcher
+
   /** Reads the key log for this batch. By key log we mean a log of time, key and value when the key was written
    * to. This is an associative operation and sufficient to scedule the service.
    *
    * May include keys from previous batches, since we need to be able to look back in time to the most recent
    * value for each key that exists.
    */
-  def readStream(batchID: BatchID)(implicit flowdef: FlowDef, mode: Mode): KeyValuePipe[K, V]
-  def lookup[W](lowerIn: BatchID, upperEx: BatchID, getKeys: KeyValuePipe[K, W])(implicit flowdef: FlowDef, mode: Mode): Try[KeyValuePipe[K, (W, Option[V])]] =
-    sys.error("TODO: this can be implemented as the lookup join, if you have materialized the K,V stream")
+  def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, V)]]
+
+  // Implement this as either mapside or grouping join
+  protected def batchedLookup[W](covers: Interval[Time],
+      getKeys: FlowToPipe[(K,W)],
+      batches: Iterable[(BatchID, FlowToPipe[(K,V)])]): FlowToPipe[(K,(W,Option[V]))]
+
+  final def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
+    StateWithError({ (in: FactoryInput) =>
+      val (timeSpan, mode) = in
+
+      // This object combines some common scalding batching operations:
+      val batchOps = new BatchedOperations(batcher)
+
+      val batchStreams = batchOps.coverIt(timeSpan).map { b => (b, readStream(b, mode)) }
+      // only produce continuous output, so stop at the first none:
+      val existing = batchStreams
+        .takeWhile { _._2.isDefined }
+        .collect { case (batch, Some(flow)) => (batch, flow) }
+
+      if(existing.isEmpty) {
+        Left(List("[ERROR] Could not load any batches of the service stream in: " + toString + " for: " + timeSpan.toString))
+      }
+      else {
+        val inBatches = existing.map { _._1 }
+        val bInt = BatchID.toInterval(inBatches).get // by construction this is an interval, so this can't throw
+        val toRead = batchOps.intersect(bInt, timeSpan) // No need to read more than this
+        getKeys((toRead, mode))
+          .right
+          .map { case ((available, outM), getFlow) =>
+            /*
+             * Note we can open more batches than we need to join, but
+             * we will deal with that when we do the join (by filtering first,
+             * then grouping on (key, batchID) to parallelize.
+             */
+            ((available, outM), batchedLookup(available, getFlow, existing))
+          }
+      }
+    })
 }
