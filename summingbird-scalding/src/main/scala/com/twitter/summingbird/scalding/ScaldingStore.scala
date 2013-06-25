@@ -19,13 +19,8 @@ package com.twitter.summingbird.scalding
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
 import com.twitter.summingbird.monad.{StateWithError, Reader}
 import com.twitter.algebird.{Monoid, Semigroup}
-import com.twitter.bijection.{Injection, Bijection, Conversion}
 import com.twitter.scalding.{Mode, TypedPipe, Grouped}
 import cascading.flow.FlowDef
-
-import java.util.{Date => JDate}
-
-import Conversion.asMethod
 
 // TODO this functionality should be in algebird
 sealed trait Commutativity extends java.io.Serializable
@@ -156,21 +151,11 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
     sg: Semigroup[V],
     commutativity: Commutativity,
     reducers: Int): PipeFactory[(K, V)] = StateWithError({ in: FactoryInput =>
-
-      implicit val t2dBij = Bijection.build { bint: Interval[Time] =>
-        bint.mapNonDecreasing { new JDate(_) } } { bint: Interval[JDate] =>
-        bint.mapNonDecreasing { _.getTime }
-      }
-
       val (timeSpan, mode) = in
-      val batchInterval = batcher.cover(timeSpan.as[Interval[JDate]])
-      val coveringBatches = BatchID.toIterable(batchInterval)
-      val batchStreams = coveringBatches.map { bid => (bid, readStream(bid, mode)) }
+      // This object combines some common scalding batching operations:
+      val batchOps = new BatchedOperations(batcher)
 
-      // This data is already on disk and will not be recomputed
-      val existing = batchStreams
-        .takeWhile { _._2.isDefined }
-        .collect { case (batch, Some(flow)) => (batch, flow) }
+      val batchStreams = batchOps.coverIt(timeSpan).map { b => (b, readStream(b, mode)) }
 
       // Maybe an inclusive interval of batches to build
       val batchesToBuild: Option[(BatchID, BatchID)] = batchStreams
@@ -180,8 +165,6 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
             case Nil => None
             case list => Some((list.min, list.max))
           }
-      def batchToTime(bint: Interval[BatchID]): Interval[Time] =
-        bint.mapNonDecreasing { batcher.earliestTimeOf(_).getTime }
 
       // If there are any new batches to build, try to build as many as possible
       val maybeBuilt: Option[Try[(Iterable[BatchID], FlowToPipe[(K,V)])]] = batchesToBuild
@@ -192,24 +175,27 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
               val firstDeltaBatch = actualLast.next
               // Compute the times we need to read of the deltas
               val deltaBatches = Interval.leftClosedRightOpen(firstDeltaBatch, lastNewBatch.next)
-              val deltaTimes = batchToTime(deltaBatches)
-              // Read the delta stream for the needed times
-              delta((deltaTimes, mode))
+              batchOps.readBatched(deltaBatches, mode, delta)
                 .right
-                .flatMap { case ((availableInput, innerm), deltaFlow2Pipe) =>
-                  val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput)
-                  val batchesWeCanBuildIt = BatchID.toIterable(batchesWeCanBuild)
+                .flatMap { case (batchesWeCanBuild, deltaFlow2Pipe) =>
                   // Check that deltas needed can actually be loaded going back to the first new batch
-                  if (batchesWeCanBuildIt.headOption != Some(firstDeltaBatch)) {
+                  if(!batchesWeCanBuild.contains(firstDeltaBatch)) {
                     Left(List("Cannot load an entire initial batch: " + firstDeltaBatch.toString
-                      + " of deltas at: " + this.toString))
+                      + " of deltas at: " + this.toString + " only: " + batchesWeCanBuild.toString))
                   }
-                  else
-                    Right((batchesWeCanBuildIt,
-                      mergeBatched(input, batchesWeCanBuildIt.toList, deltaFlow2Pipe, sg, commutativity, reducers)))
+                  else {
+                    val blist = BatchID.toIterable(batchesWeCanBuild).toList
+                    val merged = mergeBatched(input, blist, deltaFlow2Pipe, sg, commutativity, reducers)
+                    Right((blist, merged))
+                  }
                 }
             }
         }
+
+      // This data is already on disk and will not be recomputed
+      val existing = batchStreams
+        .takeWhile { _._2.isDefined }
+        .collect { case (batch, Some(flow)) => (batch, flow) }
 
       def mergeExistingAndBuilt(optBuilt: Option[(Iterable[BatchID], FlowToPipe[(K,V)])]): Try[((Interval[Time], Mode), FlowToPipe[(K,V)])] = {
         val (aBatches, aFlows) = existing.unzip
@@ -219,7 +205,8 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
         if (flows.isEmpty)
           Left(List("Zero batches requested, should never occur: " + timeSpan.toString))
         else {
-          val available = batchToTime(BatchID.toInterval(batches).get) && timeSpan
+          // it is a static (i.e. independent from input) bug if this get ever throws
+          val available = batchOps.intersect(batches, timeSpan).get
           val merged = Scalding.limitTimes(available, flows.reduce(Scalding.merge(_, _)))
           Right(((available, mode), merged))
         }

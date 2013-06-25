@@ -94,6 +94,9 @@ trait Batcher extends Serializable {
         Interval.leftClosedRightOpen(lowerBatch, upperBatch)
     }
 
+  def toInterval(b: BatchID): Interval[Date] =
+    Intersection(InclusiveLower(earliestTimeOf(b)), ExclusiveUpper(earliestTimeOf(b.next)))
+
   /** Returns the (inclusive) earliest time of the supplied batch. */
   def earliestTimeOf(batch: BatchID): Date
 
