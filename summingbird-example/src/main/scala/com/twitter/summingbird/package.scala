@@ -14,6 +14,8 @@
  limitations under the License.
  */
 
+package com.twitter.summingbird
+
 /**
   * The "example" package contains all of the code and configuration
   * necessary to run a basic Summingbird job locally that consumes
@@ -57,4 +59,4 @@
   * sritchie@twitter.com, or send me a tweet at @sritchie. Once you
   * get this code compiling and running, you'll be cooking with gas!
   */
-object example { }
+package object example { }
