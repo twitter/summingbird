@@ -34,19 +34,6 @@ sealed trait SinkOption extends Serializable
 
 case class SinkParallelism(parHint: Int) extends SinkOption
 
-// RpcParallelism controls the number of processes Storm allocates to
-// the Rpc Return bolts. The default rpc parallelism is 10.
-
-case class RpcParallelism(parHint: Int) extends SinkOption
-
-// DecoderParallelism controls the number of processes Storm allocates
-// to the Decoder bolts. The decoder bolts recieve DRPC requests,
-// decode them into a Key instance and pass this key along to the sink
-// for lookup and return (via the ReturnResults bolt). The default
-// decoder parallelism is 10.
-
-case class DecoderParallelism(parHint: Int) extends SinkOption
-
 case class OnlineSuccessHandler(handlerFn: Unit => Unit) extends SinkOption
 
 // Kryo serialization problems have been observed with using OnlineSuccessHandler. This enables
