@@ -33,7 +33,7 @@ import java.util.Date
 
 case class EventSource[T: Manifest](offline: Option[OfflineSource[T]], spout: Option[Spout[T]]) {
   def withTime(fn: T => Date)(implicit inj: Injection[T, Array[Byte]]): SourceBuilder[T] =
-    new SourceBuilder(this, fn)
+    SourceBuilder(this, fn)
 }
 
 object EventSource {

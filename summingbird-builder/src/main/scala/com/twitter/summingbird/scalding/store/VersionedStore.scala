@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding.store
 
 import cascading.flow.FlowDef
 import com.twitter.bijection.Injection
-import com.twitter.scalding.{ TypedPipe, Mode, Dsl, TDsl }
+import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe}
 import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.scalding.ScaldingEnv

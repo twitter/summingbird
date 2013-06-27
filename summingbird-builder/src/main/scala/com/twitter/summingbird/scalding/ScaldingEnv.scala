@@ -40,19 +40,18 @@ import ConfigBijection.fromJavaMap
 // to understand (and add to later).
 
 case class ScaldingEnv(override val jobName: String, inargs: Array[String])
-extends Env(jobName) {
+    extends Env(jobName) {
 
   // Configuration isn't serializable, so mark this field as
   // transient. Access to this config copy should only occur at job
   // submission time, so this should be fine.
   @transient lazy val config = {
-    val flatMappedBuilder = builder.flatMappedBuilder
     val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
 
     // TODO: Deal with duplication here with the lift between this
     // code and SummingbirdKryoHadoop
     val jConf: JMap[String,AnyRef] = new JHashMap(fromJavaMap.invert(new Configuration))
-    KryoRegistrationHelper.registerInjections(jConf, flatMappedBuilder.eventCodecPairs)
+    KryoRegistrationHelper.registerInjections(jConf, builder.eventCodecPairs)
 
     // Register key and value types. All extensions of either of these
     // types will be caught by the registered injection.
@@ -97,7 +96,7 @@ extends Env(jobName) {
   @transient
   protected lazy val hadoopTool: STool = {
     val tool = new STool
-    tool.setJobConstructor { jobArgs => builder.buildScalding(this) }
+    tool.setJobConstructor { jobArgs => sys.error("TODO") }
     tool
   }
 

@@ -26,18 +26,12 @@ object Constants {
   val RETURN_INFO = "return-info"
 
   val VALUE_FIELD = "value"
-  val RPC_STREAM = "rpc-result"
-  val DRPC_SPOUT = "drpc-spout"
-  val DRPC_DECODER = "drpcDecoder"
   val GROUP_BY_SUM = "groupBySum"
-  val RPC_RETURN = "rpcReturn"
 
   val DEFAULT_SPOUT_PARALLELISM = SpoutParallelism(1)
   val DEFAULT_FM_PARALLELISM = FlatMapParallelism(5)
   val DEFAULT_FM_STORM_METRICS = FlatMapStormMetrics(None)
   val DEFAULT_FM_CACHE = CacheSize(0)
-  val DEFAULT_RPC_PARALLELISM = RpcParallelism(1)
-  val DEFAULT_DECODER_PARALLELISM = DecoderParallelism(1)
   val DEFAULT_SINK_PARALLELISM = SinkParallelism(5)
   val DEFAULT_ONLINE_SUCCESS_HANDLER = OnlineSuccessHandler(_ => {})
   val DEFAULT_ONLINE_EXCEPTION_HANDLER = OnlineExceptionHandler(Map.empty)

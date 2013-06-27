@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.util
 
-import com.twitter.util.Future
+import com.twitter.util.{ Await, Future }
 import scala.collection.mutable.{ Queue => MutableQueue }
 
 /**
@@ -39,7 +39,7 @@ case class FutureQueue[T](init: Future[T], maxLength: Int) {
   def +=(future: Future[T]): this.type = {
     queue += future
     // Force extra futures.
-    while (queue.length > maxLength) { queue.dequeue.apply }
+    while (queue.length > maxLength) { Await.result(queue.dequeue) }
 
     // Drop all realized futures but the head off the tail
     while(queue.size > 1 && queue.head.isDefined) { queue.dequeue }
