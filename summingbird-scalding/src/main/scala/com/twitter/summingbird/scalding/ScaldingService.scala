@@ -29,6 +29,7 @@ trait ScaldingService[K, V] {
 trait BatchedService[K, V] extends ScaldingService[K, V] {
   // The batcher that describes this service
   def batcher: Batcher
+  def ordering: Ordering[K]
 
   /** Get the most recent last batch and the ID (strictly less than the input ID)
    * The "Last" is the stream with only the newest value for each key.
@@ -41,13 +42,19 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
    */
   def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, V)]]
 
-  def reducers: Option[Int] = None
+  def reducers: Option[Int]
 
-  // Implement this as either mapside or grouping join
   protected def batchedLookup[W](covers: Interval[Time],
-      getKeys: FlowToPipe[(K,W)],
-      last: (BatchID, FlowToPipe[(K, V)]),
-      streams: Iterable[(BatchID, FlowToPipe[(K,V)])]): FlowToPipe[(K,(W,Option[V]))]
+    getKeys: FlowToPipe[(K, W)],
+    last: (BatchID, FlowToPipe[(K, V)]),
+    streams: Iterable[(BatchID, FlowToPipe[(K, V)])]): FlowToPipe[(K, (W, Option[V]))] =
+      Reader[FlowInput, KeyValuePipe[K, (W, Option[V])]] { (flowMode: (FlowDef, Mode)) =>
+        val left = getKeys(flowMode)
+        // TODO we could not bother to load streams outside the covers, but probably we aren't anyway
+        val right = streams.foldLeft(last._2(flowMode)) { (merged, item) => merged ++ (item._2(flowMode)) }
+        implicit val ord = ordering
+        LookupJoin(left, right)
+      }
 
   final def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
     StateWithError({ (in: FactoryInput) =>
@@ -81,7 +88,8 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
                * we will deal with that when we do the join (by filtering first,
                * then grouping on (key, batchID) to parallelize.
                */
-              ((available, outM), batchedLookup(available, getFlow, batchLastFlow, existing))
+              ((available, outM),
+                Scalding.limitTimes(available, batchedLookup(available, getFlow, batchLastFlow, existing)))
             }
         }
       }
