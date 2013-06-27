@@ -16,9 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
-import com.twitter.scalding.{Mode, TypedPipe}
-import cascading.flow.FlowDef
+import com.twitter.scalding.TypedPipe
 
 /**
   * lookupJoin simulates the behavior of a realtime system attempting
@@ -57,7 +55,7 @@ import cascading.flow.FlowDef
   */
 // TODO move to scalding somewhere
 object LookupJoin extends Serializable {
-  def lookupJoin[T:Ordering, K:Ordering, V, JoinedV](left: TypedPipe[(T, (K, V))], right: TypedPipe[(T, (K, JoinedV))]):
+  def apply[T:Ordering, K:Ordering, V, JoinedV](left: TypedPipe[(T, (K, V))], right: TypedPipe[(T, (K, JoinedV))]):
     TypedPipe[(T, (K, (V, Option[JoinedV])))] = {
     /**
       * Implicit ordering on an either that doesn't care about the
@@ -99,8 +97,8 @@ object LookupJoin extends Serializable {
             * shows up and a new join occurs.
             */
           (None: Option[JoinedV], None: Option[(T, V, Option[JoinedV])])
-        ) { case ((lastJoined, _), (thisTime, newPair)) =>
-            newPair match {
+        ) { case ((lastJoined, _), (thisTime, leftOrRight)) =>
+            leftOrRight match {
               // Left(v) means that we have a new value from the left
               // pipe that we need to join against the current
               // "lastJoined" value sitting in scanLeft's state. This
@@ -108,12 +106,9 @@ object LookupJoin extends Serializable {
               // pipe at time "thisTime".
               case Left(v) => (lastJoined, Some((thisTime, v, lastJoined)))
 
-              // Right(joinedV) means that we've received a new delta
-              // to merge into the simulated realtime service
-              // described in the comments above. Add the delta to the
-              // existing value sitting in the simulated service (as
-              // joinedV) and return it to become the scanLeft's next
-              // state.
+              // Right(joinedV) means that we've received a new value
+              // to use in the simulated realtime service
+              // described in the comments above
               case Right(joined) => (Some(joined), None)
             }
         }.toTypedPipe
