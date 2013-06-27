@@ -149,9 +149,9 @@ case class SourceBuilder[T: Manifest] private (
     keyOrdering: Ordering[K]): CompletedBuilder[K, V] = {
     val newNode = node.sumByKey[K, V](
       null,
-      MergeableStoreSupplier.build(store.onlineSupplier())
+      MergeableStoreSupplier.from(store.onlineSupplier())
     )
-    val cb = new CompletedBuilder(newNode, keyCodec, valCodec, SourceBuilder.uuid, opts)
+    val cb = new CompletedBuilder(newNode, pairs, keyCodec, valCodec, SourceBuilder.uuid, opts)
     env.builder = cb
     cb
   }
