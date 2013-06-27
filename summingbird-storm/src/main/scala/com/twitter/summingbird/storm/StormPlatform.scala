@@ -55,10 +55,10 @@ object Storm {
   val SINK_ID = "sinkId"
 
   def local(name: String, options: Map[String, StormOptions] = Map.empty): LocalStorm =
-    new LocalStorm(name, options)(identity)
+    new LocalStorm(name, options, identity)
 
   def remote(name: String, options: Map[String, StormOptions] = Map.empty): RemoteStorm =
-    new RemoteStorm(name, options)(identity)
+    new RemoteStorm(name, options, identity)
 
   implicit def source[T](spout: Spout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) = {

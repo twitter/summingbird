@@ -78,24 +78,22 @@ case class SourceBuilder[T: Manifest] private (
   def flatMapBuilder[U: Manifest](newFlatMapper: FlatMapper[T, U]): SourceBuilder[U] =
     flatMap(newFlatMapper(_))
 
-  // TODO: Add "write" functionality. This will require a new node in the Graph.
   def write[Written](sink: CompoundSink[Written])(conversion: T => TraversableOnce[Written])
-      : SourceBuilder[T] = this
+      : SourceBuilder[T] = sys.error("TODO")
 
   def leftJoin[K, V, JoinedValue](service: CompoundService[K, JoinedValue])
     (implicit ev: T <:< (K, V), keyMf: Manifest[K], valMf: Manifest[V], joinedMf: Manifest[JoinedValue])
       : SourceBuilder[(K, (V, Option[JoinedValue]))] =
     copy(
       node = node.leftJoin(
-        null,
+        sys.error("TODO"),
         StoreWrapper[K, JoinedValue](service.online)
       )
     )
 
   // Set the number of reducers used to shard out the EventSource
   // flatmapper in the offline flatmap step.
-  // TODO: Set this. This is a Scalding option.
-  def set(fms: FlatMapShards): SourceBuilder[T] = this
+  def set(fms: FlatMapShards): SourceBuilder[T] = sys.error("TODO")
 
   // Set the cache size used in the online flatmap step.
   def set(size: CacheSize) = copy(opts = adjust(opts, id)(_.set(size)))
@@ -148,7 +146,7 @@ case class SourceBuilder[T: Manifest] private (
     monoid: Monoid[V],
     keyOrdering: Ordering[K]): CompletedBuilder[K, V] = {
     val newNode = node.sumByKey[K, V](
-      null,
+      sys.error("TODO"),
       MergeableStoreSupplier.from(store.onlineSupplier())
     )
     val cb = new CompletedBuilder(newNode, pairs, keyCodec, valCodec, SourceBuilder.uuid, opts)

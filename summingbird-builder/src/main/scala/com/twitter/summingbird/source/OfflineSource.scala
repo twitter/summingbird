@@ -32,7 +32,7 @@ import java.util.Date
 object OfflineSource {
   def apply[Event](fn: DateRange => Mappable[Event]) =
     new OfflineSource[Event] {
-      def rangedSource(range: DateRange) = fn(range)
+      def scaldingSource(range: DateRange) = fn(range)
     }
 }
 

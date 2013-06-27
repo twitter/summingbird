@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.storm
 
-import com.twitter.summingbird.builder.{ FlatMapOption, SinkOption }
+import com.twitter.summingbird.builder.{ FlatMapOption, SinkOption, SpoutParallelism }
 import com.twitter.summingbird.util.CacheSize
 
 /**

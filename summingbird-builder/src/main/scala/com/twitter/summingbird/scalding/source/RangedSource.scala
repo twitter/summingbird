@@ -30,6 +30,6 @@ import java.util.Date
 object RangedSource {
   def apply[Event](fn: DateRange => Mappable[Event]) =
     new OfflineSource[Event] {
-      def rangedSource(range: DateRange) = fn(range)
+      def scaldingSource(range: DateRange) = fn(range)
     }
 }

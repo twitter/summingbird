@@ -183,7 +183,7 @@ class BatchService[K, JoinedV](
     val thisBuilder = env.builder
 
     (for {
-      lastProcessed <- getFirstBatchID(thisBuilder.store.offlineStore)
+      lastProcessed <- getFirstBatchID(sys.error("TODO"))
       extremities = (lastProcessed, lastProcessed + env.batches - 1)
       requiredDeltas = batcher.enclosedBy(extremities, otherBatcher)
       otherAggregatedUpTo: BatchID <- otherStore.availableBatches(env).find(_ <= requiredDeltas.min)

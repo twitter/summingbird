@@ -96,7 +96,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   @transient
   protected lazy val hadoopTool: STool = {
     val tool = new STool
-    tool.setJobConstructor { jobArgs => builder.buildScalding(this) }
+    tool.setJobConstructor { jobArgs => sys.error("TODO") }
     tool
   }
 
