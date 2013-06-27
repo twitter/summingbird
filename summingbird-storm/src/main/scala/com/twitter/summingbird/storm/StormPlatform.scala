@@ -42,7 +42,7 @@ sealed trait StormStore[-K, V] {
 }
 
 object MergeableStoreSupplier {
-  def apply[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+  def from[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier(() => store, batcher)
 }
 
@@ -54,11 +54,11 @@ case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K,
 object Storm {
   val SINK_ID = "sinkId"
 
-  def local(name: String, options: Map[String, StormOptions] = Map.empty) =
+  def local(name: String, options: Map[String, StormOptions] = Map.empty): LocalStorm =
     new LocalStorm(name, options)
 
-  def apply(options: Map[String, StormOptions] = Map.empty): Storm =
-    new Storm(options)
+  def remote(name: String, options: Map[String, StormOptions] = Map.empty): RemoteStorm =
+    new RemoteStorm(name, options)
 
   implicit def source[T](spout: Spout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) = {

@@ -51,7 +51,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
   def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, V)]] = None
 
   /** Get the most recent last batch and the ID (strictly less than the input ID)
-   * The "Last" is the stream with only the oldest value for each key, within the batch
+   * The "Last" is the stream with only the newest value for each key, within the batch
    * combining the last from batchID and the deltas from batchID.next you get the stream
    * for batchID.next
    */
