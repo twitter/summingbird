@@ -17,7 +17,7 @@
 package com.twitter.summingbird
 
 /** Monoid stands alone. */
-import com.twitter.algebird.Monoid
+import com.twitter.algebird.{ Monoid, Semigroup }
 
 object Producer {
   def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
@@ -32,6 +32,9 @@ object Producer {
 
   implicit def toKeyed[P <: Platform[P], K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer)
+
+  implicit def semigroup[P, T]: Semigroup[Producer[P, T]] =
+    Semigroup.from(_ merge _)
 }
 
 /**

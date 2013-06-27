@@ -17,11 +17,9 @@ limitations under the License.
 package com.twitter.summingbird.scalding.store
 
 import cascading.flow.FlowDef
-
-import com.twitter.scalding.{ Dsl, Mode, TDsl, TypedPipe, IterableSource }
+import com.twitter.scalding.{Dsl, IterableSource, Mode, TDsl, TypedPipe}
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.scalding.ScaldingEnv
-
 import java.io.Serializable
 
 /**

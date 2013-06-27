@@ -55,10 +55,10 @@ object Storm {
   val SINK_ID = "sinkId"
 
   def local(name: String, options: Map[String, StormOptions] = Map.empty): LocalStorm =
-    new LocalStorm(name, options)
+    new LocalStorm(name, options, identity)
 
   def remote(name: String, options: Map[String, StormOptions] = Map.empty): RemoteStorm =
-    new RemoteStorm(name, options)
+    new RemoteStorm(name, options, identity)
 
   implicit def source[T](spout: Spout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) = {
@@ -67,7 +67,7 @@ object Storm {
   }
 }
 
-abstract class Storm(options: Map[String, StormOptions]) extends Platform[Storm] {
+abstract class Storm(options: Map[String, StormOptions], updateConf: Config => Config) extends Platform[Storm] {
   import Storm.SINK_ID
 
   type Source[+T] = Spout[(Long, T)]
@@ -285,8 +285,11 @@ abstract class Storm(options: Map[String, StormOptions]) extends Platform[Storm]
     config.setMaxSpoutPending(1000)
     config.setNumAckers(12)
     config.setNumWorkers(12)
-    config
+    transformConfig(config)
   }
+
+  def transformConfig(base: Config): Config = updateConf(base)
+  def withConfigUpdater(fn: Config => Config): Storm
 
   def plan[T](summer: Producer[Storm, T]): StormTopology = {
     val topologyBuilder = new TopologyBuilder
@@ -298,15 +301,24 @@ abstract class Storm(options: Map[String, StormOptions]) extends Platform[Storm]
   }
 }
 
-class RemoteStorm(jobName: String, options: Map[String, StormOptions]) extends Storm(options) {
+class RemoteStorm(jobName: String, options: Map[String, StormOptions], updateConf: Config => Config)
+    extends Storm(options, updateConf) {
+
+  override def withConfigUpdater(fn: Config => Config) =
+    new RemoteStorm(jobName, options, updateConf.andThen(fn))
+
   def run(topology: StormTopology): Unit = {
     val topologyName = "summingbird_" + jobName
     StormSubmitter.submitTopology(topologyName, baseConfig, topology)
   }
 }
 
-class LocalStorm(jobName: String, options: Map[String, StormOptions]) extends Storm(options) {
+class LocalStorm(jobName: String, options: Map[String, StormOptions], updateConf: Config => Config)
+    extends Storm(options, updateConf) {
   lazy val localCluster = new LocalCluster
+
+  override def withConfigUpdater(fn: Config => Config) =
+    new LocalStorm(jobName, options, updateConf.andThen(fn))
 
   def run(topology: StormTopology): Unit = {
     val topologyName = "summingbird_" + jobName
