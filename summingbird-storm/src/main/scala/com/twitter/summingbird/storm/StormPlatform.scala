@@ -320,8 +320,8 @@ class LocalStorm(jobName: String, options: Map[String, StormOptions])(updateConf
 
   def transformConfig(base: Config): Config = updateConf(base)
 
-  def withConfigUpdater(fn: Config => Config): RemoteStorm =
-    new RemoteStorm(jobName, options)(updateConf.andThen(fn))
+  def withConfigUpdater(fn: Config => Config): LocalStorm =
+    new LocalStorm(jobName, options)(updateConf.andThen(fn))
 
   def run(topology: StormTopology): Unit = {
     val topologyName = "summingbird_" + jobName
