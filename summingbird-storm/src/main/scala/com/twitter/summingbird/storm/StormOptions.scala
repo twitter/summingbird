@@ -24,6 +24,7 @@ import com.twitter.summingbird.util.CacheSize
   */
 
 class StormOptions(opts: Map[Class[_], Any] = Map.empty) {
+  def set(opt: SpoutParallelism) = new StormOptions(opts + (opt.getClass -> opt))
   def set(opt: SinkOption) = new StormOptions(opts + (opt.getClass -> opt))
   def set(opt: FlatMapOption) = new StormOptions(opts + (opt.getClass -> opt))
   def set(opt: CacheSize) = new StormOptions(opts + (opt.getClass -> opt))

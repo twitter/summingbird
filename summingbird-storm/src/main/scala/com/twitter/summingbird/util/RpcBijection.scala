@@ -30,12 +30,11 @@ object RpcInjection {
   import Injection.connect
   import Bufferable.{ injectionOf, viaInjection }
 
-  def of[T](implicit bijection: Injection[T, Array[Byte]])
-  : Injection[T, String] =
+  def of[T](implicit bijection: Injection[T, Array[Byte]]): Injection[T, String] =
     connect[T, Array[Byte], Base64String, String]
 
   def batchPair[K](implicit bijection: Injection[K, Array[Byte]])
-  : Injection[(K, BatchID), String] = {
+      : Injection[(K, BatchID), String] = {
     val SEP = ":"
 
     implicit val pairInjection: Injection[(String, String), String] =
@@ -52,7 +51,7 @@ object RpcInjection {
         }
       }
     implicit val kInjection: Injection[K, String] = of[K]
-
+    implicit val batch2String: Injection[BatchID, String] = BatchID.batchID2String
     connect[(K, BatchID), (String, String), String]
   }
 

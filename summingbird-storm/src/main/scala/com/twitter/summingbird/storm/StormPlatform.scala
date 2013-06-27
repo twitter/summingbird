@@ -42,8 +42,8 @@ sealed trait StormStore[-K, V] {
 }
 
 object MergeableStoreSupplier {
-  def apply[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
-    MergeableStoreSupplier(() => store, batcher)
+  def build[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+    new MergeableStoreSupplier(() => store, batcher)
 }
 
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
@@ -55,10 +55,10 @@ object Storm {
   val SINK_ID = "sinkId"
 
   def local(name: String, options: Map[String, StormOptions] = Map.empty) =
-    new LocalStorm(name, options)
+    new LocalStorm(name, options)(identity)
 
-  def apply(options: Map[String, StormOptions] = Map.empty): Storm =
-    new Storm(options)
+  def remote(name: String, options: Map[String, StormOptions] = Map.empty) =
+    new RemoteStorm(name, options)(identity)
 
   implicit def source[T](spout: Spout[T])
     (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) = {
@@ -288,6 +288,8 @@ abstract class Storm(options: Map[String, StormOptions]) extends Platform[Storm]
     config
   }
 
+  def transformConfig(base: Config): Config = base
+
   def plan[T](summer: Producer[Storm, T]): StormTopology = {
     val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
@@ -298,15 +300,28 @@ abstract class Storm(options: Map[String, StormOptions]) extends Platform[Storm]
   }
 }
 
-class RemoteStorm(jobName: String, options: Map[String, StormOptions]) extends Storm(options) {
+class RemoteStorm(jobName: String, options: Map[String, StormOptions])(updateConf: Config => Config)
+    extends Storm(options) {
+
+  def transformConfig(base: Config): Config = updateConf(base)
+
+  def withConfigUpdater(fn: Config => Config): RemoteStorm =
+    new RemoteStorm(jobName, options)(updateConf.andThen(fn))
+
   def run(topology: StormTopology): Unit = {
     val topologyName = "summingbird_" + jobName
     StormSubmitter.submitTopology(topologyName, baseConfig, topology)
   }
 }
 
-class LocalStorm(jobName: String, options: Map[String, StormOptions]) extends Storm(options) {
+class LocalStorm(jobName: String, options: Map[String, StormOptions])(updateConf: Config => Config)
+    extends Storm(options) {
   lazy val localCluster = new LocalCluster
+
+  def transformConfig(base: Config): Config = updateConf(base)
+
+  def withConfigUpdater(fn: Config => Config): RemoteStorm =
+    new RemoteStorm(jobName, options)(updateConf.andThen(fn))
 
   def run(topology: StormTopology): Unit = {
     val topologyName = "summingbird_" + jobName

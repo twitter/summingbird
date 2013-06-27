@@ -16,22 +16,20 @@ limitations under the License.
 
 package com.twitter.summingbird.builder
 
-import backtype.storm.topology.TopologyBuilder
-import backtype.storm.topology.BoltDeclarer
-
-import cascading.flow.FlowDef
-
-import com.twitter.algebird.Monoid
+import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.bijection.Injection
-import com.twitter.scalding.{TypedPipe, Mode}
-
-import com.twitter.summingbird.batch.{Batcher, BatchID}
+import com.twitter.chill.InjectionPair
+import com.twitter.storehaus.algebra.MergeableStore
+import com.twitter.summingbird._
+import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.scalding.{Scalding, ScaldingService, ScaldingStore}
+import com.twitter.summingbird.scalding.store.BatchStore
+import com.twitter.summingbird.service.CompoundService
+import com.twitter.summingbird.sink.CompoundSink
 import com.twitter.summingbird.source.EventSource
-import com.twitter.summingbird.{ Constants, FlatMapper, FunctionFlatMapper }
-
-import com.twitter.summingbird.storm.{FlatMapOperation => StormFlatMap, StormEnv}
-import com.twitter.summingbird.scalding.{FlatMapOperation => ScaldingFlatMap, ScaldingEnv}
-
+import com.twitter.summingbird.store.CompoundStore
+import com.twitter.summingbird.storm.{MergeableStoreSupplier, StoreWrapper, Storm, StormOptions}
+import com.twitter.summingbird.util.CacheSize
 import java.io.Serializable
 import java.util.Date
 
@@ -43,104 +41,127 @@ import java.util.Date
 
 // The SourceBuilder is the first level of the expansion.
 
-class SourceBuilder[Event](
-  val eventSource: EventSource[Event],
-  timeOf: Event => Date,
-  predOption: Option[(Event) => Boolean] = None,
-  flatMapShards: FlatMapShards = FlatMapShards(0),
-  spoutParallelism: SpoutParallelism = SpoutParallelism(5))
-  (implicit eventMf: Manifest[Event], eventCodec: Injection[Event, Array[Byte]])
-    extends Serializable {
-  import Constants._
+object SourceBuilder {
+  def uuid: String = java.util.UUID.randomUUID.toString
+  def adjust[A, B](m: Map[A, B], k: A)(f: B => B) = m.updated(k, f(m(k)))
 
-  val eventCodecPair = CompletedBuilder.injectionPair[Event](eventCodec)
+  implicit def sg[T]: Semigroup[SourceBuilder[T]] =
+    Semigroup.from(_ ++ _)
 
-  def filter(newPred: (Event) => Boolean): SourceBuilder[Event] = {
-    val newPredicate =
-      predOption.map { old => { (e: Event) => old(e) && newPred(e) } }
-        .orElse(Some(newPred))
-
-    new SourceBuilder(eventSource, timeOf, newPredicate, flatMapShards, spoutParallelism)
+  def apply[T](eventSource: EventSource[T], timeOf: T => Date)
+    (implicit mf: Manifest[T], eventCodec: Injection[T, Array[Byte]]) = {
+    implicit val te = TimeExtractor[T](timeOf(_).getTime)
+    val newID = java.util.UUID.randomUUID.toString
+    new SourceBuilder[T](
+      PairedProducer(
+        Scalding.sourceFromMappable(eventSource.offline.get.scaldingSource(_)).name(newID),
+        Storm.source(eventSource.spout.get).name(newID)
+      ),
+      List(CompletedBuilder.injectionPair[T](eventCodec)),
+      newID
+    )
   }
+}
 
-  def map[Key: Manifest, Val: Manifest](fn: (Event) => (Key,Val)) =
-    flatMap[Key, Val] { e : Event => Some(fn(e)) }
+case class SourceBuilder[T: Manifest] private (
+  node: PairedProducer[T, Scalding, Storm],
+  pairs: List[InjectionPair[_]],
+  id: String,
+  opts: Map[String, StormOptions] = Map.empty
+) extends Serializable {
+  import SourceBuilder.adjust
 
-  def flatMap[Key: Manifest, Val: Manifest]
-  (fn : (Event) => TraversableOnce[(Key,Val)])  =
-    flatMapBuilder[Key, Val](new FunctionFlatMapper[Event, (Key, Val)](fn))
+  def map[U: Manifest](fn: T => U): SourceBuilder[U] = copy(node = node.map(fn))
+  def filter(fn: T => Boolean): SourceBuilder[T] = copy(node = node.filter(fn))
+  def flatMap[U: Manifest](fn: T => TraversableOnce[U]): SourceBuilder[U] =
+    copy(node = node.flatMap(fn))
+  def flatMapBuilder[U: Manifest](newFlatMapper: FlatMapper[T, U]): SourceBuilder[U] =
+    flatMap(newFlatMapper(_))
 
-  def flatMapBuilder[Key: Manifest, Val: Manifest](newFlatMapper: FlatMapper[Event, (Key, Val)])
-      : SingleFlatMappedBuilder[Event, Key, Val] = {
-    val storm = StormFlatMap[Event, (Key, Val)](newFlatMapper)
-    val scalding = ScaldingFlatMap[Event, Key, Val](newFlatMapper)
-    new SingleFlatMappedBuilder[Event, Key, Val](this, storm, scalding)
-  }
+  // TODO: Add "write" functionality. This will require a new node in the Graph.
+  def write[Written](sink: CompoundSink[Written])(conversion: T => TraversableOnce[Written])
+      : SourceBuilder[T] = this
 
-  // Here are the planning methods:
-  def addToTopo(env: StormEnv, tb: TopologyBuilder, suffix: String): String = {
-    val spoutName = "spout" + suffix
-
-    // TODO: After testing, try out pushing the flatMap up to here and
-    // losing the flatMapBolt.
-    val scalaSpout = eventSource.spout.get
-
-    /**
-      * the filteredSpout emits pairs of (Event, Date). Kryo handles
-      * Date natively by only serializing the Long, so ths is just as
-      * efficient as extracting the millis. FlatMapBolt needs the
-      * java.util.Date to tag each event with a BatchID, so we keep the
-      * date around.
-      *
-      * TODO: Would it make more sense to assign a BatchID here?
-      */
-    val filteredSpout =
-      predOption.map(scalaSpout.filter(_))
-        .getOrElse(scalaSpout)
-        .map { e => (e, timeOf(e)) }
-        .getSpout
-
-    tb.setSpout(spoutName, filteredSpout, spoutParallelism.parHint)
-    spoutName
-  }
-
-  def getFlatMappedPipe(batcher: Batcher, lowerb: BatchID, env: ScaldingEnv)
-    (implicit fd: FlowDef, mode: Mode): TypedPipe[(Long, Event)] = {
-    //import TDsl._
-    //import Dsl._
-
-    val inputPipe =
-      eventSource.offline.get
-        .scaldingSource(batcher, lowerb, env)(timeOf)
-
-    val filteredPipe =
-      predOption.map { fn => inputPipe.filter { fn } }
-        .getOrElse(inputPipe)
-
-    // Sharding is a kind of parallelism on the source done to get around Hadoop issues:
-    val shards = flatMapShards.count
-    val shardedPipe = {
-      if (shards <= 1)
-        filteredPipe
-      else
-        // TODO: switch this to groupRandomly when it becomes
-        // available in the typed API
-        filteredPipe
-          .groupBy { event => new java.util.Random().nextInt(shards) }
-          .mapValues { identity(_) } // hack to get scalding to actually do the groupBy
-          .withReducers(shards)
-          .values
-    }
-    shardedPipe.map { ev => (timeOf(ev).getTime, ev) }
-  }
+  def leftJoin[K, V, JoinedValue](service: CompoundService[K, JoinedValue])
+    (implicit ev: T <:< (K, V), keyMf: Manifest[K], valMf: Manifest[V], joinedMf: Manifest[JoinedValue])
+      : SourceBuilder[(K, (V, Option[JoinedValue]))] =
+    copy(
+      node = node.leftJoin(
+        null,
+        StoreWrapper[K, JoinedValue](service.online)
+      )
+    )
 
   // Set the number of reducers used to shard out the EventSource
   // flatmapper in the offline flatmap step.
-  def set(fms: FlatMapShards): SourceBuilder[Event] =
-    new SourceBuilder(eventSource, timeOf, predOption, fms, spoutParallelism)
+  // TODO: Set this. This is a Scalding option.
+  def set(fms: FlatMapShards): SourceBuilder[T] = this
 
-  // Set the number of reducers used to shard out the EventSource
-  // flatmapper in the offline flatmap step.
-  def set(spoutPar: SpoutParallelism): SourceBuilder[Event] =
-    new SourceBuilder(eventSource, timeOf, predOption, flatMapShards, spoutPar)
+  // Set the cache size used in the online flatmap step.
+  def set(size: CacheSize) = copy(opts = adjust(opts, id)(_.set(size)))
+  def set(opt: FlatMapOption) = copy(opts = adjust(opts, id)(_.set(opt)))
+
+  /**
+    * Complete this builder instance with a BatchStore. At this point,
+    * the Summingbird job can be executed on Hadoop.
+    */
+  def groupAndSumTo[K, V](store: BatchStore[K, (BatchID, V)])(
+    implicit ev: T <:< (K, V),
+    env: Env,
+    keyMf: Manifest[K],
+    valMf: Manifest[V],
+    keyCodec: Injection[K, Array[Byte]],
+    valCodec: Injection[V, Array[Byte]],
+    batcher: Batcher,
+    monoid: Monoid[V],
+    kord: Ordering[K]): CompletedBuilder[K, V] =
+    groupAndSumTo(CompoundStore.fromOffline(store))
+
+  /**
+    * Complete this builder instance with a MergeableStore. At this point,
+    * the Summingbird job can be executed on Storm.
+    */
+  def groupAndSumTo[K, V](store: => MergeableStore[(K, BatchID), V])(
+    implicit ev: T <:< (K, V),
+    env: Env,
+    keyMf: Manifest[K],
+    valMf: Manifest[V],
+    keyCodec: Injection[K, Array[Byte]],
+    valCodec: Injection[V, Array[Byte]],
+    batcher: Batcher,
+    monoid: Monoid[V],
+    kord: Ordering[K]): CompletedBuilder[K, V] =
+    groupAndSumTo(CompoundStore.fromOnline(store))
+
+  /**
+    * Complete this builder instance with a CompoundStore. At this
+    * point, the Summingbird job can be executed on Storm or Hadoop.
+    */
+  def groupAndSumTo[K, V](store: CompoundStore[K, V])(
+    implicit ev: T <:< (K, V),
+    env: Env,
+    keyMf: Manifest[K],
+    valMf: Manifest[V],
+    keyCodec: Injection[K, Array[Byte]],
+    valCodec: Injection[V, Array[Byte]],
+    batcher: Batcher,
+    monoid: Monoid[V],
+    keyOrdering: Ordering[K]): CompletedBuilder[K, V] = {
+    val newNode = node.sumByKey[K, V](
+      null,
+      MergeableStoreSupplier.build(store.onlineSupplier())
+    )
+    val cb = new CompletedBuilder(newNode, keyCodec, valCodec, SourceBuilder.uuid, opts)
+    env.builder = cb
+    cb
+  }
+
+  // useful when you need to merge two different Event sources
+  def ++(other: SourceBuilder[T]): SourceBuilder[T] =
+    copy(
+      node = node.merge(other.node),
+      pairs = pairs ++ other.pairs,
+      id = SourceBuilder.uuid,
+      opts = opts ++ other.opts
+    )
 }

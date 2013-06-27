@@ -129,7 +129,7 @@ object StormLaws extends Properties("Storm") {
     */
   val testFn = { i: Int => List((i -> i)) }
 
-  val storm = Storm("scalaCheckJob")
+  val storm = Storm.local("scalaCheckJob")
 
   /**
     * Perform a single run of TestGraphs.singleStepJob using the
