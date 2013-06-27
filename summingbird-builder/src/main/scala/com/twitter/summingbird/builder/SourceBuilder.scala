@@ -31,7 +31,7 @@ import com.twitter.summingbird.store.CompoundStore
 import com.twitter.summingbird.storm.{MergeableStoreSupplier, StoreWrapper, Storm, StormOptions}
 import com.twitter.summingbird.util.CacheSize
 import java.io.Serializable
-import java.util.Date
+import java.util.{ Date, UUID }
 
 /**
  * @author Oscar Boykin
@@ -42,7 +42,7 @@ import java.util.Date
 // The SourceBuilder is the first level of the expansion.
 
 object SourceBuilder {
-  def uuid: String = java.util.UUID.randomUUID.toString
+  def freshUUID: String = UUID.randomUUID.toString
   def adjust[A, B](m: Map[A, B], k: A)(f: B => B) = m.updated(k, f(m(k)))
 
   implicit def sg[T]: Semigroup[SourceBuilder[T]] =
@@ -51,7 +51,7 @@ object SourceBuilder {
   def apply[T](eventSource: EventSource[T], timeOf: T => Date)
     (implicit mf: Manifest[T], eventCodec: Injection[T, Array[Byte]]) = {
     implicit val te = TimeExtractor[T](timeOf(_).getTime)
-    val newID = java.util.UUID.randomUUID.toString
+    val newID = freshUUID
     new SourceBuilder[T](
       PairedProducer(
         Scalding.sourceFromMappable(eventSource.offline.get.scaldingSource(_)).name(newID),
@@ -149,7 +149,7 @@ case class SourceBuilder[T: Manifest] private (
       sys.error("TODO"),
       MergeableStoreSupplier.from(store.onlineSupplier())
     )
-    val cb = new CompletedBuilder(newNode, pairs, keyCodec, valCodec, SourceBuilder.uuid, opts)
+    val cb = new CompletedBuilder(newNode, pairs, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
     env.builder = cb
     cb
   }
@@ -159,7 +159,7 @@ case class SourceBuilder[T: Manifest] private (
     copy(
       node = node.merge(other.node),
       pairs = pairs ++ other.pairs,
-      id = SourceBuilder.uuid,
+      id = SourceBuilder.freshUUID,
       opts = opts ++ other.opts
     )
 }
