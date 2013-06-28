@@ -21,7 +21,7 @@ import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
 import com.twitter.summingbird.monad.{StateWithError, Reader}
 import cascading.flow.FlowDef
 
-trait ScaldingService[K, V] {
+trait ScaldingService[K, V] extends java.io.Serializable {
   // A static, or write-once service can  potentially optimize this without writing the (K, V) stream out
   def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))]
 }
@@ -40,20 +40,24 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
    * to. This is an associative operation and sufficient to scedule the service.
    * This only has the keys that changed value during this batch.
    */
-  def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, V)]]
+  def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, Option[V])]]
 
   def reducers: Option[Int]
 
   protected def batchedLookup[W](covers: Interval[Time],
     getKeys: FlowToPipe[(K, W)],
     last: (BatchID, FlowToPipe[(K, V)]),
-    streams: Iterable[(BatchID, FlowToPipe[(K, V)])]): FlowToPipe[(K, (W, Option[V]))] =
+    streams: Iterable[(BatchID, FlowToPipe[(K, Option[V])])]): FlowToPipe[(K, (W, Option[V]))] =
       Reader[FlowInput, KeyValuePipe[K, (W, Option[V])]] { (flowMode: (FlowDef, Mode)) =>
         val left = getKeys(flowMode)
-        // TODO we could not bother to load streams outside the covers, but probably we aren't anyway
-        val right = streams.foldLeft(last._2(flowMode)) { (merged, item) => merged ++ (item._2(flowMode)) }
+        val liftedLast: KeyValuePipe[K, Option[V]] = last._2(flowMode).map { case (t, (k, w)) => (t, (k, Some(w))) }
+        // TODO we could not bother to load streams outside the covers, but probably we aren't anyway assuming
+        // the time spans are not wildly mismatched
+        val right = streams.foldLeft(liftedLast) { (merged, item) => merged ++ (item._2(flowMode)) }
         implicit val ord = ordering
-        LookupJoin(left, right)
+        def flatOpt[T](o: Option[Option[T]]): Option[T] = o.flatMap(identity)
+
+        LookupJoin(left, right).map { case (t, (k, (w, optoptv))) => (t, (k, (w, flatOpt(optoptv)))) }
       }
 
   final def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
