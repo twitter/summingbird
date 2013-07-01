@@ -36,7 +36,7 @@ import scala.util.control.Exception.allCatch
  */
 
 object VersionedBatchStore {
-
+  // TODO: Add a nice constructor to enable packing.
 }
 
 // TODO: it looks like when we get the mappable/directory this happens
@@ -45,9 +45,11 @@ object VersionedBatchStore {
 // meta-data and open the Mappable.
 // The source parameter is pass-by-name to avoid needing the hadoop
 // Configuration object when running the storm job.
-class VersionedBatchStore[K, V](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)(
-    implicit injection: Injection[(K, V), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])
-  extends BatchedScaldingStore[K, V] {
+class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)
+  (pack: (BatchID, (K, V)) => (K2, V2))
+  (unpack: ((K2, V2)) => (K, V))(
+  implicit injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])
+    extends BatchedScaldingStore[K, V] {
 
   /** Get the most recent last batch and the ID (strictly less than the input ID)
    * The "Last" is the stream with only the newest value for each key, within the batch
@@ -69,9 +71,10 @@ class VersionedBatchStore[K, V](rootPath: String, versionsToKeep: Int, override 
   /** Instances may choose to write out the last or just compute it from the stream */
   override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
     import Dsl._
-    implicit val ts: TupleSetter[(K,V)] = Dsl.Tup2Setter
-    lastVals.toPipe(Dsl.intFields(List(0,1)))
-      .write(VersionedKeyValSource(rootPath,
+
+    lastVals.map(pack(batchID, _))
+      .toPipe((0,1))
+      .write(VersionedKeyValSource[K2, V2](rootPath,
           sourceVersion=None,
           sinkVersion=Some(batchToVersion(batchID)),
           maxFailures=0,
@@ -98,8 +101,9 @@ class VersionedBatchStore[K, V](rootPath: String, versionsToKeep: Int, override 
       .reduceOption { (a, b) => if (a._1 > b._1) a else b }
   }
 
-  protected def readVersion(v: Long): FlowProducer[TypedPipe[(K,V)]] = Reader { (flowMode: (FlowDef, Mode)) =>
-    val mappable = VersionedKeyValSource(rootPath, sourceVersion=Some(v))
+  protected def readVersion(v: Long): FlowProducer[TypedPipe[(K, V)]] = Reader { (flowMode: (FlowDef, Mode)) =>
+    val mappable = VersionedKeyValSource[K2, V2](rootPath, sourceVersion=Some(v))
     TypedPipe.from(mappable)(flowMode._1, flowMode._2, mappable.converter)
+      .map(unpack)
   }
 }

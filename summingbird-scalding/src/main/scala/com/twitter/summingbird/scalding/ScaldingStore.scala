@@ -223,4 +223,5 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
         case Some(Right(built)) => mergeExistingAndBuilt(Some(built))
       }
     })
+
 }

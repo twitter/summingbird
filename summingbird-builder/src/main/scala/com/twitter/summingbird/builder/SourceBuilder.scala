@@ -23,7 +23,6 @@ import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.scalding.{Scalding, ScaldingService, ScaldingStore}
-import com.twitter.summingbird.scalding.store.BatchStore
 import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.CompoundSink
 import com.twitter.summingbird.source.EventSource
@@ -103,7 +102,7 @@ case class SourceBuilder[T: Manifest] private (
     * Complete this builder instance with a BatchStore. At this point,
     * the Summingbird job can be executed on Hadoop.
     */
-  def groupAndSumTo[K, V](store: BatchStore[K, (BatchID, V)])(
+  def groupAndSumTo[K, V](store: ScaldingStore[K, V])(
     implicit ev: T <:< (K, V),
     env: Env,
     keyMf: Manifest[K],
@@ -146,7 +145,7 @@ case class SourceBuilder[T: Manifest] private (
     monoid: Monoid[V],
     keyOrdering: Ordering[K]): CompletedBuilder[K, V] = {
     val newNode = node.sumByKey[K, V](
-      sys.error("TODO"),
+      store.offlineStore,
       MergeableStoreSupplier.from(store.onlineSupplier())
     )
     val cb = new CompletedBuilder(newNode, pairs, keyCodec, valCodec, SourceBuilder.freshUUID, opts)

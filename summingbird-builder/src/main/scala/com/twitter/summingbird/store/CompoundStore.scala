@@ -20,7 +20,7 @@ import com.twitter.chill.MeatLocker
 import com.twitter.storehaus.ReadableStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.scalding.store.BatchStore
+import com.twitter.summingbird.scalding.ScaldingStore
 
 /**
  * Compound BatchStore and MergeableStore, used for building a summingbird job.
@@ -29,11 +29,13 @@ import com.twitter.summingbird.scalding.store.BatchStore
  * @author Ashu Singhal
  */
 
-class CompoundStore[K, V] private (@transient offline: Option[BatchStore[K, (BatchID, V)]], online: Option[() => MergeableStore[(K, BatchID), V]])
+class CompoundStore[K, V] private (
+  @transient offline: Option[ScaldingStore[K, V]],
+  online: Option[() => MergeableStore[(K, BatchID), V]])
     extends Serializable {
   // MeatLocker these to protect them from serialization errors.
   private val offlineBox = offline.map { MeatLocker(_) }
-  def offlineStore: BatchStore[K, (BatchID, V)] = offlineBox.get.get
+  def offlineStore: ScaldingStore[K, V] = offlineBox.get.get
   def onlineSupplier: () => MergeableStore[(K, BatchID), V] = online.get
 }
 
@@ -41,9 +43,10 @@ object CompoundStore {
   def fromOnline[K, V](onlineSupplier: => MergeableStore[(K, BatchID), V]): CompoundStore[K, V] =
     new CompoundStore(None, Some(() => onlineSupplier))
 
-  def fromOffline[K, V](store: BatchStore[K, (BatchID, V)]): CompoundStore[K, V] =
+  def fromOffline[K, V](store: ScaldingStore[K, V]): CompoundStore[K, V] =
     new CompoundStore(Some(store), None)
 
-  def apply[K, V](offlineStore: BatchStore[K, (BatchID, V)], onlineSupplier: => MergeableStore[(K, BatchID), V]): CompoundStore[K, V] =
+  def apply[K, V](offlineStore: ScaldingStore[K, V], onlineSupplier: => MergeableStore[(K, BatchID), V])
+      : CompoundStore[K, V] =
     new CompoundStore(Some(offlineStore), Some(() => onlineSupplier))
 }

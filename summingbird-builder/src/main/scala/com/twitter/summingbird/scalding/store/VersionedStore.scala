@@ -20,8 +20,8 @@ import cascading.flow.FlowDef
 import com.twitter.bijection.Injection
 import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe}
 import com.twitter.scalding.commons.source.VersionedKeyValSource
-import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.scalding.ScaldingEnv
+import com.twitter.summingbird.batch.{ Batcher, BatchID }
+import com.twitter.summingbird.scalding.{ ScaldingEnv, VersionedBatchStore }
 import scala.util.control.Exception.allCatch
 
 /**
@@ -34,73 +34,18 @@ import scala.util.control.Exception.allCatch
  */
 
 object VersionedStore {
-  def apply[Key, Value](rootPath: String, versionsToKeep: Int = VersionedKeyValSource.defaultVersionsToKeep)
-      (implicit injection: Injection[(Key, Value), (Array[Byte], Array[Byte])]) =
-    new VersionedStore[Key, Value](rootPath, versionsToKeep)
-}
-
-// TODO: it looks like when we get the mappable/directory this happens
-// at a different time (not atomically) with getting the
-// meta-data. This seems like something we need to fix: atomically get
-// meta-data and open the Mappable.
-// The source parameter is pass-by-name to avoid needing the hadoop
-// Configuration object when running the storm job.
-class VersionedStore[Key, Value](rootPath: String, versionsToKeep: Int)(
-    implicit injection: Injection[(Key, Value), (Array[Byte], Array[Byte])])  extends BatchStore[Key, Value] {
-  import Dsl._
-  import TDsl._
-
-  // ## Batch-write Components
-
-  def prevUpperBound(env: ScaldingEnv): Option[(BatchID, Long)] =
-    HDFSMetadata(env.config, rootPath)
-      .find { str: String => allCatch.opt(BatchID(str)).isDefined }
-      .map { case (str, hdfsVersion) => (BatchID(str), hdfsVersion.version) }
-
-  protected def readVersion(v: Long) =
-    VersionedKeyValSource(rootPath, sourceVersion=Some(v))
-
-  override def readLatest(env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode)
-      : Option[(BatchID, TypedPipe[(Key,Value)])] =
-    prevUpperBound(env).map { case (bid, version) =>
-      (bid, readVersion(version))
-    }
-
   /**
-    * Read the version aggregated up to the supplied batchID.
+    * Returns a VersionedBatchStore that tags the BatchID alongside
+    * the stored value. This is required to serve data through a
+    * read-only key-value store designed to serve values in tandem
+    * with a realtime layer (that stores (K, BatchID) -> V). See
+    * summingbird-client's ClientStore for more information.
     */
-  override def read(batchId: BatchID, env: ScaldingEnv)(implicit fd: FlowDef, mode: Mode) =
-    HDFSMetadata(env.config, rootPath)
-      .find { bstr: String => BatchID(bstr) == batchId }
-      .map { case (bstr, hdfsVersion) => readVersion(hdfsVersion.version) }
-
-  override def availableBatches(env: ScaldingEnv): Iterable[BatchID] =
-    HDFSMetadata(env.config, rootPath)
-      .select { s: String => true }
-      .map { case (batchString, _) => BatchID(batchString) }
-
-  protected var sinkVersion: Option[Long] = None
-  // Make sure we only allocate a version once
-  def getSinkVersion(env: ScaldingEnv): Long =
-    sinkVersion.getOrElse {
-      val v = HDFSMetadata(env.config, rootPath).newVersion
-      sinkVersion = Some(v)
-      v
-    }
-
-  def write(env: ScaldingEnv, p: TypedPipe[(Key,Value)])
-  (implicit fd: FlowDef, mode: Mode) {
-    p.toPipe((0,1))
-      .write(VersionedKeyValSource(rootPath,
-          sourceVersion=None,
-          sinkVersion=Some(getSinkVersion(env)),
-          maxFailures=0,
-          versionsToKeep=versionsToKeep))
-  }
-
-  def commit(batchID: BatchID, env: ScaldingEnv) {
-    HDFSMetadata(env.config, rootPath)
-      .apply(getSinkVersion(env))
-      .put(Some(batchID.toString))
-  }
+  def apply[K, V](rootPath: String, versionsToKeep: Int = VersionedKeyValSource.defaultVersionsToKeep)
+    (implicit injection: Injection[(K, (BatchID, V)), (Array[Byte], Array[Byte])],
+      batcher: Batcher,
+      ord: Ordering[K]): VersionedBatchStore[K, V, K, (BatchID, V)] =
+    new VersionedBatchStore[K, V, K, (BatchID, V)](
+      rootPath, versionsToKeep, batcher
+    )({ case (batchID, (k, v)) => (k, (batchID, v)) })({ case (k, (batchID, v)) => (k, v) })
 }
