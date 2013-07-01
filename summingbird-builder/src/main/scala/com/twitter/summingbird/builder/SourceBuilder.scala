@@ -102,7 +102,7 @@ case class SourceBuilder[T: Manifest] private (
     * Complete this builder instance with a BatchStore. At this point,
     * the Summingbird job can be executed on Hadoop.
     */
-  def groupAndSumTo[K, V](store: ScaldingStore[K, (BatchID, V)])(
+  def groupAndSumTo[K, V](store: ScaldingStore[K, V])(
     implicit ev: T <:< (K, V),
     env: Env,
     keyMf: Manifest[K],
