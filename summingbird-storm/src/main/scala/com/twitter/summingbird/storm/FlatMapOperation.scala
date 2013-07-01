@@ -27,6 +27,11 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable { self =>
 
   override def close { }
 
+  /**
+    * TODO: Think about getting an implicit FutureCollector here, in
+    * case we don't want to completely choke on large expansions (and
+    * joins).
+    */
   def andThen[V](fmo: FlatMapOperation[U, V]): FlatMapOperation[T, V] =
     new FlatMapOperation[T, V] {
       def apply(t: T) = self(t).flatMap { tr =>
@@ -70,16 +75,9 @@ object FlatMapOperation {
       }
     }
 
-  def write[Event, Key, Value, Written](fmSupplier: => FlatMapOperation[Event, (Key, Value)],
-      sinkSupplier: () => OnlineSink[Written], conversion: ((Key, Value)) => TraversableOnce[Written]) =
-      new FlatMapOperation[Event, (Key, Value)] {
-        lazy val fm = fmSupplier
-        lazy val sink = sinkSupplier()
-
-        override def apply(e: Event) =
-          fm.apply(e).flatMap { pairs =>
-            val writes = pairs.flatMap { pair => conversion(pair).map { sink.write _ } }
-            Future.collect(writes.toList).map { _ => pairs }
-          }
-      }
+  def write[T](sinkSupplier: () => (T => Future[Unit])) =
+    new FlatMapOperation[T, T] {
+      lazy val sink = sinkSupplier()
+      override def apply(t: T) = sink(t).map { _ => Some(t) }
+    }
 }

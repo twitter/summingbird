@@ -19,10 +19,11 @@ package com.twitter.summingbird.builder
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.bijection.Injection
 import com.twitter.chill.InjectionPair
+import com.twitter.scalding.TypedPipe
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
-import com.twitter.summingbird.scalding.{Scalding, ScaldingService, ScaldingStore}
+import com.twitter.summingbird.scalding.{Scalding, ScaldingService, ScaldingStore, ScaldingSink}
 import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.CompoundSink
 import com.twitter.summingbird.source.EventSource
@@ -77,8 +78,26 @@ case class SourceBuilder[T: Manifest] private (
   def flatMapBuilder[U: Manifest](newFlatMapper: FlatMapper[T, U]): SourceBuilder[U] =
     flatMap(newFlatMapper(_))
 
-  def write[Written](sink: CompoundSink[Written])(conversion: T => TraversableOnce[Written])
-      : SourceBuilder[T] = sys.error("TODO")
+  def write[U: Manifest](sink: CompoundSink[U])(conversion: T => TraversableOnce[U]): SourceBuilder[T] = {
+    val newNode =
+      node.flatMap(conversion)
+        .write(
+        new ScaldingSink[U] {
+          override def write(pipe: TypedPipe[U]) = {
+            sink.offline.write(pipe)(sys.error("TODO"), null, null)
+          }
+        },
+          sink.online
+      ).map(Right[T, U](_): Either[T, U])
+    copy(
+      node = node.map(Left[T, U](_): Either[T, U])
+        .merge(newNode)
+        .flatMap {
+        case Left(t) => Some(t)
+        case Right(u) => None
+      }
+    )
+  }
 
   def leftJoin[K, V, JoinedValue](service: CompoundService[K, JoinedValue])
     (implicit ev: T <:< (K, V), keyMf: Manifest[K], valMf: Manifest[V], joinedMf: Manifest[JoinedValue])

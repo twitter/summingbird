@@ -36,6 +36,7 @@ import com.twitter.summingbird.util.CacheSize
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird._
+import com.twitter.util.Future
 
 sealed trait StormStore[-K, V] {
   def batcher: Batcher
@@ -72,6 +73,7 @@ abstract class Storm(options: Map[String, StormOptions], updateConf: Config => C
 
   type Source[+T] = Spout[(Long, T)]
   type Store[-K, V] = StormStore[K, V]
+  type Sink[-T] = () => (T => Future[Unit])
   type Service[-K, +V] = StormService[K, V]
   type Plan[T] = StormTopology
 
@@ -152,6 +154,11 @@ abstract class Storm(options: Map[String, StormOptions], updateConf: Config => C
 
       case FlatMappedProducer(producer, op) => {
         val newOp = FlatMapOperation(op)
+        recurse(producer, toSchedule = Right(newOp) :: toSchedule)
+      }
+
+      case WrittenProducer(producer, sinkSupplier) => {
+        val newOp = FlatMapOperation.write(sinkSupplier)
         recurse(producer, toSchedule = Right(newOp) :: toSchedule)
       }
 
