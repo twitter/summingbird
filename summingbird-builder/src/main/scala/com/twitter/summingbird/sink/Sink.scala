@@ -31,7 +31,7 @@ import com.twitter.summingbird.scalding.ScaldingEnv
 
 trait OfflineSink[Event] {
   def write(pipe: TypedPipe[Event])
-    (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv)
+  (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv)
 }
 
 class EmptyOfflineSink[Event] extends OfflineSink[Event] {

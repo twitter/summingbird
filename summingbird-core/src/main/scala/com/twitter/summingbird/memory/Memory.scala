@@ -28,6 +28,7 @@ object Memory {
 class Memory extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]
+  type Sink[-T] = (T => Unit)
   type Service[-K, +V] = (K => Option[V])
   type Plan[T] = Iterator[T]
 
@@ -39,6 +40,7 @@ class Memory extends Platform[Memory] {
       case OptionMappedProducer(producer, fn, mf) => toIterator(producer).flatMap { fn(_).iterator }
       case FlatMappedProducer(producer, fn) => toIterator(producer).flatMap(fn)
       case MergedProducer(l, r) => toIterator(l) ++ toIterator(r)
+      case WrittenProducer(producer, fn) => toIterator(producer).map { i => fn(i); i }
       case LeftJoinedProducer(producer, service) =>
         toIterator(producer).map { case (k, v) =>
           (k, (v, service(k)))

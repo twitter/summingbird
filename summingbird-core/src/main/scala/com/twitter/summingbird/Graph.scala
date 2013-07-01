@@ -33,7 +33,7 @@ object Producer {
   implicit def toKeyed[P <: Platform[P], K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer)
 
-  implicit def semigroup[P, T]: Semigroup[Producer[P, T]] =
+  implicit def semigroup[P <: Platform[P], T]: Semigroup[Producer[P, T]] =
     Semigroup.from(_ merge _)
 }
 
@@ -42,7 +42,7 @@ object Producer {
   * have operations applied to it. In Storm, this might be an
   * in-progress TopologyBuilder.
   */
-sealed trait Producer[P, T] {
+sealed trait Producer[P <: Platform[P], T] {
   def name(id: String): Producer[P, T] = NamedProducer(this, id)
   def merge(r: Producer[P, T]): Producer[P, T] = MergedProducer(this, r)
 
@@ -76,21 +76,31 @@ sealed trait Producer[P, T] {
       case other => OptionMappedProducer[P, T, U](other, optFn, manifest)
     }
   }
+
+  def write(sink: P#Sink[T]): Producer[P, T] = WrittenProducer(this, sink)
+
+  def either[U](other: Producer[P, U])(implicit tmf: Manifest[T], umf: Manifest[U]): Producer[P, Either[T, U]] =
+    map(Left(_): Either[T, U])
+      .merge(other.map(Right(_): Either[T, U]))
 }
 
 case class Source[P <: Platform[P], T](source: P#Source[T], manifest: Manifest[T])
     extends Producer[P, T]
 
-case class NamedProducer[P, T](producer: Producer[P, T], id: String) extends Producer[P, T]
+case class NamedProducer[P <: Platform[P], T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
 /** Represents filters and maps which may be optimized differently
  * Note that "option-mapping" is closed under composition and hence useful to call out
  */
-case class OptionMappedProducer[P, T, U](producer: Producer[P, T], fn: T => Option[U], manifest: Manifest[U]) extends Producer[P, U]
+case class OptionMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => Option[U], manifest: Manifest[U])
+    extends Producer[P, U]
 
-case class FlatMappedProducer[P, T, U](producer: Producer[P, T], fn: T => TraversableOnce[U]) extends Producer[P, U]
+case class FlatMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => TraversableOnce[U])
+    extends Producer[P, U]
 
-case class MergedProducer[P, T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
+case class MergedProducer[P <: Platform[P], T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
+
+case class WrittenProducer[P <: Platform[P], T](producer: Producer[P, T], sink: P#Sink[T]) extends Producer[P, T]
 
 case class Summer[P <: Platform[P], K, V](
   producer: KeyedProducer[P, K, V],
