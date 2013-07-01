@@ -78,6 +78,10 @@ sealed trait Producer[P <: Platform[P], T] {
   }
 
   def write(sink: P#Sink[T]): Producer[P, T] = WrittenProducer(this, sink)
+
+  def either[U](other: Producer[P, U])(implicit tmf: Manifest[T], umf: Manifest[U]): Producer[P, Either[T, U]] =
+    map(Left(_): Either[T, U])
+      .merge(other.map(Right(_): Either[T, U]))
 }
 
 case class Source[P <: Platform[P], T](source: P#Source[T], manifest: Manifest[T])

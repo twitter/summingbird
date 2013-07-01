@@ -45,4 +45,6 @@ case class PairedProducer[T, L <: Platform[L], R <: Platform[R]](l: Producer[L, 
   def merge(other: PairedProducer[T, L, R]) = PairedProducer(l.merge(other.l), r.merge(other.r))
   def write(leftSink: L#Sink[T], rightSink: R#Sink[T]) =
     PairedProducer(l.write(leftSink), r.write(rightSink))
+  def either[U](other: PairedProducer[U, L, R])(implicit tmf: Manifest[T], umf: Manifest[U]) =
+    PairedProducer(l.either(other.l), r.either(other.r))
 }

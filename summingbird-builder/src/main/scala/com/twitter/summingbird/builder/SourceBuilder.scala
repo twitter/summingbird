@@ -88,10 +88,9 @@ case class SourceBuilder[T: Manifest] private (
           }
         },
           sink.online
-      ).map(Right[T, U](_): Either[T, U])
+      )
     copy(
-      node = node.map(Left[T, U](_): Either[T, U])
-        .merge(newNode)
+      node = node.either(newNode)
         .flatMap {
         case Left(t) => Some(t)
         case Right(u) => None
