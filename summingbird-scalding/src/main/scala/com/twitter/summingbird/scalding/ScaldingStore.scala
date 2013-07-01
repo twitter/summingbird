@@ -55,10 +55,10 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
    * combining the last from batchID and the deltas from batchID.next you get the stream
    * for batchID.next
    */
-  def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowToPipe[(K, V)])]
+  def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])]
 
   /** Instances may choose to write out the last or just compute it from the stream */
-  def writeLast(batchID: BatchID, lastVals: KeyValuePipe[K, V])(implicit flowDef: FlowDef, mode: Mode): Unit = { }
+  def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit = { }
 
   /** Instances may choose to write out materialized streams
    * by implementing this. This is what readStream returns.
@@ -68,7 +68,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
   /** we are guaranteed to have sufficient input and deltas to cover these batches
    * and that the batches are given in order
    */
-  private def mergeBatched(input: FlowToPipe[(K,V)], batches: List[BatchID],
+  private def mergeBatched(input: FlowProducer[TypedPipe[(K,V)]], batches: List[BatchID],
     deltas: FlowToPipe[(K,V)], sg: Semigroup[V],
     commutativity: Commutativity, reducers: Int): FlowToPipe[(K,V)] = {
 
@@ -87,6 +87,10 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
       (items.filter { tkv => batcher.batchOf(new java.util.Date(tkv._1)) == b },
       items.filter { tkv => batcher.batchOf(new java.util.Date(tkv._1)) > b })
 
+    // put the smallest time on these to ensure they come first in a sort:
+    def withMinTime(p: TypedPipe[(K,V)]): KeyValuePipe[K, V] =
+      p.map { t => (Long.MinValue, t) }
+
     Reader[FlowInput, KeyValuePipe[K, V]] { (flowMode: (FlowDef, Mode)) =>
       implicit val flowDef = flowMode._1
       implicit val mode = flowMode._2
@@ -94,12 +98,12 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
       @annotation.tailrec
       def sumThem(head: BatchID,
         rest: List[BatchID],
-        lastSummed: KeyValuePipe[K, V],
+        lastSummed: TypedPipe[(K, V)],
         restDeltas: KeyValuePipe[K, V],
         acc: List[KeyValuePipe[K, V]]): KeyValuePipe[K, V] = {
         val (theseDeltas, nextDeltas) = split(head, restDeltas)
 
-        val grouped: Grouped[K, (Long, V)] = toGrouped(lastSummed ++ theseDeltas)
+        val grouped: Grouped[K, (Long, V)] = toGrouped(withMinTime(lastSummed) ++ theseDeltas)
 
         val sorted = grouped.sortBy { _._1 } // sort by time
         val maybeSorted = commutativity match {
@@ -112,7 +116,8 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
           val (tr, vr) = right
           (tl max tr, sg.plus(vl, vr))
         }
-        val nextSummed = toKVPipe(maybeSorted.reduce(redFn))
+        // We strip the times
+        val nextSummed = toKVPipe(maybeSorted.reduce(redFn)).values
         // could be an empty method, in which case scalding will do nothing here
         writeLast(head, nextSummed)
 
