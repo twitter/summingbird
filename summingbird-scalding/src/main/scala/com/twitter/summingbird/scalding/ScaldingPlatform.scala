@@ -75,9 +75,17 @@ object Scalding {
     for { l <- left; r <- right } yield (l ++ r)
 }
 
+/**
+  * TODO: Dejankify.
+  */
+trait ScaldingSink[T] {
+  def write(pipe: TypedPipe[T]): Unit
+}
+
 class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode) extends Platform[Scalding] {
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
+  type Sink[T] = ScaldingSink[T]
   type Service[K, V] = ScaldingService[K, V]
   type Plan[T] = PipeFactory[T]
   /**
@@ -120,6 +128,7 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode) extends Pl
       case NamedProducer(producer, newId)  => buildFlow(producer, id = Some(newId))
       case summer@Summer(producer, store, monoid) => buildSummer(summer, id)
       case joiner@LeftJoinedProducer(producer, svc) => buildJoin(joiner, id)
+      case WrittenProducer(producer, sink) => sys.error("TODO")
       case OptionMappedProducer(producer, op, manifest) =>
         // Map in two monads here, first state then reader
         buildFlow(producer, id).map { flowP =>

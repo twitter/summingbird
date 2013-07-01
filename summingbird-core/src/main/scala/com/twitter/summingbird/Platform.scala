@@ -19,11 +19,11 @@ package com.twitter.summingbird
 /**
   * Base trait for summingbird compilers.
   */
-
 trait Platform[P <: Platform[P]] {
   // The type of the inputs for this platform
   type Source[_]
   type Store[_, _]
+  type Sink[_]
   type Service[_, _]
   type Plan[_]
 

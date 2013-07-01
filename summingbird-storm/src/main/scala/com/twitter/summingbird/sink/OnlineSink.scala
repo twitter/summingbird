@@ -25,7 +25,7 @@ import com.twitter.util.Future
   * fanout or kafka topic.
   */
 
-trait OnlineSink[-Event] {
+trait OnlineSink[-Event] extends (Event => Future[Unit]) {
   /**
     * Note that the flatMap operation WILL error if this future errors, so be sure
     * to handle appropriate exceptions here.
