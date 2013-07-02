@@ -56,11 +56,11 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T]) extends
 }
 
 
-class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(Time, (K, V))], lastBatch: BatchID)
-(implicit ord: Ordering[K], tset: TupleSetter[(Time, (K, V))], tconv: TupleConverter[(Time, (K, V))])
+class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID)
+(implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
   extends BatchedScaldingStore[K, V] {
 
-  val batches: Map[BatchID, Mappable[(Time, (K, V))]] =
+  val batches: Map[BatchID, Mappable[(K, V)]] =
     BatchID.range(initBatch, lastBatch).map { b => (b, mockFor(b)) }.toMap
 
   // Needed to init the Test mode:
@@ -71,16 +71,16 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
     }.toMap
 
   // Call this after you compute to check the results of the
-  def lastToIterable(b: BatchID): Iterable[(Time, (K, V))] =
+  def lastToIterable(b: BatchID): Iterable[(K, V)] =
     sourceToBuffer(batches(b)).toIterable.map { tup => tconv(new TupleEntry(tup)) }
 
   val batcher = inBatcher
   val ordering = ord
 
-  def mockFor(b: BatchID): Mappable[(Time, (K, V))] =
+  def mockFor(b: BatchID): Mappable[(K, V)] =
     new MockMappable(store + b.toString)
 
-  override def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowToPipe[(K, V)])] = {
+  override def readLast(exclusiveUB: BatchID, mode: Mode) = {
     val candidates = batches.filter { _._1 < exclusiveUB }
     if(candidates.isEmpty) {
       Left(List("No batches < :" + exclusiveUB.toString))
@@ -92,7 +92,7 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
     }
   }
   /** Instances may choose to write out the last or just compute it from the stream */
-  override def writeLast(batchID: BatchID, lastVals: KeyValuePipe[K, V])(implicit flowDef: FlowDef, mode: Mode): Unit = {
+  override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
     val out = batches(batchID)
     lastVals.write(out)
   }
@@ -207,7 +207,7 @@ object ScaldingLaws extends Properties("Scalding") {
       scald.run(scald.plan(summer))
       // Now check that the inMemory ==
 
-      val smap = testStore.lastToIterable(BatchID(1)).map { _._2 }.toMap
+      val smap = testStore.lastToIterable(BatchID(1)).toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) == false
     }
 
@@ -257,7 +257,7 @@ object ScaldingLaws extends Properties("Scalding") {
       scald.run(summer)
       // Now check that the inMemory ==
 
-      val smap = testStore.lastToIterable(BatchID(1)).map { _._2 }.toMap
+      val smap = testStore.lastToIterable(BatchID(1)).toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) == false
     }
 }
