@@ -46,10 +46,6 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
 
   implicit def ordering: Ordering[K]
 
-  /** If this full stream (result of a merge) for this batch is already materialized, return it
-   */
-  def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, V)]] = None
-
   /** Get the most recent last batch and the ID (strictly less than the input ID)
    * The "Last" is the stream with only the newest value for each key, within the batch
    * combining the last from batchID and the deltas from batchID.next you get the stream
@@ -57,13 +53,8 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
    */
   def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])]
 
-  /** Instances may choose to write out the last or just compute it from the stream */
-  def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit = { }
-
-  /** Instances may choose to write out materialized streams
-   * by implementing this. This is what readStream returns.
-   */
-  def writeStream(batchID: BatchID, stream: KeyValuePipe[K, V])(implicit flowDef: FlowDef, mode: Mode): Unit = { }
+  /** Record a computed batch of code */
+  def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit
 
   /** we are guaranteed to have sufficient input and deltas to cover these batches
    * and that the batches are given in order
@@ -131,8 +122,6 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
           .mapValueStream { _.flatten /* unbox the option */ }
           .toTypedPipe
         )
-        // could be empty, in which case scalding will do nothing here
-        writeStream(head, stream)
         rest match {
           // When there is no more, merge them all:
           case Nil => (stream :: acc).reduce { _ ++ _ }
@@ -160,68 +149,36 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
       // This object combines some common scalding batching operations:
       val batchOps = new BatchedOperations(batcher)
 
-      val batchStreams = batchOps.coverIt(timeSpan).map { b => (b, readStream(b, mode)) }
-
-      // Maybe an inclusive interval of batches to build
-      val batchesToBuild: Option[(BatchID, BatchID)] = batchStreams
-          .dropWhile { _._2.isDefined }
-          .map { _._1 }
-          .toList match {
-            case Nil => None
-            case list => Some((list.min, list.max))
-          }
-
-      // If there are any new batches to build, try to build as many as possible
-      val maybeBuilt: Option[Try[(Iterable[BatchID], FlowToPipe[(K,V)])]] = batchesToBuild
-        .map { case (firstNewBatch, lastNewBatch) =>
-          readLast(firstNewBatch, mode)
-            .right
-            .flatMap { case (actualLast, input) =>
-              val firstDeltaBatch = actualLast.next
-              // Compute the times we need to read of the deltas
-              val deltaBatches = Interval.leftClosedRightOpen(firstDeltaBatch, lastNewBatch.next)
-              batchOps.readBatched(deltaBatches, mode, delta)
-                .right
-                .flatMap { case (batchesWeCanBuild, deltaFlow2Pipe) =>
-                  // Check that deltas needed can actually be loaded going back to the first new batch
-                  if(!batchesWeCanBuild.contains(firstDeltaBatch)) {
-                    Left(List("Cannot load an entire initial batch: " + firstDeltaBatch.toString
-                      + " of deltas at: " + this.toString + " only: " + batchesWeCanBuild.toString))
-                  }
-                  else {
-                    val blist = BatchID.toIterable(batchesWeCanBuild).toList
-                    val merged = mergeBatched(input, blist, deltaFlow2Pipe, sg, commutativity, reducers)
-                    Right((blist, merged))
-                  }
+      (batchOps.coverIt(timeSpan).toList match {
+        case Nil => Left(List("Timespan is covered by Nil: %s batcher: %s".format(timeSpan, batcher)))
+        case list => Right((list.min, list.max))
+      })
+      .right
+      .flatMap { case (firstNewBatch, lastNewBatch) =>
+        readLast(firstNewBatch, mode)
+          .right
+          .flatMap { case (actualLast, input) =>
+            val firstDeltaBatch = actualLast.next
+            // Compute the times we need to read of the deltas
+            val deltaBatches = Interval.leftClosedRightOpen(firstDeltaBatch, lastNewBatch.next)
+            batchOps.readBatched(deltaBatches, mode, delta)
+              .right
+              .flatMap { case (batchesWeCanBuild, deltaFlow2Pipe) =>
+                // Check that deltas needed can actually be loaded going back to the first new batch
+                if(!batchesWeCanBuild.contains(firstDeltaBatch)) {
+                  Left(List("Cannot load an entire initial batch: " + firstDeltaBatch.toString
+                    + " of deltas at: " + this.toString + " only: " + batchesWeCanBuild.toString))
                 }
-            }
+                else {
+                  val blist = BatchID.toIterable(batchesWeCanBuild).toList
+                  val merged = mergeBatched(input, blist, deltaFlow2Pipe, sg, commutativity, reducers)
+                  // it is a static (i.e. independent from input) bug if this get ever throws
+                  val available = batchOps.intersect(blist, timeSpan).get
+                  val filtered = Scalding.limitTimes(available, merged)
+                  Right(((available, mode), filtered))
+                }
+              }
+          }
         }
-
-      // This data is already on disk and will not be recomputed
-      val existing = batchStreams
-        .takeWhile { _._2.isDefined }
-        .collect { case (batch, Some(flow)) => (batch, flow) }
-
-      def mergeExistingAndBuilt(optBuilt: Option[(Iterable[BatchID], FlowToPipe[(K,V)])]): Try[((Interval[Time], Mode), FlowToPipe[(K,V)])] = {
-        val (aBatches, aFlows) = existing.unzip
-        val flows = aFlows ++ (optBuilt.map { _._2 })
-        val batches = aBatches ++ (optBuilt.map { _._1 }.getOrElse(Iterable.empty))
-
-        if (flows.isEmpty)
-          Left(List("Zero batches requested, should never occur: " + timeSpan.toString))
-        else {
-          // it is a static (i.e. independent from input) bug if this get ever throws
-          val available = batchOps.intersect(batches, timeSpan).get
-          val merged = Scalding.limitTimes(available, flows.reduce(Scalding.merge(_, _)))
-          Right(((available, mode), merged))
-        }
-      }
-
-      maybeBuilt match {
-        case None => mergeExistingAndBuilt(None)
-        case Some(Left(err)) => if (existing.isEmpty) Left(err) else mergeExistingAndBuilt(None)
-        case Some(Right(built)) => mergeExistingAndBuilt(Some(built))
-      }
     })
-
 }

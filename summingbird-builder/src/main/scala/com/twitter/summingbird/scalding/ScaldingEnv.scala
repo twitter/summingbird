@@ -73,7 +73,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // initial batch to process. All runs after the first batch
   // (incremental updates) will use the batch of the previous run as
   // the starting batch, rendering this unnecessary.
-  def startBatch[Time](batcher: Batcher): Option[BatchID] =
+  def startBatch(batcher: Batcher): Option[BatchID] =
     if (args.boolean("initial-run"))
       Some(args("start-time"))
         .map { dateString =>
