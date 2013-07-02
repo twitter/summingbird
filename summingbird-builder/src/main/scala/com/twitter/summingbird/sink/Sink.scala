@@ -18,8 +18,9 @@ package com.twitter.summingbird.sink
 
 import cascading.flow.FlowDef
 
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
 import com.twitter.scalding.{ Mode, TypedPipe }
-import com.twitter.summingbird.scalding.ScaldingEnv
+import com.twitter.summingbird.scalding.{ScaldingEnv, BatchedScaldingSink}
 
 /**
  * Represents a location to which intermediate results of the
@@ -29,9 +30,29 @@ import com.twitter.summingbird.scalding.ScaldingEnv
  * kestrel fanout or kafka topic.
  */
 
+//@deprecated("now","the ScaldingEnv was not suficiently extendable, ignores time")
 trait OfflineSink[Event] {
   def write(pipe: TypedPipe[Event])
   (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv)
+}
+
+/** Wrapped for the new scalding sink API in terms of the above */
+class BatchedSinkFromOffline[T](override val batcher: Batcher, offline: OfflineSink[T]) extends BatchedScaldingSink[T] {
+  /** OfflineSink doesn't support reading
+   */
+  def readStream(batchID: BatchID, mode: Mode) = None
+
+  /** Instances may choose to write out materialized streams
+   * by implementing this. This is what readStream returns.
+   */
+  def writeStream(batchID: BatchID, stream: TypedPipe[(Long, T)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
+    val fakeEnv = new ScaldingEnv("fakeArgs", Array()) {
+      override def startBatch(b: Batcher) = Some(batchID)
+      override def batches = 1
+    }
+    // strip the time
+    offline.write(stream.values)(flowDef, mode, fakeEnv)
+  }
 }
 
 class EmptyOfflineSink[Event] extends OfflineSink[Event] {

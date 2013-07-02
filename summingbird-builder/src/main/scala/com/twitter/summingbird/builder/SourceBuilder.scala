@@ -25,7 +25,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.scalding.{Scalding, ScaldingService, ScaldingStore, ScaldingSink}
 import com.twitter.summingbird.service.CompoundService
-import com.twitter.summingbird.sink.CompoundSink
+import com.twitter.summingbird.sink.{CompoundSink, BatchedSinkFromOffline}
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
 import com.twitter.summingbird.storm.{MergeableStoreSupplier, StoreWrapper, Storm, StormOptions}
@@ -78,17 +78,10 @@ case class SourceBuilder[T: Manifest] private (
   def flatMapBuilder[U: Manifest](newFlatMapper: FlatMapper[T, U]): SourceBuilder[U] =
     flatMap(newFlatMapper(_))
 
-  def write[U: Manifest](sink: CompoundSink[U])(conversion: T => TraversableOnce[U]): SourceBuilder[T] = {
+  def write[U](sink: CompoundSink[U])(conversion: T => TraversableOnce[U])(implicit batcher: Batcher, mf: Manifest[U]): SourceBuilder[T] = {
     val newNode =
       node.flatMap(conversion)
-        .write(
-        new ScaldingSink[U] {
-          override def write(pipe: TypedPipe[U]) = {
-            sink.offline.write(pipe)(sys.error("TODO"), null, null)
-          }
-        },
-          sink.online
-      )
+        .write(new BatchedSinkFromOffline[U](batcher, sink.offline), sink.online)
     copy(
       node = node.either(newNode)
         .flatMap {
