@@ -31,6 +31,7 @@ trait OnlineSink[-Event] extends (Event => Future[Unit]) {
     * to handle appropriate exceptions here.
     */
   def write(event: Event): Future[Unit]
+  final def apply(e: Event) = write(e)
 }
 
 class EmptyOnlineSink[Event] extends OnlineSink[Event] {
