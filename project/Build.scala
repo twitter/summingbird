@@ -9,6 +9,7 @@ object SummingbirdBuild extends Build {
     organization := "com.twitter",
     version := "0.0.5",
     scalaVersion := "2.9.2",
+    crossScalaVersions := Seq("2.9.2", "2.10.0"),
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
       "org.scala-tools.testing" %% "specs" % "1.6.9" % "test"
