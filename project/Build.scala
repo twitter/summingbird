@@ -20,7 +20,9 @@ object SummingbirdBuild extends Build {
       Opts.resolver.sonatypeReleases,
       "Clojars Repository" at "http://clojars.org/repo",
       "Conjars Repository" at "http://conjars.org/repo",
-      "Twitter Artifactory" at "http://artifactory.local.twitter.com/repo"
+      "Twitter Artifactory" at "http://artifactory.local.twitter.com/repo",
+      "Twitter Maven" at "http://maven.twttr.com",
+      "Twitter SVN Maven" at "https://svn.twitter.biz/maven-public"
     ),
 
     parallelExecution in Test := true,
