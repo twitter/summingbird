@@ -164,7 +164,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion,
-      "com.twitter" % "util-core" % utilVersion,
+      "com.twitter" %% "util-core" % utilVersion,
       "storm" % "storm" % "0.9.0-wip15"
     )
   ).dependsOn(
