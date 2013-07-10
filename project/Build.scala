@@ -7,7 +7,7 @@ import sbtgitflow.ReleasePlugin._
 object SummingbirdBuild extends Build {
   val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.0.5",
+    version := "0.1.0-SNAPSHOT",
     scalaVersion := "2.9.2",
     crossScalaVersions := Seq("2.9.2", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -16,8 +16,8 @@ object SummingbirdBuild extends Build {
     ),
 
     resolvers ++= Seq(
-      "snapshots" at "http://oss.sonatype.org/content/repositories/snapshots",
-      "releases"  at "http://oss.sonatype.org/content/repositories/releases",
+      Opts.resolver.sonatypeSnapshots,
+      Opts.resolver.sonatypeReleases,
       "Clojars Repository" at "http://clojars.org/repo",
       "Conjars Repository" at "http://conjars.org/repo",
       "Twitter Artifactory" at "http://artifactory.local.twitter.com/repo"
@@ -38,12 +38,13 @@ object SummingbirdBuild extends Build {
 
     pomIncludeRepository := { x => false },
 
-    publishTo <<= version { (v: String) =>
-      val nexus = "http://artifactory.local.twitter.com/"
-      if (v.trim.endsWith("SNAPSHOT"))
-        Some("sonatype-snapshots" at nexus + "libs-snapshots-local")
-      else
-        Some("sonatype-releases"  at nexus + "libs-releases-local")
+    publishTo <<= version { v =>
+      Some(
+        if (v.trim.toUpperCase.endsWith("SNAPSHOT"))
+          Opts.resolver.sonatypeSnapshots
+        else
+          Opts.resolver.sonatypeStaging
+      )
     },
 
     pomExtra := (
@@ -84,7 +85,9 @@ object SummingbirdBuild extends Build {
     base = file("."),
     settings = sharedSettings ++ DocGen.publishSettings
     ).settings(
-    test := { }
+    test := { },
+      publish := { }, // skip publishing for this root project.
+      publishLocal := { }
   ).aggregate(
     summingbirdCore,
     summingbirdBatch,
@@ -102,7 +105,7 @@ object SummingbirdBuild extends Build {
   val storehausVersion = "0.4.0"
   val utilVersion = "6.3.0"
   val chillVersion = "0.2.3"
-  val tormentaVersion = "0.5.0"
+  val tormentaVersion = "0.5.1"
 
   lazy val summingbirdBatch = Project(
     id = "summingbird-batch",
