@@ -90,27 +90,15 @@ sealed trait Producer[P <: Platform[P], T] {
     flatMap[U, Some[U]] { t => Some(fn(t)) }
 
   def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
-    this match {
-      // formerFn had to produce T, even though we don't know what
-      // its input type was.
-      case FlatMappedProducer(former, formerFn) =>
-        FlatMappedProducer[P, Any, U](former, (formerFn(_).flatMap(fn)))
-      case other => FlatMappedProducer[P, T, U](other, fn)
-    }
+    FlatMappedProducer[P, T, U](this, fn)
 
-  def flatMap[U, O](fn: T => O)(implicit ev: O <:< Option[U], manifest: Manifest[U]): Producer[P, U] = {
-    // ev has not been serializable in the past, casting is safe:
-    val optFn = fn.asInstanceOf[T => Option[U]]
-    this match {
-      case OptionMappedProducer(former, formerFn, _) =>
-        OptionMappedProducer[P, Any, U](former, (formerFn(_).flatMap(optFn)), manifest)
-      // If we have already flatMapped to Traversable, compose with that:
-      case FlatMappedProducer(former, formerFn) =>
-        FlatMappedProducer[P, Any, U](former,
-          (formerFn(_).flatMap(optFn andThen Option.option2Iterable)))
-      case other => OptionMappedProducer[P, T, U](other, optFn, manifest)
-    }
-  }
+  def flatMap[U, O](fn: T => O)(implicit ev: O <:< Option[U],
+    manifest: Manifest[U]): Producer[P, U] =
+    OptionMappedProducer[P, T, U](
+      this,
+      fn.asInstanceOf[T => Option[U]],
+      manifest
+    )
 
   def write(sink: P#Sink[T]): Producer[P, T] = WrittenProducer(this, sink)
 
