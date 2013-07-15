@@ -18,7 +18,7 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.LocalCluster
 import com.twitter.algebird.{MapAlgebra, Monoid}
-import com.twitter.storehaus.JMapStore
+import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
@@ -30,7 +30,14 @@ import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
 import scala.collection.JavaConverters._
-import scala.collection.mutable.{ArrayBuffer, HashMap => MutableHashMap, Map => MutableMap, SynchronizedBuffer, SynchronizedMap}
+import scala.collection.mutable.{
+  ArrayBuffer,
+  HashMap => MutableHashMap,
+  Map => MutableMap,
+  SynchronizedBuffer,
+  SynchronizedMap
+}
+import com.twitter.summingbird.Constants.DEFAULT_SPOUT_PARALLELISM
 
 /**
   * Tests for Summingbird's Storm planner.
@@ -87,8 +94,6 @@ object StormLaws extends Properties("Storm") {
       }
     }
 
-  import com.twitter.summingbird.Constants.DEFAULT_SPOUT_PARALLELISM
-
   /**
     * Global state shared by all tests.
     */
@@ -135,17 +140,18 @@ object StormLaws extends Properties("Storm") {
     * Perform a single run of TestGraphs.singleStepJob using the
     * supplied list of integers and the testFn defined above.
     */
-  def runOnce(original: List[Int]): (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
+  def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => Summer[Storm, Int, Int])
+      : (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
     val id = UUID.randomUUID.toString
     globalState += (id -> TestState())
 
     val cluster = new LocalCluster()
     val items = toIterator(original)(globalState(id).used += _)
 
-    val job = TestGraphs.singleStepJob[Storm, Int, Int, Int](
+    val job = mkJob(
       Storm.source(Spout.fromTraversable(items)),
       MergeableStoreSupplier(() => testingStore(id)(() => globalState(id).placed.incrementAndGet), Batcher.unit)
-    )(testFn)
+    )
 
     val topo = storm.plan(job)
     val parallelism = DEFAULT_SPOUT_PARALLELISM.parHint
@@ -163,10 +169,40 @@ object StormLaws extends Properties("Storm") {
 
   property("StormPlatform matches Scala for single step jobs") =
     forAll { original: List[Int] =>
-      val (fn, returnedState) = runOnce(original)
+      val (fn, returnedState) =
+        runOnce(original)(
+          TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(testFn)
+        )
       Equiv[Map[Int, Int]].equiv(
         TestGraphs.singleStepInScala(returnedState.used.toList)(fn),
-        returnedState.store.asScala.toMap.collect { case ((k, batchID), Some(v)) => (k, v) }
+        returnedState.store.asScala.toMap
+          .collect { case ((k, batchID), Some(v)) => (k, v) }
+      )
+    }
+
+  val nextFn = { pair: ((Int, (Int, Option[Int]))) =>
+    val (k, (v, joinedV)) = pair
+    List((k -> joinedV.getOrElse(10)))
+  }
+
+  val serviceFn = Arbitrary.arbitrary[Int => Option[Int]].sample.get
+  val service = StoreWrapper[Int, Int](() =>
+    ReadableStore.fromFn(serviceFn)
+  )
+
+  property("StormPlatform matches Scala for left join jobs") =
+    forAll { original: List[Int] =>
+      val (fn, returnedState) =
+        runOnce(original)(
+          TestGraphs.leftJoinJob[
+            Storm, Int, Int, Int, Int, Int
+          ](_, service, _)(testFn)(nextFn)
+        )
+      Equiv[Map[Int, Int]].equiv(
+        TestGraphs.leftJoinInScala(returnedState.used.toList)(serviceFn)
+          (fn)(nextFn),
+        returnedState.store.asScala.toMap
+          .collect { case ((k, batchID), Some(v)) => (k, v) }
       )
     }
 }
