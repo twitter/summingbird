@@ -17,6 +17,7 @@
 package com.twitter.summingbird.example
 
 import com.twitter.summingbird.storm.{ MergeableStoreSupplier, Storm }
+import com.twitter.tormenta.spout.TwitterSpout
 import twitter4j.TwitterStreamFactory
 import twitter4j.conf.ConfigurationBuilder
 
@@ -73,9 +74,7 @@ object StormRunner {
     * Monoid instances will resolve this way.)
     */
   val storeSupplier: MergeableStoreSupplier[String, Long] =
-    MergeableStoreSupplier(
-      Memcache.mergeable("urlCount")
-    )
+    MergeableStoreSupplier.from(Memcache.mergeable("urlCount"))
 
   /**
     * When this main method is executed, Storm will begin running on a

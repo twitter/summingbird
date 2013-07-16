@@ -18,7 +18,9 @@ package com.twitter.summingbird.batch
 
 import com.twitter.algebird.Monoid
 
-// TODO this is clearly more general than summingbird, and should be extended to be a ring (add union, etc...)
+// TODO (https://github.com/twitter/summingbird/issues/67): this is
+// clearly more general than summingbird, and should be extended to be
+// a ring (add union, etc...)
 
 /** Represents a single interval on a T with an Ordering
  */

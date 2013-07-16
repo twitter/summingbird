@@ -35,7 +35,8 @@ import twitter4j.json.DataObjectFactory
   */
 
 object Serialization {
-  // TODO: Remove when the new Bijection version hits the press.
+  // TODO: Remove when the new Bijection version hits the press
+  // (https://github.com/twitter/summingbird/issues/75)
   type Codec[T] = Injection[T, Array[Byte]]
 
   /**

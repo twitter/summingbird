@@ -134,12 +134,8 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def leftJoin[RightV](service: P#Service[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
     LeftJoinedProducer(this, service)
 
-  /**
-    * TODO: This could return a KeyedProducer, and we could keep going
-    * with flatMap, etc.
-    * TODO: Semigroup?
-    */
-  def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] = Summer(this, store, monoid)
+  def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
+    Summer(this, store, monoid)
 }
 
 case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
