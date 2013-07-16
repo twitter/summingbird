@@ -50,7 +50,8 @@ object DependantsTest extends Properties("Dependants") {
     fn <- arbitrary[((Int,Int)) => Option[(Int,Int)]]
     in <- genProd2
   } yield IdentityKeyedProducer(OptionMappedProducer(in, fn, manifest[(Int, Int)]))
-  // TODO: add more nodes, abstract over Platform
+  // TODO (https://github.com/twitter/summingbird/issues/74): add more
+  // nodes, abstract over Platform
   lazy val summed = for {
     in <- genSummable // don't sum sums
   } yield in.sumByKey(MMap[Int, Int]())

@@ -33,7 +33,6 @@ import org.jboss.netty.buffer.ChannelBuffer
   * merged into Storehaus and Storehaus sees its next release. This
   * pull req will make it easier to create Memcache store instances.
   */
-
 object Memcache {
   import Serialization.Codec
   val DEFAULT_TIMEOUT = 1.seconds

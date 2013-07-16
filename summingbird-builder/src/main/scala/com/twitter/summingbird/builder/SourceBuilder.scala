@@ -96,14 +96,15 @@ case class SourceBuilder[T: Manifest] private (
       : SourceBuilder[(K, (V, Option[JoinedValue]))] =
     copy(
       node = node.leftJoin(
-        sys.error("TODO"),
+        sys.error("TODO") // https://github.com/twitter/summingbird/issues/68,
         StoreWrapper[K, JoinedValue](service.online)
       )
     )
 
   // Set the number of reducers used to shard out the EventSource
   // flatmapper in the offline flatmap step.
-  def set(fms: FlatMapShards): SourceBuilder[T] = sys.error("TODO")
+  def set(fms: FlatMapShards): SourceBuilder[T] =
+    sys.error("TODO") // https://github.com/twitter/summingbird/issues/59
 
   // Set the cache size used in the online flatmap step.
   def set(size: CacheSize) = copy(opts = adjust(opts, id)(_.set(size)))

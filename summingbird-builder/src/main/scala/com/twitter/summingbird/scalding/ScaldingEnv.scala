@@ -33,11 +33,12 @@ import ConfigBijection.fromJavaMap
  * @author Ashu Singhal
  */
 
-// TODO: Add documentation later describing command-line
-// args. initial-run, start-time, batches, reducers, Hadoop-specific
-// arguments and where they go. We might pull this argument-parsing
-// out into its own class with all arguments defined to make it easier
-// to understand (and add to later).
+// TODO (https://github.com/twitter/summingbird/issues/69): Add
+// documentation later describing command-line args. initial-run,
+// start-time, batches, reducers, Hadoop-specific arguments and where
+// they go. We might pull this argument-parsing out into its own class
+// with all arguments defined to make it easier to understand (and add
+// to later).
 
 case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     extends Env(jobName) {
@@ -47,10 +48,8 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // submission time, so this should be fine.
   @transient lazy val config = {
     val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
-
-    // TODO: Deal with duplication here with the lift between this
-    // code and SummingbirdKryoHadoop
-    val jConf: JMap[String,AnyRef] = new JHashMap(fromJavaMap.invert(new Configuration))
+    val jConf: JMap[String,AnyRef] =
+      new JHashMap(fromJavaMap.invert(new Configuration))
     KryoRegistrationHelper.registerInjections(jConf, builder.eventCodecPairs)
 
     // Register key and value types. All extensions of either of these
@@ -96,7 +95,9 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   @transient
   protected lazy val hadoopTool: STool = {
     val tool = new STool
-    tool.setJobConstructor { jobArgs => sys.error("TODO") }
+    tool.setJobConstructor { jobArgs =>
+      sys.error("TODO") // https://github.com/twitter/summingbird/issues/70
+    }
     tool
   }
 

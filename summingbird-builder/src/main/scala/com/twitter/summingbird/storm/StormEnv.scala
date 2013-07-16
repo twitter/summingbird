@@ -36,11 +36,6 @@ case class StormEnv(override val jobName: String, override val args: Args) exten
     // of the environment and defining the builder).
     val ajob = abstractJob
 
-    // TODO: We strip everything before the period because of the
-    // following issue with storm:
-    // https://github.com/nathanmarz/storm/issues/261. Once this is
-    // resolved, clean this thing up.
-
     val classSuffix = jobName.split("\\.").last
     Storm.remote("summingbird_" + classSuffix, builder.opts)
       .withConfigUpdater { config =>
