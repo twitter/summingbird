@@ -54,18 +54,19 @@ object ClientStore {
 }
 
 object MergeOperations {
-  // TODO: the check here on sequential batch IDs was fucked. we should be checking that the batch
-  // layer is not more than batchesToKeep behind. the manner of doing that on a per-key basis
-  // will change in storehaus 0.3, so add in that check during the upgrade.
-
-  def sortedSum[V: Semigroup](opts: Seq[Option[(BatchID, V)]]): Try[Option[(BatchID, V)]] = {
+  // TODO (https://github.com/twitter/summingbird/issues/71): the
+  // check here on sequential batch IDs was wrong. we should be
+  // checking that the batch layer is not more than batchesToKeep
+  // behind. the manner of doing that on a per-key basis will change
+  // in storehaus 0.3, so add in that check during the upgrade.
+  def sortedSum[V: Semigroup](opts: Seq[Option[(BatchID, V)]])
+      : Try[Option[(BatchID, V)]] = {
     val sorted = opts.flatten.sortBy {  _._1 }
     Return(Semigroup.sumOption(sorted))
   }
 
   /**
    * Pivot to pivot (K, BatchID) pairs into K -> (BatchID, V).
-   * TODO: rewrite the timeOf method in the batcher in terms of the pivot.
    */
   def pivot[K, V] = Pivot.of[(K, BatchID), K, BatchID].withValue[V]
 
@@ -140,29 +141,43 @@ class ClientStore[K, V](
    *
    * At a high level, the computation performed by the multiGet is the following:
    *
-   * - Look up the set of requested keys in the offlineStore. The offlineStore holds K -> (BatchID, V).
-   * - For each key, use the returned BatchID and the current BatchID (calculated by the batcher)
-   *   to generate a sequence of BatchIDs that the onlineStore is holding. The onlineStore holds
-   *   (K, BatchID) -> V, so a join between this BatchID sequence and the K provides a keyset to
-   *   use for a multiGet to the onlineStore.
+   *
+   * - Look up the set of requested keys in the offlineStore. The
+   *   offlineStore holds K -> (BatchID, V).
+   *
+   * - For each key, use the returned BatchID and the current BatchID
+   *   (calculated by the batcher) to generate a sequence of BatchIDs
+   *   that the onlineStore is holding. The onlineStore holds (K,
+   *   BatchID) -> V, so a join between this BatchID sequence and the
+   *   K provides a keyset to use for a multiGet to the onlineStore.
+   *
    * - Perform this multiGet to the online store.
-   * - PIVOT the BatchIDs out of the online store's key into a sequence in the value -- then
-   *   a monoid merge with the offline store will append the offline value onto the beginning
-   *   of the sequence of (BatchID, V).
-   * - Finally, reduce this list by monoid-merging together all (BatchID, V) pairs. If any
-   *   BatchID is missing from the sequence (if there are any holes, for example), that
-   *   particular merged value's computation in the result will be a Future.exception
-   *   vs a defined future.
-   * - Drop the final BatchID off of all successfully aggregated values (since this BatchID
-   *   will be the current batch in all successful cases).
    *
-   * The onlineKeyFilter allows only a subset of the keys to be fetched from the realtime layer.
-   * This is a useful optimization in, for example, time series data, where many of the keys
-   * that are fetched are historical and therefore only need to be fetched from batch.
+   * - PIVOT the BatchIDs out of the online store's key into a
+   *   sequence in the value -- then a monoid merge with the offline
+   *   store will append the offline value onto the beginning of the
+   *   sequence of (BatchID, V).
    *
-   * TODO: This filter needs to be generalized correctly, and is probably incorrect at the level
-   * of just supplying a boolean function. For example, in most cases a function K => T would
-   * help tie in batching logic more easily.
+   * - Finally, reduce this list by monoid-merging together all
+   *   (BatchID, V) pairs. If any BatchID is missing from the sequence
+   *   (if there are any holes, for example), that particular merged
+   *   value's computation in the result will be a Future.exception vs
+   *   a defined future.
+   * - Drop the final BatchID off of all successfully aggregated
+   *   values (since this BatchID will be the current batch in all
+   *   successful cases).
+   *
+   * The onlineKeyFilter allows only a subset of the keys to be
+   * fetched from the realtime layer.  This is a useful optimization
+   * in, for example, time series data, where many of the keys that
+   * are fetched are historical and therefore only need to be fetched
+   * from batch.
+   *
+   * TODO (https://github.com/twitter/summingbird/issues/72): This
+   * filter needs to be generalized correctly, and is probably
+   * incorrect at the level of just supplying a boolean function. For
+   * example, in most cases a function K => T would help tie in
+   * batching logic more easily.
    */
 
   override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, FOpt[V]] = {

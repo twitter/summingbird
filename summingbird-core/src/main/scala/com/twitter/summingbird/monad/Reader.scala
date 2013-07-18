@@ -18,10 +18,11 @@ package com.twitter.summingbird.monad
 
 import com.twitter.algebird.Monad
 
-// TODO this is general, move somewhere better
+// TODO (https://github.com/twitter/summingbird/issues/67): nuke when
+// algebird is published.
 
-// Reader Monad, represents a series of operations that mutate some environment
-// type (the input to the function)
+// Reader Monad, represents a series of operations that mutate some
+// environment type (the input to the function)
 
 sealed trait Reader[-Env, +T] {
   def apply(env: Env): T
