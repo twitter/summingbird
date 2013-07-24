@@ -96,7 +96,7 @@ case class SourceBuilder[T: Manifest] private (
       : SourceBuilder[(K, (V, Option[JoinedValue]))] =
     copy(
       node = node.leftJoin(
-        sys.error("TODO") // https://github.com/twitter/summingbird/issues/68,
+        sys.error("TODO"), // https://github.com/twitter/summingbird/issues/68,
         StoreWrapper[K, JoinedValue](service.online)
       )
     )

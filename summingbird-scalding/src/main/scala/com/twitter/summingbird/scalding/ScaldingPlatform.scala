@@ -16,11 +16,11 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{Monoid, Semigroup, Monad}
+import com.twitter.algebird.{ Monoid, Semigroup, Monad }
+import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.Monad.operators // map/flatMap for monads
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird._
-import com.twitter.summingbird.monad.{StateWithError, Reader}
 import com.twitter.summingbird.batch._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner

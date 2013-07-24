@@ -22,7 +22,7 @@ import com.twitter.bijection.Injection
 import cascading.flow.FlowDef
 import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, TupleSetter}
 import com.twitter.scalding.commons.source.VersionedKeyValSource
-import com.twitter.summingbird.monad.Reader
+import com.twitter.algebird.monad.Reader
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import scala.util.control.Exception.allCatch
 
