@@ -16,16 +16,18 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding
 
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird.Env
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.builder.{ SourceBuilder, Reducers }
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
 import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
 
-import ConfigBijection.fromJavaMap
+import ConfigBijection._
 
 /**
  * @author Oscar Boykin
@@ -86,7 +88,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     val opts = SourceBuilder.adjust(
       builder.opts, builder.id)(_.set(Reducers(reducers)))
 
-    val scalding = new Scalding(
+    new Scalding(
       abstractJob.getClass.getName,
       // TODO: use a new "state" class to calculate the interval:
       // https://github.com/twitter/summingbird/issues/81

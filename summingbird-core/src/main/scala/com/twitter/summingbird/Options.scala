@@ -20,7 +20,11 @@ package com.twitter.summingbird
   * intra-graph options.
   */
 
-case class Options(opts: Map[Class[_], Any] = Map.empty) {
+object Options {
+  def apply(opts: Map[Class[_], Any] = Map.empty): Options = new Options(opts)
+}
+
+class Options(opts: Map[Class[_], Any]) {
   def set[T](opt: T) = Options(opts + (opt.getClass -> opt))
 
   def get[T](klass: Class[T]): Option[T] =
