@@ -39,6 +39,6 @@ class SummingbirdKryoFactory extends ScalaKryoFactory {
     registerInjections(k, conf)
     registerInjectionDefaults(k, conf)
     registerKryoClasses(k, conf)
-    k.setRegistrationRequired(false) // TODO: Is this necessary?
+    k.setRegistrationRequired(false)
   }
 }

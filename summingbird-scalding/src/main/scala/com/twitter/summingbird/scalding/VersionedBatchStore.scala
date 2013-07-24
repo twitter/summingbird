@@ -36,15 +36,22 @@ import scala.util.control.Exception.allCatch
  */
 
 object VersionedBatchStore {
-  // TODO: Add a nice constructor to enable packing.
+  def apply[K, V, K2, V2](rootPath: String, versionsToKeep: Int)
+    (pack: (BatchID, (K, V)) => (K2, V2))
+    (unpack: ((K2, V2)) => (K, V))(
+    implicit
+      batcher: Batcher,
+      injection: Injection[(K2, V2), (Array[Byte], Array[Byte])],
+      ordering: Ordering[K]): VersionedBatchStore[K, V, K2, V2] =
+    new VersionedBatchStore(rootPath, versionsToKeep, batcher)(pack)(unpack)
 }
 
-// TODO: it looks like when we get the mappable/directory this happens
-// at a different time (not atomically) with getting the
-// meta-data. This seems like something we need to fix: atomically get
-// meta-data and open the Mappable.
-// The source parameter is pass-by-name to avoid needing the hadoop
-// Configuration object when running the storm job.
+// TODO (https://github.com/twitter/summingbird/issues/94): it looks
+// like when we get the mappable/directory this happens at a different
+// time (not atomically) with getting the meta-data. This seems like
+// something we need to fix: atomically get meta-data and open the
+// Mappable.  The source parameter is pass-by-name to avoid needing
+// the hadoop Configuration object when running the storm job.
 class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)
   (pack: (BatchID, (K, V)) => (K2, V2))
   (unpack: ((K2, V2)) => (K, V))(
@@ -87,7 +94,9 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
 
   protected def lastBatch(exclusiveUB: BatchID, mode: HdfsMode): Option[(BatchID, FlowProducer[TypedPipe[(K,V)]])] = {
     val meta = HDFSMetadata(mode.conf, rootPath)
-    // TODO remove this when all sources have run for a while with the new version format
+    // TODO (https://github.com/twitter/summingbird/issues/95): remove
+    // this when all sources have run for a while with the new version
+    // format
     def versionToBatchIDCompat(ver: Long): BatchID = {
       //First try to read the old-style metadata:
       meta(ver)

@@ -147,7 +147,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       }
 
       case OptionMappedProducer(producer, op, manifest) => {
-        // TODO: we should always push this to the spout
         val newOp = FlatMapOperation(op andThen { _.iterator })
         recurse(producer, toSchedule = Right(newOp) :: toSchedule)
       }
@@ -202,9 +201,10 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     }
   }
 
-  // TODO: This function is returning the Node ID; replace string
-  // programming with a world where the "id" is actually the path to
-  // that node from the root.
+  // TODO https://github.com/twitter/summingbird/issues/84: This
+  // function is returning the Node ID; replace string programming
+  // with a world where the "id" is actually the path to that node
+  // from the root.
   private def scheduleFlatMapper(
     topoBuilder: TopologyBuilder,
     parents: List[String],
@@ -239,18 +239,13 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     }
   }
 
-  /**
-    * TODO: Completed is really still a producer. We can submit
-    * topologies at the completed nodes, but otherwise they can
-    * continue to flatMap, etc.
-    */
   private def populate[K, V](
     topologyBuilder: TopologyBuilder,
     summer: Summer[Storm, K, V])(implicit config: Config) = {
     implicit val monoid  = summer.monoid
 
-    val parents = buildTopology(topologyBuilder, summer, List.empty, List.empty, END_SUFFIX, None)
-    // TODO: Add wrapping case classes for memstore, etc, as in MemP.
+    val parents = buildTopology(
+      topologyBuilder, summer, List.empty, List.empty, END_SUFFIX, None)
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
@@ -263,7 +258,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       getOrElse(idOpt, DEFAULT_SINK_CACHE),
       getOrElse(idOpt, DEFAULT_SINK_STORM_METRICS),
       getOrElse(idOpt, DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(idOpt, IncludeSuccessHandler(false))
+      getOrElse(idOpt, IncludeSuccessHandler(true))
     )
 
     val declarer =
@@ -302,7 +297,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
 
-    // TODO support topologies that don't end with a sum
+    // TODO (https://github.com/twitter/summingbird/issues/86):
+    // support topologies that don't end with a sum
     populate(topologyBuilder, summer.asInstanceOf[Summer[Storm,Any,Any]])
     topologyBuilder.createTopology
   }
