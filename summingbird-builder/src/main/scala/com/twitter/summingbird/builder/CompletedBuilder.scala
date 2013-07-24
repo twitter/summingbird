@@ -19,8 +19,7 @@ package com.twitter.summingbird.builder
 import com.twitter.bijection.Injection
 import com.twitter.chill.InjectionPair
 import com.twitter.storehaus.algebra.MergeableStore.enrich
-import com.twitter.summingbird.storm.StormOptions
-import com.twitter.summingbird.{Env, KeyedProducer}
+import com.twitter.summingbird.{ Env, KeyedProducer, Options }
 import com.twitter.summingbird.scalding.Scalding
 import com.twitter.summingbird.storm.Storm
 import com.twitter.summingbird.util.CacheSize
@@ -44,7 +43,7 @@ case class CompletedBuilder[Key: Manifest, Value: Manifest](
   @transient keyCodec: Injection[Key,Array[Byte]],
   @transient valCodec: Injection[Value,Array[Byte]],
   id: String,
-  opts: Map[String, StormOptions]
+  opts: Map[String, Options]
 ) extends Serializable {
   import SourceBuilder.adjust
   import CompletedBuilder.injectionPair
