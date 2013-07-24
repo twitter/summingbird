@@ -48,8 +48,6 @@ package object scalding {
   /** These are printed/logged only when we can't make any progress */
   type FailureReason = String
 
-  // TODO (https://github.com/twitter/summingbird/issues/88): replace
-  // with scala Try with 2.9.3 or greater
   type Try[T] = Either[List[FailureReason], T]
 
   /** The recursive planner produces these objects which are Monads */
