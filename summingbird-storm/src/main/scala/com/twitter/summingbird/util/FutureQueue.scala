@@ -24,8 +24,9 @@ import scala.collection.mutable.{ Queue => MutableQueue }
  * forced after Future (n + maxLength) is added to the
  * queue.
  *
- * TODO: remove this in favor of BufferingStore in storehaus after
- * further performance  investigation.
+ * TODO (https://github.com/twitter/summingbird/issues/83): remove
+ * this in favor of BufferingStore in storehaus after further
+ * performance investigation.
  *
  * @author Oscar Boykin
  * @author Sam Ritchie

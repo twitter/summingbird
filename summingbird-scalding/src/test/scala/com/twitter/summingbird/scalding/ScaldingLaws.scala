@@ -38,7 +38,8 @@ import cascading.flow.FlowDef
   * Tests for Summingbird's Scalding planner.
   */
 
-class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T]) extends ScaldingSource with Mappable[T] {
+class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
+    extends ScaldingSource with Mappable[T] {
   val converter = tconv
   override def toString = id
   override def equals(that: Any) = that match {
@@ -48,8 +49,9 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T]) extends
   override def hashCode = id.hashCode
 
   override def localScheme : LocalScheme = {
-    // This is a hack because the MemoryTap doesn't actually care what the scheme is
-    // it just holds the fields
+    // This is a hack because the MemoryTap doesn't actually care what
+    // the scheme is it just holds the fields
+    //
     // TODO implement a proper Scheme for MemoryTap
     new CLTextDelimited(sourceFields, "\t", null : Array[Class[_]])
   }
@@ -147,22 +149,7 @@ class TestService[K, V](service: String,
 }
 
 object ScaldingLaws extends Properties("Scalding") {
-  // TODO: These functions were lifted from Storehaus's testing
-  // suite. They should move into Algebird to make it easier to test
-  // maps that have had their zeros removed with MapAlgebra.
-
-  def rightContainsLeft[K,V: Equiv](l: Map[K, V], r: Map[K, V]): Boolean =
-    l.foldLeft(true) { (acc, pair) =>
-      acc && r.get(pair._1).map { Equiv[V].equiv(_, pair._2) }.getOrElse(true)
-    }
-
-  implicit def mapEquiv[K,V: Monoid: Equiv]: Equiv[Map[K, V]] = {
-    Equiv.fromFunction { (m1, m2) =>
-      val cleanM1 = MapAlgebra.removeZeros(m1)
-      val cleanM2 = MapAlgebra.removeZeros(m2)
-      rightContainsLeft(cleanM1, cleanM2) && rightContainsLeft(cleanM2, cleanM1)
-    }
-  }
+  import MapAlgebra.sparseEquiv
 
   def testSource[T](iter: Iterable[T])
     (implicit mf: Manifest[T], te: TimeExtractor[T], tc: TupleConverter[T], tset: TupleSetter[T]):

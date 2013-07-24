@@ -44,12 +44,18 @@ trait BatchedScaldingSink[T] extends ScaldingSink[T] {
     Reader[FlowInput, TimedPipe[T]] { (flowMode: (FlowDef, Mode)) =>
       val iter = BatchID.toIterable(inter)
       val inPipe = in(flowMode)
+
+      // TODO (https://github.com/twitter/summingbird/issues/92): a
+      // version of template tap is needed here.
+
       // We need to write each of these.
-      // TODO: a version of template tap is needed here.
       iter.foreach { batch =>
         val range = batcher.toInterval(batch).mapNonDecreasing { _.getTime }
-        // TODO don't use a closure here for serialization safety
-        writeStream(batch, inPipe.filter { case (time, _) => range(time) })(flowMode._1, flowMode._2)
+        // TODO (https://github.com/twitter/summingbird/issues/90):
+        // don't use a closure here for serialization safety
+        writeStream(batch, inPipe.filter { case (time, _) =>
+          range(time)
+        })(flowMode._1, flowMode._2)
       }
       inPipe
     }

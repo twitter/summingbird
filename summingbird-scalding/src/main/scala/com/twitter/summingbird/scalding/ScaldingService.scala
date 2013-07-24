@@ -51,9 +51,13 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
       Reader[FlowInput, KeyValuePipe[K, (W, Option[V])]] { (flowMode: (FlowDef, Mode)) =>
         val left = getKeys(flowMode)
         val liftedLast: KeyValuePipe[K, Option[V]] = last._2(flowMode).map { case (t, (k, w)) => (t, (k, Some(w))) }
-        // TODO we could not bother to load streams outside the covers, but probably we aren't anyway assuming
-        // the time spans are not wildly mismatched
-        val right = streams.foldLeft(liftedLast) { (merged, item) => merged ++ (item._2(flowMode)) }
+        // TODO (https://github.com/twitter/summingbird/issues/91): we
+        // could not bother to load streams outside the covers, but
+        // probably we aren't anyway assuming the time spans are not
+        // wildly mismatched
+        val right = streams.foldLeft(liftedLast) { (merged, item) =>
+          merged ++ (item._2(flowMode))
+        }
         implicit val ord = ordering
         def flatOpt[T](o: Option[Option[T]]): Option[T] = o.flatMap(identity)
 

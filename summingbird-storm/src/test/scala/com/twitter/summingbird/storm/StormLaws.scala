@@ -53,22 +53,7 @@ case class TestState[T, K, V](
 )
 
 object StormLaws extends Properties("Storm") {
-  // TODO: These functions were lifted from Storehaus's testing
-  // suite. They should move into Algebird to make it easier to test
-  // maps that have had their zeros removed with MapAlgebra.
-
-  def rightContainsLeft[K,V: Equiv](l: Map[K, V], r: Map[K, V]): Boolean =
-    l.foldLeft(true) { (acc, pair) =>
-      acc && r.get(pair._1).map { Equiv[V].equiv(_, pair._2) }.getOrElse(true)
-    }
-
-  implicit def mapEquiv[K,V: Monoid: Equiv]: Equiv[Map[K, V]] = {
-    Equiv.fromFunction { (m1, m2) =>
-      val cleanM1 = MapAlgebra.removeZeros(m1)
-      val cleanM2 = MapAlgebra.removeZeros(m2)
-      rightContainsLeft(cleanM1, cleanM2) && rightContainsLeft(cleanM2, cleanM1)
-    }
-  }
+  import MapAlgebra.sparseEquiv
 
   // This is dangerous, obviously. The Storm platform graphs tested
   // here use the UnitBatcher, so the actual time extraction isn't
@@ -76,7 +61,8 @@ object StormLaws extends Properties("Storm") {
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
 
   def createGlobalState[T, K, V] =
-    new MutableHashMap[String, TestState[T, K, V]] with SynchronizedMap[String, TestState[T, K, V]]
+    new MutableHashMap[String, TestState[T, K, V]]
+        with SynchronizedMap[String, TestState[T, K, V]]
 
   /**
     * Returns a serializable iterator that wraps the supplied

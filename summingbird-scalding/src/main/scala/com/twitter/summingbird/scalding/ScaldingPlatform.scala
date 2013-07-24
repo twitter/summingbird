@@ -136,8 +136,9 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
         if (shards <= 1)
           src
         else
-          // TODO: switch this to groupRandomly when it becomes
-          // available in the typed API
+          // TODO (https://github.com/twitter/summingbird/issues/89):
+          // switch this to groupRandomly when it becomes available in
+          // the typed API
           src.map { flowP =>
             flowP.map { pipe =>
               pipe.groupBy { event => new java.util.Random().nextInt(shards) }
@@ -156,17 +157,30 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
         // Map in two monads here, first state then reader
         buildFlow(producer, id).map { flowP =>
           flowP.map { typedPipe =>
-            // TODO make Function1 instances outside to avoid the closure + serialization issues
-            typedPipe.flatMap { case (time, item) => op(item).map { (time, _) }.toIterable }
+            // TODO
+            // (https://github.com/twitter/summingbird/issues/90):
+            // make Function1 instances outside to avoid the closure +
+            // serialization issues
+            typedPipe.flatMap { case (time, item) =>
+              op(item).map { (time, _) }.toIterable
+            }
           }
         }
       case FlatMappedProducer(producer, op) =>
         // Map in two monads here, first state then reader
         buildFlow(producer, id).map { flowP =>
           flowP.map { typedPipe =>
-            // TODO remove toIterable in scalding 0.9.0
-            // TODO make Function1 instances outside to avoid the closure + serialization issues
-            typedPipe.flatMap { case (time, item) => op(item).toIterable.view.map { (time, _) } }
+            // TODO
+            // (https://github.com/twitter/summingbird/issues/89):
+            // remove toIterable in scalding 0.9.0
+
+            // TODO
+            // (https://github.com/twitter/summingbird/issues/90):
+            // make Function1 instances outside to avoid the closure +
+            // serialization issues
+            typedPipe.flatMap { case (time, item) =>
+              op(item).toIterable.view.map { (time, _) }
+            }
           }
         }
       case MergedProducer(l, r) => {
@@ -206,8 +220,9 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
 
         // Now we have a populated flowDef, time to let Cascading do it's thing:
         mode.newFlowConnector(conf).connect(flowDef).complete
-        // TODO log that we have completed all of ts, and should start
-        // at the upperbound
+        // TODO (https://github.com/twitter/summingbird/issues/81):
+        // log that we have completed all of ts, and should start at
+        // the upperbound
     }
   }
 }

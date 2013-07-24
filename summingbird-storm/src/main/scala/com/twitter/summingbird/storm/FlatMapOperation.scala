@@ -16,6 +16,7 @@
 
 package com.twitter.summingbird.storm
 
+import com.twitter.chill.ClosureCleaner
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird.sink.OnlineSink
 import com.twitter.util.Future
@@ -42,16 +43,17 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable { self =>
     }
 }
 
-// TODO: Use ClosureCleaner on the functions we pass into
-// FlatMapOperation.
+class FunctionFlatMapOperation[-T, +U](fm: T => TraversableOnce[U])
+    extends FlatMapOperation[T, U] {
+  ClosureCleaner(fm)
+  def apply(t: T) = Future.value(fm(t))
+}
 
 object FlatMapOperation {
   def identity[T] = FlatMapOperation { t: T => Some(t) }
 
   def apply[T, U](fm: T => TraversableOnce[U]): FlatMapOperation[T, U] =
-    new FlatMapOperation[T, U] {
-      def apply(t: T) = Future.value(fm(t))
-    }
+    new FunctionFlatMapOperation(fm)
 
   def combine[T, K, V, JoinedV](fmSupplier: => FlatMapOperation[T, (K, V)],
     storeSupplier: () => ReadableStore[K, JoinedV]): FlatMapOperation[T, (K, (V, Option[JoinedV]))] =

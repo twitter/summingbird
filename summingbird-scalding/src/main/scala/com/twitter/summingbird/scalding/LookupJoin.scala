@@ -53,7 +53,9 @@ import com.twitter.scalding.TypedPipe
   * right side will return None only if the key is absent,
   * else, the service will return Some(joinedV).
   */
-// TODO move to scalding somewhere
+
+// TODO (https://github.com/twitter/scalding/pull/507): Delete when
+// this moves into Scalding and our Scalding version bumps.
 object LookupJoin extends Serializable {
   def apply[T:Ordering, K:Ordering, V, JoinedV](left: TypedPipe[(T, (K, V))], right: TypedPipe[(T, (K, JoinedV))]):
     TypedPipe[(T, (K, (V, Option[JoinedV])))] = {
