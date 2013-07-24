@@ -22,11 +22,6 @@ import com.twitter.scalding.{Mode, TypedPipe, Grouped}
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
 import cascading.flow.FlowDef
 
-// TODO this functionality should be in algebird
-sealed trait Commutativity extends java.io.Serializable
-object NonCommutative extends Commutativity
-object Commutative extends Commutativity
-
 trait ScaldingStore[K, V] {
   /**
     * Accepts deltas along with their timestamps, returns triples of

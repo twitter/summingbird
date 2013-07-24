@@ -55,10 +55,10 @@ case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K,
 object Storm {
   val SINK_ID = "sinkId"
 
-  def local(name: String, options: Map[String, StormOptions] = Map.empty): LocalStorm =
+  def local(name: String, options: Map[String, Options] = Map.empty): LocalStorm =
     new LocalStorm(name, options, identity)
 
-  def remote(name: String, options: Map[String, StormOptions] = Map.empty): RemoteStorm =
+  def remote(name: String, options: Map[String, Options] = Map.empty): RemoteStorm =
     new RemoteStorm(name, options, identity)
 
   implicit def source[T](spout: Spout[T])
@@ -68,7 +68,7 @@ object Storm {
   }
 }
 
-abstract class Storm(options: Map[String, StormOptions], updateConf: Config => Config) extends Platform[Storm] {
+abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
   import Storm.SINK_ID
 
   type Source[+T] = Spout[(Long, T)]
@@ -86,7 +86,7 @@ abstract class Storm(options: Map[String, StormOptions], updateConf: Config => C
     */
   def isFinalFlatMap(suffix: String) = !suffix.contains(FM_CONSTANT)
 
-  def getOrElse[T: Manifest](idOpt: Option[String], default: T): T =
+  private def getOrElse[T: Manifest](idOpt: Option[String], default: T): T =
     (for {
       id <- idOpt
       stormOpts <- options.get(id)
@@ -308,7 +308,7 @@ abstract class Storm(options: Map[String, StormOptions], updateConf: Config => C
   }
 }
 
-class RemoteStorm(jobName: String, options: Map[String, StormOptions], updateConf: Config => Config)
+class RemoteStorm(jobName: String, options: Map[String, Options], updateConf: Config => Config)
     extends Storm(options, updateConf) {
 
   override def withConfigUpdater(fn: Config => Config) =
@@ -320,7 +320,7 @@ class RemoteStorm(jobName: String, options: Map[String, StormOptions], updateCon
   }
 }
 
-class LocalStorm(jobName: String, options: Map[String, StormOptions], updateConf: Config => Config)
+class LocalStorm(jobName: String, options: Map[String, Options], updateConf: Config => Config)
     extends Storm(options, updateConf) {
   lazy val localCluster = new LocalCluster
 
