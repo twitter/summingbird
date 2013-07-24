@@ -21,7 +21,7 @@ import com.twitter.scalding.TypedPipe
 import com.twitter.scalding.Mode
 import cascading.flow.FlowDef
 
-import com.twitter.summingbird.monad.{Reader, StateWithError}
+import com.twitter.algebird.monad.{Reader, StateWithError}
 import com.twitter.summingbird.batch.Interval
 
 package object scalding {

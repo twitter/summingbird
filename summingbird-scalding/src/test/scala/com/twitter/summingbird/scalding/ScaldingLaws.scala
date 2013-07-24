@@ -17,8 +17,8 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.{MapAlgebra, Monoid, Group}
+import com.twitter.algebird.monad._
 import com.twitter.summingbird._
-import com.twitter.summingbird.monad._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Interval}
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
