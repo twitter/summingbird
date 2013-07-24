@@ -49,8 +49,9 @@ import scala.util.control.Exception.allCatch
 // function as a string (to be eval'd on the server) that the realtime
 // layer could use to skip processing of certain events.
 
-// TODO: Submit a pull req to scalding-commons that adds this generic
-// capability to VersionedKeyValSource.
+// TODO (https://github.com/twitter/summingbird/issues/93): Submit a
+// pull req to scalding-commons that adds this generic capability to
+// VersionedKeyValSource.
 
 object HDFSMetadata {
   val METADATA_FILE = "_summingbird.json"
