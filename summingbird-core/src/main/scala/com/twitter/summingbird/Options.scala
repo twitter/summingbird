@@ -14,20 +14,18 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.storm
-
-import com.twitter.summingbird.builder.{ FlatMapOption, SinkOption, SpoutParallelism }
-import com.twitter.summingbird.util.CacheSize
+package com.twitter.summingbird
 
 /**
   * intra-graph options.
   */
 
-class StormOptions(opts: Map[Class[_], Any] = Map.empty) {
-  def set(opt: SpoutParallelism) = new StormOptions(opts + (opt.getClass -> opt))
-  def set(opt: SinkOption) = new StormOptions(opts + (opt.getClass -> opt))
-  def set(opt: FlatMapOption) = new StormOptions(opts + (opt.getClass -> opt))
-  def set(opt: CacheSize) = new StormOptions(opts + (opt.getClass -> opt))
+object Options {
+  def apply(opts: Map[Class[_], Any] = Map.empty): Options = new Options(opts)
+}
+
+class Options(opts: Map[Class[_], Any]) {
+  def set[T](opt: T) = Options(opts + (opt.getClass -> opt))
 
   def get[T](klass: Class[T]): Option[T] =
     opts.get(klass).asInstanceOf[Option[T]]

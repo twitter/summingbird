@@ -16,7 +16,8 @@ limitations under the License.
 
 package com.twitter.summingbird.builder
 
-/**
-  * Holdover from the refactor.
-  */
-case class FlatMapShards(count: Int)
+object Reducers {
+  val default = Reducers(-1)
+}
+
+case class Reducers(count: Int)

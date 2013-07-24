@@ -28,7 +28,7 @@ import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.{CompoundSink, BatchedSinkFromOffline}
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
-import com.twitter.summingbird.storm.{MergeableStoreSupplier, StoreWrapper, Storm, StormOptions}
+import com.twitter.summingbird.storm.{ MergeableStoreSupplier, StoreWrapper, Storm }
 import com.twitter.summingbird.util.CacheSize
 import java.io.Serializable
 import java.util.{ Date, UUID }
@@ -67,7 +67,7 @@ case class SourceBuilder[T: Manifest] private (
   node: PairedProducer[T, Scalding, Storm],
   pairs: List[InjectionPair[_]],
   id: String,
-  opts: Map[String, StormOptions] = Map.empty
+  opts: Map[String, Options] = Map.empty
 ) extends Serializable {
   import SourceBuilder.adjust
 
@@ -103,12 +103,11 @@ case class SourceBuilder[T: Manifest] private (
 
   // Set the number of reducers used to shard out the EventSource
   // flatmapper in the offline flatmap step.
-  def set(fms: FlatMapShards): SourceBuilder[T] =
-    sys.error("TODO") // https://github.com/twitter/summingbird/issues/59
+  def set(fms: FlatMapShards): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(fms)))
 
   // Set the cache size used in the online flatmap step.
-  def set(size: CacheSize) = copy(opts = adjust(opts, id)(_.set(size)))
-  def set(opt: FlatMapOption) = copy(opts = adjust(opts, id)(_.set(opt)))
+  def set(size: CacheSize): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(size)))
+  def set(opt: FlatMapOption): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(opt)))
 
   /**
     * Complete this builder instance with a BatchStore. At this point,

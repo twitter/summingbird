@@ -19,8 +19,10 @@ package com.twitter.summingbird.scalding
 import com.twitter.algebird.{ Monoid, Semigroup, Monad }
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.Monad.operators // map/flatMap for monads
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird._
+import com.twitter.summingbird.builder.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
@@ -75,7 +77,10 @@ object Scalding {
     for { l <- left; r <- right } yield (l ++ r)
 }
 
-class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode) extends Platform[Scalding] {
+class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
+  updateConf: Configuration => Configuration = identity,
+  options: Map[String, Options] = Map.empty)
+    extends Platform[Scalding] {
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
   type Sink[T] = ScaldingSink[T]
@@ -88,6 +93,13 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode) extends Pl
     * - the store needs to give us the current maximum batch.
     */
 
+  private def getOrElse[T: Manifest](idOpt: Option[String], default: T): T =
+    (for {
+      id <- idOpt
+      innerOpts <- options.get(id)
+      option <- innerOpts.get[T]
+    } yield option).getOrElse(default)
+
   private def buildSummer[K, V](summer: Summer[Scalding, K, V], id: Option[String]): PipeFactory[(K, V)] = {
     val Summer(producer, store, monoid) = summer
     /*
@@ -96,8 +108,11 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode) extends Pl
      * So, we pass the full PipeFactory to to the store so it can request only
      * the time ranges that it needs.
      */
-    // TODO: plumb the options through, don't just put -1 and NonCommutative
-    store.merge(buildFlow(producer, id), monoid, NonCommutative, -1)
+    store.merge(
+      buildFlow(producer, id), monoid,
+      getOrElse(id, NonCommutative),
+      getOrElse(id, Reducers.default).count
+    )
   }
 
   private def buildJoin[K, V, JoinedV](joined: LeftJoinedProducer[Scalding, K, V, JoinedV],
@@ -116,7 +131,22 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode) extends Pl
    */
   def buildFlow[T](producer: Producer[Scalding, T], id: Option[String]): PipeFactory[T] = {
     producer match {
-      case Source(src, manifest) => src
+      case Source(src, manifest) => {
+        val shards = getOrElse(id, FlatMapShards.default).count
+        if (shards <= 1)
+          src
+        else
+          // TODO: switch this to groupRandomly when it becomes
+          // available in the typed API
+          src.map { flowP =>
+            flowP.map { pipe =>
+              pipe.groupBy { event => new java.util.Random().nextInt(shards) }
+                .mapValues(identity(_)) // hack to get scalding to actually do the groupBy
+                .withReducers(shards)
+                .values
+            }
+          }
+      }
       case IdentityKeyedProducer(producer) => buildFlow(producer, id)
       case NamedProducer(producer, newId)  => buildFlow(producer, id = Some(newId))
       case summer@Summer(producer, store, monoid) => buildSummer(summer, id)
@@ -152,13 +182,16 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode) extends Pl
     }
   }
 
-  def config: Map[AnyRef, AnyRef] = Map.empty
-    //sys.error("TODO, set up the kryo serializers")
+  def transformConfig(base: Configuration): Configuration = updateConf(base)
+  def withConfigUpdater(fn: Configuration => Configuration): Scalding =
+    new Scalding(jobName, timeSpan, mode, fn, options)
 
   def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] =
     buildFlow(prod, None)
 
-  def run(pf: PipeFactory[_]): Unit = {
+  def run(pf: PipeFactory[_]) {
+    import ConfigBijection._
+
     pf((timeSpan, mode)) match {
       case Left(errs) =>
         println("ERROR")
@@ -167,9 +200,14 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode) extends Pl
         val flowDef = new FlowDef
         flowDef.setName(jobName)
         val outputPipe = flowDefMutator((flowDef, mode))
+        val conf = transformConfig(new Configuration)
+          .as[Map[String, AnyRef]]
+          .toMap[AnyRef, AnyRef]
+
         // Now we have a populated flowDef, time to let Cascading do it's thing:
-        mode.newFlowConnector(config).connect(flowDef).complete
-        // TODO log that we have completed all of ts, and should start at the upperbound
+        mode.newFlowConnector(conf).connect(flowDef).complete
+        // TODO log that we have completed all of ts, and should start
+        // at the upperbound
     }
   }
 }
