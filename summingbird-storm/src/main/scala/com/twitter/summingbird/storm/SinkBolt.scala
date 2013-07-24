@@ -84,9 +84,9 @@ class SinkBolt[Key, Value: Monoid](
       None
   }
 
-  // TODO: Think about how we could compose bolts using an implicit
-  // Injection[T,Tuple] This is really just the invert function.  The
-  // problem is that Storm emits Values and receives Tuples.
+  // TODO (https://github.com/twitter/tormenta/issues/1): Think about
+  // how this can help with Tormenta's open issue for a tuple
+  // conversion library. Storm emits Values and receives Tuples.
   def unpack(tuple: Tuple) = {
     val id = tuple.getValue(0).asInstanceOf[BatchID]
     val key = tuple.getValue(1).asInstanceOf[Key]
