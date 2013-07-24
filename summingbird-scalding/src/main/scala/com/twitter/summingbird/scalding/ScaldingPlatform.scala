@@ -19,6 +19,7 @@ package com.twitter.summingbird.scalding
 import com.twitter.algebird.{ Monoid, Semigroup, Monad }
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.Monad.operators // map/flatMap for monads
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird._
 import com.twitter.summingbird.builder.{ FlatMapShards, Reducers }
@@ -76,7 +77,9 @@ object Scalding {
     for { l <- left; r <- right } yield (l ++ r)
 }
 
-class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode, options: Map[String, Options] = Map.empty)
+class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
+  updateConf: Configuration => Configuration = identity,
+  options: Map[String, Options] = Map.empty)
     extends Platform[Scalding] {
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
@@ -179,13 +182,16 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode, options: M
     }
   }
 
-  def config: Map[AnyRef, AnyRef] = Map.empty
-    //sys.error("TODO, set up the kryo serializers")
+  def transformConfig(base: Configuration): Configuration = updateConf(base)
+  def withConfigUpdater(fn: Configuration => Configuration): Scalding =
+    new Scalding(jobName, timeSpan, mode, fn, options)
 
   def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] =
     buildFlow(prod, None)
 
-  def run(pf: PipeFactory[_]): Unit = {
+  def run(pf: PipeFactory[_]) {
+    import ConfigBijection._
+
     pf((timeSpan, mode)) match {
       case Left(errs) =>
         println("ERROR")
@@ -194,9 +200,14 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode, options: M
         val flowDef = new FlowDef
         flowDef.setName(jobName)
         val outputPipe = flowDefMutator((flowDef, mode))
+        val conf = transformConfig(new Configuration)
+          .as[Map[String, AnyRef]]
+          .toMap[AnyRef, AnyRef]
+
         // Now we have a populated flowDef, time to let Cascading do it's thing:
-        mode.newFlowConnector(config).connect(flowDef).complete
-        // TODO log that we have completed all of ts, and should start at the upperbound
+        mode.newFlowConnector(conf).connect(flowDef).complete
+        // TODO log that we have completed all of ts, and should start
+        // at the upperbound
     }
   }
 }

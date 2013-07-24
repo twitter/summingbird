@@ -43,21 +43,6 @@ import ConfigBijection.fromJavaMap
 case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     extends Env(jobName) {
 
-  // Configuration isn't serializable, so mark this field as
-  // transient. Access to this config copy should only occur at job
-  // submission time, so this should be fine.
-  @transient lazy val config = {
-    val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
-    val jConf: JMap[String,AnyRef] =
-      new JHashMap(fromJavaMap.invert(new Configuration))
-    KryoRegistrationHelper.registerInjections(jConf, builder.eventCodecPairs)
-
-    // Register key and value types. All extensions of either of these
-    // types will be caught by the registered injection.
-    KryoRegistrationHelper.registerInjectionDefaults(jConf, codecPairs)
-    fromJavaMap(jConf)
-  }
-
   override lazy val args = {
     // pull out any hadoop specific args
     Args(new GenericOptionsParser(new Configuration, inargs).getRemainingArgs)
@@ -92,33 +77,32 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // Summingbird job.
   def reducers : Int = args.getOrElse("reducers","20").toInt
 
-  @transient
-  protected lazy val hadoopTool: STool = {
-    val tool = new STool
-    tool.setJobConstructor { jobArgs =>
-      sys.error("TODO") // https://github.com/twitter/summingbird/issues/70
-    }
-    tool
-  }
-
   def run {
     // Calling abstractJob's constructor and binding it to a variable
     // forces any side effects caused by that constructor (building up
     // of the environment and defining the builder).
     val ajob = abstractJob
-
     // Perform config transformations before Hadoop job submission
-    val finalConf = {
-      val bij = ConfigBijection.fromMap
-      val c = bij.invert(config)
-      bij(ajob.transformConfig(c))
-    }
+    val opts = SourceBuilder.adjust(
+      builder.opts, builder.id)(_.set(Reducers(reducers)))
 
-    // Now actually run (by building the scalding job):
-    try {
-      ToolRunner.run(finalConf, hadoopTool, inargs);
-    } catch {
-      case ise: InvalidSourceException => println("Job data not ready: " + ise.getMessage)
-    }
+    val scalding = new Scalding(
+      abstractJob.getClass.getName,
+      sys.error("TODO"), // TODO: Calculate dates needed?
+      Mode.mode,
+      options = opts).withConfigUpdater { conf =>
+      val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
+      val eventCodecPairs = builder.eventCodecPairs
+
+      // TODO: Deal with duplication here with the lift between this
+      // code and SummingbirdKryoHadoop
+      val jConf: JMap[String,AnyRef] = new JHashMap(fromJavaMap.invert(conf))
+      KryoRegistrationHelper.registerInjections(jConf, eventCodecPairs)
+
+      // Register key and value types. All extensions of either of these
+      // types will be caught by the registered injection.
+      KryoRegistrationHelper.registerInjectionDefaults(jConf, codecPairs)
+      fromMap(ajob.transformConfig(jConf.as[Map[String, AnyRef]]))
+    }.run(builder.node.l)
   }
 }
