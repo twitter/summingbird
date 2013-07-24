@@ -88,7 +88,9 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
 
     val scalding = new Scalding(
       abstractJob.getClass.getName,
-      sys.error("TODO"), // TODO: Calculate dates needed?
+      // TODO: use a new "state" class to calculate the interval:
+      // https://github.com/twitter/summingbird/issues/81
+      sys.error("TODO"),
       Mode.mode,
       options = opts).withConfigUpdater { conf =>
       val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
