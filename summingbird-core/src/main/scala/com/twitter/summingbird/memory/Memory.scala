@@ -30,35 +30,62 @@ class Memory extends Platform[Memory] {
   type Store[K, V] = MutableMap[K, V]
   type Sink[-T] = (T => Unit)
   type Service[-K, +V] = (K => Option[V])
-  type Plan[T] = Iterator[T]
+  type Plan[T] = Stream[T]
 
-  def toIterator[T, K, V](producer: Producer[Memory, T]): Iterator[T] = {
-    producer match {
-      case NamedProducer(producer, _) => toIterator(producer)
-      case IdentityKeyedProducer(producer) => toIterator(producer)
-      case Source(source, _) => source.toIterator
-      case OptionMappedProducer(producer, fn, mf) => toIterator(producer).flatMap { fn(_).iterator }
-      case FlatMappedProducer(producer, fn) => toIterator(producer).flatMap(fn)
-      case MergedProducer(l, r) => toIterator(l) ++ toIterator(r)
-      case WrittenProducer(producer, fn) => toIterator(producer).map { i => fn(i); i }
-      case LeftJoinedProducer(producer, service) =>
-        toIterator(producer).map { case (k, v) =>
-          (k, (v, service(k)))
+  private type Prod[T] = Producer[Memory, T]
+  private type JamfMap = Map[Prod[_], Stream[_]]
+
+  def toStream[T, K, V](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
+    jamfs.get(outerProducer) match {
+      case Some(s) => (s.asInstanceOf[Stream[T]], jamfs)
+      case None =>
+        val (s, m) = outerProducer match {
+          case NamedProducer(producer, _) => toStream(producer, jamfs)
+          case IdentityKeyedProducer(producer) => toStream(producer, jamfs)
+          case Source(source, _) => (source.toStream, jamfs)
+          case OptionMappedProducer(producer, fn, mf) =>
+            val (s, m) = toStream(producer, jamfs)
+            (s.flatMap(fn(_)), m)
+
+          case FlatMappedProducer(producer, fn) =>
+            val (s, m) = toStream(producer, jamfs)
+            (s.flatMap(fn(_)), m)
+
+          case MergedProducer(l, r) =>
+            val (leftS, leftM) = toStream(l, jamfs)
+            val (rightS, rightM) = toStream(r, leftM)
+            (leftS ++ rightS, rightM)
+
+          case WrittenProducer(producer, fn) =>
+            val (s, m) = toStream(producer, jamfs)
+            (s.map { i => fn(i); i }, m)
+
+          case LeftJoinedProducer(producer, service) =>
+            val (s, m) = toStream(producer, jamfs)
+            val joined = s.map {
+              case (k, v) => (k, (v, service(k)))
+            }
+            (joined, m)
+
+          case Summer(producer, store, monoid) =>
+            val (s, m) = toStream(producer, jamfs)
+            val summed = s.map {
+              case pair @ (k, deltaV) =>
+                val newV = store.get(k)
+                  .map { monoid.plus(_, deltaV) }
+                  .getOrElse(deltaV)
+                store.update(k, newV)
+                pair
+            }
+            (summed, m)
         }
-      case Summer(producer, store, monoid) =>
-        toIterator(producer).map { case pair@(k, deltaV) =>
-          val newV = store.get(k)
-            .map { monoid.plus(_, deltaV) }
-            .getOrElse(deltaV)
-          store.update(k, newV)
-          pair
-        }
+        (s.asInstanceOf[Stream[T]], m + (outerProducer -> s))
     }
-  }
-  def plan[T](prod: Producer[Memory, T]): Iterator[T] =
-    toIterator(prod)
 
-  def run(iter: Iterator[_]) {
+  def plan[T](prod: Producer[Memory, T]): Stream[T] =
+    toStream(prod, Map.empty)._1
+
+  def run(iter: Stream[_]) {
     iter.foreach { it => it /* just go through the whole thing */ }
   }
 }
