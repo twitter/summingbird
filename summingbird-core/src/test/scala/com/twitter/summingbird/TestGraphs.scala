@@ -27,6 +27,26 @@ import org.scalacheck.Prop._
   */
 
 object TestGraphs {
+  def diamondJobInScala[T, K, V: Monoid]
+    (source: TraversableOnce[T])
+    (fnA: T => TraversableOnce[(K, V)])
+    (fnB: T => TraversableOnce[(K, V)]): Map[K, V] = {
+    val stream = source.toStream
+    val left = stream.flatMap(fnA)
+    val right = stream.flatMap(fnB)
+    MapAlgebra.sumByKey(left ++ right)
+  }
+
+  def diamondJob[P <: Platform[P], T, K, V: Monoid]
+    (source: Producer[P, T], sink: P#Sink[T], store: P#Store[K, V])
+    (fnA: T => TraversableOnce[(K, V)])
+    (fnB: T => TraversableOnce[(K, V)]): Summer[P, K, V] = {
+    val written = source.write(sink)
+    val left = written.flatMap(fnA)
+    val right = written.flatMap(fnB)
+    left.merge(right).sumByKey(store)
+  }
+
   def singleStepInScala[T, K, V: Monoid]
     (source: TraversableOnce[T])
     (fn: T => TraversableOnce[(K, V)]): Map[K, V] =
@@ -67,9 +87,25 @@ object TestGraphs {
 }
 
 class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbitrary: Equiv: Monoid](platform: P)(
-  store: () => P#Store[K, V])(
+  store: () => P#Store[K, V])(sink: () => P#Sink[T])(
   sourceMaker: TraversableOnce[T] => Producer[P, T])(
-  toLookupFn: P#Store[K, V] => (K => Option[V])) {
+  toLookupFn: P#Store[K, V] => (K => Option[V]))(
+  toSinkChecker: (P#Sink[T], List[T]) => Boolean) {
+
+  def diamondChecker = forAll { (items: List[T], fnA: T => List[(K, V)], fnB: T => List[(K, V)]) =>
+    val currentStore = store()
+    val currentSink = sink()
+    // Use the supplied platform to execute the source into the
+    // supplied store.
+    val plan = platform.plan {
+      TestGraphs.diamondJob(sourceMaker(items), currentSink, currentStore)(fnA)(fnB)
+    }
+    platform.run(plan)
+    val lookupFn = toLookupFn(currentStore)
+    TestGraphs.diamondJobInScala(items)(fnA)(fnB).forall { case (k, v) =>
+      lookupFn(k).exists(Equiv[V].equiv(v, _))
+    } && toSinkChecker(currentSink, items)
+  }
 
     /**
     * Accepts a platform, and supplier of an EMPTY store from K -> V
@@ -81,7 +117,7 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     * Results are retrieved using the supplied toMap function. The
     * initial data source is generated using the supplied sourceMaker
     * function.
-    */
+      */
   def singleStepChecker = forAll { (items: List[T], fn: T => List[(K, V)]) =>
     val currentStore = store()
     // Use the supplied platform to execute the source into the
@@ -91,7 +127,7 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     }
     platform.run(plan)
     val lookupFn = toLookupFn(currentStore)
-    MapAlgebra.sumByKey(items.flatMap(fn)).forall { case (k, v) =>
+    TestGraphs.singleStepInScala(items)(fn).forall { case (k, v) =>
       lookupFn(k).exists(Equiv[V].equiv(v, _))
     }
   }

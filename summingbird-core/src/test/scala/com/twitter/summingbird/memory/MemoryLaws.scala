@@ -20,7 +20,7 @@ import com.twitter.algebird.{ MapAlgebra, Monoid }
 import com.twitter.summingbird._
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
-import collection.mutable.{ Map => MutableMap }
+import collection.mutable.{ Map => MutableMap, ListBuffer }
 
 /**
   * Tests for Summingbird's in-memory planner.
@@ -32,10 +32,17 @@ object MemoryLaws extends Properties("Memory") {
   // needed.
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
 
+  class BufferFunc[T] extends (T => Unit) {
+    val buf = ListBuffer[T]()
+    def apply(t: T) = buf += t
+  }
+
   def testGraph[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
     new TestGraphs[Memory, T, K, V](new Memory)(
-      () => MutableMap.empty[K, V])(
-      Memory.toSource(_))(s => { s.get(_) })
+      () => MutableMap.empty[K, V])(() => new BufferFunc[T])(
+      Memory.toSource(_))(s => { s.get(_) })({ (f, items) =>
+        f.asInstanceOf[BufferFunc[T]].buf.toList == items
+      })
 
   /**
     * Tests the in-memory planner against a job with a single flatMap
@@ -48,6 +55,18 @@ object MemoryLaws extends Properties("Memory") {
   property("MemoryPlanner singleStep w/ Int, String, List[Int]") = singleStepLaw[Int, String, List[Int]]
   property("MemoryPlanner singleStep w/ String, Short, Map[Set[Int], Long]") =
     singleStepLaw[String, Short, Map[Set[Int], Long]]
+
+  /**
+    * Tests the in-memory planner against a job with a single flatMap
+    * operation.
+    */
+  def diamondLaw[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
+    testGraph[T, K, V].diamondChecker
+
+  property("MemoryPlanner diamond w/ Int, Int, Set[Int]") = diamondLaw[Int, Int, Set[Int]]
+  property("MemoryPlanner diamond w/ Int, String, List[Int]") = diamondLaw[Int, String, List[Int]]
+  property("MemoryPlanner diamond w/ String, Short, Map[Set[Int], Long]") =
+    diamondLaw[String, Short, Map[Set[Int], Long]]
 
   /**
     * Tests the in-memory planner by generating arbitrary flatMap and
