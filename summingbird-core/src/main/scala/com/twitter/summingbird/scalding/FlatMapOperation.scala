@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding
 
 import cascading.flow.FlowDef
 
-import com.twitter.scalding.{Mode, TypedPipe}
+import com.twitter.scalding.{Mode, TypedPipe, Dsl}
 import com.twitter.summingbird.FlatMapper
 import com.twitter.summingbird.service.OfflineService
 import com.twitter.summingbird.sink.OfflineSink
@@ -73,11 +73,16 @@ object FlatMapOperation {
         (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv):
           TypedPipe[(Long, (Key, Value))] = {
         val encoded = fm(timeEv)
-        sink.write(encoded.flatMap {
+        // force this into a new TypedPipe so that cascading can see the node in the graph
+        // If we don't do this, the fm function is applied twice.
+        // This was causing a serious additional cost on the cluster
+        import Dsl._
+        val newPipe = TypedPipe.from[(Long, (Key, Value))](encoded.toPipe((0, 1)), (0, 1))
+        sink.write(newPipe.flatMap {
           // TODO remove toList when scalding supports TraversableOnce
           case (time, pair) => conversion(pair).toList
         })
-        encoded
+        newPipe
       }
     }
 }
