@@ -160,7 +160,7 @@ case class SourceBuilder[T: Manifest] private (
     batcher: Batcher,
     monoid: Monoid[V],
     keyOrdering: Ordering[K]): CompletedBuilder[K, V] = {
-    val newNode = node.asInstanceOf[Node[(K, V)]].sumByKey(
+    val newNode = IdentityKeyedProducer(node).sumByKey(
       store.offlineStore,
       MergeableStoreSupplier.from(store.onlineSupplier())
     )

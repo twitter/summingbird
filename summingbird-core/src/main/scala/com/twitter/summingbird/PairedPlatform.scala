@@ -35,7 +35,9 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val (l, r) = apply(producer)
         (l.name(id), r.name(id))
 
-      case IdentityKeyedProducer(producer) => apply(producer)
+      case IdentityKeyedProducer(producer) =>
+        val (l, r) = apply(producer)
+        (IdentityKeyedProducer(l), IdentityKeyedProducer(r))
 
       case Source(source, mf) =>
         val (leftSource, rightSource) = source
