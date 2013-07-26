@@ -100,99 +100,134 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
       option <- innerOpts.get[T]
     } yield option).getOrElse(default)
 
-  private def buildSummer[K, V](summer: Summer[Scalding, K, V], id: Option[String]): PipeFactory[(K, V)] = {
-    val Summer(producer, store, monoid) = summer
-    /*
-     * The store may already have materialized values, so we don't need the whole
-     * input history, but to produce NEW batches, we may need some input.
-     * So, we pass the full PipeFactory to to the store so it can request only
-     * the time ranges that it needs.
-     */
-    store.merge(
-      buildFlow(producer, id), monoid,
-      getOrElse(id, NonCommutative),
-      getOrElse(id, Reducers.default).count
-    )
-  }
-
-  private def buildJoin[K, V, JoinedV](joined: LeftJoinedProducer[Scalding, K, V, JoinedV],
-    id: Option[String]): PipeFactory[(K, (V, Option[JoinedV]))] = {
-    val LeftJoinedProducer(left, service) = joined
-    /**
-     * There is no point loading more from the left than the service can
-     * join with, so we pass in the left PipeFactory so that the service
-     * can compute how wuch it can actually handle and only load that much
-     */
-    service.lookup(buildFlow(left, id))
-  }
-
   /** Return a PipeFactory that can cover as much as possible of the time range requested,
    * but the output state gives the actual, non-empty, interval that can be produced
    */
-  def buildFlow[T](producer: Producer[Scalding, T], id: Option[String]): PipeFactory[T] = {
-    producer match {
-      case Source(src, manifest) => {
-        val shards = getOrElse(id, FlatMapShards.default).count
-        if (shards <= 1)
-          src
-        else
-          // TODO (https://github.com/twitter/summingbird/issues/89):
-          // switch this to groupRandomly when it becomes available in
-          // the typed API
-          src.map { flowP =>
-            flowP.map { pipe =>
-              pipe.groupBy { event => new java.util.Random().nextInt(shards) }
-                .mapValues(identity(_)) // hack to get scalding to actually do the groupBy
-                .withReducers(shards)
-                .values
-            }
-          }
-      }
-      case IdentityKeyedProducer(producer) => buildFlow(producer, id)
-      case NamedProducer(producer, newId)  => buildFlow(producer, id = Some(newId))
-      case summer@Summer(producer, store, monoid) => buildSummer(summer, id)
-      case joiner@LeftJoinedProducer(producer, svc) => buildJoin(joiner, id)
-      case WrittenProducer(producer, sink) => sink.write(buildFlow(producer, id))
-      case OptionMappedProducer(producer, op, manifest) =>
-        // Map in two monads here, first state then reader
-        buildFlow(producer, id).map { flowP =>
-          flowP.map { typedPipe =>
-            // TODO
-            // (https://github.com/twitter/summingbird/issues/90):
-            // make Function1 instances outside to avoid the closure +
-            // serialization issues
-            typedPipe.flatMap { case (time, item) =>
-              op(item).map { (time, _) }.toIterable
-            }
-          }
-        }
-      case FlatMappedProducer(producer, op) =>
-        // Map in two monads here, first state then reader
-        buildFlow(producer, id).map { flowP =>
-          flowP.map { typedPipe =>
-            // TODO
-            // (https://github.com/twitter/summingbird/issues/89):
-            // remove toIterable in scalding 0.9.0
+  private def buildFlow[T](producer: Producer[Scalding, T],
+    id: Option[String],
+    fanOuts: Set[Producer[Scalding, _]],
+    built: Map[Producer[Scalding, _], PipeFactory[_]]): (PipeFactory[T], Map[Producer[Scalding, _], PipeFactory[_]])  = {
 
-            // TODO
-            // (https://github.com/twitter/summingbird/issues/90):
-            // make Function1 instances outside to avoid the closure +
-            // serialization issues
-            typedPipe.flatMap { case (time, item) =>
-              op(item).toIterable.view.map { (time, _) }
-            }
+    /**
+     * The scalding Typed-API does not deal with TypedPipes with fanout,
+     * it just computes both branches twice. We call this function
+     * to force all Producers that have fanOut greater than 1
+     * to render intermediate cascading pipes so that
+     * cascading will optimize them properly
+     *
+     * TODO fix this in scalding
+     * https://github.com/twitter/scalding/issues/513
+     */
+    def forceNode[U](p: PipeFactory[U]): PipeFactory[U] =
+      if(fanOuts(producer))
+        p.map { flowP =>
+          flowP.map { pipe =>
+            // For a cascading node:
+            import com.twitter.scalding.Dsl._
+            TypedPipe.from[(Long,U)](pipe.toPipe((0,1)), (0,1))
           }
         }
-      case MergedProducer(l, r) => {
-        for {
-          // concatenate errors (++) and find the intersection (&&) of times
-          leftAndRight <- buildFlow(l, id).join(buildFlow(r, id),
-            { (lerr: List[FailureReason], rerr: List[FailureReason]) => lerr ++ rerr },
-            { case ((tsl, leftFM), (tsr, _)) => (tsl && tsr, leftFM) })
-          merged = Scalding.merge(leftAndRight._1, leftAndRight._2)
-          maxAvailable <- StateWithError.getState // read the latest state, which is the time
-        } yield Scalding.limitTimes(maxAvailable._1, merged)
-      }
+      else
+        p
+
+    built.get(producer) match {
+      case Some(pf) => (pf.asInstanceOf[PipeFactory[T]], built)
+      case None =>
+        val (pf: PipeFactory[T], m) = producer match {
+          case Source(src, manifest) => {
+            val shards = getOrElse(id, FlatMapShards.default).count
+            val srcPf = if (shards <= 1)
+              src
+            else
+              // TODO (https://github.com/twitter/summingbird/issues/89):
+              // TODO (https://github.com/twitter/scalding/issues/512):
+              // switch this to groupRandomly when it becomes available in
+              // the typed API
+              src.map { flowP =>
+                flowP.map { pipe =>
+                  pipe.groupBy { event => new java.util.Random().nextInt(shards) }
+                    .mapValues(identity(_)) // hack to get scalding to actually do the groupBy
+                    .withReducers(shards)
+                    .values
+                }
+              }
+            (srcPf, built)
+          }
+          case IdentityKeyedProducer(producer) =>
+            buildFlow(producer, id, fanOuts, built)
+          case NamedProducer(producer, newId)  =>
+            buildFlow(producer, id = Some(newId), fanOuts, built)
+          case Summer(producer, store, monoid) =>
+            /*
+             * The store may already have materialized values, so we don't need the whole
+             * input history, but to produce NEW batches, we may need some input.
+             * So, we pass the full PipeFactory to to the store so it can request only
+             * the time ranges that it needs.
+             */
+            val (in, m) = buildFlow(producer, id, fanOuts, built)
+            (store.merge(in, monoid,
+              getOrElse(id, NonCommutative),
+              getOrElse(id, Reducers.default).count), m)
+          case LeftJoinedProducer(left, service) =>
+            /**
+             * There is no point loading more from the left than the service can
+             * join with, so we pass in the left PipeFactory so that the service
+             * can compute how wuch it can actually handle and only load that much
+             */
+            val (pf, m) = buildFlow(left, id, fanOuts, built)
+            (service.lookup(pf), m)
+          case WrittenProducer(producer, sink) =>
+            val (pf, m) = buildFlow(producer, id, fanOuts, built)
+            (sink.write(pf), m)
+          case OptionMappedProducer(producer, op, manifest) =>
+            // Map in two monads here, first state then reader
+            val (fmp, m) = buildFlow(producer, id, fanOuts, built)
+            (fmp.map { flowP =>
+              flowP.map { typedPipe =>
+                // TODO
+                // (https://github.com/twitter/summingbird/issues/90):
+                // make Function1 instances outside to avoid the closure +
+                // serialization issues
+                typedPipe.flatMap { case (time, item) =>
+                  op(item).map { (time, _) }.toIterable
+                }
+              }
+            }, m)
+          case FlatMappedProducer(producer, op) =>
+            // Map in two monads here, first state then reader
+            val (fmp, m) = buildFlow(producer, id, fanOuts, built)
+            (fmp.map { flowP =>
+              flowP.map { typedPipe =>
+                // TODO
+                // (https://github.com/twitter/summingbird/issues/89):
+                // remove toIterable in scalding 0.9.0
+
+                // TODO
+                // (https://github.com/twitter/summingbird/issues/90):
+                // make Function1 instances outside to avoid the closure +
+                // serialization issues
+                typedPipe.flatMap { case (time, item) =>
+                  op(item).toIterable.view.map { (time, _) }
+                }
+              }
+            }, m)
+          case MergedProducer(l, r) => {
+            val (pfl, ml) = buildFlow(l, id, fanOuts, built)
+            val (pfr, mr) = buildFlow(r, id, fanOuts, ml)
+            val merged = for {
+              // concatenate errors (++) and find the intersection (&&) of times
+              leftAndRight <- pfl.join(pfr,
+                { (lerr: List[FailureReason], rerr: List[FailureReason]) => lerr ++ rerr },
+                { case ((tsl, leftFM), (tsr, _)) => (tsl && tsr, leftFM) })
+              merged = Scalding.merge(leftAndRight._1, leftAndRight._2)
+              maxAvailable <- StateWithError.getState // read the latest state, which is the time
+            } yield Scalding.limitTimes(maxAvailable._1, merged)
+            (merged, mr)
+          }
+        }
+        // Make sure that we end any chains of nodes at fanned out nodes:
+        val res = forceNode(pf)
+        (res, built + (producer -> res))
     }
   }
 
@@ -200,8 +235,13 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
   def withConfigUpdater(fn: Configuration => Configuration): Scalding =
     new Scalding(jobName, timeSpan, mode, fn, options)
 
-  def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] =
-    buildFlow(prod, None)
+  def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] = {
+    val dep = Dependants(prod)
+    val fanOutSet =
+      Producer.transitiveDependenciesOf(prod)
+        .filter(dep.fanOut(_).exists(_ > 1))
+    buildFlow(prod, None, fanOutSet, Map.empty)._1
+  }
 
   def run(pf: PipeFactory[_]) {
     import ConfigBijection._
