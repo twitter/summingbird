@@ -37,14 +37,13 @@ object CompletedBuilder {
     InjectionPair(manifest[T].erasure.asInstanceOf[Class[T]], injection)
 }
 
-case class CompletedBuilder[Key: Manifest, Value: Manifest](
-  node: PairedProducer[(Key, Value), Scalding, Storm],
+case class CompletedBuilder[K: Manifest, V: Manifest](
+  node: SourceBuilder.Node[(K, V)],
   eventCodecPairs: List[InjectionPair[_]],
-  @transient keyCodec: Injection[Key,Array[Byte]],
-  @transient valCodec: Injection[Value,Array[Byte]],
+  @transient keyCodec: Injection[K, Array[Byte]],
+  @transient valCodec: Injection[V, Array[Byte]],
   id: String,
-  opts: Map[String, Options]
-) extends Serializable {
+  opts: Map[String, Options]) extends Serializable {
   import SourceBuilder.adjust
   import CompletedBuilder.injectionPair
 

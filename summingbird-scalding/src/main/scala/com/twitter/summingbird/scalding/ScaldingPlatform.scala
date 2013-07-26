@@ -34,9 +34,9 @@ import com.twitter.scalding.Mode
 import scala.util.control.Exception.allCatch
 
 object Scalding {
-  def sourceFromMappable[T](factory: (DateRange) => Mappable[T])
-    (implicit manifest: Manifest[T], timeOf: TimeExtractor[T]): Producer[Scalding, T] = {
-    val sourcePipeFactory: PipeFactory[T] = StateWithError[(Interval[Time], Mode), List[FailureReason], FlowToPipe[T]]{
+  def pipeFactory[T](factory: (DateRange) => Mappable[T])
+    (implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
+    StateWithError[(Interval[Time], Mode), List[FailureReason], FlowToPipe[T]]{
       (timeMode: (Interval[Time], Mode)) => {
         val (timeSpan, mode) = timeMode
 
@@ -50,25 +50,27 @@ object Scalding {
         timeSpanAsDateRange.right.flatMap { dr =>
           val mappable = factory(dr)
           // Check that this input is available:
-          (allCatch.either(mappable.validateTaps(mode)) match {
-            case Left(x) => Left(List(x.toString))
-            case Right(()) => Right(())
-          })
-          .right.map { (_:Unit) =>
-            (timeMode, Reader { (fdM: (FlowDef, Mode)) =>
-              TypedPipe.from(mappable)(fdM._1, fdM._2, mappable.converter) // converter is removed in 0.9.0
-                .flatMap { t =>
+            (allCatch.either(mappable.validateTaps(mode)) match {
+              case Left(x) => Left(List(x.toString))
+              case Right(()) => Right(())
+            })
+            .right.map { (_:Unit) =>
+              (timeMode, Reader { (fdM: (FlowDef, Mode)) =>
+                TypedPipe.from(mappable)(fdM._1, fdM._2, mappable.converter) // converter is removed in 0.9.0
+                  .flatMap { t =>
                   // Todo: get the closure out of here for serialization safety
                   val time = timeOf(t)
                   if(timeSpan(time)) Some((time, t)) else None
                 }
-            })
-          }
+              })
+            }
         }
       }
     }
-    Producer.source[Scalding, T](sourcePipeFactory)
-  }
+
+  def sourceFromMappable[T: TimeExtractor: Manifest](
+    factory: (DateRange) => Mappable[T]): Producer[Scalding, T] =
+    Producer.source[Scalding, T](pipeFactory(factory))
 
   def limitTimes[T](range: Interval[Time], in: FlowToPipe[T]): FlowToPipe[T] =
     in.map { pipe => pipe.filter { case (time, _) => range(time) } }

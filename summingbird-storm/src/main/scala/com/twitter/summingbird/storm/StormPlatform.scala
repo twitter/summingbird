@@ -61,11 +61,12 @@ object Storm {
   def remote(name: String, options: Map[String, Options] = Map.empty): RemoteStorm =
     new RemoteStorm(name, options, identity)
 
-  implicit def source[T](spout: Spout[T])
-    (implicit inj: Injection[T, Array[Byte]], manifest: Manifest[T], timeOf: TimeExtractor[T]) = {
-    val mappedSpout = spout.map { t => (timeOf(t), t) }
-    Producer.source[Storm, T](mappedSpout)
-  }
+  def timedSpout[T](spout: Spout[T])
+    (implicit timeOf: TimeExtractor[T]): Spout[(Long, T)] =
+    spout.map(t => (timeOf(t), t))
+
+  implicit def source[T: TimeExtractor: Manifest](spout: Spout[T]) =
+    Producer.source[Storm, T](timedSpout(spout))
 }
 
 abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {

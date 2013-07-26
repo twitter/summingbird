@@ -42,6 +42,9 @@ import java.util.{ Date, UUID }
 // The SourceBuilder is the first level of the expansion.
 
 object SourceBuilder {
+  type PlatformPair = Platform2[Scalding, Storm]
+  type Node[T] = Producer[PlatformPair, T]
+
   def freshUUID: String = UUID.randomUUID.toString
   def adjust[A, B](m: Map[A, B], k: A)(f: B => B) = m.updated(k, f(m(k)))
 
@@ -52,11 +55,12 @@ object SourceBuilder {
     (implicit mf: Manifest[T], eventCodec: Injection[T, Array[Byte]]) = {
     implicit val te = TimeExtractor[T](timeOf(_).getTime)
     val newID = freshUUID
+    val scaldingSource =
+      Scalding.pipeFactory(eventSource.offline.get.scaldingSource(_))
+    val stormSource = Storm.timedSpout(eventSource.spout.get)
     new SourceBuilder[T](
-      PairedProducer(
-        Scalding.sourceFromMappable(eventSource.offline.get.scaldingSource(_)).name(newID),
-        Storm.source(eventSource.spout.get).name(newID)
-      ),
+      Source[PlatformPair, T]((scaldingSource, stormSource), manifest)
+        .name(newID),
       List(CompletedBuilder.injectionPair[T](eventCodec)),
       newID
     )
@@ -64,12 +68,12 @@ object SourceBuilder {
 }
 
 case class SourceBuilder[T: Manifest] private (
-  node: PairedProducer[T, Scalding, Storm],
+  node: SourceBuilder.Node[T],
   pairs: List[InjectionPair[_]],
   id: String,
   opts: Map[String, Options] = Map.empty
 ) extends Serializable {
-  import SourceBuilder.adjust
+  import SourceBuilder.{ adjust, Node }
 
   def map[U: Manifest](fn: T => U): SourceBuilder[U] = copy(node = node.map(fn))
   def filter(fn: T => Boolean): SourceBuilder[T] = copy(node = node.filter(fn))
@@ -78,13 +82,13 @@ case class SourceBuilder[T: Manifest] private (
   def flatMapBuilder[U: Manifest](newFlatMapper: FlatMapper[T, U]): SourceBuilder[U] =
     flatMap(newFlatMapper(_))
 
-  def write[U](sink: CompoundSink[U])(conversion: T => TraversableOnce[U])(implicit batcher: Batcher, mf: Manifest[U]): SourceBuilder[T] = {
+  def write[U](sink: CompoundSink[U])(conversion: T => TraversableOnce[U])
+    (implicit batcher: Batcher, mf: Manifest[U]): SourceBuilder[T] = {
     val newNode =
       node.flatMap(conversion)
         .write(new BatchedSinkFromOffline[U](batcher, sink.offline), sink.online)
     copy(
-      node = node.either(newNode)
-        .flatMap {
+      node = node.either(newNode).flatMap[T] {
         case Left(t) => Some(t)
         case Right(u) => None
       }
@@ -95,8 +99,9 @@ case class SourceBuilder[T: Manifest] private (
     (implicit ev: T <:< (K, V), keyMf: Manifest[K], valMf: Manifest[V], joinedMf: Manifest[JoinedValue])
       : SourceBuilder[(K, (V, Option[JoinedValue]))] =
     copy(
-      node = node.leftJoin(
-        sys.error("TODO"), // https://github.com/twitter/summingbird/issues/68,
+      node = node.asInstanceOf[Node[(K, V)]].leftJoin(
+        // https://github.com/twitter/summingbird/issues/68,
+        sys.error("TODO"),
         StoreWrapper[K, JoinedValue](service.online)
       )
     )
@@ -155,11 +160,12 @@ case class SourceBuilder[T: Manifest] private (
     batcher: Batcher,
     monoid: Monoid[V],
     keyOrdering: Ordering[K]): CompletedBuilder[K, V] = {
-    val newNode = node.sumByKey[K, V](
+    val newNode = IdentityKeyedProducer(node).sumByKey(
       store.offlineStore,
       MergeableStoreSupplier.from(store.onlineSupplier())
     )
-    val cb = new CompletedBuilder(newNode, pairs, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+    val cb = CompletedBuilder(
+      newNode, pairs, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
     env.builder = cb
     cb
   }
