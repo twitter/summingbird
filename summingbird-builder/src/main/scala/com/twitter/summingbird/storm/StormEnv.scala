@@ -18,7 +18,8 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.Config
 import com.twitter.scalding.Args
-import com.twitter.summingbird.Env
+import com.twitter.summingbird.{ Env, Unzip2 }
+import com.twitter.summingbird.scalding.Scalding
 
 /**
  * Storm-specific extension to Env. StormEnv handles storm-specific configuration
@@ -29,7 +30,8 @@ import com.twitter.summingbird.Env
  * @author Ashu Singhal
  */
 
-case class StormEnv(override val jobName: String, override val args: Args) extends Env(jobName) {
+case class StormEnv(override val jobName: String, override val args: Args)
+    extends Env(jobName) {
   def run {
     // Calling abstractJob's constructor and binding it to a variable
     // forces any side effects caused by that constructor (building up
@@ -41,6 +43,6 @@ case class StormEnv(override val jobName: String, override val args: Args) exten
       .withConfigUpdater { config =>
       val c = ConfigBijection.invert(config)
       ConfigBijection(ajob.transformConfig(c))
-    }.run(builder.node.r)
+    }.run(Unzip2[Scalding, Storm]()(builder.node)._2)
   }
 }

@@ -86,6 +86,8 @@ class Memory extends Platform[Memory] {
     toStream(prod, Map.empty)._1
 
   def run(iter: Stream[_]) {
-    iter.foreach { it => it /* just go through the whole thing */ }
+    // Force the entire stream, taking care not to hold on to the
+    // tail.
+    iter.foreach(identity(_: Any))
   }
 }
