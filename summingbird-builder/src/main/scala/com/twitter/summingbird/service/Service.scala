@@ -21,39 +21,19 @@ import com.twitter.util.Future
 import com.twitter.storehaus.ReadableStore
 
 import com.twitter.scalding.{Mode, TypedPipe}
-import com.twitter.summingbird.scalding.ScaldingEnv
+import com.twitter.summingbird.scalding.{ ScaldingService, EmptyService, ScaldingEnv }
 import cascading.flow.FlowDef
 
 import java.io.Serializable
 
-/**
-  * Represents an external service against which you can do a left
-  * join.  In the future, any Sink will be supported as a Service
-  * against which we can join the previous batch (for consistency), but
-  * if you can manage the consistency yourself, go crazy with this
-  * interface!
-  */
-
-trait OfflineService[Key, JoinedValue] extends Serializable {
-  def leftJoin[Value](pipe: TypedPipe[(Long, Key, Value)])
-    (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv)
-      : TypedPipe[(Long, Key, (Value, Option[JoinedValue]))]
-}
-
-class EmptyOfflineService[K, JoinedV] extends OfflineService[K, JoinedV] {
-  def leftJoin[V](pipe: TypedPipe[(Long, K, V)])
-    (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv) =
-      pipe.map { case (t, k, v) => (t, k, (v, None: Option[JoinedV])) }
-}
-
 case class CompoundService[Key, Joined](
-  offline: OfflineService[Key, Joined],
+  offline: ScaldingService[Key, Joined],
   online: () => ReadableStore[Key, Joined]
 )
 
 object CompoundService {
-  def fromOffline[K, J](offline: OfflineService[K, J]): CompoundService[K, J] =
+  def fromOffline[K, J](offline: ScaldingService[K, J]): CompoundService[K, J] =
     CompoundService(offline, () => ReadableStore.empty)
   def fromOnline[K, J](online: => ReadableStore[K, J]): CompoundService[K, J] =
-    CompoundService(new EmptyOfflineService[K, J], () => online)
+    CompoundService(new EmptyService[K, J], () => online)
 }

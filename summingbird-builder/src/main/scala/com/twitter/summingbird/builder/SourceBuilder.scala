@@ -100,8 +100,7 @@ case class SourceBuilder[T: Manifest] private (
       : SourceBuilder[(K, (V, Option[JoinedValue]))] =
     copy(
       node = node.asInstanceOf[Node[(K, V)]].leftJoin(
-        // https://github.com/twitter/summingbird/issues/68,
-        sys.error("TODO"),
+        service.offline,
         StoreWrapper[K, JoinedValue](service.online)
       )
     )
