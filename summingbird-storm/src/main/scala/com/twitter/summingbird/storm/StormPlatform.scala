@@ -77,6 +77,11 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   type Service[-K, +V] = StormService[K, V]
   type Plan[T] = StormTopology
 
+  private type Prod[T] = Producer[Storm, T]
+  private type JamfMap = Map[Prod[_], List[String]]
+  private type FMItem = Either[StoreFactory[_, _], FlatMapOperation[_, _]]
+  private type FMList = List[FMItem]
+
   val END_SUFFIX = "end"
   val FM_CONSTANT = "flatMap-"
 
@@ -95,12 +100,14 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   def buildTopology[T](
     topoBuilder: TopologyBuilder,
-    outerProducer: Producer[Storm, T],
-    toSchedule: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]],
-    path: List[Producer[Storm, _]],
+    outerProducer: Prod[T],
+    forkedNodes: Set[Prod[_]],
+    jamfs: JamfMap,
+    toSchedule: FMList,
+    path: List[Prod[_]],
     suffix: String,
     id: Option[String])
-    (implicit config: Config): List[String] = {
+    (implicit config: Config): (List[String], JamfMap) = {
 
     /**
       * Helper method for recursively calling this same function with
@@ -109,73 +116,106 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       * infinitely if called directly with no changed parameters.)
       */
     def recurse[U](
-      producer: Producer[Storm, U],
+      producer: Prod[U],
       topoBuilder: TopologyBuilder = topoBuilder,
-      outerProducer: Producer[Storm, T] = outerProducer,
-      toSchedule: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]] = toSchedule,
-      path: List[Producer[Storm, _]] = path,
+      outerProducer: Prod[T] = outerProducer,
+      jamfs: JamfMap = jamfs,
+      toSchedule: FMList = toSchedule,
+      path: List[Prod[_]] = path,
       suffix: String = suffix,
       id: Option[String] = id) =
-      buildTopology(topoBuilder, producer, toSchedule, outerProducer :: path, suffix, id)
+      buildTopology(
+        topoBuilder, producer, forkedNodes, jamfs,
+        toSchedule, outerProducer :: path, suffix, id
+      )
 
-    def suffixOf[T](xs: List[T], suffix: String): String =
+    /**
+      * TODO: This internal check is duplicating the internal isEmpty
+      * check in scheduleFlatMapper. The idea is that we should only
+      * tag a flatMap- prefix on if there are operations to
+      * schedule. The path is calculated in a separate spot from the
+      * actual scheduling.
+      *
+      * Remove the duplication and do everything in one spot by
+      * changing the return type of scheduleFlatMapper.
+      */
+    def suffixOf(xs: List[_], suffix: String): String =
       if (xs.isEmpty) suffix else FM_CONSTANT + suffix
 
-    outerProducer match {
-      case Summer(producer, _, _) => {
-        assert(path.isEmpty, "Only a single Summer is supported at this time.")
-        recurse(producer)
-      }
-      case IdentityKeyedProducer(producer) => recurse(producer)
-      case NamedProducer(producer, newId)  => recurse(producer, id = Some(newId))
-      case Source(mappedSpout, manifest) => {
-        val spoutName = "spout-" + suffixOf(toSchedule, suffix)
-        val stormSpout = mappedSpout.getSpout
-        val parallelism = getOrElse(id, DEFAULT_SPOUT_PARALLELISM).parHint
-        topoBuilder.setSpout(spoutName, stormSpout, parallelism)
-        val parents = List(spoutName)
+    def flatMap[T, U](parents: List[String], ops: FMList) =
+      scheduleFlatMapper(topoBuilder, parents, path, suffix, id, ops)
 
-        // The current planner requires a layer of flatMapBolts, even
-        // if calling sumByKey directly on a source.
-        val operations =
-          if (toSchedule.isEmpty)
-            List(Right(FlatMapOperation.identity))
-          else toSchedule
+    /**
+      * This method is called by any nodes that contain Storm
+      * FlatMapOperations. If the calling node is a "forked node" (ie,
+      * has multiple consumers), we can't do any optimization across
+      * the boundary, so we schedule a flatMap operation and push the
+      * contained "op" down into the recursion. If it's not a forked
+      * node, we can continue to optimize the graph by pushing the
+      * current operation onto the toSchedule stack.
+      */
+    def perhapsSchedule[A, B](parent: Prod[A], op: FMItem) =
+      if (forkedNodes.contains(outerProducer)) {
+        val (s, m) = recurse(parent, toSchedule = List(op))
+        (flatMap(s, toSchedule), m)
+      } else
+        recurse(parent, toSchedule = op :: toSchedule)
 
-        // Attach a FlatMapBolt after this source.
-        scheduleFlatMapper(topoBuilder, parents, path, suffix, id, operations)
-      }
+    jamfs.get(outerProducer) match {
+      case Some(s) => (s, jamfs)
+      case None =>
+        val (strings, m): (List[String], JamfMap) = outerProducer match {
+          case Summer(producer, _, _) =>
+            assert(path.isEmpty, "Only a single Summer is supported at this time.")
+            recurse(producer)
 
-      case OptionMappedProducer(producer, op, manifest) => {
-        val newOp = FlatMapOperation(op andThen { _.iterator })
-        recurse(producer, toSchedule = Right(newOp) :: toSchedule)
-      }
+          case IdentityKeyedProducer(producer) => recurse(producer)
 
-      case FlatMappedProducer(producer, op) => {
-        val newOp = FlatMapOperation(op)
-        recurse(producer, toSchedule = Right(newOp) :: toSchedule)
-      }
+          case NamedProducer(producer, newId) => recurse(producer, id = Some(newId))
 
-      case WrittenProducer(producer, sinkSupplier) => {
-        val newOp = FlatMapOperation.write(sinkSupplier)
-        recurse(producer, toSchedule = Right(newOp) :: toSchedule)
-      }
+          case Source(mappedSpout, manifest) =>
+            val spoutName = "spout-" + suffixOf(toSchedule, suffix)
+            val stormSpout = mappedSpout.getSpout
+            val parallelism = getOrElse(id, DEFAULT_SPOUT_PARALLELISM).parHint
+            topoBuilder.setSpout(spoutName, stormSpout, parallelism)
+            val parents = List(spoutName)
 
-      case LeftJoinedProducer(producer, svc) => {
-        val newService = svc match {
-          case StoreWrapper(storeSupplier) => storeSupplier
+            // The current planner requires a layer of flatMapBolts, even
+            // if calling sumByKey directly on a source.
+            val operations =
+              if (toSchedule.isEmpty)
+                List(Right(FlatMapOperation.identity))
+              else toSchedule
+
+            // Attach a FlatMapBolt after this source.
+            (flatMap(parents, operations), jamfs)
+
+          case OptionMappedProducer(producer, op, manifest) =>
+            perhapsSchedule(producer, Right(FlatMapOperation(op.andThen(_.iterator))))
+
+          case FlatMappedProducer(producer, op) =>
+            perhapsSchedule(producer, Right(FlatMapOperation(op)))
+
+          case WrittenProducer(producer, sinkSupplier) =>
+            perhapsSchedule(producer, Right(FlatMapOperation.write(sinkSupplier)))
+
+          case LeftJoinedProducer(producer, svc) =>
+            val newService = svc match {
+              case StoreWrapper(storeSupplier) => storeSupplier
+            }
+            perhapsSchedule(producer, Left(newService))
+
+          case MergedProducer(l, r) =>
+            val leftSuffix = "L-" + suffixOf(toSchedule, suffix)
+            val rightSuffix = "R-" + suffixOf(toSchedule, suffix)
+            val (leftNodes, leftM) =
+              recurse(l, toSchedule = List.empty, suffix = leftSuffix)
+            val (rightNodes, rightM) =
+              recurse(r, toSchedule = List.empty, suffix = rightSuffix, jamfs = leftM)
+            val parents = leftNodes ++ rightNodes
+            (flatMap(parents, toSchedule), rightM)
         }
-        recurse(producer, toSchedule = Left(newService) :: toSchedule)
-      }
-
-      case MergedProducer(l, r) => {
-        val leftSuffix = "L-" + suffixOf(toSchedule, suffix)
-        val rightSuffix = "R-" + suffixOf(toSchedule, suffix)
-        val leftNodes  = recurse(l, toSchedule = List.empty, suffix = leftSuffix)
-        val rightNodes = recurse(r, toSchedule = List.empty, suffix = rightSuffix)
-        val parents = leftNodes ++ rightNodes
-        scheduleFlatMapper(topoBuilder, parents, path, suffix, id, toSchedule)
-      }
+        (strings, m + (outerProducer -> strings))
     }
   }
 
@@ -183,7 +223,10 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     * Only exists because of the crazy casts we needed.
     */
   private def serviceOperation[K, V, W](store: StoreFactory[_, _]) =
-    FlatMapOperation.combine(FlatMapOperation.identity[(K, V)], store.asInstanceOf[StoreFactory[K, W]])
+    FlatMapOperation.combine(
+      FlatMapOperation.identity[(K, V)],
+      store.asInstanceOf[StoreFactory[K, W]]
+    )
 
   private def foldOperations(
     head: Either[StoreFactory[_, _], FlatMapOperation[_, _]],
@@ -208,14 +251,14 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   private def scheduleFlatMapper(
     topoBuilder: TopologyBuilder,
     parents: List[String],
-    path: List[Producer[Storm, _]],
+    path: List[Prod[_]],
     suffix: String,
     id: Option[String],
     toSchedule: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]])
       : List[String] = {
     toSchedule match {
       case Nil => parents
-      case head :: tail => {
+      case head :: tail =>
         val summer = Producer.retrieveSummer(path)
           .getOrElse(sys.error("A Summer is required."))
         val boltName = FM_CONSTANT + suffix
@@ -235,17 +278,23 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
         parents.foreach { declarer.shuffleGrouping(_) }
         List(boltName)
-      }
     }
   }
 
   private def populate[K, V](
     topologyBuilder: TopologyBuilder,
     summer: Summer[Storm, K, V])(implicit config: Config) = {
-    implicit val monoid  = summer.monoid
+    implicit val monoid = summer.monoid
 
-    val parents = buildTopology(
-      topologyBuilder, summer, List.empty, List.empty, END_SUFFIX, None)
+    val dep = Dependants(summer)
+    val fanOutSet =
+      Producer.transitiveDependenciesOf(summer)
+        .filter(dep.fanOut(_).exists(_ > 1))
+
+    val (parents, _) = buildTopology(
+      topologyBuilder, summer, fanOutSet, Map.empty,
+      List.empty, List.empty,
+      END_SUFFIX, None)
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
