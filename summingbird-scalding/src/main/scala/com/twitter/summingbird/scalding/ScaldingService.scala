@@ -26,6 +26,11 @@ trait ScaldingService[K, V] extends java.io.Serializable {
   def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))]
 }
 
+class EmptyService[K, V] extends ScaldingService[K, V] {
+  def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
+    getKeys.map { _.map { _.map { case (t, (k, v)) => (t, (k, (v, None: Option[V]))) } } }
+}
+
 trait BatchedService[K, V] extends ScaldingService[K, V] {
   // The batcher that describes this service
   def batcher: Batcher
