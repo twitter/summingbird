@@ -18,9 +18,10 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.scalding.{ Tool => STool, _ }
-import com.twitter.summingbird.Env
+import com.twitter.summingbird.{ Env, Unzip2 }
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.builder.{ SourceBuilder, Reducers }
+import com.twitter.summingbird.storm.Storm
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
@@ -107,6 +108,6 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       // types will be caught by the registered injection.
       KryoRegistrationHelper.registerInjectionDefaults(jConf, codecPairs)
       fromMap(ajob.transformConfig(jConf.as[Map[String, AnyRef]]))
-    }.run(builder.node.l)
+    }.run(Unzip2[Scalding, Storm]()(builder.node)._1)
   }
 }
