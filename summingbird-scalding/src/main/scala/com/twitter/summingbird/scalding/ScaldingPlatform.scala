@@ -80,10 +80,21 @@ object Scalding {
     for { l <- left; r <- right } yield (l ++ r)
 }
 
-class Scalding(jobName: String, var state: WaitingState[Date], mode: Mode,
+class Scalding(jobName: String,
+  stateMaker: Configuration => WaitingState[Date],
+  mode: Mode,
   updateConf: Configuration => Configuration = identity,
   options: Map[String, Options] = Map.empty)
     extends Platform[Scalding] {
+  import ConfigBijection._
+
+  val configuration = transformConfig(new Configuration)
+  val conf = configuration
+    .as[Map[String, AnyRef]]
+    .toMap[AnyRef, AnyRef]
+
+  var state: WaitingState[Date] = stateMaker(configuration)
+
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
   type Sink[T] = ScaldingSink[T]
@@ -236,7 +247,7 @@ class Scalding(jobName: String, var state: WaitingState[Date], mode: Mode,
 
   def transformConfig(base: Configuration): Configuration = updateConf(base)
   def withConfigUpdater(fn: Configuration => Configuration): Scalding =
-    new Scalding(jobName, state, mode, fn, options)
+    new Scalding(jobName, stateMaker, mode, fn, options)
 
   def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] = {
     val dep = Dependants(prod)
@@ -247,8 +258,6 @@ class Scalding(jobName: String, var state: WaitingState[Date], mode: Mode,
   }
 
   def run(pf: PipeFactory[_]) {
-    import ConfigBijection._
-
     val runningState = state.begin
     val timeSpan = runningState.part.mapNonDecreasing(_.getTime)
     pf((timeSpan, mode)) match {
@@ -260,21 +269,17 @@ class Scalding(jobName: String, var state: WaitingState[Date], mode: Mode,
         val flowDef = new FlowDef
         flowDef.setName(jobName)
         val outputPipe = flowDefMutator((flowDef, mode))
-        val conf = transformConfig(new Configuration)
-          .as[Map[String, AnyRef]]
-          .toMap[AnyRef, AnyRef]
 
         // Now we have a populated flowDef, time to let Cascading do it's thing:
         try {
-          mode.newFlowConnector(conf).connect(flowDef).complete
-          val nextTime = ts match {
-            case Intersection(_, ExclusiveUpper(up)) => up
-            case Intersection(_, InclusiveUpper(up)) => up + 1L
-            case _ => sys.error("We should always be running for a finite interval")
-          }
-          state = runningState.succeed(ts.mapNonDecreasing(new Date(_)))
-        }
-        catch {
+          val flow = mode.newFlowConnector(conf).connect(flowDef)
+          flow.complete
+          state =
+            if (flow.getFlowStats.isSuccessful)
+              runningState.succeed(ts.mapNonDecreasing(new Date(_)))
+            else
+              runningState.fail(new Exception("Flow did not complete."))
+        } catch {
           case (e: Throwable) => {
             state = runningState.fail(e)
             throw e

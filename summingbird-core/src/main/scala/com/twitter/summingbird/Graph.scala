@@ -30,6 +30,10 @@ object Producer {
   def source[P <: Platform[P], T](s: P#Source[T])(implicit manifest: Manifest[T]): Producer[P, T] =
     Source[P, T](s, manifest)
 
+  implicit def evToKeyed[P <: Platform[P], T, K, V](producer: Producer[P, T])
+    (implicit ev: T <:< (K, V)): KeyedProducer[P, K, V] =
+    IdentityKeyedProducer[P, K, V](producer)
+
   implicit def toKeyed[P <: Platform[P], K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer)
 

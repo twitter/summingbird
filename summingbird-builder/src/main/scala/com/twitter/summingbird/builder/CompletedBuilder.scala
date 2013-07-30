@@ -19,6 +19,7 @@ package com.twitter.summingbird.builder
 import com.twitter.bijection.Injection
 import com.twitter.chill.InjectionPair
 import com.twitter.storehaus.algebra.MergeableStore.enrich
+import com.twitter.summingbird.batch.Batcher
 import com.twitter.summingbird.{ Env, KeyedProducer, Options }
 import com.twitter.summingbird.scalding.Scalding
 import com.twitter.summingbird.storm.Storm
@@ -38,8 +39,9 @@ object CompletedBuilder {
 }
 
 case class CompletedBuilder[K: Manifest, V: Manifest](
-  node: SourceBuilder.Node[(K, V)],
+  node: SourceBuilder.SummerNode[K, V],
   eventCodecPairs: List[InjectionPair[_]],
+  batcher: Batcher,
   @transient keyCodec: Injection[K, Array[Byte]],
   @transient valCodec: Injection[V, Array[Byte]],
   id: String,

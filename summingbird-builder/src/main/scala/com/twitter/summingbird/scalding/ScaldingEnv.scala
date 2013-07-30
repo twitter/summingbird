@@ -18,11 +18,13 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.scalding.{ Tool => STool, _ }
+import com.twitter.summingbird.scalding.store.HDFSMetadata
 import com.twitter.summingbird.{ Env, Unzip2 }
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.builder.{ SourceBuilder, Reducers }
 import com.twitter.summingbird.storm.Storm
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
+import com.twitter.summingbird.scalding.store.VersionedState
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
@@ -60,15 +62,13 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // initial batch to process. All runs after the first batch
   // (incremental updates) will use the batch of the previous run as
   // the starting batch, rendering this unnecessary.
-  def startBatch(batcher: Batcher): Option[BatchID] =
+  def startDate(batcher: Batcher): Option[Date] =
     if (args.boolean("initial-run"))
       Some(args("start-time"))
         .map { dateString =>
         val millis = DateOps.stringToRichDate(dateString)(tz).timestamp
-        batcher.batchOf(new Date(millis))
-      }
-      else
-        None
+        new Date(millis)
+      } else None
 
   // The number of batches to process in this particular run. Imagine
   // a batch size of one hour; For big recomputations, one might want
@@ -89,11 +89,21 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     val opts = SourceBuilder.adjust(
       builder.opts, builder.id)(_.set(Reducers(reducers)))
 
+    implicit val batcher = builder.batcher
+
+    val statePath =
+      builder.node.store._1 match {
+        case store: VersionedBatchStore[_, _, _, _] => store.rootPath
+        case _ => sys.error("You must use a VersionedBatchStore with the old Summingbird API!")
+      }
+
+    val stateMaker = { conf: Configuration =>
+      VersionedState(HDFSMetadata(conf, statePath), startDate(batcher), batches)
+    }
+
     new Scalding(
       abstractJob.getClass.getName,
-      // TODO: use a new "state" class to calculate the interval:
-      // https://github.com/twitter/summingbird/issues/81
-      sys.error("TODO"),
+      stateMaker,
       Mode.mode,
       options = opts).withConfigUpdater { conf =>
       val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
