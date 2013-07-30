@@ -38,26 +38,10 @@ object CompletedBuilder {
     InjectionPair(manifest[T].erasure.asInstanceOf[Class[T]], injection)
 }
 
-/**
-  * Required for compatibility between the new and old APIs. The old
-  * API stored job state inside of the Scalding store. The new API
-  * breaks out a State abstraction; because we can't pull a path out
-  * of the store itself, the user needs to supply an implicit
-  * StatePath. For migrating jobs, the StatePath will be the same as
-  * the HDFS path storing the scalding key-value pairs:
-
-  {{{
-  implicit val statePath = StatePath("/user/sritchie/mydata")
-  }}}
-
-  */
-case class StatePath(path: String)
-
 case class CompletedBuilder[K: Manifest, V: Manifest](
   node: SourceBuilder.SummerNode[K, V],
   eventCodecPairs: List[InjectionPair[_]],
   batcher: Batcher,
-  statePath: StatePath,
   @transient keyCodec: Injection[K, Array[Byte]],
   @transient valCodec: Injection[V, Array[Byte]],
   id: String,

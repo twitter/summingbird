@@ -91,8 +91,14 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
 
     implicit val batcher = builder.batcher
 
+    val statePath =
+      builder.node.store._1 match {
+        case store: VersionedBatchStore[_, _, _, _] => store.rootPath
+        case _ => sys.error("You must use a VersionedBatchStore with the old Summingbird API!")
+      }
+
     val stateMaker = { conf: Configuration =>
-      VersionedState(HDFSMetadata(conf, builder.statePath.path), startDate(batcher))
+      VersionedState(HDFSMetadata(conf, statePath), startDate(batcher), batches)
     }
 
     new Scalding(

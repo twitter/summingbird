@@ -121,7 +121,6 @@ case class SourceBuilder[T: Manifest] private (
   def groupAndSumTo[K, V](store: ScaldingStore[K, V])(
     implicit ev: T <:< (K, V),
     env: Env,
-    statePath: StatePath,
     keyMf: Manifest[K],
     valMf: Manifest[V],
     keyCodec: Injection[K, Array[Byte]],
@@ -137,7 +136,6 @@ case class SourceBuilder[T: Manifest] private (
   def groupAndSumTo[K, V](store: => MergeableStore[(K, BatchID), V])(
     implicit ev: T <:< (K, V),
     env: Env,
-    statePath: StatePath,
     keyMf: Manifest[K],
     valMf: Manifest[V],
     keyCodec: Injection[K, Array[Byte]],
@@ -153,7 +151,6 @@ case class SourceBuilder[T: Manifest] private (
   def groupAndSumTo[K, V](store: CompoundStore[K, V])(
     implicit ev: T <:< (K, V),
     env: Env,
-    statePath: StatePath,
     keyMf: Manifest[K],
     valMf: Manifest[V],
     keyCodec: Injection[K, Array[Byte]],
@@ -165,8 +162,7 @@ case class SourceBuilder[T: Manifest] private (
       MergeableStoreSupplier.from(store.onlineSupplier())
     )
     val cb = CompletedBuilder(
-      newNode, pairs, batcher, statePath,
-      keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+      newNode, pairs, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
     env.builder = cb
     cb
   }

@@ -52,7 +52,7 @@ object VersionedBatchStore {
 // something we need to fix: atomically get meta-data and open the
 // Mappable.  The source parameter is pass-by-name to avoid needing
 // the hadoop Configuration object when running the storm job.
-class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)
+class VersionedBatchStore[K, V, K2, V2](val rootPath: String, versionsToKeep: Int, override val batcher: Batcher)
   (pack: (BatchID, (K, V)) => (K2, V2))
   (unpack: ((K2, V2)) => (K, V))(
   implicit injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])

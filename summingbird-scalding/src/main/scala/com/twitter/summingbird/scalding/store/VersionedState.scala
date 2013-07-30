@@ -27,12 +27,12 @@ import java.util.Date
   * State representation used by the builder API for compatibility.
   */
 object VersionedState {
-  def apply(meta: HDFSMetadata, startDate: Option[Date])
+  def apply(meta: HDFSMetadata, startDate: Option[Date], maxBatches: Int)
     (implicit batcher: Batcher): VersionedState =
-    new VersionedState(meta, startDate)
+    new VersionedState(meta, startDate, maxBatches)
 }
 
-class VersionedState(meta: HDFSMetadata, startDate: Option[Date])
+class VersionedState(meta: HDFSMetadata, startDate: Option[Date], maxBatches: Int)
   (implicit batcher: Batcher) extends WaitingState[Date] { outer =>
   def begin: RunningState[Date] = new VersionedRunningState
 
@@ -43,16 +43,20 @@ class VersionedState(meta: HDFSMetadata, startDate: Option[Date])
       * time.
       */
     def part = {
-      val beginning: Date =
+      val beginning: BatchID =
         (for {
           version <- meta.mostRecentVersion
           batchString <- version.get[String]
-        } yield batcher.earliestTimeOf(BatchID(batchString))
-        ).orElse(startDate)
+        } yield BatchID(batchString)
+        ).orElse(startDate.map(batcher.batchOf(_)))
           .getOrElse(
           sys.error("You must supply a starting date on the job's first run!")
         )
-      Interval.leftClosedRightOpen(beginning, new Date())
+      val end = beginning + maxBatches
+      Interval.leftClosedRightOpen(
+        batcher.earliestTimeOf(beginning),
+        batcher.earliestTimeOf(end)
+      )
     }
 
     /**

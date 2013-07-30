@@ -272,15 +272,14 @@ class Scalding(jobName: String,
 
         // Now we have a populated flowDef, time to let Cascading do it's thing:
         try {
-          mode.newFlowConnector(conf).connect(flowDef).complete
-          val nextTime = ts match {
-            case Intersection(_, ExclusiveUpper(up)) => up
-            case Intersection(_, InclusiveUpper(up)) => up + 1L
-            case _ => sys.error("We should always be running for a finite interval")
-          }
-          state = runningState.succeed(ts.mapNonDecreasing(new Date(_)))
-        }
-        catch {
+          val flow = mode.newFlowConnector(conf).connect(flowDef)
+          flow.complete
+          state =
+            if (flow.getFlowStats.isSuccessful)
+              runningState.succeed(ts.mapNonDecreasing(new Date(_)))
+            else
+              runningState.fail(new Exception("Flow did not complete."))
+        } catch {
           case (e: Throwable) => {
             state = runningState.fail(e)
             throw e
