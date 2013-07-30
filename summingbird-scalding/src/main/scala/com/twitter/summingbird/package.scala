@@ -22,7 +22,7 @@ import com.twitter.scalding.Mode
 import cascading.flow.FlowDef
 
 import com.twitter.algebird.monad.{Reader, StateWithError}
-import com.twitter.summingbird.batch.Interval
+import com.twitter.algebird.Interval
 
 package object scalding {
   /** We represent time as Long Millis */

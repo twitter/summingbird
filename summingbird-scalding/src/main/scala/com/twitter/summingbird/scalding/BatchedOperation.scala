@@ -16,7 +16,8 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
+import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.bijection.{Injection, Bijection, Conversion}
 import com.twitter.scalding.Mode
 import java.util.{Date => JDate}
