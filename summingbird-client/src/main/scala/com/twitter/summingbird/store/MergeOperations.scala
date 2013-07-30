@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.store
 
-import com.twitter.algebird.{ Monoid, Semigroup }
+import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.UtilAlgebras._
 import com.twitter.bijection.Pivot
 import com.twitter.storehaus.FutureCollector
@@ -31,11 +31,8 @@ object MergeOperations {
   // checking that the batch layer is not more than batchesToKeep
   // behind. the manner of doing that on a per-key basis will change
   // in storehaus 0.3, so add in that check during the upgrade.
-  def sortedSum[V: Semigroup](opts: Seq[Option[(BatchID, V)]])
-      : Try[Option[(BatchID, V)]] = {
-    val sorted = opts.flatten.sortBy(_._1)
-    Return(Semigroup.sumOption(sorted))
-  }
+  def sortedSum[V: Semigroup](opts: Seq[Option[(BatchID, V)]]): Option[(BatchID, V)] =
+    Semigroup.sumOption(opts.flatten.sortBy(_._1))
 
   /**
    * Pivot to pivot (K, BatchID) pairs into K -> (BatchID, V).
@@ -52,8 +49,8 @@ object MergeOperations {
     m1: Map[K, Future[Seq[Option[(BatchID, V)]]]],
     m2: Map[K, Future[Seq[Option[(BatchID, V)]]]]
   ): Map[K, Future[Option[(BatchID, V)]]] =
-    Monoid.plus(m1, m2).map { case (k, v) =>
-      k -> v.flatMap { opts => Future.const(sortedSum(opts)) }
+    Semigroup.plus(m1, m2).map { case (k, v) =>
+      k -> v.map(sortedSum(_))
     }
 
   def dropBatches[K, V](m: Map[K, Future[Option[(BatchID, V)]]]): Map[K, Future[Option[V]]] =
@@ -80,14 +77,12 @@ object MergeOperations {
     * reasonable beginning batchID from which to start querying the
     * onlineStore.
     */
-  def defaultOfflineReturn(nowBatch: BatchID, batchesToKeep: Int): Option[BatchID] =
-    Some(nowBatch - (batchesToKeep - 1))
-
   def expand(offlineReturn: Option[BatchID], nowBatch: BatchID, batchesToKeep: Int): Iterable[BatchID] = {
     val initBatch = Semigroup.plus(
-      defaultOfflineReturn(nowBatch, batchesToKeep), offlineReturn
-    ).get
-    BatchID.range(initBatch, nowBatch).toIterable
+      Some(nowBatch - (batchesToKeep - 1)), offlineReturn
+    ).get // This will never throw, as this option can never be None
+          // (because we included an explicit "Some" inside)
+    BatchID.range(initBatch, nowBatch)
   }
 
   def generateOnlineKeys[K](ks: Seq[K], nowBatch: BatchID, batchesToKeep: Int)
