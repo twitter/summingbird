@@ -17,6 +17,7 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.{ Monoid, Semigroup, Monad }
+import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.Monad.operators // map/flatMap for monads
 import com.twitter.bijection.Conversion.asMethod
@@ -79,7 +80,7 @@ object Scalding {
     for { l <- left; r <- right } yield (l ++ r)
 }
 
-class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
+class Scalding(jobName: String, var state: WaitingState[Date], mode: Mode,
   updateConf: Configuration => Configuration = identity,
   options: Map[String, Options] = Map.empty)
     extends Platform[Scalding] {
@@ -235,7 +236,7 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
 
   def transformConfig(base: Configuration): Configuration = updateConf(base)
   def withConfigUpdater(fn: Configuration => Configuration): Scalding =
-    new Scalding(jobName, timeSpan, mode, fn, options)
+    new Scalding(jobName, state, mode, fn, options)
 
   def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] = {
     val dep = Dependants(prod)
@@ -248,10 +249,13 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
   def run(pf: PipeFactory[_]) {
     import ConfigBijection._
 
+    val runningState = state.begin
+    val timeSpan = runningState.part.mapNonDecreasing(_.getTime)
     pf((timeSpan, mode)) match {
       case Left(errs) =>
         println("ERROR")
         errs.foreach { println(_) }
+        state = runningState.fail(new Exception(errs.toString))
       case Right(((ts, mode), flowDefMutator)) =>
         val flowDef = new FlowDef
         flowDef.setName(jobName)
@@ -261,10 +265,21 @@ class Scalding(jobName: String, timeSpan: Interval[Time], mode: Mode,
           .toMap[AnyRef, AnyRef]
 
         // Now we have a populated flowDef, time to let Cascading do it's thing:
-        mode.newFlowConnector(conf).connect(flowDef).complete
-        // TODO (https://github.com/twitter/summingbird/issues/81):
-        // log that we have completed all of ts, and should start at
-        // the upperbound
+        try {
+          mode.newFlowConnector(conf).connect(flowDef).complete
+          val nextTime = ts match {
+            case Intersection(_, ExclusiveUpper(up)) => up
+            case Intersection(_, InclusiveUpper(up)) => up + 1L
+            case _ => sys.error("We should always be running for a finite interval")
+          }
+          state = runningState.succeed(ts.mapNonDecreasing(new Date(_)))
+        }
+        catch {
+          case (e: Throwable) => {
+            state = runningState.fail(e)
+            throw e
+          }
+        }
     }
   }
 }

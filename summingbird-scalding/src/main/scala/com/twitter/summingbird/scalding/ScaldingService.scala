@@ -17,8 +17,9 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.monad.{StateWithError, Reader}
+import com.twitter.algebird.Interval
 import com.twitter.scalding.{Mode, TypedPipe}
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
+import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import cascading.flow.FlowDef
 
 trait ScaldingService[K, V] extends java.io.Serializable {
