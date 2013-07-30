@@ -17,10 +17,11 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.{Monoid, Semigroup}
+import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.scalding.{Mode, TypedPipe, Grouped}
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
+import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import cascading.flow.FlowDef
 
 trait ScaldingStore[K, V] {

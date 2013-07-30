@@ -16,6 +16,8 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
+import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
+
 import scala.collection.immutable.SortedSet
 import java.util.{ Comparator, Date }
 import java.util.concurrent.TimeUnit

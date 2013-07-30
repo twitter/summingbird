@@ -16,10 +16,10 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{MapAlgebra, Monoid, Group}
+import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval}
 import com.twitter.algebird.monad._
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{BatchID, Batcher, Interval}
+import com.twitter.summingbird.batch.{BatchID, Batcher}
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
 
@@ -33,6 +33,8 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap => MutableHashMap,
 import cascading.scheme.local.{TextDelimited => CLTextDelimited}
 import cascading.tuple.{Tuple, Fields, TupleEntry}
 import cascading.flow.FlowDef
+
+import java.util.Date
 
 /**
   * Tests for Summingbird's Scalding planner.
@@ -148,6 +150,18 @@ class TestService[K, V](service: String,
   }
 }
 
+// This is not really usable, just a mock that does the same state over and over
+class LoopState[T](init: Interval[T]) extends WaitingState[T] { self =>
+  def begin = new RunningState[T] {
+    def part = self.init
+    def succeed(nextStart: Interval[T]) = self
+    def fail(err: Throwable) = {
+      println(err)
+      self
+    }
+  }
+}
+
 object ScaldingLaws extends Properties("Scalding") {
   import MapAlgebra.sparseEquiv
 
@@ -188,7 +202,7 @@ object ScaldingLaws extends Properties("Scalding") {
 
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckJob",
-        intr,
+        new LoopState(intr.mapNonDecreasing(new Date(_))),
         TestMode(testStore.sourceToBuffer ++ buffer))
 
       scald.run(scald.plan(summer))
@@ -238,7 +252,7 @@ object ScaldingLaws extends Properties("Scalding") {
 
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckleftJoinJob",
-        intr,
+        new LoopState(intr.mapNonDecreasing(new Date(_))),
         TestMode(testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer))
 
       scald.run(summer)
