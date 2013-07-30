@@ -157,7 +157,7 @@ case class SourceBuilder[T: Manifest] private (
     valCodec: Injection[V, Array[Byte]],
     batcher: Batcher,
     monoid: Monoid[V]): CompletedBuilder[K, V] = {
-    val newNode = node.asInstanceOf[Node[(K, V)]].sumByKey(
+    val newNode = Producer.evToKeyed(node).sumByKey(
       store.offlineStore,
       MergeableStoreSupplier.from(store.onlineSupplier())
     )
