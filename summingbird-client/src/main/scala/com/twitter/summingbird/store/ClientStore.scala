@@ -97,7 +97,7 @@ object ClientStore {
    * example, in most cases a function K => T would help tie in
    * batching logic more easily.
    */
-class ClientStore[K, V: Monoid](
+class ClientStore[K, V: Semigroup](
   offlineStore: ReadableStore[K, (BatchID, V)],
   onlineStore: ReadableStore[(K, BatchID), V],
   batcher: Batcher,
