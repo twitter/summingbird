@@ -44,6 +44,7 @@ import java.util.{ Date, UUID }
 object SourceBuilder {
   type PlatformPair = Platform2[Scalding, Storm]
   type Node[T] = Producer[PlatformPair, T]
+  type SummerNode[K, V] = Summer[PlatformPair, K, V]
 
   def freshUUID: String = UUID.randomUUID.toString
   def adjust[A, B](m: Map[A, B], k: A)(f: B => B) = m.updated(k, f(m(k)))
@@ -120,13 +121,13 @@ case class SourceBuilder[T: Manifest] private (
   def groupAndSumTo[K, V](store: ScaldingStore[K, V])(
     implicit ev: T <:< (K, V),
     env: Env,
+    statePath: StatePath,
     keyMf: Manifest[K],
     valMf: Manifest[V],
     keyCodec: Injection[K, Array[Byte]],
     valCodec: Injection[V, Array[Byte]],
     batcher: Batcher,
-    monoid: Monoid[V],
-    kord: Ordering[K]): CompletedBuilder[K, V] =
+    monoid: Monoid[V]): CompletedBuilder[K, V] =
     groupAndSumTo(CompoundStore.fromOffline(store))
 
   /**
@@ -136,13 +137,13 @@ case class SourceBuilder[T: Manifest] private (
   def groupAndSumTo[K, V](store: => MergeableStore[(K, BatchID), V])(
     implicit ev: T <:< (K, V),
     env: Env,
+    statePath: StatePath,
     keyMf: Manifest[K],
     valMf: Manifest[V],
     keyCodec: Injection[K, Array[Byte]],
     valCodec: Injection[V, Array[Byte]],
     batcher: Batcher,
-    monoid: Monoid[V],
-    kord: Ordering[K]): CompletedBuilder[K, V] =
+    monoid: Monoid[V]): CompletedBuilder[K, V] =
     groupAndSumTo(CompoundStore.fromOnline(store))
 
   /**
@@ -152,19 +153,20 @@ case class SourceBuilder[T: Manifest] private (
   def groupAndSumTo[K, V](store: CompoundStore[K, V])(
     implicit ev: T <:< (K, V),
     env: Env,
+    statePath: StatePath,
     keyMf: Manifest[K],
     valMf: Manifest[V],
     keyCodec: Injection[K, Array[Byte]],
     valCodec: Injection[V, Array[Byte]],
     batcher: Batcher,
-    monoid: Monoid[V],
-    keyOrdering: Ordering[K]): CompletedBuilder[K, V] = {
-    val newNode = IdentityKeyedProducer(node).sumByKey(
+    monoid: Monoid[V]): CompletedBuilder[K, V] = {
+    val newNode = node.asInstanceOf[Node[(K, V)]].sumByKey(
       store.offlineStore,
       MergeableStoreSupplier.from(store.onlineSupplier())
     )
     val cb = CompletedBuilder(
-      newNode, pairs, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+      newNode, pairs, batcher, statePath,
+      keyCodec, valCodec, SourceBuilder.freshUUID, opts)
     env.builder = cb
     cb
   }

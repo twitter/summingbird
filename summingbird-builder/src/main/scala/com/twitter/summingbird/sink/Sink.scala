@@ -18,7 +18,7 @@ package com.twitter.summingbird.sink
 
 import cascading.flow.FlowDef
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Interval }
+import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.scalding.{ Mode, TypedPipe }
 import com.twitter.summingbird.scalding.{ScaldingEnv, BatchedScaldingSink}
 
@@ -47,7 +47,7 @@ class BatchedSinkFromOffline[T](override val batcher: Batcher, offline: OfflineS
    */
   def writeStream(batchID: BatchID, stream: TypedPipe[(Long, T)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
     val fakeEnv = new ScaldingEnv("fakeArgs", Array()) {
-      override def startBatch(b: Batcher) = Some(batchID)
+      override def startDate(b: Batcher) = Some(batcher.earliestTimeOf(batchID))
       override def batches = 1
     }
     // strip the time

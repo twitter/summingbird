@@ -161,6 +161,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] {
             batchOps.readBatched(deltaBatches, mode, delta)
               .right
               .flatMap { case (batchesWeCanBuild, deltaFlow2Pipe) =>
+
                 // Check that deltas needed can actually be loaded going back to the first new batch
                 if(!batchesWeCanBuild.contains(firstDeltaBatch)) {
                   Left(List("Cannot load an entire initial batch: " + firstDeltaBatch.toString
