@@ -17,10 +17,11 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.{ Monoid, Semigroup, Monad }
-import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
+import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.Monad.operators // map/flatMap for monads
 import com.twitter.bijection.Conversion.asMethod
+import com.twitter.bijection.Injection
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird._
 import com.twitter.summingbird.builder.{ FlatMapShards, Reducers }
@@ -35,6 +36,50 @@ import com.twitter.scalding.Mode
 import scala.util.control.Exception.allCatch
 
 object Scalding {
+  implicit val dateRangeInjection: Injection[DateRange, Interval[Time]] = Injection.build {
+    (dr: DateRange) => {
+      val DateRange(l, u) = dr
+      Interval.leftClosedRightOpen(l.timestamp, u.timestamp + 1L)
+    }
+  } {
+    case Intersection(lb, ub) =>
+      val low = lb match {
+        case InclusiveLower(l) => l
+        case ExclusiveLower(l) => l+1L
+      }
+      val high = ub match {
+        case InclusiveUpper(u) => u
+        case ExclusiveUpper(u) => u-1L
+      }
+      Some(DateRange(RichDate(low), RichDate(high)))
+    case _ => None
+  }
+
+  def intersect(dr1: DateRange, dr2: DateRange): Option[DateRange] =
+    (dr1.as[Interval[Time]] && (dr2.as[Interval[Time]])).as[Option[DateRange]]
+
+  private def minify[T](mode: Mode, desired: DateRange)(factory: (DateRange) => Mappable[T]):
+    Either[List[FailureReason], DateRange] = try {
+      Right(factory(desired) match {
+        case ts: TimePathedSource => minify(mode, ts)
+        case _ => bisectingMinify(mode, desired)(factory)
+      })
+    }
+    catch {
+      case t: Throwable => Left(List(t.toString))
+    }
+
+  private def bisectingMinify[T](mode: Mode, desired: DateRange)(factory: (DateRange) => Mappable[T]): DateRange = {
+    def isGood(dr: DateRange): Boolean = allCatch.opt(factory(dr).validateTaps(mode)).isDefined
+
+    sys.error("TODO")
+  }
+
+  // TODO move this to scalding:
+  private def minify(mode: Mode, ts: TimePathedSource): DateRange = {
+    sys.error("TODO")
+  }
+
   def pipeFactory[T](factory: (DateRange) => Mappable[T])
     (implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
     StateWithError[(Interval[Time], Mode), List[FailureReason], FlowToPipe[T]]{
@@ -42,21 +87,16 @@ object Scalding {
         val (timeSpan, mode) = timeMode
 
         val timeSpanAsDateRange: Either[List[FailureReason], DateRange] =
-          timeSpan match {
-            case Intersection(InclusiveLower(low), ExclusiveUpper(up)) =>
-              Right(DateRange(RichDate(low), RichDate(up - 1L))) // these are inclusive until 0.9.0
-            case _ => Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString))
-          }
+          timeSpan.as[Option[DateRange]]
+            .map { Right(_) }
+            .getOrElse(Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString)))
 
         timeSpanAsDateRange.right.flatMap { dr =>
-          val mappable = factory(dr)
-          // Check that this input is available:
-            (allCatch.either(mappable.validateTaps(mode)) match {
-              case Left(x) => Left(List(x.toString))
-              case Right(()) => Right(())
-            })
-            .right.map { (_:Unit) =>
-              (timeMode, Reader { (fdM: (FlowDef, Mode)) =>
+          minify(mode, dr)(factory)
+            .right.map { newDr =>
+              val newIntr = newDr.as[Interval[Time]]
+              val mappable = factory(newDr)
+              ((newIntr, mode), Reader { (fdM: (FlowDef, Mode)) =>
                 TypedPipe.from(mappable)(fdM._1, fdM._2, mappable.converter) // converter is removed in 0.9.0
                   .flatMap { t =>
                   // Todo: get the closure out of here for serialization safety
