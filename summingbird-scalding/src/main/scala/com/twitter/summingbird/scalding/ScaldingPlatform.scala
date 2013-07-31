@@ -149,10 +149,9 @@ object Scalding {
               ((newIntr, mode), Reader { (fdM: (FlowDef, Mode)) =>
                 TypedPipe.from(mappable)(fdM._1, fdM._2, mappable.converter) // converter is removed in 0.9.0
                   .flatMap { t =>
-                  // Todo: get the closure out of here for serialization safety
-                  val time = timeOf(t)
-                  if(timeSpan(time)) Some((time, t)) else None
-                }
+                    val time = timeOf(t)
+                    if(newIntr(time)) Some((time, t)) else None
+                  }
               })
             }
         }
