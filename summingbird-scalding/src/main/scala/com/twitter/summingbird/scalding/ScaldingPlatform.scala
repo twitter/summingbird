@@ -27,6 +27,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.builder.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.Path
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
 import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
@@ -59,25 +60,74 @@ object Scalding {
     (dr1.as[Interval[Time]] && (dr2.as[Interval[Time]])).as[Option[DateRange]]
 
   private def minify[T](mode: Mode, desired: DateRange)(factory: (DateRange) => Mappable[T]):
-    Either[List[FailureReason], DateRange] = try {
-      Right(factory(desired) match {
-        case ts: TimePathedSource => minify(mode, ts)
-        case _ => bisectingMinify(mode, desired)(factory)
-      })
-    }
-    catch {
-      case t: Throwable => Left(List(t.toString))
+    Either[List[FailureReason], DateRange] = {
+      try {
+        val available = (mode, factory(desired)) match {
+          case (hdfs: Hdfs, ts: TimePathedSource) => minify(hdfs, ts)
+          case _ => bisectingMinify(mode, desired)(factory)
+        }
+        available.flatMap { intersect(desired, _) }
+          .map(Right(_))
+          .getOrElse(Left(List("available: " + available + ", desired: " + desired)))
+      }
+      catch { case t: Throwable => Left(List("Could not load: " + desired + "\n" + t.toString)) }
     }
 
-  private def bisectingMinify[T](mode: Mode, desired: DateRange)(factory: (DateRange) => Mappable[T]): DateRange = {
-    def isGood(dr: DateRange): Boolean = allCatch.opt(factory(dr).validateTaps(mode)).isDefined
+  private def bisectingMinify[T](mode: Mode, desired: DateRange)(factory: (DateRange) => Mappable[T]): Option[DateRange] = {
+    def isGood(end: Long): Boolean = allCatch.opt(factory(DateRange(desired.start, RichDate(end))).validateTaps(mode)).isDefined
+    val DateRange(start, end) = desired
+    if(isGood(start.timestamp)) {
+      // The invariant is that low isGood, low < upper, and upper isGood == false
+      @annotation.tailrec
+      def findEnd(low: Long, upper: Long): Long =
+        if (low == (upper - 1L))
+          low
+        else {
+          // mid must be > low because upper >= low + 2
+          val mid = low + (upper - low)/2
+          if(isGood(mid))
+            findEnd(mid, upper)
+          else
+            findEnd(low, mid)
+        }
 
-    sys.error("TODO")
+      if(isGood(end.timestamp)) Some(desired)
+      else Some(DateRange(desired.start, RichDate(findEnd(start.timestamp, end.timestamp))))
+    }
+    else {
+      // No good data
+      None
+    }
   }
 
   // TODO move this to scalding:
-  private def minify(mode: Mode, ts: TimePathedSource): DateRange = {
-    sys.error("TODO")
+  // https://github.com/twitter/scalding/issues/529
+  private def minify(mode: Hdfs, ts: TimePathedSource): Option[DateRange] = {
+    import ts.{pattern, dateRange, tz}
+
+    def combine(prev: DateRange, next: DateRange) = DateRange(prev.start, next.end)
+
+    def pathIsGood(p : String): Boolean = {
+      val path = new Path(p)
+      Option(path.getFileSystem(mode.conf).globStatus(path))
+        .map(_.length > 0)
+        .getOrElse(false)
+    }
+
+    List("%1$tH" -> Hours(1), "%1$td" -> Days(1)(tz),
+      "%1$tm" -> Months(1)(tz), "%1$tY" -> Years(1)(tz))
+      .find { unitDur : (String, Duration) => pattern.contains(unitDur._1) }
+      .map { unitDur =>
+        dateRange.each(unitDur._2)
+          .map { dr : DateRange =>
+            val path = String.format(pattern, dr.start.toCalendar(tz))
+            (dr, path)
+          }
+      }
+      .getOrElse(List((dateRange, pattern))) // This must not have any time after all
+      .takeWhile { case (_, path) => pathIsGood(path) }
+      .map(_._1)
+      .reduceOption { combine(_, _) }
   }
 
   def pipeFactory[T](factory: (DateRange) => Mappable[T])
