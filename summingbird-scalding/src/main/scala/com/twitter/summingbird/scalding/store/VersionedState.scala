@@ -44,14 +44,15 @@ class VersionedState(meta: HDFSMetadata, startDate: Option[Date], maxBatches: In
       */
     def part = {
       val beginning: BatchID =
-        (for {
-          version <- meta.mostRecentVersion
-          batchString <- version.get[String]
-        } yield BatchID(batchString)
-        ).orElse(startDate.map(batcher.batchOf(_)))
-          .getOrElse(
+        startDate.map(batcher.batchOf(_))
+          .orElse {
+          for {
+            version <- meta.mostRecentVersion
+            batchString <- version.get[String]
+          } yield BatchID(batchString)
+        } getOrElse {
           sys.error("You must supply a starting date on the job's first run!")
-        )
+        }
       val end = beginning + maxBatches
       Interval.leftClosedRightOpen(
         batcher.earliestTimeOf(beginning),
