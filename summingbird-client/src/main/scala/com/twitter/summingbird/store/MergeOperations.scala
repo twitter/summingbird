@@ -72,10 +72,9 @@ object MergeOperations {
     }
 
   /**
-    * If offlineStore has no return value for some key,
-    * defaultOfflineReturn uses batchesToKeep to calculate a
-    * reasonable beginning batchID from which to start querying the
-    * onlineStore.
+    * Selects the most recent BatchID between the offlineStore and the BatchID calculated
+    * with batchesToKeep. The more recent BatchID is used as the begining of the 
+    * range used to query the onlineStore.
     */
   def expand(offlineReturn: Option[BatchID], nowBatch: BatchID, batchesToKeep: Int): Iterable[BatchID] = {
     val initBatch = Semigroup.plus(
