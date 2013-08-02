@@ -20,7 +20,7 @@ import com.twitter.bijection.Injection
 import com.twitter.chill.InjectionPair
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.batch.Batcher
-import com.twitter.summingbird.{ Env, KeyedProducer, Options }
+import com.twitter.summingbird.{ Env, KeyedProducer, Options, Summer, Platform }
 import com.twitter.summingbird.scalding.Scalding
 import com.twitter.summingbird.storm.Storm
 import com.twitter.summingbird.util.CacheSize
@@ -38,8 +38,8 @@ object CompletedBuilder {
     InjectionPair(manifest[T].erasure.asInstanceOf[Class[T]], injection)
 }
 
-case class CompletedBuilder[K: Manifest, V: Manifest](
-  node: SourceBuilder.SummerNode[K, V],
+case class CompletedBuilder[P <: Platform[P], K: Manifest, V: Manifest](
+  node: Summer[P, K, V],
   eventCodecPairs: List[InjectionPair[_]],
   batcher: Batcher,
   @transient keyCodec: Injection[K, Array[Byte]],

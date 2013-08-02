@@ -47,7 +47,7 @@ class BatchedSinkFromOffline[T](override val batcher: Batcher, offline: OfflineS
    */
   def writeStream(batchID: BatchID, stream: TypedPipe[(Long, T)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
     val fakeEnv = new ScaldingEnv("fakeArgs", Array()) {
-      override def startDate(b: Batcher) = Some(batcher.earliestTimeOf(batchID))
+      override def startDate = None
       override def batches = 1
     }
     // strip the time
