@@ -30,10 +30,10 @@ import com.twitter.summingbird.scalding.{ScaldingEnv, BatchedScaldingSink}
  * kestrel fanout or kafka topic.
  */
 
-//@deprecated("now","the ScaldingEnv was not suficiently extendable, ignores time")
+//@deprecated("0.1.0","ignores time")
 trait OfflineSink[Event] {
-  def write(pipe: TypedPipe[Event])
-  (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv)
+  def write(batchID: BatchID, pipe: TypedPipe[Event])
+  (implicit fd: FlowDef, mode: Mode)
 }
 
 /** Wrapped for the new scalding sink API in terms of the above */
@@ -46,18 +46,13 @@ class BatchedSinkFromOffline[T](override val batcher: Batcher, offline: OfflineS
    * by implementing this. This is what readStream returns.
    */
   def writeStream(batchID: BatchID, stream: TypedPipe[(Long, T)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
-    val fakeEnv = new ScaldingEnv("fakeArgs", Array()) {
-      override def startDate = None
-      override def batches = 1
-    }
     // strip the time
-    offline.write(stream.values)(flowDef, mode, fakeEnv)
+    offline.write(batchID, stream.values)(flowDef, mode)
   }
 }
 
 class EmptyOfflineSink[Event] extends OfflineSink[Event] {
-  def write(pipe: TypedPipe[Event])
-    (implicit fd: FlowDef, mode: Mode, env: ScaldingEnv) {}
+  def write(batchID: BatchID, pipe: TypedPipe[Event])(implicit fd: FlowDef, mode: Mode) {}
 }
 
 case class CompoundSink[Event](offline: OfflineSink[Event], online: () => OnlineSink[Event])
