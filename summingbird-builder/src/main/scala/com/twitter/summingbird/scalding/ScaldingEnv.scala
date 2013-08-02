@@ -19,7 +19,7 @@ package com.twitter.summingbird.scalding
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird.scalding.store.HDFSMetadata
-import com.twitter.summingbird.{ Env, Unzip2 }
+import com.twitter.summingbird.{ Env, Unzip2, Summer }
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.builder.{ SourceBuilder, Reducers }
 import com.twitter.summingbird.storm.Storm
@@ -62,13 +62,13 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // initial batch to process. All runs after the first batch
   // (incremental updates) will use the batch of the previous run as
   // the starting batch, rendering this unnecessary.
-  def startDate(batcher: Batcher): Option[Date] =
+  def startDate: Option[Date] =
     if (args.boolean("initial-run"))
       Some(args("start-time"))
-        .map { dateString =>
-        val millis = DateOps.stringToRichDate(dateString)(tz).timestamp
-        new Date(millis)
-      } else None
+        .map { dateString => DateOps.stringToRichDate(dateString)(tz).value }
+    else None
+
+  def initialBatch(b: Batcher): Option[BatchID] = startDate.map(b.batchOf(_))
 
   // The number of batches to process in this particular run. Imagine
   // a batch size of one hour; For big recomputations, one might want
@@ -91,14 +91,21 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
 
     implicit val batcher = builder.batcher
 
-    val statePath =
-      builder.node.store._1 match {
-        case store: VersionedBatchStore[_, _, _, _] => store.rootPath
-        case _ => sys.error("You must use a VersionedBatchStore with the old Summingbird API!")
+    val scaldingSummer = builder.node.asInstanceOf[Summer[Scalding, _, _]]
+
+    def getStatePath[K,V](ss: ScaldingStore[K, V]): Option[String] =
+      ss match {
+        case store: VersionedBatchStore[_, _, _, _] => Some(store.rootPath)
+        case initstore: InitialBatchedStore[_, _] => getStatePath(initstore.proxy)
+        case _ => None
       }
 
+    val statePath = getStatePath(scaldingSummer.store).getOrElse {
+      sys.error("You must use a VersionedBatchStore with the old Summingbird API!")
+    }
+
     val stateMaker = { conf: Configuration =>
-      VersionedState(HDFSMetadata(conf, statePath), startDate(batcher), batches)
+      VersionedState(HDFSMetadata(conf, statePath), startDate, batches)
     }
 
     new Scalding(
@@ -118,6 +125,6 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       // types will be caught by the registered injection.
       KryoRegistrationHelper.registerInjectionDefaults(jConf, codecPairs)
       fromMap(ajob.transformConfig(jConf.as[Map[String, AnyRef]]))
-    }.run(Unzip2[Scalding, Storm]()(builder.node)._1)
+    }.run(scaldingSummer)
   }
 }

@@ -23,12 +23,12 @@ import com.twitter.scalding.TypedPipe
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
-import com.twitter.summingbird.scalding.{Scalding, ScaldingService, ScaldingStore, ScaldingSink}
+import com.twitter.summingbird.scalding.{Scalding, ScaldingService, ScaldingEnv, BatchedScaldingStore, ScaldingSink}
 import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.{CompoundSink, BatchedSinkFromOffline}
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
-import com.twitter.summingbird.storm.{ MergeableStoreSupplier, StoreWrapper, Storm }
+import com.twitter.summingbird.storm.{ MergeableStoreSupplier, StoreWrapper, Storm, StormEnv }
 import com.twitter.summingbird.util.CacheSize
 import java.io.Serializable
 import java.util.{ Date, UUID }
@@ -44,7 +44,6 @@ import java.util.{ Date, UUID }
 object SourceBuilder {
   type PlatformPair = Platform2[Scalding, Storm]
   type Node[T] = Producer[PlatformPair, T]
-  type SummerNode[K, V] = Summer[PlatformPair, K, V]
 
   def freshUUID: String = UUID.randomUUID.toString
   def adjust[A, B](m: Map[A, B], k: A)(f: B => B) = m.updated(k, f(m(k)))
@@ -118,7 +117,7 @@ case class SourceBuilder[T: Manifest] private (
     * Complete this builder instance with a BatchStore. At this point,
     * the Summingbird job can be executed on Hadoop.
     */
-  def groupAndSumTo[K, V](store: ScaldingStore[K, V])(
+  def groupAndSumTo[K, V](store: BatchedScaldingStore[K, V])(
     implicit ev: T <:< (K, V),
     env: Env,
     keyMf: Manifest[K],
@@ -126,7 +125,7 @@ case class SourceBuilder[T: Manifest] private (
     keyCodec: Injection[K, Array[Byte]],
     valCodec: Injection[V, Array[Byte]],
     batcher: Batcher,
-    monoid: Monoid[V]): CompletedBuilder[K, V] =
+    monoid: Monoid[V]): CompletedBuilder[_, K, V] =
     groupAndSumTo(CompoundStore.fromOffline(store))
 
   /**
@@ -141,7 +140,7 @@ case class SourceBuilder[T: Manifest] private (
     keyCodec: Injection[K, Array[Byte]],
     valCodec: Injection[V, Array[Byte]],
     batcher: Batcher,
-    monoid: Monoid[V]): CompletedBuilder[K, V] =
+    monoid: Monoid[V]): CompletedBuilder[_, K, V] =
     groupAndSumTo(CompoundStore.fromOnline(store))
 
   /**
@@ -156,13 +155,32 @@ case class SourceBuilder[T: Manifest] private (
     keyCodec: Injection[K, Array[Byte]],
     valCodec: Injection[V, Array[Byte]],
     batcher: Batcher,
-    monoid: Monoid[V]): CompletedBuilder[K, V] = {
-    val newNode = Producer.evToKeyed(node).sumByKey(
-      store.offlineStore,
-      MergeableStoreSupplier.from(store.onlineSupplier())
-    )
-    val cb = CompletedBuilder(
-      newNode, pairs, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+    monoid: Monoid[V]): CompletedBuilder[_, K, V] = {
+
+    val cb = env match {
+      case scalding: ScaldingEnv =>
+        val givenStore = store.offlineStore.getOrElse(sys.error("No offline store given in Scalding mode"))
+        // Set the store to reset if needed
+        val batchSetStore = scalding
+          .initialBatch(batcher)
+          .map { givenStore.withInitialBatch(_) }
+          .getOrElse(givenStore)
+
+        val newNode = Producer.evToKeyed(Unzip2[Scalding, Storm]()(node)._1).sumByKey(batchSetStore)
+        CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+
+      case storm: StormEnv =>
+        val givenStore = MergeableStoreSupplier.from {
+          store.onlineSupplier
+            .getOrElse(sys.error("No online store given in Storm mode"))
+            .apply()
+          }
+
+        val newNode = Producer.evToKeyed(Unzip2[Scalding, Storm]()(node)._2).sumByKey(givenStore)
+        CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+
+      case _ => sys.error("Unknown environment: " + env)
+    }
     env.builder = cb
     cb
   }

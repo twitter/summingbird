@@ -18,7 +18,7 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.Config
 import com.twitter.scalding.Args
-import com.twitter.summingbird.{ Env, Unzip2 }
+import com.twitter.summingbird.{ Env, Unzip2, Producer }
 import com.twitter.summingbird.scalding.Scalding
 
 /**
@@ -43,6 +43,6 @@ case class StormEnv(override val jobName: String, override val args: Args)
       .withConfigUpdater { config =>
       val c = ConfigBijection.invert(config)
       ConfigBijection(ajob.transformConfig(c))
-    }.run(Unzip2[Scalding, Storm]()(builder.node)._2)
+    }.run(builder.node.asInstanceOf[Producer[Storm, _]])
   }
 }
