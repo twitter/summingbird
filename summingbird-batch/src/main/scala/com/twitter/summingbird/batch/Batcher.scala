@@ -16,7 +16,8 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
+import com.twitter.algebird.{ Universe, Empty, Interval, Intersection,
+  InclusiveLower, ExclusiveUpper, InclusiveUpper, ExclusiveLower }
 
 import scala.collection.immutable.SortedSet
 import java.util.{ Comparator, Date }
@@ -84,17 +85,35 @@ trait Batcher extends Serializable {
   /** Return the largest interval of batches completely covered by
    * the interval of time.
    */
-  def batchesCoveredBy(interval: Interval[Date]): Interval[BatchID] =
+  private def dateToBatch(interval: Interval[Date])(onIncLow: (Date) => BatchID)(onExcUp: (Date) => BatchID): Interval[BatchID] = {
+    def next(d: Date): Date =  new Date(d.getTime + 1L)
+
     interval match {
       case Empty() => Empty()
       case Universe() => Universe()
-      case ExclusiveUpper(upper) => ExclusiveUpper(truncateDown(upper))
-      case InclusiveLower(lower) => InclusiveLower(truncateUp(lower))
-      case Intersection(InclusiveLower(l), ExclusiveUpper(u)) =>
-        val upperBatch = truncateDown(u)
-        val lowerBatch = truncateUp(l)
+      case ExclusiveUpper(upper) => ExclusiveUpper(onExcUp(upper))
+      case InclusiveLower(lower) => InclusiveLower(onIncLow(lower))
+      case InclusiveUpper(upper) => ExclusiveUpper(onExcUp(next(upper)))
+      case ExclusiveLower(lower) => InclusiveLower(onIncLow(next(lower)))
+      case Intersection(low, high) =>
+        // Convert to inclusive:
+        val lowdate = low match {
+          case InclusiveLower(lb) => lb
+          case ExclusiveLower(lb) => next(lb)
+        }
+        //convert it exclusive:
+        val highdate = high match {
+          case InclusiveUpper(hb) => next(hb)
+          case ExclusiveUpper(hb) => hb
+        }
+        val upperBatch = truncateDown(lowdate)
+        val lowerBatch = truncateUp(highdate)
         Interval.leftClosedRightOpen(lowerBatch, upperBatch)
     }
+  }
+
+  def batchesCoveredBy(interval: Interval[Date]): Interval[BatchID] =
+    dateToBatch(interval)(truncateDown)(truncateUp)
 
   def toInterval(b: BatchID): Interval[Date] =
     Intersection(InclusiveLower(earliestTimeOf(b)), ExclusiveUpper(earliestTimeOf(b.next)))
@@ -109,16 +128,7 @@ trait Batcher extends Serializable {
    * or: for all t in interval, batchOf(t) is in the result
    */
   def cover(interval: Interval[Date]): Interval[BatchID] =
-    interval match {
-      case Empty() => Empty()
-      case Universe() => Universe()
-      case ExclusiveUpper(upper) => ExclusiveUpper(truncateUp(upper))
-      case InclusiveLower(lower) => InclusiveLower(truncateDown(lower))
-      case Intersection(InclusiveLower(l), ExclusiveUpper(u)) =>
-        val upperBatch = truncateUp(u)
-        val lowerBatch = truncateDown(l)
-        Interval.leftClosedRightOpen(lowerBatch, upperBatch)
-    }
+    dateToBatch(interval)(truncateUp)(truncateDown)
 
   /**
     * Returns the sequence of BatchIDs that the supplied `other`
