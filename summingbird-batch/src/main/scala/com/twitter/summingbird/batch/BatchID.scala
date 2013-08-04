@@ -17,7 +17,8 @@ limitations under the License.
 package com.twitter.summingbird.batch
 
 import com.twitter.algebird.Monoid
-import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
+import com.twitter.algebird.{ Universe, Empty, Interval, Intersection,
+  InclusiveLower, ExclusiveUpper, InclusiveUpper, ExclusiveLower }
 import com.twitter.bijection.{ Bijection, Injection }
 import scala.collection.Iterator.iterate
 
@@ -76,8 +77,19 @@ object BatchID {
       case Empty() => Iterable.empty
       case Universe() => range(Min, Max)
       case ExclusiveUpper(upper) => range(Min, upper.prev)
+      case InclusiveUpper(upper) => range(Min, upper)
+      case ExclusiveLower(lower) => range(lower.next, Max)
       case InclusiveLower(lower) => range(lower, Max)
-      case Intersection(InclusiveLower(l), ExclusiveUpper(u)) => range(l, u.prev)
+      case Intersection(low, high) =>
+        val lowbatch = low match {
+          case InclusiveLower(lb) => lb
+          case ExclusiveLower(lb) => lb.next
+        }
+        val highbatch = high match {
+          case InclusiveUpper(hb) => hb
+          case ExclusiveUpper(hb) => hb.prev
+        }
+        range(lowbatch, highbatch)
     }
 
   val Max = BatchID(Long.MaxValue)
