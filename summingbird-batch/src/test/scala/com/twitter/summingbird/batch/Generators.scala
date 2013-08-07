@@ -19,12 +19,17 @@ package com.twitter.summingbird.batch
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 
+import com.twitter.algebird.Interval
+
 /**
   * Generators useful in testing Summingbird's batch module.
   */
 object Generators {
   implicit val batchIdArb: Arbitrary[BatchID] =
     Arbitrary { Arbitrary.arbitrary[Long].map { BatchID(_) } }
+
+  implicit val dateArb: Arbitrary[java.util.Date] =
+    Arbitrary { Arbitrary.arbitrary[Long].map { new java.util.Date(_) } }
 
   implicit def intervalArb[T:Arbitrary:Ordering]: Arbitrary[Interval[T]] =
     Arbitrary {

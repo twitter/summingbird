@@ -40,7 +40,7 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
   /** Get the most recent last batch and the ID (strictly less than the input ID)
    * The "Last" is the stream with only the newest value for each key.
    */
-  def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowToPipe[(K, V)])]
+  def readLast(exclusiveUB: BatchID, mode: Mode):  Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])]
 
   /** Reads the key log for this batch. By key log we mean a log of time, key and value when the key was written
    * to. This is an associative operation and sufficient to scedule the service.
@@ -52,11 +52,13 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
 
   protected def batchedLookup[W](covers: Interval[Time],
     getKeys: FlowToPipe[(K, W)],
-    last: (BatchID, FlowToPipe[(K, V)]),
+    last: (BatchID, FlowProducer[TypedPipe[(K, V)]]),
     streams: Iterable[(BatchID, FlowToPipe[(K, Option[V])])]): FlowToPipe[(K, (W, Option[V]))] =
       Reader[FlowInput, KeyValuePipe[K, (W, Option[V])]] { (flowMode: (FlowDef, Mode)) =>
         val left = getKeys(flowMode)
-        val liftedLast: KeyValuePipe[K, Option[V]] = last._2(flowMode).map { case (t, (k, w)) => (t, (k, Some(w))) }
+        val earliestInLast = batcher.earliestTimeOf(last._1).getTime
+        val liftedLast: KeyValuePipe[K, Option[V]] = last._2(flowMode)
+          .map { case (k, w) => (earliestInLast, (k, Some(w))) }
         // TODO (https://github.com/twitter/summingbird/issues/91): we
         // could not bother to load streams outside the covers, but
         // probably we aren't anyway assuming the time spans are not
@@ -108,4 +110,22 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
         }
       }
     })
+}
+
+object BatchedService extends java.io.Serializable {
+  /** If you write the output of a sumByKey, you can use it as
+   * a BatchedService
+   * Assumes the batcher is the same for both
+   */
+  def fromStoreAndSink[K,V](store: BatchedScaldingStore[K, V],
+    sink: BatchedScaldingSink[(K, Option[V])],
+    reducers: Option[Int] = None): BatchedService[K, V] = new BatchedService[K, V] {
+    override def ordering = store.ordering
+    override def batcher = store.batcher
+    override def reducers = reducers
+    override def readStream(batchID: BatchID, mode: Mode) =
+      sink.readStream(batchID, mode)
+    override def readLast(exclusiveUB: BatchID, mode: Mode) =
+      store.readLast(exclusiveUB, mode)
+  }
 }
