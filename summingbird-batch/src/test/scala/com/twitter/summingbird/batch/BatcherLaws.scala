@@ -74,7 +74,7 @@ object BatcherLaws extends Properties("Batcher") {
 
   property("batchesCoveredBy produces non-empty outputs") =
     forAll { (sl: SmallLong) =>
-      // Make usre we don't generate BatchIDs that are outside 64 bit time:
+      // Make sure we don't generate BatchIDs that are outside 64 bit time:
       val b = BatchID(sl.get)
       val list = BatchID.toIterable(
         hourlyBatcher.batchesCoveredBy(hourlyBatcher.toInterval(b))
@@ -84,10 +84,10 @@ object BatcherLaws extends Properties("Batcher") {
 
   property("batchesCoveredBy produces has times in the interval") =
     forAll { (d: Date, sl: SmallLong) =>
-      val int = Interval.leftClosedRightOpen(d, new Date(d.getTime + sl.get))
+      // Make sure we cover at least an hour in the usual case by multiplying by ms per hour
+      val int = Interval.leftClosedRightOpen(d, new Date(d.getTime + (60L * 60L * 1000L * sl.get)))
       val covered = hourlyBatcher.batchesCoveredBy(int)
-      (covered == Empty[BatchID]()) || {
-        println("in")
+      ((covered == Empty[BatchID]()) && (sl.get <= 0)) || {
         val minBatch = BatchID.toIterable(covered).min
         val maxBatch = BatchID.toIterable(covered).max
         int.contains(hourlyBatcher.earliestTimeOf(minBatch)) &&
