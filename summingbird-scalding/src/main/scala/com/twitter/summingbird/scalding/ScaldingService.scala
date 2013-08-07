@@ -119,10 +119,10 @@ object BatchedService extends java.io.Serializable {
    */
   def fromStoreAndSink[K,V](store: BatchedScaldingStore[K, V],
     sink: BatchedScaldingSink[(K, Option[V])],
-    reducers: Option[Int] = None): BatchedService[K, V] = new BatchedService[K, V] {
+    reducerOption: Option[Int] = None): BatchedService[K, V] = new BatchedService[K, V] {
     override def ordering = store.ordering
     override def batcher = store.batcher
-    override def reducers = reducers
+    override val reducers = reducerOption
     override def readStream(batchID: BatchID, mode: Mode) =
       sink.readStream(batchID, mode)
     override def readLast(exclusiveUB: BatchID, mode: Mode) =
