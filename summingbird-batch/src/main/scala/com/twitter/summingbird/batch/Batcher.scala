@@ -106,14 +106,14 @@ trait Batcher extends Serializable {
           case InclusiveUpper(hb) => next(hb)
           case ExclusiveUpper(hb) => hb
         }
-        val upperBatch = truncateDown(lowdate)
-        val lowerBatch = truncateUp(highdate)
+        val upperBatch = onExcUp(highdate)
+        val lowerBatch = onIncLow(lowdate)
         Interval.leftClosedRightOpen(lowerBatch, upperBatch)
     }
   }
 
   def batchesCoveredBy(interval: Interval[Date]): Interval[BatchID] =
-    dateToBatch(interval)(truncateDown)(truncateUp)
+    dateToBatch(interval)(truncateUp)(truncateDown)
 
   def toInterval(b: BatchID): Interval[Date] =
     Intersection(InclusiveLower(earliestTimeOf(b)), ExclusiveUpper(earliestTimeOf(b.next)))
@@ -128,7 +128,7 @@ trait Batcher extends Serializable {
    * or: for all t in interval, batchOf(t) is in the result
    */
   def cover(interval: Interval[Date]): Interval[BatchID] =
-    dateToBatch(interval)(truncateUp)(truncateDown)
+    dateToBatch(interval)(truncateDown)(truncateUp)
 
   /**
     * Returns the sequence of BatchIDs that the supplied `other`

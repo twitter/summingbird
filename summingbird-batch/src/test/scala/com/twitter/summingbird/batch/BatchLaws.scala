@@ -22,6 +22,8 @@ import org.scalacheck.Prop._
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
+import com.twitter.algebird.Interval
+
 object BatchLaws extends Properties("BatchID") {
   import Generators._
 
