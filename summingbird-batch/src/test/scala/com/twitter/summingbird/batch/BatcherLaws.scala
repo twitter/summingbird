@@ -22,6 +22,8 @@ import org.specs._
 
 import java.util.Date
 
+import com.twitter.algebird.{Interval, Empty}
+
 object BatcherLaws extends Properties("Batcher") {
   import Generators._
 
@@ -61,5 +63,35 @@ object BatcherLaws extends Properties("Batcher") {
   property("DurationBatcher should fully enclose each batch with a single batch") =
     forAll { i: Int =>
       hourlyBatcher.enclosedBy(BatchID(i), hourlyBatcher) == List(BatchID(i))
+    }
+
+  property("batchesCoveredBy is a subset of covers") =
+    forAll { (int: Interval[Date]) =>
+      val coveredBy = hourlyBatcher.batchesCoveredBy(int)
+      val covers = hourlyBatcher.cover(int)
+      (covers && coveredBy) == coveredBy
+    }
+
+  property("batchesCoveredBy produces non-empty outputs") =
+    forAll { (sl: SmallLong) =>
+      // Make sure we don't generate BatchIDs that are outside 64 bit time:
+      val b = BatchID(sl.get)
+      val list = BatchID.toIterable(
+        hourlyBatcher.batchesCoveredBy(hourlyBatcher.toInterval(b))
+      ).toList
+      list == List(b)
+    }
+
+  property("batchesCoveredBy produces has times in the interval") =
+    forAll { (d: Date, sl: SmallLong) =>
+      // Make sure we cover at least an hour in the usual case by multiplying by ms per hour
+      val int = Interval.leftClosedRightOpen(d, new Date(d.getTime + (60L * 60L * 1000L * sl.get)))
+      val covered = hourlyBatcher.batchesCoveredBy(int)
+      ((covered == Empty[BatchID]()) && (sl.get <= 0)) || {
+        val minBatch = BatchID.toIterable(covered).min
+        val maxBatch = BatchID.toIterable(covered).max
+        int.contains(hourlyBatcher.earliestTimeOf(minBatch)) &&
+          int.contains(new Date(hourlyBatcher.earliestTimeOf(maxBatch.next).getTime - 1L))
+      }
     }
 }

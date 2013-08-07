@@ -136,7 +136,7 @@ class TestService[K, V](service: String,
       Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable)(fd._1, fd._2, mappable.converter) }
     }
   }
-  override def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowToPipe[(K, V)])] = {
+  override def readLast(exclusiveUB: BatchID, mode: Mode) = {
     val candidates = lasts.filter { _._1 < exclusiveUB }
     if(candidates.isEmpty) {
       Left(List("No batches < :" + exclusiveUB.toString))
@@ -144,7 +144,9 @@ class TestService[K, V](service: String,
     else {
       val (batch, _) = candidates.maxBy { _._1 }
       val mappable = lastMappable(batch)
-      val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable)(fd._1, fd._2, mappable.converter) }
+      val rdr = Reader { (fd: (FlowDef, Mode)) =>
+        TypedPipe.from(mappable)(fd._1, fd._2, mappable.converter).values
+      }
       Right((batch, rdr))
     }
   }
@@ -202,7 +204,7 @@ object ScaldingLaws extends Properties("Scalding") {
 
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckJob",
-        new LoopState(intr.mapNonDecreasing(new Date(_))),
+        _ => new LoopState(intr.mapNonDecreasing(t => new Date(t))),
         TestMode(testStore.sourceToBuffer ++ buffer))
 
       scald.run(scald.plan(summer))
@@ -252,7 +254,7 @@ object ScaldingLaws extends Properties("Scalding") {
 
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckleftJoinJob",
-        new LoopState(intr.mapNonDecreasing(new Date(_))),
+        _ => new LoopState(intr.mapNonDecreasing(t => new Date(t))),
         TestMode(testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer))
 
       scald.run(summer)
