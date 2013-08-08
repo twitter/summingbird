@@ -46,7 +46,8 @@ object SourceBuilder {
   type Node[T] = Producer[PlatformPair, T]
 
   def freshUUID: String = UUID.randomUUID.toString
-  def adjust[A, B](m: Map[A, B], k: A)(f: B => B) = m.updated(k, f(m(k)))
+  def adjust[T](m: Map[T, Options], k: T)(f: Options => Options) =
+    m.updated(k, f(m.getOrElse(k, Options())))
 
   implicit def sg[T]: Semigroup[SourceBuilder[T]] =
     Semigroup.from(_ ++ _)
@@ -62,8 +63,7 @@ object SourceBuilder {
       Source[PlatformPair, T]((scaldingSource, stormSource), manifest)
         .name(newID),
       List(CompletedBuilder.injectionPair[T](eventCodec)),
-      newID,
-      Map(newID -> Options())
+      newID
     )
   }
 }
