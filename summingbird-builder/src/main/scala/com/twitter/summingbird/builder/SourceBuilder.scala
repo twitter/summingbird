@@ -62,7 +62,8 @@ object SourceBuilder {
       Source[PlatformPair, T]((scaldingSource, stormSource), manifest)
         .name(newID),
       List(CompletedBuilder.injectionPair[T](eventCodec)),
-      newID
+      newID,
+      Map(newID -> Options())
     )
   }
 }
