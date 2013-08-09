@@ -111,7 +111,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     new Scalding(
       abstractJob.getClass.getName,
       stateMaker,
-      Mode.mode,
+      Hdfs(true, _),
       options = opts).withConfigUpdater { conf =>
       val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
       val eventCodecPairs = builder.eventCodecPairs
