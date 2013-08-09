@@ -32,7 +32,7 @@ object Producer {
 
   implicit def evToKeyed[P <: Platform[P], T, K, V](producer: Producer[P, T])
     (implicit ev: T <:< (K, V)): KeyedProducer[P, K, V] =
-    IdentityKeyedProducer[P, K, V](producer)
+    IdentityKeyedProducer[P, K, V](producer.asInstanceOf[Producer[P, (K, V)]])
 
   implicit def toKeyed[P <: Platform[P], K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer)
