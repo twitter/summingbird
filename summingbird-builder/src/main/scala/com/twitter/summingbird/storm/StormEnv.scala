@@ -39,7 +39,7 @@ case class StormEnv(override val jobName: String, override val args: Args)
     val ajob = abstractJob
 
     val classSuffix = jobName.split("\\.").last
-    Storm.remote("summingbird_" + classSuffix, builder.opts)
+    Storm.remote(classSuffix, builder.opts)
       .withConfigUpdater { config =>
       val c = ConfigBijection.invert(config)
       ConfigBijection(ajob.transformConfig(c))
