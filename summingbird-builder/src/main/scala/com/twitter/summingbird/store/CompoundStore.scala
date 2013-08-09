@@ -34,7 +34,7 @@ class CompoundStore[K, V] private (
   online: Option[() => MergeableStore[(K, BatchID), V]])
     extends Serializable {
   // MeatLocker these to protect them from serialization errors.
-  private val offlineBox = MeatLocker(offlineStore)
+  private val offlineBox = MeatLocker(offline)
   def offlineStore: Option[BatchedScaldingStore[K, V]] = offlineBox.get
   def onlineSupplier: Option[() => MergeableStore[(K, BatchID), V]] = online
 }
