@@ -178,13 +178,8 @@ class Scalding(
     extends Platform[Scalding] {
   import ConfigBijection._
 
-  val configuration = transformConfig(new Configuration)
-  val conf = configuration
-    .as[Map[String, AnyRef]]
-    .toMap[AnyRef, AnyRef]
-
-  var state: WaitingState[Date] = stateMaker(configuration)
-  val mode = modeMaker(configuration)
+  @transient val configuration = transformConfig(new Configuration)
+  @transient var state: WaitingState[Date] = stateMaker(configuration)
 
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
@@ -351,6 +346,11 @@ class Scalding(
   def run(pf: PipeFactory[_]) {
     val runningState = state.begin
     val timeSpan = runningState.part.mapNonDecreasing(_.getTime)
+    val mode = modeMaker(configuration)
+    val conf = configuration
+      .as[Map[String, AnyRef]]
+      .toMap[AnyRef, AnyRef]
+
     pf((timeSpan, mode)) match {
       case Left(errs) =>
         println("ERROR")
