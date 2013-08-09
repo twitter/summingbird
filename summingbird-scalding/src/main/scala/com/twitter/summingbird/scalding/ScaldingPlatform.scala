@@ -169,9 +169,10 @@ object Scalding {
     for { l <- left; r <- right } yield (l ++ r)
 }
 
-class Scalding(jobName: String,
+class Scalding(
+  jobName: String,
   stateMaker: Configuration => WaitingState[Date],
-  mode: Mode,
+  modeMaker: Configuration => Mode,
   updateConf: Configuration => Configuration = identity,
   options: Map[String, Options] = Map.empty)
     extends Platform[Scalding] {
@@ -183,6 +184,7 @@ class Scalding(jobName: String,
     .toMap[AnyRef, AnyRef]
 
   var state: WaitingState[Date] = stateMaker(configuration)
+  val mode = modeMaker(configuration)
 
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
@@ -336,7 +338,7 @@ class Scalding(jobName: String,
 
   def transformConfig(base: Configuration): Configuration = updateConf(base)
   def withConfigUpdater(fn: Configuration => Configuration): Scalding =
-    new Scalding(jobName, stateMaker, mode, fn, options)
+    new Scalding(jobName, stateMaker, modeMaker, fn, options)
 
   def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] = {
     val dep = Dependants(prod)
