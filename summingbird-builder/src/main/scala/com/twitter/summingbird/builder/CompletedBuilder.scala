@@ -39,13 +39,13 @@ object CompletedBuilder {
 }
 
 case class CompletedBuilder[P <: Platform[P], K: Manifest, V: Manifest](
-  node: Summer[P, K, V],
+  @transient node: Summer[P, K, V],
   eventCodecPairs: List[InjectionPair[_]],
   batcher: Batcher,
   @transient keyCodec: Injection[K, Array[Byte]],
   @transient valCodec: Injection[V, Array[Byte]],
   id: String,
-  opts: Map[String, Options]) extends Serializable {
+  @transient opts: Map[String, Options]) extends Serializable {
   import SourceBuilder.adjust
   import CompletedBuilder.injectionPair
 
