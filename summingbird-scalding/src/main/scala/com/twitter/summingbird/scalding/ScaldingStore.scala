@@ -24,7 +24,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import cascading.flow.FlowDef
 
-trait ScaldingStore[K, V] {
+trait ScaldingStore[K, V] extends java.io.Serializable {
   /**
     * Accepts deltas along with their timestamps, returns triples of
     * (time, K, V(aggregated up to the time)).
