@@ -27,14 +27,19 @@ import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
 
+import org.apache.hadoop.conf.Configuration
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap => MutableHashMap, Map => MutableMap, SynchronizedBuffer, SynchronizedMap}
 
 import cascading.scheme.local.{TextDelimited => CLTextDelimited}
 import cascading.tuple.{Tuple, Fields, TupleEntry}
 import cascading.flow.FlowDef
+import cascading.tap.Tap
 
 import java.util.Date
+
+import org.specs._
 
 /**
   * Tests for Summingbird's Scalding planner.
@@ -56,6 +61,9 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
     //
     // TODO implement a proper Scheme for MemoryTap
     new CLTextDelimited(sourceFields, "\t", null : Array[Class[_]])
+  }
+  override def createTap(readOrWrite : AccessMode)(implicit mode : Mode) : Tap[_,_,_] = {
+    null
   }
 }
 
@@ -263,4 +271,34 @@ object ScaldingLaws extends Properties("Scalding") {
       val smap = testStore.lastToIterable(BatchID(1)).toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) == false
     }
+}
+
+class ScaldingSerializationSpecs extends Specification {
+  noDetailedDiffs()
+
+  implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor( _._1 )
+
+  "ScaldingPlatform" should {
+    "serialize Hadoop Jobs for single step jobs" in {
+      // Add a time:
+      val inWithTime = List(1, 2, 3).zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = ScaldingLaws.simpleBatcher
+      import Dsl._ // Won't be needed in scalding 0.9.0
+      val testStore = new TestStore[Int,Int]("test", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val (buffer, source) = ScaldingLaws.testSource(inWithTime)
+
+      val summer = TestGraphs.singleStepJob[Scalding,(Long, Int),Int,Int](source, testStore) {
+        tup => List((1 -> tup._2))
+      }
+
+      val mode = Hdfs(true, new Configuration)
+      val intr = Interval.leftClosedRightOpen(0L, inWithTime.size.toLong)
+      val scald = new Scalding("scalaCheckJob",
+        _ => new LoopState(intr.mapNonDecreasing(t => new Date(t))),
+        _ => mode)
+
+      (try { scald.toFlow((intr,mode), scald.plan(summer)); true }
+      catch { case t: Throwable => println(t); false }) must beTrue
+    }
+  }
 }

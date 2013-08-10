@@ -31,7 +31,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
 import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
-import cascading.flow.FlowDef
+import cascading.flow.{FlowDef, Flow}
 import com.twitter.scalding.Mode
 
 import scala.util.control.Exception.allCatch
@@ -238,7 +238,7 @@ class Scalding(
     built.get(producer) match {
       case Some(pf) => (pf.asInstanceOf[PipeFactory[T]], built)
       case None =>
-        val (pf: PipeFactory[T], m) = producer match {
+        val (pf, m) = producer match {
           case Source(src, manifest) => {
             val shards = getOrElse(id, FlatMapShards.default).count
             val srcPf = if (shards <= 1)
@@ -332,7 +332,7 @@ class Scalding(
         }
         // Make sure that we end any chains of nodes at fanned out nodes:
         val res = forceNode(pf)
-        (res, built + (producer -> res))
+        (res.asInstanceOf[PipeFactory[T]], built + (producer -> res))
     }
   }
 
@@ -348,23 +348,35 @@ class Scalding(
     buildFlow(prod, None, fanOutSet, Map.empty)._1
   }
 
+  // This is a side-effect-free computation that is called by run
+  def toFlow(timeSpanMode: (Interval[Time], Mode), pf: PipeFactory[_]): Try[(Interval[Time], Flow[_])] =
+    pf(timeSpanMode)
+      .right
+      .flatMap { case (((ts, m), flowDefMutator)) =>
+        val flowDef = new FlowDef
+        flowDef.setName(jobName)
+        val outputPipe = flowDefMutator((flowDef, m))
+        // Now we have a populated flowDef, time to let Cascading do it's thing:
+        try {
+          Right((ts, mode.newFlowConnector(conf).connect(flowDef)))
+        } catch {
+          case (e: Throwable) => Left(List(e.toString))
+        }
+    }
+
   def run(pf: PipeFactory[_]) {
     val runningState = state.begin
     val timeSpan = runningState.part.mapNonDecreasing(_.getTime)
-    pf((timeSpan, mode)) match {
+    toFlow((timeSpan, mode), pf) match {
       case Left(errs) =>
         println("ERROR")
         errs.foreach { println(_) }
+        // Mutate the state
         state = runningState.fail(new Exception(errs.toString))
-      case Right(((ts, mode), flowDefMutator)) =>
-        val flowDef = new FlowDef
-        flowDef.setName(jobName)
-        val outputPipe = flowDefMutator((flowDef, mode))
-
-        // Now we have a populated flowDef, time to let Cascading do it's thing:
+      case Right((ts,flow)) =>
         try {
-          val flow = mode.newFlowConnector(conf).connect(flowDef)
           flow.complete
+          // Mutate the state
           state =
             if (flow.getFlowStats.isSuccessful)
               runningState.succeed(ts.mapNonDecreasing(new Date(_)))
