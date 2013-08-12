@@ -18,6 +18,8 @@ package com.twitter.summingbird
 
 /**
   * intra-graph options.
+  * Rather than use string keys, the .getClass of the option is used.
+  * It is up to you to have classes that make sense and match what is consumed.
   */
 
 object Options {
@@ -25,7 +27,7 @@ object Options {
 }
 
 class Options(opts: Map[Class[_], Any]) {
-  def set[T](opt: T) = Options(opts + (opt.getClass -> opt))
+  def set(opt: Any) = Options(opts + (opt.getClass -> opt))
 
   def get[T](klass: Class[T]): Option[T] =
     opts.get(klass).asInstanceOf[Option[T]]
@@ -33,8 +35,8 @@ class Options(opts: Map[Class[_], Any]) {
   def getOrElse[T](klass: Class[T], default: T): T =
     opts.getOrElse(klass, default).asInstanceOf[T]
 
-  private def klass[T: Manifest] = manifest[T].erasure.asInstanceOf[Class[T]]
+  private def klass[T: ClassManifest] = classManifest[T].erasure.asInstanceOf[Class[T]]
 
-  def get[T: Manifest]: Option[T] = get(klass[T])
-  def getOrElse[T: Manifest](default: T): T = getOrElse(klass[T], default)
+  def get[T: ClassManifest]: Option[T] = get(klass[T])
+  def getOrElse[T: ClassManifest](default: T): T = getOrElse(klass[T], default)
 }

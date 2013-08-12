@@ -19,9 +19,9 @@ package com.twitter.summingbird.scalding
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird.scalding.store.HDFSMetadata
-import com.twitter.summingbird.{ Env, Unzip2, Summer }
+import com.twitter.summingbird.{ Env, Unzip2, Summer, Producer, AbstractJob }
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
-import com.twitter.summingbird.builder.{ SourceBuilder, Reducers }
+import com.twitter.summingbird.builder.{ SourceBuilder, Reducers, CompletedBuilder }
 import com.twitter.summingbird.storm.Storm
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.summingbird.scalding.store.VersionedState
@@ -37,6 +37,12 @@ import ConfigBijection._
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
+
+// If present, after the groupAndSum we store
+// the intermediate key-values for using a store as a service
+// in another job.
+// Prefer using .write in the -core API.
+case class StoreIntermediateData[K, V](sink: ScaldingSink[(K,V)]) extends java.io.Serializable
 
 // TODO (https://github.com/twitter/summingbird/issues/69): Add
 // documentation later describing command-line args. initial-run,
@@ -85,34 +91,8 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     // forces any side effects caused by that constructor (building up
     // of the environment and defining the builder).
     val ajob = abstractJob
-    // Perform config transformations before Hadoop job submission
-    val opts = SourceBuilder.adjust(
-      builder.opts, builder.id)(_.set(Reducers(reducers)))
-
-    implicit val batcher = builder.batcher
-
-    val scaldingSummer = builder.node.asInstanceOf[Summer[Scalding, _, _]]
-
-    def getStatePath[K,V](ss: ScaldingStore[K, V]): Option[String] =
-      ss match {
-        case store: VersionedBatchStore[_, _, _, _] => Some(store.rootPath)
-        case initstore: InitialBatchedStore[_, _] => getStatePath(initstore.proxy)
-        case _ => None
-      }
-
-    val statePath = getStatePath(scaldingSummer.store).getOrElse {
-      sys.error("You must use a VersionedBatchStore with the old Summingbird API!")
-    }
-
-    val stateMaker = { conf: Configuration =>
-      VersionedState(HDFSMetadata(conf, statePath), startDate, batches)
-    }
-
-    new Scalding(
-      abstractJob.getClass.getName,
-      stateMaker,
-      Hdfs(true, _),
-      options = opts).withConfigUpdater { conf =>
+    val scaldingBuilder = builder.asInstanceOf[CompletedBuilder[Scalding, _, _]]
+    val updater = { conf : Configuration =>
       val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
       val eventCodecPairs = builder.eventCodecPairs
 
@@ -125,6 +105,44 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       // types will be caught by the registered injection.
       KryoRegistrationHelper.registerInjectionDefaults(jConf, codecPairs)
       fromMap(ajob.transformConfig(jConf.as[Map[String, AnyRef]]))
-    }.run(scaldingSummer)
+    }
+    run(ajob.getClass.getName, scaldingBuilder, updater)
+  }
+
+  def run[K,V](name: String,
+    scaldingBuilder: CompletedBuilder[Scalding, K, V],
+    confud: Configuration => Configuration) {
+    // Perform config transformations before Hadoop job submission
+    val opts = SourceBuilder.adjust(
+      scaldingBuilder.opts, scaldingBuilder.id)(_.set(Reducers(reducers)))
+    // Support for the old setting based writing
+    val toRun: Producer[Scalding, (K, V)] =
+      (for {
+        opt <- opts.get(scaldingBuilder.id)
+        stid <- opt.get[StoreIntermediateData[K,V]]
+      } yield (scaldingBuilder.node.write(stid.sink))).getOrElse(scaldingBuilder.node)
+
+    def getStatePath[K1,V1](ss: ScaldingStore[K1, V1]): Option[String] =
+      ss match {
+        case store: VersionedBatchStore[_, _, _, _] => Some(store.rootPath)
+        case initstore: InitialBatchedStore[_, _] => getStatePath(initstore.proxy)
+        case _ => None
+      }
+    // Fail as soon as possible if this is not a valid store:
+    val statePath = getStatePath(scaldingBuilder.node.store).getOrElse {
+      sys.error("You must use a VersionedBatchStore with the old Summingbird API!")
+    }
+    // VersionedState needs this
+    implicit val batcher = scaldingBuilder.batcher
+    val stateMaker = { conf: Configuration =>
+      VersionedState(HDFSMetadata(conf, statePath), startDate, batches)
+    }
+
+    new Scalding(
+      name,
+      stateMaker,
+      Hdfs(true, _),
+      confud,
+      opts).run(toRun)
   }
 }
