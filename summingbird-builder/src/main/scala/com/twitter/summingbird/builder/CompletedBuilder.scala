@@ -38,28 +38,22 @@ object CompletedBuilder {
     InjectionPair(manifest[T].erasure.asInstanceOf[Class[T]], injection)
 }
 
-case class CompletedBuilder[P <: Platform[P], K: Manifest, V: Manifest](
+case class CompletedBuilder[P <: Platform[P], K, V](
   node: Summer[P, K, V],
   eventCodecPairs: List[InjectionPair[_]],
   batcher: Batcher,
   @transient keyCodec: Injection[K, Array[Byte]],
   @transient valCodec: Injection[V, Array[Byte]],
   id: String,
-  opts: Map[String, Options]) extends Serializable {
+  opts: Map[String, Options])(implicit val keyMf: Manifest[K], val valMf: Manifest[V]) extends Serializable {
   import SourceBuilder.adjust
   import CompletedBuilder.injectionPair
 
   val keyCodecPair = injectionPair(keyCodec)
   val valueCodecPair = injectionPair(valCodec)
 
-  // Set the cache size used in the online flatmap step.
-  def set(size: CacheSize)(implicit env: Env) = {
-    val cb = copy(opts = adjust(opts, id)(_.set(size)))
-    env.builder = cb
-    cb
-  }
-
-  def set(opt: SinkOption)(implicit env: Env) = {
+  // Set any Option
+  def set[T](opt: T)(implicit env: Env) = {
     val cb = copy(opts = adjust(opts, id)(_.set(opt)))
     env.builder = cb
     cb
