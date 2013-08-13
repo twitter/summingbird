@@ -22,7 +22,7 @@ import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.Monad.operators // map/flatMap for monads
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
-import com.twitter.scalding.{ Tool => STool, _ }
+import com.twitter.scalding.{ Tool => STool, Source => SSource, _ }
 import com.twitter.summingbird._
 import com.twitter.summingbird.builder.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
@@ -59,7 +59,13 @@ object Scalding {
   def intersect(dr1: DateRange, dr2: DateRange): Option[DateRange] =
     (dr1.as[Interval[Time]] && (dr2.as[Interval[Time]])).as[Option[DateRange]]
 
-  private def minify[T](mode: Mode, desired: DateRange)(factory: (DateRange) => Mappable[T]):
+  /** Given a constructor function, computes the maximum available range
+   * of time or gives an error.
+   *
+   * Works by calling validateTaps on the Mappable, so if that does not work correctly
+   * this will be incorrect.
+   */
+  def minify(mode: Mode, desired: DateRange)(factory: (DateRange) => SSource):
     Either[List[FailureReason], DateRange] = {
       try {
         val available = (mode, factory(desired)) match {
@@ -73,7 +79,7 @@ object Scalding {
       catch { case t: Throwable => Left(List("Could not load: " + desired + "\n" + t.toString)) }
     }
 
-  private def bisectingMinify[T](mode: Mode, desired: DateRange)(factory: (DateRange) => Mappable[T]): Option[DateRange] = {
+  private def bisectingMinify(mode: Mode, desired: DateRange)(factory: (DateRange) => SSource): Option[DateRange] = {
     def isGood(end: Long): Boolean = allCatch.opt(factory(DateRange(desired.start, RichDate(end))).validateTaps(mode)).isDefined
     val DateRange(start, end) = desired
     if(isGood(start.timestamp)) {
