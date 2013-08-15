@@ -221,7 +221,7 @@ object ScaldingLaws extends Properties("Scalding") {
       case 2L => new java.util.Date(Long.MaxValue)
     }
   }
-/*
+
   property("ScaldingPlatform matches Scala for single step jobs, with everything in one Batch") =
     forAll { (original: List[Int], fn: (Int) => List[(Int, Int)]) =>
       val inMemory = TestGraphs.singleStepInScala(original)(fn)
@@ -296,7 +296,7 @@ object ScaldingLaws extends Properties("Scalding") {
       val smap = testStore.lastToIterable(BatchID(1)).toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) == false
     }
- */
+
   property("ScaldingPlatform matches Scala for diamond jobs with write & everything in one Batch") =
     forAll { (original: List[Int],
       fn1: (Int) => List[(Int, Int)],
