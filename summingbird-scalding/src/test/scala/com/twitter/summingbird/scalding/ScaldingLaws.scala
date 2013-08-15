@@ -63,7 +63,7 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
     new CLTextDelimited(sourceFields, "\t", null : Array[Class[_]])
   }
   override def createTap(readOrWrite : AccessMode)(implicit mode : Mode) : Tap[_,_,_] = {
-    null
+    scala.util.Try(super.createTap(readOrWrite)(mode)).getOrElse(null)
   }
 }
 
@@ -160,6 +160,30 @@ class TestService[K, V](service: String,
   }
 }
 
+/** This is a test sink that assumes single threaded testing with
+ * cascading local mode
+ */
+class TestSink[T] extends ScaldingSink[T] {
+  private var data: Vector[(Long, T)] = Vector.empty
+
+  def write(incoming: PipeFactory[T]): PipeFactory[T] =
+    // three functors deep:
+    incoming.map { state =>
+      state.map { reader =>
+        reader.map { timeItem =>
+          data = data :+ timeItem
+          timeItem
+        }
+      }
+    }
+
+  def reset: Vector[(Long, T)] = {
+    val oldData = data
+    data = Vector.empty
+    oldData
+  }
+}
+
 // This is not really usable, just a mock that does the same state over and over
 class LoopState[T](init: Interval[T]) extends WaitingState[T] { self =>
   def begin = new RunningState[T] {
@@ -197,7 +221,7 @@ object ScaldingLaws extends Properties("Scalding") {
       case 2L => new java.util.Date(Long.MaxValue)
     }
   }
-
+/*
   property("ScaldingPlatform matches Scala for single step jobs, with everything in one Batch") =
     forAll { (original: List[Int], fn: (Int) => List[(Int, Int)]) =>
       val inMemory = TestGraphs.singleStepInScala(original)(fn)
@@ -208,7 +232,8 @@ object ScaldingLaws extends Properties("Scalding") {
       val testStore = new TestStore[Int,Int]("test", batcher, BatchID(0), Iterable.empty, BatchID(1))
       val (buffer, source) = testSource(inWithTime)
 
-      val summer = TestGraphs.singleStepJob[Scalding,(Long, Int),Int,Int](source, testStore) { tup => fn(tup._2) }
+      val summer = TestGraphs.singleStepJob[Scalding,(Long,Int),Int,Int](source, testStore)(t =>
+          fn(t._2))
 
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckJob",
@@ -271,6 +296,42 @@ object ScaldingLaws extends Properties("Scalding") {
       val smap = testStore.lastToIterable(BatchID(1)).toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) == false
     }
+ */
+  property("ScaldingPlatform matches Scala for diamond jobs with write & everything in one Batch") =
+    forAll { (original: List[Int],
+      fn1: (Int) => List[(Int, Int)],
+      fn2: (Int) => List[(Int, Int)]) =>
+      val inMemory = TestGraphs.diamondJobInScala(original)(fn1)(fn2)
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = simpleBatcher
+      import Dsl._ // Won't be needed in scalding 0.9.0
+      val testStore = new TestStore[Int,Int]("test", batcher, BatchID(0),
+        Iterable.empty, BatchID(1))
+      val testSink = new TestSink[(Long,Int)]
+      val (buffer, source) = testSource(inWithTime)
+
+      val summer = TestGraphs
+        .diamondJob[Scalding,(Long, Int),Int,Int](source,
+          testSink,
+          testStore)(t => fn1(t._2))(t => fn2(t._2))
+
+      val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
+      val scald = new Scalding("scalaCheckJob",
+        _ => new LoopState(intr.mapNonDecreasing(t => new Date(t))),
+        _ => TestMode(testStore.sourceToBuffer ++ buffer))
+
+      scald.run(scald.plan(summer))
+      // Now check that the inMemory ==
+
+        val sinkOut = testSink.reset
+        println(sinkOut)
+        println(inWithTime)
+      val smap = testStore.lastToIterable(BatchID(1)).toMap
+      (Monoid.isNonZero(Group.minus(inMemory, smap)) == false) &&
+      (sinkOut.map { _._2 }.toList == inWithTime )
+    }
+
 }
 
 class ScaldingSerializationSpecs extends Specification {
