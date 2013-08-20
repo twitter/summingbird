@@ -174,7 +174,15 @@ object Scalding {
   def merge[T](left: FlowToPipe[T], right: FlowToPipe[T]): FlowToPipe[T] =
     for { l <- left; r <- right } yield (l ++ r)
 
-  /** Memoize the inner reader */
+  /** Memoize the inner reader
+   *  This is not a performance optimization, but a correctness one applicable
+   *  to some cases (namely any function that mutates the FlowDef or does IO).
+   *  Though we are working in a referentially transparent manner, the application
+   *  of the function inside the PipeFactory (the Reader) mutates the FlowDef.
+   *  For a fixed PipeFactory, we only want to mutate a given FlowDef once.
+   *  If we memoize with this function, it guarantees that the PipeFactory
+   *  is idempotent.
+   * */
   def memoize[T](pf: PipeFactory[T]): PipeFactory[T] = {
     val mmap = scala.collection.mutable.Map[(FlowDef,Mode), TimedPipe[T]]()
     pf.map { rdr =>
