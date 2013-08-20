@@ -52,7 +52,8 @@ object SummingbirdBuild extends Build {
     publishTo <<= version { v =>
       Some(
         if (v.trim.toUpperCase.endsWith("SNAPSHOT"))
-          Opts.resolver.sonatypeSnapshots
+          //Opts.resolver.sonatypeSnapshots
+          "internal-snap" at "http://artifactory.local.twitter.com/libs-snapshots-local"
         else
           Opts.resolver.sonatypeStaging
       )

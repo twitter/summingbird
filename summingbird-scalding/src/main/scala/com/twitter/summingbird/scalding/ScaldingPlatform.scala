@@ -173,6 +173,22 @@ object Scalding {
 
   def merge[T](left: FlowToPipe[T], right: FlowToPipe[T]): FlowToPipe[T] =
     for { l <- left; r <- right } yield (l ++ r)
+
+  /** Memoize the inner reader
+   *  This is not a performance optimization, but a correctness one applicable
+   *  to some cases (namely any function that mutates the FlowDef or does IO).
+   *  Though we are working in a referentially transparent manner, the application
+   *  of the function inside the PipeFactory (the Reader) mutates the FlowDef.
+   *  For a fixed PipeFactory, we only want to mutate a given FlowDef once.
+   *  If we memoize with this function, it guarantees that the PipeFactory
+   *  is idempotent.
+   * */
+  def memoize[T](pf: PipeFactory[T]): PipeFactory[T] = {
+    val mmap = scala.collection.mutable.Map[(FlowDef,Mode), TimedPipe[T]]()
+    pf.map { rdr =>
+      Reader({ i => mmap.getOrElseUpdate(i, rdr(i)) })
+    }
+  }
 }
 
 class Scalding(
@@ -217,7 +233,8 @@ class Scalding(
   private def buildFlow[T](producer: Producer[Scalding, T],
     id: Option[String],
     fanOuts: Set[Producer[Scalding, _]],
-    built: Map[Producer[Scalding, _], PipeFactory[_]]): (PipeFactory[T], Map[Producer[Scalding, _], PipeFactory[_]])  = {
+    built: Map[Producer[Scalding, _], PipeFactory[_]]): (PipeFactory[T], Map[Producer[Scalding, _], PipeFactory[_]]) = {
+    import Scalding.memoize
 
     /**
      * The scalding Typed-API does not deal with TypedPipes with fanout,
@@ -240,7 +257,6 @@ class Scalding(
         }
       else
         p
-
     built.get(producer) match {
       case Some(pf) => (pf.asInstanceOf[PipeFactory[T]], built)
       case None =>
@@ -337,8 +353,8 @@ class Scalding(
           }
         }
         // Make sure that we end any chains of nodes at fanned out nodes:
-        val res = forceNode(pf)
-        (res.asInstanceOf[PipeFactory[T]], built + (producer -> res))
+        val res = memoize(forceNode(pf))
+        (res.asInstanceOf[PipeFactory[T]], m + (producer -> res))
     }
   }
 
