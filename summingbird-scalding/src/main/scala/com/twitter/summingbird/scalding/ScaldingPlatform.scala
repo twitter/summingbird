@@ -76,7 +76,7 @@ object Scalding {
           .map(Right(_))
           .getOrElse(Left(List("available: " + available + ", desired: " + desired)))
       }
-      catch { case t: Throwable => Left(List("Could not load: " + desired + "\n" + t.toString)) }
+      catch { case t: Throwable => toTry(t) }
     }
 
   private def bisectingMinify(mode: Mode, desired: DateRange)(factory: (DateRange) => SSource): Option[DateRange] = {
@@ -168,6 +168,17 @@ object Scalding {
     factory: (DateRange) => Mappable[T]): Producer[Scalding, T] =
     Producer.source[Scalding, T](pipeFactory(factory))
 
+  /** The typed API (currently, as of 0.9.0) hides all flatMaps
+   * from cascading, so if you fork a pipe, the whole input
+   * is recomputed. This function forces a cascading node
+   * so that cascading can see that any forks of the output
+   * share a common prefix of operations
+   */
+  def forcePipe[U](pipe: TimedPipe[U]): TimedPipe[U] = {
+    import com.twitter.scalding.Dsl._
+    TypedPipe.from[(Long,U)](pipe.toPipe((0,1)), (0,1))
+  }
+
   def limitTimes[T](range: Interval[Time], in: FlowToPipe[T]): FlowToPipe[T] =
     in.map { pipe => pipe.filter { case (time, _) => range(time) } }
 
@@ -183,30 +194,31 @@ object Scalding {
    *  If we memoize with this function, it guarantees that the PipeFactory
    *  is idempotent.
    * */
-  def memoize[T](pf: PipeFactory[T]): PipeFactory[T] = {
-    val mmap = scala.collection.mutable.Map[(FlowDef,Mode), TimedPipe[T]]()
+  def memoize[T](pf: PipeFactory[T]): PipeFactory[T] =
     pf.map { rdr =>
-      Reader({ i => mmap.getOrElseUpdate(i, rdr(i)) })
+      val memo = new Memo(rdr)
+      Reader({ i => memo.getOrElseUpdate(i) })
     }
-  }
+}
+
+// Jank to get around serialization issues
+class Memo[T](rdr: Reader[(FlowDef,Mode),TimedPipe[T]]) extends java.io.Serializable {
+  @transient private val mmap = scala.collection.mutable.Map[(FlowDef,Mode), TimedPipe[T]]()
+  def getOrElseUpdate(in: (FlowDef,Mode)): TimedPipe[T] =
+    mmap.getOrElseUpdate(in, rdr(in))
 }
 
 class Scalding(
   jobName: String,
-  stateMaker: Configuration => WaitingState[Date],
-  modeMaker: Configuration => Mode,
-  updateConf: Configuration => Configuration = identity,
-  options: Map[String, Options] = Map.empty)
+  @transient stateMaker: Configuration => WaitingState[Date],
+  @transient modeMaker: Configuration => Mode,
+  @transient updateConf: Configuration => Configuration = identity,
+  @transient options: Map[String, Options] = Map.empty)
     extends Platform[Scalding] {
   import ConfigBijection._
 
-  val configuration = transformConfig(new Configuration)
-  val conf = configuration
-    .as[Map[String, AnyRef]]
-    .toMap[AnyRef, AnyRef]
-
-  var state: WaitingState[Date] = stateMaker(configuration)
-  val mode = modeMaker(configuration)
+  @transient val configuration = transformConfig(new Configuration)
+  @transient var state: WaitingState[Date] = stateMaker(configuration)
 
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
@@ -249,14 +261,11 @@ class Scalding(
     def forceNode[U](p: PipeFactory[U]): PipeFactory[U] =
       if(fanOuts(producer))
         p.map { flowP =>
-          flowP.map { pipe =>
-            // For a cascading node:
-            import com.twitter.scalding.Dsl._
-            TypedPipe.from[(Long,U)](pipe.toPipe((0,1)), (0,1))
-          }
+          flowP.map { Scalding.forcePipe(_) }
         }
       else
         p
+
     built.get(producer) match {
       case Some(pf) => (pf.asInstanceOf[PipeFactory[T]], built)
       case None =>
@@ -380,13 +389,14 @@ class Scalding(
         val outputPipe = flowDefMutator((flowDef, m))
         // Now we have a populated flowDef, time to let Cascading do it's thing:
         try {
-          Right((ts, mode.newFlowConnector(conf).connect(flowDef)))
+          Right((ts, m.newFlowConnector(m.config).connect(flowDef)))
         } catch {
-          case (e: Throwable) => Left(List(e.toString))
+          case (e: Throwable) => toTry(e)
         }
     }
 
   def run(pf: PipeFactory[_]) {
+    val mode = modeMaker(configuration)
     val runningState = state.begin
     val timeSpan = runningState.part.mapNonDecreasing(_.getTime)
     toFlow((timeSpan, mode), pf) match {
@@ -397,6 +407,9 @@ class Scalding(
         state = runningState.fail(new Exception(errs.toString))
       case Right((ts,flow)) =>
         try {
+          // TODO: sane way to configure. https://github.com/twitter/summingbird/issues/137
+          flow.writeDOT(jobName + ".dot")
+          flow.writeStepsDOT(jobName + "_steps.dot")
           flow.complete
           // Mutate the state
           state =

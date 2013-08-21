@@ -48,7 +48,7 @@ package object scalding {
   /** These are printed/logged only when we can't make any progress */
   type FailureReason = String
 
-  type Try[T] = Either[List[FailureReason], T]
+  type Try[+T] = Either[List[FailureReason], T]
 
   /** The recursive planner produces these objects which are Monads */
   type PlannerOutput[+T] = StateWithError[FactoryInput, List[FailureReason], T]
@@ -58,4 +58,12 @@ package object scalding {
   // Helps interop with scalding:
   implicit def modeFromTuple(implicit fm: (FlowDef, Mode)): Mode = fm._2
   implicit def flowDefFromTuple(implicit fm: (FlowDef, Mode)): FlowDef = fm._1
+
+  def toTry(e: Throwable): Try[Nothing] = {
+    val writer = new java.io.StringWriter
+    val printWriter = new java.io.PrintWriter(writer)
+    e.printStackTrace(printWriter)
+    printWriter.flush
+    Left(List(writer.toString))
+  }
 }
