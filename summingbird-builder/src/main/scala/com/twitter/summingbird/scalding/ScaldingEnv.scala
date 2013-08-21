@@ -59,7 +59,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     Args(new GenericOptionsParser(new Configuration, inargs).getRemainingArgs)
   }
 
-  lazy val tz = TimeZone.getTimeZone("UTC")
+  def tz = TimeZone.getTimeZone("UTC")
 
   // Summingbird's Scalding mode needs some way to figure out the very
   // first batch to grab. This particular implementation gets the
@@ -93,6 +93,10 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     val ajob = abstractJob
     val scaldingBuilder = builder.asInstanceOf[CompletedBuilder[Scalding, _, _]]
     val updater = { conf : Configuration =>
+      // Parse the Hadoop args.
+      // TODO rethink this: https://github.com/twitter/summingbird/issues/136
+      // I think we shouldn't pretend Configuration is immutable.
+      new GenericOptionsParser(conf, inargs)
       val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
       val eventCodecPairs = builder.eventCodecPairs
 
