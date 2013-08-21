@@ -24,7 +24,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import cascading.flow.FlowDef
 
-trait ScaldingStore[K, V] {
+trait ScaldingStore[K, V] extends java.io.Serializable {
   /**
     * Accepts deltas along with their timestamps, returns triples of
     * (time, K, V(aggregated up to the time)).
@@ -83,9 +83,12 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
       tp.map { case (k, (t, v)) => (t, (k, v)) }
 
     // Return the items in this batch in ._1 and not in a future batch in ._2
-    def split(b: BatchID, items: KeyValuePipe[K, V]): (KeyValuePipe[K, V], KeyValuePipe[K, V]) =
-      (items.filter { tkv => batcher.batchOf(new java.util.Date(tkv._1)) == b },
-      items.filter { tkv => batcher.batchOf(new java.util.Date(tkv._1)) > b })
+    def split(b: BatchID, items: KeyValuePipe[K, V]): (KeyValuePipe[K, V], KeyValuePipe[K, V]) = {
+      // we need cascading to see that we are forking this pipe:
+      val forked = Scalding.forcePipe(items)
+      (forked.filter { tkv => batcher.batchOf(new java.util.Date(tkv._1)) == b },
+      forked.filter { tkv => batcher.batchOf(new java.util.Date(tkv._1)) > b })
+    }
 
     // put the smallest time on these to ensure they come first in a sort:
     def withMinTime(p: TypedPipe[(K,V)]): KeyValuePipe[K, V] =

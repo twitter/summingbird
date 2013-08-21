@@ -60,7 +60,7 @@ object Env {
  */
 abstract class Env(val jobName : String) extends java.io.Serializable {
   val args : Args
-  var builder : CompletedBuilder[_,_,_] = null
+  @transient var builder : CompletedBuilder[_,_,_] = null
 
   // This is where the builder is actually populated.
   protected def abstractJob: AbstractJob = AbstractJob(jobName, this)
