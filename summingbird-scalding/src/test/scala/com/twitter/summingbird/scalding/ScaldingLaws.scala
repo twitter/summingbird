@@ -358,7 +358,7 @@ class ScaldingSerializationSpecs extends Specification {
         _ => new LoopState(intr.mapNonDecreasing(t => new Date(t))),
         _ => mode)
 
-      (try { scald.toFlow((intr,mode), scald.plan(summer)); true }
+      (try { scald.toFlow(intr, mode, scald.plan(summer)); true }
       catch { case t: Throwable => println(t); false }) must beTrue
     }
   }
