@@ -178,7 +178,7 @@ case class SourceBuilder[T: Manifest] private (
           }
 
         val newNode = Producer.evToKeyed(Unzip2[Scalding, Storm]()(node)._2).sumByKey(givenStore)
-        CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+        CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, Storm.SINK_ID, opts)
 
       case _ => sys.error("Unknown environment: " + env)
     }

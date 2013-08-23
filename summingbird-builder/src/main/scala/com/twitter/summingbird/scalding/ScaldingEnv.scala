@@ -125,6 +125,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
         opt <- opts.get(scaldingBuilder.id)
         stid <- opt.get[StoreIntermediateData[K,V]]
       } yield (scaldingBuilder.node.write(stid.sink))).getOrElse(scaldingBuilder.node)
+        .name(scaldingBuilder.id)
 
     def getStatePath[K1,V1](ss: ScaldingStore[K1, V1]): Option[String] =
       ss match {
