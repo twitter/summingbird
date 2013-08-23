@@ -37,13 +37,6 @@ trait ScaldingStore[K, V] extends java.io.Serializable {
     reducers: Int): PipeFactory[(K, V)]
 }
 
-object ScaldingStore extends java.io.Serializable {
-  def empty[K,V]: FlowProducer[TypedPipe[(K, V)]] = {
-    import Dsl._
-    Reader({implicit fdm: (FlowDef, Mode) => TypedPipe.from(IterableSource(Iterable.empty[(K,V)])) })
-  }
-}
-
 trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   /** The batcher for this store */
   def batcher: Batcher
@@ -215,7 +208,7 @@ class InitialBatchedStore[K,V](val firstNonZero: BatchID, val proxy: BatchedScal
   // Here is where we switch:
   def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
     if (exclusiveUB > firstNonZero) proxy.readLast(exclusiveUB, mode)
-    else if (exclusiveUB == firstNonZero) Right((firstNonZero.prev, ScaldingStore.empty))
+    else if (exclusiveUB == firstNonZero) Right((firstNonZero.prev, Scalding.emptyFlowProducer[(K,V)]))
     else Left(List("Earliest batch set at :" + firstNonZero + " but tried to read: " + exclusiveUB))
   }
 }
