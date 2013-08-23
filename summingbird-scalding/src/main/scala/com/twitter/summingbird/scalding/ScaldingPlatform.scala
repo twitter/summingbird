@@ -136,18 +136,17 @@ object Scalding {
       .reduceOption { combine(_, _) }
   }
 
+  /** This uses minify to find the smallest subset we can run.
+   * If you don't want this behavior, then use pipeFactoryExact which
+   * either produces all the DateRange or the whole job fails.
+   */
   def pipeFactory[T](factory: (DateRange) => Mappable[T])
     (implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
     StateWithError[(Interval[Time], Mode), List[FailureReason], FlowToPipe[T]]{
       (timeMode: (Interval[Time], Mode)) => {
         val (timeSpan, mode) = timeMode
 
-        val timeSpanAsDateRange: Either[List[FailureReason], DateRange] =
-          timeSpan.as[Option[DateRange]]
-            .map { Right(_) }
-            .getOrElse(Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString)))
-
-        timeSpanAsDateRange.right.flatMap { dr =>
+        toDateRange(timeSpan).right.flatMap { dr =>
           minify(mode, dr)(factory)
             .right.map { newDr =>
               val newIntr = newDr.as[Interval[Time]]
@@ -164,9 +163,34 @@ object Scalding {
       }
     }
 
+  def pipeFactoryExact[T](factory: (DateRange) => Mappable[T])
+    (implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
+    StateWithError[(Interval[Time], Mode), List[FailureReason], FlowToPipe[T]]{
+      (timeMode: (Interval[Time], Mode)) => {
+        val (timeSpan, mode) = timeMode
+
+        toDateRange(timeSpan).right.map { dr =>
+          val mappable = factory(dr)
+          ((timeSpan, mode), Reader { (fdM: (FlowDef, Mode)) =>
+            mappable.validateTaps(fdM._2) //This can throw, but that is what this caller wants
+            TypedPipe.from(mappable)(fdM._1, fdM._2, mappable.converter) // converter is removed in 0.9.0
+              .flatMap { t =>
+                val time = timeOf(t)
+                if(timeSpan(time)) Some((time, t)) else None
+              }
+          })
+        }
+      }
+    }
+
   def sourceFromMappable[T: TimeExtractor: Manifest](
     factory: (DateRange) => Mappable[T]): Producer[Scalding, T] =
     Producer.source[Scalding, T](pipeFactory(factory))
+
+  def toDateRange(timeSpan: Interval[Time]): Try[DateRange] =
+      timeSpan.as[Option[DateRange]]
+        .map { Right(_) }
+        .getOrElse(Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString)))
 
   /** The typed API (currently, as of 0.9.0) hides all flatMaps
    * from cascading, so if you fork a pipe, the whole input
@@ -346,6 +370,8 @@ object Scalding {
   }
 
   /** Use this method to interop with existing scalding code
+   * Note this may return a smaller DateRange than you ask for
+   * If you need an exact DateRange see toPipeExact.
    */
   def toPipe[T](dr: DateRange,
     prod: Producer[Scalding, T],
@@ -357,6 +383,17 @@ object Scalding {
       }
   }
 
+  /** Use this method to interop with existing scalding code that expects
+   * to schedule an exact DateRange or fail.
+   */
+  def toPipeExact[T](dr: DateRange,
+    prod: Producer[Scalding, T],
+    opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[TypedPipe[(Long, T)]] = {
+      val ts = dr.as[Interval[Time]]
+      val pf = plan(opts, prod)
+      toPipeExact(ts, fd, mode, pf)
+    }
+
   def toPipe[T](timeSpan: Interval[Time],
     flowDef: FlowDef,
     mode: Mode,
@@ -364,6 +401,17 @@ object Scalding {
     pf((timeSpan, mode))
       .right
       .map { case (((ts, m), flowDefMutator)) => (ts, flowDefMutator((flowDef, m))) }
+
+  def toPipeExact[T](timeSpan: Interval[Time],
+    flowDef: FlowDef,
+    mode: Mode,
+    pf: PipeFactory[T]): Try[TimedPipe[T]] =
+    pf((timeSpan, mode))
+      .right
+      .flatMap { case (((ts, m), flowDefMutator)) =>
+        if(ts != timeSpan) Left(List("Could not load all of %s, only %s".format(ts, timeSpan)))
+        else Right(flowDefMutator((flowDef, m)))
+      }
 }
 
 // Jank to get around serialization issues
