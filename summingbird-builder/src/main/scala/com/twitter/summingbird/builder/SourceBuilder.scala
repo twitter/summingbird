@@ -60,8 +60,7 @@ object SourceBuilder {
       Scalding.pipeFactory(eventSource.offline.get.scaldingSource(_))
     val stormSource = Storm.timedSpout(eventSource.spout.get)
     new SourceBuilder[T](
-      Source[PlatformPair, T]((scaldingSource, stormSource), manifest)
-        .name(newID),
+      Source[PlatformPair, T]((scaldingSource, stormSource), manifest),
       List(CompletedBuilder.injectionPair[T](eventCodec)),
       newID
     )
@@ -167,7 +166,9 @@ case class SourceBuilder[T: Manifest] private (
           .map { givenStore.withInitialBatch(_) }
           .getOrElse(givenStore)
 
-        val newNode = Producer.evToKeyed(Unzip2[Scalding, Storm]()(node)._1).sumByKey(batchSetStore)
+        val newNode = Producer.evToKeyed(Unzip2[Scalding, Storm]()(node)._1)
+          .name(id)
+          .sumByKey(batchSetStore)
         CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
 
       case storm: StormEnv =>
@@ -177,7 +178,9 @@ case class SourceBuilder[T: Manifest] private (
             .apply()
           }
 
-        val newNode = Producer.evToKeyed(Unzip2[Scalding, Storm]()(node)._2).sumByKey(givenStore)
+        val newNode = Producer.evToKeyed(Unzip2[Scalding, Storm]()(node)._2)
+          .name(id)
+          .sumByKey(givenStore)
         CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, Storm.SINK_ID, opts)
 
       case _ => sys.error("Unknown environment: " + env)
@@ -189,7 +192,7 @@ case class SourceBuilder[T: Manifest] private (
   // useful when you need to merge two different Event sources
   def ++(other: SourceBuilder[T]): SourceBuilder[T] =
     copy(
-      node = node.merge(other.node),
+      node = node.name(id).merge(other.node.name(other.id)),
       pairs = pairs ++ other.pairs,
       id = SourceBuilder.freshUUID,
       opts = opts ++ other.opts
