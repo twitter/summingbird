@@ -56,6 +56,12 @@ object Scalding {
     case _ => None
   }
 
+
+  def emptyFlowProducer[T]: FlowProducer[TypedPipe[T]] = {
+    import Dsl._
+    Reader({implicit fdm: (FlowDef, Mode) => TypedPipe.from(IterableSource(Iterable.empty[T])) })
+  }
+
   def intersect(dr1: DateRange, dr2: DateRange): Option[DateRange] =
     (dr1.as[Interval[Time]] && (dr2.as[Interval[Time]])).as[Option[DateRange]]
 
