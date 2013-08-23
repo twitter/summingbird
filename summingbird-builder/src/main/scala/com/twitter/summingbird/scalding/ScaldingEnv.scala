@@ -26,6 +26,7 @@ import com.twitter.summingbird.storm.Storm
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.summingbird.scalding.store.VersionedState
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.io.serializer.{Serialization => HSerialization}
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
 import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
@@ -86,6 +87,12 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // Summingbird job.
   def reducers : Int = args.getOrElse("reducers","20").toInt
 
+  def ioSerializations: List[Class[_ <: HSerialization[_]]] = List(
+    classOf[org.apache.hadoop.io.serializer.WritableSerialization],
+    classOf[cascading.tuple.hadoop.TupleSerialization],
+    classOf[com.twitter.summingbird.scalding.SummingbirdKryoHadoop]
+  )
+
   def run {
     // Calling abstractJob's constructor and binding it to a variable
     // forces any side effects caused by that constructor (building up
@@ -100,8 +107,8 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
       val eventCodecPairs = builder.eventCodecPairs
 
-      // TODO: Deal with duplication here with the lift between this
-      // code and SummingbirdKryoHadoop
+      conf.set("io.serializations", ioSerializations.map { _.getName }.mkString(","))
+      // TODO: replace with chill.config
       val jConf: JMap[String,AnyRef] = new JHashMap(fromJavaMap.invert(conf))
       KryoRegistrationHelper.registerInjections(jConf, eventCodecPairs)
 
