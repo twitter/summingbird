@@ -331,7 +331,32 @@ object ScaldingLaws extends Properties("Scalding") {
       (Monoid.isNonZero(Group.minus(inMemory, smap)) == false) &&
       (sinkOut.map { _._2 }.toList == inWithTime )
     }
+}
 
+object VersionBatchLaws extends Properties("VersionBatchLaws") {
+  property("version -> BatchID -> version") = forAll { (l: Long) =>
+    val vbs = new VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
+      0, Batcher.ofHours(1))(null)(null)
+    val b = vbs.versionToBatchID(l)
+    vbs.batchIDToVersion(b) <= l
+  }
+  property("BatchID -> version -> BatchID") = forAll { (bint: Int) =>
+    val b = BatchID(bint)
+    val vbs = new VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
+      0, Batcher.ofHours(1))(null)(null)
+    val v = vbs.batchIDToVersion(b)
+    vbs.versionToBatchID(v) == b
+  }
+  property("version is an upperbound on time") = forAll { (lBig: Long) =>
+    val l = lBig/1000L
+    val batcher = Batcher.ofHours(1)
+    val vbs = new VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
+      0, batcher)(null)(null)
+    val b = vbs.versionToBatchID(l)
+    (batcher.earliestTimeOf(b.next).getTime <= l) &&
+    (batcher.earliestTimeOf(b).getTime < l)
+    (batcher.earliestTimeOf(b.next.next).getTime > l)
+  }
 }
 
 class ScaldingSerializationSpecs extends Specification {

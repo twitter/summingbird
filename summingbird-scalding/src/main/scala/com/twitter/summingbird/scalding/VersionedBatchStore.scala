@@ -70,8 +70,11 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String)
     }
   }
 
-  // Use the exclusive upper bound as the time
-  def batchToVersion(b: BatchID): Long = batcher.earliestTimeOf(b.next).getTime
+  /** The version numbers are the exclusive upper-bound of time covered
+   * by this store. Put another way, all events that occured before the version
+   * are included in this store.
+   */
+  def batchIDToVersion(b: BatchID): Long = batcher.earliestTimeOf(b.next).getTime
   def versionToBatchID(ver: Long): BatchID = batcher.batchOf(new java.util.Date(ver)).prev
 
   protected def lastBatch(exclusiveUB: BatchID, mode: HdfsMode): Option[(BatchID, FlowProducer[TypedPipe[(K,V)]])] = {
@@ -80,10 +83,13 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String)
     // this when all sources have run for a while with the new version
     // format
     def versionToBatchIDCompat(ver: Long): BatchID = {
-      //First try to read the old-style metadata:
+      /**
+       * Old style writes the UPPER BOUND batchID, so all times
+       * are in a batch LESS than the value in the file.
+       */
       meta(ver)
         .get[String]
-        .flatMap { str => allCatch.opt(BatchID(str)) }
+        .flatMap { str => allCatch.opt(BatchID(str).prev) }
         .getOrElse(versionToBatchID(ver))
     }
     meta
@@ -115,7 +121,7 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
       .toPipe((0,1))
       .write(VersionedKeyValSource[K2, V2](rootPath,
           sourceVersion=None,
-          sinkVersion=Some(batchToVersion(batchID)),
+          sinkVersion=Some(batchIDToVersion(batchID)),
           maxFailures=0,
           versionsToKeep=versionsToKeep))
   }
