@@ -498,7 +498,7 @@ class Scalding(
         try {
           options.get(jobName).foreach { jopt =>
             jopt.get[WriteDot].foreach { o => flow.writeDOT(o.filename) }
-            jopt.get[WriteStepsDot].foreach { o => flow.writeDOT(o.filename) }
+            jopt.get[WriteStepsDot].foreach { o => flow.writeStepsDOT(o.filename) }
           }
           flow.complete
           if (flow.getFlowStats.isSuccessful)
