@@ -487,6 +487,7 @@ class Scalding(
     run(state, mode, plan(pf))
 
   def run(state: WaitingState[Date], mode: Mode, pf: PipeFactory[_]): WaitingState[Date] = {
+    setIoSerializations(mode)
     val runningState = state.begin
     val timeSpan = runningState.part.mapNonDecreasing(_.getTime)
     toFlow(timeSpan, mode, pf) match {
