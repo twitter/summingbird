@@ -90,7 +90,9 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
   store: () => P#Store[K, V])(sink: () => P#Sink[T])(
   sourceMaker: TraversableOnce[T] => Producer[P, T])(
   toLookupFn: P#Store[K, V] => (K => Option[V]))(
-  toSinkChecker: (P#Sink[T], List[T]) => Boolean) {
+  toSinkChecker: (P#Sink[T], List[T]) => Boolean)(
+  run: (P, P#Plan[_]) => Unit
+  ){
 
   def diamondChecker = forAll { (items: List[T], fnA: T => List[(K, V)], fnB: T => List[(K, V)]) =>
     val currentStore = store()
@@ -100,7 +102,7 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     val plan = platform.plan {
       TestGraphs.diamondJob(sourceMaker(items), currentSink, currentStore)(fnA)(fnB)
     }
-    platform.run(plan)
+    run(platform, plan)
     val lookupFn = toLookupFn(currentStore)
     TestGraphs.diamondJobInScala(items)(fnA)(fnB).forall { case (k, v) =>
       lookupFn(k).exists(Equiv[V].equiv(v, _))
@@ -125,7 +127,7 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     val plan = platform.plan {
       TestGraphs.singleStepJob(sourceMaker(items), currentStore)(fn)
     }
-    platform.run(plan)
+    run(platform, plan)
     val lookupFn = toLookupFn(currentStore)
     TestGraphs.singleStepInScala(items)(fn).forall { case (k, v) =>
       lookupFn(k).exists(Equiv[V].equiv(v, _))
@@ -152,7 +154,7 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
       val plan = platform.plan {
         TestGraphs.leftJoinJob(sourceMaker(items), service, currentStore)(preJoinFn)(postJoinFn)
       }
-      platform.run(plan)
+      run(platform, plan)
       val serviceFn = serviceToFn(service)
       val lookupFn = toLookupFn(currentStore)
 
