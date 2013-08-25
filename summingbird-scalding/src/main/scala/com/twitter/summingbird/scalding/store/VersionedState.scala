@@ -80,6 +80,6 @@ class VersionedState(meta: HDFSMetadata, startDate: Option[Date], maxBatches: In
       * VersionedStore should itself be cleaning up the most recent
       * failed version's data.
       */
-    def fail(err: Throwable) = outer
+    def fail(err: Throwable) = throw err
   }
 }

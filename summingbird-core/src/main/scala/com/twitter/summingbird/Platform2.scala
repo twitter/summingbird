@@ -90,10 +90,4 @@ class Platform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
     val (leftProducer, rightProducer) = Unzip2[P1, P2]()(producer)
     (p1.plan(leftProducer), p2.plan(rightProducer))
   }
-
-  def run(pairPlan: Plan[_]) {
-    val (leftPlan, rightPlan) = pairPlan
-    p1.run(leftPlan.asInstanceOf[p1.Plan[_]])
-    p2.run(rightPlan.asInstanceOf[p2.Plan[_]])
-  }
 }
