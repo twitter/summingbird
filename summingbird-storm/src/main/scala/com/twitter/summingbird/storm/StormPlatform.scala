@@ -352,6 +352,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     populate(topologyBuilder, summer.asInstanceOf[Summer[Storm,Any,Any]])
     topologyBuilder.createTopology
   }
+  def run(summer: Producer[Storm, _]): Unit = run(plan(summer))
+  def run(topology: StormTopology): Unit
 }
 
 class RemoteStorm(jobName: String, options: Map[String, Options], updateConf: Config => Config)

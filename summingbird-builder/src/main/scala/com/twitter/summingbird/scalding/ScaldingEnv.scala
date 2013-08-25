@@ -26,7 +26,6 @@ import com.twitter.summingbird.storm.Storm
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.summingbird.scalding.store.VersionedState
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.io.serializer.{Serialization => HSerialization}
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
 import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
@@ -87,12 +86,6 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // Summingbird job.
   def reducers : Int = args.getOrElse("reducers","20").toInt
 
-  def ioSerializations: List[Class[_ <: HSerialization[_]]] = List(
-    classOf[org.apache.hadoop.io.serializer.WritableSerialization],
-    classOf[cascading.tuple.hadoop.TupleSerialization],
-    classOf[com.twitter.summingbird.scalding.SummingbirdKryoHadoop]
-  )
-
   def run {
     // Calling abstractJob's constructor and binding it to a variable
     // forces any side effects caused by that constructor (building up
@@ -107,7 +100,6 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
       val eventCodecPairs = builder.eventCodecPairs
 
-      conf.set("io.serializations", ioSerializations.map { _.getName }.mkString(","))
       // TODO: replace with chill.config
       val jConf: JMap[String,AnyRef] = new JHashMap(fromJavaMap.invert(conf))
       KryoRegistrationHelper.registerInjections(jConf, eventCodecPairs)
@@ -144,17 +136,10 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     val statePath = getStatePath(scaldingBuilder.node.store).getOrElse {
       sys.error("You must use a VersionedBatchStore with the old Summingbird API!")
     }
+    val conf = confud(new Configuration)
     // VersionedState needs this
     implicit val batcher = scaldingBuilder.batcher
-    val stateMaker = { conf: Configuration =>
-      VersionedState(HDFSMetadata(conf, statePath), startDate, batches)
-    }
-
-    new Scalding(
-      name,
-      stateMaker,
-      Hdfs(true, _),
-      confud,
-      opts).run(toRun)
+    val state = VersionedState(HDFSMetadata(conf, statePath), startDate, batches)
+    new Scalding(name, opts).run(state, Hdfs(true, conf), toRun)
   }
 }

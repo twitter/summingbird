@@ -42,7 +42,7 @@ object MemoryLaws extends Properties("Memory") {
       () => MutableMap.empty[K, V])(() => new BufferFunc[T])(
       Memory.toSource(_))(s => { s.get(_) })({ (f, items) =>
         f.asInstanceOf[BufferFunc[T]].buf.toList == items
-      })
+      })({ (p: Memory, plan: Memory#Plan[_]) => p.run(plan) })
 
   /**
     * Tests the in-memory planner against a job with a single flatMap

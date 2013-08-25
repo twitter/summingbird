@@ -236,11 +236,11 @@ object ScaldingLaws extends Properties("Scalding") {
           fn(t._2))
 
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
-      val scald = new Scalding("scalaCheckJob",
-        _ => new LoopState(intr.mapNonDecreasing(t => new Date(t))),
-        _ => TestMode(testStore.sourceToBuffer ++ buffer))
+      val scald = new Scalding("scalaCheckJob")
+      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val mode = TestMode(testStore.sourceToBuffer ++ buffer)
 
-      scald.run(scald.plan(summer))
+      scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
 
       val smap = testStore.lastToIterable(BatchID(1)).toMap
@@ -286,11 +286,11 @@ object ScaldingLaws extends Properties("Scalding") {
         TestGraphs.leftJoinJob[Scalding,(Long, Int),Int,Int,Int,Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
 
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
-      val scald = new Scalding("scalaCheckleftJoinJob",
-        _ => new LoopState(intr.mapNonDecreasing(t => new Date(t))),
-        _ => TestMode(testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer))
+      val scald = new Scalding("scalaCheckleftJoinJob")
+      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val mode = TestMode(testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer)
 
-      scald.run(summer)
+      scald.run(ws, mode, summer)
       // Now check that the inMemory ==
 
       val smap = testStore.lastToIterable(BatchID(1)).toMap
@@ -316,12 +316,12 @@ object ScaldingLaws extends Properties("Scalding") {
           testSink,
           testStore)(t => fn1(t._2))(t => fn2(t._2))
 
+      val scald = new Scalding("scalding-diamond-Job")
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
-      val scald = new Scalding("scalaCheckJob",
-        _ => new LoopState(intr.mapNonDecreasing(t => new Date(t))),
-        _ => TestMode(testStore.sourceToBuffer ++ buffer))
+      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val mode = TestMode(testStore.sourceToBuffer ++ buffer)
 
-      scald.run(scald.plan(summer))
+      scald.run(ws, mode, summer)
       // Now check that the inMemory ==
 
         val sinkOut = testSink.reset
@@ -379,9 +379,7 @@ class ScaldingSerializationSpecs extends Specification {
 
       val mode = Hdfs(true, new Configuration)
       val intr = Interval.leftClosedRightOpen(0L, inWithTime.size.toLong)
-      val scald = new Scalding("scalaCheckJob",
-        _ => new LoopState(intr.mapNonDecreasing(t => new Date(t))),
-        _ => mode)
+      val scald = new Scalding("scalaCheckJob")
 
       (try { scald.toFlow(intr, mode, scald.plan(summer)); true }
       catch { case t: Throwable => println(t); false }) must beTrue

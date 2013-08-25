@@ -28,6 +28,7 @@ import com.twitter.summingbird.builder.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
+import org.apache.hadoop.io.serializer.{Serialization => HSerialization}
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
 import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
@@ -427,36 +428,44 @@ class Memo[T] extends java.io.Serializable {
     mmap.getOrElseUpdate(in, rdr(in))
 }
 
+/** Use this option to write the logical graph that cascading
+ * produces before Map/Reduce planning.
+ * Use the job name as the key
+ */
+case class WriteDot(filename: String)
+
+/** Use this option to write map/reduce graph
+ * that cascading produces
+ * Use the job name as the key
+ */
+case class WriteStepsDot(filename: String)
+
 class Scalding(
   jobName: String,
-  @transient stateMaker: Configuration => WaitingState[Date],
-  @transient modeMaker: Configuration => Mode,
-  @transient updateConf: Configuration => Configuration = identity,
   @transient options: Map[String, Options] = Map.empty)
     extends Platform[Scalding] {
-  import ConfigBijection._
-
-  @transient val configuration = transformConfig(new Configuration)
-  @transient var state: WaitingState[Date] = stateMaker(configuration)
 
   type Source[T] = PipeFactory[T]
   type Store[K, V] = ScaldingStore[K, V]
   type Sink[T] = ScaldingSink[T]
   type Service[K, V] = ScaldingService[K, V]
   type Plan[T] = PipeFactory[T]
-  /**
-    * run(Summer(producer, store))
-    *
-    * - command line runner gives us the # of batches we want to run.
-    * - the store needs to give us the current maximum batch.
-    */
-
-  def transformConfig(base: Configuration): Configuration = updateConf(base)
-  def withConfigUpdater(fn: Configuration => Configuration): Scalding =
-    new Scalding(jobName, stateMaker, modeMaker, fn, options)
 
   def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] =
     Scalding.plan(options, prod)
+
+  protected def ioSerializations: List[Class[_ <: HSerialization[_]]] = List(
+    classOf[org.apache.hadoop.io.serializer.WritableSerialization],
+    classOf[cascading.tuple.hadoop.TupleSerialization],
+    classOf[com.twitter.summingbird.scalding.SummingbirdKryoHadoop]
+  )
+
+  private def setIoSerializations(m: Mode): Unit =
+    m match {
+      case Hdfs(_, conf) =>
+        conf.set("io.serializations", ioSerializations.map { _.getName }.mkString(","))
+      case _ => ()
+    }
 
   // This is a side-effect-free computation that is called by run
   def toFlow(timeSpan: Interval[Time], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Time], Flow[_])] = {
@@ -474,32 +483,31 @@ class Scalding(
     }
   }
 
-  def run(pf: PipeFactory[_]) {
-    val mode = modeMaker(configuration)
+  def run(state: WaitingState[Date], mode: Mode, pf: Producer[Scalding, _]): WaitingState[Date] =
+    run(state, mode, plan(pf))
+
+  def run(state: WaitingState[Date], mode: Mode, pf: PipeFactory[_]): WaitingState[Date] = {
     val runningState = state.begin
     val timeSpan = runningState.part.mapNonDecreasing(_.getTime)
     toFlow(timeSpan, mode, pf) match {
       case Left(errs) =>
         println("ERROR")
         errs.foreach { println(_) }
-        // Mutate the state
-        state = runningState.fail(new Exception(errs.toString))
+        runningState.fail(new Exception(errs.toString))
       case Right((ts,flow)) =>
         try {
-          // TODO: sane way to configure. https://github.com/twitter/summingbird/issues/137
-          flow.writeDOT(jobName + ".dot")
-          flow.writeStepsDOT(jobName + "_steps.dot")
+          options.get(jobName).foreach { jopt =>
+            jopt.get[WriteDot].foreach { o => flow.writeDOT(o.filename) }
+            jopt.get[WriteStepsDot].foreach { o => flow.writeDOT(o.filename) }
+          }
           flow.complete
-          // Mutate the state
-          state =
-            if (flow.getFlowStats.isSuccessful)
-              runningState.succeed(ts.mapNonDecreasing(new Date(_)))
-            else
-              runningState.fail(new Exception("Flow did not complete."))
+          if (flow.getFlowStats.isSuccessful)
+            runningState.succeed(ts.mapNonDecreasing(new Date(_)))
+          else
+            runningState.fail(new Exception("Flow did not complete."))
         } catch {
           case (e: Throwable) => {
-            state = runningState.fail(e)
-            throw e
+            runningState.fail(e)
           }
         }
     }
