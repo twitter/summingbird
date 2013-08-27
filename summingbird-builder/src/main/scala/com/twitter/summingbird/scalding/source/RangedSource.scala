@@ -25,11 +25,14 @@ import java.util.Date
  * @author Oscar Boykin
  * @author Sam Ritchie
  * @author Ashu Singhal
+ * This is for compatibility with legacy code. This embiggens the date
+ * range requested by 1 hour on each side to catch any spill-over.
+ * the source is always filtered before use, so it never uses
+ * events with timestamp outside the range.
  */
-
 object RangedSource {
   def apply[Event](fn: DateRange => Mappable[Event]) =
     new OfflineSource[Event] {
-      def scaldingSource(range: DateRange) = fn(range)
+      def scaldingSource(range: DateRange) = fn(range.embiggen(Hours(1)))
     }
 }
