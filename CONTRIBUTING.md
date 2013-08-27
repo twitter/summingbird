@@ -13,4 +13,4 @@ Recommendations and requirements for how to best contribute to Summingbird. We s
 ### License
 
 By contributing your code, you agree to license your contribution under the terms of the APLv2:
-https://github.com/twitter/scalding/blob/master/LICENSE
+https://github.com/twitter/summingbird/blob/master/LICENSE
