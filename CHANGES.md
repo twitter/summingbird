@@ -1,5 +1,12 @@
 # summingbird #
 
+## 0.1.0
+
+* new, producer-based API
+* Split Storm and Scalding platforms
+* Added in-memory platform
+* Complete DSL rebuild in anticipation of release.
+
 ## 0.0.4
 
 * fix compiler-induced bug in BatchAggregatorJob.
