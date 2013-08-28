@@ -302,8 +302,9 @@ object Scalding {
              * the time ranges that it needs.
              */
             val (in, m) = buildFlow(options, producer, id, fanOuts, built)
+            val isCommutative = getOrElse(options, id, MonoidIsCommutative(false))
             (store.merge(in, monoid,
-              getOrElse(options, id, NonCommutative),
+              isCommutative.commutativity,
               getOrElse(options, id, Reducers.default).count), m)
           case LeftJoinedProducer(left, service) =>
             /**
