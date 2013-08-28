@@ -69,7 +69,7 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
         implicit val ord = ordering
         def flatOpt[T](o: Option[Option[T]]): Option[T] = o.flatMap(identity)
 
-        LookupJoin(left, right).map { case (t, (k, (w, optoptv))) => (t, (k, (w, flatOpt(optoptv)))) }
+        LookupJoin(left, right, reducers).map { case (t, (k, (w, optoptv))) => (t, (k, (w, flatOpt(optoptv)))) }
       }
 
   final def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
