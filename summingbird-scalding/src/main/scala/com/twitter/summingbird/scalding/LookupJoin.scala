@@ -57,7 +57,9 @@ import com.twitter.scalding.TypedPipe
 // TODO (https://github.com/twitter/scalding/pull/507): Delete when
 // this moves into Scalding and our Scalding version bumps.
 object LookupJoin extends Serializable {
-  def apply[T:Ordering, K:Ordering, V, JoinedV](left: TypedPipe[(T, (K, V))], right: TypedPipe[(T, (K, JoinedV))]):
+  def apply[T:Ordering, K:Ordering, V, JoinedV](left: TypedPipe[(T, (K, V))],
+    right: TypedPipe[(T, (K, JoinedV))],
+    reducers: Option[Int] = None):
     TypedPipe[(T, (K, (V, Option[JoinedV])))] = {
     /**
       * Implicit ordering on an either that doesn't care about the
@@ -79,6 +81,7 @@ object LookupJoin extends Serializable {
       left.map { case (t, (k, v)) => (k, (t, Left(v): Either[V, JoinedV])) }
         .++(right.map { case (t, (k, joinedV)) => (k, (t, Right(joinedV): Either[V, JoinedV])) })
         .group
+        .withReducers(reducers.getOrElse(-1)) // -1 means default in scalding
         .sortBy { _._2 }
     /**
       * Grouping by K leaves values of (T, Either[V, JoinedV]). Sort
