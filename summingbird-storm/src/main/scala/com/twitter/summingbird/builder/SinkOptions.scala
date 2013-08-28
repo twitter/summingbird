@@ -52,10 +52,6 @@ object SinkStormMetrics {
 }
 class SinkStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]]) extends SinkOption
 
-// True if the Monoid is commutative, false otherwise.
-
-case class MonoidIsCommutative(isCommutative: Boolean) extends SinkOption
-
 // MaxWaitingFutures is the maximum number of key-value pairs that the
 // SinkBolt in Storm will process before starting to force the
 // futures. For example, setting MaxWaitingFutures(100) means that if
