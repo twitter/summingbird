@@ -52,8 +52,6 @@ trait BatchedScaldingSink[T] extends ScaldingSink[T] {
       // We need to write each of these.
       iter.foreach { batch =>
         val range = batcher.toInterval(batch).mapNonDecreasing { _.getTime }
-        // TODO (https://github.com/twitter/summingbird/issues/90):
-        // don't use a closure here for serialization safety
         writeStream(batch, inPipe.filter { case (time, _) =>
           range(time)
         })(flowMode._1, flowMode._2)
