@@ -21,6 +21,7 @@ import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, Inclusive
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.scalding.{Dsl, Mode, TypedPipe, Grouped, IterableSource, TupleSetter, TupleConverter}
 import com.twitter.summingbird._
+import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import cascading.flow.FlowDef
 

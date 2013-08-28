@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird
+package com.twitter.summingbird.option
 
 import java.io.Serializable
 
@@ -30,13 +30,17 @@ object Commutative extends Commutativity
  * as the key for the option.
  */
 object MonoidIsCommutative {
-  // True if the Monoid is commutative, false otherwise.
+  /** Assume false unless the user says otherwise
+   */
+  val default = MonoidIsCommutative(NonCommutative)
+  /** True if the Monoid is commutative, false otherwise.
+   */
   def apply(isCommutative: Boolean): MonoidIsCommutative =
     if(isCommutative) {
       MonoidIsCommutative(Commutative)
     }
     else {
-      MonoidIsCommutative(NonCommutative)
+      default
     }
 }
 case class MonoidIsCommutative(commutativity: Commutativity)

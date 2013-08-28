@@ -16,6 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird
 
+import com.twitter.summingbird.option._
 import com.twitter.summingbird.builder._
 import com.twitter.summingbird.util.CacheSize
 
@@ -37,6 +38,6 @@ object Constants {
   val DEFAULT_ONLINE_EXCEPTION_HANDLER = OnlineExceptionHandler(Map.empty)
   val DEFAULT_SINK_CACHE = CacheSize(0)
   val DEFAULT_SINK_STORM_METRICS = SinkStormMetrics(None)
-  val DEFAULT_MONOID_IS_COMMUTATIVE = MonoidIsCommutative(false)
+  val DEFAULT_MONOID_IS_COMMUTATIVE = MonoidIsCommutative.default
   val DEFAULT_MAX_WAITING_FUTURES = MaxWaitingFutures(10)
 }

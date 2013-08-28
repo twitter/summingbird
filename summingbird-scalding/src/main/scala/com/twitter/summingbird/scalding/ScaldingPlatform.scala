@@ -26,6 +26,7 @@ import com.twitter.scalding.{ Tool => STool, Source => SSource, _ }
 import com.twitter.summingbird._
 import com.twitter.summingbird.builder.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
+import com.twitter.summingbird.option._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.serializer.{Serialization => HSerialization}
