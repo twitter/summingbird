@@ -51,16 +51,15 @@ class BatchedSinkFromOffline[T](override val batcher: Batcher, offline: OfflineS
   }
 }
 
-class EmptyOfflineSink[Event] extends OfflineSink[Event] {
-  def write(batchID: BatchID, pipe: TypedPipe[Event])(implicit fd: FlowDef, mode: Mode) {}
-}
-
-case class CompoundSink[Event](offline: OfflineSink[Event], online: () => OnlineSink[Event])
+case class CompoundSink[Event](offline: Option[OfflineSink[Event]], online: Option[() => OnlineSink[Event]])
 
 object CompoundSink {
+  def apply[Event](offline: OfflineSink[Event], online: => OnlineSink[Event]): CompoundSink[Event] =
+    CompoundSink(Some(offline), Some(() => online))
+
   def fromOffline[Event](offline: OfflineSink[Event]): CompoundSink[Event] =
-    CompoundSink(offline, () => new EmptyOnlineSink[Event]())
+    CompoundSink(Some(offline), None)
 
   def fromOnline[Event](online: => OnlineSink[Event]): CompoundSink[Event] =
-    CompoundSink(new EmptyOfflineSink[Event](), () => online)
+    CompoundSink(None, Some(() => online))
 }

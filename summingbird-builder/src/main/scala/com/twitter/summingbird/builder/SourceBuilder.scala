@@ -91,8 +91,8 @@ case class SourceBuilder[T: Manifest] private (
     (implicit batcher: Batcher, mf: Manifest[U]): SourceBuilder[T] = {
     val newNode =
       node.flatMap(conversion).write(
-        Some(new BatchedSinkFromOffline[U](batcher, sink.offline)),
-        Some(sink.online)
+        sink.offline.map(new BatchedSinkFromOffline[U](batcher, _)),
+        sink.online
       )
     copy(
       node = node.either(newNode).flatMap[T] {
@@ -107,8 +107,8 @@ case class SourceBuilder[T: Manifest] private (
       : SourceBuilder[(K, (V, Option[JoinedValue]))] =
     copy(
       node = node.asInstanceOf[Node[(K, V)]].leftJoin(
-        Some(service.offline),
-        Some(StoreWrapper[K, JoinedValue](service.online))
+        service.offline,
+        service.online.map(StoreWrapper[K, JoinedValue](_))
       )
     )
 
