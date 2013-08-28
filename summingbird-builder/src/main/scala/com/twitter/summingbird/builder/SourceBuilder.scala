@@ -34,15 +34,20 @@ import java.io.Serializable
 import java.util.{ Date, UUID }
 
 /**
- * @author Oscar Boykin
- * @author Sam Ritchie
- * @author Ashu Singhal
- */
-
-// The SourceBuilder is the first level of the expansion.
+  * The (deprecated) Summingbird builder API builds up a single
+  * MapReduce job using a SourceBuilder. After any number of calls to
+  * flatMap, leftJoin, filter, merge, etc, the user calls
+  * "groupAndSumTo", equivalent to "sumByKey" in the Producer
+  * API. This call converts the SourceBuilder into a CompletedBuilder
+  * and prevents and future flatMap operations.
+  *
+  * @author Oscar Boykin
+  * @author Sam Ritchie
+  * @author Ashu Singhal
+  */
 
 object SourceBuilder {
-  type PlatformPair = Platform2[Scalding, Storm]
+  type PlatformPair = OptionalPlatform2[Scalding, Storm]
   type Node[T] = Producer[PlatformPair, T]
 
   def freshUUID: String = UUID.randomUUID.toString
@@ -57,8 +62,8 @@ object SourceBuilder {
     implicit val te = TimeExtractor[T](timeOf(_).getTime)
     val newID = freshUUID
     val scaldingSource =
-      Scalding.pipeFactory(eventSource.offline.get.scaldingSource(_))
-    val stormSource = Storm.timedSpout(eventSource.spout.get)
+      eventSource.offline.map( s => Scalding.pipeFactory(s.scaldingSource(_)))
+    val stormSource = eventSource.spout.map(Storm.timedSpout(_))
     new SourceBuilder[T](
       Source[PlatformPair, T]((scaldingSource, stormSource), manifest),
       List(CompletedBuilder.injectionPair[T](eventCodec)),
@@ -85,8 +90,10 @@ case class SourceBuilder[T: Manifest] private (
   def write[U](sink: CompoundSink[U])(conversion: T => TraversableOnce[U])
     (implicit batcher: Batcher, mf: Manifest[U]): SourceBuilder[T] = {
     val newNode =
-      node.flatMap(conversion)
-        .write(new BatchedSinkFromOffline[U](batcher, sink.offline), sink.online)
+      node.flatMap(conversion).write(
+        sink.offline.map(new BatchedSinkFromOffline[U](batcher, _)),
+        sink.online
+      )
     copy(
       node = node.either(newNode).flatMap[T] {
         case Left(t) => Some(t)
@@ -101,7 +108,7 @@ case class SourceBuilder[T: Manifest] private (
     copy(
       node = node.asInstanceOf[Node[(K, V)]].leftJoin(
         service.offline,
-        StoreWrapper[K, JoinedValue](service.online)
+        service.online.map(StoreWrapper[K, JoinedValue](_))
       )
     )
 
@@ -166,9 +173,11 @@ case class SourceBuilder[T: Manifest] private (
           .map { givenStore.withInitialBatch(_) }
           .getOrElse(givenStore)
 
-        val newNode = Producer.evToKeyed(Unzip2[Scalding, Storm]()(node)._1)
-          .name(id)
-          .sumByKey(batchSetStore)
+        val newNode = OptionalUnzip2[Scalding, Storm]()(node)._1.map {
+          Producer.evToKeyed(_)
+            .name(id)
+            .sumByKey(batchSetStore)
+        }.getOrElse(sys.error("Scalding mode specified alongside some online-only Source, Service or Sink."))
         CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
 
       case storm: StormEnv =>
@@ -178,9 +187,11 @@ case class SourceBuilder[T: Manifest] private (
             .apply()
           }
 
-        val newNode = Producer.evToKeyed(Unzip2[Scalding, Storm]()(node)._2)
-          .name(id)
-          .sumByKey(givenStore)
+        val newNode = OptionalUnzip2[Scalding, Storm]()(node)._2.map {
+          Producer.evToKeyed(_)
+            .name(id)
+            .sumByKey(givenStore)
+        }.getOrElse(sys.error("Storm mode specified alongside some offline-only Source, Service or Sink."))
         CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, Storm.SINK_ID, opts)
 
       case _ => sys.error("Unknown environment: " + env)
