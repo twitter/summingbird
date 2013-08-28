@@ -321,10 +321,6 @@ object Scalding {
             val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
             (fmp.map { flowP =>
               flowP.map { typedPipe =>
-                // TODO
-                // (https://github.com/twitter/summingbird/issues/90):
-                // make Function1 instances outside to avoid the closure +
-                // serialization issues
                 typedPipe.flatMap { case (time, item) =>
                   op(item).map { (time, _) }.toIterable
                 }
@@ -338,11 +334,6 @@ object Scalding {
                 // TODO
                 // (https://github.com/twitter/summingbird/issues/89):
                 // remove toIterable in scalding 0.9.0
-
-                // TODO
-                // (https://github.com/twitter/summingbird/issues/90):
-                // make Function1 instances outside to avoid the closure +
-                // serialization issues
                 typedPipe.flatMap { case (time, item) =>
                   op(item).toIterable.view.map { (time, _) }
                 }
