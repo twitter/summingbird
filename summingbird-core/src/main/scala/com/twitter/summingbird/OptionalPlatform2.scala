@@ -16,6 +16,9 @@
 
 package com.twitter.summingbird
 
+/**
+  * @author Aaron Siegel
+  */
 case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
   def apply[T](root: Producer[OptionalPlatform2[P1, P2], T])
       : (Option[Producer[P1, T]], Option[Producer[P2, T]]) =
