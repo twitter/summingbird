@@ -16,8 +16,6 @@
 
 package com.twitter.summingbird
 
-import com.twitter.algebird.Monoid
-
 /**
   * I tried to make Unzip2 an object with an apply method that took
   * all three type parameters, but ran into issues:

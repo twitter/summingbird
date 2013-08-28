@@ -16,24 +16,23 @@ limitations under the License.
 
 package com.twitter.summingbird.service
 
-import com.twitter.util.Future
-
 import com.twitter.storehaus.ReadableStore
+import com.twitter.summingbird.scalding.ScaldingService
 
-import com.twitter.scalding.{Mode, TypedPipe}
-import com.twitter.summingbird.scalding.{ ScaldingService, EmptyService, ScaldingEnv }
-import cascading.flow.FlowDef
-
-import java.io.Serializable
-
+/**
+  * Pairing of an online and offline service for use with an
+  * OptionalPlatform2[Scalding, Storm].
+  */
 case class CompoundService[Key, Joined](
-  offline: ScaldingService[Key, Joined],
-  online: () => ReadableStore[Key, Joined]
+  offline: Option[ScaldingService[Key, Joined]],
+  online: Option[() => ReadableStore[Key, Joined]]
 )
 
 object CompoundService {
+  def apply[K, J](offline: ScaldingService[K, J], online: => ReadableStore[K, J]): CompoundService[K, J] =
+    CompoundService(Some(offline), Some(() => online))
   def fromOffline[K, J](offline: ScaldingService[K, J]): CompoundService[K, J] =
-    CompoundService(offline, () => ReadableStore.empty)
+    CompoundService(Some(offline), None)
   def fromOnline[K, J](online: => ReadableStore[K, J]): CompoundService[K, J] =
-    CompoundService(new EmptyService[K, J], () => online)
+    CompoundService(None, Some(() => online))
 }
