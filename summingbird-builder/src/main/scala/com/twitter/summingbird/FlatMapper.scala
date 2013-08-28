@@ -16,8 +16,6 @@
 
 package com.twitter.summingbird
 
-import com.twitter.chill.ClosureCleaner
-
 /**
   * @author Oscar Boykin
   * @author Sam Ritchie
@@ -34,13 +32,6 @@ abstract class FlatMapper[-T, +U] extends (T => TraversableOnce[U]) {
 // Function1 to the Summingbird DSL directly.
 
 class FunctionFlatMapper[T, U](fn: T => TraversableOnce[U]) extends FlatMapper[T, U] {
-  /**
-    * Necessary to remove the $outer reference from the captured
-    * function. Without this, Kryo's FieldSerializer tries to
-    * serialize the $outer variable and pulls in the entire
-    * surrounding scope.
-    */
-  ClosureCleaner(fn)
   override def encode(t: T) = fn(t)
 }
 
