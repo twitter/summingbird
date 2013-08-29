@@ -112,7 +112,7 @@ case class SourceBuilder[T: Manifest] private (
       )
     )
 
-  def set[Opt](opt: Opt): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(opt)))
+  def set(opt: Any): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(opt)))
 
   /**
     * Complete this builder instance with a BatchStore. At this point,
