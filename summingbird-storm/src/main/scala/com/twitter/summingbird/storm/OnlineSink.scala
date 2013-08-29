@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.sink
+package com.twitter.summingbird.storm
 
 import com.twitter.util.Future
 
@@ -24,7 +24,6 @@ import com.twitter.util.Future
   * jobs. This sink can be implemented using, for example, a kestrel
   * fanout or kafka topic.
   */
-
 trait OnlineSink[-Event] extends (Event => Future[Unit]) {
   /**
     * Note that the flatMap operation WILL error if this future errors, so be sure
@@ -34,6 +33,10 @@ trait OnlineSink[-Event] extends (Event => Future[Unit]) {
   final def apply(e: Event) = write(e)
 }
 
-class EmptyOnlineSink[Event] extends OnlineSink[Event] {
-  def write(event: Event) = Future.Unit
+object OnlineSink {
+  val unit: OnlineSink[Any] = EmptyOnlineSink
+}
+
+object EmptyOnlineSink extends OnlineSink[Any] {
+  def write(event: Any) = Future.Unit
 }

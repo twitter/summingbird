@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.util
+package com.twitter.summingbird.storm.option
 
 import scala.util.Random
 

@@ -22,10 +22,8 @@ import backtype.storm.tuple.{ Fields, Tuple, Values }
 
 import com.twitter.algebird.{ Monoid, SummingQueue }
 import com.twitter.chill.MeatLocker
-import com.twitter.summingbird.Constants
-import com.twitter.summingbird.util.CacheSize
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
-import com.twitter.summingbird.storm.option.FlatMapStormMetrics
+import com.twitter.summingbird.storm.option.{ CacheSize, FlatMapStormMetrics }
 import com.twitter.storehaus.algebra.MergeableStore
 
 import MergeableStore.enrich

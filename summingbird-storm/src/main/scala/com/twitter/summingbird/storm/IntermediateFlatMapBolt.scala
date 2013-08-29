@@ -18,8 +18,9 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.tuple.{Fields, Tuple, Values}
 import com.twitter.storehaus.algebra.MergeableStore.enrich
-import com.twitter.summingbird.Constants._
 import com.twitter.summingbird.storm.option.FlatMapStormMetrics
+
+import Constants._
 
 /**
   * This bolt is used for intermediate flatMapping before a grouping.
