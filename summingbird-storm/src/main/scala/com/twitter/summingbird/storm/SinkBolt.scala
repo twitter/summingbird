@@ -21,10 +21,8 @@ import backtype.storm.tuple.Tuple
 import com.twitter.algebird.{Monoid, SummingQueue}
 import com.twitter.chill.MeatLocker
 import com.twitter.storehaus.algebra.MergeableStore
-import com.twitter.summingbird.Constants
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.storm.option._
-import com.twitter.summingbird.util.{CacheSize, FutureQueue}
 import com.twitter.util.Future
 import java.util.{ Map => JMap }
 
