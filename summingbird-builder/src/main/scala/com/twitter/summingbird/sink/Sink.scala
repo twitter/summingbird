@@ -21,6 +21,7 @@ import cascading.flow.FlowDef
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.scalding.{ Mode, TypedPipe }
 import com.twitter.summingbird.scalding.{ScaldingEnv, BatchedScaldingSink}
+import com.twitter.summingbird.storm.OnlineSink
 
 /**
  * Represents a location to which intermediate results of the
@@ -30,7 +31,7 @@ import com.twitter.summingbird.scalding.{ScaldingEnv, BatchedScaldingSink}
  * kestrel fanout or kafka topic.
  */
 
-//@deprecated("0.1.0","ignores time")
+// @deprecated("ignores time", "0.1.0")
 trait OfflineSink[Event] {
   def write(batchID: BatchID, pipe: TypedPipe[Event])
   (implicit fd: FlowDef, mode: Mode)

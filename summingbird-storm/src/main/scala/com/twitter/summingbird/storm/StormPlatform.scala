@@ -29,7 +29,6 @@ import com.twitter.bijection.Injection
 import com.twitter.chill.InjectionPair
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
-import com.twitter.summingbird.Constants._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.storm.option.IncludeSuccessHandler
 import com.twitter.summingbird.util.CacheSize
@@ -37,6 +36,8 @@ import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird._
 import com.twitter.util.Future
+
+import Constants._
 
 sealed trait StormStore[-K, V] {
   def batcher: Batcher

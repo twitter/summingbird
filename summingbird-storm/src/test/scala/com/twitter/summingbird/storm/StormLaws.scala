@@ -37,7 +37,7 @@ import scala.collection.mutable.{
   SynchronizedBuffer,
   SynchronizedMap
 }
-import com.twitter.summingbird.Constants.DEFAULT_SPOUT_PARALLELISM
+import Constants.DEFAULT_SPOUT_PARALLELISM
 
 /**
   * Tests for Summingbird's Storm planner.

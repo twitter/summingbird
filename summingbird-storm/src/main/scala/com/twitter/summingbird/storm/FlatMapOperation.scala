@@ -17,7 +17,6 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.storehaus.ReadableStore
-import com.twitter.summingbird.sink.OnlineSink
 import com.twitter.util.Future
 import java.io.{ Closeable, Serializable }
 

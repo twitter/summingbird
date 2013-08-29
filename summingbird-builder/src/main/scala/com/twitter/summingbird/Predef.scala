@@ -54,6 +54,6 @@ object Predef {
   val VersionedStore = com.twitter.summingbird.scalding.store.VersionedStore
 
   // Common options
-  type CacheSize = com.twitter.summingbird.util.CacheSize
-  val CacheSize = com.twitter.summingbird.util.CacheSize
+  type CacheSize = com.twitter.summingbird.storm.option.CacheSize
+  val CacheSize = com.twitter.summingbird.storm.option.CacheSize
 }
