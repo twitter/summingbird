@@ -112,13 +112,7 @@ case class SourceBuilder[T: Manifest] private (
       )
     )
 
-  // Set the number of reducers used to shard out the EventSource
-  // flatmapper in the offline flatmap step.
-  def set(fms: FlatMapShards): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(fms)))
-
-  // Set the cache size used in the online flatmap step.
-  def set(size: CacheSize): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(size)))
-  def set(opt: FlatMapOption): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(opt)))
+  def set[Opt](opt: Opt): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(opt)))
 
   /**
     * Complete this builder instance with a BatchStore. At this point,
