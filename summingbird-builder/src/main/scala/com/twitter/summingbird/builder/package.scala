@@ -27,4 +27,10 @@ package com.twitter.summingbird
 package object builder {
   val MonoidIsCommutative = com.twitter.summingbird.option.MonoidIsCommutative
   type MonoidIsCommutative = com.twitter.summingbird.option.MonoidIsCommutative
+
+  /** Scalding options here */
+  val FlatMapShards = com.twitter.summingbird.scalding.option.FlatMapShards
+  type FlatMapShards = com.twitter.summingbird.scalding.option.FlatMapShards
+  val Reducers = com.twitter.summingbird.scalding.option.Reducers
+  type Reducers = com.twitter.summingbird.scalding.option.Reducers
 }
