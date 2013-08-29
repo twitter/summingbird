@@ -14,33 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.builder
+package com.twitter.summingbird.storm.option
 
 import com.twitter.summingbird.storm.StormMetric
 
 /**
- * Options used by the FlatMappedBuilder.
+ * Options used by the flatMapping stage of a storm topology.
  *
  * @author Oscar Boykin
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
 
-sealed trait FlatMapOption extends java.io.Serializable
+case class SpoutParallelism(parHint: Int)
 
-case class SpoutParallelism(parHint: Int) extends FlatMapOption
+case class FlatMapParallelism(parHint: Int)
 
-case class FlatMapParallelism(parHint: Int) extends FlatMapOption
-
-// This stupidity is necessary because val parameters can't be
-// call-by-name.  We pass a function so that the metrics aren't
-// serialized. Beyond the storm IMetric not being serializable,
-// passing a value also causes problems with the instance registered
-// in the bolt being different from the one used in the summingbird
-// job.
+/**
+  * This stupidity is necessary because val parameters can't be
+  * call-by-name.  We pass a function so that the metrics aren't
+  * serialized. Beyond the storm IMetric not being serializable,
+  * passing a value also causes problems with the instance registered
+  * in the bolt being different from the one used in the summingbird
+  * job.
+  */
 object FlatMapStormMetrics {
   def apply(metrics: => TraversableOnce[StormMetric[_]]) = new FlatMapStormMetrics(() => metrics)
   def unapply(metrics: FlatMapStormMetrics) = Some(metrics.metrics)
 }
 
-class FlatMapStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]]) extends FlatMapOption
+class FlatMapStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
