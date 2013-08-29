@@ -25,6 +25,7 @@ package com.twitter.summingbird
  * @author Ashu Singhal
  */
 package object builder {
+
   @deprecated("Use com.twitter.summingbird.option.MonoidIsCommutative", "0.1.0")
   val MonoidIsCommutative = option.MonoidIsCommutative
 
@@ -78,4 +79,17 @@ package object builder {
 
   @deprecated("Use com.twitter.summingbird.storm.option.MaxWaitingFutures", "0.1.0")
   val MaxWaitingFutures = storm.option.MaxWaitingFutures
+
+  /** Scalding options here */
+  @deprecated("Use com.twitter.summingbird.scalding.option.FlatMapShards", "0.1.0")
+  val FlatMapShards = scalding.option.FlatMapShards
+
+  @deprecated("Use com.twitter.summingbird.scalding.option.FlatMapShards", "0.1.0")
+  type FlatMapShards = scalding.option.FlatMapShards
+
+  @deprecated("Use com.twitter.summingbird.scalding.option.Reducers", "0.1.0")
+  val Reducers = scalding.option.Reducers
+
+  @deprecated("Use com.twitter.summingbird.scalding.option.Reducers", "0.1.0")
+  type Reducers = scalding.option.Reducers
 }

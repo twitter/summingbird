@@ -24,7 +24,7 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
 import com.twitter.scalding.{ Tool => STool, Source => SSource, _ }
 import com.twitter.summingbird._
-import com.twitter.summingbird.builder.{ FlatMapShards, Reducers }
+import com.twitter.summingbird.scalding.option.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.option._
 import org.apache.hadoop.conf.Configuration
