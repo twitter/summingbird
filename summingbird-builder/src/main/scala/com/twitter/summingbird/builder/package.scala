@@ -25,28 +25,57 @@ package com.twitter.summingbird
  * @author Ashu Singhal
  */
 package object builder {
+  @deprecated("Use com.twitter.summingbird.option.MonoidIsCommutative", "0.1.0")
   val MonoidIsCommutative = option.MonoidIsCommutative
+
+  @deprecated("Use com.twitter.summingbird.option.MonoidIsCommutative", "0.1.0")
   type MonoidIsCommutative = option.MonoidIsCommutative
 
   /**
     * Storm flatMap option types and objects.
     */
-  type SpoutParallelism = option.SpoutParallelism
-  val SpoutParallelism = option.SpoutParallelism
-  type FlatMapParallelism = option.FlatMapParallelism
-  val FlatMapParallelism = option.FlatMapParallelism
-  type FlatMapStormMetrics = option.FlatMapStormMetrics
-  val FlatMapStormMetrics = option.FlatMapStormMetrics
+  @deprecated("Use com.twitter.summingbird.storm.option.SpoutParallelism", "0.1.0")
+  type SpoutParallelism = storm.option.SpoutParallelism
+
+  @deprecated("Use com.twitter.summingbird.storm.option.SpoutParallelism", "0.1.0")
+  val SpoutParallelism = storm.option.SpoutParallelism
+
+  @deprecated("Use com.twitter.summingbird.storm.option.FlatMapParallelism", "0.1.0")
+  type FlatMapParallelism = storm.option.FlatMapParallelism
+
+  @deprecated("Use com.twitter.summingbird.storm.option.FlatMapParallelism", "0.1.0")
+  val FlatMapParallelism = storm.option.FlatMapParallelism
+
+  @deprecated("Use com.twitter.summingbird.storm.option.FlatMapStormMetrics", "0.1.0")
+  type FlatMapStormMetrics = storm.option.FlatMapStormMetrics
+
+  @deprecated("Use com.twitter.summingbird.storm.option.FlatMapStormMetrics", "0.1.0")
+  val FlatMapStormMetrics = storm.option.FlatMapStormMetrics
 
   /**
     * Sink objects and types.
     */
-  type SinkParallelism = option.SinkParallelism
-  val SinkParallelism = option.SinkParallelism
-  type OnlineSuccessHandler = option.OnlineSuccessHandler
-  val OnlineSuccessHandler = option.OnlineSuccessHandler
-  type SinkStormMetrics = option.SinkStormMetrics
-  val SinkStormMetrics = option.SinkStormMetrics
-  type MaxWaitingFutures = option.MaxWaitingFutures
-  val MaxWaitingFutures = option.MaxWaitingFutures
+  @deprecated("Use com.twitter.summingbird.storm.option.SinkParallelism", "0.1.0")
+  type SinkParallelism = storm.option.SinkParallelism
+
+  @deprecated("Use com.twitter.summingbird.storm.option.SinkParallelism", "0.1.0")
+  val SinkParallelism = storm.option.SinkParallelism
+
+  @deprecated("Use com.twitter.summingbird.storm.option.OnlineSuccessHandler", "0.1.0")
+  type OnlineSuccessHandler = storm.option.OnlineSuccessHandler
+
+  @deprecated("Use com.twitter.summingbird.storm.option.OnlineSuccessHandler", "0.1.0")
+  val OnlineSuccessHandler = storm.option.OnlineSuccessHandler
+
+  @deprecated("Use com.twitter.summingbird.storm.option.SinkStormMetrics", "0.1.0")
+  type SinkStormMetrics = storm.option.SinkStormMetrics
+
+  @deprecated("Use com.twitter.summingbird.storm.option.SinkStormMetrics", "0.1.0")
+  val SinkStormMetrics = storm.option.SinkStormMetrics
+
+  @deprecated("Use com.twitter.summingbird.storm.option.MaxWaitingFutures", "0.1.0")
+  type MaxWaitingFutures = storm.option.MaxWaitingFutures
+
+  @deprecated("Use com.twitter.summingbird.storm.option.MaxWaitingFutures", "0.1.0")
+  val MaxWaitingFutures = storm.option.MaxWaitingFutures
 }

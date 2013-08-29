@@ -17,6 +17,7 @@ limitations under the License.
 package com.twitter.summingbird
 
 import com.twitter.summingbird.option._
+import com.twitter.summingbird.storm.option._
 import com.twitter.summingbird.util.CacheSize
 
 object Constants {
