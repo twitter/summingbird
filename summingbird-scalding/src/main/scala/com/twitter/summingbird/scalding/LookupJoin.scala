@@ -82,7 +82,7 @@ object LookupJoin extends Serializable {
         .++(right.map { case (t, (k, joinedV)) => (k, (t, Right(joinedV): Either[V, JoinedV])) })
         .group
         .withReducers(reducers.getOrElse(-1)) // -1 means default in scalding
-        .sortBy { _._2 }
+        .sortBy(identity)
     /**
       * Grouping by K leaves values of (T, Either[V, JoinedV]). Sort
       * by time and scanLeft. The iterator will now represent pairs of
@@ -102,14 +102,17 @@ object LookupJoin extends Serializable {
             * shows up and a new join occurs.
             */
           (None: Option[JoinedV], None: Option[(T, V, Option[JoinedV])])
-        ) { case ((lastJoined, _), (thisTime, leftOrRight)) =>
-            leftOrRight match {
+        ) { (state, timeValue) =>
+            timeValue._2 match {
               // Left(v) means that we have a new value from the left
               // pipe that we need to join against the current
               // "lastJoined" value sitting in scanLeft's state. This
               // is equivalent to a lookup on the data in the right
               // pipe at time "thisTime".
-              case Left(v) => (lastJoined, Some((thisTime, v, lastJoined)))
+              case Left(v) =>
+                val thisTime = timeValue._1
+                val lastJoined = state._1
+                (lastJoined, Some((thisTime, v, lastJoined)))
 
               // Right(joinedV) means that we've received a new value
               // to use in the simulated realtime service
@@ -118,13 +121,13 @@ object LookupJoin extends Serializable {
             }
         }.toTypedPipe
 
-    for {
-      // Now, get rid of residual state from the scanLeft above:
-      (k, (_, optV)) <- joined
-
+    // Now, get rid of residual state from the scanLeft above:
+    joined.flatMap { case (k, (_, optV)) =>
       // filter out every event that produced a Right(delta) above,
       // leaving only the leftJoin events that occurred above:
-      (t, v, optJoined) <- optV
-    } yield (t, (k, (v, optJoined)))
+      optV.map { case (t, v, optJoined) =>
+        (t, (k, (v, optJoined)))
+      }
+    }
   }
 }
