@@ -71,8 +71,8 @@ class LookupJoinedTest extends Specification {
     //Set up the job:
     "correctly lookup" in {
       val MAX_KEY = 10
-      val in0 = genList(Int.MaxValue, MAX_KEY, 10)
-      val in1 = genList(Int.MaxValue, MAX_KEY, 10)
+      val in0 = genList(Int.MaxValue, MAX_KEY, 10000)
+      val in1 = genList(Int.MaxValue, MAX_KEY, 10000)
       JobTest(new LookupJoinerJob(_))
         .source(TypedTsv[(Int,Int,Int)]("input0"), in0)
         .source(TypedTsv[(Int,Int,Int)]("input1"), in1)
