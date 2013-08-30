@@ -14,7 +14,7 @@
         </head>
         <body onload="sh_highlightDocument('../lib/', '.min.js');" class="value">
       <div id="definition">
-        <a title="Go to companion" href="EventSource.html"><img src="../../../../lib/object_to_trait_big.png" /></a>
+        <a title="Go to companion" href="EventSource.html"><img src="../../../../lib/object_to_class_big.png" /></a>
         <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.source" class="extype" href="package.html">source</a></p>
         <h1><a title="Go to companion" href="EventSource.html">EventSource</a></h1>
       </div>
@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-core/src/main/scala/com/twitter/summingbird/source/EventSource.scala">EventSource.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-builder/src/main/scala/com/twitter/summingbird/source/EventSource.scala">EventSource.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -123,6 +123,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.source.EventSource#apply" data-isabs="false">
+      <a id="apply[T](OfflineSource[T],Spout[T])(Manifest[T]):EventSource[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="offline">offline: <a name="com.twitter.summingbird.source.OfflineSource" class="extype" href="OfflineSource.html">OfflineSource</a>[T]</span>, <span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.source.EventSource" class="extype" href="EventSource.html">EventSource</a>[T]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -189,6 +201,30 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.source.EventSource#fromOffline" data-isabs="false">
+      <a id="fromOffline[T](OfflineSource[T])(Manifest[T]):EventSource[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromOffline</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="offline">offline: <a name="com.twitter.summingbird.source.OfflineSource" class="extype" href="OfflineSource.html">OfflineSource</a>[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.source.EventSource" class="extype" href="EventSource.html">EventSource</a>[T]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.source.EventSource#fromOnline" data-isabs="false">
+      <a id="fromOnline[T](Spout[T])(Manifest[T]):EventSource[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromOnline</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.source.EventSource" class="extype" href="EventSource.html">EventSource</a>[T]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
       <a id="getClass():java.lang.Class[_]"></a>
       <h4 class="signature">
@@ -261,30 +297,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.source.EventSource#offlineToEvent" data-isabs="false">
-      <a id="offlineToEvent[Event, Time](OfflineSource[Event, Time]):EventSource[Event, Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">implicit </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">offlineToEvent</span><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>]</span><span class="params">(<span name="src">src: <a name="com.twitter.summingbird.source.OfflineSource" class="extype" href="OfflineSource.html">OfflineSource</a>[Event, Time]</span>)</span><span class="result">: <a name="com.twitter.summingbird.source.EventSource" class="extype" href="EventSource.html">EventSource</a>[Event, Time]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.source.EventSource#onlineToEvent" data-isabs="false">
-      <a id="onlineToEvent[Event, Time](OnlineSource[Event, Time]):EventSource[Event, Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">implicit </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">onlineToEvent</span><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>]</span><span class="params">(<span name="src">src: <a name="com.twitter.summingbird.source.OnlineSource" class="extype" href="OnlineSource.html">OnlineSource</a>[Event, Time]</span>)</span><span class="result">: <a name="com.twitter.summingbird.source.EventSource" class="extype" href="EventSource.html">EventSource</a>[Event, Time]</span>
-      </span>
-      </h4>
-      
     </li><li visbl="prt" name="com.twitter.summingbird.source.EventSource#readResolve" data-isabs="false">
       <a id="readResolve():AnyRef"></a>
       <h4 class="signature">

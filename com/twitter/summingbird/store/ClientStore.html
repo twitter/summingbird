@@ -25,13 +25,38 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">ClientStore</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, V]</span>
+        <span class="name">ClientStore</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, V]</span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-client/src/main/scala/com/twitter/summingbird/store/ClientStore.scala">ClientStore.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>The multiGet uses the &quot;for&quot; syntax internally to chain a bunch of computations
+from T =&gt; Future[U].</p><p>At a high level, the computation performed by the multiGet is the following:</p><p>- Look up the set of requested keys in the offlineStore. The
+  offlineStore holds K -&gt; (BatchID, V).</p><p>- For each key, use the returned BatchID and the current BatchID
+  (calculated by the batcher) to generate a sequence of BatchIDs
+  that the onlineStore is holding. The onlineStore holds (K,
+  BatchID) -&gt; V, so a join between this BatchID sequence and the
+  K provides a keyset to use for a multiGet to the onlineStore.</p><p>- Perform this multiGet to the online store.</p><p>- PIVOT the BatchIDs out of the online store's key into a
+  sequence in the value -- then a monoid merge with the offline
+  store will append the offline value onto the beginning of the
+  sequence of (BatchID, V).</p><p>- Finally, reduce this list by monoid-merging together all
+  (BatchID, V) pairs. If any BatchID is missing from the sequence
+  (if there are any holes, for example), that particular merged
+  value's computation in the result will be a Future.exception vs
+  a defined future.
+- Drop the final BatchID off of all successfully aggregated
+  values (since this BatchID will be the current batch in all
+  successful cases).</p><p>The onlineKeyFilter allows only a subset of the keys to be
+fetched from the realtime layer.  This is a useful optimization
+in, for example, time series data, where many of the keys that
+are fetched are historical and therefore only need to be fetched
+from batch.</p><p>TODO (https://github.com/twitter/summingbird/issues/72): This
+filter needs to be generalized correctly, and is probably
+incorrect at the level of just supplying a boolean function. For
+example, in most cases a function K =&gt; T would help tie in
+batching logic more easily.
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-client/src/main/scala/com/twitter/summingbird/store/ClientStore.scala">ClientStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, V], <span name="java.io.Closeable" class="extype">Closeable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, V], <span name="java.io.Closeable" class="extype">Closeable</span>, <span name="java.lang.AutoCloseable" class="extype">AutoCloseable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -45,7 +70,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.store.ClientStore" class="in"><span>ClientStore</span></li><li name="com.twitter.storehaus.ReadableStore" class="in"><span>ReadableStore</span></li><li name="java.io.Closeable" class="in"><span>Closeable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.store.ClientStore" class="in"><span>ClientStore</span></li><li name="com.twitter.storehaus.ReadableStore" class="in"><span>ReadableStore</span></li><li name="java.io.Closeable" class="in"><span>Closeable</span></li><li name="java.lang.AutoCloseable" class="in"><span>AutoCloseable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -58,14 +83,14 @@
         <div class="members" id="constructors">
               <h3>Instance Constructors</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.store.ClientStore#this" data-isabs="false">
-      <a id="this:ClientStore[T, K, V]"></a>
+      <a id="this:ClientStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">ClientStore</span><span class="params">(<span name="offlineStore">offlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>, <span name="onlineStore">onlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a>[T]</span>, <span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>, <span name="batchesToKeep">batchesToKeep: <span name="scala.Int" class="extype">Int</span></span>)</span>
+        <span class="name">ClientStore</span><span class="params">(<span name="offlineStore">offlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>, <span name="onlineStore">onlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="batchesToKeep">batchesToKeep: <span name="scala.Int" class="extype">Int</span></span>, <span name="onlineKeyFilter">onlineKeyFilter: (K) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>)</span>
       </span>
       </h4>
       
@@ -176,19 +201,7 @@
         <span class="name">close</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReadableStore → Closeable</dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.store.ClientStore#defaultInit" data-isabs="false">
-      <a id="defaultInit(BatchID):Option[(BatchID, V)]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">defaultInit</span><span class="params">(<span name="nowBatch">nowBatch: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a> = <span class="symbol"><span class="name"><a href="../batch/Batcher.html#currentBatch:BatchID">batcher.currentBatch</a></span></span></span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReadableStore → Closeable → AutoCloseable</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -213,18 +226,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.store.ClientStore#expand" data-isabs="false">
-      <a id="expand(Option[(BatchID, V)],BatchID):Iterable[(BatchID, V)]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">expand</span><span class="params">(<span name="init">init: <span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>, <span name="nowBatch">nowBatch: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a> = <span class="symbol"><span class="name"><a href="../batch/Batcher.html#currentBatch:BatchID">batcher.currentBatch</a></span></span></span>)</span><span class="result">: Iterable[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -240,18 +241,6 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.store.ClientStore#generateOnlineKeys" data-isabs="false">
-      <a id="generateOnlineKeys(Seq[K],BatchID)((K) ⇒ Future[Option[(BatchID, V)]]):Future[Set[(K, BatchID)]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">generateOnlineKeys</span><span class="params">(<span name="ks">ks: Seq[K]</span>, <span name="nowBatch">nowBatch: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>)</span><span class="params">(<span name="lookup">lookup: (K) ⇒ <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[Set[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>)]]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.storehaus.ReadableStore#get" data-isabs="false">
       <a id="get(K):Future[Option[V]]"></a>
       <h4 class="signature">
@@ -288,18 +277,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.store.ClientStore#implicitMonoid" data-isabs="false">
-      <a id="implicitMonoid:Monoid[V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">implicit </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">implicitMonoid</span><span class="result">: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <h4 class="signature">
@@ -313,34 +290,17 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.store.ClientStore#multiGet" data-isabs="false">
-      <a id="multiGet(Set[K]):Future[Map[K, Future[Option[V]]]]"></a>
+      <a id="multiGet[K1&lt;:K](Set[K1]):Map[K1, FOpt[V]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">multiGet</span><span class="params">(<span name="ks">ks: Set[K]</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[Map[K, <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Option" class="extype">Option</span>[V]]]]</span>
+        <span class="name">multiGet</span><span class="tparams">[<span name="K1">K1 &lt;: K</span>]</span><span class="params">(<span name="ks">ks: Set[K1]</span>)</span><span class="result">: Map[K1, FOpt[V]]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">The multiGet uses the &quot;for&quot; syntax internally to chain a bunch of computations
-from T =&gt; Future[U].</p><div class="fullcomment"><div class="comment cmt"><p>The multiGet uses the &quot;for&quot; syntax internally to chain a bunch of computations
-from T =&gt; Future[U].</p><p>At a high level, the computation performed by the multiGet is the following:</p><p>- Look up the set of requested keys in the offlineStore. The offlineStore holds K -&gt; (BatchID, V).
-- For each key, use the returned BatchID and the current BatchID (calculated by the batcher)
-  to generate a sequence of BatchIDs that the onlineStore is holding. The onlineStore holds
-  (K, BatchID) -&gt; V, so a join between this BatchID sequence and the K provides a keyset to
-  use for a multiGet to the onlineStore.
-- Perform this multiGet to the online store.
-- PIVOT the BatchIDs out of the online store's key into a sequence in the value -- then
-  a monoid merge with the offline store will append the offline value onto the beginning
-  of the sequence of (BatchID, V).
-- Finally, reduce this list by monoid-merging together all (BatchID, V) pairs. If any
-  BatchID is missing from the sequence (if there are any holes, for example), that
-  particular merged value's computation in the result will be a Future.exception
-  vs a defined future.
-- Drop the final BatchID off of all successfully aggregated values (since this BatchID
-  will be the current batch in all successful cases).
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.store.ClientStore" class="extype" href="">ClientStore</a> → ReadableStore</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.store.ClientStore" class="extype" href="">ClientStore</a> → ReadableStore</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -377,31 +337,6 @@ from T =&gt; Future[U].</p><p>At a high level, the computation performed by the 
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.storehaus.ReadableStore#or" data-isabs="false">
-      <a id="or(ReadableStore[K, V]):ReadableStore[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">or</span><span class="params">(<span name="other">other: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, V]</span>)</span><span class="result">: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, V]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReadableStore</dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.store.ClientStore#pivotBatches" data-isabs="false">
-      <a id="pivotBatches(Map[(K, BatchID), Future[Option[V]]]):Map[K, Future[Seq[Option[(BatchID, V)]]]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">pivotBatches</span><span class="params">(<span name="m">m: Map[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Option" class="extype">Option</span>[V]]]</span>)</span><span class="result">: Map[K, <span name="com.twitter.util.Future" class="extype">Future</span>[Seq[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]]]</span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">Pivots each BatchID out of the key and into the Value's future.</p><div class="fullcomment"><div class="comment cmt"><p>Pivots each BatchID out of the key and into the Value's future.
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -482,6 +417,8 @@ from T =&gt; Future[U].</p><p>At a high level, the computation performed by the 
               <h3>Inherited from <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, V]</h3>
             </div><div name="java.io.Closeable" class="parent">
               <h3>Inherited from <span name="java.io.Closeable" class="extype">Closeable</span></h3>
+            </div><div name="java.lang.AutoCloseable" class="parent">
+              <h3>Inherited from <span name="java.lang.AutoCloseable" class="extype">AutoCloseable</span></h3>
             </div><div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">

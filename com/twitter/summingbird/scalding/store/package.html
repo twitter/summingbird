@@ -48,63 +48,75 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.store.BatchReadableStore" data-isabs="true">
-      <a id="BatchReadableStore:BatchReadableStore[K, V]"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.store.BytesWritableBijection" data-isabs="false">
+      <a id="BytesWritableBijection:BytesWritableBijection"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BytesWritableBijection.html"><span class="name">BytesWritableBijection</span></a><span class="result"> extends Bijection[BytesWritable, Array[Byte]]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata" data-isabs="false">
+      <a id="HDFSMetadata:HDFSMetadata"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HDFSMetadata.html"><span class="name">HDFSMetadata</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Class to access metadata for a single versioned output directory</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSVersionMetadata" data-isabs="false">
+      <a id="HDFSVersionMetadata:HDFSVersionMetadata"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HDFSVersionMetadata.html"><span class="name">HDFSVersionMetadata</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Refers to a specific version on disk.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.IntermediateFileStore" data-isabs="false">
+      <a id="IntermediateFileStore:IntermediateFileStore[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IntermediateFileStore.html"><span class="name">IntermediateFileStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends IntermediateStore[K, V]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.IntermediateStore" data-isabs="true">
+      <a id="IntermediateStore:IntermediateStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="BatchReadableStore.html"><span class="name">BatchReadableStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends Serializable</span>
+        <a href="IntermediateStore.html"><span class="name">IntermediateStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends Serializable</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.BatchStore" data-isabs="true">
-      <a id="BatchStore:BatchStore[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="BatchStore.html"><span class="name">BatchStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchReadableStore[K, V] with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.EmptyBatchStore" data-isabs="false">
-      <a id="EmptyBatchStore:EmptyBatchStore[K, V]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedState" data-isabs="false">
+      <a id="VersionedState:VersionedState"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="EmptyBatchStore.html"><span class="name">EmptyBatchStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchStore[K, V]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.TsvStore" data-isabs="false">
-      <a id="TsvStore:TsvStore[Key, Value]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="TsvStore.html"><span class="name">TsvStore</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends BatchStore[Key, Value]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedStore" data-isabs="false">
-      <a id="VersionedStore:VersionedStore[Key, Value]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="VersionedStore.html"><span class="name">VersionedStore</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends BatchStore[Key, Value]</span>
+        <a href="VersionedState.html"><span class="name">VersionedState</span></a><span class="result"> extends WaitingState[Date]</span>
       </span>
       </h4>
       
@@ -115,19 +127,7 @@
 
         <div class="values members" id="values">
               <h3>Value Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.store.BatchReadableStore" data-isabs="false">
-      <a id="BatchReadableStore:BatchReadableStore"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="BatchReadableStore$.html"><span class="name">BatchReadableStore</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata" data-isabs="false">
+              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata" data-isabs="false">
       <a id="HDFSMetadata:HDFSMetadata"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -139,18 +139,18 @@
       </span>
       </h4>
       <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.TsvStore" data-isabs="false">
-      <a id="TsvStore:TsvStore"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedState" data-isabs="false">
+      <a id="VersionedState:VersionedState"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="TsvStore$.html"><span class="name">TsvStore</span></a><span class="result"> extends Serializable</span>
+        <a href="VersionedState$.html"><span class="name">VersionedState</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
-      <p class="comment cmt"></p>
+      <p class="comment cmt">State representation used by the builder API for compatibility.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedStore" data-isabs="false">
       <a id="VersionedStore:VersionedStore"></a>
       <h4 class="signature">
@@ -159,7 +159,7 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="VersionedStore$.html"><span class="name">VersionedStore</span></a><span class="result"> extends Serializable</span>
+        <a href="VersionedStore$.html"><span class="name">VersionedStore</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       <p class="comment cmt">Scalding implementation of the batch read and write components

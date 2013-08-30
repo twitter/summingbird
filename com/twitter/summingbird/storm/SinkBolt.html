@@ -25,7 +25,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">SinkBolt</span><span class="tparams">[<span name="StoreType">StoreType &lt;: <span name="com.twitter.storehaus.Store" class="extype">Store</span>[StoreType, (Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends <a name="com.twitter.summingbird.storm.BufferingBolt" class="extype" href="BufferingBolt.html">BufferingBolt</a>[Map[(Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]]</span>
+        <span class="name">SinkBolt</span><span class="tparams">[<span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends <a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a></span>
       </span>
       </h4>
       
@@ -38,12 +38,9 @@ these calls might take a bit of time to complete.</p><p>MaxWaitingFutures(count)
 representing the &quot;+&quot; of kv-pair n only when kvpair n + 100 shows up in the bolt,
 effectively pushing back against latency bumps in the host.</p><p>The allowed latency before a future is forced is equal to
 (MaxWaitingFutures * execute latency).
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-core/src/main/scala/com/twitter/summingbird/storm/SinkBolt.scala">SinkBolt.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/SinkBolt.scala">SinkBolt.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.storm.BufferingBolt" class="extype" href="BufferingBolt.html">BufferingBolt</a>[Map[(Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]], <span name="backtype.storm.topology.IRichBolt" class="extype">IRichBolt</span>, <span name="backtype.storm.topology.IComponent" class="extype">IComponent</span>, <span name="backtype.storm.task.IBolt" class="extype">IBolt</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
-        </div><div class="toggleContainer block">
-          <span class="toggle">Known Subclasses</span>
-          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.storm.ConcurrentSinkBolt" class="extype" href="ConcurrentSinkBolt.html">ConcurrentSinkBolt</a></div>
+          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a>, <span name="backtype.storm.topology.IRichBolt" class="extype">IRichBolt</span>, <span name="backtype.storm.topology.IComponent" class="extype">IComponent</span>, <span name="backtype.storm.task.IBolt" class="extype">IBolt</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -57,7 +54,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.storm.SinkBolt" class="in"><span>SinkBolt</span></li><li name="com.twitter.summingbird.storm.BufferingBolt" class="in"><span>BufferingBolt</span></li><li name="backtype.storm.topology.IRichBolt" class="in"><span>IRichBolt</span></li><li name="backtype.storm.topology.IComponent" class="in"><span>IComponent</span></li><li name="backtype.storm.task.IBolt" class="in"><span>IBolt</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.storm.SinkBolt" class="in"><span>SinkBolt</span></li><li name="com.twitter.summingbird.storm.BaseBolt" class="in"><span>BaseBolt</span></li><li name="backtype.storm.topology.IRichBolt" class="in"><span>IRichBolt</span></li><li name="backtype.storm.topology.IComponent" class="in"><span>IComponent</span></li><li name="backtype.storm.task.IBolt" class="in"><span>IBolt</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -70,14 +67,14 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <div class="members" id="constructors">
               <h3>Instance Constructors</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#this" data-isabs="false">
-      <a id="this:SinkBolt[StoreType, Key, Value]"></a>
+      <a id="this:SinkBolt[Key, Value]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SinkBolt</span><span class="params">(<span name="store">store: StoreType</span>, <span name="rpc">rpc: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[<span name="scala.Option" class="extype">Option</span>[Value], String]</span>, <span name="successHandler">successHandler: <a name="com.twitter.summingbird.builder.OnlineSuccessHandler" class="extype" href="../builder/OnlineSuccessHandler.html">OnlineSuccessHandler</a></span>, <span name="exceptionHandler">exceptionHandler: <a name="com.twitter.summingbird.builder.OnlineExceptionHandler" class="extype" href="../builder/OnlineExceptionHandler.html">OnlineExceptionHandler</a></span>, <span name="cacheSize">cacheSize: <a name="com.twitter.summingbird.util.CacheSize" class="extype" href="../util/CacheSize.html">CacheSize</a></span>, <span name="maxWaitingFutures">maxWaitingFutures: <a name="com.twitter.summingbird.builder.MaxWaitingFutures" class="extype" href="../builder/MaxWaitingFutures.html">MaxWaitingFutures</a></span>, <span name="metrics">metrics: <a name="com.twitter.summingbird.builder.SinkStormMetrics" class="extype" href="../builder/SinkStormMetrics.html">SinkStormMetrics</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[Value]</span>)</span>
+        <span class="name">SinkBolt</span><span class="params">(<span name="storeSupplier">storeSupplier: () ⇒ <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]</span>, <span name="successHandler">successHandler: <a name="com.twitter.summingbird.storm.option.OnlineSuccessHandler" class="extype" href="option/OnlineSuccessHandler.html">OnlineSuccessHandler</a></span>, <span name="exceptionHandler">exceptionHandler: <a name="com.twitter.summingbird.storm.option.OnlineExceptionHandler" class="extype" href="option/OnlineExceptionHandler.html">OnlineExceptionHandler</a></span>, <span name="cacheSize">cacheSize: <a name="com.twitter.summingbird.storm.option.CacheSize" class="extype" href="option/CacheSize.html">CacheSize</a></span>, <span name="metrics">metrics: <a name="com.twitter.summingbird.storm.option.SinkStormMetrics" class="extype" href="option/SinkStormMetrics.html">SinkStormMetrics</a></span>, <span name="maxWaitingFutures">maxWaitingFutures: <a name="com.twitter.summingbird.storm.option.MaxWaitingFutures" class="extype" href="option/MaxWaitingFutures.html">MaxWaitingFutures</a></span>, <span name="includeSuccessHandler">includeSuccessHandler: <a name="com.twitter.summingbird.storm.option.IncludeSuccessHandler" class="extype" href="option/IncludeSuccessHandler.html">IncludeSuccessHandler</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[Value]</span>)</span>
       </span>
       </h4>
       
@@ -86,7 +83,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.storm.BufferingBolt.Mutex" data-isabs="false">
+              <ol><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt.Mutex" data-isabs="false">
       <a id="Mutex:Mutex"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -94,7 +91,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="BufferingBolt$Mutex.html"><span class="name">Mutex</span></a><span class="result"> extends Serializable</span>
+        <a href="BaseBolt$Mutex.html"><span class="name">Mutex</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
       
@@ -165,6 +162,18 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#ack" data-isabs="false">
+      <a id="ack(Tuple):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ack</span><span class="params">(<span name="tuple">tuple: <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a></dd></dl></div>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -177,7 +186,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.BufferingBolt#buffer" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#buffer" data-isabs="false">
       <a id="buffer:SummingQueue[Map[(Key, BatchID), Value]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -188,8 +197,8 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <span class="name">buffer</span><span class="result">: <span name="com.twitter.algebird.SummingQueue" class="extype">SummingQueue</span>[Map[(Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BufferingBolt" class="extype" href="BufferingBolt.html">BufferingBolt</a></dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.BufferingBolt#cacheCount" data-isabs="false">
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#cacheCount" data-isabs="false">
       <a id="cacheCount:Option[Int]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -200,7 +209,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <span class="name">cacheCount</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BufferingBolt" class="extype" href="BufferingBolt.html">BufferingBolt</a></dd></dl></div>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#cleanup" data-isabs="false">
       <a id="cleanup():Unit"></a>
       <h4 class="signature">
@@ -212,7 +221,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <span class="name">cleanup</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SinkBolt" class="extype" href="">SinkBolt</a> → IBolt</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SinkBolt" class="extype" href="">SinkBolt</a> → <a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a> → IBolt</dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -228,19 +237,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.BufferingBolt#collector" data-isabs="false">
-      <a id="collector:OutputCollector"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">var</span>
-      </span>
-      <span class="symbol">
-        <span class="name">collector</span><span class="result">: <span name="backtype.storm.task.OutputCollector" class="extype">OutputCollector</span></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BufferingBolt" class="extype" href="BufferingBolt.html">BufferingBolt</a></dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#declareOutputFields" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#declareOutputFields" data-isabs="false">
       <a id="declareOutputFields(OutputFieldsDeclarer):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -248,10 +245,10 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">declareOutputFields</span><span class="params">(<span name="dec">dec: <span name="backtype.storm.topology.OutputFieldsDeclarer" class="extype">OutputFieldsDeclarer</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">declareOutputFields</span><span class="params">(<span name="declarer">declarer: <span name="backtype.storm.topology.OutputFieldsDeclarer" class="extype">OutputFieldsDeclarer</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SinkBolt" class="extype" href="">SinkBolt</a> → IComponent</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a> → IComponent</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -284,7 +281,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">exceptionHandlerBox</span><span class="result">: <span name="com.twitter.chill.MeatLocker" class="extype">MeatLocker</span>[<a name="com.twitter.summingbird.builder.OnlineExceptionHandler" class="extype" href="../builder/OnlineExceptionHandler.html">OnlineExceptionHandler</a>]</span>
+        <span class="name">exceptionHandlerBox</span><span class="result">: <span name="com.twitter.chill.MeatLocker" class="extype">MeatLocker</span>[<a name="com.twitter.summingbird.storm.option.OnlineExceptionHandler" class="extype" href="option/OnlineExceptionHandler.html">OnlineExceptionHandler</a>]</span>
       </span>
       </h4>
       
@@ -300,18 +297,19 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SinkBolt" class="extype" href="">SinkBolt</a> → IBolt</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#executeDRPC" data-isabs="false">
-      <a id="executeDRPC(Tuple):Unit"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#fields" data-isabs="false">
+      <a id="fields:None.type"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">executeDRPC</span><span class="params">(<span name="tuple">tuple: <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">fields</span><span class="result">: None.type</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">The fields this bolt plans on returning.</p><div class="fullcomment"><div class="comment cmt"><p>The fields this bolt plans on returning.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SinkBolt" class="extype" href="">SinkBolt</a> → <a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a></dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -328,14 +326,14 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#futureQueue" data-isabs="false">
-      <a id="futureQueue:FutureQueue[StoreType]"></a>
+      <a id="futureQueue:FutureQueue[Unit]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">var</span>
+        <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">futureQueue</span><span class="result">: <a name="com.twitter.summingbird.util.FutureQueue" class="extype" href="../util/FutureQueue.html">FutureQueue</a>[StoreType]</span>
+        <span class="name">futureQueue</span><span class="result">: <a name="com.twitter.summingbird.storm.FutureQueue" class="extype" href="FutureQueue.html">FutureQueue</a>[<span name="scala.Unit" class="extype">Unit</span>]</span>
       </span>
       </h4>
       
@@ -351,7 +349,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#getComponentConfiguration" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#getComponentConfiguration" data-isabs="false">
       <a id="getComponentConfiguration:Null"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -362,7 +360,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <span class="name">getComponentConfiguration</span><span class="result">: <span name="scala.Null" class="extype">Null</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SinkBolt" class="extype" href="">SinkBolt</a> → <a name="com.twitter.summingbird.storm.BufferingBolt" class="extype" href="BufferingBolt.html">BufferingBolt</a> → IComponent</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a> → IComponent</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
       <a id="hashCode():Int"></a>
       <h4 class="signature">
@@ -375,30 +373,6 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.storm.SinkBolt#incStore" data-isabs="false">
-      <a id="incStore(((Key, BatchID), Value)):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">incStore</span><span class="params">(<span name="item">item: ((Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value)</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.storm.SinkBolt#increment" data-isabs="false">
-      <a id="increment(StoreType,((Key, BatchID), Value)):Future[StoreType]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">increment</span><span class="params">(<span name="store">store: StoreType</span>, <span name="item">item: ((Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value)</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[StoreType]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <h4 class="signature">
@@ -411,31 +385,7 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.storm.SinkBolt#multiIncStore" data-isabs="false">
-      <a id="multiIncStore(Option[Map[(Key, BatchID), Value]]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">multiIncStore</span><span class="params">(<span name="optItems">optItems: <span name="scala.Option" class="extype">Option</span>[Map[(Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.storm.SinkBolt#multiIncrement" data-isabs="false">
-      <a id="multiIncrement(StoreType,Map[(Key, BatchID), Value]):Future[StoreType]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">multiIncrement</span><span class="params">(<span name="store">store: StoreType</span>, <span name="items">items: Map[(Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[StoreType]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.BufferingBolt#mutex" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#mutex" data-isabs="false">
       <a id="mutex:Mutex"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -443,10 +393,10 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">mutex</span><span class="result">: <a name="com.twitter.summingbird.storm.BufferingBolt.Mutex" class="extype" href="BufferingBolt$Mutex.html">Mutex</a></span>
+        <span class="name">mutex</span><span class="result">: <a name="com.twitter.summingbird.storm.BaseBolt.Mutex" class="extype" href="BaseBolt$Mutex.html">Mutex</a></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BufferingBolt" class="extype" href="BufferingBolt.html">BufferingBolt</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -483,6 +433,18 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#onCollector" data-isabs="false">
+      <a id="onCollector[U]((OutputCollector) ⇒ U):U"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">onCollector</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (<span name="backtype.storm.task.OutputCollector" class="extype">OutputCollector</span>) ⇒ U</span>)</span><span class="result">: U</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#prepare" data-isabs="false">
       <a id="prepare(java.util.Map[_, _],TopologyContext,OutputCollector):Unit"></a>
       <h4 class="signature">
@@ -494,28 +456,16 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <span class="name">prepare</span><span class="params">(<span name="conf">conf: java.util.Map[_, _]</span>, <span name="context">context: <span name="backtype.storm.task.TopologyContext" class="extype">TopologyContext</span></span>, <span name="oc">oc: <span name="backtype.storm.task.OutputCollector" class="extype">OutputCollector</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SinkBolt" class="extype" href="">SinkBolt</a> → <a name="com.twitter.summingbird.storm.BufferingBolt" class="extype" href="BufferingBolt.html">BufferingBolt</a> → IBolt</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#rpcBijection" data-isabs="false">
-      <a id="rpcBijection:MeatLocker[Bijection[Option[Value], String]]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SinkBolt" class="extype" href="">SinkBolt</a> → <a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a> → IBolt</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#store" data-isabs="false">
+      <a id="store:MergeableStore[(Key, BatchID), Value]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">rpcBijection</span><span class="result">: <span name="com.twitter.chill.MeatLocker" class="extype">MeatLocker</span>[<span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[<span name="scala.Option" class="extype">Option</span>[Value], String]]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#storeBox" data-isabs="false">
-      <a id="storeBox:MeatLocker[StoreType]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">storeBox</span><span class="result">: <span name="com.twitter.chill.MeatLocker" class="extype">MeatLocker</span>[StoreType]</span>
+        <span class="name">store</span><span class="result">: <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]</span>
       </span>
       </h4>
       
@@ -527,7 +477,19 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">successHandlerBox</span><span class="result">: <span name="com.twitter.chill.MeatLocker" class="extype">MeatLocker</span>[<a name="com.twitter.summingbird.builder.OnlineSuccessHandler" class="extype" href="../builder/OnlineSuccessHandler.html">OnlineSuccessHandler</a>]</span>
+        <span class="name">successHandlerBox</span><span class="result">: <span name="com.twitter.chill.MeatLocker" class="extype">MeatLocker</span>[<a name="com.twitter.summingbird.storm.option.OnlineSuccessHandler" class="extype" href="option/OnlineSuccessHandler.html">OnlineSuccessHandler</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt#successHandlerOpt" data-isabs="false">
+      <a id="successHandlerOpt:Option[OnlineSuccessHandler]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">successHandlerOpt</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.storm.option.OnlineSuccessHandler" class="extype" href="option/OnlineSuccessHandler.html">OnlineSuccessHandler</a>]</span>
       </span>
       </h4>
       
@@ -543,18 +505,6 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.BufferingBolt#toCollector" data-isabs="false">
-      <a id="toCollector[U]((OutputCollector) ⇒ U):U"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toCollector</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (<span name="backtype.storm.task.OutputCollector" class="extype">OutputCollector</span>) ⇒ U</span>)</span><span class="result">: U</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BufferingBolt" class="extype" href="BufferingBolt.html">BufferingBolt</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -631,8 +581,8 @@ effectively pushing back against latency bumps in the host.</p><p>The allowed la
         </div>
 
         <div id="inheritedMembers">
-        <div name="com.twitter.summingbird.storm.BufferingBolt" class="parent">
-              <h3>Inherited from <a name="com.twitter.summingbird.storm.BufferingBolt" class="extype" href="BufferingBolt.html">BufferingBolt</a>[Map[(Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]]</h3>
+        <div name="com.twitter.summingbird.storm.BaseBolt" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a></h3>
             </div><div name="backtype.storm.topology.IRichBolt" class="parent">
               <h3>Inherited from <span name="backtype.storm.topology.IRichBolt" class="extype">IRichBolt</span></h3>
             </div><div name="backtype.storm.topology.IComponent" class="parent">

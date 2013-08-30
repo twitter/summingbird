@@ -14,28 +14,24 @@
         </head>
         <body onload="sh_highlightDocument('../lib/', '.min.js');" class="type">
       <div id="definition">
-        <a title="Go to companion" href="FlatMapper$.html"><img src="../../../lib/trait_to_object_big.png" /></a>
+        <a title="Go to companion" href="FlatMapper$.html"><img src="../../../lib/class_to_object_big.png" /></a>
         <p id="owner"><a name="com" class="extype" href="../../package.html">com</a>.<a name="com.twitter" class="extype" href="../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="package.html">summingbird</a></p>
         <h1><a title="Go to companion" href="FlatMapper$.html">FlatMapper</a></h1>
       </div>
 
       <h4 class="signature" id="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">FlatMapper</span><span class="tparams">[<span name="Event">Event</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends <span name="java.io.Serializable" class="extype">Serializable</span></span>
+        <span class="name">FlatMapper</span><span class="tparams">[<span name="T">-T</span>, <span name="U">+U</span>]</span><span class="result"> extends (T) ⇒ TraversableOnce[U]</span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Main class to represents a realtime flatmap operation
-Event: the type of real time object you are flatmapping
-Key: the type you are sharding on.
-Value: the ultimate type for the aggregation.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-core/src/main/scala/com/twitter/summingbird/FlatMapper.scala">FlatMapper.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-builder/src/main/scala/com/twitter/summingbird/FlatMapper.scala">FlatMapper.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent">(T) ⇒ TraversableOnce[U], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div><div class="toggleContainer block">
           <span class="toggle">Known Subclasses</span>
           <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.FunctionFlatMapper" class="extype" href="FunctionFlatMapper.html">FunctionFlatMapper</a></div>
@@ -52,7 +48,7 @@ Value: the ultimate type for the aggregation.
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.FlatMapper" class="in"><span>FlatMapper</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.FlatMapper" class="in"><span>FlatMapper</span></li><li name="scala.Function1" class="in"><span>Function1</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -62,45 +58,36 @@ Value: the ultimate type for the aggregation.
 
       <div id="template">
         <div id="allMembers">
-        
+        <div class="members" id="constructors">
+              <h3>Instance Constructors</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.FlatMapper#this" data-isabs="false">
+      <a id="this:FlatMapper[T, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FlatMapper</span><span class="params">()</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
 
         
 
         <div class="values members" id="values">
               <h3>Abstract Value Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.FlatMapper#cleanup" data-isabs="true">
-      <a id="cleanup:Unit"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.FlatMapper#encode" data-isabs="true">
+      <a id="encode(T):TraversableOnce[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">cleanup</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.FlatMapper#encode" data-isabs="true">
-      <a id="encode(Event):TraversableOnce[(Key, Value)]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">encode</span><span class="params">(<span name="thisEvent">thisEvent: Event</span>)</span><span class="result">: TraversableOnce[(Key, Value)]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.FlatMapper#prepare" data-isabs="true">
-      <a id="prepare(java.util.Map[_, _]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">prepare</span><span class="params">(<span name="config">config: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">encode</span><span class="params">(<span name="t">t: T</span>)</span><span class="result">: TraversableOnce[U]</span>
       </span>
       </h4>
       
@@ -169,6 +156,30 @@ Value: the ultimate type for the aggregation.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.Function1#andThen" data-isabs="false">
+      <a id="andThen[A]((TraversableOnce[U]) ⇒ A):(T) ⇒ A"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">andThen</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="g">g: (TraversableOnce[U]) ⇒ A</span>)</span><span class="result">: (T) ⇒ A</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function1</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.FlatMapper#apply" data-isabs="false">
+      <a id="apply(T):TraversableOnce[U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="t">t: T</span>)</span><span class="result">: TraversableOnce[U]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.FlatMapper" class="extype" href="">FlatMapper</a> → Function1</dd></dl></div>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -196,6 +207,18 @@ Value: the ultimate type for the aggregation.
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li visbl="pub" name="scala.Function1#compose" data-isabs="false">
+      <a id="compose[A]((A) ⇒ T):(A) ⇒ TraversableOnce[U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">compose</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="g">g: (A) ⇒ T</span>)</span><span class="result">: (A) ⇒ TraversableOnce[U]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function1</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -319,7 +342,7 @@ Value: the ultimate type for the aggregation.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
+    </li><li visbl="pub" name="scala.Function1#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -330,7 +353,7 @@ Value: the ultimate type for the aggregation.
         <span class="name">toString</span><span class="params">()</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function1 → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">
@@ -383,8 +406,8 @@ Value: the ultimate type for the aggregation.
         </div>
 
         <div id="inheritedMembers">
-        <div name="java.io.Serializable" class="parent">
-              <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
+        <div name="scala.Function1" class="parent">
+              <h3>Inherited from (T) ⇒ TraversableOnce[U]</h3>
             </div><div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">

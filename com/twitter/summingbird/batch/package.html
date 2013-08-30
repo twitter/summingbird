@@ -49,29 +49,17 @@
         <div class="types members" id="types">
               <h3>Type Members</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.batch.AbstractBatcher" data-isabs="true">
-      <a id="AbstractBatcher:AbstractBatcher[Time]"></a>
+      <a id="AbstractBatcher:AbstractBatcher"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="AbstractBatcher.html"><span class="name">AbstractBatcher</span></a><span class="tparams">[<span name="Time">Time</span>]</span><span class="result"> extends Batcher[Time]</span>
+        <a href="AbstractBatcher.html"><span class="name">AbstractBatcher</span></a><span class="result"> extends Batcher</span>
       </span>
       </h4>
       <p class="comment cmt">Abstract class to extend for easier java interop.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.BaseDurationBatcher" data-isabs="true">
-      <a id="BaseDurationBatcher:BaseDurationBatcher[Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="BaseDurationBatcher.html"><span class="name">BaseDurationBatcher</span></a><span class="tparams">[<span name="Time">Time</span>]</span><span class="result"> extends Batcher[Time]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Base class for duration batchers.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID" data-isabs="false">
       <a id="BatchID:BatchID"></a>
       <h4 class="signature">
@@ -85,125 +73,30 @@
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher" data-isabs="true">
-      <a id="Batcher:Batcher[Time]"></a>
+      <a id="Batcher:Batcher"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="Batcher.html"><span class="name">Batcher</span></a><span class="tparams">[<span name="Time">Time</span>]</span><span class="result"> extends Serializable</span>
+        <a href="Batcher.html"><span class="name">Batcher</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.BatcherBijection" data-isabs="false">
-      <a id="BatcherBijection:BatcherBijection[T, U]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.MillisecondBatcher" data-isabs="false">
+      <a id="MillisecondBatcher:MillisecondBatcher"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="BatcherBijection.html"><span class="name">BatcherBijection</span></a><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="result"> extends Bijection[Batcher[T], Batcher[U]]</span>
+        <a href="MillisecondBatcher.html"><span class="name">MillisecondBatcher</span></a><span class="result"> extends AbstractBatcher</span>
       </span>
       </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.BijectedBatcher" data-isabs="false">
-      <a id="BijectedBatcher:BijectedBatcher[T, U]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="BijectedBatcher.html"><span class="name">BijectedBatcher</span></a><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="result"> extends Batcher[U]</span>
-      </span>
-      </h4>
-      <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.DurationBatcher" data-isabs="true">
-      <a id="DurationBatcher:DurationBatcher[Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="DurationBatcher.html"><span class="name">DurationBatcher</span></a><span class="tparams">[<span name="Time">Time</span>]</span><span class="result"> extends BaseDurationBatcher[Time]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Batcher based on Scalding's AbsoluteDuration.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.MillisecondsDurationBatcher" data-isabs="false">
-      <a id="MillisecondsDurationBatcher:MillisecondsDurationBatcher"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="MillisecondsDurationBatcher.html"><span class="name">MillisecondsDurationBatcher</span></a><span class="result"> extends DurationBatcher[Long]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.MillisecondsUtilDurationBatcher" data-isabs="false">
-      <a id="MillisecondsUtilDurationBatcher:MillisecondsUtilDurationBatcher"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="MillisecondsUtilDurationBatcher.html"><span class="name">MillisecondsUtilDurationBatcher</span></a><span class="result"> extends UtilDurationBatcher[Long]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.SecondsDurationBatcher" data-isabs="false">
-      <a id="SecondsDurationBatcher:SecondsDurationBatcher"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SecondsDurationBatcher.html"><span class="name">SecondsDurationBatcher</span></a><span class="result"> extends DurationBatcher[Int]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.SecondsUtilDurationBatcher" data-isabs="false">
-      <a id="SecondsUtilDurationBatcher:SecondsUtilDurationBatcher"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SecondsUtilDurationBatcher.html"><span class="name">SecondsUtilDurationBatcher</span></a><span class="result"> extends UtilDurationBatcher[Int]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.UnitBatcher" data-isabs="false">
-      <a id="UnitBatcher:UnitBatcher[Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="UnitBatcher.html"><span class="name">UnitBatcher</span></a><span class="tparams">[<span name="Time">Time</span>]</span><span class="result"> extends Batcher[Time]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.UtilDurationBatcher" data-isabs="true">
-      <a id="UtilDurationBatcher:UtilDurationBatcher[Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="UtilDurationBatcher.html"><span class="name">UtilDurationBatcher</span></a><span class="tparams">[<span name="Time">Time</span>]</span><span class="result"> extends BaseDurationBatcher[Time]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Batcher based on com.</p>
+      <p class="comment cmt">Batcher implementation based on a fixed-width batch of
+milliseconds.</p>
     </li></ol>
             </div>
 
@@ -236,67 +129,7 @@ Summingbird.</p>
       </span>
       </h4>
       <p class="comment cmt">For the purposes of batching, each Event object has exactly one
-Time.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.MillisecondsDurationBatcher" data-isabs="false">
-      <a id="MillisecondsDurationBatcher:MillisecondsDurationBatcher"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="MillisecondsDurationBatcher$.html"><span class="name">MillisecondsDurationBatcher</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.MillisecondsUtilDurationBatcher" data-isabs="false">
-      <a id="MillisecondsUtilDurationBatcher:MillisecondsUtilDurationBatcher"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="MillisecondsUtilDurationBatcher$.html"><span class="name">MillisecondsUtilDurationBatcher</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.SecondsDurationBatcher" data-isabs="false">
-      <a id="SecondsDurationBatcher:SecondsDurationBatcher"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="SecondsDurationBatcher$.html"><span class="name">SecondsDurationBatcher</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.SecondsUtilDurationBatcher" data-isabs="false">
-      <a id="SecondsUtilDurationBatcher:SecondsUtilDurationBatcher"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="SecondsUtilDurationBatcher$.html"><span class="name">SecondsUtilDurationBatcher</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.UnitBatcher" data-isabs="false">
-      <a id="UnitBatcher:UnitBatcher"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="UnitBatcher$.html"><span class="name">UnitBatcher</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Batcher with a single, infinitely long batch.</p>
+Time (in millis).</p>
     </li></ol>
             </div>
 

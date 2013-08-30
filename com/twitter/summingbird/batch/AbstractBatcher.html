@@ -25,14 +25,17 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">AbstractBatcher</span><span class="tparams">[<span name="Time">Time</span>]</span><span class="result"> extends <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a>[Time]</span>
+        <span class="name">AbstractBatcher</span><span class="result"> extends <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></span>
       </span>
       </h4>
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Abstract class to extend for easier java interop.
 </p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-batch/src/main/scala/com/twitter/summingbird/batch/Batcher.scala">Batcher.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a>[Time], <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+        </div><div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.batch.MillisecondBatcher" class="extype" href="MillisecondBatcher.html">MillisecondBatcher</a></div>
         </div></div>
     
 
@@ -59,7 +62,7 @@
         <div class="members" id="constructors">
               <h3>Instance Constructors</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.batch.AbstractBatcher#this" data-isabs="false">
-      <a id="this:AbstractBatcher[Time]"></a>
+      <a id="this:AbstractBatcher"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
@@ -78,65 +81,29 @@
         <div class="values members" id="values">
               <h3>Abstract Value Members</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#batchOf" data-isabs="true">
-      <a id="batchOf(Time):BatchID"></a>
+      <a id="batchOf(Date):BatchID"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">batchOf</span><span class="params">(<span name="t">t: Time</span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>
+        <span class="name">batchOf</span><span class="params">(<span name="t">t: <span name="java.util.Date" class="extype">Date</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#currentTime" data-isabs="true">
-      <a id="currentTime:Time"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">currentTime</span><span class="result">: Time</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
+      <p class="shortcomment cmt">Returns the batch into which the supplied Date is bucketed.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the batch into which the supplied Date is bucketed.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#earliestTimeOf" data-isabs="true">
-      <a id="earliestTimeOf(BatchID):Time"></a>
+      <a id="earliestTimeOf(BatchID):Date"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">earliestTimeOf</span><span class="params">(<span name="batch">batch: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>)</span><span class="result">: Time</span>
+        <span class="name">earliestTimeOf</span><span class="params">(<span name="batch">batch: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>)</span><span class="result">: <span name="java.util.Date" class="extype">Date</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#parseTime" data-isabs="true">
-      <a id="parseTime(String):Time"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">parseTime</span><span class="params">(<span name="s">s: String</span>)</span><span class="result">: Time</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#timeComparator" data-isabs="true">
-      <a id="timeComparator:Comparator[Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">timeComparator</span><span class="result">: <span name="java.util.Comparator" class="extype">Comparator</span>[Time]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
+      <p class="shortcomment cmt">Returns the (inclusive) earliest time of the supplied batch.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the (inclusive) earliest time of the supplied batch.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
     </li></ol>
             </div>
 
@@ -214,6 +181,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#batchesCoveredBy" data-isabs="false">
+      <a id="batchesCoveredBy(Interval[Date]):Interval[BatchID]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batchesCoveredBy</span><span class="params">(<span name="interval">interval: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<span name="java.util.Date" class="extype">Date</span>]</span>)</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -229,6 +208,22 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#cover" data-isabs="false">
+      <a id="cover(Interval[Date]):Interval[BatchID]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cover</span><span class="params">(<span name="interval">interval: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<span name="java.util.Date" class="extype">Date</span>]</span>)</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">What batches are needed to cover the given interval
+or: for all t in interval, batchOf(t) is in the result
+</p><div class="fullcomment"><div class="comment cmt"><p>What batches are needed to cover the given interval
+or: for all t in interval, batchOf(t) is in the result
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#currentBatch" data-isabs="false">
       <a id="currentBatch:BatchID"></a>
       <h4 class="signature">
@@ -240,7 +235,36 @@
         <span class="name">currentBatch</span><span class="result">: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>
       </span>
       </h4>
+      <p class="shortcomment cmt">Returns the current BatchID.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the current BatchID.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#enclosedBy" data-isabs="false">
+      <a id="enclosedBy((BatchID, BatchID),Batcher):Iterable[BatchID]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">enclosedBy</span><span class="params">(<span name="extremities">extremities: (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>)</span>, <span name="other">other: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></span>)</span><span class="result">: Iterable[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
+      </span>
+      </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#enclosedBy" data-isabs="false">
+      <a id="enclosedBy(BatchID,Batcher):Iterable[BatchID]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">enclosedBy</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>, <span name="other">other: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></span>)</span><span class="result">: Iterable[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns the sequence of BatchIDs that the supplied <code>other</code>
+batcher would need to fetch to fully enclose the supplied
+<code>batchID</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the sequence of BatchIDs that the supplied <code>other</code>
+batcher would need to fetch to fully enclose the supplied
+<code>batchID</code>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -364,6 +388,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#toInterval" data-isabs="false">
+      <a id="toInterval(BatchID):Interval[Date]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toInterval</span><span class="params">(<span name="b">b: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>)</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<span name="java.util.Date" class="extype">Date</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -429,7 +465,7 @@
 
         <div id="inheritedMembers">
         <div name="com.twitter.summingbird.batch.Batcher" class="parent">
-              <h3>Inherited from <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a>[Time]</h3>
+              <h3>Inherited from <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></h3>
             </div><div name="java.io.Serializable" class="parent">
               <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
             </div><div name="scala.AnyRef" class="parent">

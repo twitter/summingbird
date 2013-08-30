@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-client/src/main/scala/com/twitter/summingbird/store/ClientStore.scala">ClientStore.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-client/src/main/scala/com/twitter/summingbird/store/MergeOperations.scala">MergeOperations.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -57,7 +57,22 @@
         <div id="allMembers">
         
 
-        
+        <div class="types members" id="types">
+              <h3>Type Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#FOpt" data-isabs="false">
+      <a id="FOpt:FOpt[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FOpt</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> = <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Option" class="extype">Option</span>[T]]</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
 
         
 
@@ -151,26 +166,26 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#collect" data-isabs="false">
-      <a id="collect[T, U](Seq[(T, Future[U])]):Future[Seq[(T, U)]]"></a>
+      <a id="collect[T, U](Seq[(T, Future[U])])(FutureCollector[(T, U)]):Future[Seq[(T, U)]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">collect</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="seq">seq: Seq[(T, <span name="com.twitter.util.Future" class="extype">Future</span>[U])]</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[Seq[(T, U)]]</span>
+        <span class="name">collect</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="seq">seq: Seq[(T, <span name="com.twitter.util.Future" class="extype">Future</span>[U])]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="collect">collect: <span name="com.twitter.storehaus.FutureCollector" class="extype">FutureCollector</span>[(T, U)]</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[Seq[(T, U)]]</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#const" data-isabs="false">
-      <a id="const[T](Try[T]):Future[T]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#decrementOfflineBatch" data-isabs="false">
+      <a id="decrementOfflineBatch[K, V](Map[K, FOpt[(BatchID, V)]]):Map[K, Future[Seq[Option[(BatchID, V)]]]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">const</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="result">result: <span name="com.twitter.util.Try" class="extype">Try</span>[T]</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[T]</span>
+        <span class="name">decrementOfflineBatch</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="m">m: Map[K, FOpt[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]</span>)</span><span class="result">: Map[K, <span name="com.twitter.util.Future" class="extype">Future</span>[Seq[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]]]</span>
       </span>
       </h4>
       
@@ -210,6 +225,22 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#expand" data-isabs="false">
+      <a id="expand(Option[BatchID],BatchID,Int):Iterable[BatchID]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">expand</span><span class="params">(<span name="offlineReturn">offlineReturn: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>]</span>, <span name="nowBatch">nowBatch: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="batchesToKeep">batchesToKeep: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: Iterable[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Selects the most recent BatchID between the offlineStore and the BatchID calculated
+with batchesToKeep.</p><div class="fullcomment"><div class="comment cmt"><p>Selects the most recent BatchID between the offlineStore and the BatchID calculated
+with batchesToKeep. The more recent BatchID is used as the begining of the
+range used to query the onlineStore.
+</p></div></div>
     </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -225,6 +256,18 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#generateOnlineKeys" data-isabs="false">
+      <a id="generateOnlineKeys[K](Seq[K],BatchID,Int)((K) ⇒ FOpt[BatchID])(FutureCollector[(K, Iterable[BatchID])]):Future[Set[(K, BatchID)]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">generateOnlineKeys</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="ks">ks: Seq[K]</span>, <span name="nowBatch">nowBatch: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="batchesToKeep">batchesToKeep: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="params">(<span name="lookup">lookup: (K) ⇒ FOpt[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="collect">collect: <span name="com.twitter.storehaus.FutureCollector" class="extype">FutureCollector</span>[(K, Iterable[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>])]</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[Set[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>)]]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
       <a id="getClass():java.lang.Class[_]"></a>
       <h4 class="signature">
@@ -261,28 +304,15 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#isSequential" data-isabs="false">
-      <a id="isSequential[T](Seq[T])((T, T) ⇒ Boolean):Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isSequential</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="seq">seq: Seq[T]</span>)</span><span class="params">(<span name="areConsecutive">areConsecutive: (T, T) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">Returns true if every pair in the sequence returns true
-for areConsecutive, false otherwise.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#mergeResults" data-isabs="false">
-      <a id="mergeResults[K, V](Map[K, Future[Seq[Option[(BatchID, V)]]]],Map[K, Future[Seq[Option[(BatchID, V)]]]])(Monoid[V]):Map[K, Future[Option[(BatchID, V)]]]"></a>
+      <a id="mergeResults[K, V](Map[K, Future[Seq[Option[(BatchID, V)]]]],Map[K, Future[Seq[Option[(BatchID, V)]]]])(Semigroup[V]):Map[K, Future[Option[(BatchID, V)]]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">mergeResults</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="m1">m1: Map[K, <span name="com.twitter.util.Future" class="extype">Future</span>[Seq[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]]]</span>, <span name="m2">m2: Map[K, <span name="com.twitter.util.Future" class="extype">Future</span>[Seq[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]]]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span><span class="result">: Map[K, <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]]</span>
+        <span class="name">mergeResults</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="m1">m1: Map[K, <span name="com.twitter.util.Future" class="extype">Future</span>[Seq[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]]]</span>, <span name="m2">m2: Map[K, <span name="com.twitter.util.Future" class="extype">Future</span>[Seq[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]]]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>)</span><span class="result">: Map[K, <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]]</span>
       </span>
       </h4>
       
@@ -323,40 +353,38 @@ for areConsecutive, false otherwise.</p>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#pivot" data-isabs="false">
-      <a id="pivot[K, V]:Pivot[((K, BatchID), V), K, (BatchID, V)]"></a>
+      <a id="pivot[K]:Pivot[(K, BatchID), K, BatchID]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">pivot</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result">: <span name="com.twitter.bijection.Pivot" class="extype">Pivot</span>[((K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V), K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>
+        <span class="name">pivot</span><span class="tparams">[<span name="K">K</span>]</span><span class="result">: <span name="com.twitter.bijection.Pivot" class="extype">Pivot</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Pivot to pivot (K, BatchID) pairs into K -&gt; (BatchID, V).</p><div class="fullcomment"><div class="comment cmt"><p>Pivot to pivot (K, BatchID) pairs into K -&gt; (BatchID, V).
-TODO: rewrite the timeOf method in the batcher in terms of the pivot.
-</p></div></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#seqMonoid" data-isabs="false">
-      <a id="seqMonoid[V]:Monoid[Seq[V]]"></a>
+      <p class="shortcomment cmt">Pivot to pivot (K, BatchID) pairs into K -&gt; (BatchID, V).</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#pivotBatches" data-isabs="false">
+      <a id="pivotBatches[K, V](Map[(K, BatchID), FOpt[V]]):Map[K, Future[Seq[Option[(BatchID, V)]]]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">implicit </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">seqMonoid</span><span class="tparams">[<span name="V">V</span>]</span><span class="result">: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[Seq[V]]</span>
+        <span class="name">pivotBatches</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="m">m: Map[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), FOpt[V]]</span>)</span><span class="result">: Map[K, <span name="com.twitter.util.Future" class="extype">Future</span>[Seq[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]]]</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Pivots each BatchID out of the key and into the Value's future.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.store.MergeOperations#sortedSum" data-isabs="false">
-      <a id="sortedSum[V](Seq[Option[(BatchID, V)]])(Semigroup[V]):Try[Option[(BatchID, V)]]"></a>
+      <a id="sortedSum[V](Seq[Option[(BatchID, V)]])(Semigroup[V]):Option[(BatchID, V)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">sortedSum</span><span class="tparams">[<span name="V">V</span>]</span><span class="params">(<span name="opts">opts: Seq[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>)</span><span class="result">: <span name="com.twitter.util.Try" class="extype">Try</span>[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]</span>
+        <span class="name">sortedSum</span><span class="tparams">[<span name="V">V</span>]</span><span class="params">(<span name="opts">opts: Seq[<span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>
       </span>
       </h4>
       

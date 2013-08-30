@@ -125,38 +125,38 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.store.ClientStore#apply" data-isabs="false">
-      <a id="apply[T, K, V](ReadableStore[K, (BatchID, V)],ReadableStore[(K, BatchID), V],Int)(Batcher[T],Monoid[V]):ClientStore[T, K, V]"></a>
+      <a id="apply[K, V](ReadableStore[K, (BatchID, V)],ReadableStore[(K, BatchID), V],Int,(K) ⇒ Boolean)(Batcher,Monoid[V]):ClientStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="offlineStore">offlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>, <span name="onlineStore">onlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>, <span name="batchesToKeep">batchesToKeep: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a>[T]</span>, <span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.ClientStore" class="extype" href="ClientStore.html">ClientStore</a>[T, K, V]</span>
+        <span class="name">apply</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="offlineStore">offlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>, <span name="onlineStore">onlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>, <span name="batchesToKeep">batchesToKeep: <span name="scala.Int" class="extype">Int</span></span>, <span name="onlineKeyFilter">onlineKeyFilter: (K) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.ClientStore" class="extype" href="ClientStore.html">ClientStore</a>[K, V]</span>
       </span>
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.store.ClientStore#apply" data-isabs="false">
-      <a id="apply[T, K, V](ReadableStore[K, (BatchID, V)])(Batcher[T],Monoid[V]):ClientStore[T, K, V]"></a>
+      <a id="apply[K, V](ReadableStore[K, (BatchID, V)])(Batcher,Monoid[V]):ClientStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="offlineStore">offlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a>[T]</span>, <span name="arg1">arg1: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.ClientStore" class="extype" href="ClientStore.html">ClientStore</a>[T, K, V]</span>
+        <span class="name">apply</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="offlineStore">offlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.ClientStore" class="extype" href="ClientStore.html">ClientStore</a>[K, V]</span>
       </span>
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.store.ClientStore#apply" data-isabs="false">
-      <a id="apply[T, K, V](ReadableStore[(K, BatchID), V],Int)(Batcher[T],Monoid[V]):ClientStore[T, K, V]"></a>
+      <a id="apply[K, V](ReadableStore[(K, BatchID), V],Int)(Batcher,Monoid[V]):ClientStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="onlineStore">onlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>, <span name="batchesToKeep">batchesToKeep: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a>[T]</span>, <span name="arg1">arg1: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.ClientStore" class="extype" href="ClientStore.html">ClientStore</a>[T, K, V]</span>
+        <span class="name">apply</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="onlineStore">onlineStore: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>, <span name="batchesToKeep">batchesToKeep: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.ClientStore" class="extype" href="ClientStore.html">ClientStore</a>[K, V]</span>
       </span>
       </h4>
       
@@ -187,6 +187,18 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.store.ClientStore#defaultOnlineKeyFilter" data-isabs="false">
+      <a id="defaultOnlineKeyFilter[K]:(K) ⇒ Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultOnlineKeyFilter</span><span class="tparams">[<span name="K">K</span>]</span><span class="result">: (K) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">

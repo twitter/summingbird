@@ -14,7 +14,7 @@
         </head>
         <body onload="sh_highlightDocument('../lib/', '.min.js');" class="value">
       <div id="definition">
-        <a title="Go to companion" href="FlatMapper.html"><img src="../../../lib/object_to_trait_big.png" /></a>
+        <a title="Go to companion" href="FlatMapper.html"><img src="../../../lib/object_to_class_big.png" /></a>
         <p id="owner"><a name="com" class="extype" href="../../package.html">com</a>.<a name="com.twitter" class="extype" href="../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="package.html">summingbird</a></p>
         <h1><a title="Go to companion" href="FlatMapper.html">FlatMapper</a></h1>
       </div>
@@ -25,13 +25,13 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">FlatMapper</span><span class="result"> extends <span name="scala.Serializable" class="extype">Serializable</span></span>
+        <span class="name">FlatMapper</span><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-core/src/main/scala/com/twitter/summingbird/FlatMapper.scala">FlatMapper.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-builder/src/main/scala/com/twitter/summingbird/FlatMapper.scala">FlatMapper.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -45,7 +45,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.FlatMapper" class="in"><span>FlatMapper</span></li><li name="scala.Serializable" class="in"><span>Serializable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.FlatMapper" class="in"><span>FlatMapper</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -124,14 +124,14 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.FlatMapper#andThen" data-isabs="false">
-      <a id="andThen[E, K1, V1, K2, V2](FlatMapper[E, K1, V1],FlatMapper[(K1, V1), K2, V2]):FlatMapper[E, K2, V2]"></a>
+      <a id="andThen[T, U, V](FlatMapper[T, U],FlatMapper[U, V]):FlatMapper[T, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">andThen</span><span class="tparams">[<span name="E">E</span>, <span name="K1">K1</span>, <span name="V1">V1</span>, <span name="K2">K2</span>, <span name="V2">V2</span>]</span><span class="params">(<span name="fm">fm: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[E, K1, V1]</span>, <span name="fm2">fm2: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[(K1, V1), K2, V2]</span>)</span><span class="result">: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[E, K2, V2]</span>
+        <span class="name">andThen</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>, <span name="V">V</span>]</span><span class="params">(<span name="fm">fm: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[T, U]</span>, <span name="fm2">fm2: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[U, V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[T, V]</span>
       </span>
       </h4>
       
@@ -187,14 +187,14 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.FlatMapper#filter" data-isabs="false">
-      <a id="filter[E, K, V](FlatMapper[E, K, V],((K, V)) ⇒ Boolean):FlatMapper[E, K, V]"></a>
+      <a id="filter[T, U](FlatMapper[T, U],(U) ⇒ Boolean):FlatMapper[T, U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">filter</span><span class="tparams">[<span name="E">E</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="fm">fm: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[E, K, V]</span>, <span name="filterfn">filterfn: ((K, V)) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[E, K, V]</span>
+        <span class="name">filter</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="fm">fm: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[T, U]</span>, <span name="filterfn">filterfn: (U) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[T, U]</span>
       </span>
       </h4>
       
@@ -214,14 +214,14 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.FlatMapper#functionToFlatMapper" data-isabs="false">
-      <a id="functionToFlatMapper[Event, Key, Value]((Event) ⇒ TraversableOnce[(Key, Value)]):FlatMapper[Event, Key, Value]"></a>
+      <a id="functionToFlatMapper[T, U]((T) ⇒ TraversableOnce[U]):FlatMapper[T, U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">implicit </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">functionToFlatMapper</span><span class="tparams">[<span name="Event">Event</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="params">(<span name="fn">fn: (Event) ⇒ TraversableOnce[(Key, Value)]</span>)</span><span class="result">: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[Event, Key, Value]</span>
+        <span class="name">functionToFlatMapper</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (T) ⇒ TraversableOnce[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="FlatMapper.html">FlatMapper</a>[T, U]</span>
       </span>
       </h4>
       
@@ -297,18 +297,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.FlatMapper#readResolve" data-isabs="false">
-      <a id="readResolve():AnyRef"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">readResolve</span><span class="params">()</span><span class="result">: AnyRef</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -385,11 +373,7 @@
         </div>
 
         <div id="inheritedMembers">
-        <div name="scala.Serializable" class="parent">
-              <h3>Inherited from <span name="scala.Serializable" class="extype">Serializable</span></h3>
-            </div><div name="java.io.Serializable" class="parent">
-              <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
-            </div><div name="scala.AnyRef" class="parent">
+        <div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">
               <h3>Inherited from <span name="scala.Any" class="extype">Any</span></h3>

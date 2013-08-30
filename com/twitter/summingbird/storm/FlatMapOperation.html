@@ -25,13 +25,16 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">FlatMapOperation</span><span class="tparams">[<span name="Event">Event</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends <span name="java.io.Serializable" class="extype">Serializable</span> with <span name="java.io.Closeable" class="extype">Closeable</span></span>
+        <span class="name">FlatMapOperation</span><span class="tparams">[<span name="T">-T</span>, <span name="U">+U</span>]</span><span class="result"> extends <span name="java.io.Serializable" class="extype">Serializable</span> with <span name="java.io.Closeable" class="extype">Closeable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Self Type</dt><dd><a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="">FlatMapOperation</a>[Event, Key, Value]</dd><dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-core/src/main/scala/com/twitter/summingbird/storm/FlatMapOperation.scala">FlatMapOperation.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Self Type</dt><dd><a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="">FlatMapOperation</a>[T, U]</dd><dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/FlatMapOperation.scala">FlatMapOperation.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="java.io.Closeable" class="extype">Closeable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><span name="java.io.Closeable" class="extype">Closeable</span>, <span name="java.lang.AutoCloseable" class="extype">AutoCloseable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+        </div><div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.storm.FunctionFlatMapOperation" class="extype" href="FunctionFlatMapOperation.html">FunctionFlatMapOperation</a></div>
         </div></div>
     
 
@@ -45,7 +48,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.storm.FlatMapOperation" class="in"><span>FlatMapOperation</span></li><li name="java.io.Closeable" class="in"><span>Closeable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.storm.FlatMapOperation" class="in"><span>FlatMapOperation</span></li><li name="java.io.Closeable" class="in"><span>Closeable</span></li><li name="java.lang.AutoCloseable" class="in"><span>AutoCloseable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -62,14 +65,14 @@
         <div class="values members" id="values">
               <h3>Abstract Value Members</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation#apply" data-isabs="true">
-      <a id="apply(Event):Future[TraversableOnce[(Key, Value)]]"></a>
+      <a id="apply(T):Future[TraversableOnce[U]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="e">e: Event</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[TraversableOnce[(Key, Value)]]</span>
+        <span class="name">apply</span><span class="params">(<span name="t">t: T</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[TraversableOnce[U]]</span>
       </span>
       </h4>
       
@@ -139,17 +142,19 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation#andThen" data-isabs="false">
-      <a id="andThen[K2, V2](FlatMapOperation[(Key, Value), K2, V2]):FlatMapOperation[Event, K2, V2]"></a>
+      <a id="andThen[V](FlatMapOperation[U, V]):FlatMapOperation[T, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">andThen</span><span class="tparams">[<span name="K2">K2</span>, <span name="V2">V2</span>]</span><span class="params">(<span name="fmo">fmo: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="">FlatMapOperation</a>[(Key, Value), K2, V2]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="">FlatMapOperation</a>[Event, K2, V2]</span>
+        <span class="name">andThen</span><span class="tparams">[<span name="V">V</span>]</span><span class="params">(<span name="fmo">fmo: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="">FlatMapOperation</a>[U, V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="">FlatMapOperation</a>[T, V]</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">TODO: Think about getting an implicit FutureCollector here, in
+case we don't want to completely choke on large expansions (and
+joins).</p>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -188,7 +193,7 @@
         <span class="name">close</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="">FlatMapOperation</a> → Closeable</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="">FlatMapOperation</a> → Closeable → AutoCloseable</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -378,6 +383,8 @@
         <div id="inheritedMembers">
         <div name="java.io.Closeable" class="parent">
               <h3>Inherited from <span name="java.io.Closeable" class="extype">Closeable</span></h3>
+            </div><div name="java.lang.AutoCloseable" class="parent">
+              <h3>Inherited from <span name="java.lang.AutoCloseable" class="extype">AutoCloseable</span></h3>
             </div><div name="java.io.Serializable" class="parent">
               <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
             </div><div name="scala.AnyRef" class="parent">

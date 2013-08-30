@@ -48,66 +48,32 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.source.EventSource" data-isabs="true">
-      <a id="EventSource:EventSource[Event, Time]"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.source.EventSource" data-isabs="false">
+      <a id="EventSource:EventSource[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="EventSource.html"><span class="name">EventSource</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>]</span><span class="result"> extends OnlineSource[Event, Time] with OfflineSource[Event, Time]</span>
+        <a href="EventSource.html"><span class="name">EventSource</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="offline">offline: Option[OfflineSource[T]]</span>, <span name="spout">spout: Option[Spout[T]]</span>, <span name="evidence$1">evidence$1: Manifest[T]</span>)</span><span class="result"> extends Product with Serializable</span>
       </span>
       </h4>
-      
+      <p class="comment cmt">An EventSource[Event,Time] is a compound source that mixes together
+the notions of an online and offline source:
+</p>
     </li><li visbl="pub" name="com.twitter.summingbird.source.OfflineSource" data-isabs="true">
-      <a id="OfflineSource:OfflineSource[Event, Time]"></a>
+      <a id="OfflineSource:OfflineSource[Event]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="OfflineSource.html"><span class="name">OfflineSource</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>]</span><span class="result"> extends TimeExtractor[Event, Time]</span>
+        <a href="OfflineSource.html"><span class="name">OfflineSource</span></a><span class="tparams">[<span name="Event">Event</span>]</span><span class="result"> extends Serializable</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.source.OnlineSource" data-isabs="true">
-      <a id="OnlineSource:OnlineSource[Event, Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="OnlineSource.html"><span class="name">OnlineSource</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>]</span><span class="result"> extends TimeExtractor[Event, Time]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.source.StormSource" data-isabs="true">
-      <a id="StormSource:StormSource[T, Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="StormSource.html"><span class="name">StormSource</span></a><span class="tparams">[<span name="T">T</span>, <span name="Time">Time</span>]</span><span class="result"> extends OnlineSource[T, Time]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.source.TimeExtractor" data-isabs="true">
-      <a id="TimeExtractor:TimeExtractor[Event, Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="TimeExtractor.html"><span class="name">TimeExtractor</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>]</span><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      <p class="comment cmt"></p>
     </li></ol>
             </div>
 
@@ -124,6 +90,18 @@
       </span>
       <span class="symbol">
         <a href="EventSource$.html"><span class="name">EventSource</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.source.OfflineSource" data-isabs="false">
+      <a id="OfflineSource:OfflineSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="OfflineSource$.html"><span class="name">OfflineSource</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
       

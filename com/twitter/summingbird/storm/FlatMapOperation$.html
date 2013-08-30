@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-core/src/main/scala/com/twitter/summingbird/storm/FlatMapOperation.scala">FlatMapOperation.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/FlatMapOperation.scala">FlatMapOperation.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -124,14 +124,14 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation#apply" data-isabs="false">
-      <a id="apply[Event, Key, Value](FlatMapper[Event, Key, Value]):FlatMapOperation[Event, Key, Value]"></a>
+      <a id="apply[T, U]((T) ⇒ TraversableOnce[U]):FlatMapOperation[T, U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="Event">Event</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="params">(<span name="fm">fm: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="../FlatMapper.html">FlatMapper</a>[Event, Key, Value]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[Event, Key, Value]</span>
+        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="fm">fm: (T) ⇒ TraversableOnce[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[T, U]</span>
       </span>
       </h4>
       
@@ -163,14 +163,14 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation#combine" data-isabs="false">
-      <a id="combine[Event, Key, Value, Joined](FlatMapOperation[Event, Key, Value],ReadableStore[Key, Joined]):FlatMapOperation[Event, Key, (Value, Option[Joined])]"></a>
+      <a id="combine[T, K, V, JoinedV](⇒ FlatMapOperation[T, (K, V)],() ⇒ ReadableStore[K, JoinedV]):FlatMapOperation[T, (K, (V, Option[JoinedV]))]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">combine</span><span class="tparams">[<span name="Event">Event</span>, <span name="Key">Key</span>, <span name="Value">Value</span>, <span name="Joined">Joined</span>]</span><span class="params">(<span name="fm">fm: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[Event, Key, Value]</span>, <span name="store">store: <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[Key, Joined]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[Event, Key, (Value, <span name="scala.Option" class="extype">Option</span>[Joined])]</span>
+        <span class="name">combine</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="JoinedV">JoinedV</span>]</span><span class="params">(<span name="fmSupplier">fmSupplier: ⇒ <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[T, (K, V)]</span>, <span name="storeSupplier">storeSupplier: () ⇒ <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, JoinedV]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[T, (K, (V, <span name="scala.Option" class="extype">Option</span>[JoinedV]))]</span>
       </span>
       </h4>
       
@@ -237,6 +237,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation#identity" data-isabs="false">
+      <a id="identity[T]:FlatMapOperation[T, T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">identity</span><span class="tparams">[<span name="T">T</span>]</span><span class="result">: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[T, T]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <h4 class="signature">
@@ -366,6 +378,18 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation#write" data-isabs="false">
+      <a id="write[T](() ⇒ (T) ⇒ Future[Unit]):FlatMapOperation[T, T] { ... /* 2 definitions in type refinement */ }"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">write</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="sinkSupplier">sinkSupplier: () ⇒ (T) ⇒ <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[T, T] { ... /* 2 definitions in type refinement */ }</span>
+      </span>
+      </h4>
+      
     </li></ol>
             </div>
 

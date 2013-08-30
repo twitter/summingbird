@@ -30,12 +30,9 @@
       </h4>
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>For the purposes of batching, each Event object has exactly one
-Time. The Batcher[Time] uses this time to assign each Event to a
-specific BatchID. Batcher[Time] also has a Comparator[Time] so that
-Time is ordered. Lastly, a Batcher[Time] can return the minimum
-value of Time for each BatchID.  The Time type in practice might be
-a java Date, a Long representing millis since the epoch, or an Int
-representing seconds since the epoch, for instance.
+Time (in millis). The Batcher uses this time to assign each Event
+to a specific BatchID. A Batcher can return the minimum time for
+each BatchID.
 </p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-batch/src/main/scala/com/twitter/summingbird/batch/Batcher.scala">Batcher.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
@@ -130,6 +127,19 @@ representing seconds since the epoch, for instance.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#apply" data-isabs="false">
+      <a id="apply(Long,TimeUnit):MillisecondBatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="value">value: <span name="scala.Long" class="extype">Long</span></span>, <span name="unit">unit: <span name="java.util.concurrent.TimeUnit" class="extype">TimeUnit</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.MillisecondBatcher" class="extype" href="MillisecondBatcher.html">MillisecondBatcher</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns a batcher that assigns batches based on multiples of the
+supplied TimeUnit from the epoch.</p>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -142,18 +152,6 @@ representing seconds since the epoch, for instance.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#bijection" data-isabs="false">
-      <a id="bijection[T, U](Bijection[T, U]):Bijection[Batcher[T], Batcher[U]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">implicit </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">bijection</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="bij">bij: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[T, U]</span>)</span><span class="result">: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[<a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a>[T], <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a>[U]]</span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">Returns a Bijection between Batcher[T] and Batcher[U].</p>
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -280,6 +278,45 @@ representing seconds since the epoch, for instance.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#ofDays" data-isabs="false">
+      <a id="ofDays(Long):MillisecondBatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ofDays</span><span class="params">(<span name="count">count: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.MillisecondBatcher" class="extype" href="MillisecondBatcher.html">MillisecondBatcher</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns a batcher that generates batches of the supplied number
+of days.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#ofHours" data-isabs="false">
+      <a id="ofHours(Long):MillisecondBatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ofHours</span><span class="params">(<span name="count">count: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.MillisecondBatcher" class="extype" href="MillisecondBatcher.html">MillisecondBatcher</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns a batcher that generates batches of the supplied number
+of hours.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#ofMinutes" data-isabs="false">
+      <a id="ofMinutes(Long):MillisecondBatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ofMinutes</span><span class="params">(<span name="count">count: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.MillisecondBatcher" class="extype" href="MillisecondBatcher.html">MillisecondBatcher</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns a batcher that generates batches of the supplied number
+of minutes.</p>
     </li><li visbl="prt" name="com.twitter.summingbird.batch.Batcher#readResolve" data-isabs="false">
       <a id="readResolve():AnyRef"></a>
       <h4 class="signature">
@@ -316,18 +353,19 @@ representing seconds since the epoch, for instance.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#viaBijection" data-isabs="false">
-      <a id="viaBijection[T, U](Batcher[T])(Bijection[T, U]):Batcher[U]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#unit" data-isabs="false">
+      <a id="unit:AbstractBatcher"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">implicit </span>
-        <span class="kind">def</span>
+        <span class="modifier"></span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">viaBijection</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a>[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="bij">bij: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[T, U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a>[U]</span>
+        <span class="name">unit</span><span class="result">: <a name="com.twitter.summingbird.batch.AbstractBatcher" class="extype" href="AbstractBatcher.html">AbstractBatcher</a></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Converts a Batcher[T] into a Batcher[U] via an implicit bijection.</p>
+      <p class="shortcomment cmt">Returns a batcher that assigns every input tuple to the same
+batch.</p>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">

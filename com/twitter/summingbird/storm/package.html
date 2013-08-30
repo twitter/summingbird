@@ -29,7 +29,8 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"></div>
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Package containing the Summingbird Storm platform.
+</p></div></div>
     
 
       <div id="mbrsel">
@@ -48,78 +49,189 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.storm.BufferingBolt" data-isabs="true">
-      <a id="BufferingBolt:BufferingBolt[T]"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt" data-isabs="true">
+      <a id="BaseBolt:BaseBolt"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="BufferingBolt.html"><span class="name">BufferingBolt</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends IRichBolt</span>
+        <a href="BaseBolt.html"><span class="name">BaseBolt</span></a><span class="result"> extends IRichBolt</span>
       </span>
       </h4>
       <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.ConcurrentSinkBolt" data-isabs="false">
-      <a id="ConcurrentSinkBolt:ConcurrentSinkBolt[StoreType, Key, Value]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.CollectorMergeableStore" data-isabs="false">
+      <a id="CollectorMergeableStore:CollectorMergeableStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ConcurrentSinkBolt.html"><span class="name">ConcurrentSinkBolt</span></a><span class="tparams">[<span name="StoreType">StoreType &lt;: Store[StoreType, (Key, BatchID), Value]</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends SinkBolt[StoreType, Key, Value]</span>
+        <a href="CollectorMergeableStore.html"><span class="name">CollectorMergeableStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends MergeableStore[(K, BatchID), V]</span>
       </span>
       </h4>
-      <p class="comment cmt">Extension of SinkBolt that allows concurrent writes from multiIncrement.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.DecoderBolt" data-isabs="false">
-      <a id="DecoderBolt:DecoderBolt[Key]"></a>
+      <p class="comment cmt">CollectorMergeableStore merges (K, BatchID) -&gt; V into the
+underlying store by way of a storm topology.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.FinalFlatMapBolt" data-isabs="false">
+      <a id="FinalFlatMapBolt:FinalFlatMapBolt[Event, Key, Value]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DecoderBolt.html"><span class="name">DecoderBolt</span></a><span class="tparams">[<span name="Key">Key</span>]</span><span class="result"> extends BaseBasicBolt</span>
-      </span>
-      </h4>
-      <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapBolt" data-isabs="false">
-      <a id="FlatMapBolt:FlatMapBolt[Event, Time, Key, Value]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="FlatMapBolt.html"><span class="name">FlatMapBolt</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends BufferingBolt[Map[(Key, BatchID), Value]]</span>
+        <a href="FinalFlatMapBolt.html"><span class="name">FinalFlatMapBolt</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends BaseBolt</span>
       </span>
       </h4>
       <p class="comment cmt"></p>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation" data-isabs="true">
-      <a id="FlatMapOperation:FlatMapOperation[Event, Key, Value]"></a>
+      <a id="FlatMapOperation:FlatMapOperation[T, U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="FlatMapOperation.html"><span class="name">FlatMapOperation</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends Serializable with Closeable</span>
+        <a href="FlatMapOperation.html"><span class="name">FlatMapOperation</span></a><span class="tparams">[<span name="T">-T</span>, <span name="U">+U</span>]</span><span class="result"> extends Serializable with Closeable</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt" data-isabs="false">
-      <a id="SinkBolt:SinkBolt[StoreType, Key, Value]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.FunctionFlatMapOperation" data-isabs="false">
+      <a id="FunctionFlatMapOperation:FunctionFlatMapOperation[T, U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SinkBolt.html"><span class="name">SinkBolt</span></a><span class="tparams">[<span name="StoreType">StoreType &lt;: Store[StoreType, (Key, BatchID), Value]</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends BufferingBolt[Map[(Key, BatchID), Value]]</span>
+        <a href="FunctionFlatMapOperation.html"><span class="name">FunctionFlatMapOperation</span></a><span class="tparams">[<span name="T">-T</span>, <span name="U">+U</span>]</span><span class="result"> extends FlatMapOperation[T, U]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue" data-isabs="false">
+      <a id="FutureQueue:FutureQueue[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="FutureQueue.html"><span class="name">FutureQueue</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="init">init: Future[T]</span>, <span name="maxLength">maxLength: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Maintains a rolling window of futures.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.IntermediateFlatMapBolt" data-isabs="false">
+      <a id="IntermediateFlatMapBolt:IntermediateFlatMapBolt[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IntermediateFlatMapBolt.html"><span class="name">IntermediateFlatMapBolt</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends BaseBolt</span>
+      </span>
+      </h4>
+      <p class="comment cmt">This bolt is used for intermediate flatMapping before a grouping.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.LocalStorm" data-isabs="false">
+      <a id="LocalStorm:LocalStorm"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LocalStorm.html"><span class="name">LocalStorm</span></a><span class="result"> extends Storm</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.MergeableStoreSupplier" data-isabs="false">
+      <a id="MergeableStoreSupplier:MergeableStoreSupplier[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MergeableStoreSupplier.html"><span class="name">MergeableStoreSupplier</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: () ⇒ MergeableStore[(K, BatchID), V]</span>, <span name="batcher">batcher: Batcher</span>)</span><span class="result"> extends StormStore[K, V] with Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.OnlineSink" data-isabs="true">
+      <a id="OnlineSink:OnlineSink[Event]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="OnlineSink.html"><span class="name">OnlineSink</span></a><span class="tparams">[<span name="Event">-Event</span>]</span><span class="result"> extends (Event) ⇒ Future[Unit]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Represents a location to which intermediate results of the
+&quot;flatMap&quot; operation can be written for consumption by other
+jobs.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.RemoteStorm" data-isabs="false">
+      <a id="RemoteStorm:RemoteStorm"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RemoteStorm.html"><span class="name">RemoteStorm</span></a><span class="result"> extends Storm</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SinkBolt" data-isabs="false">
+      <a id="SinkBolt:SinkBolt[Key, Value]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SinkBolt.html"><span class="name">SinkBolt</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends BaseBolt</span>
       </span>
       </h4>
       <p class="comment cmt">The SinkBolt takes two related options: CacheSize and MaxWaitingFutures.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.package#StoreFactory" data-isabs="false">
+      <a id="StoreFactory:() ⇒ ReadableStore[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">StoreFactory</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> = () ⇒ <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, V]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.package" class="extype" href="package$.html">package</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.StoreWrapper" data-isabs="false">
+      <a id="StoreWrapper:StoreWrapper[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StoreWrapper.html"><span class="name">StoreWrapper</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: () ⇒ ReadableStore[K, V]</span>)</span><span class="result"> extends StormService[K, V] with Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm" data-isabs="true">
+      <a id="Storm:Storm"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Storm.html"><span class="name">Storm</span></a><span class="result"> extends Platform[Storm]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.storm.StormEnv" data-isabs="false">
       <a id="StormEnv:StormEnv"></a>
       <h4 class="signature">
@@ -146,6 +258,30 @@
       <p class="comment cmt">Necessary info for registering a metric in storm
 &quot;interval&quot; is period over which the metric will be aggregated
 </p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.StormService" data-isabs="true">
+      <a id="StormService:StormService[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="StormService.html"><span class="name">StormService</span></a><span class="tparams">[<span name="K">-K</span>, <span name="V">+V</span>]</span><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.StormStore" data-isabs="true">
+      <a id="StormStore:StormStore[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="StormStore.html"><span class="name">StormStore</span></a><span class="tparams">[<span name="K">-K</span>, <span name="V">V</span>]</span><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.storm.SummingbirdKryoFactory" data-isabs="false">
       <a id="SummingbirdKryoFactory:SummingbirdKryoFactory"></a>
       <h4 class="signature">
@@ -177,6 +313,30 @@
       </span>
       </h4>
       <p class="comment cmt">Converts a scala map to and from a storm Config instance.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Constants" data-isabs="false">
+      <a id="Constants:Constants"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Constants$.html"><span class="name">Constants</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.EmptyOnlineSink" data-isabs="false">
+      <a id="EmptyOnlineSink:EmptyOnlineSink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="EmptyOnlineSink$.html"><span class="name">EmptyOnlineSink</span></a><span class="result"> extends OnlineSink[Any]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation" data-isabs="false">
       <a id="FlatMapOperation:FlatMapOperation"></a>
       <h4 class="signature">
@@ -186,6 +346,42 @@
       </span>
       <span class="symbol">
         <a href="FlatMapOperation$.html"><span class="name">FlatMapOperation</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.MergeableStoreSupplier" data-isabs="false">
+      <a id="MergeableStoreSupplier:MergeableStoreSupplier"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MergeableStoreSupplier$.html"><span class="name">MergeableStoreSupplier</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.OnlineSink" data-isabs="false">
+      <a id="OnlineSink:OnlineSink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="OnlineSink$.html"><span class="name">OnlineSink</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm" data-isabs="false">
+      <a id="Storm:Storm"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Storm$.html"><span class="name">Storm</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
@@ -201,27 +397,15 @@
       </span>
       </h4>
       <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.scheme" data-isabs="false">
-      <a id="scheme:scheme"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.option" data-isabs="false">
+      <a id="option:option"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">package</span>
       </span>
       <span class="symbol">
-        <a href="scheme/package.html"><span class="name">scheme</span></a>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.store" data-isabs="false">
-      <a id="store:store"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">package</span>
-      </span>
-      <span class="symbol">
-        <a href="store/package.html"><span class="name">store</span></a>
+        <a href="option/package.html"><span class="name">option</span></a>
       </span>
       </h4>
       

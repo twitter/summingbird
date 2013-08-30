@@ -14,24 +14,24 @@
         </head>
         <body onload="sh_highlightDocument('../lib/', '.min.js');" class="type">
       <div id="definition">
-        <img src="../../../../lib/class_big.png" />
+        <a title="Go to companion" href="SourceBuilder$.html"><img src="../../../../lib/class_to_object_big.png" /></a>
         <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.builder" class="extype" href="package.html">builder</a></p>
-        <h1>SourceBuilder</h1>
+        <h1><a title="Go to companion" href="SourceBuilder$.html">SourceBuilder</a></h1>
       </div>
 
       <h4 class="signature" id="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">class</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">SourceBuilder</span><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>]</span><span class="result"> extends <span name="java.io.Serializable" class="extype">Serializable</span></span>
+        <span class="name">SourceBuilder</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="node">node: Node[T]</span>, <span name="pairs">pairs: List[com.twitter.chill.InjectionPair[_]]</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>, <span name="evidence$1">evidence$1: Manifest[T]</span>)</span><span class="result"> extends <span name="java.io.Serializable" class="extype">Serializable</span> with <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-core/src/main/scala/com/twitter/summingbird/builder/SourceBuilder.scala">SourceBuilder.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-builder/src/main/scala/com/twitter/summingbird/builder/SourceBuilder.scala">SourceBuilder.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -45,7 +45,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.builder.SourceBuilder" class="in"><span>SourceBuilder</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.builder.SourceBuilder" class="in"><span>SourceBuilder</span></li><li name="scala.Serializable" class="in"><span>Serializable</span></li><li name="scala.Product" class="in"><span>Product</span></li><li name="scala.Equals" class="in"><span>Equals</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -55,22 +55,7 @@
 
       <div id="template">
         <div id="allMembers">
-        <div class="members" id="constructors">
-              <h3>Instance Constructors</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#this" data-isabs="false">
-      <a id="this:SourceBuilder[Event, Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">new</span>
-      </span>
-      <span class="symbol">
-        <span class="name">SourceBuilder</span><span class="params">(<span name="eventSource">eventSource: <a name="com.twitter.summingbird.source.EventSource" class="extype" href="../source/EventSource.html">EventSource</a>[Event, Time]</span>, <span name="predOption">predOption: <span name="scala.Option" class="extype">Option</span>[(Event) ⇒ <span name="scala.Boolean" class="extype">Boolean</span>] = <span class="symbol">scala.None</span></span>, <span name="flatMapShards">flatMapShards: <a name="com.twitter.summingbird.builder.FlatMapShards" class="extype" href="FlatMapShards.html">FlatMapShards</a> = <span name="com.twitter.summingbird.Constants.DEFAULT_FM_SHARDS" class="defval">...</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[Event]</span>, <span name="arg1">arg1: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a>[Time]</span>, <span name="arg2">arg2: Manifest[Time]</span>)</span>
-      </span>
-      </h4>
-      
-    </li></ol>
-            </div>
+        
 
         
 
@@ -114,6 +99,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#++" data-isabs="false">
+      <a id="++(SourceBuilder[T]):SourceBuilder[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $plus$plus">++</span><span class="params">(<span name="other">other: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[T]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#==" data-isabs="false">
       <a id="==(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -138,18 +135,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#addToTopo" data-isabs="false">
-      <a id="addToTopo(StormEnv,TopologyBuilder,String):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">addToTopo</span><span class="params">(<span name="env">env: <a name="com.twitter.summingbird.storm.StormEnv" class="extype" href="../storm/StormEnv.html">StormEnv</a></span>, <span name="tb">tb: <span name="backtype.storm.topology.TopologyBuilder" class="extype">TopologyBuilder</span></span>, <span name="suffix">suffix: String</span>)</span><span class="result">: String</span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -162,6 +147,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#canEqual" data-isabs="false">
+      <a id="canEqual(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEqual</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a> → Equals</dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -189,7 +186,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#equals" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#equals" data-isabs="false">
       <a id="equals(Any):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -200,40 +197,16 @@
         <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#eventCodecPairs" data-isabs="false">
-      <a id="eventCodecPairs:List[com.twitter.chill.BijectionPair[_ &gt;: Time with Event]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">eventCodecPairs</span><span class="result">: <span name="scala.collection.immutable.List" class="extype">List</span>[com.twitter.chill.BijectionPair[_ &gt;: Time with Event]]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#eventSource" data-isabs="false">
-      <a id="eventSource:EventSource[Event, Time]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">eventSource</span><span class="result">: <a name="com.twitter.summingbird.source.EventSource" class="extype" href="../source/EventSource.html">EventSource</a>[Event, Time]</span>
-      </span>
-      </h4>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a> → Equals → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#filter" data-isabs="false">
-      <a id="filter((Event) ⇒ Boolean):SourceBuilder[Event, Time]"></a>
+      <a id="filter((T) ⇒ Boolean):SourceBuilder[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">filter</span><span class="params">(<span name="newPred">newPred: (Event) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[Event, Time]</span>
+        <span class="name">filter</span><span class="params">(<span name="fn">fn: (T) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[T]</span>
       </span>
       </h4>
       
@@ -253,26 +226,26 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#flatMap" data-isabs="false">
-      <a id="flatMap[Key, Val]((Event) ⇒ TraversableOnce[(Key, Val)])(Manifest[Key],Manifest[Val]):SingleFlatMappedBuilder[Event, Time, Key, Val]"></a>
+      <a id="flatMap[U]((T) ⇒ TraversableOnce[U])(Manifest[U]):SourceBuilder[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flatMap</span><span class="tparams">[<span name="Key">Key</span>, <span name="Val">Val</span>]</span><span class="params">(<span name="fn">fn: (Event) ⇒ TraversableOnce[(Key, Val)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[Key]</span>, <span name="arg1">arg1: Manifest[Val]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SingleFlatMappedBuilder" class="extype" href="SingleFlatMappedBuilder.html">SingleFlatMappedBuilder</a>[Event, Time, Key, Val]</span>
+        <span class="name">flatMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (T) ⇒ TraversableOnce[U]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[U]</span>
       </span>
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#flatMapBuilder" data-isabs="false">
-      <a id="flatMapBuilder[Key, Val](FlatMapper[Event, Key, Val])(Manifest[Key],Manifest[Val]):SingleFlatMappedBuilder[Event, Time, Key, Val]"></a>
+      <a id="flatMapBuilder[U](FlatMapper[T, U])(Manifest[U]):SourceBuilder[U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">flatMapBuilder</span><span class="tparams">[<span name="Key">Key</span>, <span name="Val">Val</span>]</span><span class="params">(<span name="newFlatMapper">newFlatMapper: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="../FlatMapper.html">FlatMapper</a>[Event, Key, Val]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[Key]</span>, <span name="arg1">arg1: Manifest[Val]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SingleFlatMappedBuilder" class="extype" href="SingleFlatMappedBuilder.html">SingleFlatMappedBuilder</a>[Event, Time, Key, Val]</span>
+        <span class="name">flatMapBuilder</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="newFlatMapper">newFlatMapper: <a name="com.twitter.summingbird.FlatMapper" class="extype" href="../FlatMapper.html">FlatMapper</a>[T, U]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[U]</span>
       </span>
       </h4>
       
@@ -288,19 +261,49 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#getFlatMappedPipe" data-isabs="false">
-      <a id="getFlatMappedPipe(Batcher[Time],BatchID,ScaldingEnv)(FlowDef,Mode):TypedPipe[(Time, Event)]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#groupAndSumTo" data-isabs="false">
+      <a id="groupAndSumTo[K, V](CompoundStore[K, V])(&lt;:&lt;[T, (K, V)],Env,Manifest[K],Manifest[V],Injection[K, Array[Byte]],Injection[V, Array[Byte]],Batcher,Monoid[V]):com.twitter.summingbird.builder.CompletedBuilder[_, K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getFlatMappedPipe</span><span class="params">(<span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a>[Time]</span>, <span name="lowerb">lowerb: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="env">env: <a name="com.twitter.summingbird.scalding.ScaldingEnv" class="extype" href="../scalding/ScaldingEnv.html">ScaldingEnv</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="fd">fd: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, Event)]</span>
+        <span class="name">groupAndSumTo</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: <a name="com.twitter.summingbird.store.CompoundStore" class="extype" href="../store/CompoundStore.html">CompoundStore</a>[K, V]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ev">ev: <span name="scala.Predef.&lt;:&lt;" class="extype">&lt;:&lt;</span>[T, (K, V)]</span>, <span name="env">env: <a name="com.twitter.summingbird.Env" class="extype" href="../Env.html">Env</a></span>, <span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>, <span name="keyCodec">keyCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[K, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="valCodec">valCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[V, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span><span class="result">: com.twitter.summingbird.builder.CompletedBuilder[_, K, V]</span>
       </span>
       </h4>
-      
-    </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
+      <p class="shortcomment cmt">Complete this builder instance with a CompoundStore.</p><div class="fullcomment"><div class="comment cmt"><p>Complete this builder instance with a CompoundStore. At this
+point, the Summingbird job can be executed on Storm or Hadoop.
+</p></div></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#groupAndSumTo" data-isabs="false">
+      <a id="groupAndSumTo[K, V](⇒ MergeableStore[(K, BatchID), V])(&lt;:&lt;[T, (K, V)],Env,Manifest[K],Manifest[V],Injection[K, Array[Byte]],Injection[V, Array[Byte]],Batcher,Monoid[V]):com.twitter.summingbird.builder.CompletedBuilder[_, K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">groupAndSumTo</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ev">ev: <span name="scala.Predef.&lt;:&lt;" class="extype">&lt;:&lt;</span>[T, (K, V)]</span>, <span name="env">env: <a name="com.twitter.summingbird.Env" class="extype" href="../Env.html">Env</a></span>, <span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>, <span name="keyCodec">keyCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[K, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="valCodec">valCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[V, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span><span class="result">: com.twitter.summingbird.builder.CompletedBuilder[_, K, V]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Complete this builder instance with a MergeableStore.</p><div class="fullcomment"><div class="comment cmt"><p>Complete this builder instance with a MergeableStore. At this point,
+the Summingbird job can be executed on Storm.
+</p></div></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#groupAndSumTo" data-isabs="false">
+      <a id="groupAndSumTo[K, V](BatchedScaldingStore[K, V])(&lt;:&lt;[T, (K, V)],Env,Manifest[K],Manifest[V],Injection[K, Array[Byte]],Injection[V, Array[Byte]],Batcher,Monoid[V]):com.twitter.summingbird.builder.CompletedBuilder[_, K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">groupAndSumTo</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: <a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="../scalding/BatchedScaldingStore.html">BatchedScaldingStore</a>[K, V]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ev">ev: <span name="scala.Predef.&lt;:&lt;" class="extype">&lt;:&lt;</span>[T, (K, V)]</span>, <span name="env">env: <a name="com.twitter.summingbird.Env" class="extype" href="../Env.html">Env</a></span>, <span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>, <span name="keyCodec">keyCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[K, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="valCodec">valCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[V, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span><span class="result">: com.twitter.summingbird.builder.CompletedBuilder[_, K, V]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Complete this builder instance with a BatchStore.</p><div class="fullcomment"><div class="comment cmt"><p>Complete this builder instance with a BatchStore. At this point,
+the Summingbird job can be executed on Hadoop.
+</p></div></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#hashCode" data-isabs="false">
       <a id="hashCode():Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -311,7 +314,19 @@
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a> → AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#id" data-isabs="false">
+      <a id="id:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">id</span><span class="result">: String</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <h4 class="signature">
@@ -324,15 +339,27 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#map" data-isabs="false">
-      <a id="map[Key, Val]((Event) ⇒ (Key, Val))(Manifest[Key],Manifest[Val]):SingleFlatMappedBuilder[Event, Time, Key, Val]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#leftJoin" data-isabs="false">
+      <a id="leftJoin[K, V, JoinedValue](CompoundService[K, JoinedValue])(&lt;:&lt;[T, (K, V)],Manifest[K],Manifest[V],Manifest[JoinedValue]):SourceBuilder[(K, (V, Option[JoinedValue]))]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">map</span><span class="tparams">[<span name="Key">Key</span>, <span name="Val">Val</span>]</span><span class="params">(<span name="fn">fn: (Event) ⇒ (Key, Val)</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[Key]</span>, <span name="arg1">arg1: Manifest[Val]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SingleFlatMappedBuilder" class="extype" href="SingleFlatMappedBuilder.html">SingleFlatMappedBuilder</a>[Event, Time, Key, Val]</span>
+        <span class="name">leftJoin</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>, <span name="JoinedValue">JoinedValue</span>]</span><span class="params">(<span name="service">service: <a name="com.twitter.summingbird.service.CompoundService" class="extype" href="../service/CompoundService.html">CompoundService</a>[K, JoinedValue]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ev">ev: <span name="scala.Predef.&lt;:&lt;" class="extype">&lt;:&lt;</span>[T, (K, V)]</span>, <span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>, <span name="joinedMf">joinedMf: Manifest[JoinedValue]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[(K, (V, <span name="scala.Option" class="extype">Option</span>[JoinedValue]))]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#map" data-isabs="false">
+      <a id="map[U]((T) ⇒ U)(Manifest[U]):SourceBuilder[U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">map</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (T) ⇒ U</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[U]</span>
       </span>
       </h4>
       
@@ -348,6 +375,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#node" data-isabs="false">
+      <a id="node:Node[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">node</span><span class="result">: Node[T]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#notify" data-isabs="false">
       <a id="notify():Unit"></a>
       <h4 class="signature">
@@ -372,15 +411,87 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#set" data-isabs="false">
-      <a id="set(FlatMapShards):SourceBuilder[Event, Time]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#opts" data-isabs="false">
+      <a id="opts:Map[String, Options]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">opts</span><span class="result">: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#pairs" data-isabs="false">
+      <a id="pairs:List[com.twitter.chill.InjectionPair[_]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pairs</span><span class="result">: List[com.twitter.chill.InjectionPair[_]]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#productArity" data-isabs="false">
+      <a id="productArity:Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">set</span><span class="params">(<span name="fms">fms: <a name="com.twitter.summingbird.builder.FlatMapShards" class="extype" href="FlatMapShards.html">FlatMapShards</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[Event, Time]</span>
+        <span class="name">productArity</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#productElement" data-isabs="false">
+      <a id="productElement(Int):Any"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productElement</span><span class="params">(<span name="arg0">arg0: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Any" class="extype">Any</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="scala.Product#productIterator" data-isabs="false">
+      <a id="productIterator:Iterator[Any]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productIterator</span><span class="result">: Iterator[<span name="scala.Any" class="extype">Any</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#productPrefix" data-isabs="false">
+      <a id="productPrefix:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productPrefix</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#set" data-isabs="false">
+      <a id="set(Any):SourceBuilder[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">set</span><span class="params">(<span name="opt">opt: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[T]</span>
       </span>
       </h4>
       
@@ -396,7 +507,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -404,10 +515,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
+        <span class="name">toString</span><span class="params">()</span><span class="result">: String</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a> → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">
@@ -453,14 +564,50 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#write" data-isabs="false">
+      <a id="write[U](CompoundSink[U])((T) ⇒ TraversableOnce[U])(Batcher,Manifest[U]):SourceBuilder[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">write</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="sink">sink: <a name="com.twitter.summingbird.sink.CompoundSink" class="extype" href="../sink/CompoundSink.html">CompoundSink</a>[U]</span>)</span><span class="params">(<span name="conversion">conversion: (T) ⇒ TraversableOnce[U]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="mf">mf: Manifest[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="">SourceBuilder</a>[T]</span>
+      </span>
+      </h4>
+      
     </li></ol>
             </div>
 
-        
+        <div class="values members" id="values">
+              <h3>Deprecated Value Members</h3>
+              <ol><li visbl="pub" name="scala.Product#productElements" data-isabs="false">
+      <a id="productElements:Iterator[Any]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.8.0) use productIterator instead">productElements</span><span class="result">: Iterator[<span name="scala.Any" class="extype">Any</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.8.0)</i> use productIterator instead</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">
-        <div name="java.io.Serializable" class="parent">
+        <div name="scala.Serializable" class="parent">
+              <h3>Inherited from <span name="scala.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="scala.Product" class="parent">
+              <h3>Inherited from <span name="scala.Product" class="extype">Product</span></h3>
+            </div><div name="scala.Equals" class="parent">
+              <h3>Inherited from <span name="scala.Equals" class="extype">Equals</span></h3>
+            </div><div name="java.io.Serializable" class="parent">
               <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
             </div><div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>

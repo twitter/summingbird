@@ -25,13 +25,13 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">CompoundStore</span><span class="result"> extends AnyRef</span>
+        <span class="name">CompoundStore</span><span class="result"> extends <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-core/src/main/scala/com/twitter/summingbird/store/CompoundStore.scala">CompoundStore.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-builder/src/main/scala/com/twitter/summingbird/store/CompoundStore.scala">CompoundStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -45,7 +45,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.store.CompoundStore" class="in"><span>CompoundStore</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.store.CompoundStore" class="in"><span>CompoundStore</span></li><li name="scala.Serializable" class="in"><span>Serializable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -124,38 +124,14 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.store.CompoundStore#apply" data-isabs="false">
-      <a id="apply[K, V](BatchStore[K, (BatchID, V)]):CompoundStore[EmptyStore[(K, BatchID), V], K, V]"></a>
+      <a id="apply[K, V](BatchedScaldingStore[K, V],⇒ MergeableStore[(K, BatchID), V]):CompoundStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: <a name="com.twitter.summingbird.scalding.store.BatchStore" class="extype" href="../scalding/store/BatchStore.html">BatchStore</a>[K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.CompoundStore" class="extype" href="CompoundStore.html">CompoundStore</a>[<a name="com.twitter.summingbird.store.EmptyStore" class="extype" href="EmptyStore.html">EmptyStore</a>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V], K, V]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.store.CompoundStore#apply" data-isabs="false">
-      <a id="apply[StoreType&lt;:Store[StoreType, (K, BatchID), V], K, V](StoreType):CompoundStore[StoreType, K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="StoreType">StoreType &lt;: <span name="com.twitter.storehaus.Store" class="extype">Store</span>[StoreType, (K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: StoreType</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.CompoundStore" class="extype" href="CompoundStore.html">CompoundStore</a>[StoreType, K, V]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.store.CompoundStore#apply" data-isabs="false">
-      <a id="apply[StoreType&lt;:Store[StoreType, (K, BatchID), V], K, V](BatchStore[K, (BatchID, V)],StoreType):CompoundStore[StoreType, K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="StoreType">StoreType &lt;: <span name="com.twitter.storehaus.Store" class="extype">Store</span>[StoreType, (K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="offlineStore">offlineStore: <a name="com.twitter.summingbird.scalding.store.BatchStore" class="extype" href="../scalding/store/BatchStore.html">BatchStore</a>[K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>, <span name="onlineStore">onlineStore: StoreType</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.CompoundStore" class="extype" href="CompoundStore.html">CompoundStore</a>[StoreType, K, V]</span>
+        <span class="name">apply</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="offlineStore">offlineStore: <a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="../scalding/BatchedScaldingStore.html">BatchedScaldingStore</a>[K, V]</span>, <span name="onlineSupplier">onlineSupplier: ⇒ <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.CompoundStore" class="extype" href="CompoundStore.html">CompoundStore</a>[K, V]</span>
       </span>
       </h4>
       
@@ -226,26 +202,26 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.store.CompoundStore#fromOffline" data-isabs="false">
-      <a id="fromOffline[K, V](BatchStore[K, (BatchID, V)]):CompoundStore[EmptyStore[(K, BatchID), V], K, V]"></a>
+      <a id="fromOffline[K, V](BatchedScaldingStore[K, V]):CompoundStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">implicit </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">fromOffline</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: <a name="com.twitter.summingbird.scalding.store.BatchStore" class="extype" href="../scalding/store/BatchStore.html">BatchStore</a>[K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V)]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.CompoundStore" class="extype" href="CompoundStore.html">CompoundStore</a>[<a name="com.twitter.summingbird.store.EmptyStore" class="extype" href="EmptyStore.html">EmptyStore</a>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V], K, V]</span>
+        <span class="name">fromOffline</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: <a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="../scalding/BatchedScaldingStore.html">BatchedScaldingStore</a>[K, V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.CompoundStore" class="extype" href="CompoundStore.html">CompoundStore</a>[K, V]</span>
       </span>
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.store.CompoundStore#fromOnline" data-isabs="false">
-      <a id="fromOnline[StoreType&lt;:Store[StoreType, (K, BatchID), V], K, V](StoreType):CompoundStore[StoreType, K, V]"></a>
+      <a id="fromOnline[K, V](⇒ MergeableStore[(K, BatchID), V]):CompoundStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">implicit </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">fromOnline</span><span class="tparams">[<span name="StoreType">StoreType &lt;: <span name="com.twitter.storehaus.Store" class="extype">Store</span>[StoreType, (K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: StoreType</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.CompoundStore" class="extype" href="CompoundStore.html">CompoundStore</a>[StoreType, K, V]</span>
+        <span class="name">fromOnline</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="onlineSupplier">onlineSupplier: ⇒ <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.store.CompoundStore" class="extype" href="CompoundStore.html">CompoundStore</a>[K, V]</span>
       </span>
       </h4>
       
@@ -321,6 +297,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="prt" name="com.twitter.summingbird.store.CompoundStore#readResolve" data-isabs="false">
+      <a id="readResolve():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">readResolve</span><span class="params">()</span><span class="result">: AnyRef</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -397,7 +385,11 @@
         </div>
 
         <div id="inheritedMembers">
-        <div name="scala.AnyRef" class="parent">
+        <div name="scala.Serializable" class="parent">
+              <h3>Inherited from <span name="scala.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="java.io.Serializable" class="parent">
+              <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">
               <h3>Inherited from <span name="scala.Any" class="extype">Any</span></h3>

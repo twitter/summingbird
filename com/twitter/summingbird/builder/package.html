@@ -29,7 +29,9 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"></div>
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>We put typedefs and vals here to make working with the (deprecated) Builder
+API nicer.
+</p></div></div>
     
 
       <div id="mbrsel">
@@ -48,259 +50,182 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.builder.BuilderImplicits" data-isabs="true">
-      <a id="BuilderImplicits:BuilderImplicits"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="BuilderImplicits.html"><span class="name">BuilderImplicits</span></a><span class="result"> extends OfflineSourceImplicits</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder" data-isabs="false">
-      <a id="CompletedBuilder:CompletedBuilder[StoreType, Time, Key, Value]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="CompletedBuilder.html"><span class="name">CompletedBuilder</span></a><span class="tparams">[<span name="StoreType">StoreType &lt;: Store[StoreType, (Key, BatchID), Value]</span>, <span name="Time">Time</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.DecoderParallelism" data-isabs="false">
-      <a id="DecoderParallelism:DecoderParallelism"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder" data-isabs="false">
+      <a id="CompletedBuilder:CompletedBuilder[P, K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="DecoderParallelism.html"><span class="name">DecoderParallelism</span></a><span class="params">(<span name="parHint">parHint: Int</span>)</span><span class="result"> extends SinkOption with Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.FlatMapOption" data-isabs="true">
-      <a id="FlatMapOption:FlatMapOption"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">sealed </span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="FlatMapOption.html"><span class="name">FlatMapOption</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Options used by the FlatMappedBuilder.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.FlatMapParallelism" data-isabs="false">
-      <a id="FlatMapParallelism:FlatMapParallelism"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="FlatMapParallelism.html"><span class="name">FlatMapParallelism</span></a><span class="params">(<span name="parHint">parHint: Int</span>)</span><span class="result"> extends FlatMapOption with Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.FlatMapShards" data-isabs="false">
-      <a id="FlatMapShards:FlatMapShards"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="FlatMapShards.html"><span class="name">FlatMapShards</span></a><span class="params">(<span name="count">count: Int</span>)</span><span class="result"> extends FlatMapOption with Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.FlatMapStormMetrics" data-isabs="false">
-      <a id="FlatMapStormMetrics:FlatMapStormMetrics"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="FlatMapStormMetrics.html"><span class="name">FlatMapStormMetrics</span></a><span class="result"> extends FlatMapOption</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.FlatMappedBuilder" data-isabs="true">
-      <a id="FlatMappedBuilder:FlatMappedBuilder[Time, Key, Value]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="FlatMappedBuilder.html"><span class="name">FlatMappedBuilder</span></a><span class="tparams">[<span name="Time">Time</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      <p class="comment cmt">The flatmapped builder represents an EventSource with a FlatMapper attached.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.MaxWaitingFutures" data-isabs="false">
-      <a id="MaxWaitingFutures:MaxWaitingFutures"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="MaxWaitingFutures.html"><span class="name">MaxWaitingFutures</span></a><span class="params">(<span name="get">get: Int</span>)</span><span class="result"> extends SinkOption with Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.MergedFlatMappedBuilder" data-isabs="false">
-      <a id="MergedFlatMappedBuilder:MergedFlatMappedBuilder[Time, Key, Value]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="MergedFlatMappedBuilder.html"><span class="name">MergedFlatMappedBuilder</span></a><span class="tparams">[<span name="Time">Time</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends FlatMappedBuilder[Time, Key, Value]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">MergedFlatMappedBuilder describes the union of two individual FlatMappedBuilders.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.MonoidIsCommutative" data-isabs="false">
-      <a id="MonoidIsCommutative:MonoidIsCommutative"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="MonoidIsCommutative.html"><span class="name">MonoidIsCommutative</span></a><span class="params">(<span name="isCommutative">isCommutative: Boolean</span>)</span><span class="result"> extends SinkOption with Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.OfflineSourceImplicits" data-isabs="true">
-      <a id="OfflineSourceImplicits:OfflineSourceImplicits"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="OfflineSourceImplicits.html"><span class="name">OfflineSourceImplicits</span></a><span class="result"> extends OnlineSourceImplicits</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.OnlineExceptionHandler" data-isabs="false">
-      <a id="OnlineExceptionHandler:OnlineExceptionHandler"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="OnlineExceptionHandler.html"><span class="name">OnlineExceptionHandler</span></a><span class="params">(<span name="handlerFn">handlerFn: PartialFunction[Throwable, Unit]</span>)</span><span class="result"> extends SinkOption with Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.OnlineSourceImplicits" data-isabs="true">
-      <a id="OnlineSourceImplicits:OnlineSourceImplicits"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="OnlineSourceImplicits.html"><span class="name">OnlineSourceImplicits</span></a><span class="result"> extends AnyRef</span>
-      </span>
-      </h4>
-      <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.OnlineSuccessHandler" data-isabs="false">
-      <a id="OnlineSuccessHandler:OnlineSuccessHandler"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="OnlineSuccessHandler.html"><span class="name">OnlineSuccessHandler</span></a><span class="params">(<span name="handlerFn">handlerFn: (Unit) ⇒ Unit</span>)</span><span class="result"> extends SinkOption with Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.RpcParallelism" data-isabs="false">
-      <a id="RpcParallelism:RpcParallelism"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="RpcParallelism.html"><span class="name">RpcParallelism</span></a><span class="params">(<span name="parHint">parHint: Int</span>)</span><span class="result"> extends SinkOption with Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SingleFlatMappedBuilder" data-isabs="false">
-      <a id="SingleFlatMappedBuilder:SingleFlatMappedBuilder[Event, Time, Key, Value]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SingleFlatMappedBuilder.html"><span class="name">SingleFlatMappedBuilder</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>, <span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends FlatMappedBuilder[Time, Key, Value]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">SingleFlatMappedBuilder is the abstract class used
-to transform an EventSource into a FlatMappedBuilder.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SinkOption" data-isabs="true">
-      <a id="SinkOption:SinkOption"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">sealed </span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="SinkOption.html"><span class="name">SinkOption</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SinkParallelism" data-isabs="false">
-      <a id="SinkParallelism:SinkParallelism"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="SinkParallelism.html"><span class="name">SinkParallelism</span></a><span class="params">(<span name="parHint">parHint: Int</span>)</span><span class="result"> extends SinkOption with Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SinkStormMetrics" data-isabs="false">
-      <a id="SinkStormMetrics:SinkStormMetrics"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SinkStormMetrics.html"><span class="name">SinkStormMetrics</span></a><span class="result"> extends SinkOption</span>
+        <a href="CompletedBuilder.html"><span class="name">CompletedBuilder</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="node">node: Summer[P, K, V]</span>, <span name="eventCodecPairs">eventCodecPairs: List[com.twitter.chill.InjectionPair[_]]</span>, <span name="batcher">batcher: Batcher</span>, <span name="keyCodec">keyCodec: Injection[K, Array[Byte]]</span>, <span name="valCodec">valCodec: Injection[V, Array[Byte]]</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, Options]</span>, <span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>)</span><span class="result"> extends Serializable with Product with Serializable</span>
       </span>
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder" data-isabs="false">
-      <a id="SourceBuilder:SourceBuilder[Event, Time]"></a>
+      <a id="SourceBuilder:SourceBuilder[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">class</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SourceBuilder.html"><span class="name">SourceBuilder</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Time">Time</span>]</span><span class="result"> extends Serializable</span>
+        <a href="SourceBuilder.html"><span class="name">SourceBuilder</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="node">node: Node[T]</span>, <span name="pairs">pairs: List[com.twitter.chill.InjectionPair[_]]</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, Options]</span>, <span name="evidence$1">evidence$1: Manifest[T]</span>)</span><span class="result"> extends Serializable with Product with Serializable</span>
       </span>
       </h4>
-      <p class="comment cmt"></p>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#FlatMapParallelism" data-isabs="false">
+      <a id="FlatMapParallelism:FlatMapParallelism"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.FlatMapParallelism">FlatMapParallelism</span><span class="result"> = <a name="com.twitter.summingbird.storm.option.FlatMapParallelism" class="extype" href="../storm/option/FlatMapParallelism.html">FlatMapParallelism</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.FlatMapParallelism</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#FlatMapShards" data-isabs="false">
+      <a id="FlatMapShards:FlatMapShards"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.scalding.option.FlatMapShards">FlatMapShards</span><span class="result"> = <a name="com.twitter.summingbird.scalding.option.FlatMapShards" class="extype" href="../scalding/option/FlatMapShards.html">FlatMapShards</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.scalding.option.FlatMapShards</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#FlatMapStormMetrics" data-isabs="false">
+      <a id="FlatMapStormMetrics:FlatMapStormMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.FlatMapStormMetrics">FlatMapStormMetrics</span><span class="result"> = <a name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" class="extype" href="../storm/option/FlatMapStormMetrics.html">FlatMapStormMetrics</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.FlatMapStormMetrics</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#MaxWaitingFutures" data-isabs="false">
+      <a id="MaxWaitingFutures:MaxWaitingFutures"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.MaxWaitingFutures">MaxWaitingFutures</span><span class="result"> = <a name="com.twitter.summingbird.storm.option.MaxWaitingFutures" class="extype" href="../storm/option/MaxWaitingFutures.html">MaxWaitingFutures</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.MaxWaitingFutures</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#MonoidIsCommutative" data-isabs="false">
+      <a id="MonoidIsCommutative:MonoidIsCommutative"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.option.MonoidIsCommutative">MonoidIsCommutative</span><span class="result"> = <a name="com.twitter.summingbird.option.MonoidIsCommutative" class="extype" href="../option/MonoidIsCommutative.html">MonoidIsCommutative</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.option.MonoidIsCommutative</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#OnlineSuccessHandler" data-isabs="false">
+      <a id="OnlineSuccessHandler:OnlineSuccessHandler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.OnlineSuccessHandler">OnlineSuccessHandler</span><span class="result"> = <a name="com.twitter.summingbird.storm.option.OnlineSuccessHandler" class="extype" href="../storm/option/OnlineSuccessHandler.html">OnlineSuccessHandler</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.OnlineSuccessHandler</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#Reducers" data-isabs="false">
+      <a id="Reducers:Reducers"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.scalding.option.Reducers">Reducers</span><span class="result"> = <a name="com.twitter.summingbird.scalding.option.Reducers" class="extype" href="../scalding/option/Reducers.html">Reducers</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.scalding.option.Reducers</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#SinkParallelism" data-isabs="false">
+      <a id="SinkParallelism:SinkParallelism"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.SinkParallelism">SinkParallelism</span><span class="result"> = <a name="com.twitter.summingbird.storm.option.SinkParallelism" class="extype" href="../storm/option/SinkParallelism.html">SinkParallelism</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Sink objects and types.</p><div class="fullcomment"><div class="comment cmt"><p>Sink objects and types.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.SinkParallelism</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#SinkStormMetrics" data-isabs="false">
+      <a id="SinkStormMetrics:SinkStormMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.SinkStormMetrics">SinkStormMetrics</span><span class="result"> = <a name="com.twitter.summingbird.storm.option.SinkStormMetrics" class="extype" href="../storm/option/SinkStormMetrics.html">SinkStormMetrics</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.SinkStormMetrics</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#SpoutParallelism" data-isabs="false">
+      <a id="SpoutParallelism:SpoutParallelism"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.SpoutParallelism">SpoutParallelism</span><span class="result"> = <a name="com.twitter.summingbird.storm.option.SpoutParallelism" class="extype" href="../storm/option/SpoutParallelism.html">SpoutParallelism</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Storm flatMap option types and objects.</p><div class="fullcomment"><div class="comment cmt"><p>Storm flatMap option types and objects.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.SpoutParallelism</p></dd></dl></div>
     </li></ol>
             </div>
 
@@ -308,46 +233,188 @@ to transform an EventSource into a FlatMappedBuilder.</p>
 
         <div class="values members" id="values">
               <h3>Value Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.builder.Builder" data-isabs="false">
-      <a id="Builder:Builder"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder" data-isabs="false">
+      <a id="CompletedBuilder:CompletedBuilder"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="Builder$.html"><span class="name">Builder</span></a><span class="result"> extends BuilderImplicits</span>
+        <a href="CompletedBuilder$.html"><span class="name">CompletedBuilder</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.FlatMapStormMetrics" data-isabs="false">
-      <a id="FlatMapStormMetrics:FlatMapStormMetrics"></a>
+      <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder" data-isabs="false">
+      <a id="SourceBuilder:SourceBuilder"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="FlatMapStormMetrics$.html"><span class="name">FlatMapStormMetrics</span></a><span class="result"> extends Serializable</span>
+        <a href="SourceBuilder$.html"><span class="name">SourceBuilder</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SinkStormMetrics" data-isabs="false">
-      <a id="SinkStormMetrics:SinkStormMetrics"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="SinkStormMetrics$.html"><span class="name">SinkStormMetrics</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      
+      <p class="comment cmt">The (deprecated) Summingbird builder API builds up a single
+MapReduce job using a SourceBuilder.</p>
     </li></ol>
             </div>
 
-        
+        <div class="values members" id="values">
+              <h3>Deprecated Value Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.builder.package#FlatMapParallelism" data-isabs="false">
+      <a id="FlatMapParallelism:com.twitter.summingbird.storm.option.FlatMapParallelism.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.FlatMapParallelism">FlatMapParallelism</span><span class="result">: com.twitter.summingbird.storm.option.FlatMapParallelism.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.FlatMapParallelism</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#FlatMapShards" data-isabs="false">
+      <a id="FlatMapShards:com.twitter.summingbird.scalding.option.FlatMapShards.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.scalding.option.FlatMapShards">FlatMapShards</span><span class="result">: com.twitter.summingbird.scalding.option.FlatMapShards.type</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Scalding options here</p><div class="fullcomment"><div class="comment cmt"><p>Scalding options here</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.scalding.option.FlatMapShards</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#FlatMapStormMetrics" data-isabs="false">
+      <a id="FlatMapStormMetrics:com.twitter.summingbird.storm.option.FlatMapStormMetrics.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.FlatMapStormMetrics">FlatMapStormMetrics</span><span class="result">: com.twitter.summingbird.storm.option.FlatMapStormMetrics.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.FlatMapStormMetrics</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#MaxWaitingFutures" data-isabs="false">
+      <a id="MaxWaitingFutures:com.twitter.summingbird.storm.option.MaxWaitingFutures.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.MaxWaitingFutures">MaxWaitingFutures</span><span class="result">: com.twitter.summingbird.storm.option.MaxWaitingFutures.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.MaxWaitingFutures</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#MonoidIsCommutative" data-isabs="false">
+      <a id="MonoidIsCommutative:com.twitter.summingbird.option.MonoidIsCommutative.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.option.MonoidIsCommutative">MonoidIsCommutative</span><span class="result">: com.twitter.summingbird.option.MonoidIsCommutative.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.option.MonoidIsCommutative</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#OnlineSuccessHandler" data-isabs="false">
+      <a id="OnlineSuccessHandler:com.twitter.summingbird.storm.option.OnlineSuccessHandler.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.OnlineSuccessHandler">OnlineSuccessHandler</span><span class="result">: com.twitter.summingbird.storm.option.OnlineSuccessHandler.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.OnlineSuccessHandler</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#Reducers" data-isabs="false">
+      <a id="Reducers:com.twitter.summingbird.scalding.option.Reducers.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.scalding.option.Reducers">Reducers</span><span class="result">: com.twitter.summingbird.scalding.option.Reducers.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.scalding.option.Reducers</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#SinkParallelism" data-isabs="false">
+      <a id="SinkParallelism:com.twitter.summingbird.storm.option.SinkParallelism.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.SinkParallelism">SinkParallelism</span><span class="result">: com.twitter.summingbird.storm.option.SinkParallelism.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.SinkParallelism</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#SinkStormMetrics" data-isabs="false">
+      <a id="SinkStormMetrics:com.twitter.summingbird.storm.option.SinkStormMetrics.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.SinkStormMetrics">SinkStormMetrics</span><span class="result">: com.twitter.summingbird.storm.option.SinkStormMetrics.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.SinkStormMetrics</p></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.package#SpoutParallelism" data-isabs="false">
+      <a id="SpoutParallelism:com.twitter.summingbird.storm.option.SpoutParallelism.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 0.1.0) Use com.twitter.summingbird.storm.option.SpoutParallelism">SpoutParallelism</span><span class="result">: com.twitter.summingbird.storm.option.SpoutParallelism.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.package" class="extype" href="package$.html">package</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 0.1.0)</i> Use com.twitter.summingbird.storm.option.SpoutParallelism</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">

@@ -14,9 +14,9 @@
         </head>
         <body onload="sh_highlightDocument('../lib/', '.min.js');" class="value">
       <div id="definition">
-        <img src="../../../../../lib/object_big.png" />
+        <a title="Go to companion" href="HDFSMetadata.html"><img src="../../../../../lib/object_to_class_big.png" /></a>
         <p id="owner"><a name="com" class="extype" href="../../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../../package.html">summingbird</a>.<a name="com.twitter.summingbird.scalding" class="extype" href="../package.html">scalding</a>.<a name="com.twitter.summingbird.scalding.store" class="extype" href="package.html">store</a></p>
-        <h1>HDFSMetadata</h1>
+        <h1><a title="Go to companion" href="HDFSMetadata.html">HDFSMetadata</a></h1>
       </div>
 
       <h4 class="signature" id="signature">
@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-core/src/main/scala/com/twitter/summingbird/scalding/store/HDFSMetadata.scala">HDFSMetadata.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/store/HDFSMetadata.scala">HDFSMetadata.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -135,6 +135,18 @@
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata#apply" data-isabs="false">
+      <a id="apply(Configuration,String):HDFSMetadata"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="conf">conf: <span name="org.apache.hadoop.conf.Configuration" class="extype">Configuration</span></span>, <span name="rootPath">rootPath: String</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.store.HDFSMetadata" class="extype" href="HDFSMetadata.html">HDFSMetadata</a></span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -162,18 +174,6 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata#createVersion" data-isabs="false">
-      <a id="createVersion(Configuration,String):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">createVersion</span><span class="params">(<span name="conf">conf: <span name="org.apache.hadoop.conf.Configuration" class="extype">Configuration</span></span>, <span name="rootPath">rootPath: String</span>)</span><span class="result">: String</span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -214,17 +214,17 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata#get" data-isabs="false">
-      <a id="get[T](Configuration,String)(JsonNodeBijection[T]):Option[T]"></a>
+      <a id="get[T](Configuration,String)(JsonNodeInjection[T]):Option[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">get</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="conf">conf: <span name="org.apache.hadoop.conf.Configuration" class="extype">Configuration</span></span>, <span name="path">path: String</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.bijection.json.JsonNodeBijection" class="extype">JsonNodeBijection</span>[T]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[T]</span>
+        <span class="name">get</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="conf">conf: <span name="org.apache.hadoop.conf.Configuration" class="extype">Configuration</span></span>, <span name="path">path: String</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.bijection.json.JsonNodeInjection" class="extype">JsonNodeInjection</span>[T]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[T]</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Get from the most recent version</p>
     </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
       <a id="getClass():java.lang.Class[_]"></a>
       <h4 class="signature">
@@ -237,18 +237,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata#getPath" data-isabs="false">
-      <a id="getPath(Configuration,String):Option[Path]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getPath</span><span class="params">(<span name="conf">conf: <span name="org.apache.hadoop.conf.Configuration" class="extype">Configuration</span></span>, <span name="rootPath">rootPath: String</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<span name="org.apache.hadoop.fs.Path" class="extype">Path</span>]</span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
       <a id="hashCode():Int"></a>
       <h4 class="signature">
@@ -310,17 +298,17 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata#put" data-isabs="false">
-      <a id="put[T](Configuration,String,Option[T])(JsonNodeBijection[T]):Unit"></a>
+      <a id="put[T](Configuration,String,Option[T])(JsonNodeInjection[T]):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">put</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="conf">conf: <span name="org.apache.hadoop.conf.Configuration" class="extype">Configuration</span></span>, <span name="path">path: String</span>, <span name="obj">obj: <span name="scala.Option" class="extype">Option</span>[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.bijection.json.JsonNodeBijection" class="extype">JsonNodeBijection</span>[T]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">put</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="conf">conf: <span name="org.apache.hadoop.conf.Configuration" class="extype">Configuration</span></span>, <span name="path">path: String</span>, <span name="obj">obj: <span name="scala.Option" class="extype">Option</span>[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.bijection.json.JsonNodeInjection" class="extype">JsonNodeInjection</span>[T]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Put to the most recent version</p>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -345,18 +333,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata#versionedStore" data-isabs="false">
-      <a id="versionedStore(Configuration,String):VersionedStore"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">versionedStore</span><span class="params">(<span name="conf">conf: <span name="org.apache.hadoop.conf.Configuration" class="extype">Configuration</span></span>, <span name="rootPath">rootPath: String</span>)</span><span class="result">: <span name="backtype.hadoop.datastores.VersionedStore" class="extype">VersionedStore</span></span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">

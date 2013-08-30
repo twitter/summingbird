@@ -48,42 +48,19 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.service.BaseService" data-isabs="true">
-      <a id="BaseService:BaseService[Key, JoinedValue]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="BaseService.html"><span class="name">BaseService</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="JoinedValue">JoinedValue</span>]</span><span class="result"> extends Serializable with Closeable</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Represents an external service against which you can do a left join.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.service.CompoundService" data-isabs="true">
+              <ol><li visbl="pub" name="com.twitter.summingbird.service.CompoundService" data-isabs="false">
       <a id="CompoundService:CompoundService[Key, Joined]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CompoundService.html"><span class="name">CompoundService</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="Joined">Joined</span>]</span><span class="result"> extends ReadableStore[Key, Joined] with OfflineService[Key, Joined]</span>
+        <a href="CompoundService.html"><span class="name">CompoundService</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="Joined">Joined</span>]</span><span class="params">(<span name="offline">offline: Option[ScaldingService[Key, Joined]]</span>, <span name="online">online: Option[() ⇒ ReadableStore[Key, Joined]]</span>)</span><span class="result"> extends Product with Serializable</span>
       </span>
       </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.service.OfflineService" data-isabs="true">
-      <a id="OfflineService:OfflineService[Key, JoinedValue]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="OfflineService.html"><span class="name">OfflineService</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="JoinedValue">JoinedValue</span>]</span><span class="result"> extends BaseService[Key, JoinedValue]</span>
-      </span>
-      </h4>
-      
+      <p class="comment cmt">Pairing of an online and offline service for use with an
+OptionalPlatform2[Scalding, Storm].</p>
     </li></ol>
             </div>
 

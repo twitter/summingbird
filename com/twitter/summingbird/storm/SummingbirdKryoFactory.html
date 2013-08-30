@@ -29,9 +29,9 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-core/src/main/scala/com/twitter/summingbird/storm/SummingbirdKryoFactory.scala">SummingbirdKryoFactory.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/SummingbirdKryoFactory.scala">SummingbirdKryoFactory.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="extype">ScalaKryoFactory</span>, <span name="com.twitter.chill.KryoSerializer" class="extype">KryoSerializer</span>, <span name="backtype.storm.serialization.IKryoFactory" class="extype">IKryoFactory</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><span name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="extype">ScalaKryoFactory</span>, <span name="backtype.storm.serialization.IKryoFactory" class="extype">IKryoFactory</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -45,7 +45,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.storm.SummingbirdKryoFactory" class="in"><span>SummingbirdKryoFactory</span></li><li name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="in"><span>ScalaKryoFactory</span></li><li name="com.twitter.chill.KryoSerializer" class="in"><span>KryoSerializer</span></li><li name="backtype.storm.serialization.IKryoFactory" class="in"><span>IKryoFactory</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.storm.SummingbirdKryoFactory" class="in"><span>SummingbirdKryoFactory</span></li><li name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="in"><span>ScalaKryoFactory</span></li><li name="backtype.storm.serialization.IKryoFactory" class="in"><span>IKryoFactory</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -165,30 +165,6 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.chill.KryoSerializer#deserialize" data-isabs="false">
-      <a id="deserialize[T](Array[Byte]):T"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">deserialize</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="bytes">bytes: <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]</span>)</span><span class="result">: T</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>KryoSerializer</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.chill.KryoSerializer#deserializeBase64" data-isabs="false">
-      <a id="deserializeBase64[T](String):T"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">deserializeBase64</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="str">str: String</span>)</span><span class="result">: T</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>KryoSerializer</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -252,18 +228,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ScalaKryoFactory → IKryoFactory</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.chill.KryoSerializer#getKryo" data-isabs="false">
-      <a id="getKryo:Kryo"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getKryo</span><span class="result">: <span name="com.esotericsoftware.kryo.Kryo" class="extype">Kryo</span></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>KryoSerializer</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
       <a id="hashCode():Int"></a>
       <h4 class="signature">
@@ -384,30 +348,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ScalaKryoFactory</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.chill.KryoSerializer#serialize" data-isabs="false">
-      <a id="serialize(AnyRef):Array[Byte]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">serialize</span><span class="params">(<span name="ag">ag: AnyRef</span>)</span><span class="result">: <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>KryoSerializer</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.chill.KryoSerializer#serializeBase64" data-isabs="false">
-      <a id="serializeBase64(AnyRef):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">serializeBase64</span><span class="params">(<span name="ag">ag: AnyRef</span>)</span><span class="result">: String</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>KryoSerializer</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -486,8 +426,6 @@
         <div id="inheritedMembers">
         <div name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="parent">
               <h3>Inherited from <span name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="extype">ScalaKryoFactory</span></h3>
-            </div><div name="com.twitter.chill.KryoSerializer" class="parent">
-              <h3>Inherited from <span name="com.twitter.chill.KryoSerializer" class="extype">KryoSerializer</span></h3>
             </div><div name="backtype.storm.serialization.IKryoFactory" class="parent">
               <h3>Inherited from <span name="backtype.storm.serialization.IKryoFactory" class="extype">IKryoFactory</span></h3>
             </div><div name="scala.AnyRef" class="parent">

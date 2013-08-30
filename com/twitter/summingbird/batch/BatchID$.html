@@ -131,6 +131,30 @@ isomorphic to Long).
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#Max" data-isabs="false">
+      <a id="Max:BatchID"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Max</span><span class="result">: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#Min" data-isabs="false">
+      <a id="Min:BatchID"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Min</span><span class="result">: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#apply" data-isabs="false">
       <a id="apply(String):BatchID"></a>
       <h4 class="signature">
@@ -168,14 +192,14 @@ isomorphic to Long).
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#batchID2Bytes" data-isabs="false">
-      <a id="batchID2Bytes:Bijection[BatchID, Array[Byte]]"></a>
+      <a id="batchID2Bytes:Injection[BatchID, Array[Byte]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">implicit </span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">batchID2Bytes</span><span class="result">: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>
+        <span class="name">batchID2Bytes</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>
       </span>
       </h4>
       
@@ -192,14 +216,14 @@ isomorphic to Long).
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#batchID2String" data-isabs="false">
-      <a id="batchID2String:Bijection[BatchID, String]"></a>
+      <a id="batchID2String:Injection[BatchID, String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">implicit </span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">batchID2String</span><span class="result">: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>, String]</span>
+        <span class="name">batchID2String</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>, String]</span>
       </span>
       </h4>
       
@@ -342,14 +366,14 @@ isomorphic to Long).
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#range" data-isabs="false">
-      <a id="range(BatchID,BatchID):Iterator[BatchID]"></a>
+      <a id="range(BatchID,BatchID):Iterable[BatchID]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">range</span><span class="params">(<span name="start">start: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>, <span name="end">end: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>)</span><span class="result">: Iterator[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
+        <span class="name">range</span><span class="params">(<span name="start">start: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>, <span name="end">end: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>)</span><span class="result">: Iterable[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Returns an Iterator[BatchID] containing the range
@@ -378,6 +402,31 @@ isomorphic to Long).
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#toInterval" data-isabs="false">
+      <a id="toInterval(TraversableOnce[BatchID]):Option[Interval[BatchID]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toInterval</span><span class="params">(<span name="iter">iter: TraversableOnce[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#toIterable" data-isabs="false">
+      <a id="toIterable(Interval[BatchID]):Iterable[BatchID]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toIterable</span><span class="params">(<span name="interval">interval: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>)</span><span class="result">: Iterable[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns all the BatchIDs that are contained in the interval
+</p>
     </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">

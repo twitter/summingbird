@@ -49,53 +49,43 @@
         <div class="types members" id="types">
               <h3>Type Members</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.store.ClientStore" data-isabs="false">
-      <a id="ClientStore:ClientStore[T, K, V]"></a>
+      <a id="ClientStore:ClientStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="ClientStore.html"><span class="name">ClientStore</span></a><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends ReadableStore[K, V]</span>
+        <a href="ClientStore.html"><span class="name">ClientStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends ReadableStore[K, V]</span>
       </span>
       </h4>
-      
+      <p class="comment cmt">The multiGet uses the &quot;for&quot; syntax internally to chain a bunch of computations
+from T =&gt; Future[U].</p>
     </li><li visbl="pub" name="com.twitter.summingbird.store.CompoundStore" data-isabs="false">
-      <a id="CompoundStore:CompoundStore[StoreType, K, V]"></a>
+      <a id="CompoundStore:CompoundStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="CompoundStore.html"><span class="name">CompoundStore</span></a><span class="tparams">[<span name="StoreType">StoreType &lt;: Store[StoreType, (K, BatchID), V]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends AnyRef</span>
+        <a href="CompoundStore.html"><span class="name">CompoundStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends Serializable</span>
       </span>
       </h4>
-      <p class="comment cmt">Compound BatchStore and Store, used for building a summingbird job.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.store.EmptyStore" data-isabs="false">
-      <a id="EmptyStore:EmptyStore[K, V]"></a>
+      <p class="comment cmt">Compound BatchStore and MergeableStore, used for building a summingbird job.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.store.SideEffectStore" data-isabs="false">
+      <a id="SideEffectStore:SideEffectStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="EmptyStore.html"><span class="name">EmptyStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends Store[EmptyStore[K, V], K, V]</span>
+        <a href="SideEffectStore.html"><span class="name">SideEffectStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends MergeableStore[K, V]</span>
       </span>
       </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.store.MissingBatchException" data-isabs="false">
-      <a id="MissingBatchException:MissingBatchException"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="MissingBatchException.html"><span class="name">MissingBatchException</span></a><span class="result"> extends RuntimeException</span>
-      </span>
-      </h4>
-      
+      <p class="comment cmt">MergeableStore that triggers a side effect on every call to put or
+merge.</p>
     </li></ol>
             </div>
 
@@ -123,7 +113,7 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="CompoundStore$.html"><span class="name">CompoundStore</span></a><span class="result"> extends AnyRef</span>
+        <a href="CompoundStore$.html"><span class="name">CompoundStore</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
       
@@ -139,6 +129,21 @@
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.store.PresentingStore" data-isabs="false">
+      <a id="PresentingStore:PresentingStore"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PresentingStore$.html"><span class="name">PresentingStore</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Returns a MergeableStore that augments a Summingbird &quot;online
+store&quot; with the ability to snapshot keys from the combined
+online/offline ClientStore into some third presenting store every
+time a key is touched.</p>
     </li></ol>
             </div>
 
