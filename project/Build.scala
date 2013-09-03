@@ -34,7 +34,7 @@ object SummingbirdBuild extends Build {
       "Twitter SVN Maven" at "https://svn.twitter.biz/maven-public"
     ),
 
-    parallelExecution in Test := true,
+    parallelExecution in Test := false, //scalding tests need this due to a Hadoop race
 
     scalacOptions ++= Seq(
       "-unchecked",
@@ -190,7 +190,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-util" % algebirdVersion,
       withCross("com.twitter" %% "bijection-json" % bijectionVersion),
       withCross("com.twitter" %% "chill" % chillVersion),
-      withCross("com.twitter" %% "scalding-core" % scaldingVersion),
+      "com.twitter" %% "scalding-core" % scaldingVersion,
       withCross("com.twitter" %% "scalding-commons" % "0.2.0")
     )
   ).dependsOn(
