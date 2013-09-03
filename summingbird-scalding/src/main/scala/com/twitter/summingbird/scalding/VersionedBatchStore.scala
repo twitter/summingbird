@@ -110,7 +110,7 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String)
 class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)
   (pack: (BatchID, (K, V)) => (K2, V2))
   (unpack: ((K2, V2)) => (K, V))(
-  implicit injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])
+  implicit @transient injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])
     extends VersionedBatchStoreBase[K, V](rootPath) {
 
   /** Instances may choose to write out the last or just compute it from the stream */
