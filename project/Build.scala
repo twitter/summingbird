@@ -113,7 +113,7 @@ object SummingbirdBuild extends Build {
   val dfsDatastoresVersion = "1.3.4"
   val bijectionVersion = "0.4.0"
   val algebirdVersion = "0.2.0"
-  val scaldingVersion = "0.8.5"
+  val scaldingVersion = "0.8.11"
   val storehausVersion = "0.4.0"
   val utilVersion = "6.3.0"
   val chillVersion = "0.2.3"
