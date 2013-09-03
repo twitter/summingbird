@@ -37,11 +37,13 @@ import java.util.{ Date, Map => JMap }
  */
 
 class FinalFlatMapBolt[Event, Key, Value](
-  flatMapOp: FlatMapOperation[Event, (Key, Value)],
+  @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
   cacheSize: CacheSize,
   metrics: FlatMapStormMetrics)
   (implicit monoid: Monoid[Value], batcher: Batcher)
     extends BaseBolt(metrics.metrics) {
+
+  val lockedOp = MeatLocker(flatMapOp)
   var collectorMergeable: MergeableStore[(Key, BatchID), Value] = null
 
   override val fields = {
@@ -73,7 +75,7 @@ class FinalFlatMapBolt[Event, Key, Value](
       * the future completes the input tuple is acked once the future
       * completes.
       */
-    flatMapOp.apply(event).foreach { pairs =>
+    lockedOp.get.apply(event).foreach { pairs =>
       pairs.foreach { case (k, v) =>
         onCollector { _ => collectorMergeable.merge((k, batchID) -> v) }
       }
@@ -81,5 +83,5 @@ class FinalFlatMapBolt[Event, Key, Value](
     }
   }
 
-  override def cleanup { flatMapOp.close }
+  override def cleanup { lockedOp.get.close }
 }
