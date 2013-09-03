@@ -16,6 +16,7 @@
 
 package com.twitter.summingbird.storm
 
+import com.twitter.chill.MeatLocker
 import com.twitter.storehaus.ReadableStore
 import com.twitter.util.Future
 import java.io.{ Closeable, Serializable }
@@ -41,9 +42,10 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable { self =>
     }
 }
 
-class FunctionFlatMapOperation[-T, +U](fm: T => TraversableOnce[U])
+class FunctionFlatMapOperation[T, U](@transient fm: T => TraversableOnce[U])
     extends FlatMapOperation[T, U] {
-  def apply(t: T) = Future.value(fm(t))
+  val boxed = MeatLocker(fm)
+  def apply(t: T) = Future.value(boxed.get(t))
 }
 
 object FlatMapOperation {
