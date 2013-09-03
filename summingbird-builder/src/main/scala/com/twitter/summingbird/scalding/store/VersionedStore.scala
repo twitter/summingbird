@@ -47,5 +47,7 @@ object VersionedStore {
       ord: Ordering[K]): VersionedBatchStore[K, V, K, (BatchID, V)] =
     new VersionedBatchStore[K, V, K, (BatchID, V)](
       rootPath, versionsToKeep, batcher
-    )({ case (batchID, (k, v)) => (k, (batchID, v)) })({ case (k, (batchID, v)) => (k, v) })
+    )({ case (batchID, (k, v)) => (k, (batchID, v)) })({ case (k, (batchID, v)) => (k, v) }) {
+      override def select(b: List[BatchID]) = List(b.last)
+    }
 }
