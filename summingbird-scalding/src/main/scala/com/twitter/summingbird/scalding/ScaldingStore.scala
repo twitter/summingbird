@@ -77,7 +77,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     deltas: FlowToPipe[(K,V)], sg: Semigroup[V],
     commutativity: Commutativity, reducers: Int): FlowToPipe[(K,V)] = {
 
-    val finalBatch = batches.tail // batches won't be empty.
+    val finalBatch = batches.last // batches won't be empty.
     val filteredBatches = select(batches)
 
     assert(filteredBatches.contains(finalBatch), "select must not remove the final batch.")
