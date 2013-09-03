@@ -25,6 +25,8 @@ import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import cascading.flow.FlowDef
 
+import java.util.Date
+
 trait ScaldingStore[K, V] extends java.io.Serializable {
   /**
     * Accepts deltas along with their timestamps, returns triples of
@@ -43,6 +45,13 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   def batcher: Batcher
 
   implicit def ordering: Ordering[K]
+
+  /**
+    * Override select if you don't want to materialize every
+    * batch. Note that select MUST return a list containing the final
+    * batch in the supplied list; otherwise data would be lost.
+    */
+  def select(b: List[BatchID]): List[BatchID] = b
 
   /**
    * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
@@ -68,6 +77,11 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     deltas: FlowToPipe[(K,V)], sg: Semigroup[V],
     commutativity: Commutativity, reducers: Int): FlowToPipe[(K,V)] = {
 
+    val finalBatch = batches.last // batches won't be empty.
+    val filteredBatches = select(batches).sorted
+
+    assert(filteredBatches.contains(finalBatch), "select must not remove the final batch.")
+
     //Convert to a Grouped by "swapping" Time and K
     def toGrouped(items: KeyValuePipe[K, V]): Grouped[K, (Long, V)] =
       items.groupBy { case (_, (k, _)) => k }
@@ -78,12 +92,13 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     def toKVPipe(tp: TypedPipe[(K, (Long, V))]): KeyValuePipe[K, V] =
       tp.map { case (k, (t, v)) => (t, (k, v)) }
 
-    // Return the items in this batch in ._1 and not in a future batch in ._2
+    // Return the items in this batch in ._1 and not in this or a
+    // previous batch in ._2
     def split(b: BatchID, items: KeyValuePipe[K, V]): (KeyValuePipe[K, V], KeyValuePipe[K, V]) = {
       // we need cascading to see that we are forking this pipe:
       val forked = Scalding.forcePipe(items)
-      (forked.filter { tkv => batcher.batchOf(new java.util.Date(tkv._1)) == b },
-      forked.filter { tkv => batcher.batchOf(new java.util.Date(tkv._1)) > b })
+      (forked.filter { tkv => batcher.batchOf(new Date(tkv._1)) <= b },
+        forked.filter { tkv => batcher.batchOf(new Date(tkv._1)) > b })
     }
 
     // put the smallest time on these to ensure they come first in a sort:
@@ -140,7 +155,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
       val latestSummed = input(flowMode)
       val incoming = deltas(flowMode)
       // This will throw if there is not one batch, but that should never happen and is a failure
-      sumThem(batches.head, batches.tail, latestSummed, incoming, Nil)
+      sumThem(filteredBatches.head, filteredBatches.tail, latestSummed, incoming, Nil)
     }
   }
 
