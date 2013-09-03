@@ -80,7 +80,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     val finalBatch = batches.tail // batches won't be empty.
     val filteredBatches = select(batches)
 
-    assert(!batches.isEmpty && batches.contains(finalBatch), "select must not remove the final batch.")
+    assert(filteredBatches.contains(finalBatch), "select must not remove the final batch.")
 
     //Convert to a Grouped by "swapping" Time and K
     def toGrouped(items: KeyValuePipe[K, V]): Grouped[K, (Long, V)] =
