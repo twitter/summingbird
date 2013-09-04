@@ -49,7 +49,7 @@ import java.util.{ Map => JMap }
   */
 
 class SinkBolt[Key, Value: Monoid](
-  storeSupplier: () => MergeableStore[(Key,BatchID), Value],
+  @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
   cacheSize: CacheSize,
@@ -58,7 +58,8 @@ class SinkBolt[Key, Value: Monoid](
   includeSuccessHandler: IncludeSuccessHandler) extends BaseBolt(metrics.metrics) {
   import Constants._
 
-  lazy val store = storeSupplier.apply
+  val storeBox = MeatLocker(storeSupplier)
+  lazy val store = storeBox.get.apply
 
   // See MaxWaitingFutures for a todo around removing this.
   lazy val cacheCount = cacheSize.size
