@@ -90,6 +90,18 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String)
       meta(ver)
         .get[String]
         .flatMap { str => allCatch.opt(BatchID(str).prev) }
+        .map { oldbatch =>
+          val newBatch = versionToBatchID(ver)
+          if(newBatch > oldbatch) {
+            println("## WARNING ##")
+            println("in BatchStore(%s)".format(rootPath))
+            println("Old-style version number is ahead of what the new-style would be.")
+            println("Until batchID: %s (%s) you will see this warning"
+              .format(newBatch, batcher.earliestTimeOf(newBatch)))
+            println("##---------##")
+          }
+          oldbatch
+        }
         .getOrElse(versionToBatchID(ver))
     }
     meta
