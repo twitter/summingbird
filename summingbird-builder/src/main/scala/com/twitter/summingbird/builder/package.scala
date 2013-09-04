@@ -68,6 +68,18 @@ package object builder {
   @deprecated("Use com.twitter.summingbird.storm.option.OnlineSuccessHandler", "0.1.0")
   val OnlineSuccessHandler = storm.option.OnlineSuccessHandler
 
+  @deprecated("Use com.twitter.summingbird.storm.option.IncludeSuccessHandler", "0.1.0")
+  type IncludeSuccessHandler = storm.option.IncludeSuccessHandler
+
+  @deprecated("Use com.twitter.summingbird.storm.option.IncludeSuccessHandler", "0.1.0")
+  val IncludeSuccessHandler = storm.option.IncludeSuccessHandler
+
+  @deprecated("Use com.twitter.summingbird.storm.option.OnlineExceptionHandler", "0.1.0")
+  type OnlineExceptionHandler = storm.option.OnlineExceptionHandler
+
+  @deprecated("Use com.twitter.summingbird.storm.option.OnlineExceptionHandler", "0.1.0")
+  val OnlineExceptionHandler = storm.option.OnlineExceptionHandler
+
   @deprecated("Use com.twitter.summingbird.storm.option.SinkStormMetrics", "0.1.0")
   type SinkStormMetrics = storm.option.SinkStormMetrics
 
