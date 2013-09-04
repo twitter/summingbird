@@ -73,10 +73,10 @@ object SourceBuilder {
 }
 
 case class SourceBuilder[T: Manifest] private (
-  node: SourceBuilder.Node[T],
-  pairs: List[InjectionPair[_]],
+  @transient node: SourceBuilder.Node[T],
+  @transient pairs: List[InjectionPair[_]],
   id: String,
-  opts: Map[String, Options] = Map.empty
+  @transient opts: Map[String, Options] = Map.empty
 ) extends Serializable {
   import SourceBuilder.{ adjust, Node }
 
