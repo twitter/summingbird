@@ -70,13 +70,15 @@ object UniqueKeyedService extends java.io.Serializable {
     fromAndThen[(K,V),K,V](fn, identity, reducers)
 
   /** The Mappable is the subclass of Source that knows about the file system. */
-  def fromAndThen[T,K:Ordering,V](fn: DateRange => Mappable[T], andThen: TypedPipe[T] => TypedPipe[(K,V)],
-                                  reducers: Option[Int] = None): UniqueKeyedService[K, V] =
+  def fromAndThen[T,K:Ordering,V](
+    fn: DateRange => Mappable[T],
+    andThen: TypedPipe[T] => TypedPipe[(K,V)],
+    inputReducers: Option[Int] = None): UniqueKeyedService[K, V] =
     new SourceUniqueKeyedService[Mappable[T], K, V] {
       def ordering = Ordering[K]
       def source(dr: DateRange) = fn(dr)
       def toPipe(mappable: Mappable[T])(implicit flow: FlowDef, mode: Mode) =
         andThen(TypedPipe.from(mappable)(flow, mode, mappable.converter)) // converter is removed in 0.9.0
-      def reducers: Option[Int] = reducers
+      def reducers: Option[Int] = inputReducers
     }
 }
