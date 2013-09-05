@@ -31,7 +31,7 @@ To learn more and find links to tutorials and information around the web, check 
 
 The latest ScalaDocs are hosted on Summingbird's [Github Project Page](http://twitter.github.io/summingbird).
 
-Discussion occurs primarily on the Summingbird mailing list. To join the mailing list, email [summingbird@librelist.com](mailto:summingbird@librelist.com). The same address is used for posting once you've joined. Issues should be reported on the GitHub issue tracker. Simpler issues appropriate for first-time contributors looking to help out are tagged "newbie".
+Discussion occurs primarily on the [Summingbird mailing list](http://librelist.com/browser/summingbird/). To join the mailing list, email [summingbird@librelist.com](mailto:summingbird@librelist.com). The same address is used for posting once you've joined. Issues should be reported on the GitHub issue tracker. Simpler issues appropriate for first-time contributors looking to help out are tagged "newbie".
 
 Follow [@summingbird](https://twitter.com/summingbird) on Twitter for updates.
 
