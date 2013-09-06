@@ -128,14 +128,48 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
   /** Instances may choose to write out the last or just compute it from the stream */
   override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
     import Dsl._
+    val batchVersion = batchIDToVersion(batchID)
+    /**
+      * The Builder API used to not specify a sinkVersion, leading to
+      * versions tagged with the wall clock time. When builder API
+      * users migrate over to the new code, they can run into a
+      * situation where the new version created has a lower version
+      * than the current maximum version in the directory.
+      *
+      * This behavior clashes with the current VersionedState
+      * implementation, which decides what data to source by querying
+      * meta.mostRecentVersion. If mostRecentVersion doesn't change
+      * from run to run, the job will process the same data over and
+      * over.
+      *
+      * To solve this issue and assist with migrations, if the
+      * existing max version in the directory has a timestamp that's
+      * greater than that of the batchID being committed, we add a
+      * single millisecond to the current version, guaranteeing that
+      * we're writing a new max version (but only bumping a tiny bit
+      * forward).
+      *
+      * After a couple of job runs the batchID version should start
+      * winning.
+      */
+    val newVersion: Option[Long] = mode match {
+      case m: HdfsMode => {
+        val meta = HDFSMetadata(m.conf, rootPath)
+        meta.mostRecentVersion.map(_.version)
+          .filter(_ > batchVersion)
+          .map(_ + 1L)
+          .orElse(Some(batchVersion))
+      }
+      case _ => Some(batchVersion)
+    }
 
     lastVals.map(pack(batchID, _))
       .toPipe((0,1))
       .write(VersionedKeyValSource[K2, V2](rootPath,
-          sourceVersion=None,
-          sinkVersion=Some(batchIDToVersion(batchID)),
-          maxFailures=0,
-          versionsToKeep=versionsToKeep))
+        sourceVersion=None,
+        sinkVersion=newVersion,
+        maxFailures=0,
+        versionsToKeep=versionsToKeep))
   }
 
   protected def readVersion(v: Long): FlowProducer[TypedPipe[(K, V)]] = Reader { (flowMode: (FlowDef, Mode)) =>
