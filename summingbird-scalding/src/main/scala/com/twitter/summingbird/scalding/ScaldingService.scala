@@ -22,7 +22,7 @@ import com.twitter.scalding.{Mode, TypedPipe}
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import cascading.flow.FlowDef
 
-trait ScaldingService[K, V] extends java.io.Serializable {
+trait ScaldingService[K, +V] extends java.io.Serializable {
   // A static, or write-once service can  potentially optimize this without writing the (K, V) stream out
   def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))]
 }
@@ -50,6 +50,20 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
 
   def reducers: Option[Int]
 
+  /** This executes the join algortihm on the streams.
+   * You are guaranteed that all the service data needed
+   * to do the join is present.
+   */
+  def lookup[W](incoming: TypedPipe[(Time, (K, W))],
+    servStream: TypedPipe[(Time, (K, Option[V]))]): TypedPipe[(Time, (K, (W, Option[V])))] = {
+
+    def flatOpt[T](o: Option[Option[T]]): Option[T] = o.flatMap(identity)
+
+    implicit val ord = ordering
+    LookupJoin(incoming, servStream, reducers)
+      .map { case (t, (k, (w, optoptv))) => (t, (k, (w, flatOpt(optoptv)))) }
+  }
+
   protected def batchedLookup[W](covers: Interval[Time],
     getKeys: FlowToPipe[(K, W)],
     last: (BatchID, FlowProducer[TypedPipe[(K, V)]]),
@@ -66,10 +80,7 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
         val right = streams.foldLeft(liftedLast) { (merged, item) =>
           merged ++ (item._2(flowMode))
         }
-        implicit val ord = ordering
-        def flatOpt[T](o: Option[Option[T]]): Option[T] = o.flatMap(identity)
-
-        LookupJoin(left, right, reducers).map { case (t, (k, (w, optoptv))) => (t, (k, (w, flatOpt(optoptv)))) }
+        lookup(left, right)
       }
 
   final def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =

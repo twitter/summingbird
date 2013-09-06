@@ -32,7 +32,7 @@ object SummingbirdBuild extends Build {
       "Twitter Maven" at "http://maven.twttr.com"
     ),
 
-    parallelExecution in Test := false, //scalding tests need this due to a Hadoop race
+    parallelExecution in Test := false, // until scalding 0.9.0 we can't do this
 
     scalacOptions ++= Seq(
       "-unchecked",
