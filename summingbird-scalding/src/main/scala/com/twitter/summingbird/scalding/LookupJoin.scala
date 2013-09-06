@@ -57,10 +57,24 @@ import com.twitter.scalding.TypedPipe
 // TODO (https://github.com/twitter/scalding/pull/507): Delete when
 // this moves into Scalding and our Scalding version bumps.
 object LookupJoin extends Serializable {
+  /** This is the "infinite history" join and always joins regardless of how
+   * much time is between the left and the right
+   */
   def apply[T:Ordering, K:Ordering, V, JoinedV](left: TypedPipe[(T, (K, V))],
     right: TypedPipe[(T, (K, JoinedV))],
     reducers: Option[Int] = None):
-    TypedPipe[(T, (K, (V, Option[JoinedV])))] = {
+    TypedPipe[(T, (K, (V, Option[JoinedV])))] =
+      withWindow(left, right, reducers)((_,_) => true)
+
+  /**
+   * This ensures that gate(Tleft, Tright) == true, else the None is emitted
+   * as the joined value.
+   * Useful for bounding the time of the join to a recent window
+   */
+  def withWindow[T:Ordering, K:Ordering, V, JoinedV](left: TypedPipe[(T, (K, V))],
+    right: TypedPipe[(T, (K, JoinedV))],
+    reducers: Option[Int] = None)(gate: (T,T) => Boolean):
+      TypedPipe[(T, (K, (V, Option[JoinedV])))] = {
     /**
       * Implicit ordering on an either that doesn't care about the
       * actual container values, puts the lookups before the service writes
@@ -77,7 +91,7 @@ object LookupJoin extends Serializable {
           }
       }
 
-    val joined: TypedPipe[(K, (Option[JoinedV], Option[(T, V, Option[JoinedV])]))] =
+    val joined: TypedPipe[(K, (Option[(T, JoinedV)], Option[(T, V, Option[JoinedV])]))] =
       left.map { case (t, (k, v)) => (k, (t, Left(v): Either[V, JoinedV])) }
         .++(right.map { case (t, (k, joinedV)) => (k, (t, Right(joinedV): Either[V, JoinedV])) })
         .group
@@ -101,23 +115,25 @@ object LookupJoin extends Serializable {
             * JoinedV is updated and Some(newValue) when a (K, V)
             * shows up and a new join occurs.
             */
-          (None: Option[JoinedV], None: Option[(T, V, Option[JoinedV])])
-        ) { (state, timeValue) =>
-            timeValue._2 match {
+          (None: Option[(T,JoinedV)], None: Option[(T, V, Option[JoinedV])])
+        ) { case ((optTJV, result), (time, leftOrRight)) =>
+            leftOrRight match {
               // Left(v) means that we have a new value from the left
               // pipe that we need to join against the current
               // "lastJoined" value sitting in scanLeft's state. This
               // is equivalent to a lookup on the data in the right
               // pipe at time "thisTime".
               case Left(v) =>
-                val thisTime = timeValue._1
-                val lastJoined = state._1
-                (lastJoined, Some((thisTime, v, lastJoined)))
+                val filteredJoined = optTJV.flatMap { case (oldt, jv) =>
+                  if(gate(time, oldt)) Some(jv)
+                  else None
+                }
+                (optTJV, Some((time, v, filteredJoined)))
 
               // Right(joinedV) means that we've received a new value
               // to use in the simulated realtime service
               // described in the comments above
-              case Right(joined) => (Some(joined), None)
+              case Right(joined) => (Some((time, joined)), None)
             }
         }.toTypedPipe
 
