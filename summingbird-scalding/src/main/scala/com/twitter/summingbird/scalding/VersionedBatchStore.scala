@@ -136,17 +136,18 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
       * situation where the new version created has a lower version
       * than the current maximum version in the directory.
       *
-      * This clashes with the current VersionedState implementation,
-      * which decides what data to run on by querying
+      * This behavior clashes with the current VersionedState
+      * implementation, which decides what data to source by querying
       * meta.mostRecentVersion. If mostRecentVersion doesn't change
       * from run to run, the job will process the same data over and
       * over.
       *
-      * To solve this issue and assist with migrations, if the new
-      * batch has a timestamp that's greater than the batchID being
-      * committed, we add a single millisecond to the current version,
-      * guaranteeing that we're writing a new max version (but only
-      * bumping a tiny bit forward).
+      * To solve this issue and assist with migrations, if the
+      * existing max version in the directory has a timestamp that's
+      * greater than that of the batchID being committed, we add a
+      * single millisecond to the current version, guaranteeing that
+      * we're writing a new max version (but only bumping a tiny bit
+      * forward).
       *
       * After a couple of job runs the batchID version should start
       * winning.
