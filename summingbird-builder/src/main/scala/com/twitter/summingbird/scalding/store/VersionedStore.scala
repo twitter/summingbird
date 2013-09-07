@@ -38,8 +38,16 @@ object VersionedStore {
     * Returns a VersionedBatchStore that tags the BatchID alongside
     * the stored value. This is required to serve data through a
     * read-only key-value store designed to serve values in tandem
-    * with a realtime layer (that stores (K, BatchID) -> V). See
-    * summingbird-client's ClientStore for more information.
+    * with a realtime layer (that stores (K, BatchID) -> V)).
+    *
+    * The packing function receives the inclusive upper BatchID being
+    * committed. We actually need to store the exclusive upper bound
+    * alongside the value, so the packing function calls
+    * batchID.next. On the unpack, we drop the batchID, so no
+    * off-by-one error arises.
+    *
+    * See summingbird-client's ClientStore for more information on the
+    * merge between offline and online data.
     */
   def apply[K, V](rootPath: String, versionsToKeep: Int = VersionedKeyValSource.defaultVersionsToKeep)
     (implicit injection: Injection[(K, (BatchID, V)), (Array[Byte], Array[Byte])],
@@ -47,7 +55,7 @@ object VersionedStore {
       ord: Ordering[K]): VersionedBatchStore[K, V, K, (BatchID, V)] =
     new VersionedBatchStore[K, V, K, (BatchID, V)](
       rootPath, versionsToKeep, batcher
-    )({ case (batchID, (k, v)) => (k, (batchID, v)) })({ case (k, (batchID, v)) => (k, v) }) {
+    )({ case (batchID, (k, v)) => (k, (batchID.next, v)) })({ case (k, (_, v)) => (k, v) }) {
       override def select(b: List[BatchID]) = List(b.last)
     }
 }
