@@ -170,7 +170,7 @@ object SummingbirdBuild extends Build {
       withCross("com.twitter" %% "chill" % chillVersion),
       withCross("com.twitter" %% "storehaus-core" % storehausVersion),
       withCross("com.twitter" %% "storehaus-algebra" % storehausVersion),
-      withCross("com.twitter" %% "tormenta-core" % tormentaVersion),
+      "com.twitter" %% "tormenta-core" % tormentaVersion,
       withCross("com.twitter" %% "util-core" % utilVersion),
       "storm" % "storm" % "0.9.0-wip15"
     )
@@ -206,7 +206,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdExample = module("example").settings(
     libraryDependencies ++= Seq(
       withCross("com.twitter" %% "bijection-netty" % bijectionVersion),
-      withCross("com.twitter" %% "tormenta-twitter" % tormentaVersion),
+      "com.twitter" %% "tormenta-twitter" % tormentaVersion,
       withCross("com.twitter" %% "storehaus-memcache" % storehausVersion)
     )
   ).dependsOn(summingbirdCore, summingbirdStorm)
