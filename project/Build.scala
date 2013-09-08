@@ -115,7 +115,7 @@ object SummingbirdBuild extends Build {
   val storehausVersion = "0.4.0"
   val utilVersion = "6.3.0"
   val chillVersion = "0.2.3"
-  val tormentaVersion = "0.5.1"
+  val tormentaVersion = "0.5.2"
 
   /**
     * This returns the youngest jar we released that is compatible with
