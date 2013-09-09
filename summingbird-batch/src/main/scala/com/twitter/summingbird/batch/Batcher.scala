@@ -65,9 +65,42 @@ object Batcher {
     * Returns a batcher that assigns every input tuple to the same
     * batch.
     */
-  val unit = new AbstractBatcher  {
-    def batchOf(t: Date) = BatchID(0)
-    def earliestTimeOf(batch: BatchID) = new Date(0)
+  val unit: Batcher = new AbstractBatcher  {
+    override val currentBatch = BatchID(0L)
+    def batchOf(t: Date) = currentBatch
+    def earliestTimeOf(batch: BatchID) = new Date(Long.MinValue)
+    override def toInterval(b: BatchID): Interval[Date] =
+      if(b == BatchID(0))
+        Intersection(
+          InclusiveLower(new Date(Long.MinValue)),
+          InclusiveUpper(new Date(Long.MaxValue))
+        )
+      else
+        Empty[Date]()
+
+    val totalBatchInterval = Intersection(
+      InclusiveLower(currentBatch), ExclusiveUpper(currentBatch.next)
+    )
+    override def batchesCoveredBy(interval: Interval[Date]): Interval[BatchID] =
+      interval match {
+        case Empty() => Empty()
+        case Universe() => totalBatchInterval
+        case ExclusiveUpper(upper) => Empty()
+        case InclusiveLower(lower) =>
+          if(lower.getTime == Long.MinValue) totalBatchInterval
+          else Empty()
+        case InclusiveUpper(upper) =>
+          if(upper.getTime == Long.MaxValue) totalBatchInterval
+          else Empty()
+        case ExclusiveLower(lower) => Empty()
+        case Intersection(low, high) => batchesCoveredBy(low) && batchesCoveredBy(high)
+      }
+
+    override def cover(interval: Interval[Date]): Interval[BatchID] =
+      interval match {
+        case Empty() => Empty()
+        case _ => totalBatchInterval
+      }
   }
 }
 
@@ -141,7 +174,7 @@ trait Batcher extends Serializable {
     BatchID.range(
       other.batchOf(earliestInclusive),
       other.batchOf(latestInclusive)
-    ).toList
+    )
   }
 
   def enclosedBy(extremities: (BatchID, BatchID), other: Batcher): Iterable[BatchID] = {
