@@ -87,22 +87,17 @@ sealed trait Producer[P <: Platform[P], T] {
 
   def filter(fn: T => Boolean)(implicit mf: Manifest[T]): Producer[P, T] =
     // Enforce using the OptionMapped here:
-    flatMap[T, Option[T]] { Some(_).filter(fn) }
+    optionMap(Some(_).filter(fn))
 
   def map[U](fn: T => U)(implicit mf: Manifest[U]): Producer[P, U] =
     // Enforce using the OptionMapped here:
-    flatMap[U, Some[U]] { t => Some(fn(t)) }
+    optionMap(t => Some(fn(t)))
+
+  def optionMap[U: Manifest](fn: T => Option[U]): Producer[P, U] =
+    OptionMappedProducer[P, T, U](this, fn, manifest[U])
 
   def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
     FlatMappedProducer[P, T, U](this, fn)
-
-  def flatMap[U, O](fn: T => O)(implicit ev: O <:< Option[U],
-    manifest: Manifest[U]): Producer[P, U] =
-    OptionMappedProducer[P, T, U](
-      this,
-      fn.asInstanceOf[T => Option[U]],
-      manifest
-    )
 
   def write(sink: P#Sink[T]): Producer[P, T] = WrittenProducer(this, sink)
 
