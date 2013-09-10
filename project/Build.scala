@@ -93,10 +93,10 @@ object SummingbirdBuild extends Build {
     id = "summingbird",
     base = file("."),
     settings = sharedSettings ++ DocGen.publishSettings
-    ).settings(
+  ).settings(
     test := { },
-      publish := { }, // skip publishing for this root project.
-      publishLocal := { }
+    publish := { }, // skip publishing for this root project.
+    publishLocal := { }
   ).aggregate(
     summingbirdCore,
     summingbirdBatch,
