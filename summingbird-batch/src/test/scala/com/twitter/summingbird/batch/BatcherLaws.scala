@@ -22,7 +22,7 @@ import org.specs._
 
 import java.util.Date
 
-import com.twitter.algebird.{Interval, Empty}
+import com.twitter.algebird.{Interval, ExclusiveUpper, Empty}
 
 object BatcherLaws extends Properties("Batcher") {
   import Generators._
@@ -31,7 +31,7 @@ object BatcherLaws extends Properties("Batcher") {
     batcher.batchOf(batcher.earliestTimeOf(b))
   }
 
-  def earliestIsLE(batcher: Batcher) = forAll { (d: Date) =>
+  def earliestIs_<=(batcher: Batcher) = forAll { (d: Date) =>
     (batcher.earliestTimeOf(batcher.batchOf(d)).compareTo(d) <= 0)
   }
 
@@ -58,7 +58,7 @@ object BatcherLaws extends Properties("Batcher") {
     }
 
   def batcherLaws(batcher: Batcher) =
-    earliestIsLE(batcher) &&
+    earliestIs_<=(batcher) &&
       batchesAreWeakOrderings(batcher) &&
       batchesIncreaseByAtMostOne(batcher) &&
       batchesCoveredByIdent(batcher)
@@ -74,7 +74,7 @@ object BatcherLaws extends Properties("Batcher") {
   property("1H obeys laws") = batcherLaws(Batcher.ofHours(1))
 
   property("Combined obeys laws") =
-    batcherLaws(new CombinedBatcher(Batcher.ofHours(1), new Date(), Batcher.ofMinutes(10)))
+    batcherLaws(new CombinedBatcher(Batcher.ofHours(1), ExclusiveUpper(new Date()), Batcher.ofMinutes(10)))
 
   val millisPerHour = 1000 * 60 * 60
 
