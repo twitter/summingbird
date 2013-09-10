@@ -31,7 +31,7 @@
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Scalding implementation of the batch read and write components
 of a store that uses the VersionedKeyValSource from scalding-commons.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-builder/src/main/scala/com/twitter/summingbird/scalding/store/VersionedStore.scala">VersionedStore.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.0/summingbird-builder/src/main/scala/com/twitter/summingbird/scalding/store/VersionedStore.scala">VersionedStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -140,8 +140,12 @@ of a store that uses the VersionedKeyValSource from scalding-commons.
 the stored value.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a VersionedBatchStore that tags the BatchID alongside
 the stored value. This is required to serve data through a
 read-only key-value store designed to serve values in tandem
-with a realtime layer (that stores (K, BatchID) -&gt; V). See
-summingbird-client's ClientStore for more information.
+with a realtime layer (that stores (K, BatchID) -&gt; V)).</p><p>The packing function receives the inclusive upper BatchID being
+committed. We actually need to store the exclusive upper bound
+alongside the value, so the packing function calls
+batchID.next. On the unpack, we drop the batchID, so no
+off-by-one error arises.</p><p>See summingbird-client's ClientStore for more information on the
+merge between offline and online data.
 </p></div></div>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>

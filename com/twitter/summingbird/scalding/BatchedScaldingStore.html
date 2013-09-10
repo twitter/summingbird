@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Self Type</dt><dd><a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="">BatchedScaldingStore</a>[K, V]</dd><dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingStore.scala">ScaldingStore.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Self Type</dt><dd><a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="">BatchedScaldingStore</a>[K, V]</dd><dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.0/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingStore.scala">ScaldingStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.ScaldingStore" class="extype" href="ScaldingStore.html">ScaldingStore</a>[K, V], <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div><div class="toggleContainer block">
@@ -337,6 +337,22 @@ results by rolling forward
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedScaldingStore#select" data-isabs="false">
+      <a id="select(List[BatchID]):List[BatchID]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">select</span><span class="params">(<span name="b">b: List[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>]</span>)</span><span class="result">: List[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Override select if you don't want to materialize every
+batch.</p><div class="fullcomment"><div class="comment cmt"><p>Override select if you don't want to materialize every
+batch. Note that select MUST return a list containing the final
+batch in the supplied list; otherwise data would be lost.
+</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">

@@ -96,6 +96,18 @@
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedWindowService" data-isabs="true">
+      <a id="BatchedWindowService:BatchedWindowService[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="BatchedWindowService.html"><span class="name">BatchedWindowService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedService[K, V]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">This is a service that has a finite memory.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.EmptyService" data-isabs="false">
       <a id="EmptyService:EmptyService[K, V]"></a>
       <h4 class="signature">
@@ -285,7 +297,7 @@ generally T will be some kind of TypedPipe
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="ScaldingService.html"><span class="name">ScaldingService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends Serializable</span>
+        <a href="ScaldingService.html"><span class="name">ScaldingService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">+V</span>]</span><span class="result"> extends Serializable</span>
       </span>
       </h4>
       
@@ -326,6 +338,20 @@ generally T will be some kind of TypedPipe
       </h4>
       <p class="comment cmt">A UniqueKeyedService covers the case where Keys are globally
 unique and either are not present or have one value.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.SimpleWindowedService" data-isabs="true">
+      <a id="SimpleWindowedService:SimpleWindowedService[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SimpleWindowedService.html"><span class="name">SimpleWindowedService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedWindowService[K, V]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">More familiar interface to scalding users that creates
+the Reader from two other methods
+</p>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.SourceUniqueKeyedService" data-isabs="true">
       <a id="SourceUniqueKeyedService:SourceUniqueKeyedService[S, K, V]"></a>
       <h4 class="signature">
@@ -434,8 +460,8 @@ unique and either are not present or have one value.</p>
         <a href="VersionedBatchStoreBase.html"><span class="name">VersionedBatchStoreBase</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedScaldingStore[K, V]</span>
       </span>
       </h4>
-      <p class="comment cmt">Allows subclasses to share the means of reading version numbers but plug
-in methods to actually read or write the data.</p>
+      <p class="comment cmt">Allows subclasses to share the means of reading version numbers but
+plug in methods to actually read or write the data.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.WaitingState" data-isabs="true">
       <a id="WaitingState:WaitingState[T]"></a>
       <h4 class="signature">
@@ -558,8 +584,8 @@ by performing realtime lookups on a key-value Store.</p>
         <a href="VersionedBatchStore$.html"><span class="name">VersionedBatchStore</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
-      <p class="comment cmt">Scalding implementation of the batch read and write components
-of a store that uses the VersionedKValSource from scalding-commons.</p>
+      <p class="comment cmt">Scalding implementation of the batch read and write components of a
+store that uses the VersionedKeyValSource from scalding-commons.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#flowDefFromTuple" data-isabs="false">
       <a id="flowDefFromTuple((FlowDef, Mode)):FlowDef"></a>
       <h4 class="signature">

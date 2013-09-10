@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/UniqueKeyedService.scala">UniqueKeyedService.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.0/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/UniqueKeyedService.scala">UniqueKeyedService.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -190,26 +190,26 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.UniqueKeyedService#from" data-isabs="false">
-      <a id="from[K, V]((DateRange) ⇒ Mappable[(K, V)])(Ordering[K]):UniqueKeyedService[K, V]"></a>
+      <a id="from[K, V]((DateRange) ⇒ Mappable[(K, V)],Option[Int])(Ordering[K]):UniqueKeyedService[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">from</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="fn">fn: (<span name="com.twitter.scalding.DateRange" class="extype">DateRange</span>) ⇒ <span name="com.twitter.scalding.Mappable" class="extype">Mappable</span>[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Ordering[K]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.UniqueKeyedService" class="extype" href="UniqueKeyedService.html">UniqueKeyedService</a>[K, V]</span>
+        <span class="name">from</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="fn">fn: (<span name="com.twitter.scalding.DateRange" class="extype">DateRange</span>) ⇒ <span name="com.twitter.scalding.Mappable" class="extype">Mappable</span>[(K, V)]</span>, <span name="reducers">reducers: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Ordering[K]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.UniqueKeyedService" class="extype" href="UniqueKeyedService.html">UniqueKeyedService</a>[K, V]</span>
       </span>
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.UniqueKeyedService#fromAndThen" data-isabs="false">
-      <a id="fromAndThen[T, K, V]((DateRange) ⇒ Mappable[T],(TypedPipe[T]) ⇒ TypedPipe[(K, V)])(Ordering[K]):UniqueKeyedService[K, V]"></a>
+      <a id="fromAndThen[T, K, V]((DateRange) ⇒ Mappable[T],(TypedPipe[T]) ⇒ TypedPipe[(K, V)],Option[Int])(Ordering[K]):UniqueKeyedService[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">fromAndThen</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="fn">fn: (<span name="com.twitter.scalding.DateRange" class="extype">DateRange</span>) ⇒ <span name="com.twitter.scalding.Mappable" class="extype">Mappable</span>[T]</span>, <span name="andThen">andThen: (<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[T]) ⇒ <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Ordering[K]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.UniqueKeyedService" class="extype" href="UniqueKeyedService.html">UniqueKeyedService</a>[K, V]</span>
+        <span class="name">fromAndThen</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="fn">fn: (<span name="com.twitter.scalding.DateRange" class="extype">DateRange</span>) ⇒ <span name="com.twitter.scalding.Mappable" class="extype">Mappable</span>[T]</span>, <span name="andThen">andThen: (<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[T]) ⇒ <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]</span>, <span name="inputReducers">inputReducers: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Ordering[K]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.UniqueKeyedService" class="extype" href="UniqueKeyedService.html">UniqueKeyedService</a>[K, V]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">The Mappable is the subclass of Source that knows about the file system.</p>

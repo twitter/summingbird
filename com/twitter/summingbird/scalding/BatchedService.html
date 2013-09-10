@@ -29,9 +29,12 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingService.scala">ScaldingService.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.0/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingService.scala">ScaldingService.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.ScaldingService" class="extype" href="ScaldingService.html">ScaldingService</a>[K, V], <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+        </div><div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.scalding.BatchedWindowService" class="extype" href="BatchedWindowService.html">BatchedWindowService</a>, <a name="com.twitter.summingbird.scalding.SimpleWindowedService" class="extype" href="SimpleWindowedService.html">SimpleWindowedService</a></div>
         </div></div>
     
 
@@ -316,6 +319,21 @@ This only has the keys that changed value during this batch.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.BatchedService" class="extype" href="">BatchedService</a> → <a name="com.twitter.summingbird.scalding.ScaldingService" class="extype" href="ScaldingService.html">ScaldingService</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedService#lookup" data-isabs="false">
+      <a id="lookup[W](TypedPipe[(Time, (K, W))],TypedPipe[(Time, (K, Option[V]))]):TypedPipe[(Time, (K, (W, Option[V])))]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lookup</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="incoming">incoming: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, W))]</span>, <span name="servStream">servStream: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, <span name="scala.Option" class="extype">Option</span>[V]))]</span>)</span><span class="result">: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, (W, <span name="scala.Option" class="extype">Option</span>[V])))]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">This executes the join algortihm on the streams.</p><div class="fullcomment"><div class="comment cmt"><p>This executes the join algortihm on the streams.
+You are guaranteed that all the service data needed
+to do the join is present.
+</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">

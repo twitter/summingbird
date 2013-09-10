@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/develop/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/VersionedBatchStore.scala">VersionedBatchStore.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.0/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/VersionedBatchStore.scala">VersionedBatchStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.VersionedBatchStoreBase" class="extype" href="VersionedBatchStoreBase.html">VersionedBatchStoreBase</a>[K, V], <a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="BatchedScaldingStore.html">BatchedScaldingStore</a>[K, V], <a name="com.twitter.summingbird.scalding.ScaldingStore" class="extype" href="ScaldingStore.html">ScaldingStore</a>[K, V], <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -161,10 +161,12 @@
         <span class="name">batchIDToVersion</span><span class="params">(<span name="b">b: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>)</span><span class="result">: <span name="scala.Long" class="extype">Long</span></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">The version numbers are the exclusive upper-bound of time covered
-by this store.</p><div class="fullcomment"><div class="comment cmt"><p>The version numbers are the exclusive upper-bound of time covered
-by this store. Put another way, all events that occured before the version
-are included in this store.
+      <p class="shortcomment cmt">These functions convert back and forth between a specific
+BatchID and the earliest time of the BatchID just after it.</p><div class="fullcomment"><div class="comment cmt"><p>These functions convert back and forth between a specific
+BatchID and the earliest time of the BatchID just after it.</p><p>The version numbers are the exclusive upper-bound of time
+covered by this store, while the batchIDs are the inclusive
+upper bound. Put another way, all events that occured before the
+version are included in this store.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.VersionedBatchStoreBase" class="extype" href="VersionedBatchStoreBase.html">VersionedBatchStoreBase</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.VersionedBatchStore#batcher" data-isabs="false">
       <a id="batcher:Batcher"></a>
@@ -355,12 +357,12 @@ results by rolling forward
         <span class="name">readLast</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]])]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Get the most recent last batch and the ID (strictly less than the input ID)
-The &quot;Last&quot; is the stream with only the newest value for each key, within the batch
-combining the last from batchID and the deltas from batchID.</p><div class="fullcomment"><div class="comment cmt"><p>Get the most recent last batch and the ID (strictly less than the input ID)
-The &quot;Last&quot; is the stream with only the newest value for each key, within the batch
-combining the last from batchID and the deltas from batchID.next you get the stream
-for batchID.next
+      <p class="shortcomment cmt">Returns a snapshot of the store's (K, V) pairs aggregated up to
+(but not including!) the time covered by the supplied batchID.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a snapshot of the store's (K, V) pairs aggregated up to
+(but not including!) the time covered by the supplied batchID.</p><p>Aggregating the readLast for a particular batchID with the
+stream stored for the same batchID will return the aggregate up
+to (but not including) batchID.next. Streams deal with inclusive
+upper bound.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.VersionedBatchStoreBase" class="extype" href="VersionedBatchStoreBase.html">VersionedBatchStoreBase</a> → <a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="BatchedScaldingStore.html">BatchedScaldingStore</a></dd></dl></div>
     </li><li visbl="prt" name="com.twitter.summingbird.scalding.VersionedBatchStore#readVersion" data-isabs="false">
       <a id="readVersion(Long):FlowProducer[TypedPipe[(K, V)]]"></a>
@@ -373,7 +375,26 @@ for batchID.next
         <span class="name">readVersion</span><span class="params">(<span name="v">v: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: FlowProducer[<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.VersionedBatchStore" class="extype" href="">VersionedBatchStore</a> → <a name="com.twitter.summingbird.scalding.VersionedBatchStoreBase" class="extype" href="VersionedBatchStoreBase.html">VersionedBatchStoreBase</a></dd></dl></div>
+      <p class="shortcomment cmt">Returns a FlowProducer that supplies all data for the given
+specific version within this store's rootPath.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a FlowProducer that supplies all data for the given
+specific version within this store's rootPath.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.VersionedBatchStore" class="extype" href="">VersionedBatchStore</a> → <a name="com.twitter.summingbird.scalding.VersionedBatchStoreBase" class="extype" href="VersionedBatchStoreBase.html">VersionedBatchStoreBase</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedScaldingStore#select" data-isabs="false">
+      <a id="select(List[BatchID]):List[BatchID]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">select</span><span class="params">(<span name="b">b: List[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>]</span>)</span><span class="result">: List[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Override select if you don't want to materialize every
+batch.</p><div class="fullcomment"><div class="comment cmt"><p>Override select if you don't want to materialize every
+batch. Note that select MUST return a list containing the final
+batch in the supplied list; otherwise data would be lost.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="BatchedScaldingStore.html">BatchedScaldingStore</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -480,7 +501,15 @@ On write, we throw if batchID is less than firstNonZero
         <span class="name">writeLast</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="lastVals">lastVals: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Instances may choose to write out the last or just compute it from the stream</p><div class="fullcomment"><div class="comment cmt"><p>Instances may choose to write out the last or just compute it from the stream</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.VersionedBatchStore" class="extype" href="">VersionedBatchStore</a> → <a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="BatchedScaldingStore.html">BatchedScaldingStore</a></dd></dl></div>
+      <p class="shortcomment cmt">writeLast receives an INCLUSIVE upper bound on batchID and a
+pipe of all key-value pairs aggregated up to (and including)
+that batchID.</p><div class="fullcomment"><div class="comment cmt"><p>writeLast receives an INCLUSIVE upper bound on batchID and a
+pipe of all key-value pairs aggregated up to (and including)
+that batchID. (Yes, this is confusing, since a number of other
+methods talk about the EXCLUSIVE upper bound.)</p><p>This implementation of writeLast sinks all key-value pairs out
+into a VersionedStore directory whose tagged version is the
+EXCLUSIVE upper bound on batchID, or &quot;batchID.next&quot;.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.VersionedBatchStore" class="extype" href="">VersionedBatchStore</a> → <a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="BatchedScaldingStore.html">BatchedScaldingStore</a></dd></dl></div>
     </li></ol>
             </div>
 
