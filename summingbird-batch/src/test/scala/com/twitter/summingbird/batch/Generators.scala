@@ -29,7 +29,11 @@ object Generators {
     Arbitrary { Arbitrary.arbitrary[Long].map { BatchID(_) } }
 
   implicit val dateArb: Arbitrary[java.util.Date] =
-    Arbitrary { Arbitrary.arbitrary[Long].map { new java.util.Date(_) } }
+    Arbitrary {
+      // a relevant 200 or so year range
+      Gen.choose(-137878042589500L, 137878042589500L)
+        .map { new java.util.Date(_) }
+    }
 
   implicit def intervalArb[T:Arbitrary:Ordering]: Arbitrary[Interval[T]] =
     Arbitrary {
