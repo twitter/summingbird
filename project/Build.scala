@@ -16,7 +16,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.1.0-SNAPSHOT",
+    version := "0.1.0",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -50,8 +50,7 @@ object SummingbirdBuild extends Build {
     publishTo <<= version { v =>
       Some(
         if (v.trim.toUpperCase.endsWith("SNAPSHOT"))
-          //Opts.resolver.sonatypeSnapshots
-          "internal-snap" at "http://artifactory.local.twitter.com/libs-snapshots-local"
+          Opts.resolver.sonatypeSnapshots
         else
           Opts.resolver.sonatypeStaging
       )
