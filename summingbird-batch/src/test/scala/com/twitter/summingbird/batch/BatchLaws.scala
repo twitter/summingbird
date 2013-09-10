@@ -22,6 +22,8 @@ import org.scalacheck.Prop._
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
+import com.twitter.algebird.Interval
+
 object BatchLaws extends Properties("BatchID") {
   import Generators._
 
@@ -47,5 +49,13 @@ object BatchLaws extends Properties("BatchID") {
       BatchID(b).next.prev == BatchID(b) &&
       BatchID(b).prev.next == BatchID(b) &&
       BatchID(b).prev == BatchID(b - 1L)
+    }
+
+  property("range, toInterval and toIterable should be equivalent") =
+    forAll { (b1: BatchID, diff: SmallLong) =>
+      val b2 = b1 + (diff.get)
+      val interval = Interval.leftClosedRightOpen(b1, b2.next)
+      (BatchID.toInterval(BatchID.range(b1, b2)) == Some(interval)) &&
+        BatchID.toIterable(interval).toList == BatchID.range(b1, b2).toList
     }
 }
