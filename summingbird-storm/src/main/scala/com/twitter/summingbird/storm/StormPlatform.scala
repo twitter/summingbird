@@ -144,7 +144,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     def suffixOf(xs: List[_], suffix: String): String =
       if (xs.isEmpty) suffix else FM_CONSTANT + suffix
 
-    def flatMap[T, U](parents: List[String], ops: FMList) =
+    def flatMap(parents: List[String], ops: FMList) =
       scheduleFlatMapper(topoBuilder, parents, path, suffix, id, ops)
 
     /**
@@ -156,12 +156,17 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       * node, we can continue to optimize the graph by pushing the
       * current operation onto the toSchedule stack.
       */
-    def perhapsSchedule[A, B](parent: Prod[A], op: FMItem) =
+    def perhapsSchedule[A](parent: Prod[A], op: FMItem) = {
       if (forkedNodes.contains(outerProducer)) {
-        val (s, m) = recurse(parent, toSchedule = List(op))
+        val (s, m) = recurse(
+          parent,
+          toSchedule = List(op),
+          suffix = "fork-" + suffixOf(toSchedule, suffix)
+        )
         (flatMap(s, toSchedule), m)
       } else
         recurse(parent, toSchedule = op :: toSchedule)
+    }
 
     jamfs.get(outerProducer) match {
       case Some(s) => (s, jamfs)
