@@ -485,9 +485,7 @@ class Scalding(
     val timeSpan = runningState.part.mapNonDecreasing(_.getTime)
     toFlow(timeSpan, mode, pf) match {
       case Left(errs) =>
-        println("ERROR")
-        errs.foreach { println(_) }
-        runningState.fail(new Exception(errs.toString))
+        runningState.fail(FlowPlanException(errs))
       case Right((ts,flow)) =>
         try {
           options.get(jobName).foreach { jopt =>

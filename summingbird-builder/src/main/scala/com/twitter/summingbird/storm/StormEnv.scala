@@ -19,6 +19,7 @@ package com.twitter.summingbird.storm
 import backtype.storm.Config
 import com.twitter.scalding.Args
 import com.twitter.summingbird.{ Env, Unzip2, Producer }
+import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.summingbird.scalding.Scalding
 
 /**
@@ -38,11 +39,17 @@ case class StormEnv(override val jobName: String, override val args: Args)
     // of the environment and defining the builder).
     val ajob = abstractJob
 
+    val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
+    val eventCodecPairs = builder.eventCodecPairs
+
     val classSuffix = jobName.split("\\.").last
     Storm.remote(classSuffix, builder.opts)
       .withConfigUpdater { config =>
       val c = ConfigBijection.invert(config)
-      ConfigBijection(ajob.transformConfig(c))
+      val transformed = ConfigBijection(ajob.transformConfig(c))
+      KryoRegistrationHelper.registerInjections(transformed, eventCodecPairs)
+      KryoRegistrationHelper.registerInjectionDefaults(transformed, codecPairs)
+      transformed
     }.run(builder.node.asInstanceOf[Producer[Storm, _]])
   }
 }
