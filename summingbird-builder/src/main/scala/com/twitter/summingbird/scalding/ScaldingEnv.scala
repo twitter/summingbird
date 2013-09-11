@@ -140,6 +140,21 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     // VersionedState needs this
     implicit val batcher = scaldingBuilder.batcher
     val state = VersionedState(HDFSMetadata(conf, statePath), startDate, batches)
-    new Scalding(name, opts).run(state, Hdfs(true, conf), toRun)
+    try {
+      new Scalding(name, opts).run(state, Hdfs(true, conf), toRun)
+    }
+    catch {
+      case f@FlowPlanException(errs) =>
+        /* This is generally due to data not being ready, don't give a failed error code */
+       if(!args.boolean("scalding.nothrowplan")) {
+         println("use: --scalding.nothrowplan to not give a failing error code in this case")
+         throw f
+       }
+       else {
+         println("[ERROR]: ========== FlowPlanException =========")
+         errs.foreach { println(_) }
+         println("========== FlowPlanException =========")
+       }
+    }
   }
 }

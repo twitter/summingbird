@@ -1,5 +1,8 @@
 # summingbird #
 
+## 0.1.1
+* Add --scalding.nothrowplan to not rethrow/exit with error on a flow plan error
+
 ## 0.1.0
 
 * new, producer-based API
