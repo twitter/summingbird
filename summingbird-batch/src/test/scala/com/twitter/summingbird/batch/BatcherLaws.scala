@@ -72,6 +72,8 @@ object BatcherLaws extends Properties("Batcher") {
   property("Unit obeys laws") = batcherLaws(Batcher.unit)
 
   property("1H obeys laws") = batcherLaws(Batcher.ofHours(1))
+  property("UTC 1H obeys laws") = batcherLaws(CalendarBatcher.ofHoursUtc(1))
+  property("UTC 1D obeys laws") = batcherLaws(CalendarBatcher.ofDaysUtc(1))
 
   property("Combined obeys laws") =
     batcherLaws(new CombinedBatcher(Batcher.ofHours(1), ExclusiveUpper(new Date()), Batcher.ofMinutes(10)))
