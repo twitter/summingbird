@@ -23,7 +23,9 @@ import backtype.storm.tuple.{ Fields, Tuple, Values }
 import com.twitter.algebird.{ Monoid, SummingQueue }
 import com.twitter.chill.MeatLocker
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
-import com.twitter.summingbird.storm.option.{ CacheSize, FlatMapStormMetrics }
+import com.twitter.summingbird.storm.option.{
+  AnchorTuples, CacheSize, FlatMapStormMetrics
+}
 import com.twitter.storehaus.algebra.MergeableStore
 
 import MergeableStore.enrich
@@ -39,12 +41,13 @@ import java.util.{ Date, Map => JMap }
 class FinalFlatMapBolt[Event, Key, Value](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
   cacheSize: CacheSize,
-  metrics: FlatMapStormMetrics)
+  metrics: FlatMapStormMetrics,
+  anchor: AnchorTuples)
   (implicit monoid: Monoid[Value], batcher: Batcher)
     extends BaseBolt(metrics.metrics) {
 
   val lockedOp = MeatLocker(flatMapOp)
-  var collectorMergeable: MergeableStore[(Key, BatchID), Value] = null
+  var collectorMergeable: MergeableStore[(Key, Tuple, BatchID), Value] = null
 
   override val fields = {
     import Constants._
@@ -56,7 +59,7 @@ class FinalFlatMapBolt[Event, Key, Value](
     super.prepare(conf, context, oc)
     onCollector { collector =>
       collectorMergeable =
-        new CollectorMergeableStore[Key, Value](collector)
+        new CollectorMergeableStore[Key, Value](collector, anchor)
           .withSummer { m =>
           implicit val monoid: Monoid[Value] = m
           SummingQueue(cacheSize.size.getOrElse(0))
@@ -77,7 +80,7 @@ class FinalFlatMapBolt[Event, Key, Value](
       */
     lockedOp.get.apply(event).foreach { pairs =>
       pairs.foreach { case (k, v) =>
-        onCollector { _ => collectorMergeable.merge((k, batchID) -> v) }
+        onCollector { _ => collectorMergeable.merge((k, tuple, batchID) -> v) }
       }
       ack(tuple)
     }

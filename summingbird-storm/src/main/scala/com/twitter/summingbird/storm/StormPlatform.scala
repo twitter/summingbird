@@ -30,7 +30,7 @@ import com.twitter.chill.InjectionPair
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
-import com.twitter.summingbird.storm.option.IncludeSuccessHandler
+import com.twitter.summingbird.storm.option.{ AnchorTuples, IncludeSuccessHandler }
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.tormenta.spout.Spout
@@ -266,17 +266,20 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       case head :: tail =>
         val operation = foldOperations(head, tail)
         val metrics = getOrElse(id, DEFAULT_FM_STORM_METRICS)
+        val anchorTuples = getOrElse(id, AnchorTuples.default)
+
         val bolt = if (isFinalFlatMap(suffix)) {
           val summer = Producer.retrieveSummer(path)
             .getOrElse(sys.error("A Summer is required."))
           new FinalFlatMapBolt(
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
             getOrElse(id, DEFAULT_FM_CACHE),
-            getOrElse(id, DEFAULT_FM_STORM_METRICS)
+            getOrElse(id, DEFAULT_FM_STORM_METRICS),
+            anchorTuples
           )(summer.monoid.asInstanceOf[Monoid[Any]], summer.store.batcher)
         }
         else
-          new IntermediateFlatMapBolt(operation, metrics)
+          new IntermediateFlatMapBolt(operation, metrics, anchorTuples)
 
         val parallelism = getOrElse(id, DEFAULT_FM_PARALLELISM)
         val boltName = FM_CONSTANT + suffix
@@ -313,7 +316,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       getOrElse(idOpt, DEFAULT_SINK_CACHE),
       getOrElse(idOpt, DEFAULT_SINK_STORM_METRICS),
       getOrElse(idOpt, DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(idOpt, IncludeSuccessHandler(true))
+      getOrElse(idOpt, IncludeSuccessHandler.default)
     )
 
     val declarer =
