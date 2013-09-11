@@ -45,6 +45,10 @@ case class OnlineSuccessHandler(handlerFn: Unit => Unit)
   */
 case class IncludeSuccessHandler(get: Boolean)
 
+object IncludeSuccessHandler {
+  val default = IncludeSuccessHandler(true)
+}
+
 case class OnlineExceptionHandler(handlerFn: PartialFunction[Throwable, Unit])
 
 
