@@ -264,21 +264,22 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     toSchedule match {
       case Nil => parents
       case head :: tail =>
-        val summer = Producer.retrieveSummer(path)
-          .getOrElse(sys.error("A Summer is required."))
-        val boltName = FM_CONSTANT + suffix
         val operation = foldOperations(head, tail)
         val metrics = getOrElse(id, DEFAULT_FM_STORM_METRICS)
-        val bolt = if (isFinalFlatMap(suffix))
+        val bolt = if (isFinalFlatMap(suffix)) {
+          val summer = Producer.retrieveSummer(path)
+            .getOrElse(sys.error("A Summer is required."))
           new FinalFlatMapBolt(
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
             getOrElse(id, DEFAULT_FM_CACHE),
             getOrElse(id, DEFAULT_FM_STORM_METRICS)
           )(summer.monoid.asInstanceOf[Monoid[Any]], summer.store.batcher)
+        }
         else
           new IntermediateFlatMapBolt(operation, metrics)
 
         val parallelism = getOrElse(id, DEFAULT_FM_PARALLELISM)
+        val boltName = FM_CONSTANT + suffix
         val declarer = topoBuilder.setBolt(boltName, bolt, parallelism.parHint)
 
         parents.foreach { declarer.shuffleGrouping(_) }
