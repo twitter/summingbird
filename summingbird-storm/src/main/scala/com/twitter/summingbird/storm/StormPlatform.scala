@@ -156,7 +156,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       * node, we can continue to optimize the graph by pushing the
       * current operation onto the toSchedule stack.
       */
-    def perhapsSchedule[A](parent: Prod[A], op: FMItem) = {
+    def perhapsSchedule[A](parent: Prod[A], op: FMItem) =
       if (forkedNodes.contains(outerProducer)) {
         val (s, m) = recurse(
           parent,
@@ -164,9 +164,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
           suffix = "fork-" + suffixOf(toSchedule, suffix)
         )
         (flatMap(s, toSchedule), m)
-      } else
-        recurse(parent, toSchedule = op :: toSchedule)
-    }
+      } else recurse(parent, toSchedule = op :: toSchedule)
 
     jamfs.get(outerProducer) match {
       case Some(s) => (s, jamfs)
