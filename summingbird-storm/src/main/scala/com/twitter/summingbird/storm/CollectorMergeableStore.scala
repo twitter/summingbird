@@ -16,11 +16,13 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
+import backtype.storm.tuple.Tuple
 import backtype.storm.task.OutputCollector
 import backtype.storm.tuple.Values
 import com.twitter.algebird.Monoid
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.BatchID
+import com.twitter.summingbird.storm.option.AnchorTuples
 import com.twitter.util.Future
 
 /**
@@ -37,21 +39,26 @@ import com.twitter.util.Future
   * @author Sam Ritchie
   */
 
-class CollectorMergeableStore[K, V](collector: OutputCollector)
+class CollectorMergeableStore[K, V](
+  collector: OutputCollector,
+  anchorTuples: AnchorTuples)
   (override implicit val monoid: Monoid[V])
-    extends MergeableStore[(K, BatchID), V] {
-  override def get(k: (K, BatchID)) =
+    extends MergeableStore[(K, Tuple, BatchID), V] {
+  override def get(k: (K, Tuple, BatchID)) =
     sys.error("Gets out of a CollectorMergeableStore are not supported.")
-  override def put(pair: ((K, BatchID), Option[V])) =
+  override def put(pair: ((K, Tuple, BatchID), Option[V])) =
     sys.error("Puts into a CollectorMergeableStore are not supported.")
 
-  override def merge(pair: ((K, BatchID), V)) = {
-    val ((k, id), v) = pair
-    collector.emit(new Values(
+  override def merge(pair: ((K, Tuple, BatchID), V)) = {
+    val ((k, tuple, id), v) = pair
+    val values = new Values(
       id.asInstanceOf[AnyRef],
       k.asInstanceOf[AnyRef],
       v.asInstanceOf[AnyRef]
-    ))
+    )
+    if (anchorTuples.anchor)
+      collector.emit(tuple, values)
+    else collector.emit(values)
     Future.Unit
   }
 }
