@@ -30,7 +30,7 @@ import com.twitter.chill.InjectionPair
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
-import com.twitter.summingbird.storm.option.IncludeSuccessHandler
+import com.twitter.summingbird.storm.option.{ AnchorTuples, IncludeSuccessHandler }
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.tormenta.spout.Spout
@@ -38,6 +38,7 @@ import com.twitter.summingbird._
 import com.twitter.util.Future
 
 import Constants._
+import scala.annotation.tailrec
 
 sealed trait StormStore[-K, V] {
   def batcher: Batcher
@@ -144,7 +145,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     def suffixOf(xs: List[_], suffix: String): String =
       if (xs.isEmpty) suffix else FM_CONSTANT + suffix
 
-    def flatMap[T, U](parents: List[String], ops: FMList) =
+    def flatMap(parents: List[String], ops: FMList) =
       scheduleFlatMapper(topoBuilder, parents, path, suffix, id, ops)
 
     /**
@@ -156,12 +157,15 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       * node, we can continue to optimize the graph by pushing the
       * current operation onto the toSchedule stack.
       */
-    def perhapsSchedule[A, B](parent: Prod[A], op: FMItem) =
+    def perhapsSchedule[A](parent: Prod[A], op: FMItem) =
       if (forkedNodes.contains(outerProducer)) {
-        val (s, m) = recurse(parent, toSchedule = List(op))
+        val (s, m) = recurse(
+          parent,
+          toSchedule = List(op),
+          suffix = "fork-" + suffixOf(toSchedule, suffix)
+        )
         (flatMap(s, toSchedule), m)
-      } else
-        recurse(parent, toSchedule = op :: toSchedule)
+      } else recurse(parent, toSchedule = op :: toSchedule)
 
     jamfs.get(outerProducer) match {
       case Some(s) => (s, jamfs)
@@ -261,21 +265,25 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     toSchedule match {
       case Nil => parents
       case head :: tail =>
-        val summer = Producer.retrieveSummer(path)
-          .getOrElse(sys.error("A Summer is required."))
-        val boltName = FM_CONSTANT + suffix
         val operation = foldOperations(head, tail)
         val metrics = getOrElse(id, DEFAULT_FM_STORM_METRICS)
-        val bolt = if (isFinalFlatMap(suffix))
+        val anchorTuples = getOrElse(id, AnchorTuples.default)
+
+        val bolt = if (isFinalFlatMap(suffix)) {
+          val summer = Producer.retrieveSummer(path)
+            .getOrElse(sys.error("A Summer is required."))
           new FinalFlatMapBolt(
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
             getOrElse(id, DEFAULT_FM_CACHE),
-            getOrElse(id, DEFAULT_FM_STORM_METRICS)
+            getOrElse(id, DEFAULT_FM_STORM_METRICS),
+            anchorTuples
           )(summer.monoid.asInstanceOf[Monoid[Any]], summer.store.batcher)
+        }
         else
-          new IntermediateFlatMapBolt(operation, metrics)
+          new IntermediateFlatMapBolt(operation, metrics, anchorTuples)
 
         val parallelism = getOrElse(id, DEFAULT_FM_PARALLELISM)
+        val boltName = FM_CONSTANT + suffix
         val declarer = topoBuilder.setBolt(boltName, bolt, parallelism.parHint)
 
         parents.foreach { declarer.shuffleGrouping(_) }
@@ -285,7 +293,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private def populate[K, V](
     topologyBuilder: TopologyBuilder,
-    summer: Summer[Storm, K, V])(implicit config: Config) = {
+    summer: Summer[Storm, K, V],
+    name: Option[String])(implicit config: Config) = {
     implicit val monoid = summer.monoid
 
     val dep = Dependants(summer)
@@ -296,12 +305,12 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val (parents, _) = buildTopology(
       topologyBuilder, summer, fanOutSet, Map.empty,
       List.empty, List.empty,
-      END_SUFFIX, None)
+      END_SUFFIX, name)
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
 
-    val idOpt = Some(SINK_ID)
+    val idOpt = name.orElse(Some(SINK_ID))
     val sinkBolt = new SinkBolt[K, V](
       supplier,
       getOrElse(idOpt, DEFAULT_ONLINE_SUCCESS_HANDLER),
@@ -309,7 +318,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       getOrElse(idOpt, DEFAULT_SINK_CACHE),
       getOrElse(idOpt, DEFAULT_SINK_STORM_METRICS),
       getOrElse(idOpt, DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(idOpt, IncludeSuccessHandler(true))
+      getOrElse(idOpt, IncludeSuccessHandler.default)
     )
 
     val declarer =
@@ -344,13 +353,26 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   def transformConfig(base: Config): Config = updateConf(base)
   def withConfigUpdater(fn: Config => Config): Storm
 
-  def plan[T](summer: Producer[Storm, T]): StormTopology = {
+  def plan[T](node: Producer[Storm, T]): StormTopology = {
     val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
 
+    /**
+      * This crippled version of the StormPlatform only supports a
+      * Summer or any number of NamedProducers stacked onto the end of
+      * the DAG.
+      */
+    @tailrec def retrieve(p: Producer[Storm, _], id: Option[String] = None): (Summer[Storm, Any, Any], Option[String]) =
+      p match {
+        case s: Summer[Storm, Any, Any] => (s, id)
+        case NamedProducer(inner, name) => retrieve(inner, Some(name))
+        case _ => sys.error("A Summer is required.")
+      }
+    val (summer, name) = retrieve(node)
+
     // TODO (https://github.com/twitter/summingbird/issues/86):
     // support topologies that don't end with a sum
-    populate(topologyBuilder, summer.asInstanceOf[Summer[Storm,Any,Any]])
+    populate(topologyBuilder, summer, name)
     topologyBuilder.createTopology
   }
   def run(summer: Producer[Storm, _]): Unit = run(plan(summer))

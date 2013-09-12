@@ -16,9 +16,12 @@
 
 package com.twitter.summingbird.scalding
 
+import com.twitter.bijection.ImplicitBijection
+import com.twitter.bijection.algebird.BijectedSemigroup
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{StateWithError, Reader}
+import com.twitter.bijection.Bijection
 import com.twitter.scalding.{Dsl, Mode, TypedPipe, Grouped, IterableSource, TupleSetter, TupleConverter}
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
@@ -125,13 +128,44 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           case NonCommutative => sorted
         }
 
-        val redFn: (((Long, V), (Long, V)) => (Long, V)) = { (left, right) =>
+        /**
+          * If the supplied Semigroup[V] is an instance of
+          * BijectedSemigroup[U, V], Returns the backing Bijection[U, V]
+          * and Semigroup[U]; else None.
+          */
+        def unpackBijectedSemigroup[U]: Option[(Bijection[V, U], Semigroup[U])] =
+          sg match {
+            case innerSg: BijectedSemigroup[_, _] =>
+              def getField[F: ClassManifest](fieldName: String): F = {
+                val f = classOf[BijectedSemigroup[_, _]].getDeclaredField(fieldName)
+                f.setAccessible(true)
+                implicitly[ClassManifest[F]]
+                  .erasure.asInstanceOf[Class[F]].cast(f.get(innerSg))
+              }
+              Some((
+                getField[ImplicitBijection[U, V]]("bij").bijection.inverse,
+                getField[Semigroup[U]]("sg")
+              ))
+            case _ => None
+          }
+
+        def redFn[T: Semigroup]
+            : (((Long, T), (Long, T)) => (Long, T)) = { (left, right) =>
           val (tl, vl) = left
           val (tr, vr) = right
-          (tl max tr, sg.plus(vl, vr))
+          (tl max tr, Semigroup.plus(vl, vr))
         }
+
         // We strip the times
-        val nextSummed = toKVPipe(maybeSorted.reduce(redFn)).values
+        def sumNext[U] =
+          unpackBijectedSemigroup[U].map { case (bij, semi) =>
+            maybeSorted.mapValues { case (l, v) => (l, bij(v)) }
+              .reduce(redFn[U](semi))
+              .map { case (k, (l, v)) => (k, (l, (bij.invert(v)))) }
+          }.getOrElse {
+            maybeSorted.reduce(redFn(sg))
+          }
+        val nextSummed = toKVPipe(sumNext).values
         // could be an empty method, in which case scalding will do nothing here
         writeLast(head, nextSummed)
 
@@ -139,7 +173,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
         val stream = toKVPipe(sorted.scanLeft(None: Option[(Long, V)]) { (old, item) =>
             old match {
               case None => Some(item)
-              case Some(prev) => Some(redFn(prev, item))
+              case Some(prev) => Some(redFn(sg)(prev, item))
             }
           }
           .mapValueStream { _.flatten /* unbox the option */ }
