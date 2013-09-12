@@ -133,7 +133,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           * BijectedSemigroup[U, V], Returns the backing Bijection[U, V]
           * and Semigroup[U]; else None.
           */
-        def unpackBijectedSemigroup[U]: Option[(Bijection[V, U], Semigroup[U])] = {
+        def unpackBijectedSemigroup[U]: Option[(Bijection[V, U], Semigroup[U])] =
           sg match {
             case innerSg: BijectedSemigroup[_, _] =>
               def getField[F: ClassManifest](fieldName: String): F = {
@@ -148,7 +148,6 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
               ))
             case _ => None
           }
-        }
 
         def redFn[T: Semigroup]
             : (((Long, T), (Long, T)) => (Long, T)) = { (left, right) =>
