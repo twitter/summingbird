@@ -45,11 +45,11 @@ import ConfigBijection._
 case class StoreIntermediateData[K, V](sink: ScaldingSink[(K,V)]) extends java.io.Serializable
 
 // TODO (https://github.com/twitter/summingbird/issues/69): Add
-// documentation later describing command-line args. initial-run,
-// start-time, batches, reducers, Hadoop-specific arguments and where
-// they go. We might pull this argument-parsing out into its own class
-// with all arguments defined to make it easier to understand (and add
-// to later).
+// documentation later describing command-line args. start-time,
+// batches, reducers, Hadoop-specific arguments and where they go. We
+// might pull this argument-parsing out into its own class with all
+// arguments defined to make it easier to understand (and add to
+// later).
 
 case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     extends Env(jobName) {
@@ -69,10 +69,8 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // (incremental updates) will use the batch of the previous run as
   // the starting batch, rendering this unnecessary.
   def startDate: Option[Date] =
-    if (args.boolean("initial-run"))
-      Some(args("start-time"))
-        .map { dateString => DateOps.stringToRichDate(dateString)(tz).value }
-    else None
+    args.optional("start-time")
+      .map(DateOps.stringToRichDate(_)(tz).value)
 
   def initialBatch(b: Batcher): Option[BatchID] = startDate.map(b.batchOf(_))
 
