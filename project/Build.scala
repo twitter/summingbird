@@ -167,6 +167,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" %% "chill-bijection" % chillVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion,
@@ -187,6 +188,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-util" % algebirdVersion,
       "com.twitter" %% "bijection-json" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" %% "chill-bijection" % chillVersion,
       "commons-lang" % "commons-lang" % "2.6",
       "com.twitter" %% "scalding-core" % scaldingVersion,
       "com.twitter" %% "scalding-commons" % scaldingVersion

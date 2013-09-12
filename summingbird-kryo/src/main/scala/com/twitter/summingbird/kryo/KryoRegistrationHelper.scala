@@ -19,7 +19,7 @@ package com.twitter.summingbird.kryo
 import com.esotericsoftware.kryo.Kryo
 import com.twitter.bijection.CastInjection
 import com.twitter.bijection.{ Base64String, Bijection, Injection }
-import com.twitter.chill.{ InjectionPair, KryoInjection, KryoSerializer }
+import com.twitter.chill.{ KryoInjection, KryoSerializer }
 
 import java.util.{ HashMap, Map => JMap }
 
