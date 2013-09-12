@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.0/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/FinalFlatMapBolt.scala">FinalFlatMapBolt.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/FinalFlatMapBolt.scala">FinalFlatMapBolt.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a>, <span name="backtype.storm.topology.IRichBolt" class="extype">IRichBolt</span>, <span name="backtype.storm.topology.IComponent" class="extype">IComponent</span>, <span name="backtype.storm.task.IBolt" class="extype">IBolt</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -65,7 +65,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">FinalFlatMapBolt</span><span class="params">(<span name="flatMapOp">flatMapOp: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[Event, (Key, Value)]</span>, <span name="cacheSize">cacheSize: <a name="com.twitter.summingbird.storm.option.CacheSize" class="extype" href="option/CacheSize.html">CacheSize</a></span>, <span name="metrics">metrics: <a name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" class="extype" href="option/FlatMapStormMetrics.html">FlatMapStormMetrics</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[Value]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>)</span>
+        <span class="name">FinalFlatMapBolt</span><span class="params">(<span name="flatMapOp">flatMapOp: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[Event, (Key, Value)]</span>, <span name="cacheSize">cacheSize: <a name="com.twitter.summingbird.storm.option.CacheSize" class="extype" href="option/CacheSize.html">CacheSize</a></span>, <span name="metrics">metrics: <a name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" class="extype" href="option/FlatMapStormMetrics.html">FlatMapStormMetrics</a></span>, <span name="anchor">anchor: <a name="com.twitter.summingbird.storm.option.AnchorTuples" class="extype" href="option/AnchorTuples.html">AnchorTuples</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[Value]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>)</span>
       </span>
       </h4>
       
@@ -205,14 +205,14 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.FinalFlatMapBolt#collectorMergeable" data-isabs="false">
-      <a id="collectorMergeable:MergeableStore[(Key, BatchID), Value]"></a>
+      <a id="collectorMergeable:MergeableStore[(Key, Tuple, BatchID), Value]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">var</span>
       </span>
       <span class="symbol">
-        <span class="name">collectorMergeable</span><span class="result">: <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(Key, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]</span>
+        <span class="name">collectorMergeable</span><span class="result">: <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(Key, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), Value]</span>
       </span>
       </h4>
       

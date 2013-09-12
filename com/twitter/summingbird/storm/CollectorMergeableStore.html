@@ -25,7 +25,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">CollectorMergeableStore</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>
+        <span class="name">CollectorMergeableStore</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>
       </span>
       </h4>
       
@@ -36,9 +36,9 @@ brings us a little closer to expressing that idea, and lets us use
 the &quot;BufferingStore&quot; combinator on the FlatMapBolt collector
 itself without maintaining a separate SummingQueue in the
 FlatMapBolt and recreating the logic.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.0/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/CollectorMergeableStore.scala">CollectorMergeableStore.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/CollectorMergeableStore.scala">CollectorMergeableStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V], <span name="com.twitter.storehaus.Store" class="extype">Store</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V], <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V], <span name="java.io.Closeable" class="extype">Closeable</span>, <span name="java.lang.AutoCloseable" class="extype">AutoCloseable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V], <span name="com.twitter.storehaus.Store" class="extype">Store</span>[(K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V], <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[(K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V], <span name="java.io.Closeable" class="extype">Closeable</span>, <span name="java.lang.AutoCloseable" class="extype">AutoCloseable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -72,7 +72,7 @@ FlatMapBolt and recreating the logic.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CollectorMergeableStore</span><span class="params">(<span name="collector">collector: <span name="backtype.storm.task.OutputCollector" class="extype">OutputCollector</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span>
+        <span class="name">CollectorMergeableStore</span><span class="params">(<span name="collector">collector: <span name="backtype.storm.task.OutputCollector" class="extype">OutputCollector</span></span>, <span name="anchorTuples">anchorTuples: <a name="com.twitter.summingbird.storm.option.AnchorTuples" class="extype" href="option/AnchorTuples.html">AnchorTuples</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="monoid">monoid: <span name="com.twitter.algebird.Monoid" class="extype">Monoid</span>[V]</span>)</span>
       </span>
       </h4>
       
@@ -224,14 +224,14 @@ FlatMapBolt and recreating the logic.
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.CollectorMergeableStore#get" data-isabs="false">
-      <a id="get((K, BatchID)):Nothing"></a>
+      <a id="get((K, Tuple, BatchID)):Nothing"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">get</span><span class="params">(<span name="k">k: (K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>)</span>)</span><span class="result">: <span name="scala.Nothing" class="extype">Nothing</span></span>
+        <span class="name">get</span><span class="params">(<span name="k">k: (K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>)</span>)</span><span class="result">: <span name="scala.Nothing" class="extype">Nothing</span></span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.CollectorMergeableStore" class="extype" href="">CollectorMergeableStore</a> → ReadableStore</dd></dl></div>
@@ -272,14 +272,14 @@ FlatMapBolt and recreating the logic.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.CollectorMergeableStore#merge" data-isabs="false">
-      <a id="merge(((K, BatchID), V)):Future[Unit]"></a>
+      <a id="merge(((K, Tuple, BatchID), V)):Future[Unit]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">merge</span><span class="params">(<span name="pair">pair: ((K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V)</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</span>
+        <span class="name">merge</span><span class="params">(<span name="pair">pair: ((K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V)</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.CollectorMergeableStore" class="extype" href="">CollectorMergeableStore</a> → MergeableStore</dd></dl></div>
@@ -296,38 +296,38 @@ FlatMapBolt and recreating the logic.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.CollectorMergeableStore" class="extype" href="">CollectorMergeableStore</a> → MergeableStore</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.storehaus.ReadableStore#multiGet" data-isabs="false">
-      <a id="multiGet[K1&lt;:(K, BatchID)](Set[K1]):Map[K1, Future[Option[V]]]"></a>
+      <a id="multiGet[K1&lt;:(K, Tuple, BatchID)](Set[K1]):Map[K1, Future[Option[V]]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">multiGet</span><span class="tparams">[<span name="K1">K1 &lt;: (K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>)</span>]</span><span class="params">(<span name="ks">ks: Set[K1]</span>)</span><span class="result">: Map[K1, <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Option" class="extype">Option</span>[V]]]</span>
+        <span class="name">multiGet</span><span class="tparams">[<span name="K1">K1 &lt;: (K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>)</span>]</span><span class="params">(<span name="ks">ks: Set[K1]</span>)</span><span class="result">: Map[K1, <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Option" class="extype">Option</span>[V]]]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReadableStore</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.storehaus.algebra.MergeableStore#multiMerge" data-isabs="false">
-      <a id="multiMerge[K1&lt;:(K, BatchID)](Map[K1, V]):Map[K1, Future[Unit]]"></a>
+      <a id="multiMerge[K1&lt;:(K, Tuple, BatchID)](Map[K1, V]):Map[K1, Future[Unit]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">multiMerge</span><span class="tparams">[<span name="K1">K1 &lt;: (K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>)</span>]</span><span class="params">(<span name="kvs">kvs: Map[K1, V]</span>)</span><span class="result">: Map[K1, <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]]</span>
+        <span class="name">multiMerge</span><span class="tparams">[<span name="K1">K1 &lt;: (K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>)</span>]</span><span class="params">(<span name="kvs">kvs: Map[K1, V]</span>)</span><span class="result">: Map[K1, <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>MergeableStore</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.storehaus.Store#multiPut" data-isabs="false">
-      <a id="multiPut[K1&lt;:(K, BatchID)](Map[K1, Option[V]]):Map[K1, Future[Unit]]"></a>
+      <a id="multiPut[K1&lt;:(K, Tuple, BatchID)](Map[K1, Option[V]]):Map[K1, Future[Unit]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">multiPut</span><span class="tparams">[<span name="K1">K1 &lt;: (K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>)</span>]</span><span class="params">(<span name="kvs">kvs: Map[K1, <span name="scala.Option" class="extype">Option</span>[V]]</span>)</span><span class="result">: Map[K1, <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]]</span>
+        <span class="name">multiPut</span><span class="tparams">[<span name="K1">K1 &lt;: (K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>)</span>]</span><span class="params">(<span name="kvs">kvs: Map[K1, <span name="scala.Option" class="extype">Option</span>[V]]</span>)</span><span class="result">: Map[K1, <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Store</dd></dl></div>
@@ -368,14 +368,14 @@ FlatMapBolt and recreating the logic.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.CollectorMergeableStore#put" data-isabs="false">
-      <a id="put(((K, BatchID), Option[V])):Nothing"></a>
+      <a id="put(((K, Tuple, BatchID), Option[V])):Nothing"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">put</span><span class="params">(<span name="pair">pair: ((K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), <span name="scala.Option" class="extype">Option</span>[V])</span>)</span><span class="result">: <span name="scala.Nothing" class="extype">Nothing</span></span>
+        <span class="name">put</span><span class="params">(<span name="pair">pair: ((K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), <span name="scala.Option" class="extype">Option</span>[V])</span>)</span><span class="result">: <span name="scala.Nothing" class="extype">Nothing</span></span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.CollectorMergeableStore" class="extype" href="">CollectorMergeableStore</a> → Store</dd></dl></div>
@@ -456,11 +456,11 @@ FlatMapBolt and recreating the logic.
 
         <div id="inheritedMembers">
         <div name="com.twitter.storehaus.algebra.MergeableStore" class="parent">
-              <h3>Inherited from <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</h3>
+              <h3>Inherited from <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</h3>
             </div><div name="com.twitter.storehaus.Store" class="parent">
-              <h3>Inherited from <span name="com.twitter.storehaus.Store" class="extype">Store</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</h3>
+              <h3>Inherited from <span name="com.twitter.storehaus.Store" class="extype">Store</span>[(K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</h3>
             </div><div name="com.twitter.storehaus.ReadableStore" class="parent">
-              <h3>Inherited from <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</h3>
+              <h3>Inherited from <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[(K, <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</h3>
             </div><div name="java.io.Closeable" class="parent">
               <h3>Inherited from <span name="java.io.Closeable" class="extype">Closeable</span></h3>
             </div><div name="java.lang.AutoCloseable" class="parent">
