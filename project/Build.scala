@@ -185,8 +185,8 @@ object SummingbirdBuild extends Build {
       "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
       "com.backtype" % "dfs-datastores-cascading" % dfsDatastoresVersion,
       "com.twitter" %% "algebird-core" % algebirdVersion,
-      "com.twitter" %% "algebird-bijection" % algebirdVersion,
       withCross("com.twitter" %% "bijection-json" % bijectionVersion),
+      withCross("com.twitter" %% "bijection-algebird" % bijectionVersion),
       withCross("com.twitter" %% "chill" % chillVersion),
       "com.twitter" %% "scalding-core" % scaldingVersion,
       withCross("com.twitter" %% "scalding-commons" % "0.2.0")
