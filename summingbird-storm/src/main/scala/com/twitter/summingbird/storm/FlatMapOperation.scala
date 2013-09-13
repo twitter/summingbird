@@ -63,12 +63,17 @@ object FlatMapOperation {
         fm.apply(t).flatMap { trav: TraversableOnce[(K, V)] =>
           val resultList = trav.toSeq // Can't go through this twice
           val keySet: Set[K] = resultList.map { _._1 }.toSet
-          // Do the lookup
-          val mres: Map[K, Future[Option[JoinedV]]] =
-            if (keySet.isEmpty) Map.empty else store.multiGet(keySet)
-          Future.collect {
-            resultList.map { case (k, v) => mres(k).map { k -> (v, _) } }
-          }.map { _.toMap }
+
+          if (keySet.isEmpty)
+            Future.value(Map.empty)
+          else {
+            // Do the lookup
+            val mres: Map[K, Future[Option[JoinedV]]] =
+              store.multiGet(keySet)
+            Future.collect {
+              resultList.map { case (k, v) => mres(k).map { k -> (v, _) } }
+            }.map { _.toMap }
+          }
         }
 
       override def close {
