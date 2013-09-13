@@ -22,7 +22,8 @@ import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.bijection.{ Bijection, ImplicitBijection }
-import com.twitter.scalding.{Dsl, Mode, TypedPipe, Grouped, IterableSource, TupleSetter, TupleConverter}
+import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, TupleSetter, TupleConverter}
+import com.twitter.scalding.typed.Grouped
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
@@ -135,8 +136,8 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           */
         def unpackBijectedSemigroup[U]: Option[(Bijection[V, U], Semigroup[U])] =
           sg match {
-            case innerSg: BijectedSemigroup[U, V] =>
-              Some(innerSg.asInstanceOf[BijectedSemigroup[U, V]].bijection -> innerSg.sg)
+            case innerSg: BijectedSemigroup[_, _] =>
+              Some(innerSg.asInstanceOf[BijectedSemigroup[U, V]].bijection -> innerSg.sg.asInstanceOf[Semigroup[U]])
             case _ => None
           }
 

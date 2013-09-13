@@ -19,7 +19,6 @@ package com.twitter.summingbird.scalding
 import com.twitter.algebird.{ Monoid, Semigroup, Monad }
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{ StateWithError, Reader }
-import com.twitter.algebird.Monad.operators // map/flatMap for monads
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
 import com.twitter.scalding.{ Tool => STool, Source => SSource, _ }
@@ -36,6 +35,7 @@ import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
 import cascading.flow.{FlowDef, Flow}
 import com.twitter.scalding.Mode
 
+import scala.util.{ Success, Failure }
 import scala.util.control.Exception.allCatch
 
 object Scalding {
@@ -54,8 +54,8 @@ object Scalding {
         case InclusiveUpper(u) => u
         case ExclusiveUpper(u) => u-1L
       }
-      Some(DateRange(RichDate(low), RichDate(high)))
-    case _ => None
+      Success(DateRange(RichDate(low), RichDate(high)))
+    case _ => Failure(new RuntimeException("Unbounded interval!"))
   }
 
 
@@ -160,7 +160,7 @@ object Scalding {
               val newIntr = newDr.as[Interval[Time]]
               val mappable = factory(newDr)
               ((newIntr, mode), Reader { (fdM: (FlowDef, Mode)) =>
-                TypedPipe.from(mappable)(fdM._1, fdM._2, mappable.converter) // converter is removed in 0.9.0
+                TypedPipe.from(mappable)(fdM._1, fdM._2)
                   .flatMap { t =>
                     val time = timeOf(t)
                     if(newIntr(time)) Some((time, t)) else None
@@ -181,7 +181,7 @@ object Scalding {
           val mappable = factory(dr)
           ((timeSpan, mode), Reader { (fdM: (FlowDef, Mode)) =>
             mappable.validateTaps(fdM._2) //This can throw, but that is what this caller wants
-            TypedPipe.from(mappable)(fdM._1, fdM._2, mappable.converter) // converter is removed in 0.9.0
+            TypedPipe.from(mappable)(fdM._1, fdM._2)
               .flatMap { t =>
                 val time = timeOf(t)
                 if(timeSpan(time)) Some((time, t)) else None
@@ -277,10 +277,6 @@ object Scalding {
             val srcPf = if (shards <= 1)
               src
             else
-              // TODO (https://github.com/twitter/summingbird/issues/89):
-              // TODO (https://github.com/twitter/scalding/issues/512):
-              // switch this to groupRandomly when it becomes available in
-              // the typed API
               src.map { flowP =>
                 flowP.map { pipe =>
                   pipe.groupBy { event => new java.util.Random().nextInt(shards) }
@@ -334,7 +330,7 @@ object Scalding {
             (fmp.map { flowP =>
               flowP.map { typedPipe =>
                 typedPipe.flatMap { case (time, item) =>
-                  op(item).view.map((time, _))
+                  op(item).map((time, _))
                 }
               }
             }, m)
@@ -447,7 +443,7 @@ class Scalding(
   protected def ioSerializations: List[Class[_ <: HSerialization[_]]] = List(
     classOf[org.apache.hadoop.io.serializer.WritableSerialization],
     classOf[cascading.tuple.hadoop.TupleSerialization],
-    classOf[com.twitter.summingbird.scalding.SummingbirdKryoHadoop]
+    classOf[com.twitter.chill.hadoop.KryoSerialization]
   )
 
   private def setIoSerializations(m: Mode): Unit =

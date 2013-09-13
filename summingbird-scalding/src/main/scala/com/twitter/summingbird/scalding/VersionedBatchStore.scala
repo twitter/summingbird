@@ -24,7 +24,7 @@ import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, Tuple
 import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.algebird.monad.Reader
 import com.twitter.summingbird.batch.{BatchID, Batcher}
-import scala.util.control.Exception.allCatch
+import scala.util.{ Try => ScalaTry }
 
 /**
  * Scalding implementation of the batch read and write components of a
@@ -111,7 +111,7 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
        */
       meta(ver)
         .get[String]
-        .flatMap { str => allCatch.opt(BatchID(str).prev) }
+        .flatMap { str => ScalaTry(BatchID(str).prev) }
         .map { oldbatch =>
           val newBatch = versionToBatchID(ver)
           if(newBatch > oldbatch) {
@@ -211,7 +211,7 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
     */
   protected def readVersion(v: Long): FlowProducer[TypedPipe[(K, V)]] = Reader { (flowMode: (FlowDef, Mode)) =>
     val mappable = VersionedKeyValSource[K2, V2](rootPath, sourceVersion=Some(v))
-    TypedPipe.from(mappable)(flowMode._1, flowMode._2, mappable.converter)
+    TypedPipe.from(mappable)(flowMode._1, flowMode._2)
       .map(unpack)
   }
 }

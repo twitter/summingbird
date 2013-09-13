@@ -101,7 +101,6 @@ object SummingbirdBuild extends Build {
     summingbirdCore,
     summingbirdBatch,
     summingbirdClient,
-    summingbirdKryo,
     summingbirdStorm,
     summingbirdScalding,
     summingbirdBuilder
@@ -113,7 +112,7 @@ object SummingbirdBuild extends Build {
   val scaldingVersion = "0.9.0-SNAPSHOT"
   val storehausVersion = "0.5.1"
   val utilVersion = "6.3.8"
-  val chillVersion = "0.3.0"
+  val chillVersion = "0.3.2"
   val tormentaVersion = "0.5.2"
 
   /**
@@ -156,18 +155,12 @@ object SummingbirdBuild extends Build {
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   )
 
-  lazy val summingbirdKryo = module("kryo").settings(
-    libraryDependencies ++= Seq(
-      "com.twitter" %% "bijection-core" % bijectionVersion,
-      "com.twitter" %% "chill" % chillVersion
-    )
-  )
-
   lazy val summingbirdStorm = module("storm").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" % "chill-storm" % chillVersion,
       "com.twitter" %% "chill-bijection" % chillVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
@@ -177,8 +170,7 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
-    summingbirdBatch,
-    summingbirdKryo
+    summingbirdBatch
   )
 
   lazy val summingbirdScalding = module("scalding").settings(
@@ -190,6 +182,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-bijection" % algebirdVersion,
       "com.twitter" %% "bijection-json" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" % "chill-hadoop" % chillVersion,
       "com.twitter" %% "chill-bijection" % chillVersion,
       "commons-lang" % "commons-lang" % "2.6",
       "com.twitter" %% "scalding-core" % scaldingVersion,
@@ -197,8 +190,7 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
-    summingbirdBatch,
-    summingbirdKryo
+    summingbirdBatch
   )
 
   lazy val summingbirdBuilder = module("builder").dependsOn(

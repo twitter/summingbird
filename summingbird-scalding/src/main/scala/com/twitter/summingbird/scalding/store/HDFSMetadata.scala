@@ -23,6 +23,7 @@ import org.apache.hadoop.io.WritableUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import scala.collection.JavaConverters._
+import scala.util.Try
 import scala.util.control.Exception.allCatch
 
 /**
@@ -63,7 +64,7 @@ object HDFSMetadata {
   def get[T: JsonNodeInjection](conf: Configuration, path: String): Option[T] =
     apply(conf, path)
       .mostRecentVersion
-      .flatMap { _.get[T] }
+      .flatMap { _.get[T].toOption }
 
   /** Put to the most recent version */
   def put[T: JsonNodeInjection](conf: Configuration, path: String, obj: Option[T]) =
@@ -101,9 +102,11 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
 
   /** select all versions that satisfy a predicate */
   def select[T: JsonNodeInjection](fn: (T) => Boolean): Iterable[(T, HDFSVersionMetadata)] =
-    for { v <- versions
-          hmd = apply(v)
-          it <- hmd.get[T] if fn(it) } yield (it, hmd)
+    for {
+      v <- versions
+      hmd = apply(v)
+      it <- hmd.get[T].toOption if fn(it)
+    } yield (it, hmd)
 
   /** This touches the filesystem once on each call, newest to oldest
    * This relies on dfs-datastore doing the sorting, which it does
@@ -124,8 +127,8 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
 /** Refers to a specific version on disk. Allows reading and writing metadata to specific locations
  */
 class HDFSVersionMetadata private[store] (val version: Long, conf: Configuration, path: Path) {
-  private def getString: Option[String] =
-    allCatch.opt {
+  private def getString: Try[String] =
+    Try {
       val fs = FileSystem.get(conf)
       val is = new DataInputStream(fs.open(path))
       val str = WritableUtils.readString(is)
@@ -134,7 +137,7 @@ class HDFSVersionMetadata private[store] (val version: Long, conf: Configuration
     }
   /** get an item from the metadata file. If there is any failure, you get None.
    */
-  def get[T: JsonNodeInjection]: Option[T] =
+  def get[T: JsonNodeInjection]: Try[T] =
     getString.flatMap { JsonInjection.fromString[T](_) }
 
   private def putString(str: String) {

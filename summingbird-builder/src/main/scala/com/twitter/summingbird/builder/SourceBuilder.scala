@@ -18,7 +18,8 @@ package com.twitter.summingbird.builder
 
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.bijection.{Codec, Injection}
-import com.twitter.chill.InjectionPair
+import com.twitter.chill.IKryoRegistrar
+import com.twitter.chill.java.IterableRegistrar
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
@@ -65,7 +66,7 @@ object SourceBuilder {
     val stormSource = eventSource.spout.map(Storm.timedSpout(_))
     new SourceBuilder[T](
       Source[PlatformPair, T]((scaldingSource, stormSource), manifest),
-      List(CompletedBuilder.injectionPair[T](eventCodec)),
+      CompletedBuilder.injectionRegistrar[T](eventCodec),
       newID
     )
   }
@@ -73,7 +74,7 @@ object SourceBuilder {
 
 case class SourceBuilder[T: Manifest] private (
   @transient node: SourceBuilder.Node[T],
-  @transient pairs: List[InjectionPair[_]],
+  @transient registrar: IKryoRegistrar,
   id: String,
   @transient opts: Map[String, Options] = Map.empty
 ) extends Serializable {
@@ -171,7 +172,7 @@ case class SourceBuilder[T: Manifest] private (
             .name(id)
             .sumByKey(batchSetStore)
         }.getOrElse(sys.error("Scalding mode specified alongside some online-only Source, Service or Sink."))
-        CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
 
       case storm: StormEnv =>
         val givenStore = MergeableStoreSupplier.from {
@@ -185,7 +186,7 @@ case class SourceBuilder[T: Manifest] private (
             .name(id)
             .sumByKey(givenStore)
         }.getOrElse(sys.error("Storm mode specified alongside some offline-only Source, Service or Sink."))
-        CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, Storm.SINK_ID, opts)
+        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, Storm.SINK_ID, opts)
 
       case _ => sys.error("Unknown environment: " + env)
     }
@@ -197,7 +198,7 @@ case class SourceBuilder[T: Manifest] private (
   def ++(other: SourceBuilder[T]): SourceBuilder[T] =
     copy(
       node = node.name(id).merge(other.node.name(other.id)),
-      pairs = pairs ++ other.pairs,
+      registrar = new IterableRegistrar(registrar, other.registrar),
       id = SourceBuilder.freshUUID,
       opts = opts ++ other.opts
     )

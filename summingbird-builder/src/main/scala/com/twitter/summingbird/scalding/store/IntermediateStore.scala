@@ -74,15 +74,16 @@ extends IntermediateStore[K, V] {
     dumped.read
       .toTypedPipe[(BytesWritable, BytesWritable)]('key -> 'val)
       // Filter out anything that could not be deserialized
-      .flatMap {case(kl, v) =>
-        for(dkl <- kl2writable.invert(kl);
-            dv <- v2writable.invert(v))
-        yield (dkl._2, dkl._1, dv)
+      .flatMap {case (kl, v) =>
+        (for {
+          dkl <- kl2writable.invert(kl)
+          dv <- v2writable.invert(v)
+        } yield (dkl._2, dkl._1, dv)
+        ).toOption
       }
   }
 
   private def getPath(batch: BatchID) = path + "/intermediate/%s".format(batch)
-
 }
 
 class BytesWritableBijection extends Bijection[BytesWritable, Array[Byte]] {

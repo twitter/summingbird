@@ -48,7 +48,7 @@ class VersionedState(meta: HDFSMetadata, startDate: Option[Date], maxBatches: In
           .orElse {
           for {
             version <- meta.mostRecentVersion
-            batchString <- version.get[String]
+            batchString <- version.get[String].toOption
           } yield BatchID(batchString)
         } getOrElse {
           sys.error("You must supply a starting date on the job's first run!")

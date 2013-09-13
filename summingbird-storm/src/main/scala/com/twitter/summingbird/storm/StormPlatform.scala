@@ -16,28 +16,20 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.LocalCluster
-import backtype.storm.Testing
-import backtype.storm.testing.CompleteTopologyParam
-import backtype.storm.testing.MockedSources
-import backtype.storm.tuple.Fields
-import backtype.storm.{Config, StormSubmitter}
+import Constants._
+import backtype.storm.{Config, LocalCluster, StormSubmitter}
 import backtype.storm.generated.StormTopology
-import backtype.storm.topology.{ BoltDeclarer, TopologyBuilder }
+import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
+import backtype.storm.tuple.Fields
 import com.twitter.algebird.Monoid
-import com.twitter.bijection.Injection
-import com.twitter.chill.InjectionPair
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
-import com.twitter.summingbird.storm.option.{ AnchorTuples, IncludeSuccessHandler }
-import com.twitter.summingbird.util.CacheSize
-import com.twitter.summingbird.kryo.KryoRegistrationHelper
-import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird._
+import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler}
+import com.twitter.summingbird.util.CacheSize
+import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
-
-import Constants._
 import scala.annotation.tailrec
 
 sealed trait StormStore[-K, V] {
@@ -343,7 +335,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   def baseConfig = {
     val config = new Config
     config.setFallBackOnJavaSerialization(false)
-    config.setKryoFactory(classOf[SummingbirdKryoFactory])
+    config.setKryoFactory(classOf[com.twitter.chill.storm.BlizzardKryoFactory])
     config.setMaxSpoutPending(1000)
     config.setNumAckers(12)
     config.setNumWorkers(12)
