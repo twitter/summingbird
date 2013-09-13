@@ -38,6 +38,7 @@ import com.twitter.summingbird._
 import com.twitter.util.Future
 
 import Constants._
+import scala.annotation.tailrec
 
 sealed trait StormStore[-K, V] {
   def batcher: Batcher
@@ -292,7 +293,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private def populate[K, V](
     topologyBuilder: TopologyBuilder,
-    summer: Summer[Storm, K, V])(implicit config: Config) = {
+    summer: Summer[Storm, K, V],
+    name: Option[String])(implicit config: Config) = {
     implicit val monoid = summer.monoid
 
     val dep = Dependants(summer)
@@ -303,12 +305,12 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val (parents, _) = buildTopology(
       topologyBuilder, summer, fanOutSet, Map.empty,
       List.empty, List.empty,
-      END_SUFFIX, None)
+      END_SUFFIX, name)
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
 
-    val idOpt = Some(SINK_ID)
+    val idOpt = name.orElse(Some(SINK_ID))
     val sinkBolt = new SinkBolt[K, V](
       supplier,
       getOrElse(idOpt, DEFAULT_ONLINE_SUCCESS_HANDLER),
@@ -351,13 +353,26 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   def transformConfig(base: Config): Config = updateConf(base)
   def withConfigUpdater(fn: Config => Config): Storm
 
-  def plan[T](summer: Producer[Storm, T]): StormTopology = {
+  def plan[T](node: Producer[Storm, T]): StormTopology = {
     val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
 
+    /**
+      * This crippled version of the StormPlatform only supports a
+      * Summer or any number of NamedProducers stacked onto the end of
+      * the DAG.
+      */
+    @tailrec def retrieve(p: Producer[Storm, _], id: Option[String] = None): (Summer[Storm, Any, Any], Option[String]) =
+      p match {
+        case s: Summer[Storm, Any, Any] => (s, id)
+        case NamedProducer(inner, name) => retrieve(inner, Some(name))
+        case _ => sys.error("A Summer is required.")
+      }
+    val (summer, name) = retrieve(node)
+
     // TODO (https://github.com/twitter/summingbird/issues/86):
     // support topologies that don't end with a sum
-    populate(topologyBuilder, summer.asInstanceOf[Summer[Storm,Any,Any]])
+    populate(topologyBuilder, summer, name)
     topologyBuilder.createTopology
   }
   def run(summer: Producer[Storm, _]): Unit = run(plan(summer))

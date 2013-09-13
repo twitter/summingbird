@@ -145,6 +145,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdClient = module("client").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "algebird-util" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion
@@ -186,6 +187,7 @@ object SummingbirdBuild extends Build {
       "com.backtype" % "dfs-datastores-cascading" % dfsDatastoresVersion,
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "algebird-util" % algebirdVersion,
+      "com.twitter" %% "algebird-bijection" % algebirdVersion,
       "com.twitter" %% "bijection-json" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
       "com.twitter" %% "chill-bijection" % chillVersion,
