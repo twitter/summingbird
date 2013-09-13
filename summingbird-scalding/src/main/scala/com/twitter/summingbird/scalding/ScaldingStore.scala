@@ -16,12 +16,12 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.bijection.ImplicitBijection
-import com.twitter.bijection.algebird.BijectedSemigroup
+
+import com.twitter.algebird.bijection.BijectedSemigroup
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{StateWithError, Reader}
-import com.twitter.bijection.Bijection
+import com.twitter.bijection.{ Bijection, ImplicitBijection }
 import com.twitter.scalding.{Dsl, Mode, TypedPipe, Grouped, IterableSource, TupleSetter, TupleConverter}
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
@@ -135,17 +135,8 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           */
         def unpackBijectedSemigroup[U]: Option[(Bijection[V, U], Semigroup[U])] =
           sg match {
-            case innerSg: BijectedSemigroup[_, _] =>
-              def getField[F: ClassManifest](fieldName: String): F = {
-                val f = classOf[BijectedSemigroup[_, _]].getDeclaredField(fieldName)
-                f.setAccessible(true)
-                implicitly[ClassManifest[F]]
-                  .erasure.asInstanceOf[Class[F]].cast(f.get(innerSg))
-              }
-              Some((
-                getField[ImplicitBijection[U, V]]("bij").bijection.inverse,
-                getField[Semigroup[U]]("sg")
-              ))
+            case innerSg: BijectedSemigroup[U, V] =>
+              Some(innerSg.asInstanceOf[BijectedSemigroup[U, V]].bijection -> innerSg.sg)
             case _ => None
           }
 

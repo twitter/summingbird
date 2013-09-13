@@ -324,7 +324,7 @@ object Scalding {
             (fmp.map { flowP =>
               flowP.map { typedPipe =>
                 typedPipe.flatMap { case (time, item) =>
-                  op(item).map { (time, _) }.toIterable
+                  op(item).map((time, _))
                 }
               }
             }, m)
@@ -333,11 +333,8 @@ object Scalding {
             val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
             (fmp.map { flowP =>
               flowP.map { typedPipe =>
-                // TODO
-                // (https://github.com/twitter/summingbird/issues/89):
-                // remove toIterable in scalding 0.9.0
                 typedPipe.flatMap { case (time, item) =>
-                  op(item).toIterable.view.map { (time, _) }
+                  op(item).view.map((time, _))
                 }
               }
             }, m)

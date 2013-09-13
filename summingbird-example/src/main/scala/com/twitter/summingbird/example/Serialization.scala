@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.example
 
-import com.twitter.bijection.{ Bufferable, Injection }
+import com.twitter.bijection.{ Bufferable, Codec, Injection }
 import com.twitter.summingbird.batch.BatchID
 import twitter4j.Status
 import twitter4j.json.DataObjectFactory
@@ -35,10 +35,6 @@ import twitter4j.json.DataObjectFactory
   */
 
 object Serialization {
-  // TODO: Remove when the new Bijection version hits the press
-  // (https://github.com/twitter/summingbird/issues/75)
-  type Codec[T] = Injection[T, Array[Byte]]
-
   /**
     * This Injection converts the twitter4j.Status objects that Storm
     * and Scalding will process into Strings.

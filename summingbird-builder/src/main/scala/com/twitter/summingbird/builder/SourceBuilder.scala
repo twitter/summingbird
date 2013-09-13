@@ -17,9 +17,8 @@ limitations under the License.
 package com.twitter.summingbird.builder
 
 import com.twitter.algebird.{Monoid, Semigroup}
-import com.twitter.bijection.Injection
+import com.twitter.bijection.{Codec, Injection}
 import com.twitter.chill.InjectionPair
-import com.twitter.scalding.TypedPipe
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
@@ -58,7 +57,7 @@ object SourceBuilder {
     Semigroup.from(_ ++ _)
 
   def apply[T](eventSource: EventSource[T], timeOf: T => Date)
-    (implicit mf: Manifest[T], eventCodec: Injection[T, Array[Byte]]) = {
+    (implicit mf: Manifest[T], eventCodec: Codec[T]) = {
     implicit val te = TimeExtractor[T](timeOf(_).getTime)
     val newID = freshUUID
     val scaldingSource =
@@ -123,8 +122,8 @@ case class SourceBuilder[T: Manifest] private (
     env: Env,
     keyMf: Manifest[K],
     valMf: Manifest[V],
-    keyCodec: Injection[K, Array[Byte]],
-    valCodec: Injection[V, Array[Byte]],
+    keyCodec: Codec[K],
+    valCodec: Codec[V],
     batcher: Batcher,
     monoid: Monoid[V]): CompletedBuilder[_, K, V] =
     groupAndSumTo(CompoundStore.fromOffline(store))
@@ -138,8 +137,8 @@ case class SourceBuilder[T: Manifest] private (
     env: Env,
     keyMf: Manifest[K],
     valMf: Manifest[V],
-    keyCodec: Injection[K, Array[Byte]],
-    valCodec: Injection[V, Array[Byte]],
+    keyCodec: Codec[K],
+    valCodec: Codec[V],
     batcher: Batcher,
     monoid: Monoid[V]): CompletedBuilder[_, K, V] =
     groupAndSumTo(CompoundStore.fromOnline(store))
@@ -153,8 +152,8 @@ case class SourceBuilder[T: Manifest] private (
     env: Env,
     keyMf: Manifest[K],
     valMf: Manifest[V],
-    keyCodec: Injection[K, Array[Byte]],
-    valCodec: Injection[V, Array[Byte]],
+    keyCodec: Codec[K],
+    valCodec: Codec[V],
     batcher: Batcher,
     monoid: Monoid[V]): CompletedBuilder[_, K, V] = {
 
