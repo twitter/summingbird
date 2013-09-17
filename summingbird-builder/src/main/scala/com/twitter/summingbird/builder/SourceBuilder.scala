@@ -102,6 +102,14 @@ case class SourceBuilder[T: Manifest] private (
     )
   }
 
+  def write(sink: CompoundSink[T])(implicit batcher: Batcher): SourceBuilder[T] =
+    copy(
+      node = node.write(
+        sink.offline.map(new BatchedSinkFromOffline[T](batcher, _)),
+        sink.online
+      )
+    )
+
   def leftJoin[K, V, JoinedValue](service: CompoundService[K, JoinedValue])
     (implicit ev: T <:< (K, V), keyMf: Manifest[K], valMf: Manifest[V], joinedMf: Manifest[JoinedValue])
       : SourceBuilder[(K, (V, Option[JoinedValue]))] =

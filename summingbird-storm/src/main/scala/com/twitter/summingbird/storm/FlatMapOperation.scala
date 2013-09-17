@@ -83,8 +83,10 @@ object FlatMapOperation {
     }
 
   def write[T](sinkSupplier: () => (T => Future[Unit])) =
-    new FlatMapOperation[T, T] {
-      lazy val sink = sinkSupplier()
-      override def apply(t: T) = sink(t).map { _ => Some(t) }
-    }
+    new WriteOperation[T](sinkSupplier)
+}
+
+class WriteOperation[T](sinkSupplier: () => (T => Future[Unit])) extends FlatMapOperation[T, T] {
+  lazy val sink = sinkSupplier()
+  override def apply(t: T) = sink(t).map { _ => Some(t) }
 }

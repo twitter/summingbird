@@ -157,15 +157,17 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       * node, we can continue to optimize the graph by pushing the
       * current operation onto the toSchedule stack.
       */
-    def perhapsSchedule[A](parent: Prod[A], op: FMItem) =
-      if (forkedNodes.contains(outerProducer)) {
+    def perhapsSchedule[A](parent: Prod[A], op: FMItem) = {
+      val newOps = op :: toSchedule
+      if (forkedNodes.contains(parent)) {
         val (s, m) = recurse(
           parent,
-          toSchedule = List(op),
-          suffix = "fork-" + suffixOf(toSchedule, suffix)
+          toSchedule = List.empty,
+          suffix = "fork-" + suffixOf(newOps, suffix)
         )
-        (flatMap(s, toSchedule), m)
-      } else recurse(parent, toSchedule = op :: toSchedule)
+        (flatMap(s, newOps), m)
+      } else recurse(parent, toSchedule = newOps)
+    }
 
     jamfs.get(outerProducer) match {
       case Some(s) => (s, jamfs)
@@ -179,19 +181,19 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
           case NamedProducer(producer, newId) => recurse(producer, id = Some(newId))
 
-          case Source(mappedSpout, manifest) =>
-            val spoutName = "spout-" + suffixOf(toSchedule, suffix)
-            val stormSpout = mappedSpout.getSpout
-            val parallelism = getOrElse(id, DEFAULT_SPOUT_PARALLELISM).parHint
-            topoBuilder.setSpout(spoutName, stormSpout, parallelism)
-            val parents = List(spoutName)
-
+          case Source(spout, manifest) =>
             // The current planner requires a layer of flatMapBolts, even
             // if calling sumByKey directly on a source.
             val operations =
               if (toSchedule.isEmpty)
                 List(Right(FlatMapOperation.identity))
               else toSchedule
+
+            val spoutName = "spout-" + suffixOf(operations, suffix)
+            val stormSpout = spout.getSpout
+            val parallelism = getOrElse(id, DEFAULT_SPOUT_PARALLELISM).parHint
+            topoBuilder.setSpout(spoutName, stormSpout, parallelism)
+            val parents = List(spoutName)
 
             // Attach a FlatMapBolt after this source.
             (flatMap(parents, operations), jamfs)
