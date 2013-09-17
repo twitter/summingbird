@@ -1,5 +1,10 @@
 # summingbird #
 
+## 0.1.3
+
+Fix bug in storm planner's forking:  https://github.com/twitter/summingbird/pull/217
+Don't send empty multiGets to online service: https://github.com/twitter/summingbird/pull/209
+
 ## 0.1.2
 
 * UTC Calendar Batcher: https://github.com/twitter/summingbird/pull/195
