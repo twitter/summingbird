@@ -181,7 +181,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
           case NamedProducer(producer, newId) => recurse(producer, id = Some(newId))
 
-          case Source(mappedSpout, manifest) =>
+          case Source(spout, manifest) =>
             // The current planner requires a layer of flatMapBolts, even
             // if calling sumByKey directly on a source.
             val operations =
@@ -190,7 +190,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
               else toSchedule
 
             val spoutName = "spout-" + suffixOf(operations, suffix)
-            val stormSpout = mappedSpout.getSpout
+            val stormSpout = spout.getSpout
             val parallelism = getOrElse(id, DEFAULT_SPOUT_PARALLELISM).parHint
             topoBuilder.setSpout(spoutName, stormSpout, parallelism)
             val parents = List(spoutName)
