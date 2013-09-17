@@ -110,6 +110,14 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     run(ajob.getClass.getName, scaldingBuilder, updater)
   }
 
+  // Used to insert a write just before the store so the store
+  // can be used as a Service
+  private def addDeltaWrite[K,V](snode: Summer[Scalding, K, V],
+    sink: ScaldingSink[(K,V)]): Summer[Scalding, K, V] = {
+    val Summer(prod, store, monoid) = snode
+    Summer(prod.write(sink), store, monoid)
+  }
+
   def run[K,V](name: String,
     scaldingBuilder: CompletedBuilder[Scalding, K, V],
     confud: Configuration => Configuration) {
@@ -121,7 +129,8 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       (for {
         opt <- opts.get(scaldingBuilder.id)
         stid <- opt.get[StoreIntermediateData[K,V]]
-      } yield (scaldingBuilder.node.write(stid.sink))).getOrElse(scaldingBuilder.node)
+      } yield addDeltaWrite(scaldingBuilder.node, stid.sink))
+        .getOrElse(scaldingBuilder.node)
         .name(scaldingBuilder.id)
 
     def getStatePath[K1,V1](ss: ScaldingStore[K1, V1]): Option[String] =
