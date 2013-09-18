@@ -42,7 +42,10 @@ case class StormEnv(override val jobName: String, override val args: Args)
     val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
     val eventCodecPairs = builder.eventCodecPairs
 
-    val classSuffix = jobName.split("\\.").last
+    val classSuffix =
+      args.optional("name")
+        .getOrElse(jobName.split("\\.").last)
+
     Storm.remote(classSuffix, builder.opts)
       .withConfigUpdater { config =>
       val c = ConfigBijection.invert(config)

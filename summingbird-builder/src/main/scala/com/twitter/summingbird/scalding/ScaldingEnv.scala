@@ -107,7 +107,10 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       KryoRegistrationHelper.registerInjectionDefaults(jConf, codecPairs)
       fromMap(ajob.transformConfig(jConf.as[Map[String, AnyRef]]))
     }
-    run(ajob.getClass.getName, scaldingBuilder, updater)
+    val jobName =
+      args.optional("name")
+        .getOrElse(ajob.getClass.getName)
+    run(jobName, scaldingBuilder, updater)
   }
 
   // Used to insert a write just before the store so the store
