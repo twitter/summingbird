@@ -194,7 +194,7 @@ case class SourceBuilder[T: Manifest] private (
             .name(id)
             .sumByKey(givenStore)
         }.getOrElse(sys.error("Storm mode specified alongside some offline-only Source, Service or Sink."))
-        CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, Storm.SINK_ID, opts)
+        CompletedBuilder(newNode, pairs, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
 
       case _ => sys.error("Unknown environment: " + env)
     }
