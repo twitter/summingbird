@@ -230,10 +230,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
           case WrittenProducer(producer, sinkSupplier) =>
             perhapsSchedule(producer, FMItem.sink(sinkSupplier))
 
-          case LeftJoinedProducer(producer, svc) =>
-            val newService = svc match {
-              case StoreWrapper(storeSupplier) => storeSupplier
-            }
+          case LeftJoinedProducer(producer, StoreWrapper(newService)) =>
             perhapsSchedule(producer, FactoryCell(newService))
 
           case MergedProducer(l, r) =>
