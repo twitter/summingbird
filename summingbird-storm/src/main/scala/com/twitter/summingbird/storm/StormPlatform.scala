@@ -82,14 +82,8 @@ case class FactoryCell(factory: StoreFactory[_, _]) extends FMItem
 case class FlatMap(op: FlatMapOperation[_, _]) extends FMItem
 
 object FMItem {
-  // type OptionMap[T, U] = T => Option[U]
-  // type FMItem = Either[OptionMap[_, _], Either[StoreFactory[_, _], FlatMapOperation[_, _]]]
-
-  def optionMap[T, U](op: T => Option[U]): FMItem = OptionMap(op)
-  def storeFactory(factory: StoreFactory[_, _]): FMItem = FactoryCell(factory)
-  def flatMap(op: FlatMapOperation[_, _]): FMItem = FlatMap(op)
   def sink[T](sinkSupplier: () => (T => Future[Unit])): FMItem =
-    flatMap(FlatMapOperation.write(sinkSupplier))
+    FlatMap(FlatMapOperation.write(sinkSupplier))
 }
 
 abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
@@ -208,7 +202,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
             val operations =
               if (remaining.isEmpty)
-                List(FMItem.flatMap(FlatMapOperation.identity))
+                List(FlatMap(FlatMapOperation.identity))
               else remaining
 
             val spoutName = "spout-" + suffixOf(operations, suffix)
@@ -228,19 +222,19 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             (flatMap(parents, operations), jamfs)
 
           case OptionMappedProducer(producer, op, manifest) =>
-            perhapsSchedule(producer, FMItem.optionMap(op))
+            perhapsSchedule(producer, OptionMap(op))
 
           case FlatMappedProducer(producer, op) =>
-            perhapsSchedule(producer, FMItem.flatMap(FlatMapOperation(op)))
+            perhapsSchedule(producer, FlatMap(FlatMapOperation(op)))
 
           case WrittenProducer(producer, sinkSupplier) =>
-              perhapsSchedule(producer, FMItem.sink(sinkSupplier))
+            perhapsSchedule(producer, FMItem.sink(sinkSupplier))
 
           case LeftJoinedProducer(producer, svc) =>
             val newService = svc match {
               case StoreWrapper(storeSupplier) => storeSupplier
             }
-            perhapsSchedule(producer, FMItem.storeFactory(newService))
+            perhapsSchedule(producer, FactoryCell(newService))
 
           case MergedProducer(l, r) =>
             val leftSuffix = "L-" + suffixOf(toSchedule, suffix)
