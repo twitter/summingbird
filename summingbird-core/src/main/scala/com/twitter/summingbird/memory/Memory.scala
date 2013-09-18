@@ -18,11 +18,25 @@ package com.twitter.summingbird.memory
 
 import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
-import collection.mutable.{ Map => MutableMap }
+import collection.mutable.{ Map => MutableMap, Queue => MQueue }
 
 object Memory {
   implicit def toSource[T](traversable: TraversableOnce[T])(implicit mf: Manifest[T]): Producer[Memory, T] =
     Producer.source[Memory, T](traversable)
+}
+
+case class MemoryWindow[K, V](size: Int) {
+  private val queue = new MQueue[(K,V)]()
+  private val memory = MutableMap[K,V]()
+  def put(kv: (K,V)): Unit = {
+    queue += kv
+    memory += kv
+    if(queue.size > size) {
+      val (k, _) = queue.dequeue
+      memory -= k
+    }
+  }
+  def get(k: K): Option[V] = memory.get(k)
 }
 
 class Memory extends Platform[Memory] {
@@ -31,6 +45,8 @@ class Memory extends Platform[Memory] {
   type Sink[-T] = (T => Unit)
   type Service[-K, +V] = (K => Option[V])
   type Plan[T] = Stream[T]
+
+  type Window[K, V] = MemoryWindow[K, V]
 
   private type Prod[T] = Producer[Memory, T]
   private type JamfMap = Map[Prod[_], Stream[_]]
@@ -54,11 +70,27 @@ class Memory extends Platform[Memory] {
           case MergedProducer(l, r) =>
             val (leftS, leftM) = toStream(l, jamfs)
             val (rightS, rightM) = toStream(r, leftM)
+            // TODO: this is not what anyone would expect:
+            // should interleave`
             (leftS ++ rightS, rightM)
 
           case WrittenProducer(producer, fn) =>
             val (s, m) = toStream(producer, jamfs)
             (s.map { i => fn(i); i }, m)
+
+          case WindowJoinedProducer(left, right, window) =>
+            val (leftS, leftM) = toStream(left, jamfs)
+            val (rightS, rightM) = toStream(right, leftM)
+            val rightIt = rightS.iterator
+            val joined = leftS.map { case (k, v) =>
+              val res = (k, (v, window.get(k)))
+              // Feed the next right:
+              if(rightIt.hasNext) {
+                window.put(rightIt.next)
+              }
+              res
+            }
+            (joined, rightM)
 
           case LeftJoinedProducer(producer, service) =>
             val (s, m) = toStream(producer, jamfs)

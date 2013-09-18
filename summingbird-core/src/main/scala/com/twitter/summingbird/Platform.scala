@@ -25,6 +25,10 @@ trait Platform[P <: Platform[P]] {
   type Store[_, _]
   type Sink[_]
   type Service[_, _]
+
+  // Represents memory for a Producer to be used as a join with K, V
+  type Window[_, _]
+
   type Plan[_]
 
   def plan[T](completed: Producer[P, T]): Plan[T]

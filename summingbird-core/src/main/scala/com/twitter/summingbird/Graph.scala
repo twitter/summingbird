@@ -53,6 +53,9 @@ object Producer {
       case FlatMappedProducer(producer, fn) => Set(producer)
       case MergedProducer(l, r) => Set(l, r)
       case WrittenProducer(producer, fn) => Set(producer)
+      case WindowJoinedProducer(left, right, _) =>
+        Set(left.asInstanceOf[Producer[P, _]],
+            right.asInstanceOf[Producer[P, _]])
       case LeftJoinedProducer(producer, service) => Set(producer.asInstanceOf[Producer[P, _]])
       case Summer(producer, store, monoid) => Set(producer.asInstanceOf[Producer[P, _]])
     }
@@ -133,6 +136,12 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def leftJoin[RightV](service: P#Service[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
     LeftJoinedProducer(this, service)
 
+  /** Do a windowed join over another KeyedProducer.
+   * Note, that producer will be planned along with this one.
+   */
+  def leftJoin[RightV](that: KeyedProducer[P, K, RightV], window: P#Window[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
+    WindowJoinedProducer(this, that, window)
+
   def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
     Summer(this, store, monoid)
 }
@@ -141,3 +150,7 @@ case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (
 
 case class LeftJoinedProducer[P <: Platform[P], K, V, JoinedV](left: KeyedProducer[P, K, V], joined: P#Service[K, JoinedV])
     extends KeyedProducer[P, K, (V, Option[JoinedV])]
+
+case class WindowJoinedProducer[P <: Platform[P], K, V, JoinedV](left: KeyedProducer[P, K, V],
+  right: KeyedProducer[P, K, JoinedV],
+  window: P#Window[K, JoinedV]) extends KeyedProducer[P, K, (V, Option[JoinedV])]
