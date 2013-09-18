@@ -59,6 +59,11 @@ object Producer {
     }
   }
 
+  def allTails[P <: Platform[P]](p: Producer[P, _]): Set[Producer[P, _]] =
+    (transitiveDependenciesOf(p)
+      .collect { case AlsoProducer(l, _) => l }
+      .flatMap(allTails(_))) + p
+
   /** Since we know these nodes form a DAG by immutability
    * the search is easy
    */
