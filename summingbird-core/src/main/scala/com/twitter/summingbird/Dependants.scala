@@ -20,7 +20,7 @@ package com.twitter.summingbird
  * by the fact that they are immutable.
  */
 case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
-  private val graph: Map[Producer[P, _], Set[Producer[P, _]]] = {
+  private[summingbird] val graph: Map[Producer[P, _], Set[Producer[P, _]]] = {
     val empty = Map[Producer[P, _], Set[Producer[P, _]]]()
 
     (Producer.transitiveDependenciesOf(tail) + tail)
