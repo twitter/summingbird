@@ -53,7 +53,7 @@ case class TestState[T, K, V](
   placed: AtomicInteger = new AtomicInteger
 )
 
-object Stormlaws extends Specification {
+object StormLaws extends Specification {
   import MapAlgebra.sparseEquiv
 
   // This is dangerous, obviously. The Storm platform graphs tested
@@ -150,13 +150,11 @@ object Stormlaws extends Specification {
       runOnce(original)(
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(testFn)
       )
-    assert {
-      Equiv[Map[Int, Int]].equiv(
-        TestGraphs.singleStepInScala(returnedState.used.toList)(fn),
-        returnedState.store.asScala.toMap
-          .collect { case ((k, batchID), Some(v)) => (k, v) }
-      )
-    }
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.singleStepInScala(original)(fn),
+      returnedState.store.asScala.toMap
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
   }
 
   val nextFn = { pair: ((Int, (Int, Option[Int]))) =>
@@ -165,27 +163,21 @@ object Stormlaws extends Specification {
   }
 
   val serviceFn = Arbitrary.arbitrary[Int => Option[Int]].sample.get
-  val service = StoreWrapper[Int, Int](() =>
-    ReadableStore.fromFn(serviceFn)
-  )
+  val service = StoreWrapper[Int, Int](() => ReadableStore.fromFn(serviceFn))
 
   "StormPlatform matches Scala for left join jobs" in {
     val original = sample[List[Int]]
 
     val (fn, returnedState) =
       runOnce(original)(
-        TestGraphs.leftJoinJob[
-          Storm, Int, Int, Int, Int, Int
-        ](_, service, _)(testFn)(nextFn)
+        TestGraphs.leftJoinJob[Storm, Int, Int, Int, Int, Int](_, service, _)(testFn)(nextFn)
       )
-    assert {
-      Equiv[Map[Int, Int]].equiv(
-        TestGraphs.leftJoinInScala(returnedState.used.toList)(serviceFn)
-          (fn)(nextFn),
-        returnedState.store.asScala.toMap
-          .collect { case ((k, batchID), Some(v)) => (k, v) }
-      )
-    }
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.leftJoinInScala(original)(serviceFn)
+        (fn)(nextFn),
+      returnedState.store.asScala.toMap
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
   }
 
   "StormPlatform matches Scala for optionMap only jobs" in {
@@ -209,13 +201,11 @@ object Stormlaws extends Specification {
     Thread.sleep(1000)
     cluster.shutdown
 
-    assert {
-      Equiv[Map[Int, Int]].equiv(
+    Equiv[Map[Int, Int]].equiv(
         MapAlgebra.sumByKey(original.filter(_ % 2 == 0).map(_ -> 10)),
         globalState(id).store.asScala
           .toMap
           .collect { case ((k, batchID), Some(v)) => (k, v) }
-      )
-    }
+    ) must beTrue
   }
 }

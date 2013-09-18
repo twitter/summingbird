@@ -258,7 +258,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private def foldOperations(head: FMItem, tail: List[FMItem]) = {
     val operation = head match {
-      case OptionMap(op) => FlatMapOperation(op.andThen(_.iterator))
+      case OptionMap(op) => FlatMapOperation(op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]])
       case FactoryCell(store) => serviceOperation(store)
       case FlatMap(op) => op
     }
@@ -267,7 +267,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
         store.asInstanceOf[StoreFactory[Any, Any]]
       ).asInstanceOf[FlatMapOperation[Any, Any]]
-      case (acc, OptionMap(op)) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator)))
+      case (acc, OptionMap(op)) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
       case (acc, FlatMap(op)) => acc.andThen(op.asInstanceOf[FlatMapOperation[Any, Any]])
     }
   }
