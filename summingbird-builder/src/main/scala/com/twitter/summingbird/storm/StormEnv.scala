@@ -50,6 +50,6 @@ case class StormEnv(override val jobName: String, override val args: Args)
       KryoRegistrationHelper.registerInjections(transformed, eventCodecPairs)
       KryoRegistrationHelper.registerInjectionDefaults(transformed, codecPairs)
       transformed
-    }.run(builder.node.asInstanceOf[Producer[Storm, _]])
+    }.run(builder.node.name(builder.id).asInstanceOf[Producer[Storm, _]])
   }
 }
