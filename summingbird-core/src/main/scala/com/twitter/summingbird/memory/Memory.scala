@@ -39,14 +39,33 @@ case class MemoryWindow[K, V](size: Int) {
   def get(k: K): Option[V] = memory.get(k)
 }
 
+class RoundRobin[T](left: Iterator[T], right: Iterator[T]) extends Iterator[T] {
+  private var its = (left, right)
+  def hasNext = left.hasNext || right.hasNext
+  @annotation.tailrec
+  final def next = {
+    its = its.swap
+    if(its._1.hasNext) its._1.next
+    else next
+  }
+}
+
+trait MService[-K, +V] {
+  def get(k: K): Option[V]
+}
+
+trait MSink[-T] {
+  def put(t: T): Unit
+}
+
+trait MStore[K, V] extends MService[K, V] with MSink[(K, V)]
+
 class Memory extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
-  type Store[K, V] = MutableMap[K, V]
-  type Sink[-T] = (T => Unit)
-  type Service[-K, +V] = (K => Option[V])
+  type Store[K, V] = MStore[K, V]
+  type Sink[-T] = MSink[T]
+  type Service[-K, +V] = MService[K, V]
   type Plan[T] = Stream[T]
-
-  type Window[K, V] = MemoryWindow[K, V]
 
   private type Prod[T] = Producer[Memory, T]
   private type JamfMap = Map[Prod[_], Stream[_]]
@@ -70,32 +89,27 @@ class Memory extends Platform[Memory] {
           case MergedProducer(l, r) =>
             val (leftS, leftM) = toStream(l, jamfs)
             val (rightS, rightM) = toStream(r, leftM)
-            // TODO: this is not what anyone would expect:
-            // should interleave`
-            (leftS ++ rightS, rightM)
+            val merged = (new RoundRobin(leftS.iterator, rightS.iterator)).toStream
+            (merged, rightM)
+
+          case AlsoProducer(l, r) =>
+            // like a merge on this platform
+            val (leftS, leftM) = toStream(l, jamfs)
+            val (rightS, rightM) = toStream(r, leftM)
+            val rightOnly = (new RoundRobin(leftS.iterator.map(Left(_)),
+               rightS.iterator.map(Right(_))))
+              .collect { case Right(x) => x }
+              .toStream
+            (rightOnly, rightM)
 
           case WrittenProducer(producer, fn) =>
             val (s, m) = toStream(producer, jamfs)
-            (s.map { i => fn(i); i }, m)
-
-          case WindowJoinedProducer(left, right, window) =>
-            val (leftS, leftM) = toStream(left, jamfs)
-            val (rightS, rightM) = toStream(right, leftM)
-            val rightIt = rightS.iterator
-            val joined = leftS.map { case (k, v) =>
-              val res = (k, (v, window.get(k)))
-              // Feed the next right:
-              if(rightIt.hasNext) {
-                window.put(rightIt.next)
-              }
-              res
-            }
-            (joined, rightM)
+            (s.map { i => fn.put(i); i }, m)
 
           case LeftJoinedProducer(producer, service) =>
             val (s, m) = toStream(producer, jamfs)
             val joined = s.map {
-              case (k, v) => (k, (v, service(k)))
+              case (k, v) => (k, (v, service.get(k)))
             }
             (joined, m)
 
@@ -106,7 +120,7 @@ class Memory extends Platform[Memory] {
                 val newV = store.get(k)
                   .map { monoid.plus(_, deltaV) }
                   .getOrElse(deltaV)
-                store.update(k, newV)
+                store.put(k, newV)
                 pair
             }
             (summed, m)

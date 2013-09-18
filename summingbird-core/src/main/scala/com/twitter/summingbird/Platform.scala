@@ -22,12 +22,9 @@ package com.twitter.summingbird
 trait Platform[P <: Platform[P]] {
   // The type of the inputs for this platform
   type Source[_]
-  type Store[_, _]
   type Sink[_]
   type Service[_, _]
-
-  // Represents memory for a Producer to be used as a join with K, V
-  type Window[_, _]
+  type Store[k, v] <: Service[k, v] with Sink[(k, v)]
 
   type Plan[_]
 

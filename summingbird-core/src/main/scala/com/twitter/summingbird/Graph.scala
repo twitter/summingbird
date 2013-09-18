@@ -46,6 +46,7 @@ object Producer {
      * I work around with the cast.
      */
     p match {
+      case AlsoProducer(_, right) => Set(right)
       case NamedProducer(producer, _) => Set(producer)
       case IdentityKeyedProducer(producer) => Set(producer.asInstanceOf[Producer[P, _]])
       case Source(source, _) => Set()
@@ -53,9 +54,6 @@ object Producer {
       case FlatMappedProducer(producer, fn) => Set(producer)
       case MergedProducer(l, r) => Set(l, r)
       case WrittenProducer(producer, fn) => Set(producer)
-      case WindowJoinedProducer(left, right, _) =>
-        Set(left.asInstanceOf[Producer[P, _]],
-            right.asInstanceOf[Producer[P, _]])
       case LeftJoinedProducer(producer, service) => Set(producer.asInstanceOf[Producer[P, _]])
       case Summer(producer, store, monoid) => Set(producer.asInstanceOf[Producer[P, _]])
     }
@@ -107,10 +105,25 @@ sealed trait Producer[P <: Platform[P], T] {
   def either[U](other: Producer[P, U])(implicit tmf: Manifest[T], umf: Manifest[U]): Producer[P, Either[T, U]] =
     map(Left(_): Either[T, U])
       .merge(other.map(Right(_): Either[T, U]))
+
+  /**
+   * Schedule this Producer and also the next, returning the type of the next.
+   * This ensures that both Producers are planned, but there is not neccesarily
+   * a relationship between them. Similar to the par function in haskell.
+   */
+  def also[U](that: Producer[P, U]): Producer[P, U] =
+    AlsoProducer(this, that)
 }
 
 case class Source[P <: Platform[P], T](source: P#Source[T], manifest: Manifest[T])
     extends Producer[P, T]
+
+/** This is a special node in that ensures the item on the left
+ * is planned, but does not consider it to be a dependency.
+ * The output of this Producer is the right.
+ */
+case class AlsoProducer[P <: Platform[P], L, R](left: Producer[P, L],
+  right: Producer[P, R]) extends Producer[P, R]
 
 case class NamedProducer[P <: Platform[P], T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
@@ -139,8 +152,9 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   /** Do a windowed join over another KeyedProducer.
    * Note, that producer will be planned along with this one.
    */
-  def leftJoin[RightV](that: KeyedProducer[P, K, RightV], window: P#Window[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
-    WindowJoinedProducer(this, that, window)
+  def leftJoin[RightV](that: KeyedProducer[P, K, RightV],
+    window: P#Store[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
+    IdentityKeyedProducer(that.write(window).also(leftJoin(window)))
 
   def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
     Summer(this, store, monoid)
@@ -150,7 +164,3 @@ case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (
 
 case class LeftJoinedProducer[P <: Platform[P], K, V, JoinedV](left: KeyedProducer[P, K, V], joined: P#Service[K, JoinedV])
     extends KeyedProducer[P, K, (V, Option[JoinedV])]
-
-case class WindowJoinedProducer[P <: Platform[P], K, V, JoinedV](left: KeyedProducer[P, K, V],
-  right: KeyedProducer[P, K, JoinedV],
-  window: P#Window[K, JoinedV]) extends KeyedProducer[P, K, (V, Option[JoinedV])]

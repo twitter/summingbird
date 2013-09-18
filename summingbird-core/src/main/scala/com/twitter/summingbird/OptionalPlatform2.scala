@@ -50,6 +50,13 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val mergedr = for (lri <- lr; rri <- rr) yield lri.merge(rri)
         (mergedl, mergedr)
 
+      case AlsoProducer(l, r) =>
+        val (ll, lr) = apply(l)
+        val (rl, rr) = apply(r)
+        val alsol = for (lli <- ll; rli <- rl) yield lli.also(rli)
+        val alsor = for (lri <- lr; rri <- rr) yield lri.also(rri)
+        (alsol, alsor)
+
       case WrittenProducer(producer, sink) =>
         val (l, r) = apply(producer)
         val (leftSink, rightSink) = sink

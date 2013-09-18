@@ -54,6 +54,11 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val (rl, rr) = apply(r)
         (ll.merge(rl), lr.merge(rr))
 
+      case AlsoProducer(l, r) =>
+        val (ll, lr) = apply(l)
+        val (rl, rr) = apply(r)
+        (ll.also(rl), lr.also(rr))
+
       case WrittenProducer(producer, sink) =>
         val (l, r) = apply(producer)
         val (leftSink, rightSink) = sink
