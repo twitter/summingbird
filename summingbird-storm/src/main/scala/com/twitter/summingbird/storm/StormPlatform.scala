@@ -55,8 +55,6 @@ sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 object Storm {
-  val SINK_ID = "sinkId"
-
   def local(name: String, options: Map[String, Options] = Map.empty): LocalStorm =
     new LocalStorm(name, options, identity)
 
@@ -67,13 +65,28 @@ object Storm {
     (implicit timeOf: TimeExtractor[T]): Spout[(Long, T)] =
     spout.map(t => (timeOf(t), t))
 
+  def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+    MergeableStoreSupplier.from(store)
+
   implicit def source[T: TimeExtractor: Manifest](spout: Spout[T]) =
     Producer.source[Storm, T](timedSpout(spout))
 }
 
-abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
-  import Storm.SINK_ID
+/**
+  * Object containing helper functions to build up the list of storm
+  * operations that can potentially be optimized.
+  */
+sealed trait FMItem
+case class OptionMap[T, U](op: T => Option[U]) extends FMItem
+case class FactoryCell(factory: StoreFactory[_, _]) extends FMItem
+case class FlatMap(op: FlatMapOperation[_, _]) extends FMItem
 
+object FMItem {
+  def sink[T](sinkSupplier: () => (T => Future[Unit])): FMItem =
+    FlatMap(FlatMapOperation.write(sinkSupplier))
+}
+
+abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
   type Source[+T] = Spout[(Long, T)]
   type Store[-K, V] = StormStore[K, V]
   type Sink[-T] = () => (T => Future[Unit])
@@ -82,8 +95,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private type Prod[T] = Producer[Storm, T]
   private type JamfMap = Map[Prod[_], List[String]]
-  private type FMItem = Either[StoreFactory[_, _], FlatMapOperation[_, _]]
-  private type FMList = List[FMItem]
 
   val END_SUFFIX = "end"
   val FM_CONSTANT = "flatMap-"
@@ -106,7 +117,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     outerProducer: Prod[T],
     forkedNodes: Set[Prod[_]],
     jamfs: JamfMap,
-    toSchedule: FMList,
+    toSchedule: List[FMItem],
     path: List[Prod[_]],
     suffix: String,
     id: Option[String])
@@ -123,7 +134,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       topoBuilder: TopologyBuilder = topoBuilder,
       outerProducer: Prod[T] = outerProducer,
       jamfs: JamfMap = jamfs,
-      toSchedule: FMList = toSchedule,
+      toSchedule: List[FMItem] = toSchedule,
       path: List[Prod[_]] = path,
       suffix: String = suffix,
       id: Option[String] = id) =
@@ -145,7 +156,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     def suffixOf(xs: List[_], suffix: String): String =
       if (xs.isEmpty) suffix else FM_CONSTANT + suffix
 
-    def flatMap(parents: List[String], ops: FMList) =
+    def flatMap(parents: List[String], ops: List[FMItem]) =
       scheduleFlatMapper(topoBuilder, parents, path, suffix, id, ops)
 
     /**
@@ -184,13 +195,25 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
           case Source(spout, manifest) =>
             // The current planner requires a layer of flatMapBolts, even
             // if calling sumByKey directly on a source.
+            val (optionMaps, remaining) = toSchedule.span {
+              case OptionMap(_) => true
+              case _ => false
+            }
+
             val operations =
-              if (toSchedule.isEmpty)
-                List(Right(FlatMapOperation.identity))
-              else toSchedule
+              if (remaining.isEmpty)
+                List(FlatMap(FlatMapOperation.identity))
+              else remaining
 
             val spoutName = "spout-" + suffixOf(operations, suffix)
-            val stormSpout = spout.getSpout
+
+            val stormSpout = optionMaps.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) {
+              case (spout, OptionMap(op)) =>
+                spout.flatMap { case (time, t) =>
+                  op.asInstanceOf[Any => Option[Nothing]].apply(t)
+                    .map { x => (time, x) } }
+              case _ => sys.error("not possible, given the above call to span.")
+            }.getSpout
             val parallelism = getOrElse(id, DEFAULT_SPOUT_PARALLELISM).parHint
             topoBuilder.setSpout(spoutName, stormSpout, parallelism)
             val parents = List(spoutName)
@@ -199,19 +222,16 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             (flatMap(parents, operations), jamfs)
 
           case OptionMappedProducer(producer, op, manifest) =>
-            perhapsSchedule(producer, Right(FlatMapOperation(op.andThen(_.iterator))))
+            perhapsSchedule(producer, OptionMap(op))
 
           case FlatMappedProducer(producer, op) =>
-            perhapsSchedule(producer, Right(FlatMapOperation(op)))
+            perhapsSchedule(producer, FlatMap(FlatMapOperation(op)))
 
           case WrittenProducer(producer, sinkSupplier) =>
-            perhapsSchedule(producer, Right(FlatMapOperation.write(sinkSupplier)))
+            perhapsSchedule(producer, FMItem.sink(sinkSupplier))
 
-          case LeftJoinedProducer(producer, svc) =>
-            val newService = svc match {
-              case StoreWrapper(storeSupplier) => storeSupplier
-            }
-            perhapsSchedule(producer, Left(newService))
+          case LeftJoinedProducer(producer, StoreWrapper(newService)) =>
+            perhapsSchedule(producer, FactoryCell(newService))
 
           case MergedProducer(l, r) =>
             val leftSuffix = "L-" + suffixOf(toSchedule, suffix)
@@ -236,19 +256,19 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       store.asInstanceOf[StoreFactory[K, W]]
     )
 
-  private def foldOperations(
-    head: Either[StoreFactory[_, _], FlatMapOperation[_, _]],
-    tail: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]]) = {
+  private def foldOperations(head: FMItem, tail: List[FMItem]) = {
     val operation = head match {
-      case Left(store) => serviceOperation(store)
-      case Right(op) => op
+      case OptionMap(op) => FlatMapOperation(op.andThen(_.iterator))
+      case FactoryCell(store) => serviceOperation(store)
+      case FlatMap(op) => op
     }
     tail.foldLeft(operation.asInstanceOf[FlatMapOperation[Any, Any]]) {
-      case (acc, Left(store)) => FlatMapOperation.combine(
+      case (acc, FactoryCell(store)) => FlatMapOperation.combine(
         acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
         store.asInstanceOf[StoreFactory[Any, Any]]
       ).asInstanceOf[FlatMapOperation[Any, Any]]
-      case (acc, Right(op)) => acc.andThen(op.asInstanceOf[FlatMapOperation[Any, Any]])
+      case (acc, OptionMap(op)) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator)))
+      case (acc, FlatMap(op)) => acc.andThen(op.asInstanceOf[FlatMapOperation[Any, Any]])
     }
   }
 
@@ -262,7 +282,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     path: List[Prod[_]],
     suffix: String,
     id: Option[String],
-    toSchedule: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]])
+    toSchedule: List[FMItem])
       : List[String] = {
     toSchedule match {
       case Nil => parents
@@ -312,22 +332,21 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       case MergeableStoreSupplier(contained, _) => contained
     }
 
-    val idOpt = name.orElse(Some(SINK_ID))
     val sinkBolt = new SinkBolt[K, V](
       supplier,
-      getOrElse(idOpt, DEFAULT_ONLINE_SUCCESS_HANDLER),
-      getOrElse(idOpt, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-      getOrElse(idOpt, DEFAULT_SINK_CACHE),
-      getOrElse(idOpt, DEFAULT_SINK_STORM_METRICS),
-      getOrElse(idOpt, DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(idOpt, IncludeSuccessHandler.default)
+      getOrElse(name, DEFAULT_ONLINE_SUCCESS_HANDLER),
+      getOrElse(name, DEFAULT_ONLINE_EXCEPTION_HANDLER),
+      getOrElse(name, DEFAULT_SINK_CACHE),
+      getOrElse(name, DEFAULT_SINK_STORM_METRICS),
+      getOrElse(name, DEFAULT_MAX_WAITING_FUTURES),
+      getOrElse(name, IncludeSuccessHandler.default)
     )
 
     val declarer =
       topologyBuilder.setBolt(
         GROUP_BY_SUM,
         sinkBolt,
-        getOrElse(idOpt, DEFAULT_SINK_PARALLELISM).parHint)
+        getOrElse(name, DEFAULT_SINK_PARALLELISM).parHint)
 
     parents.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
