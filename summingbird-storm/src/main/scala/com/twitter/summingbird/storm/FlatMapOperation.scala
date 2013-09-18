@@ -22,7 +22,7 @@ import com.twitter.util.Future
 import java.io.{ Closeable, Serializable }
 
 // Represents the logic in the flatMap bolts
-trait FlatMapOperation[-T, +U] extends Serializable with Closeable { self =>
+trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
   def apply(t: T): Future[TraversableOnce[U]]
 
   override def close { }
@@ -32,14 +32,19 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable { self =>
     * case we don't want to completely choke on large expansions (and
     * joins).
     */
-  def andThen[V](fmo: FlatMapOperation[U, V]): FlatMapOperation[T, V] =
+  def andThen[V](fmo: FlatMapOperation[U, V]): FlatMapOperation[T, V] = {
+    val self = this // Using the standard "self" at the top of the
+                    // trait caused a nullpointerexception after
+                    // serialization. I think that Kryo mis-serializes that reference.
     new FlatMapOperation[T, V] {
       def apply(t: T) = self(t).flatMap { tr =>
         val next: Seq[Future[TraversableOnce[V]]] = tr.map { fmo.apply(_) }.toSeq
         Future.collect(next).map(_.flatten) // flatten the inner
       }
+
       override def close { self.close; fmo.close }
     }
+  }
 }
 
 class FunctionFlatMapOperation[T, U](@transient fm: T => TraversableOnce[U])
