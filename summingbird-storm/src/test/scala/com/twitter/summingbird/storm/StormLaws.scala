@@ -150,11 +150,13 @@ object Stormlaws extends Specification {
       runOnce(original)(
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(testFn)
       )
-    Equiv[Map[Int, Int]].equiv(
-      TestGraphs.singleStepInScala(returnedState.used.toList)(fn),
-      returnedState.store.asScala.toMap
-        .collect { case ((k, batchID), Some(v)) => (k, v) }
-    )
+    assert {
+      Equiv[Map[Int, Int]].equiv(
+        TestGraphs.singleStepInScala(returnedState.used.toList)(fn),
+        returnedState.store.asScala.toMap
+          .collect { case ((k, batchID), Some(v)) => (k, v) }
+      )
+    }
   }
 
   val nextFn = { pair: ((Int, (Int, Option[Int]))) =>
@@ -176,12 +178,14 @@ object Stormlaws extends Specification {
           Storm, Int, Int, Int, Int, Int
         ](_, service, _)(testFn)(nextFn)
       )
-    Equiv[Map[Int, Int]].equiv(
-      TestGraphs.leftJoinInScala(returnedState.used.toList)(serviceFn)
-        (fn)(nextFn),
-      returnedState.store.asScala.toMap
-        .collect { case ((k, batchID), Some(v)) => (k, v) }
-    )
+    assert {
+      Equiv[Map[Int, Int]].equiv(
+        TestGraphs.leftJoinInScala(returnedState.used.toList)(serviceFn)
+          (fn)(nextFn),
+        returnedState.store.asScala.toMap
+          .collect { case ((k, batchID), Some(v)) => (k, v) }
+      )
+    }
   }
 
   "StormPlatform matches Scala for optionMap only jobs" in {
