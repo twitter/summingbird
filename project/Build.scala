@@ -164,6 +164,7 @@ object SummingbirdBuild extends Build {
   )
 
   lazy val summingbirdStorm = module("storm").settings(
+    parallelExecution in Test := false,
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
       withCross("com.twitter" %% "bijection-core" % bijectionVersion),

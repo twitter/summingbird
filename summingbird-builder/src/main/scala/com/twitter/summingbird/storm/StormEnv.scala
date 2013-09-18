@@ -46,13 +46,16 @@ case class StormEnv(override val jobName: String, override val args: Args)
       args.optional("name")
         .getOrElse(jobName.split("\\.").last)
 
-    Storm.remote(classSuffix, builder.opts)
+    Storm.remote(builder.opts)
       .withConfigUpdater { config =>
       val c = ConfigBijection.invert(config)
       val transformed = ConfigBijection(ajob.transformConfig(c))
       KryoRegistrationHelper.registerInjections(transformed, eventCodecPairs)
       KryoRegistrationHelper.registerInjectionDefaults(transformed, codecPairs)
       transformed
-    }.run(builder.node.name(builder.id).asInstanceOf[Producer[Storm, _]])
+    }.run(
+      builder.node.name(builder.id).asInstanceOf[Producer[Storm, _]],
+      classSuffix
+    )
   }
 }
