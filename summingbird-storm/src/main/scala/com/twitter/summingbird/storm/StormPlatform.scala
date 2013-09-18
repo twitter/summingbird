@@ -76,20 +76,23 @@ object Storm {
   * Object containing helper functions to build up the list of storm
   * operations that can potentially be optimized.
   */
-object FMItem {
-  type OptionMap[T, U] = T => Option[U]
-  type FMItem = Either[OptionMap[_, _], Either[StoreFactory[_, _], FlatMapOperation[_, _]]]
+sealed trait FMItem
+case class OptionMap[T, U](op: T => Option[U]) extends FMItem
+case class FactoryCell(factory: StoreFactory[_, _]) extends FMItem
+case class FlatMap(op: FlatMapOperation[_, _]) extends FMItem
 
-  def optionMap[T, U](op: T => Option[U]): FMItem = Left(op)
-  def storeFactory(factory: StoreFactory[_, _]): FMItem = Right(Left(factory))
-  def flatMap(op: FlatMapOperation[_, _]): FMItem = Right(Right(op))
+object FMItem {
+  // type OptionMap[T, U] = T => Option[U]
+  // type FMItem = Either[OptionMap[_, _], Either[StoreFactory[_, _], FlatMapOperation[_, _]]]
+
+  def optionMap[T, U](op: T => Option[U]): FMItem = OptionMap(op)
+  def storeFactory(factory: StoreFactory[_, _]): FMItem = FactoryCell(factory)
+  def flatMap(op: FlatMapOperation[_, _]): FMItem = FlatMap(op)
   def sink[T](sinkSupplier: () => (T => Future[Unit])): FMItem =
     flatMap(FlatMapOperation.write(sinkSupplier))
 }
 
 abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
-  import FMItem.FMItem
-
   type Source[+T] = Spout[(Long, T)]
   type Store[-K, V] = StormStore[K, V]
   type Sink[-T] = () => (T => Future[Unit])
@@ -98,7 +101,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private type Prod[T] = Producer[Storm, T]
   private type JamfMap = Map[Prod[_], List[String]]
-  private type FMList = List[FMItem]
 
   val END_SUFFIX = "end"
   val FM_CONSTANT = "flatMap-"
@@ -121,7 +123,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     outerProducer: Prod[T],
     forkedNodes: Set[Prod[_]],
     jamfs: JamfMap,
-    toSchedule: FMList,
+    toSchedule: List[FMItem],
     path: List[Prod[_]],
     suffix: String,
     id: Option[String])
@@ -138,7 +140,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       topoBuilder: TopologyBuilder = topoBuilder,
       outerProducer: Prod[T] = outerProducer,
       jamfs: JamfMap = jamfs,
-      toSchedule: FMList = toSchedule,
+      toSchedule: List[FMItem] = toSchedule,
       path: List[Prod[_]] = path,
       suffix: String = suffix,
       id: Option[String] = id) =
@@ -160,15 +162,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     def suffixOf(xs: List[_], suffix: String): String =
       if (xs.isEmpty) suffix else FM_CONSTANT + suffix
 
-    def flatMap(parents: List[String], ops: FMList) = {
-      val flattened: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]] =
-        ops map {
-          case Left(op) => Right(FlatMapOperation(op.andThen(_.iterator)))
-          case Right(Right(op)) => Right(op)
-          case Right(Left(factory)) => Left(factory)
-        }
-      scheduleFlatMapper(topoBuilder, parents, path, suffix, id, flattened)
-    }
+    def flatMap(parents: List[String], ops: List[FMItem]) =
+      scheduleFlatMapper(topoBuilder, parents, path, suffix, id, ops)
 
     /**
       * This method is called by any nodes that contain Storm
@@ -191,9 +186,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       } else recurse(parent, toSchedule = newOps)
     }
 
-    def folder[T, U](s: Spout[(Long, T)], op: T => Option[U]): Spout[(Long, U)] =
-      s.flatMap { case (time, t) => op(t).map { x => (time, x) } }
-
     jamfs.get(outerProducer) match {
       case Some(s) => (s, jamfs)
       case None =>
@@ -209,7 +201,11 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
           case Source(spout, manifest) =>
             // The current planner requires a layer of flatMapBolts, even
             // if calling sumByKey directly on a source.
-            val (optionMaps, remaining) = toSchedule.span(_.isLeft)
+            val (optionMaps, remaining) = toSchedule.span {
+              case OptionMap(_) => true
+              case _ => false
+            }
+
             val operations =
               if (remaining.isEmpty)
                 List(FMItem.flatMap(FlatMapOperation.identity))
@@ -218,10 +214,11 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             val spoutName = "spout-" + suffixOf(operations, suffix)
 
             val stormSpout = optionMaps.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) {
-              case (spout, Left(op)) =>
+              case (spout, OptionMap(op)) =>
                 spout.flatMap { case (time, t) =>
                   op.asInstanceOf[Any => Option[Nothing]].apply(t)
                     .map { x => (time, x) } }
+              case _ => sys.error("not possible, given the above call to span.")
             }.getSpout
             val parallelism = getOrElse(id, DEFAULT_SPOUT_PARALLELISM).parHint
             topoBuilder.setSpout(spoutName, stormSpout, parallelism)
@@ -268,19 +265,19 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       store.asInstanceOf[StoreFactory[K, W]]
     )
 
-  private def foldOperations(
-    head: Either[StoreFactory[_, _], FlatMapOperation[_, _]],
-    tail: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]]) = {
+  private def foldOperations(head: FMItem, tail: List[FMItem]) = {
     val operation = head match {
-      case Left(store) => serviceOperation(store)
-      case Right(op) => op
+      case OptionMap(op) => FlatMapOperation(op.andThen(_.iterator))
+      case FactoryCell(store) => serviceOperation(store)
+      case FlatMap(op) => op
     }
     tail.foldLeft(operation.asInstanceOf[FlatMapOperation[Any, Any]]) {
-      case (acc, Left(store)) => FlatMapOperation.combine(
+      case (acc, FactoryCell(store)) => FlatMapOperation.combine(
         acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
         store.asInstanceOf[StoreFactory[Any, Any]]
       ).asInstanceOf[FlatMapOperation[Any, Any]]
-      case (acc, Right(op)) => acc.andThen(op.asInstanceOf[FlatMapOperation[Any, Any]])
+      case (acc, OptionMap(op)) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator)))
+      case (acc, FlatMap(op)) => acc.andThen(op.asInstanceOf[FlatMapOperation[Any, Any]])
     }
   }
 
@@ -294,7 +291,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     path: List[Prod[_]],
     suffix: String,
     id: Option[String],
-    toSchedule: List[Either[StoreFactory[_, _], FlatMapOperation[_, _]]])
+    toSchedule: List[FMItem])
       : List[String] = {
     toSchedule match {
       case Nil => parents
