@@ -26,6 +26,7 @@ import com.twitter.finagle.memcached.protocol.text.Memcached
 import com.twitter.storehaus.Store
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.memcache.{HashEncoder, MemcacheStore}
+import com.twitter.summingbird.batch.BatchID
 import org.jboss.netty.buffer.ChannelBuffer
 
 /**
@@ -54,14 +55,17 @@ object Memcache {
   }
 
   /**
-   * Returns a function that encodes a key to a Memcache key string given a
-   * unique namespace string.
+   * Returns a function that encodes a key to a Memcache key string
+   * given a unique namespace string.
    */
-  def keyEncoder[T](namespace: String)(implicit inj: Codec[T]): T => String = { key: T =>
+  def keyEncoder[T](namespace: String)
+    (implicit inj: Codec[T]): T => String = { key: T =>
     def concat(bytes: Array[Byte]): Array[Byte] =
       namespace.getBytes ++ bytes
 
-    (inj andThen (concat _) andThen HashEncoder() andThen Bijection.connect[Array[Byte], Base64String])(key).str
+    (inj.andThen(concat _)
+      .andThen(HashEncoder())
+      .andThen(Bijection.connect[Array[Byte], Base64String]))(key).str
   }
 
   def store[K: Codec, V: Codec](keyPrefix: String): Store[K, V] = {

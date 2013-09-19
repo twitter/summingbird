@@ -17,7 +17,7 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.monad.{StateWithError, Reader}
-import com.twitter.algebird.Interval
+import com.twitter.algebird.{Interval, Semigroup}
 import com.twitter.scalding.{Mode, TypedPipe}
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import cascading.flow.FlowDef
@@ -50,7 +50,7 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
 
   def reducers: Option[Int]
 
-  /** This executes the join algortihm on the streams.
+  /** This executes the join algorithm on the streams.
    * You are guaranteed that all the service data needed
    * to do the join is present.
    */
@@ -132,11 +132,23 @@ object BatchedService extends java.io.Serializable {
     sink: BatchedScaldingSink[(K, Option[V])],
     reducerOption: Option[Int] = None): BatchedService[K, V] = new BatchedService[K, V] {
     override def ordering = store.ordering
-    override def batcher = store.batcher
+    override def batcher = {
+      assert(store.batcher == sink.batcher, "Batchers do not match")
+      store.batcher
+    }
     override val reducers = reducerOption
     override def readStream(batchID: BatchID, mode: Mode) =
       sink.readStream(batchID, mode)
     override def readLast(exclusiveUB: BatchID, mode: Mode) =
       store.readLast(exclusiveUB, mode)
   }
+
+  /** If you write the output JUST BEFORE sumByKey, you can use it as
+   * a BatchedService
+   * Assumes the batcher is the same for both
+   */
+  def fromStoreAndDeltaSink[K,V:Semigroup](store: BatchedScaldingStore[K, V],
+    sink: BatchedScaldingSink[(K, V)],
+    reducerOption: Option[Int] = None): BatchedDeltaService[K, V] =
+      new BatchedDeltaService[K, V](store, sink, reducerOption)
 }

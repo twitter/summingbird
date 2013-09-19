@@ -18,6 +18,8 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.scalding.TypedPipe
 
+import com.twitter.algebird.Semigroup
+
 /**
   * lookupJoin simulates the behavior of a realtime system attempting
   * to leftJoin (K, V) pairs against some other value type (JoinedV)
@@ -67,11 +69,35 @@ object LookupJoin extends Serializable {
       withWindow(left, right, reducers)((_,_) => true)
 
   /**
+   * In this case, the right pipe is fed through a scanLeft doing a Semigroup.plus
+   * before joined to the left
+   */
+  def rightSumming[T:Ordering, K:Ordering, V, JoinedV: Semigroup](left: TypedPipe[(T, (K, V))],
+    right: TypedPipe[(T, (K, JoinedV))],
+    reducers: Option[Int] = None):
+    TypedPipe[(T, (K, (V, Option[JoinedV])))] =
+      withWindowRightSumming(left, right, reducers)((_,_) => true)
+
+  /**
    * This ensures that gate(Tleft, Tright) == true, else the None is emitted
    * as the joined value.
    * Useful for bounding the time of the join to a recent window
    */
   def withWindow[T:Ordering, K:Ordering, V, JoinedV](left: TypedPipe[(T, (K, V))],
+    right: TypedPipe[(T, (K, JoinedV))],
+    reducers: Option[Int] = None)(gate: (T,T) => Boolean):
+      TypedPipe[(T, (K, (V, Option[JoinedV])))] = {
+
+      implicit val keepNew: Semigroup[JoinedV] = Semigroup.from { (older, newer) => newer }
+      withWindowRightSumming(left, right, reducers)(gate)
+  }
+
+  /**
+   * This ensures that gate(Tleft, Tright) == true, else the None is emitted
+   * as the joined value, and sums are only done as long as they they come
+   * within the gate interval as well
+   */
+  def withWindowRightSumming[T:Ordering, K:Ordering, V, JoinedV: Semigroup](left: TypedPipe[(T, (K, V))],
     right: TypedPipe[(T, (K, JoinedV))],
     reducers: Option[Int] = None)(gate: (T,T) => Boolean):
       TypedPipe[(T, (K, (V, Option[JoinedV])))] = {
@@ -133,7 +159,12 @@ object LookupJoin extends Serializable {
               // Right(joinedV) means that we've received a new value
               // to use in the simulated realtime service
               // described in the comments above
-              case Right(joined) => (Some((time, joined)), None)
+              case Right(joined) =>
+                val nextJoined = optTJV
+                  .filter { case (oldt, _) => gate(time, oldt) } // did it fall out of cache?
+                  .map { case (_, oldJ) => Semigroup.plus(oldJ, joined) }
+                  .getOrElse(joined)
+                (Some((time, nextJoined)), None)
             }
         }.toTypedPipe
 

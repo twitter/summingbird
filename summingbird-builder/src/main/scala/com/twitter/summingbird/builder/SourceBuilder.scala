@@ -102,6 +102,14 @@ case class SourceBuilder[T: Manifest] private (
     )
   }
 
+  def write(sink: CompoundSink[T])(implicit batcher: Batcher): SourceBuilder[T] =
+    copy(
+      node = node.write(
+        sink.offline.map(new BatchedSinkFromOffline[T](batcher, _)),
+        sink.online
+      )
+    )
+
   def leftJoin[K, V, JoinedValue](service: CompoundService[K, JoinedValue])
     (implicit ev: T <:< (K, V), keyMf: Manifest[K], valMf: Manifest[V], joinedMf: Manifest[JoinedValue])
       : SourceBuilder[(K, (V, Option[JoinedValue]))] =
@@ -186,7 +194,7 @@ case class SourceBuilder[T: Manifest] private (
             .name(id)
             .sumByKey(givenStore)
         }.getOrElse(sys.error("Storm mode specified alongside some offline-only Source, Service or Sink."))
-        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, Storm.SINK_ID, opts)
+        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
 
       case _ => sys.error("Unknown environment: " + env)
     }

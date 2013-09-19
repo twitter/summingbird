@@ -19,7 +19,7 @@ import org.specs._
 import java.lang.{Integer => JInt}
 import com.twitter.scalding._
 
-import com.twitter.algebird.{Monoid, Group}
+import com.twitter.algebird.{Monoid, Semigroup, Group}
 
 object LookupJoinedTest {
   // Not defined if there is a collision in K and T, so make those unique:
@@ -48,6 +48,13 @@ class LookupJoinerJob(args : Args) extends Job(args) {
       (t.toString, k.toString, v.toString, opt.toString)
     }
     .write(TypedTsv[(String,String,String,String)]("output"))
+
+  LookupJoin.rightSumming(TypedPipe.from(in0).map { case (t,k,v) => (t, (k, v)) },
+    TypedPipe.from(in1).map { case (t,k,v) => (t, (k, v)) })
+    .map { case (t, (k, (v, opt))) =>
+      (t.toString, k.toString, v.toString, opt.toString)
+    }
+    .write(TypedTsv[(String,String,String,String)]("output2"))
 }
 
 class LookupJoinedTest extends Specification {
@@ -67,18 +74,47 @@ class LookupJoinedTest extends Specification {
     }
     in0.map { case (t,k,v) => (t.toString, k.toString, v.toString, lookup(t, k).toString) }
   }
+  def lookupSumJoin[T:Ordering,K,V,W:Semigroup](in0: Iterable[(T,K,V)], in1: Iterable[(T,K,W)]) = {
+    implicit val ord: Ordering[(T,K,W)] = Ordering.by { _._1 }
+    val serv = in1.groupBy(_._2).mapValues {
+      _.toList
+        .sorted
+        .scanLeft(None:Option[(T,K,W)]) { (old, newer) =>
+          old.map { case (_,_,w) => (newer._1, newer._2, Semigroup.plus(w, newer._3)) }
+            .orElse(Some(newer))
+        }
+        .filter { _.isDefined }
+        .map { _.get }
+    }.toMap // Force the map
+
+    def lookup(t: T, k: K): Option[W] = {
+      val ord = Ordering.by { tkw: (T, K, W) => tkw._1 }
+      serv.get(k).flatMap { in1s =>
+        in1s.filter { case (t1, _, _) => Ordering[T].lt(t1, t) }
+          .reduceOption(ord.max(_, _))
+          .map { _._3 }
+      }
+    }
+    in0.map { case (t,k,v) => (t.toString, k.toString, v.toString, lookup(t, k).toString) }
+  }
   "A LookupJoinerJob" should {
     //Set up the job:
     "correctly lookup" in {
-      val MAX_KEY = 10
-      val in0 = genList(Int.MaxValue, MAX_KEY, 10000)
-      val in1 = genList(Int.MaxValue, MAX_KEY, 10000)
+      val MAX_KEY = 100
+      val VAL_COUNT = 10000
+      val in0 = genList(Int.MaxValue, MAX_KEY, VAL_COUNT)
+      val in1 = genList(Int.MaxValue, MAX_KEY, VAL_COUNT)
       JobTest(new LookupJoinerJob(_))
         .source(TypedTsv[(Int,Int,Int)]("input0"), in0)
         .source(TypedTsv[(Int,Int,Int)]("input1"), in1)
         .sink[(String, String, String, String)](
           TypedTsv[(String,String,String,String)]("output")) { outBuf =>
           outBuf.toSet must be_==(lookupJoin(in0, in1).toSet)
+          in0.size must be_==(outBuf.size)
+        }
+        .sink[(String, String, String, String)](
+          TypedTsv[(String,String,String,String)]("output2")) { outBuf =>
+          outBuf.toSet must be_==(lookupSumJoin(in0, in1).toSet)
           in0.size must be_==(outBuf.size)
         }
         .run

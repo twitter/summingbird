@@ -103,7 +103,8 @@ object SummingbirdBuild extends Build {
     summingbirdClient,
     summingbirdStorm,
     summingbirdScalding,
-    summingbirdBuilder
+    summingbirdBuilder,
+    summingbirdExample
   )
 
   val dfsDatastoresVersion = "1.3.4"
@@ -156,6 +157,7 @@ object SummingbirdBuild extends Build {
   )
 
   lazy val summingbirdStorm = module("storm").settings(
+    parallelExecution in Test := false,
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,

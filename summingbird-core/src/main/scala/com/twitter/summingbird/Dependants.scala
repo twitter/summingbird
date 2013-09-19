@@ -55,6 +55,6 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
    */
   def depth(p: Producer[P, _]): Option[Int] = depths.get(p)
   def dependantsOf(p: Producer[P, _]): Option[Set[Producer[P, _]]] = graph.get(p)
-
+  def nodes: Set[Producer[P, _]] = graph.keys.toSet
   def fanOut(p: Producer[P, _]): Option[Int] = dependantsOf(p).map { _.size }
 }

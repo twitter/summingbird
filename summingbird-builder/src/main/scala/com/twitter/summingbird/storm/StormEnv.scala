@@ -42,8 +42,11 @@ case class StormEnv(override val jobName: String, override val args: Args)
     // of the environment and defining the builder).
     val ajob = abstractJob
 
-    val classSuffix = jobName.split("\\.").last
-    Storm.remote(classSuffix, builder.opts)
+    val classSuffix =
+      args.optional("name")
+        .getOrElse(jobName.split("\\.").last)
+
+    Storm.remote(builder.opts)
       .withConfigUpdater { config =>
       val c = ConfigBijection.invert(config)
       val transformed = ConfigBijection(ajob.transformConfig(c))
@@ -54,6 +57,9 @@ case class StormEnv(override val jobName: String, override val args: Args)
         new ScalaKryoInstantiator().withRegistrar(builder.registrar)
       )
       transformed
-    }.run(builder.node.asInstanceOf[Producer[Storm, _]])
+    }.run(
+      builder.node.name(builder.id).asInstanceOf[Producer[Storm, _]],
+      classSuffix
+    )
   }
 }
