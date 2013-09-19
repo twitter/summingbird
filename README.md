@@ -25,7 +25,7 @@ The logic is exactly the same, and the code is almost the same. The main differe
 
 Summingbird provides you with the primitives you need to build rock solid production systems.
 
-## Getting Started: Word Count with Twitter and Storm
+## Getting Started: Word Count with Twitter
 
 The `summingbird-example` project allows you to run the wordcount program above on a sample of Twitter data using a local Storm topology and memcache instance. You can find the actual job definition in [ExampleJob.scala](https://github.com/twitter/summingbird/blob/develop/summingbird-example/src/main/scala/com/twitter/summingbird/example/ExampleJob.scala).
 
