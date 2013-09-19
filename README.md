@@ -64,10 +64,10 @@ sbt summingbird-example/run
 
 Storm should puke out a bunch of output, then stabilize and hang. This means that Storm is updating your local memcache instance with counts of every word that it sees in each tweet.
 
-To query the aggregate results in Memcached, you'll need to open a repl:
+To query the aggregate results in Memcached, you'll need to open an SBT repl in a new terminal:
 
 ```bash
-sbt summingbird-example/run
+sbt summingbird-example/console
 ```
 
 At the launched repl, run the following:
