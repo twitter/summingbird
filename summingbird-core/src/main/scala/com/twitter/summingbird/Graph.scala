@@ -72,7 +72,7 @@ object Producer {
       }
     }
     val start = dependenciesOf(p)
-    val (deps, _) = loop(start.toList, start, start.toSet)
+    val (deps, _) = loop(start, start, start.toSet)
     deps
   }
 }

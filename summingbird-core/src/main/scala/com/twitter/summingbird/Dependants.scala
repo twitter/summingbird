@@ -21,15 +21,16 @@ package com.twitter.summingbird
  */
 case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
   private val allNodes = tail :: Producer.transitiveDependenciesOf(tail)
-  private val graph: Map[Producer[P, _], List[Producer[P, _]]] = {
-    val empty = Map[Producer[P, _], List[Producer[P, _]]]()
+  private val emptyList = List[Producer[P, _]]()
+  val empty = Map[Producer[P, _], List[Producer[P, _]]]()
 
+  private val graph: Map[Producer[P, _], List[Producer[P, _]]] = {
     allNodes
       .foldLeft(empty) { (graph, child) =>
-        val withChild = graph + (child -> graph.getOrElse(child, List[Producer[P, _]]()))
+        val withChild = graph + (child -> graph.getOrElse(child, emptyList))
         Producer.dependenciesOf(child)
           .foldLeft(withChild) { (innerg, parent) =>
-            innerg + (parent -> (innerg.getOrElse(parent, List[Producer[P, _]]()) :+ child).distinct)
+            innerg + (parent -> (child :: innerg.getOrElse(parent, emptyList)).distinct)
           }
       }
   }
@@ -40,7 +41,7 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
     if(todo.isEmpty) acc
     else {
 
-      def withParents(n: Producer[P, _]) = (Producer.dependenciesOf(n) :+ n).distinct.filterNot { acc.contains(_) }
+      def withParents(n: Producer[P, _]) = (n :: Producer.dependenciesOf(n)).distinct.filterNot { acc.contains(_) }
 
       val (done, rest) = todo.map { withParents(_) }.partition { _.size == 1 }
       val newTodo = rest.flatten
