@@ -365,7 +365,7 @@ object Scalding {
     val dep = Dependants(prod)
     val fanOutSet =
       Producer.transitiveDependenciesOf(prod)
-        .filter(dep.fanOut(_).exists(_ > 1))
+        .filter(dep.fanOut(_).exists(_ > 1)).toSet
     buildFlow(options, prod, None, fanOutSet, Map.empty)._1
   }
 
