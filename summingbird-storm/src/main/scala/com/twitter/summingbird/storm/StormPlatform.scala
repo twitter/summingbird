@@ -322,7 +322,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val dep = Dependants(summer)
     val fanOutSet =
       Producer.transitiveDependenciesOf(summer)
-        .filter(dep.fanOut(_).exists(_ > 1))
+        .filter(dep.fanOut(_).exists(_ > 1)).toSet
 
     val (parents, _) = buildTopology(
       topologyBuilder, summer, fanOutSet, Map.empty,
