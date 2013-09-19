@@ -104,7 +104,8 @@ object SummingbirdBuild extends Build {
     summingbirdKryo,
     summingbirdStorm,
     summingbirdScalding,
-    summingbirdBuilder
+    summingbirdBuilder,
+    summingbirdExample
   )
 
   val dfsDatastoresVersion = "1.3.4"
