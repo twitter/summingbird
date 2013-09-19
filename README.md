@@ -25,6 +25,69 @@ The logic is exactly the same, and the code is almost the same. The main differe
 
 Summingbird provides you with the primitives you need to build rock solid production systems.
 
+## Getting Started: Word Count with Twitter and Storm
+
+The `summingbird-example` project allows you to run the wordcount program above on a sample of Twitter data using a local Storm topology and memcache instance. You can find the actual job definition in [ExampleJob.scala](https://github.com/twitter/summingbird/blob/develop/summingbird-example/src/main/scala/com/twitter/summingbird/example/ExampleJob.scala).
+
+First, make sure you have `memcached` installed locally. If not, you can get it by installing [Homebrew](http://brew.sh/) and running this command in a shell:
+
+```bash
+brew install memcached
+```
+
+When this is finished, run the `memcached` command in a separate terminal.
+
+Now you'll need to set up access to the Twitter Streaming API. [This blog post](http://tugdualgrall.blogspot.com/2012/11/couchbase-create-large-dataset-using.html) has a great walkthrough, so open that page, head over to https://dev.twitter.com/ and get your various keys and tokens. Once you have these, clone the Summingbird repository:
+
+```bash
+git clone https://github.com/twitter/summingbird.git
+cd summingbird
+```
+
+And open [StormRunner.scala](https://github.com/twitter/summingbird/blob/develop/summingbird-example/src/main/scala/com/twitter/summingbird/example/StormRunner.scala) in your editor. Replace the dummy variables under `config` variable with your auth tokens:
+
+```scala
+lazy val config = new ConfigurationBuilder()
+    .setOAuthConsumerKey("mykey")
+    .setOAuthConsumerSecret("mysecret")
+    .setOAuthAccessToken("token")
+    .setOAuthAccessTokenSecret("tokensecret")
+    .setJSONStoreEnabled(true) // required for JSON serialization
+    .build
+```
+
+You're all ready to go! Now it's time to unleash Storm on your Twitter stream. Make sure the `memcached` terminal is still open, then start Storm from the `summingbird` directory:
+
+```bash
+sbt summingbird-example/run
+```
+
+Storm should puke out a bunch of output, then stabilize and hang. This means that Storm is updating your local memcache instance with counts of every word that it sees in each tweet.
+
+To query the aggregate results in Memcached, you'll need to open a repl:
+
+```bash
+sbt summingbird-example/run
+```
+
+At the launched repl, run the following:
+
+```scala
+scala> import com.twitter.summingbird.example._
+import com.twitter.summingbird.example._
+
+scala> StormRunner.lookup("i")
+<memcache store loading elided>
+res0: Option[Long] = Some(5)
+
+scala> StormRunner.lookup("i")
+res1: Option[Long] = Some(52)
+```
+
+Boom. Counts for the word `"i"` are growing in realtime.
+
+See the [wiki page](https://github.com/twitter/summingbird/wiki/Getting-started-with-summingbird-example) for a more detailed explanation of the configuration required to get this job up and running and some ideas for where to go next.
+
 ## Community and Documentation
 
 To learn more and find links to tutorials and information around the web, check out the [Summingbird Wiki](https://github.com/twitter/summingbird/wiki).
