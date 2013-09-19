@@ -22,9 +22,11 @@ import com.twitter.summingbird.{Platform, Producer, Dependants, NamedProducer, I
 
 case class VizGraph[P <: Platform[P]](tail: Producer[P, _]) {
   val dependantState = Dependants(tail)
+  type NameLut = (Map[Producer[P, _], String], Map[String, Int])
+  def emptyNameLut = (Map[Producer[P, _], String](), Map[String, Int]())
 
   @annotation.tailrec
-  private def recurseGetNode(n :Producer[P, _], name: String): (String, Set[Producer[P, _]])  = {
+  private def recurseGetNode(n :Producer[P, _], name: String): (String, Producer[P, _], Set[Producer[P, _]])  = {
     val children: Set[Producer[P, _]] = dependantState.dependantsOf(n).getOrElse(Set[Producer[P, _]]())
     children.headOption match {
       case Some(child: NamedProducer[_, _]) =>
@@ -32,23 +34,51 @@ case class VizGraph[P <: Platform[P]](tail: Producer[P, _]) {
       case Some(child: IdentityKeyedProducer[_, _, _]) =>
         recurseGetNode(child, name)
       case _ =>
-        (name, children)
+        (name, n, children)
     }
   }
 
-
-  override def toString() : String = {
-    val base = "graph summingbirdGraph {\n"
-    val graphStr = dependantState.nodes.foldLeft("") {(runningStr, nextNode) =>
-      nextNode match {
-        case NamedProducer(parent, name) => runningStr
-        case i : IdentityKeyedProducer[_, _, _] => runningStr
-        case _ => {
-          val (nodeName, children) = recurseGetNode(nextNode, nextNode.getClass.toString)
-          runningStr + children.foldLeft("") {(r, c) =>
-            val (childName, _) = recurseGetNode(c, c.getClass.toString)
-            r + "\"" + nodeName + "\" -- \"" + childName + "\"\n"
+  def getName(curLut: NameLut, node: Producer[P, _], preferredName: String): (NameLut, String) = {
+    val nodeLUT = curLut._1
+    val nameLUT = curLut._2
+    nodeLUT.get(node) match {
+      case Some(name) => (curLut, name)
+      case None => {
+        nameLUT.get(preferredName) match {
+          case Some(count) => {
+            val newNum = count + 1
+            val newName = preferredName + "[" + newNum + "]"
+            println(nameLUT)
+            (((nodeLUT + (node -> newName)), (nameLUT + (preferredName -> newNum))), newName)
           }
+          case None => {
+            (((nodeLUT + (node -> preferredName)), (nameLUT + (preferredName -> 1))), preferredName)
+          }
+        }
+      }
+    }
+  }
+  override def toString() : String = {
+    
+    val base = "digraph summingbirdGraph {\n"
+    val (graphStr, _) = dependantState.nodes.foldLeft(("", emptyNameLut)) { case ((runningStr, nameLut), nextNode) =>
+      nextNode match {
+        case NamedProducer(parent, name) => (runningStr, nameLut)
+        case i : IdentityKeyedProducer[_, _, _] => (runningStr, nameLut)
+        case _ => {
+          val (rawNodeName, evalNode, children) = recurseGetNode(nextNode, nextNode.getClass.toString)
+          val (updatedLut, nodeName) = getName(nameLut, evalNode, rawNodeName)
+
+          val (new_str, innerNameLut) = children.foldLeft(("", updatedLut)){ case ((innerRunningStr, innerNameLut), c)  =>
+            val (childName, childNode, _) = recurseGetNode(c, c.getClass.toString)
+
+            val innerNewStr = "\"" + nodeName + "(" + dependantState.fanOut(evalNode) + ")" + "\" -> \"" 
+            val (updatedLut2, pChildName) = getName(innerNameLut, childNode, childName)
+
+            val innerNewStr2 = pChildName + "(" + dependantState.fanOut(childNode) + ")" + "\"\n"
+            (innerRunningStr + innerNewStr + innerNewStr2, updatedLut2)
+          }
+          (runningStr + new_str, innerNameLut)
         }
       }
     }
