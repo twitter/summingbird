@@ -21,69 +21,70 @@ import com.twitter.summingbird.{Platform, Producer, Dependants, NamedProducer, I
 import com.twitter.summingbird.storm._
 
 case class VizGraph(dag: StormDag, dependantState: Dependants[Storm]) {
-  type BaseLut[T] = (Map[T, String], Map[String, Int])
-  type NameLut = BaseLut[Producer[Storm, _]]
+  type BaseLookupTable[T] = (Map[T, String], Map[String, Int])
+  type NameLookupTable = BaseLookupTable[Producer[Storm, _]]
 
-  type NodeNameLut = BaseLut[StormNode]
-  def buildLut[T]() = (Map[T, String](), Map[String, Int]())
-  def emptyNodeNameLut(): NodeNameLut = buildLut()
-  def emptyNameLut(): NameLut = buildLut()
+  type NodeNameLookupTable = BaseLookupTable[StormNode]
+  def buildLookupTable[T]() = (Map[T, String](), Map[String, Int]())
+  def emptyNodeNameLookupTable(): NodeNameLookupTable = buildLookupTable()
+  def emptyNameLookupTable(): NameLookupTable = buildLookupTable()
 
-  def getName[T](curLut: BaseLut[T], node: T, requestedName: Option[String] = None): (BaseLut[T], String) = {
-    val nodeLUT = curLut._1
-    val nameLUT = curLut._2
+  def getName[T](curLookupTable: BaseLookupTable[T], node: T, requestedName: Option[String] = None): (BaseLookupTable[T], String) = {
+    val nodeLookupTable = curLookupTable._1
+    val nameLookupTable = curLookupTable._2
     val preferredName = requestedName.getOrElse(node.getClass.getName.replaceFirst("com.twitter.summingbird.",""))
-    nodeLUT.get(node) match {
-      case Some(name) => (curLut, name)
+    nodeLookupTable.get(node) match {
+      case Some(name) => (curLookupTable, name)
       case None => {
-        nameLUT.get(preferredName) match {
+        nameLookupTable.get(preferredName) match {
           case Some(count) => {
             val newNum = count + 1
             val newName = preferredName + "[" + newNum + "]"
-            (((nodeLUT + (node -> newName)), (nameLUT + (preferredName -> newNum))), newName)
+            (((nodeLookupTable + (node -> newName)), (nameLookupTable + (preferredName -> newNum))), newName)
           }
           case None => {
-            (((nodeLUT + (node -> preferredName)), (nameLUT + (preferredName -> 1))), preferredName)
+            (((nodeLookupTable + (node -> preferredName)), (nameLookupTable + (preferredName -> 1))), preferredName)
           }
         }
       }
     }
   }
 
-  def getSubGraphStr(nameLut: NameLut, node: StormNode): (List[String], List[String], NameLut) = {
-    node.members.foldLeft((List[String](), List[String](), nameLut)) { case ((definitions, mappings, nameLut), nextNode) =>
+  def getSubGraphStr(nameLookupTable: NameLookupTable, node: StormNode): (List[String], List[String], NameLookupTable) = {
+    node.members.foldLeft((List[String](), List[String](), nameLookupTable)) { case ((definitions, mappings, nameLookupTable), nextNode) =>
       val dependants = dependantState.dependantsOf(nextNode).getOrElse(Set())
 
-      val (updatedLut, uniqueNodeName) = getName(nameLut, nextNode)
+      val (updatedLookupTable, uniqueNodeName) = getName(nameLookupTable, nextNode)
       val nodeName = "\"" + uniqueNodeName + "\""
 
-      val (newMappings, innerNameLut) = dependants.foldLeft((List[String](), updatedLut)){ case ((mappings, innerNameLut), childNode)  =>
+      val (newMappings, innerNameLookupTable) = dependants.foldLeft((List[String](), updatedLookupTable)){ case ((mappings, innerNameLookupTable), childNode)  =>
 
 
-        val (updatedLut2, uniqueChildName) = getName(innerNameLut, childNode)
+        val (updatedLookupTable2, uniqueChildName) = getName(innerNameLookupTable, childNode)
         val childName = "\"" + uniqueChildName + "\""
 
         val mappingStr = "%s -> %s\n".format(nodeName, childName)
-        (mappingStr :: mappings, updatedLut2)
+        (mappingStr :: mappings, updatedLookupTable2)
       }
-      (nodeName :: definitions, newMappings ++ mappings, innerNameLut)
+      (nodeName :: definitions, newMappings ++ mappings, innerNameLookupTable)
     }
   }
   def genClusters(): (String, Map[StormNode, String]) = {
-    val (clusters, producerMappings, nodeNames, producerNames, nodeToShortLut) = dag.nodes.foldLeft((List[String](), List[String](), emptyNodeNameLut(), emptyNameLut(), Map[StormNode, String]())) { 
-        case ((clusters, producerMappings, curNodeNameLut, nameLut, nodeShortName), node) =>
+    val (clusters, producerMappings, nodeNames, producerNames, nodeToShortLookupTable) = dag.nodes.foldLeft((List[String](), List[String](), emptyNodeNameLookupTable(), emptyNameLookupTable(), Map[StormNode, String]())) { 
+        case ((clusters, producerMappings, curNodeNameLookupTable, nameLookupTable, nodeShortName), node) =>
 
-          val (newNodeNameLut, nodeName) = getName(curNodeNameLut, node, Some(node.getName))
-          val (nodeDefinitions, mappings, newNameLut) = getSubGraphStr(nameLut, node)
+          val (newNodeNameLookupTable, nodeName) = getName(curNodeNameLookupTable, node, Some(node.getName))
+          val (nodeDefinitions, mappings, newNameLookupTable) = getSubGraphStr(nameLookupTable, node)
           val shortName = "cluster_" + node.hashCode.toHexString
           val newNodeShortName = nodeShortName + (node -> shortName)
           val nextCluster = "subgraph %s {\n\tlabel=\"%s\"\n%s\n}\n".format(shortName, nodeName, nodeDefinitions.mkString("\n"))
-          (nextCluster :: clusters, mappings ++ producerMappings, newNodeNameLut, newNameLut, newNodeShortName)
+          (nextCluster :: clusters, mappings ++ producerMappings, newNodeNameLookupTable, newNameLookupTable, newNodeShortName)
     }
 
-    ((clusters ++ producerMappings).mkString("\n"), nodeToShortLut)
+    ((clusters ++ producerMappings).mkString("\n"), nodeToShortLookupTable)
 
   }
+  
   override def toString() : String = {
     val base = "digraph summingbirdGraph {\n"
     val (clusterStr, mapping) = genClusters
