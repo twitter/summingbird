@@ -1,9 +1,19 @@
 # summingbird #
 
+## 0.1.4
+
+* Fix Storm Tests: https://github.com/twitter/summingbird/pull/227
+* Custom --name flag for job name in builder api: https://github.com/twitter/summingbird/pull/226
+* Remove SINK_ID reference from SourceBuilder: https://github.com/twitter/summingbird/pull/225
+* Add Dot Graph Generation from SB Producer: https://github.com/twitter/summingbird/pull/223
+* Push filters down to storm spout: https://github.com/twitter/summingbird/pull/224
+* Revert StoreIntermediate to old approach: https://github.com/twitter/summingbird/pull/219
+* Add in old SummingJoin: https://github.com/twitter/summingbird/pull/218
+
 ## 0.1.3
 
-Fix bug in storm planner's forking:  https://github.com/twitter/summingbird/pull/217
-Don't send empty multiGets to online service: https://github.com/twitter/summingbird/pull/209
+* Fix bug in storm planner's forking:  https://github.com/twitter/summingbird/pull/217
+* Don't send empty multiGets to online service: https://github.com/twitter/summingbird/pull/209
 
 ## 0.1.2
 
