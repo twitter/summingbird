@@ -40,6 +40,112 @@ import com.twitter.util.Future
 import Constants._
 import scala.annotation.tailrec
 
+sealed trait StormNode {
+  val members: Set[Producer[Storm, _]] = Set()
+
+  private val dependantStateOpt = members.headOption.map(h => Dependants(h))
+
+  def dependantsOf(p: Producer[Storm, _]): List[Producer[Storm, _]] = {
+    dependantStateOpt match {
+      case Some(dependantState) => dependantState.dependantsOf(p).getOrElse(List())
+      case _ => List()
+    }
+  }
+
+  def localDependantsOf(p: Producer[Storm, _]): List[Producer[Storm, _]] = dependantsOf(p).filter(members.contains(_))
+
+  def toSpout: StormSpout = {
+    this match {
+      case s: StormBolt => {
+        StormSpout(s.members)
+      }
+      case s: StormSpout => s
+    }
+  }
+
+  def contains(p: Producer[Storm, _]): Boolean = members.contains(p)
+
+  def getName(): String = {
+    getClass.toString
+  }
+
+  def add(node: Producer[Storm, _]): StormNode
+}
+
+case class StormBolt(override val members: Set[Producer[Storm, _]] = Set()) extends StormNode {
+  def add(node: Producer[Storm, _]): StormNode = {
+    val newMembers = members + node
+    this.copy(members=newMembers)
+  }
+}
+case class StormSpout(override val members: Set[Producer[Storm, _]] = Set()) extends StormNode {
+  def add(node: Producer[Storm, _]): StormNode = {
+    val newMembers = members + node
+    this.copy(members=newMembers)
+  }
+}
+
+case class StormDag(nodeLut: Map[Producer[Storm, _], StormNode], dag: Map[StormNode, Set[StormNode]] = Map[StormNode, Set[StormNode]](), allNodes: Set[StormNode] = Set[StormNode]()) {
+  def connect(src: StormNode, dest: StormNode): StormDag = {
+    if (src == dest) {
+      this
+    } else {
+      assert(!dest.isInstanceOf[StormSpout])
+      val currentTargets = dag.getOrElse(src, Set[StormNode]())
+      StormDag(nodeLut, dag + (src -> (currentTargets + dest) ), allNodes)
+    }
+  }
+
+  def nodes = allNodes
+
+  def connect(src: Producer[Storm, _], dest: Producer[Storm, _]): StormDag = {
+    val newDag = for {
+      lNode <- nodeLut.get(src);
+      rNode <- nodeLut.get(dest)
+    } yield connect(lNode, rNode)
+    newDag.getOrElse(this)
+  }
+  def dependantsOf(n: StormNode): Set[StormNode] = dag.get(n).getOrElse(Set())
+}
+object StormDag {
+  def build(registry: StormRegistry) : StormDag = {
+    val nodeLut = registry.buildLut
+    registry.registry.foldLeft(StormDag(nodeLut, allNodes = registry.registry)){ (curDag, stormNode) =>
+      stormNode.members.foldLeft(curDag) { (innerDag, outerProducer) =>
+        outerProducer match {
+          case Summer(producer, _, _) => innerDag.connect(producer, outerProducer)
+          case IdentityKeyedProducer(producer) => innerDag.connect(producer, outerProducer)
+          case NamedProducer(producer, newId) => innerDag.connect(producer, outerProducer)
+          case OptionMappedProducer(producer, op, manifest) => innerDag.connect(producer, outerProducer)
+          case FlatMappedProducer(producer, op) => innerDag.connect(producer, outerProducer)
+          case WrittenProducer(producer, sinkSupplier) => innerDag.connect(producer, outerProducer)
+          case LeftJoinedProducer(producer, StoreWrapper(newService)) => innerDag.connect(producer, outerProducer)
+          case MergedProducer(l, r) => innerDag.connect(l, outerProducer).connect(r, outerProducer)
+          case Source(_, _) => innerDag
+        }
+      }
+    }
+  }
+}
+
+case class StormRegistry(registry: Set[StormNode] = Set[StormNode]()) {
+  
+  def register(n: StormNode): StormRegistry =  {
+    StormRegistry(registry + n )
+  }
+
+  def buildLut() : Map[Producer[Storm, _], StormNode] = {
+    registry.foldLeft(Map[Producer[Storm, _], StormNode]()){ (curRegistry, stormNode) =>
+      stormNode.members.foldLeft(curRegistry) { (innerRegistry, producer) =>
+        (innerRegistry + (producer -> stormNode))
+      }
+    }
+  }
+}
+
+object StormNode {
+
+}
 sealed trait StormStore[-K, V] {
   def batcher: Batcher
 }
@@ -92,8 +198,9 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   type Sink[-T] = () => (T => Future[Unit])
   type Service[-K, +V] = StormService[K, V]
   type Plan[T] = StormTopology
-
+  
   private type Prod[T] = Producer[Storm, T]
+  private type VisitedStore = Set[Prod[_]]
   private type JamfMap = Map[Prod[_], List[String]]
 
   val END_SUFFIX = "end"
@@ -111,6 +218,55 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       stormOpts <- options.get(id)
       option <- stormOpts.get[T]
     } yield option).getOrElse(default)
+
+
+  def collectPass[T](outerProducer: Prod[T], previousBolt: StormNode, stormRegistry: StormRegistry, forkedNodes: Set[Prod[_]], visited: VisitedStore): (StormRegistry, VisitedStore) = {
+    
+    val currentBolt = previousBolt.add(outerProducer)
+    def recurse[U](
+      producer: Prod[U],
+      updatedBolt: StormNode = currentBolt,
+      updatedDag: StormRegistry = stormRegistry,
+      visited: VisitedStore = visited)
+    : (StormRegistry, VisitedStore) = {
+      collectPass(producer, updatedBolt, updatedDag, forkedNodes, visited = visited)
+    }
+
+    def maybeSplit[A](dependency: Prod[A], visited: VisitedStore): (StormRegistry, VisitedStore) = {
+      if (forkedNodes.contains(dependency)) {
+        recurse(dependency, updatedBolt = StormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
+      } else recurse(dependency, visited = visited)
+    }
+    
+    if (visited.contains(outerProducer)) {
+      (stormRegistry, visited)
+    } else {
+      val visitedWithN = visited + outerProducer
+      outerProducer match {
+        case Summer(producer, _, _) =>
+          recurse(producer, updatedBolt = StormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visitedWithN)
+
+        case IdentityKeyedProducer(producer) => maybeSplit(producer, visited = visitedWithN)
+        case NamedProducer(producer, newId) => maybeSplit(producer, visited = visitedWithN)
+        case Source(spout, manifest) =>
+          val spoutBolt = currentBolt.toSpout
+          (stormRegistry.register(spoutBolt), visitedWithN)
+
+        case OptionMappedProducer(producer, op, manifest) => maybeSplit(producer, visited = visitedWithN)
+
+        case FlatMappedProducer(producer, op)  => maybeSplit(producer, visited = visitedWithN)
+
+        case WrittenProducer(producer, sinkSupplier)  => maybeSplit(producer, visited = visitedWithN)
+
+        case LeftJoinedProducer(producer, StoreWrapper(newService)) => maybeSplit(producer, visited = visitedWithN)
+
+        case MergedProducer(l, r) =>
+          val (lDag, newVisisted) = recurse(l, updatedBolt = StormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visitedWithN)
+          recurse(r, updatedBolt = StormBolt(), updatedDag = lDag, visited = newVisisted)
+      }
+
+    }
+  }
 
   def buildTopology[T](
     topoBuilder: TopologyBuilder,
@@ -258,6 +414,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private def foldOperations(head: FMItem, tail: List[FMItem]) = {
     val operation = head match {
+
       case OptionMap(op) => FlatMapOperation(op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]])
       case FactoryCell(store) => serviceOperation(store)
       case FlatMap(op) => op
@@ -414,7 +571,6 @@ class RemoteStorm(options: Map[String, Options], updateConf: Config => Config) e
 class LocalStorm(options: Map[String, Options], updateConf: Config => Config)
     extends Storm(options, updateConf) {
   lazy val localCluster = new LocalCluster
-
   override def withConfigUpdater(fn: Config => Config) =
     new LocalStorm(options, updateConf.andThen(fn))
 
