@@ -29,7 +29,7 @@ Summingbird provides you with the primitives you need to build rock solid produc
 
 The `summingbird-example` project allows you to run the wordcount program above on a sample of Twitter data using a local Storm topology and memcache instance. You can find the actual job definition in [ExampleJob.scala](https://github.com/twitter/summingbird/blob/develop/summingbird-example/src/main/scala/com/twitter/summingbird/example/ExampleJob.scala).
 
-First, make sure you have `memcached` installed locally. If not, you can get it by installing [Homebrew](http://brew.sh/) and running this command in a shell:
+First, make sure you have `memcached` installed locally. If not, if you're on OS X, you can get it by installing [Homebrew](http://brew.sh/) and running this command in a shell:
 
 ```bash
 brew install memcached
