@@ -21,35 +21,61 @@ import com.twitter.summingbird.{Platform, Producer, Dependants, NamedProducer, I
 
 
 case class VizGraph[P <: Platform[P]](tail: Producer[P, _]) {
-  val dependantState = Dependants(tail)
+  private val dependantState = Dependants(tail)
+  private type NameLookupTable = (Map[Producer[P, _], String], Map[String, Int])
+  private val emptyNameLookupTable = (Map[Producer[P, _], String](), Map[String, Int]())
 
   @annotation.tailrec
-  private def recurseGetNode(n :Producer[P, _], name: String): (String, Set[Producer[P, _]])  = {
-    val children: Set[Producer[P, _]] = dependantState.dependantsOf(n).getOrElse(Set[Producer[P, _]]())
+  private def recurseGetNode(n :Producer[P, _], nameOpt: Option[String] = None): (String, Producer[P, _], List[Producer[P, _]])  = {
+    val children: List[Producer[P, _]] = dependantState.dependantsOf(n).getOrElse(List[Producer[P, _]]())
+    val name = nameOpt.getOrElse(n.getClass.getName.replaceFirst("com.twitter.summingbird.", ""))
     children.headOption match {
       case Some(child: NamedProducer[_, _]) =>
-        recurseGetNode(child, child.id)
+        recurseGetNode(child, Some(child.id))
       case Some(child: IdentityKeyedProducer[_, _, _]) =>
-        recurseGetNode(child, name)
+        recurseGetNode(child, Some(name))
       case _ =>
-        (name, children)
+        (name, n, children)
     }
   }
 
+  def getName(curLookupTable: NameLookupTable, node: Producer[P, _], preferredName: String): (NameLookupTable, String) = {
+    val (nodeLookupTable, nameLookupTable) = curLookupTable
 
-  override def toString() : String = {
-    val base = "graph summingbirdGraph {\n"
-    val graphStr = dependantState.nodes.foldLeft("") {(runningStr, nextNode) =>
-      nextNode match {
-        case NamedProducer(parent, name) => runningStr
-        case i : IdentityKeyedProducer[_, _, _] => runningStr
-        case _ => {
-          val (nodeName, children) = recurseGetNode(nextNode, nextNode.getClass.toString)
-          runningStr + children.foldLeft("") {(r, c) =>
-            val (childName, _) = recurseGetNode(c, c.getClass.toString)
-            r + "\"" + nodeName + "\" -- \"" + childName + "\"\n"
+    nodeLookupTable.get(node) match {
+      case Some(name) => (curLookupTable, name)
+      case None => 
+        nameLookupTable.get(preferredName) match {
+          case Some(count) => {
+            val newNum = count + 1
+            val newName = preferredName + "[" + newNum + "]"
+            (((nodeLookupTable + (node -> newName)), (nameLookupTable + (preferredName -> newNum))), newName)
           }
+          case None => (((nodeLookupTable + (node -> preferredName)), (nameLookupTable + (preferredName -> 1))), preferredName)
         }
+    }
+  }
+  override def toString() : String = {
+    val base = "digraph summingbirdGraph {\n"
+    val (graphStr, _) = dependantState.nodes.foldLeft(("", emptyNameLookupTable)) { case ((runningStr, nameLookupTable), nextNode) =>
+      nextNode match {
+        case NamedProducer(parent, name) => (runningStr, nameLookupTable)
+        case IdentityKeyedProducer(_) => (runningStr, nameLookupTable)
+        case _ => 
+          // Compute the lines and new names for the nextNode
+          val (rawNodeName, evalNode, children) = recurseGetNode(nextNode)
+          val (updatedLookupTable, nodeName) = getName(nameLookupTable, evalNode, rawNodeName)
+
+          val (new_str, innerNameLookupTable) = children.foldLeft(("", updatedLookupTable)){ case ((innerRunningStr, innerNameLookupTable), c)  =>
+            val (childName, childNode, _) = recurseGetNode(c)
+
+            val innerNewStr = "\"" + nodeName + "\" -> \"" 
+            val (updatedLookupTable2, pChildName) = getName(innerNameLookupTable, childNode, childName)
+
+            val innerNewStr2 = pChildName + "\"\n"
+            (innerRunningStr + innerNewStr + innerNewStr2, updatedLookupTable2)
+          }
+          (runningStr + new_str, innerNameLookupTable)
       }
     }
     base + graphStr + "\n}"
@@ -57,7 +83,5 @@ case class VizGraph[P <: Platform[P]](tail: Producer[P, _]) {
 }
 
 object BaseViz {
-  def apply[P <: Platform[P]](tail: Producer[P, _], writer: Writer):Unit = {
-    writer.write(VizGraph(tail).toString)
-  }
+  def apply[P <: Platform[P]](tail: Producer[P, _], writer: Writer):Unit = writer.write(VizGraph(tail).toString)
 }

@@ -64,11 +64,11 @@ object DependantsTest extends Properties("Dependants") {
   implicit def genProducer: Arbitrary[Producer[Memory, _]] = Arbitrary(oneOf(genProd1, genProd2))
 
   property("transitive deps includes non-transitive") = forAll { (prod: Producer[Memory, _]) =>
-    val deps = Producer.dependenciesOf(prod)
-    (Producer.transitiveDependenciesOf(prod) & deps) == deps
+    val deps = Producer.dependenciesOf(prod).toSet
+    (Producer.transitiveDependenciesOf(prod).toSet & deps) == deps
   }
   property("we don't depend on ourself") = forAll { (prod: Producer[Memory, _]) =>
-    !((Producer.dependenciesOf(prod) | Producer.transitiveDependenciesOf(prod)).contains(prod))
+    !((Producer.dependenciesOf(prod) ++ Producer.transitiveDependenciesOf(prod)).toSet.contains(prod))
   }
   property("if transitive deps == non-transitive, then parents are sources") = forAll { (prod: Producer[Memory, _]) =>
     val deps = Producer.dependenciesOf(prod)
@@ -91,6 +91,16 @@ object DependantsTest extends Properties("Dependants") {
     Producer.transitiveDependenciesOf(tail).forall { t =>
       deps.depth(t).get < deps.depth(tail).get
     }
+  }
+
+  property("The transitive dependencies list is unique") = forAll { (tail: Producer[Memory, _]) =>
+    val deps = Producer.transitiveDependenciesOf(tail)
+    deps.size == deps.toSet.size
+  }
+
+  property("The dependencies list is unique") = forAll { (tail: Producer[Memory, _]) =>
+    val deps = Producer.dependenciesOf(tail)
+    deps.size == deps.toSet.size
   }
 
   property("if A is a dependency of B, then B is a dependant of A") = forAll { (prod:  Producer[Memory, _]) =>

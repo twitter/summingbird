@@ -20,15 +20,17 @@ package com.twitter.summingbird
  * by the fact that they are immutable.
  */
 case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
-  private val graph: Map[Producer[P, _], Set[Producer[P, _]]] = {
-    val empty = Map[Producer[P, _], Set[Producer[P, _]]]()
+  private val allNodes = tail :: Producer.transitiveDependenciesOf(tail)
+  private val emptyList = List[Producer[P, _]]()
+  val empty = Map[Producer[P, _], List[Producer[P, _]]]()
 
-    (Producer.transitiveDependenciesOf(tail) + tail)
+  private val graph: Map[Producer[P, _], List[Producer[P, _]]] = {
+    allNodes
       .foldLeft(empty) { (graph, child) =>
-        val withChild = graph + (child -> graph.getOrElse(child, Set[Producer[P, _]]()))
+        val withChild = graph + (child -> graph.getOrElse(child, emptyList))
         Producer.dependenciesOf(child)
           .foldLeft(withChild) { (innerg, parent) =>
-            innerg + (parent -> (innerg.getOrElse(parent, Set[Producer[P, _]]()) + child))
+            innerg + (parent -> (child :: innerg.getOrElse(parent, emptyList)).distinct)
           }
       }
   }
@@ -38,7 +40,8 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
   private def computeDepth(todo: Set[Producer[P, _]], acc: Map[Producer[P, _], Int]): Map[Producer[P, _], Int] =
     if(todo.isEmpty) acc
     else {
-      def withParents(n: Producer[P, _]) = (Producer.dependenciesOf(n) + n).filterNot { acc.contains(_) }
+
+      def withParents(n: Producer[P, _]) = (n :: Producer.dependenciesOf(n)).distinct.filterNot { acc.contains(_) }
 
       val (done, rest) = todo.map { withParents(_) }.partition { _.size == 1 }
       val newTodo = rest.flatten
@@ -54,7 +57,7 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
   /** The max of zero and 1 + depth of all parents if the node is the graph
    */
   def depth(p: Producer[P, _]): Option[Int] = depths.get(p)
-  def dependantsOf(p: Producer[P, _]): Option[Set[Producer[P, _]]] = graph.get(p)
-  def nodes: Set[Producer[P, _]] = graph.keys.toSet
+  def dependantsOf(p: Producer[P, _]): Option[List[Producer[P, _]]] = graph.get(p)
+  def nodes: List[Producer[P, _]] = allNodes
   def fanOut(p: Producer[P, _]): Option[Int] = dependantsOf(p).map { _.size }
 }

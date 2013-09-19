@@ -40,39 +40,41 @@ object Producer {
   implicit def semigroup[P <: Platform[P], T]: Semigroup[Producer[P, T]] =
     Semigroup.from(_ merge _)
 
-  def dependenciesOf[P <: Platform[P]](p: Producer[P, _]): Set[Producer[P, _]] = {
+  def dependenciesOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
     /*
      * Keyed producers seem to have some issue with type inference that
      * I work around with the cast.
      */
     p match {
-      case NamedProducer(producer, _) => Set(producer)
-      case IdentityKeyedProducer(producer) => Set(producer.asInstanceOf[Producer[P, _]])
-      case Source(source, _) => Set()
-      case OptionMappedProducer(producer, fn, mf) => Set(producer)
-      case FlatMappedProducer(producer, fn) => Set(producer)
-      case MergedProducer(l, r) => Set(l, r)
-      case WrittenProducer(producer, fn) => Set(producer)
-      case LeftJoinedProducer(producer, service) => Set(producer.asInstanceOf[Producer[P, _]])
-      case Summer(producer, store, monoid) => Set(producer.asInstanceOf[Producer[P, _]])
+      case NamedProducer(producer, _) => List(producer)
+      case IdentityKeyedProducer(producer) => List(producer.asInstanceOf[Producer[P, _]])
+      case Source(source, _) => List()
+      case OptionMappedProducer(producer, fn, mf) => List(producer)
+      case FlatMappedProducer(producer, fn) => List(producer)
+      case MergedProducer(l, r) => List(l, r)
+      case WrittenProducer(producer, fn) => List(producer)
+      case LeftJoinedProducer(producer, service) => List(producer.asInstanceOf[Producer[P, _]])
+      case Summer(producer, store, monoid) => List(producer.asInstanceOf[Producer[P, _]])
     }
   }
 
   /** Since we know these nodes form a DAG by immutability
    * the search is easy
    */
-  def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, _]): Set[Producer[P, _]] = {
+  def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
     @annotation.tailrec
-    def loop(stack: List[Producer[P, _]], acc: Set[Producer[P, _]]): Set[Producer[P, _]] = {
+    def loop(stack: List[Producer[P, _]], deps: List[Producer[P,_]], acc: Set[Producer[P, _]]): (List[Producer[P,_]], Set[Producer[P, _]]) = {
       stack match {
-        case Nil => acc
+        case Nil => (deps, acc)
         case h::tail =>
           val newStack = dependenciesOf(h).filterNot(acc).foldLeft(tail) { (s, it) => it :: s }
-          loop(newStack, acc + h)
+          val newDeps = if(acc.contains(h)) deps else (h :: deps)
+          loop(newStack, newDeps, acc + h)
       }
     }
     val start = dependenciesOf(p)
-    loop(start.toList, start)
+    val (deps, _) = loop(start, start, start.toSet)
+    deps
   }
 }
 
