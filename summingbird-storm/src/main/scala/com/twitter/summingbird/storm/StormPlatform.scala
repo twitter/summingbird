@@ -55,11 +55,11 @@ sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 object Storm {
-  def local(name: String, options: Map[String, Options] = Map.empty): LocalStorm =
-    new LocalStorm(name, options, identity)
+  def local(options: Map[String, Options] = Map.empty): LocalStorm =
+    new LocalStorm(options, identity)
 
-  def remote(name: String, options: Map[String, Options] = Map.empty): RemoteStorm =
-    new RemoteStorm(name, options, identity)
+  def remote(options: Map[String, Options] = Map.empty): RemoteStorm =
+    new RemoteStorm(options, identity)
 
   def timedSpout[T](spout: Spout[T])
     (implicit timeOf: TimeExtractor[T]): Spout[(Long, T)] =
@@ -210,7 +210,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             val stormSpout = optionMaps.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) {
               case (spout, OptionMap(op)) =>
                 spout.flatMap { case (time, t) =>
-                  op.asInstanceOf[Any => Option[Nothing]].apply(t)
+                  op.asInstanceOf[Any => Option[_]].apply(t)
                     .map { x => (time, x) } }
               case _ => sys.error("not possible, given the above call to span.")
             }.getSpout
@@ -258,7 +258,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private def foldOperations(head: FMItem, tail: List[FMItem]) = {
     val operation = head match {
-      case OptionMap(op) => FlatMapOperation(op.andThen(_.iterator))
+      case OptionMap(op) => FlatMapOperation(op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]])
       case FactoryCell(store) => serviceOperation(store)
       case FlatMap(op) => op
     }
@@ -267,7 +267,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
         store.asInstanceOf[StoreFactory[Any, Any]]
       ).asInstanceOf[FlatMapOperation[Any, Any]]
-      case (acc, OptionMap(op)) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator)))
+      case (acc, OptionMap(op)) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
       case (acc, FlatMap(op)) => acc.andThen(op.asInstanceOf[FlatMapOperation[Any, Any]])
     }
   }
@@ -396,30 +396,29 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     populate(topologyBuilder, summer, name)
     topologyBuilder.createTopology
   }
-  def run(summer: Producer[Storm, _]): Unit = run(plan(summer))
-  def run(topology: StormTopology): Unit
+  def run(summer: Producer[Storm, _], jobName: String): Unit = run(plan(summer), jobName)
+  def run(topology: StormTopology, jobName: String): Unit
 }
 
-class RemoteStorm(jobName: String, options: Map[String, Options], updateConf: Config => Config)
-    extends Storm(options, updateConf) {
+class RemoteStorm(options: Map[String, Options], updateConf: Config => Config) extends Storm(options, updateConf) {
 
   override def withConfigUpdater(fn: Config => Config) =
-    new RemoteStorm(jobName, options, updateConf.andThen(fn))
+    new RemoteStorm(options, updateConf.andThen(fn))
 
-  def run(topology: StormTopology): Unit = {
+  override def run(topology: StormTopology, jobName: String): Unit = {
     val topologyName = "summingbird_" + jobName
     StormSubmitter.submitTopology(topologyName, baseConfig, topology)
   }
 }
 
-class LocalStorm(jobName: String, options: Map[String, Options], updateConf: Config => Config)
+class LocalStorm(options: Map[String, Options], updateConf: Config => Config)
     extends Storm(options, updateConf) {
   lazy val localCluster = new LocalCluster
 
   override def withConfigUpdater(fn: Config => Config) =
-    new LocalStorm(jobName, options, updateConf.andThen(fn))
+    new LocalStorm(options, updateConf.andThen(fn))
 
-  def run(topology: StormTopology): Unit = {
+  override def run(topology: StormTopology, jobName: String): Unit = {
     val topologyName = "summingbird_" + jobName
     localCluster.submitTopology(topologyName, baseConfig, topology)
   }
