@@ -16,7 +16,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.1.3",
+    version := "0.1.4",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -52,7 +52,8 @@ object SummingbirdBuild extends Build {
         if (v.trim.toUpperCase.endsWith("SNAPSHOT"))
           Opts.resolver.sonatypeSnapshots
         else
-          Opts.resolver.sonatypeStaging
+          "fuck" at "http://artifactory.local.twitter.com/libs-releases-local"
+          // Opts.resolver.sonatypeStaging
       )
     },
 
@@ -164,6 +165,7 @@ object SummingbirdBuild extends Build {
   )
 
   lazy val summingbirdStorm = module("storm").settings(
+    parallelExecution in Test := false,
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
       withCross("com.twitter" %% "bijection-core" % bijectionVersion),

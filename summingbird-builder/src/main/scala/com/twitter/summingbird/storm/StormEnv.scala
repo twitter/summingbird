@@ -42,14 +42,20 @@ case class StormEnv(override val jobName: String, override val args: Args)
     val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
     val eventCodecPairs = builder.eventCodecPairs
 
-    val classSuffix = jobName.split("\\.").last
-    Storm.remote(classSuffix, builder.opts)
+    val classSuffix =
+      args.optional("name")
+        .getOrElse(jobName.split("\\.").last)
+
+    Storm.remote(builder.opts)
       .withConfigUpdater { config =>
       val c = ConfigBijection.invert(config)
       val transformed = ConfigBijection(ajob.transformConfig(c))
       KryoRegistrationHelper.registerInjections(transformed, eventCodecPairs)
       KryoRegistrationHelper.registerInjectionDefaults(transformed, codecPairs)
       transformed
-    }.run(builder.node.asInstanceOf[Producer[Storm, _]])
+    }.run(
+      builder.node.name(builder.id).asInstanceOf[Producer[Storm, _]],
+      classSuffix
+    )
   }
 }

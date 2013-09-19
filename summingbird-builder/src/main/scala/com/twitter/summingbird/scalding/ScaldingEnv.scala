@@ -107,7 +107,18 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       KryoRegistrationHelper.registerInjectionDefaults(jConf, codecPairs)
       fromMap(ajob.transformConfig(jConf.as[Map[String, AnyRef]]))
     }
-    run(ajob.getClass.getName, scaldingBuilder, updater)
+    val jobName =
+      args.optional("name")
+        .getOrElse(ajob.getClass.getName)
+    run(jobName, scaldingBuilder, updater)
+  }
+
+  // Used to insert a write just before the store so the store
+  // can be used as a Service
+  private def addDeltaWrite[K,V](snode: Summer[Scalding, K, V],
+    sink: ScaldingSink[(K,V)]): Summer[Scalding, K, V] = {
+    val Summer(prod, store, monoid) = snode
+    Summer(prod.write(sink), store, monoid)
   }
 
   def run[K,V](name: String,
@@ -121,7 +132,8 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       (for {
         opt <- opts.get(scaldingBuilder.id)
         stid <- opt.get[StoreIntermediateData[K,V]]
-      } yield (scaldingBuilder.node.write(stid.sink))).getOrElse(scaldingBuilder.node)
+      } yield addDeltaWrite(scaldingBuilder.node, stid.sink))
+        .getOrElse(scaldingBuilder.node)
         .name(scaldingBuilder.id)
 
     def getStatePath[K1,V1](ss: ScaldingStore[K1, V1]): Option[String] =
