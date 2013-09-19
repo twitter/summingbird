@@ -16,8 +16,10 @@
 
 package com.twitter.summingbird.example
 
+import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.storm.{ MergeableStoreSupplier, Storm }
 import com.twitter.tormenta.spout.TwitterSpout
+import com.twitter.util.Await
 import twitter4j.TwitterStreamFactory
 import twitter4j.conf.ConfigurationBuilder
 
@@ -72,9 +74,17 @@ object StormRunner {
     * Monoid[Long] used by this particular store is being pulled in
     * from the Monoid companion object in Algebird. (Most trivial
     * Monoid instances will resolve this way.)
+    *
+    * First, the backing store:
+    */
+  lazy val stringLongStore =
+    Memcache.mergeable[(String, BatchID), Long]("urlCount")
+
+  /**
+    * And then the supplier:
     */
   val storeSupplier: MergeableStoreSupplier[String, Long] =
-    MergeableStoreSupplier.from(Memcache.mergeable("urlCount"))
+    Storm.store(stringLongStore)
 
   /**
     * When this main method is executed, Storm will begin running on a
@@ -93,21 +103,23 @@ object StormRunner {
       "wordCountJob"
     )
   }
+
   /**
     * Once you've got this running in the background, fire up another
     * repl and query memcached for some counts.
     *
-    * The following commands will look up words:
-
+    * The following commands will look up words. Hitting a word twice
+    * will show that Storm is updating Memcache behind the scenes:
     {{{
-    import com.twitter.summingbird.example._
-    import com.twitter.util.Await
-    val store = Memcache.mergeable("urlCount")
+    scala>     lookup("i") // Or any other common word
+    res7: Option[Long] = Some(1774)
 
-    def lookup(word: String) =
-      Await.result(myStore.get((word, StatusStreamer.batcher.currentBatch)))
-
-    lookup("and") // Or any other common word
+    scala>     lookup("i")
+    res8: Option[Long] = Some(1779)
     }}}
-  */
+    */
+  def lookup(word: String): Option[Long] =
+    Await.result {
+      stringLongStore.get(word -> StatusStreamer.batcher.currentBatch)
+    }
 }
