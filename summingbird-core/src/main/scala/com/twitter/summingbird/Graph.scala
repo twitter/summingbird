@@ -68,7 +68,7 @@ object Producer {
         case Nil => (deps, acc)
         case h::tail =>
           val newStack = dependenciesOf(h).filterNot(acc).foldLeft(tail) { (s, it) => it :: s }
-          loop(newStack, deps :+ h, acc + h)
+          loop(newStack, h :: deps, acc + h)
       }
     }
     val start = dependenciesOf(p)
