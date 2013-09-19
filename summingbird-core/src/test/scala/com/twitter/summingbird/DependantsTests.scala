@@ -93,6 +93,16 @@ object DependantsTest extends Properties("Dependants") {
     }
   }
 
+  property("The transitive dependencies list is unique") = forAll { (tail: Producer[Memory, _]) =>
+    val deps = Producer.transitiveDependenciesOf(tail)
+    deps.size == deps.toSet.size
+  }
+
+  property("The dependencies list is unique") = forAll { (tail: Producer[Memory, _]) =>
+    val deps = Producer.dependenciesOf(tail)
+    deps.size == deps.toSet.size
+  }
+
   property("if A is a dependency of B, then B is a dependant of A") = forAll { (prod:  Producer[Memory, _]) =>
     val dependants = Dependants(prod)
     Producer.transitiveDependenciesOf(prod).forall { child =>
