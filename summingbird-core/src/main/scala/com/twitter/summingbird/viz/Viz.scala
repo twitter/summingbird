@@ -62,6 +62,7 @@ case class VizGraph[P <: Platform[P]](tail: Producer[P, _]) {
         case NamedProducer(parent, name) => (runningStr, nameLookupTable)
         case IdentityKeyedProducer(_) => (runningStr, nameLookupTable)
         case _ => 
+          // Compute the lines and new names for the nextNode
           val (rawNodeName, evalNode, children) = recurseGetNode(nextNode)
           val (updatedLookupTable, nodeName) = getName(nameLookupTable, evalNode, rawNodeName)
 
