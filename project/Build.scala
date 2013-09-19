@@ -52,8 +52,7 @@ object SummingbirdBuild extends Build {
         if (v.trim.toUpperCase.endsWith("SNAPSHOT"))
           Opts.resolver.sonatypeSnapshots
         else
-          "fuck" at "http://artifactory.local.twitter.com/libs-releases-local"
-          // Opts.resolver.sonatypeStaging
+          Opts.resolver.sonatypeStaging
       )
     },
 
