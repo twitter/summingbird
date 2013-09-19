@@ -54,36 +54,49 @@ sealed trait StormNode {
 
   def localDependantsOf(p: Producer[Storm, _]): List[Producer[Storm, _]] = dependantsOf(p).filter(members.contains(_))
 
-  def toSpout: StormSpout = {
-    this match {
-      case s: StormBolt => {
-        StormSpout(s.members)
-      }
-      case s: StormSpout => s
-    }
-  }
+  def toSpout: StormSpout = StormSpout(this.members)
+
+  def toSummer: SummerStormBolt = SummerStormBolt(this.members)
 
   def contains(p: Producer[Storm, _]): Boolean = members.contains(p)
 
-  def getName(): String = {
-    getClass.toString
-  }
+  def getName(): String = getClass.getName.replaceFirst("com.twitter.summingbird.storm.","")
 
   def add(node: Producer[Storm, _]): StormNode
 }
 
-case class StormBolt(override val members: Set[Producer[Storm, _]] = Set()) extends StormNode {
+case class IntermediateFlatMapStormBolt(override val members: Set[Producer[Storm, _]] = Set()) extends StormNode {
   def add(node: Producer[Storm, _]): StormNode = {
     val newMembers = members + node
     this.copy(members=newMembers)
   }
+  override def getName = "Intermediate Flatmap Bolt"
 }
+
+case class FinalFlatMapStormBolt(override val members: Set[Producer[Storm, _]] = Set()) extends StormNode {
+  def add(node: Producer[Storm, _]): StormNode = {
+    val newMembers = members + node
+    this.copy(members=newMembers)
+  }
+  override def getName = "Final Flatmap Bolt"
+}
+
+case class SummerStormBolt(override val members: Set[Producer[Storm, _]] = Set()) extends StormNode {
+  def add(node: Producer[Storm, _]): StormNode = {
+    val newMembers = members + node
+    this.copy(members=newMembers)
+  }
+  override def getName = "Summer Bolt"
+}
+
 case class StormSpout(override val members: Set[Producer[Storm, _]] = Set()) extends StormNode {
   def add(node: Producer[Storm, _]): StormNode = {
     val newMembers = members + node
     this.copy(members=newMembers)
   }
+  override def getName = "Spout"
 }
+
 
 case class StormDag(nodeLut: Map[Producer[Storm, _], StormNode], dag: Map[StormNode, Set[StormNode]] = Map[StormNode, Set[StormNode]](), allNodes: Set[StormNode] = Set[StormNode]()) {
   def connect(src: StormNode, dest: StormNode): StormDag = {
@@ -234,7 +247,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
     def maybeSplit[A](dependency: Prod[A], visited: VisitedStore): (StormRegistry, VisitedStore) = {
       if (forkedNodes.contains(dependency)) {
-        recurse(dependency, updatedBolt = StormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
+        recurse(dependency, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
       } else recurse(dependency, visited = visited)
     }
     
@@ -244,7 +257,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       val visitedWithN = visited + outerProducer
       outerProducer match {
         case Summer(producer, _, _) =>
-          recurse(producer, updatedBolt = StormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visitedWithN)
+          recurse(producer, updatedBolt = FinalFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt.toSummer), visited = visitedWithN)
 
         case IdentityKeyedProducer(producer) => maybeSplit(producer, visited = visitedWithN)
         case NamedProducer(producer, newId) => maybeSplit(producer, visited = visitedWithN)
@@ -261,8 +274,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         case LeftJoinedProducer(producer, StoreWrapper(newService)) => maybeSplit(producer, visited = visitedWithN)
 
         case MergedProducer(l, r) =>
-          val (lDag, newVisisted) = recurse(l, updatedBolt = StormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visitedWithN)
-          recurse(r, updatedBolt = StormBolt(), updatedDag = lDag, visited = newVisisted)
+          val (lDag, newVisisted) = recurse(l, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visitedWithN)
+          recurse(r, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = lDag, visited = newVisisted)
       }
 
     }

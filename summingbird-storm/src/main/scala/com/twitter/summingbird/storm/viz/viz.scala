@@ -70,11 +70,10 @@ case class VizGraph(dag: StormDag, dependantState: Dependants[Storm]) {
     }
   }
   def genClusters(): (String, Map[StormNode, String]) = {
-
     val (clusters, producerMappings, nodeNames, producerNames, nodeToShortLut) = dag.nodes.foldLeft((List[String](), List[String](), emptyNodeNameLut(), emptyNameLut(), Map[StormNode, String]())) { 
         case ((clusters, producerMappings, curNodeNameLut, nameLut, nodeShortName), node) =>
 
-          val (newNodeNameLut, nodeName) = getName(curNodeNameLut, node)
+          val (newNodeNameLut, nodeName) = getName(curNodeNameLut, node, Some(node.getName))
           val (nodeDefinitions, mappings, newNameLut) = getSubGraphStr(nameLut, node)
           val shortName = "cluster_" + node.hashCode.toHexString
           val newNodeShortName = nodeShortName + (node -> shortName)
@@ -99,7 +98,7 @@ object StormViz {
     val fanOutSet =
       Producer.transitiveDependenciesOf(tail)
         .filter(dep.fanOut(_).exists(_ > 1)).toSet
-    val (stormRegistry, _) = storm.collectPass(tail, StormBolt(), StormRegistry(), fanOutSet, Set())
+    val (stormRegistry, _) = storm.collectPass(tail, IntermediateFlatMapStormBolt(), StormRegistry(), fanOutSet, Set())
     val stormDag = StormDag.build(stormRegistry)
     writer.write(VizGraph(stormDag, dep).toString)
   }
