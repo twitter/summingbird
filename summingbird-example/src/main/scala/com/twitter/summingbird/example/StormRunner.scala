@@ -88,8 +88,9 @@ object StormRunner {
     * locally.)
     */
   def main(args: Array[String]) {
-    Storm.local("wordCountJob").run(
-      wordCount[Storm](spout, storeSupplier)
+    Storm.local().run(
+      wordCount[Storm](spout, storeSupplier),
+      "wordCountJob"
     )
   }
   /**
