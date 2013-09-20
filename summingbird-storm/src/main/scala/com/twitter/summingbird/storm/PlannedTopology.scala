@@ -64,9 +64,8 @@ sealed trait StormNode {
 
   def add(node: Producer[Storm, _]): StormNode
 
-  def reverse(): StormNode
+  def reverse: StormNode
 
-  def remove(p: Producer[Storm, _]): StormNode
 
   def toStringWithPrefix(prefix: String): String = {
     prefix + getName + "\n" + members.foldLeft(""){ case (str, producer) =>
@@ -86,8 +85,7 @@ case class IntermediateFlatMapStormBolt(override val members: List[Producer[Stor
     this.copy(members=newMembers)
   }
   override def getName = "Intermediate Flatmap Bolt"
-  def reverse() = this.copy(members.reverse)
-  def remove(p: Producer[Storm, _]) = this.copy(members.filter(_ != p))
+  def reverse = this.copy(members.reverse)
 }
 
 case class FinalFlatMapStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
@@ -96,8 +94,7 @@ case class FinalFlatMapStormBolt(override val members: List[Producer[Storm, _]] 
     this.copy(members=newMembers)
   }
   override def getName = "Final Flatmap Bolt"
-  def reverse() = this.copy(members.reverse)
-  def remove(p: Producer[Storm, _]) = this.copy(members.filter(_ != p))
+  def reverse = this.copy(members.reverse)
 }
 
 case class SummerStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
@@ -106,8 +103,7 @@ case class SummerStormBolt(override val members: List[Producer[Storm, _]] = List
     this.copy(members=newMembers)
   }
   override def getName = "Summer Bolt"
-  def reverse() = this.copy(members.reverse)
-  def remove(p: Producer[Storm, _]) = this.copy(members.filter(_ != p))
+  def reverse = this.copy(members.reverse)
 }
 
 case class StormSpout(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
@@ -116,8 +112,7 @@ case class StormSpout(override val members: List[Producer[Storm, _]] = List()) e
     this.copy(members=newMembers)
   }
   override def getName = "Spout"
-  def reverse() = this.copy(members.reverse)
-  def remove(p: Producer[Storm, _]) = this.copy(members.filter(_ != p))
+  def reverse = this.copy(members.reverse)
 }
 
 

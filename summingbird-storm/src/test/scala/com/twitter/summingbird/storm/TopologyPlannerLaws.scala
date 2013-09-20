@@ -95,10 +95,15 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     in <- genProd2
   } yield FlatMappedProducer(in, fn)
 
+
+  def aDependency(p: KeyedProducer[Storm, Int, Int]): Gen[KeyedProducer[Storm, Int, Int]] = {
+    oneOf((p :: Producer.transitiveDependenciesOf(p)).collect{case x:KeyedProducer[_, _, _] => x.asInstanceOf[KeyedProducer[Storm,Int,Int]]})
+  }
+
   lazy val genMerged2 = for {
     _  <- Gen.choose(0,1) 
     p1 <- genProd2
-    p2 <- genProd2
+    p2 <- oneOf(genProd2, aDependency(p1))
   } yield IdentityKeyedProducer(MergedProducer(p1, p2))
 
   lazy val genOptMap21 = for {
@@ -122,8 +127,8 @@ object TopologyPlannerLaws extends Properties("StormDag") {
 
 
   // Removed Summable from here, so we never should recurse
-  def genProd2: Gen[KeyedProducer[Storm, Int, Int]] = frequency((15, genSource2), (5, genOptMap12), (5, genOptMap22), (1, genMerged2), (1, genFlatMap22), (1, genFlatMap12))
-  def genProd1: Gen[Producer[Storm, Int]] = frequency((15, genSource1), (5, genOptMap11), (5, genOptMap21), (1, genMerged1), (1, genFlatMap11), (1, genFlatMap21))
+  def genProd2: Gen[KeyedProducer[Storm, Int, Int]] = frequency((12, genSource2), (5, genOptMap12), (5, genOptMap22), (5, genMerged2), (5, genFlatMap22), (5, genFlatMap12))
+  def genProd1: Gen[Producer[Storm, Int]] = frequency((12, genSource1), (5, genOptMap11), (5, genOptMap21), (5, genMerged1), (5, genFlatMap11), (5, genFlatMap21))
 
   implicit def genProducer: Arbitrary[StormDag] = Arbitrary(genDag)
 
