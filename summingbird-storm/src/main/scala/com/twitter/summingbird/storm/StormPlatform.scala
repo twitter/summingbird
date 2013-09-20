@@ -22,6 +22,8 @@ import backtype.storm.generated.StormTopology
 import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
 import backtype.storm.tuple.Fields
 import com.twitter.algebird.Monoid
+import com.twitter.chill.ScalaKryoInstantiator
+import com.twitter.chill.config.{ ConfiguredInstantiator, JavaMapConfig }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
@@ -360,6 +362,12 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     config.setMaxSpoutPending(1000)
     config.setNumAckers(12)
     config.setNumWorkers(12)
+    val kryoConfig = new JavaMapConfig(config)
+    ConfiguredInstantiator.setSerialized(
+      kryoConfig,
+      classOf[ScalaKryoInstantiator],
+      new ScalaKryoInstantiator()
+    )
     transformConfig(config)
   }
 

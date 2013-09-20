@@ -231,7 +231,7 @@ object ScaldingLaws extends Properties("Scalding") {
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckJob")
       val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
-      val mode = TestMode(testStore.sourceToBuffer ++ buffer)
+      val mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
       scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
@@ -281,7 +281,7 @@ object ScaldingLaws extends Properties("Scalding") {
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckleftJoinJob")
       val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
-      val mode = TestMode(testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer)
+      val mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
 
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
@@ -312,7 +312,7 @@ object ScaldingLaws extends Properties("Scalding") {
       val scald = new Scalding("scalding-diamond-Job")
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
-      val mode = TestMode(testStore.sourceToBuffer ++ buffer)
+      val mode = TestMode(s => (testStore.sourceToBuffer ++ buffer).get(s))
 
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
