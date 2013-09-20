@@ -62,6 +62,16 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     in <- genProd1
   } yield OptionMappedProducer(in, fn, manifest[Int])
 
+  lazy val genFlatMap11 = for {
+    fn <- arbitrary[(Int) => List[Int]]
+    in <- genProd1
+  } yield FlatMappedProducer(in, fn)
+
+  lazy val genFlatMap12 = for {
+    fn <- arbitrary[(Int) => List[(Int, Int)]]
+    in <- genProd1
+  } yield IdentityKeyedProducer(FlatMappedProducer(in, fn))
+
   lazy val genOptMap12 = for {
     fn <- arbitrary[(Int) => Option[(Int,Int)]]
     in <- genProd1
@@ -73,6 +83,15 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     p2 <- genProd1
   } yield MergedProducer(p1, p2)
 
+  lazy val genFlatMap22 = for {
+    fn <- arbitrary[((Int, Int)) => List[(Int, Int)]]
+    in <- genProd2
+  } yield IdentityKeyedProducer(FlatMappedProducer(in, fn))
+
+    lazy val genFlatMap21 = for {
+    fn <- arbitrary[((Int, Int)) => List[Int]]
+    in <- genProd2
+  } yield FlatMappedProducer(in, fn)
 
   lazy val genMerged2 = for {
     _  <- Gen.choose(0,1) 
@@ -96,8 +115,8 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   } yield StormToplogyBuilder(in.sumByKey(testStore))
 
   // Removed Summable from here, so we never should recurse
-  def genProd2: Gen[KeyedProducer[Storm, Int, Int]] = frequency((15, genSource2), (5, genOptMap12), (5, genOptMap22), (1, genMerged2))
-  def genProd1: Gen[Producer[Storm, Int]] = frequency((15, genSource1), (5, genOptMap11), (5, genOptMap21), (1, genMerged1))
+  def genProd2: Gen[KeyedProducer[Storm, Int, Int]] = frequency((15, genSource2), (5, genOptMap12), (5, genOptMap22), (1, genMerged2), (1, genFlatMap22), (1, genFlatMap12))
+  def genProd1: Gen[Producer[Storm, Int]] = frequency((15, genSource1), (5, genOptMap11), (5, genOptMap21), (1, genMerged1), (1, genFlatMap11), (1, genFlatMap21))
 
   implicit def genProducer: Arbitrary[StormDag] = Arbitrary(summed)
 
@@ -210,7 +229,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
       val firstP = n.members.last
       firstP match {
         case Summer(_, _, _) =>
-            dag.dependsOn(n).forall {otherN =>
+            dag.dependsOn(n).size > 0 && dag.dependsOn(n).forall {otherN =>
               otherN.isInstanceOf[FinalFlatMapStormBolt]
             }
         case _ => true
@@ -228,4 +247,13 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     numFinalFlatmapBolts == 1
   }
   
+
+  property("There should be no flatmap producers in the source node") = forAll { (dag: StormDag) =>
+    dag.nodes.forall{n =>
+      n match {
+        case n: StormSpout => n.members.forall{p => !p.isInstanceOf[FlatMappedProducer[_, _, _]]}
+        case _ => true
+      }
+    }
+  }
 }
