@@ -19,8 +19,8 @@ package com.twitter.summingbird.storm
 import backtype.storm.Config
 import com.twitter.scalding.Args
 import com.twitter.chill.ScalaKryoInstantiator
-import com.twitter.chill.java.IterableRegistrar
 import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
+import com.twitter.chill.java.IterableRegistrar
 import com.twitter.summingbird.{ Env, Unzip2, Producer }
 import com.twitter.summingbird.scalding.Scalding
 import scala.collection.JavaConverters._
@@ -54,7 +54,9 @@ case class StormEnv(override val jobName: String, override val args: Args)
       ConfInst.setSerialized(
         kryoConfig,
         classOf[ScalaKryoInstantiator],
-        new ScalaKryoInstantiator().withRegistrar(builder.registrar)
+        new ScalaKryoInstantiator()
+          .withRegistrar(builder.registrar)
+          .withRegistrar(new IterableRegistrar(ajob.registrars))
       )
       transformed
     }.run(

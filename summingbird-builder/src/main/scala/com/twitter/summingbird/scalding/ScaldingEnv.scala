@@ -72,7 +72,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // the starting batch, rendering this unnecessary.
   def startDate: Option[Date] =
     args.optional("start-time")
-      .map(RichDate(_)(tz).value)
+      .map(RichDate(_)(tz, DateParser.default).value)
 
   def initialBatch(b: Batcher): Option[BatchID] = startDate.map(b.batchOf(_))
 
@@ -103,7 +103,9 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       ConfInst.setSerialized(
         kryoConfig,
         classOf[ScalaKryoInstantiator],
-        new ScalaKryoInstantiator().withRegistrar(builder.registrar)
+        new ScalaKryoInstantiator()
+          .withRegistrar(builder.registrar)
+          .withRegistrar(new IterableRegistrar(ajob.registrars))
       )
       fromMap(ajob.transformConfig(jConf.as[Map[String, AnyRef]]))
     }
