@@ -20,11 +20,12 @@ import java.io.Writer
 import com.twitter.summingbird.{Platform, Producer, Dependants, NamedProducer, IdentityKeyedProducer}
 import com.twitter.summingbird.storm._
 
-case class VizGraph(dag: StormDag, dependantState: Dependants[Storm]) {
+case class VizGraph(dag: StormDag) {
   type BaseLookupTable[T] = (Map[T, String], Map[String, Int])
   type NameLookupTable = BaseLookupTable[Producer[Storm, _]]
 
   type NodeNameLookupTable = BaseLookupTable[StormNode]
+  val dependantState: Dependants[Storm] = Dependants(dag.tail)
   def buildLookupTable[T]() = (Map[T, String](), Map[String, Int]())
   def emptyNodeNameLookupTable(): NodeNameLookupTable = buildLookupTable()
   def emptyNameLookupTable(): NameLookupTable = buildLookupTable()
@@ -93,15 +94,11 @@ case class VizGraph(dag: StormDag, dependantState: Dependants[Storm]) {
 }
 
 object StormViz {
-  def apply(storm: Storm, tail: Producer[Storm, _], writer: Writer):Unit = {
-   
-    val dep = Dependants(tail)
-    val fanOutSet =
-      Producer.transitiveDependenciesOf(tail)
-        .filter(dep.fanOut(_).exists(_ > 1)).toSet
-    val topoBuilder = new StormToplogyBuilder(tail)
-    val (stormRegistry, _) = topoBuilder.collectPass(tail, IntermediateFlatMapStormBolt(), StormRegistry(), fanOutSet, Set())
-    val stormDag = StormDag.build(stormRegistry)
-    writer.write(VizGraph(stormDag, dep).toString)
+  def apply(tail: Producer[Storm, _], writer: Writer):Unit = {
+    apply(StormToplogyBuilder(tail), writer)
+  }
+
+  def apply(stormDag: StormDag, writer: Writer): Unit = {
+    writer.write(VizGraph(stormDag).toString)
   }
 }
