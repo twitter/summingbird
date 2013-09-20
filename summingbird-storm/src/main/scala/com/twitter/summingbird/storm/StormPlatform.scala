@@ -250,6 +250,17 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         recurse(dependency, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
       } else recurse(dependency, visited = visited)
     }
+
+    def mergeCollapse[A](l: Prod[A], r: Prod[A]): (List[Prod[A]], List[Prod[A]]) = {
+      List(l, r).foldLeft((List[Prod[A]](), List[Prod[A]]())) { case ((mergeNodes, sibList), node) =>
+        node match {
+          case MergedProducer(subL, subR) =>
+          val (newMerge, newSib) = mergeCollapse(subL, subR) 
+          ((node :: mergeNodes ::: newMerge), sibList ::: newSib)
+          case _ => (mergeNodes, node :: sibList)
+        }
+      }
+    }
     
     if (visited.contains(outerProducer)) {
       (stormRegistry, visited)
@@ -274,8 +285,13 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         case LeftJoinedProducer(producer, StoreWrapper(newService)) => maybeSplit(producer, visited = visitedWithN)
 
         case MergedProducer(l, r) =>
-          val (lDag, newVisisted) = recurse(l, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visitedWithN)
-          recurse(r, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = lDag, visited = newVisisted)
+
+          val (mergeNodes, siblings) = mergeCollapse(l, r)
+          val newCurrentBolt = mergeNodes.foldLeft(currentBolt)(_.add(_))
+          val startingReg = stormRegistry.register(newCurrentBolt)
+          siblings.foldLeft((startingReg, visitedWithN)) {case ((newStormReg, newVisited), n) =>
+            recurse(n, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = newStormReg, newVisited)
+          }
       }
 
     }
