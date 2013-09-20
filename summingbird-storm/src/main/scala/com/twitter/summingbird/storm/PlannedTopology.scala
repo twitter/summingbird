@@ -66,6 +66,8 @@ sealed trait StormNode {
 
   def reverse(): StormNode
 
+  def remove(p: Producer[Storm, _]): StormNode
+
   def toStringWithPrefix(prefix: String): String = {
     prefix + getName + "\n" + members.foldLeft(""){ case (str, producer) =>
       str + prefix + "\t" + producer.getClass.getName.replaceFirst("com.twitter.summingbird.", "") + "\n"
@@ -84,7 +86,8 @@ case class IntermediateFlatMapStormBolt(override val members: List[Producer[Stor
     this.copy(members=newMembers)
   }
   override def getName = "Intermediate Flatmap Bolt"
-  def reverse() = IntermediateFlatMapStormBolt(members.reverse)
+  def reverse() = this.copy(members.reverse)
+  def remove(p: Producer[Storm, _]) = this.copy(members.filter(_ != p))
 }
 
 case class FinalFlatMapStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
@@ -93,7 +96,8 @@ case class FinalFlatMapStormBolt(override val members: List[Producer[Storm, _]] 
     this.copy(members=newMembers)
   }
   override def getName = "Final Flatmap Bolt"
-  def reverse() = FinalFlatMapStormBolt(members.reverse)
+  def reverse() = this.copy(members.reverse)
+  def remove(p: Producer[Storm, _]) = this.copy(members.filter(_ != p))
 }
 
 case class SummerStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
@@ -102,7 +106,8 @@ case class SummerStormBolt(override val members: List[Producer[Storm, _]] = List
     this.copy(members=newMembers)
   }
   override def getName = "Summer Bolt"
-  def reverse() = SummerStormBolt(members.reverse)
+  def reverse() = this.copy(members.reverse)
+  def remove(p: Producer[Storm, _]) = this.copy(members.filter(_ != p))
 }
 
 case class StormSpout(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
@@ -111,22 +116,27 @@ case class StormSpout(override val members: List[Producer[Storm, _]] = List()) e
     this.copy(members=newMembers)
   }
   override def getName = "Spout"
-  def reverse() = StormSpout(members.reverse)
+  def reverse() = this.copy(members.reverse)
+  def remove(p: Producer[Storm, _]) = this.copy(members.filter(_ != p))
 }
 
 
+
 case class StormDag(tail: Producer[Storm, _], nodeLut: Map[Producer[Storm, _], StormNode],
-               forwardDag: Map[StormNode, Set[StormNode]], reverseDag: Map[StormNode, Set[StormNode]],
+               dependsOnM: Map[StormNode, Set[StormNode]], dependantOfM: Map[StormNode, Set[StormNode]],
                allNodes: Set[StormNode]) {
   def connect(src: StormNode, dest: StormNode): StormDag = {
     if (src == dest) {
       this
     } else {
       assert(!dest.isInstanceOf[StormSpout])
-      val forwardTargets = forwardDag.getOrElse(src, Set[StormNode]())
-      val reverseTargets = reverseDag.getOrElse(dest, Set[StormNode]())
+      // We build/maintain two maps,
+      // Nodes to which each node depends on
+      // and nodes on which each node depends
+      val dependsOnTargets = dependsOnM.getOrElse(src, Set[StormNode]())
+      val dependantOfTargets = dependantOfM.getOrElse(dest, Set[StormNode]())
 
-      StormDag(tail, nodeLut, forwardDag + (src -> (forwardTargets + dest) ), reverseDag + (dest -> (reverseTargets + src)), allNodes)
+      StormDag(tail, nodeLut, dependsOnM + (src -> (dependsOnTargets + dest) ), dependantOfM + (dest -> (dependantOfTargets + src)), allNodes)
     }
   }
 
@@ -142,8 +152,8 @@ case class StormDag(tail: Producer[Storm, _], nodeLut: Map[Producer[Storm, _], S
     newDag.getOrElse(this)
   }
 
-  def dependantsOf(n: StormNode): Set[StormNode] = forwardDag.get(n).getOrElse(Set())
-  def dependsOn(n: StormNode): Set[StormNode] = reverseDag.get(n).getOrElse(Set())
+  def dependantsOf(n: StormNode): Set[StormNode] = dependsOnM.get(n).getOrElse(Set())
+  def dependsOn(n: StormNode): Set[StormNode] = dependantOfM.get(n).getOrElse(Set())
 
   def toStringWithPrefix(prefix: String): String = {
     prefix + "StormDag\n" + allNodes.foldLeft(""){ case (str, node) =>
@@ -191,7 +201,7 @@ case class StormRegistry(tail: Producer[Storm, _], registry: Set[StormNode] = Se
   }
 }
 
-object StormToplogyBuilder {
+object StormTopologyBuilder {
   private type Prod[T] = Producer[Storm, T]
   private type VisitedStore = Set[Prod[_]]
 
@@ -219,20 +229,30 @@ object StormToplogyBuilder {
       collectProducers(producer, updatedBolt, updatedDag, forkedNodes, visited = visited)
     }
 
-    def resolve[A](dependency: Prod[A]): Prod[A] = {
+    def resolve(dependency: Prod[_]): Prod[_] = { 
       dependency match {
         case NamedProducer(producer, _) => resolve(producer)
         case IdentityKeyedProducer(producer) => resolve(producer)
+        case OptionMappedProducer(producer, _, _) => resolve(producer)
         case _ => dependency
       }
     }
 
-    def maybeSplit[A](dependency: Prod[A], visited: VisitedStore): (StormRegistry, VisitedStore) = {
-      if (forkedNodes.contains(dependency)) {
+    def maybeSplit[A](dependency: Prod[A], visited: VisitedStore, liveWithSource: Boolean = true): (StormRegistry, VisitedStore) = {
+      val resolvedDependency = resolve(dependency)
+      val resolvedIsSource = resolvedDependency.isInstanceOf[Source[_, _]]
+
+      val doSplit = dependency match {
+        case _ if (forkedNodes.contains(dependency)) => true
+        case _ if (currentBolt.isInstanceOf[FinalFlatMapStormBolt] && resolvedIsSource) => true
+        case _ if (outerProducer.isInstanceOf[FlatMappedProducer[_, _, _]] && resolvedIsSource) => true
+        case _ => false
+      }
+      if (doSplit) {
         recurse(dependency, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
-      } else if(resolve(dependency).isInstanceOf[Source[Storm, _]] && previousBolt.isInstanceOf[FinalFlatMapStormBolt]) { // Handle having 3 layers in small graphs
-        recurse(dependency, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
-      } else recurse(dependency, visited = visited)
+        } else {
+          recurse(dependency, visited = visited)
+      }
     }
 
     def mergeCollapse[A](l: Prod[A], r: Prod[A]): (List[Prod[A]], List[Prod[A]]) = {
@@ -262,7 +282,7 @@ object StormToplogyBuilder {
 
         case OptionMappedProducer(producer, op, manifest) => maybeSplit(producer, visited = visitedWithN)
 
-        case FlatMappedProducer(producer, op)  => maybeSplit(producer, visited = visitedWithN)
+        case FlatMappedProducer(producer, op)  => maybeSplit(producer, visited = visitedWithN, liveWithSource = false)
 
         case WrittenProducer(producer, sinkSupplier)  => maybeSplit(producer, visited = visitedWithN)
 

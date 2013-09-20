@@ -33,6 +33,7 @@ import org.specs._
 import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
+
 import scala.collection.JavaConverters._
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import scala.collection.mutable.{ArrayBuffer, SynchronizedBuffer}
@@ -48,6 +49,7 @@ import scala.collection.mutable.{Map => MMap}
 
 
 object TopologyPlannerLaws extends Properties("StormDag") {
+
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
   implicit val batcher = Batcher.unit
 
@@ -110,15 +112,20 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   } yield IdentityKeyedProducer(OptionMappedProducer(in, fn, manifest[(Int, Int)]))
   // TODO (https://github.com/twitter/summingbird/issues/74): add more
   // nodes, abstract over Platform
-  lazy val summed : Gen[StormDag]= for {
+  lazy val summed : Gen[Producer[Storm, _]]= for {
     in <- genProd2 
-  } yield StormToplogyBuilder(in.sumByKey(testStore))
+  } yield in.sumByKey(testStore)
+
+  lazy val genDag : Gen[StormDag]= for {
+    tail <- summed 
+  } yield StormTopologyBuilder(tail)
+
 
   // Removed Summable from here, so we never should recurse
   def genProd2: Gen[KeyedProducer[Storm, Int, Int]] = frequency((15, genSource2), (5, genOptMap12), (5, genOptMap22), (1, genMerged2), (1, genFlatMap22), (1, genFlatMap12))
   def genProd1: Gen[Producer[Storm, Int]] = frequency((15, genSource1), (5, genOptMap11), (5, genOptMap21), (1, genMerged1), (1, genFlatMap11), (1, genFlatMap21))
 
-  implicit def genProducer: Arbitrary[StormDag] = Arbitrary(summed)
+  implicit def genProducer: Arbitrary[StormDag] = Arbitrary(genDag)
 
 
   val testFn = { i: Int => List((i -> i)) }
@@ -250,10 +257,12 @@ object TopologyPlannerLaws extends Properties("StormDag") {
 
   property("There should be no flatmap producers in the source node") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
-      n match {
+      val success = n match {
         case n: StormSpout => n.members.forall{p => !p.isInstanceOf[FlatMappedProducer[_, _, _]]}
         case _ => true
       }
+      if(!success) dumpFailingGraph(dag)
+      success
     }
   }
 }

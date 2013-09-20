@@ -95,7 +95,7 @@ case class VizGraph(dag: StormDag) {
 
 object StormViz {
   def apply(tail: Producer[Storm, _], writer: Writer):Unit = {
-    apply(StormToplogyBuilder(tail), writer)
+    apply(StormTopologyBuilder(tail), writer)
   }
 
   def apply(stormDag: StormDag, writer: Writer): Unit = {
