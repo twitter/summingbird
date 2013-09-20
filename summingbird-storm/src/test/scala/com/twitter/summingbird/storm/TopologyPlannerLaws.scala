@@ -217,34 +217,15 @@ object TopologyPlannerLaws extends Properties("StormDag") {
       }
     }
   }
-  // -> Prior to a summer should be a final flatmap bolt, any bolt not prior to a summer should be a intermediate flatmap bolt
 
-  // val nextFn = { pair: ((Int, (Int, Option[Int]))) =>
-  //   val (k, (v, joinedV)) = pair
-  //   List((k -> joinedV.getOrElse(10)))
-  // }
-
-  // def numFinalFlatMapStormBolt(d: StormDag): Int = d.nodes.foldLeft(0){ case (total, current) =>
-  //     current match {
-  //       case FinalFlatMapStormBolt(_) => total + 1
-  //       case _ => total
-  //     }
-  // }
-
-  // "Get Storm" in {
-  //   val original = sample[List[Int]]
-  //   val testSink = () => ((x: Any) => com.twitter.util.Future.Unit)
-    
-
-  //   val fn_1 = (x: Int) => List((x, x))
-  //   val fn_2 = (x: Int) => List((x, x))
-
-  //   val summer = TestGraphs.diamondJob[Storm, Int, Int, Int](Storm.source(TraversableSpout(original)), testSink, testStore)(fn_1)(fn_2)
-  //   val dag: StormDag = genDagForTail(summer)
-
-  //   numSummer(dag) == 1
-  //   //must beTrue
-  // }
-
+  property("There should only be one final flatmap bolt") = forAll { (dag: StormDag) =>
+    val numFinalFlatmapBolts = dag.nodes.foldLeft(0){(sum, n) =>
+        n match {
+          case _: FinalFlatMapStormBolt => sum + 1
+          case _ => sum
+        }
+    }
+    numFinalFlatmapBolts == 1
+  }
   
 }

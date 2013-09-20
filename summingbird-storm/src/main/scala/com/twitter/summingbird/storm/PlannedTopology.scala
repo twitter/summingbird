@@ -219,8 +219,18 @@ object StormToplogyBuilder {
       collectProducers(producer, updatedBolt, updatedDag, forkedNodes, visited = visited)
     }
 
+    def resolve[A](dependency: Prod[A]): Prod[A] = {
+      dependency match {
+        case NamedProducer(producer, _) => resolve(producer)
+        case IdentityKeyedProducer(producer) => resolve(producer)
+        case _ => dependency
+      }
+    }
+
     def maybeSplit[A](dependency: Prod[A], visited: VisitedStore): (StormRegistry, VisitedStore) = {
       if (forkedNodes.contains(dependency)) {
+        recurse(dependency, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
+      } else if(resolve(dependency).isInstanceOf[Source[Storm, _]] && previousBolt.isInstanceOf[FinalFlatMapStormBolt]) { // Handle having 3 layers in small graphs
         recurse(dependency, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
       } else recurse(dependency, visited = visited)
     }
@@ -262,7 +272,7 @@ object StormToplogyBuilder {
           val (mergeNodes, siblings) = mergeCollapse(l, r)
           val newCurrentBolt = mergeNodes.foldLeft(currentBolt)(_.add(_))
           val startingReg = stormRegistry.register(newCurrentBolt)
-          siblings.foldLeft((startingReg, visitedWithN)) {case ((newStormReg, newVisited), n) =>
+          siblings.foldLeft((startingReg, visitedWithN)) { case ((newStormReg, newVisited), n) =>
             recurse(n, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = newStormReg, newVisited)
           }
       }
