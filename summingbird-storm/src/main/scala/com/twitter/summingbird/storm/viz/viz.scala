@@ -99,7 +99,8 @@ object StormViz {
     val fanOutSet =
       Producer.transitiveDependenciesOf(tail)
         .filter(dep.fanOut(_).exists(_ > 1)).toSet
-    val (stormRegistry, _) = storm.collectPass(tail, IntermediateFlatMapStormBolt(), StormRegistry(), fanOutSet, Set())
+    val topoBuilder = new StormToplogyBuilder(tail)
+    val (stormRegistry, _) = topoBuilder.collectPass(tail, IntermediateFlatMapStormBolt(), StormRegistry(), fanOutSet, Set())
     val stormDag = StormDag.build(stormRegistry)
     writer.write(VizGraph(stormDag, dep).toString)
   }
