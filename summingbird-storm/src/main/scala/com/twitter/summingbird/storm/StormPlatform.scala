@@ -92,7 +92,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   type Sink[-T] = () => (T => Future[Unit])
   type Service[-K, +V] = StormService[K, V]
   type Plan[T] = StormTopology
-  
+
   private type Prod[T] = Producer[Storm, T]
   private type JamfMap = Map[Prod[_], List[String]]
 
@@ -112,8 +112,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       option <- stormOpts.get[T]
     } yield option).getOrElse(default)
 
-
-  
   def buildTopology[T](
     topoBuilder: TopologyBuilder,
     outerProducer: Prod[T],
@@ -260,7 +258,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private def foldOperations(head: FMItem, tail: List[FMItem]) = {
     val operation = head match {
-
       case OptionMap(op) => FlatMapOperation(op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]])
       case FactoryCell(store) => serviceOperation(store)
       case FlatMap(op) => op
@@ -417,6 +414,7 @@ class RemoteStorm(options: Map[String, Options], updateConf: Config => Config) e
 class LocalStorm(options: Map[String, Options], updateConf: Config => Config)
     extends Storm(options, updateConf) {
   lazy val localCluster = new LocalCluster
+
   override def withConfigUpdater(fn: Config => Config) =
     new LocalStorm(options, updateConf.andThen(fn))
 
