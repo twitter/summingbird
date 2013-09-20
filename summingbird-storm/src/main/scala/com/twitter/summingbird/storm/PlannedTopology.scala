@@ -60,7 +60,7 @@ sealed trait StormNode {
 
   def contains(p: Producer[Storm, _]): Boolean = members.contains(p)
 
-  def getName(): String = getClass.getName.replaceFirst("com.twitter.summingbird.storm.","")
+  def getName: String = getClass.getName.replaceFirst("com.twitter.summingbird.storm.","")
 
   def add(node: Producer[Storm, _]): StormNode
 
@@ -224,32 +224,42 @@ object StormTopologyBuilder {
       collectProducers(producer, updatedBolt, updatedDag, forkedNodes, visited = visited)
     }
 
-    def resolve(dependency: Prod[_]): Prod[_] = { 
+    def mergableWithSource(dependency: Prod[_]): Boolean = { 
       dependency match {
-        case NamedProducer(producer, _) => resolve(producer)
-        case IdentityKeyedProducer(producer) => resolve(producer)
-        case OptionMappedProducer(producer, _, _) => resolve(producer)
-        case _ => dependency
+        case NamedProducer(producer, _) => mergableWithSource(producer)
+        case IdentityKeyedProducer(producer) => mergableWithSource(producer)
+        case OptionMappedProducer(producer, _, _) => mergableWithSource(producer)
+        case Source(_, _) => true
+        case _ => false
       }
     }
 
-    def maybeSplit[A](dependency: Prod[A], visited: VisitedStore, liveWithSource: Boolean = true): (StormRegistry, VisitedStore) = {
-      val resolvedDependency = resolve(dependency)
-      val resolvedIsSource = resolvedDependency.isInstanceOf[Source[_, _]]
-
-      val doSplit = dependency match {
-        case _ if (forkedNodes.contains(dependency)) => true
-        case _ if (currentBolt.isInstanceOf[FinalFlatMapStormBolt] && resolvedIsSource) => true
-        case _ if (outerProducer.isInstanceOf[FlatMappedProducer[_, _, _]] && resolvedIsSource) => true
+    
+    /*
+     * This function acts as a look ahead, rather than depending on the state of the current node it depends
+     * on the nodes further along in the dag. That is conditions for spliting into multiple StormNodes are based on as yet
+     * unvisisted Producers.
+     */
+    def maybeSplit[A](dep: Prod[A], visited: VisitedStore, liveWithSource: Boolean = true): (StormRegistry, VisitedStore) = {
+      val doSplit = dep match {
+        case _ if (forkedNodes.contains(dep)) => true
+        case _ if (currentBolt.isInstanceOf[FinalFlatMapStormBolt] && mergableWithSource(dep)) => true
+        case _ if (outerProducer.isInstanceOf[FlatMappedProducer[_, _, _]] && mergableWithSource(dep)) => true
         case _ => false
       }
       if (doSplit) {
-        recurse(dependency, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
+        recurse(dep, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
         } else {
-          recurse(dependency, visited = visited)
+        recurse(dep, visited = visited)
       }
     }
 
+    /*
+     * This is a peek ahead when we meet a MergedProducer. We pull the directly depended on MergedProducer's into the same StormNode.
+     * This has the effect of pulling all of the merged streams in as siblings rather than just the two.
+     * From this we return a list of the MergedProducers which should be combined into the current StormNode, and the list of nodes
+     * on which these nodes depends (the producers passing data into these MergedProducer).
+     */
     def mergeCollapse[A](l: Prod[A], r: Prod[A]): (List[Prod[A]], List[Prod[A]]) = {
       List(l, r).foldLeft((List[Prod[A]](), List[Prod[A]]())) { case ((mergeNodes, sibList), node) =>
         node match {
