@@ -107,6 +107,13 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     p2 <- oneOf(genProd2, aDependency(p1))
   } yield IdentityKeyedProducer(MergedProducer(p1, p2))
 
+
+  lazy val genWrite22: Gen[KeyedProducer[Storm, Int, Int]] = for {
+    _  <- Gen.choose(0,1) 
+    p1 <- genProd2
+  } yield IdentityKeyedProducer(p1.write(() => {(_) => com.twitter.util.Future.Unit}))
+
+
   lazy val genOptMap21 = for {
     fn <- arbitrary[((Int,Int)) => Option[Int]]
     in <- genProd2
@@ -124,9 +131,9 @@ object TopologyPlannerLaws extends Properties("StormDag") {
 
   lazy val genDag : Gen[StormDag]= for {
     tail <- summed 
-  } yield StormTopologyBuilder(tail)
+  } yield DagBuilder(tail)
 
-
+// (7, genWrite22)
   // Removed Summable from here, so we never should recurse
   def genProd2: Gen[KeyedProducer[Storm, Int, Int]] = frequency((12, genSource2), (5, genOptMap12), (5, genOptMap22), (5, genMerged2), (5, genFlatMap22), (5, genFlatMap12))
   def genProd1: Gen[Producer[Storm, Int]] = frequency((12, genSource1), (5, genOptMap11), (5, genOptMap21), (5, genMerged1), (5, genFlatMap11), (5, genFlatMap21))
@@ -142,9 +149,9 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   var dumpNumber = 1
   def dumpGraph(dag: StormDag) = {
     import java.io._
-    import com.twitter.summingbird.storm.viz.StormViz
+    import com.twitter.summingbird.storm.viz.VizGraph
     val writer2 = new PrintWriter(new File("/tmp/failingGraph" + dumpNumber + ".dot"))
-    StormViz(dag.tail, writer2)
+    VizGraph(dag.tail, writer2)
     writer2.close()
     dumpNumber = dumpNumber + 1
   }
@@ -264,6 +271,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   
 
   property("There should be no flatmap producers in the source node") = forAll { (dag: StormDag) =>
+    dumpGraph(dag)
     dag.nodes.forall{n =>
       val success = n match {
         case n: StormSpout => n.members.forall{p => !p.isInstanceOf[FlatMappedProducer[_, _, _]]}
