@@ -55,8 +55,8 @@ object TopologyPlannerLaws extends Properties("StormDag") {
 
   val testStore = MergeableStoreSupplier.from {MergeableStore.fromStore[(Int, BatchID), Int](new JMapStore[(Int, BatchID), Int]())}
 
-  val genSource1 = value(Storm.source(TraversableSpout(List[Int]())))
-  val genSource2 = value(IdentityKeyedProducer(Storm.source(TraversableSpout(List[(Int, Int)]()))))
+  def genSource1 = value(Storm.source(TraversableSpout(List[Int]())))
+  def genSource2 = value(IdentityKeyedProducer(Storm.source(TraversableSpout(List[(Int, Int)]()))))
 
   // Put the non-recursive calls first, otherwise you blow the stack
   lazy val genOptMap11 = for {
@@ -97,7 +97,8 @@ object TopologyPlannerLaws extends Properties("StormDag") {
 
 
   def aDependency(p: KeyedProducer[Storm, Int, Int]): Gen[KeyedProducer[Storm, Int, Int]] = {
-    oneOf((p :: Producer.transitiveDependenciesOf(p)).collect{case x:KeyedProducer[_, _, _] => x.asInstanceOf[KeyedProducer[Storm,Int,Int]]})
+    val deps = Producer.transitiveDependenciesOf(p).collect{case x:KeyedProducer[_, _, _] => x.asInstanceOf[KeyedProducer[Storm,Int,Int]]}
+    if(deps.size == 1) genProd2 else oneOf(deps)
   }
 
   lazy val genMerged2 = for {
@@ -138,12 +139,14 @@ object TopologyPlannerLaws extends Properties("StormDag") {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
-  def dumpFailingGraph(dag: StormDag) = {
+  var dumpNumber = 1
+  def dumpGraph(dag: StormDag) = {
     import java.io._
     import com.twitter.summingbird.storm.viz.StormViz
-    val writer2 = new PrintWriter(new File("/tmp/failingGraph.dot"))
+    val writer2 = new PrintWriter(new File("/tmp/failingGraph" + dumpNumber + ".dot"))
     StormViz(dag.tail, writer2)
     writer2.close()
+    dumpNumber = dumpNumber + 1
   }
 
   property("Dag Nodes must be unique") = forAll { (dag: StormDag) =>
@@ -156,12 +159,12 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     }
   }
 
-  property("The any Summer must be the first in its node") = forAll { (dag: StormDag) =>
+  property("If a StormNode contains a Summer, it must be the first Producer in that StormNode") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       val firstP = n.members.last
       n.members.forall{p =>
         val inError = (p.isInstanceOf[Summer[_, _, _]] && p != firstP)
-        if(inError) dumpFailingGraph(dag)
+        if(inError) dumpGraph(dag)
         !inError
       }
     }
@@ -170,7 +173,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   property("The first producer in a storm node cannot be a NamedProducer") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       val inError = n.members.last.isInstanceOf[NamedProducer[_, _]]
-      if(inError) dumpFailingGraph(dag)
+      if(inError) dumpGraph(dag)
       !inError
     }
   }
@@ -184,12 +187,12 @@ object TopologyPlannerLaws extends Properties("StormDag") {
           case _ => (seenMergeProducer, (inError || seenMergeProducer))
         }
       }
-      if(inError) dumpFailingGraph(dag)
+      if(inError) dumpGraph(dag)
       !inError
     }
   }
 
-  property("The the last producer in any StormNode must be a KeyedProducer") = forAll { (dag: StormDag) =>
+  property("The the last producer in any StormNode prior to a summer must be a KeyedProducer") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       val firstP = n.members.last
       firstP match {
@@ -266,7 +269,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
         case n: StormSpout => n.members.forall{p => !p.isInstanceOf[FlatMappedProducer[_, _, _]]}
         case _ => true
       }
-      if(!success) dumpFailingGraph(dag)
+      if(!success) dumpGraph(dag)
       success
     }
   }

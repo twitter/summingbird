@@ -80,37 +80,25 @@ sealed trait StormNode {
 }
 
 case class IntermediateFlatMapStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
-  def add(node: Producer[Storm, _]): StormNode = {
-    val newMembers = node :: members
-    this.copy(members=newMembers)
-  }
+  def add(node: Producer[Storm, _]): StormNode = if(members.contains(node)) this else this.copy(members=node :: members)
   override def getName = "Intermediate Flatmap Bolt"
   def reverse = this.copy(members.reverse)
 }
 
 case class FinalFlatMapStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
-  def add(node: Producer[Storm, _]): StormNode = {
-    val newMembers = node :: members
-    this.copy(members=newMembers)
-  }
+  def add(node: Producer[Storm, _]): StormNode = if(members.contains(node)) this else this.copy(members=node :: members)
   override def getName = "Final Flatmap Bolt"
   def reverse = this.copy(members.reverse)
 }
 
 case class SummerStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
-  def add(node: Producer[Storm, _]): StormNode = {
-    val newMembers = node :: members
-    this.copy(members=newMembers)
-  }
+  def add(node: Producer[Storm, _]): StormNode = if(members.contains(node)) this else this.copy(members=node :: members)
   override def getName = "Summer Bolt"
   def reverse = this.copy(members.reverse)
 }
 
 case class StormSpout(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
-  def add(node: Producer[Storm, _]): StormNode = {
-    val newMembers = node :: members
-    this.copy(members=newMembers)
-  }
+  def add(node: Producer[Storm, _]): StormNode = if(members.contains(node)) this else this.copy(members=node :: members)
   override def getName = "Spout"
   def reverse = this.copy(members.reverse)
 }
@@ -156,7 +144,27 @@ case class StormDag(tail: Producer[Storm, _], nodeLut: Map[Producer[Storm, _], S
     }
   }
   override def toString(): String = {
-    toStringWithPrefix("\t")
+    val res = toStringWithPrefix("\t")
+    var dumpNumber = 1
+    def dumpFailingGraph(dag: StormDag) = {
+      import java.io._
+      import com.twitter.summingbird.viz.BaseViz
+      val writer2 = new PrintWriter(new File("/tmp/failingBaseGraph" + dumpNumber + ".dot"))
+      BaseViz(dag.tail, writer2)
+      writer2.close()
+      dumpNumber = dumpNumber + 1
+    }
+    def dumpSFailingGraph(dag: StormDag) = {
+    import java.io._
+    import com.twitter.summingbird.storm.viz.StormViz
+    val writer2 = new PrintWriter(new File("/tmp/failingSGraph" + dumpNumber + ".dot"))
+    StormViz(dag.tail, writer2)
+    writer2.close()
+    dumpNumber = dumpNumber + 1
+   }
+   dumpSFailingGraph(this)
+    dumpFailingGraph(this)
+    res
   }
 }
 
@@ -184,7 +192,9 @@ object StormDag {
 case class StormRegistry(tail: Producer[Storm, _], registry: Set[StormNode] = Set[StormNode]()) {
   
   def register(n: StormNode): StormRegistry =  {
-    StormRegistry(tail, registry + n.reverse )
+    if(n.members.size > 0) {
+      StormRegistry(tail, registry + n.reverse )  
+    } else this
   }
 
   def buildLut() : Map[Producer[Storm, _], StormNode] = {
@@ -201,107 +211,107 @@ object StormTopologyBuilder {
   private type VisitedStore = Set[Prod[_]]
 
   def apply[P](tail: Producer[Storm, P]): StormDag = {
-    val dep = Dependants(tail)
-    val fanOutSet =
-      Producer.transitiveDependenciesOf(tail)
-        .filter(dep.fanOut(_).exists(_ > 1)).toSet
-
-    val (stormRegistry, _) = collectProducers(tail, IntermediateFlatMapStormBolt(), StormRegistry(tail), fanOutSet, Set())
+    val stormRegistry = new buildReg(tail)()
     StormDag.build(stormRegistry)
   }
 
-  private def collectProducers[T](outerProducer: Prod[T], previousBolt: StormNode, stormRegistry: StormRegistry,
-                      forkedNodes: Set[Prod[_]], visited: VisitedStore): (StormRegistry, VisitedStore) = {
+  private class buildReg[P](tail: Producer[Storm, P])  {
+    private val dep = Dependants(tail)
+    private val forkedNodes =
+      Producer.transitiveDependenciesOf(tail)
+        .filter(dep.fanOut(_).exists(_ > 1)).toSet
+
+    def apply(): StormRegistry = {
+        val (stormRegistry, _) = recursiveCollect(tail, IntermediateFlatMapStormBolt(), StormRegistry(tail), Set())
+        stormRegistry
+    }
+
+    private def recursiveCollect[T](outerProducer: Prod[T], previousBolt: StormNode, stormRegistry: StormRegistry, visited: VisitedStore) : (StormRegistry, VisitedStore) = {
+      if (visited.contains(outerProducer)) {
+        (stormRegistry.register(previousBolt), visited)
+      } else {
+        val currentBolt = previousBolt.add(outerProducer)
+        val visitedWithN = visited + outerProducer
+
+        def recurse[U](
+          producer: Prod[U],
+          updatedBolt: StormNode = currentBolt,
+          updatedDag: StormRegistry = stormRegistry,
+          visited: VisitedStore = visitedWithN)
+        : (StormRegistry, VisitedStore) = {
+          recursiveCollect(producer, updatedBolt, updatedDag, visited)
+        }
+
+        def mergableWithSource(dependency: Prod[_]): Boolean = { 
+          dependency match {
+            case NamedProducer(producer, _) => mergableWithSource(producer)
+            case IdentityKeyedProducer(producer) => mergableWithSource(producer)
+            case OptionMappedProducer(producer, _, _) => mergableWithSource(producer)
+            case Source(_, _) => true
+            case _ => false
+          }
+        }
+
+        /*
+         * This function acts as a look ahead, rather than depending on the state of the current node it depends
+         * on the nodes further along in the dag. That is conditions for spliting into multiple StormNodes are based on as yet
+         * unvisisted Producers.
+         */
+        def maybeSplit[A](dep: Prod[A], outerProducerMergableWithSource: Boolean = true): (StormRegistry, VisitedStore) = {
+          val doSplit = dep match {
+            case _ if (forkedNodes.contains(dep)) => true
+            case _ if (currentBolt.isInstanceOf[FinalFlatMapStormBolt] && mergableWithSource(dep)) => true
+            case _ if (!outerProducerMergableWithSource && mergableWithSource(dep)) => true
+            case _ => false
+          }
+          if (doSplit) {
+            recurse(dep, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt))
+            } else {
+            recurse(dep)
+          }
+        }
+
+        /*
+         * This is a peek ahead when we meet a MergedProducer. We pull the directly depended on MergedProducer's into the same StormNode,
+         * only if that MergedProducer is not a fan out node.
+         * This has the effect of pulling all of the merged streams in as siblings rather than just the two.
+         * From this we return a list of the MergedProducers which should be combined into the current StormNode, and the list of nodes
+         * on which these nodes depends (the producers passing data into these MergedProducer).
+         */
+        
+        def mergeCollapse[A](p: Prod[A]): (Set[Prod[A]], Set[Prod[A]]) = {
+          p match {
+            case MergedProducer(subL, subR) if !forkedNodes.contains(p) =>
+              if(subL == subR) throw new Exception("Storm doesn't support both the left and right sides of a join being the same node.")
+              val (lMergeNodes, lSiblings) = mergeCollapse(subL)
+              val (rMergeNodes, rSiblings) = mergeCollapse(subR)
+              (lMergeNodes | rMergeNodes + p, lSiblings | rSiblings)
+            case _ => (Set(), Set(p))
+          }
+        }
+
     
-    val currentBolt = previousBolt.add(outerProducer)
-
-    def recurse[U](
-      producer: Prod[U],
-      updatedBolt: StormNode = currentBolt,
-      updatedDag: StormRegistry = stormRegistry,
-      visited: VisitedStore = visited)
-    : (StormRegistry, VisitedStore) = {
-      collectProducers(producer, updatedBolt, updatedDag, forkedNodes, visited = visited)
-    }
-
-    def mergableWithSource(dependency: Prod[_]): Boolean = { 
-      dependency match {
-        case NamedProducer(producer, _) => mergableWithSource(producer)
-        case IdentityKeyedProducer(producer) => mergableWithSource(producer)
-        case OptionMappedProducer(producer, _, _) => mergableWithSource(producer)
-        case Source(_, _) => true
-        case _ => false
-      }
-    }
-
-    
-    /*
-     * This function acts as a look ahead, rather than depending on the state of the current node it depends
-     * on the nodes further along in the dag. That is conditions for spliting into multiple StormNodes are based on as yet
-     * unvisisted Producers.
-     */
-    def maybeSplit[A](dep: Prod[A], visited: VisitedStore, liveWithSource: Boolean = true): (StormRegistry, VisitedStore) = {
-      val doSplit = dep match {
-        case _ if (forkedNodes.contains(dep)) => true
-        case _ if (currentBolt.isInstanceOf[FinalFlatMapStormBolt] && mergableWithSource(dep)) => true
-        case _ if (outerProducer.isInstanceOf[FlatMappedProducer[_, _, _]] && mergableWithSource(dep)) => true
-        case _ => false
-      }
-      if (doSplit) {
-        recurse(dep, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt), visited = visited)
-        } else {
-        recurse(dep, visited = visited)
-      }
-    }
-
-    /*
-     * This is a peek ahead when we meet a MergedProducer. We pull the directly depended on MergedProducer's into the same StormNode.
-     * This has the effect of pulling all of the merged streams in as siblings rather than just the two.
-     * From this we return a list of the MergedProducers which should be combined into the current StormNode, and the list of nodes
-     * on which these nodes depends (the producers passing data into these MergedProducer).
-     */
-    def mergeCollapse[A](l: Prod[A], r: Prod[A]): (List[Prod[A]], List[Prod[A]]) = {
-      List(l, r).foldLeft((List[Prod[A]](), List[Prod[A]]())) { case ((mergeNodes, sibList), node) =>
-        node match {
-          case MergedProducer(subL, subR) =>
-            val (newMerge, newSib) = mergeCollapse(subL, subR) 
-            ((node :: mergeNodes ::: newMerge), sibList ::: newSib)
-          case _ => (mergeNodes, node :: sibList)
+      
+        outerProducer match {
+          case Summer(producer, _, _) => recurse(producer, updatedBolt = FinalFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt.toSummer))
+          case IdentityKeyedProducer(producer) => maybeSplit(producer)
+          case NamedProducer(producer, newId) => maybeSplit(producer)
+          case Source(spout, manifest) => (stormRegistry.register(currentBolt.toSpout), visitedWithN)
+          case OptionMappedProducer(producer, op, manifest) => maybeSplit(producer)
+          case FlatMappedProducer(producer, op)  => maybeSplit(producer, outerProducerMergableWithSource = false)
+          case WrittenProducer(producer, sinkSupplier)  => maybeSplit(producer, outerProducerMergableWithSource = false)
+          case LeftJoinedProducer(producer, StoreWrapper(newService)) => maybeSplit(producer, outerProducerMergableWithSource = false)
+          case MergedProducer(l, r) =>
+            if(l == r) throw new Exception("Storm doesn't support both the left and right sides of a join being the same node.")
+            val (otherMergeNodes, siblings) = mergeCollapse(outerProducer)
+            val newCurrentBolt = otherMergeNodes.foldLeft(currentBolt)(_.add(_))
+            val visitedWithOther = otherMergeNodes.foldLeft(visitedWithN){ (visited, n) => visited + n }
+            val startingReg = stormRegistry.register(newCurrentBolt)
+            siblings.foldLeft((startingReg, visitedWithOther)) { case ((newStormReg, newVisited), n) =>
+              recurse(n, IntermediateFlatMapStormBolt(), newStormReg, newVisited)
+            }
         }
       }
     }
-    
-    if (visited.contains(outerProducer)) {
-      (stormRegistry, visited)
-    } else {
-      val visitedWithN = visited + outerProducer
-      outerProducer match {
-        case Summer(producer, _, _) =>
-          recurse(producer, updatedBolt = FinalFlatMapStormBolt(), updatedDag = stormRegistry.register(currentBolt.toSummer), visited = visitedWithN)
-
-        case IdentityKeyedProducer(producer) => maybeSplit(producer, visited = visitedWithN)
-        case NamedProducer(producer, newId) => maybeSplit(producer, visited = visitedWithN)
-        case Source(spout, manifest) =>
-          val spoutBolt = currentBolt.toSpout
-          (stormRegistry.register(spoutBolt), visitedWithN)
-
-        case OptionMappedProducer(producer, op, manifest) => maybeSplit(producer, visited = visitedWithN)
-
-        case FlatMappedProducer(producer, op)  => maybeSplit(producer, visited = visitedWithN, liveWithSource = false)
-
-        case WrittenProducer(producer, sinkSupplier)  => maybeSplit(producer, visited = visitedWithN)
-
-        case LeftJoinedProducer(producer, StoreWrapper(newService)) => maybeSplit(producer, visited = visitedWithN)
-
-        case MergedProducer(l, r) =>
-          val (mergeNodes, siblings) = mergeCollapse(l, r)
-          val newCurrentBolt = mergeNodes.foldLeft(currentBolt)(_.add(_))
-          val startingReg = stormRegistry.register(newCurrentBolt)
-          siblings.foldLeft((startingReg, visitedWithN)) { case ((newStormReg, newVisited), n) =>
-            recurse(n, updatedBolt = IntermediateFlatMapStormBolt(), updatedDag = newStormReg, newVisited)
-          }
-      }
-    }
   }
-
 }
