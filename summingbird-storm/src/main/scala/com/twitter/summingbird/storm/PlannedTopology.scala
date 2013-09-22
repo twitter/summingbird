@@ -160,8 +160,8 @@ object DagBuilder {
   def apply[P](tail: Producer[Storm, P]): StormDag = {
     val stormNodeSet = buildStormNodesSet(tail)
 
-    // The nodes are added in a summer -> source manner
-    // but its easier to look at laws in a source -> summer manner
+    // The nodes are added in a source -> summer way with how we do list prepends
+    // but its easier to look at laws in a summer -> source manner
     // We also drop all StormNodes with no members(may occur when we visit a node already seen and its the first in that Node)
     val revsersedNodeSet = stormNodeSet.filter(_.members.size > 0).foldLeft(Set[StormNode]()){(nodes, n) => nodes + n.reverse}
     StormDag.build(tail, revsersedNodeSet)
