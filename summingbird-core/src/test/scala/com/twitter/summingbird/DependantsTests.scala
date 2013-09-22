@@ -56,10 +56,24 @@ object DependantsTest extends Properties("Dependants") {
     in <- genSummable // don't sum sums
   } yield in.sumByKey(MMap[Int, Int]())
 
+  lazy val also1 = for {
+    _ <- Gen.choose(0, 1) // avoids blowup on self recursion
+    out <- genProd1
+    ignored <- oneOf(genProd2, genProd1, oneOf(Producer.transitiveDependenciesOf(out))): Gen[Producer[Memory, _]]
+  } yield ignored.also(out)
+
+  lazy val also2 = for {
+    _ <- Gen.choose(0, 1) // avoids blowup on self recursion
+    out <- genProd2
+    ignored <- oneOf(genProd2, genProd1, oneOf(Producer.transitiveDependenciesOf(out))): Gen[Producer[Memory, _]]
+  } yield IdentityKeyedProducer(ignored.also(out))
+
   // We bias towards sources so the trees don't get too deep
   def genSummable: Gen[KeyedProducer[Memory, Int, Int]] = frequency((2, genSource2), (1, genOptMap12), (1, genOptMap22))
-  def genProd2: Gen[KeyedProducer[Memory, Int, Int]] = frequency((3, genSource2), (1, genOptMap12), (1, genOptMap22), (1, summed))
-  def genProd1: Gen[Producer[Memory, Int]] = frequency((3, genSource1), (1, genOptMap11), (1, genOptMap21))
+  def genProd2: Gen[KeyedProducer[Memory, Int, Int]] =
+    frequency((3, genSource2), (1, genOptMap12), (1, genOptMap22), (1, also2), (1, summed))
+  def genProd1: Gen[Producer[Memory, Int]] =
+    frequency((3, genSource1), (1, genOptMap11), (1, genOptMap21), (1, also1))
 
   implicit def genProducer: Arbitrary[Producer[Memory, _]] = Arbitrary(oneOf(genProd1, genProd2))
 
@@ -78,7 +92,7 @@ object DependantsTest extends Properties("Dependants") {
 
   property("Sources all the only things of depth == 0") = forAll { (prod: Producer[Memory, _]) =>
     val deps = Dependants(prod)
-    Producer.transitiveDependenciesOf(prod).forall { t =>
+    deps.nodes.forall { t =>
       val tdepth = deps.depth(t).get
       implies(tdepth == 0, t.isInstanceOf[Source[_, _]]) &&
       implies(tdepth > 0, (Producer.dependenciesOf(t).map { deps.depth(_).get }.max) < tdepth) &&
@@ -88,8 +102,10 @@ object DependantsTest extends Properties("Dependants") {
 
   property("Tails have max depth") = forAll { (tail: Producer[Memory, _]) =>
     val deps = Dependants(tail)
-    Producer.transitiveDependenciesOf(tail).forall { t =>
-      deps.depth(t).get < deps.depth(tail).get
+    deps.allTails.forall { thisTail =>
+      Producer.transitiveDependenciesOf(thisTail).forall { t =>
+        deps.depth(t).get < deps.depth(thisTail).get
+      }
     }
   }
 
@@ -105,9 +121,58 @@ object DependantsTest extends Properties("Dependants") {
 
   property("if A is a dependency of B, then B is a dependant of A") = forAll { (prod:  Producer[Memory, _]) =>
     val dependants = Dependants(prod)
-    Producer.transitiveDependenciesOf(prod).forall { child =>
-      Producer.dependenciesOf(child).forall { parent => dependants.dependantsOf(parent).get.contains(child) } &&
-        (dependants.fanOut(child).get > 0)
-    } && (dependants.fanOut(prod) == Some(0))
+
+    dependants.nodes.forall { n =>
+      Producer.dependenciesOf(n).forall { parent =>
+        dependants.dependantsOf(parent).get.contains(n)
+      }
+    }
+  }
+
+  property("tails have no dependencies, and nodes with no dependencies are tails") =
+    forAll { (prod: Producer[Memory, _]) =>
+      val dependants = Dependants(prod)
+      import dependants._
+
+      val tails = allTails.toSet
+      tails.map { dependantsOf(_) }.forall { _.get.isEmpty } && {
+          nodes
+          .filter { dependantsOf(_) == Some(Nil) }
+          .forall(tails)
+      }
+    }
+
+  property("finding all nodes and tails works") = forAll { (prod: Producer[Memory, _]) =>
+    // Only also breaks the normal dependency rules to find all nodes
+    // sorry for the cast, remove when the Producer variance is fixed
+    def allParents(n: Producer[Memory, Any]): Set[Producer[Memory, Any]] = {
+      n match {
+        case AlsoProducer(l, r) =>
+          Set(n, l, r).asInstanceOf[Set[Producer[Memory, Any]] ]
+        case _ =>
+          (n :: Producer.dependenciesOf(n))
+            .toSet
+            .asInstanceOf[Set[Producer[Memory, Any]] ]
+      }
+    }
+    @annotation.tailrec
+    def fix[T](acc: Set[T])(fn: T => Set[T]): Set[T] = {
+      val newSet = acc.flatMap(fn)
+      if(newSet == acc) acc
+      else fix(newSet)(fn)
+    }
+    val alln = fix(Set(prod.asInstanceOf[Producer[Memory, Any]]))(allParents _)
+    val deps = Dependants(prod)
+    val tails = alln.filter(deps.fanOut(_).get == 0)
+    (tails == deps.allTails.toSet) && (deps.nodes.toSet == alln)
+  }
+
+  property("tails <= AlsoProducer count + 1") = forAll { (prod: Producer[Memory, _]) =>
+    val dependants = Dependants(prod)
+
+    (!dependants.allTails.isEmpty) && {
+      val alsoCount = dependants.nodes.collect { case AlsoProducer(_, _) => 1 }.sum
+      (dependants.allTails.size <= (alsoCount + 1))
+    }
   }
 }
