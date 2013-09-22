@@ -133,9 +133,8 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     tail <- summed 
   } yield DagBuilder(tail)
 
-// (7, genWrite22)
   // Removed Summable from here, so we never should recurse
-  def genProd2: Gen[KeyedProducer[Storm, Int, Int]] = frequency((12, genSource2), (5, genOptMap12), (5, genOptMap22), (5, genMerged2), (5, genFlatMap22), (5, genFlatMap12))
+  def genProd2: Gen[KeyedProducer[Storm, Int, Int]] = frequency((12, genSource2), (5, genOptMap12), (5, genOptMap22), (7, genWrite22), (5, genMerged2), (5, genFlatMap22), (5, genFlatMap12))
   def genProd1: Gen[Producer[Storm, Int]] = frequency((12, genSource1), (5, genOptMap11), (5, genOptMap21), (5, genMerged1), (5, genFlatMap11), (5, genFlatMap21))
 
   implicit def genProducer: Arbitrary[StormDag] = Arbitrary(genDag)
@@ -271,7 +270,6 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   
 
   property("There should be no flatmap producers in the source node") = forAll { (dag: StormDag) =>
-    dumpGraph(dag)
     dag.nodes.forall{n =>
       val success = n match {
         case n: StormSpout => n.members.forall{p => !p.isInstanceOf[FlatMappedProducer[_, _, _]]}
