@@ -26,14 +26,15 @@ object Producer {
    * and it returns the input node.
    */
   def entireGraphOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
+    // The casts can be removed when Producer is covariant:
     val parentFn = { (in: Producer[P, Any]) => in match {
-        case AlsoProducer(l, r) => List(l, r) // the left is not a dep, need a special case
-        case _ => dependenciesOf(in).asInstanceOf[Producer[P, Any]]
+        case AlsoProducer(l, r) =>
+          List(l, r).asInstanceOf[List[Producer[P, Any]]] // the left is not a dep, need a special case
+        case _ => dependenciesOf(in).asInstanceOf[List[Producer[P, Any]]]
       }
     }
-    // The casts can be removed when Producer is covariant:
-    val nfn = parentFn.asInstanceOf[graph.NeighborFn[Producer[P, Any]]]
-    val above = graph.depthFirstOf(p.asInstanceOf[Producer[P, Any]])(nfn).toList.asInstanceOf[List[Producer[P, _]]]
+    val above = graph.depthFirstOf(p.asInstanceOf[Producer[P, Any]])(parentFn)
+      .toList.asInstanceOf[List[Producer[P, _]]]
     p :: above
   }
 
