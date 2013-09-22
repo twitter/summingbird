@@ -20,17 +20,21 @@ package com.twitter.summingbird
  * by the fact that they are immutable.
  */
 case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
-  private val allNodes = tail :: Producer.transitiveDependenciesOf(tail)
-  private val emptyList = List[Producer[P, _]]()
-  val empty = Map[Producer[P, _], List[Producer[P, _]]]()
+  lazy val allTails: List[Producer[P, _]] = nodes.filter { fanOut(_).get == 0 }
+  val nodes: List[Producer[P, _]] = Producer.entireGraphOf(tail)
 
+  private val empty: Map[Producer[P, _], List[Producer[P, _]]] = Map.empty
+
+  /** This is the dependants graph. Each Producer knows who it depends on
+   * but not who depends on it without doing this computation
+   */
   private val graph: Map[Producer[P, _], List[Producer[P, _]]] = {
-    allNodes
+    nodes
       .foldLeft(empty) { (graph, child) =>
-        val withChild = graph + (child -> graph.getOrElse(child, emptyList))
+        val withChild = graph + (child -> graph.getOrElse(child, Nil))
         Producer.dependenciesOf(child)
           .foldLeft(withChild) { (innerg, parent) =>
-            innerg + (parent -> (child :: innerg.getOrElse(parent, emptyList)).distinct)
+            innerg + (parent -> (child :: innerg.getOrElse(parent, Nil)).distinct)
           }
       }
   }
@@ -58,6 +62,5 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
    */
   def depth(p: Producer[P, _]): Option[Int] = depths.get(p)
   def dependantsOf(p: Producer[P, _]): Option[List[Producer[P, _]]] = graph.get(p)
-  def nodes: List[Producer[P, _]] = allNodes
   def fanOut(p: Producer[P, _]): Option[Int] = dependantsOf(p).map { _.size }
 }
