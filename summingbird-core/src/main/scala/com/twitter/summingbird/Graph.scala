@@ -20,6 +20,21 @@ package com.twitter.summingbird
 import com.twitter.algebird.{ Monoid, Semigroup }
 
 object Producer {
+
+  /** return this and the recursively reachable nodes in depth first, left first order
+   * a tail is a node that has 0 dependencies in the Producer graph.
+   * Either there are zero AlsoProducers, or this returns a List of length greater than 1.
+   */
+  def entireGraphOf[P <: Platform[P], T](p: Producer[P, T]): List[Producer[P, _]] = {
+    // TODO: optimize and share such graph walking code in one place on generic types
+    val parents = p match {
+      case AlsoProducer(l, r) => List(l, r) // the left is not a dep, need a special case
+      case _ => dependenciesOf(p)
+    }
+    val above = parents.flatMap(entireGraphOf(_))
+    (p :: above).distinct
+  }
+
   def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
     paths.collectFirst { case s: Summer[P, _, _] => s }
 
@@ -46,6 +61,7 @@ object Producer {
      * I work around with the cast.
      */
     p match {
+      case AlsoProducer(_, prod) => List(prod)
       case NamedProducer(producer, _) => List(producer)
       case IdentityKeyedProducer(producer) => List(producer.asInstanceOf[Producer[P, _]])
       case Source(source, _) => List()
@@ -58,8 +74,8 @@ object Producer {
     }
   }
 
-  /** Since we know these nodes form a DAG by immutability
-   * the search is easy
+  /**
+   * Return all dependencies of a given node in depth first, left first order.
    */
   def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
     @annotation.tailrec
@@ -84,6 +100,12 @@ object Producer {
   * in-progress TopologyBuilder.
   */
 sealed trait Producer[P <: Platform[P], T] {
+  /** Ensure this is scheduled, but return something equivalent to the argument
+   * like the function `par` in Haskell.
+   * This can be used to combine two independent Producers in a way that ensures
+   * that the Platform will plan both into a single Plan.
+   */
+  def also[R](that: Producer[P, R]): Producer[P, R] = AlsoProducer(this, that)
   def name(id: String): Producer[P, T] = NamedProducer(this, id)
   def merge(r: Producer[P, T]): Producer[P, T] = MergedProducer(this, r)
 
@@ -110,6 +132,12 @@ sealed trait Producer[P <: Platform[P], T] {
 
 case class Source[P <: Platform[P], T](source: P#Source[T], manifest: Manifest[T])
     extends Producer[P, T]
+
+/**
+ * This is a special node that ensures that the first argument is planned, but produces values
+ * equivalent to the result.
+ */
+case class AlsoProducer[P <: Platform[P], T, R](ensure: Producer[P, T], result: Producer[P, R]) extends Producer[P, R]
 
 case class NamedProducer[P <: Platform[P], T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
