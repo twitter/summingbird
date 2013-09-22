@@ -54,8 +54,8 @@ sealed trait StormNode {
     prefix + getNameFallback + "\n" + members.foldLeft(""){ case (str, producer) =>
       str + prefix + "\t" + producer.getClass.getName.replaceFirst("com.twitter.summingbird.", "") + "\n"
     }
-
   }
+
   override def toString(): String = {
     toStringWithPrefix("\t")
   }
@@ -143,28 +143,16 @@ object StormDag {
   }
   def build(tail: Producer[Storm, _], registry: List[StormNode]) : StormDag = {
 
-     val seenNames = Set[StormNode]()
-
-
-
+    val seenNames = Set[StormNode]()
     val producerToNode = buildProducerToNodeLookUp(registry)
-
     val dag = registry.foldLeft(StormDag(tail, producerToNode, registry)){ (curDag, stormNode) =>
       // Here we are building the StormDag's connection topology.
       // We visit every producer and connect the StormNode's represented by its dependant and dependancies.
       // Producers which live in the same node will result in a NOP in connect.
+
       stormNode.members.foldLeft(curDag) { (innerDag, dependantProducer) =>
-        dependantProducer match {
-          case Summer(producer, _, _) => innerDag.connect(producer, dependantProducer)
-          case IdentityKeyedProducer(producer) => innerDag.connect(producer, dependantProducer)
-          case NamedProducer(producer, newId) => innerDag.connect(producer, dependantProducer)
-          case OptionMappedProducer(producer, op, manifest) => innerDag.connect(producer, dependantProducer)
-          case FlatMappedProducer(producer, op) => innerDag.connect(producer, dependantProducer)
-          case WrittenProducer(producer, sinkSupplier) => innerDag.connect(producer, dependantProducer)
-          case LeftJoinedProducer(producer, StoreWrapper(newService)) => innerDag.connect(producer, dependantProducer)
-          case MergedProducer(l, r) => innerDag.connect(l, dependantProducer).connect(r, dependantProducer)
-          case Source(_, _) => innerDag
-        }
+        Producer.dependenciesOf(dependantProducer)
+            .foldLeft(innerDag) { (dag, dep) => dag.connect(dep, dependantProducer) }
       }
     }
 
@@ -189,7 +177,6 @@ object StormDag {
     val (nodeToName, _) = genNames(dag.tailN, dag, Map(dag.tailN -> "T"), Set("T"))
     val nameToNode = nodeToName.map((t) => (t._2,t._1))
     dag.copy(nodeToName = nodeToName, nameToNode = nameToNode)
-
   }
 }
 
@@ -213,7 +200,6 @@ object DagBuilder {
     val forkedNodes = Producer.transitiveDependenciesOf(tail)
                         .filter(dep.fanOut(_).exists(_ > 1)).toSet
     def distinctAddToList[T](l : List[T], n : T): List[T] = if(l.contains(n)) l else (n :: l)
-
 
     // Add the dependentProducer to a StormNode along with each of its dependencies in turn.
     def addWithDependencies[T](dependantProducer: Prod[T], previousBolt: StormNode, 
