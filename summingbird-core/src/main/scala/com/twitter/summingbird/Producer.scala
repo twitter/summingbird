@@ -22,17 +22,19 @@ import com.twitter.algebird.{ Monoid, Semigroup }
 object Producer {
 
   /** return this and the recursively reachable nodes in depth first, left first order
-   * a tail is a node that has 0 dependencies in the Producer graph.
-   * Either there are zero AlsoProducers, or this returns a List of length greater than 1.
+   * Differs from transitiveDependencies in that this goes up both sides of an either
+   * and it returns the input node.
    */
   def entireGraphOf[P <: Platform[P], T](p: Producer[P, T]): List[Producer[P, _]] = {
-    // TODO: optimize and share such graph walking code in one place on generic types
-    val parents = p match {
-      case AlsoProducer(l, r) => List(l, r) // the left is not a dep, need a special case
-      case _ => dependenciesOf(p)
+    val parentFn = { (in: Producer[P, _]) => in match {
+        case AlsoProducer(l, r) => List(l, r) // the left is not a dep, need a special case
+        case _ => dependenciesOf(in)
+      }
     }
-    val above = parents.flatMap(entireGraphOf(_))
-    (p :: above).distinct
+    // The casts can be removed when Producer is covariant:
+    val nfn = parentFn.asInstanceOf[graph.NeighborFn[Producer[P, Any]]]
+    val above = graph.depthFirstOf(p.asInstanceOf[Producer[P, Any]])(nfn).toList.asInstanceOf[List[Producer[P, _]]]
+    p :: above
   }
 
   def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
@@ -78,19 +80,9 @@ object Producer {
    * Return all dependencies of a given node in depth first, left first order.
    */
   def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
-    @annotation.tailrec
-    def loop(stack: List[Producer[P, _]], deps: List[Producer[P,_]], acc: Set[Producer[P, _]]): (List[Producer[P,_]], Set[Producer[P, _]]) = {
-      stack match {
-        case Nil => (deps, acc)
-        case h::tail =>
-          val newStack = dependenciesOf(h).filterNot(acc).foldLeft(tail) { (s, it) => it :: s }
-          val newDeps = if(acc.contains(h)) deps else (h :: deps)
-          loop(newStack, newDeps, acc + h)
-      }
-    }
-    val start = dependenciesOf(p)
-    val (deps, _) = loop(start, start, start.toSet)
-    deps
+    // The casts can be removed when Producer is covariant:
+    val nfn = (dependenciesOf _).asInstanceOf[graph.NeighborFn[Producer[P, Any]]]
+    graph.depthFirstOf(p.asInstanceOf[Producer[P, Any]])(nfn).toList.asInstanceOf[List[Producer[P, _]]]
   }
 }
 

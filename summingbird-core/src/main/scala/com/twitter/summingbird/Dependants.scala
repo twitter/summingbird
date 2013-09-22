@@ -16,6 +16,8 @@
 
 package com.twitter.summingbird
 
+import com.twitter.summingbird.graph._
+
 /** Producers are Directed Acyclic Graphs
  * by the fact that they are immutable.
  */
@@ -23,44 +25,37 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
   lazy val allTails: List[Producer[P, _]] = nodes.filter { fanOut(_).get == 0 }
   val nodes: List[Producer[P, _]] = Producer.entireGraphOf(tail)
 
-  private val empty: Map[Producer[P, _], List[Producer[P, _]]] = Map.empty
-
   /** This is the dependants graph. Each Producer knows who it depends on
    * but not who depends on it without doing this computation
    */
-  private val graph: Map[Producer[P, _], List[Producer[P, _]]] = {
-    nodes
-      .foldLeft(empty) { (graph, child) =>
-        val withChild = graph + (child -> graph.getOrElse(child, Nil))
-        Producer.dependenciesOf(child)
-          .foldLeft(withChild) { (innerg, parent) =>
-            innerg + (parent -> (child :: innerg.getOrElse(parent, Nil)).distinct)
-          }
-      }
+  private val graph: NeighborFn[Producer[P, _]] = {
+    // The casts can be removed when Producer is covariant:
+    val nfn = (Producer.dependenciesOf _).asInstanceOf[NeighborFn[Producer[P, Any]]]
+    reversed(nodes.asInstanceOf[List[Producer[P, Any]]])(nfn)
+      .asInstanceOf[NeighborFn[Producer[P, _]]]
   }
-  private val depths: Map[Producer[P, _], Int] = computeDepth(graph.keys.toSet, Map.empty)
-
-  @annotation.tailrec
-  private def computeDepth(todo: Set[Producer[P, _]], acc: Map[Producer[P, _], Int]): Map[Producer[P, _], Int] =
-    if(todo.isEmpty) acc
-    else {
-
-      def withParents(n: Producer[P, _]) = (n :: Producer.dependenciesOf(n)).distinct.filterNot { acc.contains(_) }
-
-      val (done, rest) = todo.map { withParents(_) }.partition { _.size == 1 }
-      val newTodo = rest.flatten
-      val newAcc = acc ++ (done.flatten.map { n =>
-        val depth = Producer.dependenciesOf(n)
-          .map { acc(_) + 1 }
-          .reduceOption { _ max _ }
-          .getOrElse(0)
-        n -> depth
-      })
-      computeDepth(newTodo, newAcc)
-    }
+  private val depths: Map[Producer[P, _], Int] = {
+    // The casts can be removed when Producer is covariant:
+    val nfn = (Producer.dependenciesOf _).asInstanceOf[NeighborFn[Producer[P, Any]]]
+    dagDepth(nodes.asInstanceOf[List[Producer[P, Any]]])(nfn)
+      .asInstanceOf[Map[Producer[P, _], Int]]
+  }
   /** The max of zero and 1 + depth of all parents if the node is the graph
    */
+  def isNode(p: Producer[P, _]): Boolean = depth(p).isDefined
   def depth(p: Producer[P, _]): Option[Int] = depths.get(p)
-  def dependantsOf(p: Producer[P, _]): Option[List[Producer[P, _]]] = graph.get(p)
+
+  def dependantsOf(p: Producer[P, _]): Option[List[Producer[P, _]]] =
+    if(isNode(p)) Some(graph(p).toList) else None
+
   def fanOut(p: Producer[P, _]): Option[Int] = dependantsOf(p).map { _.size }
+  /**
+   * Return all dependendants of a given node.
+   * Does not include itself
+   */
+  def transitiveDependantsOf(p: Producer[P, _]): List[Producer[P, _]] = {
+    // The casts can be removed when Producer is covariant:
+    val nfn = graph.asInstanceOf[NeighborFn[Producer[P, Any]]]
+    depthFirstOf(p.asInstanceOf[Producer[P, Any]])(nfn).toList.asInstanceOf[List[Producer[P, _]]]
+  }
 }
