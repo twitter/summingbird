@@ -61,7 +61,7 @@ class Memory extends Platform[Memory] {
             val (left, leftM) = toStream(l, jamfs)
             // We need to force all of left to make sure any
             // side effects in write happen
-            val lforcedEmpty = left.filter(_ => true)
+            val lforcedEmpty = left.filter(_ => false)
             val (right, rightM) = toStream(r, leftM)
             (right ++ lforcedEmpty, rightM)
 
