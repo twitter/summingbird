@@ -32,8 +32,6 @@ case class VizGraph[P <: Platform[P]](tail: Producer[P, _]) {
     children.headOption match {
       case Some(child: NamedProducer[_, _]) =>
         recurseGetNode(child, Some(child.id))
-      case Some(child: IdentityKeyedProducer[_, _, _]) =>
-        recurseGetNode(child, Some(name))
       case _ =>
         (name, n, children)
     }
@@ -60,7 +58,6 @@ case class VizGraph[P <: Platform[P]](tail: Producer[P, _]) {
     val (graphStr, _) = dependantState.nodes.foldLeft(("", emptyNameLookupTable)) { case ((runningStr, nameLookupTable), nextNode) =>
       nextNode match {
         case NamedProducer(parent, name) => (runningStr, nameLookupTable)
-        case IdentityKeyedProducer(_) => (runningStr, nameLookupTable)
         case _ => 
           // Compute the lines and new names for the nextNode
           val (rawNodeName, evalNode, children) = recurseGetNode(nextNode)
