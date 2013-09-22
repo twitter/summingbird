@@ -25,10 +25,10 @@ object Producer {
    * Differs from transitiveDependencies in that this goes up both sides of an either
    * and it returns the input node.
    */
-  def entireGraphOf[P <: Platform[P], T](p: Producer[P, T]): List[Producer[P, _]] = {
-    val parentFn = { (in: Producer[P, _]) => in match {
+  def entireGraphOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
+    val parentFn = { (in: Producer[P, Any]) => in match {
         case AlsoProducer(l, r) => List(l, r) // the left is not a dep, need a special case
-        case _ => dependenciesOf(in)
+        case _ => dependenciesOf(in).asInstanceOf[Producer[P, Any]]
       }
     }
     // The casts can be removed when Producer is covariant:
