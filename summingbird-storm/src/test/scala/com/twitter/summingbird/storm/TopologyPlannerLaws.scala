@@ -279,4 +279,9 @@ object TopologyPlannerLaws extends Properties("StormDag") {
       success
     }
   }
+
+  property("Nodes in the storm DAG should have unique names") = forAll { (dag: StormDag) =>
+    val allNames = dag.nodes.toList.map{n => dag.getNodeName(n)}
+    allNames.size == allNames.distinct.size
+  }
 }

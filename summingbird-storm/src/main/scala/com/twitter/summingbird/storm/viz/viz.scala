@@ -24,10 +24,8 @@ case class VizGraph(dag: StormDag) {
   type BaseLookupTable[T] = (Map[T, String], Map[String, Int])
   type NameLookupTable = BaseLookupTable[Producer[Storm, _]]
 
-  type NodeNameLookupTable = BaseLookupTable[StormNode]
   val dependantState: Dependants[Storm] = Dependants(dag.tail)
   def buildLookupTable[T]() = (Map[T, String](), Map[String, Int]())
-  def emptyNodeNameLookupTable(): NodeNameLookupTable = buildLookupTable()
   def emptyNameLookupTable(): NameLookupTable = buildLookupTable()
   private def defaultName[T](node: T): String = node.getClass.getName.replaceFirst("com.twitter.summingbird.","")
 
@@ -71,15 +69,14 @@ case class VizGraph(dag: StormDag) {
     }
   }
   def genClusters(): String = {
-    val (clusters, producerMappings, nodeNames, producerNames, nodeToShortLookupTable) = dag.nodes.foldLeft((List[String](), List[String](), emptyNodeNameLookupTable(), emptyNameLookupTable(), Map[StormNode, String]())) { 
-        case ((clusters, producerMappings, curNodeNameLookupTable, nameLookupTable, nodeShortName), node) =>
+    val (clusters, producerMappings, producerNames, nodeToShortLookupTable) = dag.nodes.foldLeft((List[String](), List[String](), emptyNameLookupTable(), Map[StormNode, String]())) { 
+        case ((clusters, producerMappings, nameLookupTable, nodeShortName), node) =>
 
-          val (newNodeNameLookupTable, nodeName) = getName(curNodeNameLookupTable, node, Some(node.getName))
           val (nodeDefinitions, mappings, newNameLookupTable) = getSubGraphStr(nameLookupTable, node)
           val shortName = "cluster_" + node.hashCode.toHexString
           val newNodeShortName = nodeShortName + (node -> shortName)
-          val nextCluster = "subgraph %s {\n\tlabel=\"%s\"\n%s\n}\n".format(shortName, nodeName, nodeDefinitions.mkString("\n"))
-          (nextCluster :: clusters, mappings ++ producerMappings, newNodeNameLookupTable, newNameLookupTable, newNodeShortName)
+          val nextCluster = "subgraph %s {\n\tlabel=\"%s\"\n%s\n}\n".format(shortName, dag.getNodeName(node), nodeDefinitions.mkString("\n"))
+          (nextCluster :: clusters, mappings ++ producerMappings, newNameLookupTable, newNodeShortName)
     }
 
     "digraph summingbirdGraph {\n" + (clusters ++ producerMappings).mkString("\n") +  "\n}"
