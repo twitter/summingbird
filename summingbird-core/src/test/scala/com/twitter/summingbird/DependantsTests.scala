@@ -22,60 +22,21 @@ import org.scalacheck._
 import Gen._
 import Arbitrary.arbitrary
 import org.scalacheck.Prop._
+import scala.util.Random
 
 import scala.collection.mutable.{Map => MMap}
 
 object DependantsTest extends Properties("Dependants") {
+  import TestGraphGenerators._
+  implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
+  implicit def sink1: Memory#Sink[Int] = ((_) => Unit)
+  implicit def sink2: Memory#Sink[(Int, Int)] = ((_) => Unit)
+  def genIntList = Seq.fill(50)(Random.nextInt).toList
+  def genPairIntList = Seq.fill(50)((Random.nextInt, Random.nextInt)).toList
+  implicit def genSource1: Gen[Producer[Memory, Int]] = Gen.choose(1,1000).map(x => Producer.source[Memory, Int](genIntList))
+  implicit def genSource2: Gen[KeyedProducer[Memory, Int, Int]] = Gen.choose(1,1000).map(x => IdentityKeyedProducer(Producer.source[Memory, (Int, Int)](genPairIntList)))
 
-  val genSource1 = value(Producer.source[Memory, Int](List[Int]()))
-  val genSource2 = value(IdentityKeyedProducer(Producer.source[Memory, (Int, Int)](List[(Int, Int)]())))
-
-  // Put the non-recursive calls first, otherwise you blow the stack
-  lazy val genOptMap11 = for {
-    fn <- arbitrary[(Int) => Option[Int]]
-    in <- genProd1
-  } yield OptionMappedProducer(in, fn, manifest[Int])
-
-  lazy val genOptMap12 = for {
-    fn <- arbitrary[(Int) => Option[(Int,Int)]]
-    in <- genProd1
-  } yield IdentityKeyedProducer(OptionMappedProducer(in, fn, manifest[(Int, Int)]))
-
-  lazy val genOptMap21 = for {
-    fn <- arbitrary[((Int,Int)) => Option[Int]]
-    in <- genProd2
-  } yield OptionMappedProducer(in, fn, manifest[Int])
-
-  lazy val genOptMap22 = for {
-    fn <- arbitrary[((Int,Int)) => Option[(Int,Int)]]
-    in <- genProd2
-  } yield IdentityKeyedProducer(OptionMappedProducer(in, fn, manifest[(Int, Int)]))
-  // TODO (https://github.com/twitter/summingbird/issues/74): add more
-  // nodes, abstract over Platform
-  lazy val summed = for {
-    in <- genSummable // don't sum sums
-  } yield in.sumByKey(MMap[Int, Int]())
-
-  lazy val also1 = for {
-    _ <- Gen.choose(0, 1) // avoids blowup on self recursion
-    out <- genProd1
-    ignored <- oneOf(genProd2, genProd1, oneOf(Producer.transitiveDependenciesOf(out))): Gen[Producer[Memory, _]]
-  } yield ignored.also(out)
-
-  lazy val also2 = for {
-    _ <- Gen.choose(0, 1) // avoids blowup on self recursion
-    out <- genProd2
-    ignored <- oneOf(genProd2, genProd1, oneOf(Producer.transitiveDependenciesOf(out))): Gen[Producer[Memory, _]]
-  } yield IdentityKeyedProducer(ignored.also(out))
-
-  // We bias towards sources so the trees don't get too deep
-  def genSummable: Gen[KeyedProducer[Memory, Int, Int]] = frequency((2, genSource2), (1, genOptMap12), (1, genOptMap22))
-  def genProd2: Gen[KeyedProducer[Memory, Int, Int]] =
-    frequency((3, genSource2), (1, genOptMap12), (1, genOptMap22), (1, also2), (1, summed))
-  def genProd1: Gen[Producer[Memory, Int]] =
-    frequency((3, genSource1), (1, genOptMap11), (1, genOptMap21), (1, also1))
-
-  implicit def genProducer: Arbitrary[Producer[Memory, _]] = Arbitrary(oneOf(genProd1, genProd2))
+  implicit def genProducer: Arbitrary[Producer[Memory, _]] = Arbitrary(oneOf(genProd1, genProd2, summed))
 
   property("transitive deps includes non-transitive") = forAll { (prod: Producer[Memory, _]) =>
     val deps = Producer.dependenciesOf(prod).toSet
@@ -84,9 +45,12 @@ object DependantsTest extends Properties("Dependants") {
   property("we don't depend on ourself") = forAll { (prod: Producer[Memory, _]) =>
     !((Producer.dependenciesOf(prod) ++ Producer.transitiveDependenciesOf(prod)).toSet.contains(prod))
   }
+
   property("if transitive deps == non-transitive, then parents are sources") = forAll { (prod: Producer[Memory, _]) =>
     val deps = Producer.dependenciesOf(prod)
-    (Producer.transitiveDependenciesOf(prod) == deps) ==> (deps.forall { case s@Source(_, _) => true; case _ => false })
+    (Producer.transitiveDependenciesOf(prod) == deps) ==> {
+      deps.forall { case s@Source(_, _) => true; case _ => false }
+    }
   }
   def implies(a: Boolean, b: => Boolean): Boolean = if (a) b else true
 
