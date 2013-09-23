@@ -217,6 +217,13 @@ object Scalding {
   def merge[T](left: FlowToPipe[T], right: FlowToPipe[T]): FlowToPipe[T] =
     for { l <- left; r <- right } yield (l ++ r)
 
+  /**
+   * This does the AlsoProducer logic of making `ensure` a part of the
+   * flow, but not this output.
+   */
+  def also[L,R](ensure: FlowToPipe[L], result: FlowToPipe[R]): FlowToPipe[R] =
+    for { _ <- ensure; r <- result } yield r
+
   /** Memoize the inner reader
    *  This is not a performance optimization, but a correctness one applicable
    *  to some cases (namely any function that mutates the FlowDef or does IO).
@@ -353,6 +360,23 @@ object Scalding {
               maxAvailable <- StateWithError.getState // read the latest state, which is the time
             } yield Scalding.limitTimes(maxAvailable._1, merged)
             (merged, mr)
+          }
+          /** The logic here is identical to a merge except we ignore what comes out of
+           * the left side, BUT NOT THE TIME. we can't let the right get ahead of what the
+           * left could do to be consistent with the rest of this code.
+           */
+          case AlsoProducer(l, r) => {
+            val (pfl, ml) = buildFlow(options, l, id, fanOuts, built)
+            val (pfr, mr) = buildFlow(options, r, id, fanOuts, ml)
+            val onlyRight = for {
+              // concatenate errors (++) and find the intersection (&&) of times
+              leftAndRight <- pfl.join(pfr,
+                { (lerr: List[FailureReason], rerr: List[FailureReason]) => lerr ++ rerr },
+                { case ((tsl, leftFM), (tsr, _)) => (tsl && tsr, leftFM) })
+              justRight = Scalding.also(leftAndRight._1, leftAndRight._2)
+              maxAvailable <- StateWithError.getState // read the latest state, which is the time
+            } yield Scalding.limitTimes(maxAvailable._1, justRight)
+            (onlyRight, mr)
           }
         }
         // Make sure that we end any chains of nodes at fanned out nodes:
