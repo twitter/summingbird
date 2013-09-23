@@ -59,7 +59,7 @@ lazy val config = new ConfigurationBuilder()
 You're all ready to go! Now it's time to unleash Storm on your Twitter stream. Make sure the `memcached` terminal is still open, then start Storm from the `summingbird` directory:
 
 ```bash
-sbt summingbird-example/run
+./sbt summingbird-example/run
 ```
 
 Storm should puke out a bunch of output, then stabilize and hang. This means that Storm is updating your local memcache instance with counts of every word that it sees in each tweet.
@@ -67,7 +67,7 @@ Storm should puke out a bunch of output, then stabilize and hang. This means tha
 To query the aggregate results in Memcached, you'll need to open an SBT repl in a new terminal:
 
 ```bash
-sbt summingbird-example/console
+./sbt summingbird-example/console
 ```
 
 At the launched repl, run the following:

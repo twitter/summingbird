@@ -47,7 +47,7 @@ object DependantsTest extends Properties("Dependants") {
   property("if transitive deps == non-transitive, then parents are sources") = forAll { (prod: Producer[Memory, _]) =>
     val deps = Producer.dependenciesOf(prod)
     (Producer.transitiveDependenciesOf(prod) == deps) ==> {
-      deps.forall { case s@Source(_, _) => true; case _ => false }
+      deps.forall { case s@Source(_) => true; case _ => false }
     }
   }
   def implies(a: Boolean, b: => Boolean): Boolean = if (a) b else true
@@ -126,7 +126,10 @@ object DependantsTest extends Properties("Dependants") {
     val alln = fix(Set(prod.asInstanceOf[Producer[Memory, Any]]))(allParents _)
     val deps = Dependants(prod)
     val tails = alln.filter(deps.fanOut(_).get == 0)
-    (tails == deps.allTails.toSet) && (deps.nodes.toSet == alln)
+    (tails == deps.allTails.toSet) &&
+      (tails.size == deps.allTails.size) &&
+      (deps.nodes.toSet == alln) &&
+      (deps.nodes.size == alln.size)
   }
 
   property("tails <= AlsoProducer count + 1") = forAll { (prod: Producer[Memory, _]) =>
@@ -137,4 +140,13 @@ object DependantsTest extends Properties("Dependants") {
       (dependants.allTails.size <= (alsoCount + 1))
     }
   }
+
+  property("Sources + transitive dependants are all the nodes") = forAll { (prod: Producer[Memory, _]) =>
+    val allNodes = Producer.entireGraphOf(prod)
+    val sources = allNodes.collect { case s@Source(_) => s }.toSet
+    val dependants = Dependants(prod)
+    val sAndDown = (sources ++ sources.flatMap { dependants.transitiveDependantsOf(_) })
+    allNodes.toSet == sAndDown
+  }
+
 }

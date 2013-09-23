@@ -33,22 +33,22 @@ object TestGraphGenerators {
   def genOptMap11[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
     fn <- arbitrary[(Int) => Option[Int]]
     in <- genProd1
-  } yield OptionMappedProducer(in, fn, manifest[Int])
+  } yield OptionMappedProducer(in, fn)
 
   def genOptMap12[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
     fn <- arbitrary[(Int) => Option[(Int,Int)]]
     in <- genProd1
-  } yield IdentityKeyedProducer(OptionMappedProducer(in, fn, manifest[(Int, Int)]))
+  } yield IdentityKeyedProducer(OptionMappedProducer(in, fn))
 
   def genOptMap21[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
     fn <- arbitrary[((Int,Int)) => Option[Int]]
     in <- genProd2
-  } yield OptionMappedProducer(in, fn, manifest[Int])
+  } yield OptionMappedProducer(in, fn)
 
   def genOptMap22[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
     fn <- arbitrary[((Int,Int)) => Option[(Int,Int)]]
     in <- genProd2
-  } yield IdentityKeyedProducer(OptionMappedProducer(in, fn, manifest[(Int, Int)]))
+  } yield IdentityKeyedProducer(OptionMappedProducer(in, fn))
 
   def aDependency[P <: Platform[P]](p: KeyedProducer[P, Int, Int])(implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[KeyedProducer[P, Int, Int]] = {
     val deps = Producer.transitiveDependenciesOf(p).collect{case x:KeyedProducer[_, _, _] => x.asInstanceOf[KeyedProducer[P,Int,Int]]}
@@ -90,7 +90,7 @@ object TestGraphGenerators {
   def genWrite22[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]],
   					genSource2 : Arbitrary[KeyedProducer[P, Int, Int]],
   					testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[KeyedProducer[P, Int, Int]] = for {
-    _  <- Gen.choose(0,1) 
+    _  <- Gen.choose(0,1)
     p1 <- genProd2
   } yield IdentityKeyedProducer(p1.write(sink2))
 

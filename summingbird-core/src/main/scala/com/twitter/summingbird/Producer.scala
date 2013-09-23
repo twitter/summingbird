@@ -22,17 +22,20 @@ import com.twitter.algebird.{ Monoid, Semigroup }
 object Producer {
 
   /** return this and the recursively reachable nodes in depth first, left first order
-   * a tail is a node that has 0 dependencies in the Producer graph.
-   * Either there are zero AlsoProducers, or this returns a List of length greater than 1.
+   * Differs from transitiveDependencies in that this goes up both sides of an either
+   * and it returns the input node.
    */
-  def entireGraphOf[P <: Platform[P], T](p: Producer[P, T]): List[Producer[P, _]] = {
-    // TODO: optimize and share such graph walking code in one place on generic types
-    val parents = p match {
-      case AlsoProducer(l, r) => List(l, r) // the left is not a dep, need a special case
-      case _ => dependenciesOf(p)
+  def entireGraphOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
+    // The casts can be removed when Producer is covariant:
+    val parentFn = { (in: Producer[P, Any]) => in match {
+        case AlsoProducer(l, r) =>
+          List(l, r).asInstanceOf[List[Producer[P, Any]]] // the left is not a dep, need a special case
+        case _ => dependenciesOf(in).asInstanceOf[List[Producer[P, Any]]]
+      }
     }
-    val above = parents.flatMap(entireGraphOf(_))
-    (p :: above).distinct
+    val above = graph.depthFirstOf(p.asInstanceOf[Producer[P, Any]])(parentFn)
+      .toList.asInstanceOf[List[Producer[P, _]]]
+    p :: above
   }
 
   def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
@@ -42,8 +45,7 @@ object Producer {
     * Begin from some base representation. An iterator for in-memory,
     * for example.
     */
-  def source[P <: Platform[P], T](s: P#Source[T])(implicit manifest: Manifest[T]): Producer[P, T] =
-    Source[P, T](s, manifest)
+  def source[P <: Platform[P], T](s: P#Source[T]): Producer[P, T] = Source[P, T](s)
 
   implicit def evToKeyed[P <: Platform[P], T, K, V](producer: Producer[P, T])
     (implicit ev: T <:< (K, V)): KeyedProducer[P, K, V] =
@@ -64,8 +66,8 @@ object Producer {
       case AlsoProducer(_, prod) => List(prod)
       case NamedProducer(producer, _) => List(producer)
       case IdentityKeyedProducer(producer) => List(producer.asInstanceOf[Producer[P, _]])
-      case Source(source, _) => List()
-      case OptionMappedProducer(producer, fn, mf) => List(producer)
+      case Source(_) => List()
+      case OptionMappedProducer(producer, fn) => List(producer)
       case FlatMappedProducer(producer, fn) => List(producer)
       case MergedProducer(l, r) => List(l, r)
       case WrittenProducer(producer, fn) => List(producer)
@@ -78,19 +80,9 @@ object Producer {
    * Return all dependencies of a given node in depth first, left first order.
    */
   def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
-    @annotation.tailrec
-    def loop(stack: List[Producer[P, _]], deps: List[Producer[P,_]], acc: Set[Producer[P, _]]): (List[Producer[P,_]], Set[Producer[P, _]]) = {
-      stack match {
-        case Nil => (deps, acc)
-        case h::tail =>
-          val newStack = dependenciesOf(h).filterNot(acc).foldLeft(tail) { (s, it) => it :: s }
-          val newDeps = if(acc.contains(h)) deps else (h :: deps)
-          loop(newStack, newDeps, acc + h)
-      }
-    }
-    val start = dependenciesOf(p)
-    val (deps, _) = loop(start, start, start.toSet)
-    deps
+    // The casts can be removed when Producer is covariant:
+    val nfn = (dependenciesOf _).asInstanceOf[graph.NeighborFn[Producer[P, Any]]]
+    graph.depthFirstOf(p.asInstanceOf[Producer[P, Any]])(nfn).toList.asInstanceOf[List[Producer[P, _]]]
   }
 }
 
@@ -109,28 +101,31 @@ sealed trait Producer[P <: Platform[P], T] {
   def name(id: String): Producer[P, T] = NamedProducer(this, id)
   def merge(r: Producer[P, T]): Producer[P, T] = MergedProducer(this, r)
 
-  def filter(fn: T => Boolean)(implicit mf: Manifest[T]): Producer[P, T] =
+  def collect[U](fn: PartialFunction[T,U]): Producer[P, U] =
+    optionMap(fn.lift)
+
+  def filter(fn: T => Boolean): Producer[P, T] =
     // Enforce using the OptionMapped here:
     optionMap(Some(_).filter(fn))
 
-  def map[U](fn: T => U)(implicit mf: Manifest[U]): Producer[P, U] =
+  def map[U](fn: T => U): Producer[P, U] =
     // Enforce using the OptionMapped here:
     optionMap(t => Some(fn(t)))
 
-  def optionMap[U: Manifest](fn: T => Option[U]): Producer[P, U] =
-    OptionMappedProducer[P, T, U](this, fn, manifest[U])
+  def optionMap[U](fn: T => Option[U]): Producer[P, U] =
+    OptionMappedProducer[P, T, U](this, fn)
 
   def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
     FlatMappedProducer[P, T, U](this, fn)
 
   def write(sink: P#Sink[T]): Producer[P, T] = WrittenProducer(this, sink)
 
-  def either[U](other: Producer[P, U])(implicit tmf: Manifest[T], umf: Manifest[U]): Producer[P, Either[T, U]] =
+  def either[U](other: Producer[P, U]): Producer[P, Either[T, U]] =
     map(Left(_): Either[T, U])
       .merge(other.map(Right(_): Either[T, U]))
 }
 
-case class Source[P <: Platform[P], T](source: P#Source[T], manifest: Manifest[T])
+case class Source[P <: Platform[P], T](source: P#Source[T])
     extends Producer[P, T]
 
 /**
@@ -144,7 +139,7 @@ case class NamedProducer[P <: Platform[P], T](producer: Producer[P, T], id: Stri
 /** Represents filters and maps which may be optimized differently
  * Note that "option-mapping" is closed under composition and hence useful to call out
  */
-case class OptionMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => Option[U], manifest: Manifest[U])
+case class OptionMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => Option[U])
     extends Producer[P, U]
 
 case class FlatMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => TraversableOnce[U])
