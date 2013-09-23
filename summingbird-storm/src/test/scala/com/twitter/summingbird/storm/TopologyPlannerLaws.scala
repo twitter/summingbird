@@ -53,95 +53,27 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
   implicit val batcher = Batcher.unit
 
-  val testStore = MergeableStoreSupplier.from {MergeableStore.fromStore[(Int, BatchID), Int](new JMapStore[(Int, BatchID), Int]())}
+  import TestGraphGenerators._
+  implicit def sink1: Storm#Sink[Int] = (() => ((_) => Future.Unit))
+  implicit def sink2: Storm#Sink[(Int, Int)] = (() => ((_) => Future.Unit))
 
-  def genSource1 = value(Storm.source(TraversableSpout(List[Int]())))
-  def genSource2 = value(IdentityKeyedProducer(Storm.source(TraversableSpout(List[(Int, Int)]()))))
-
-  // Put the non-recursive calls first, otherwise you blow the stack
-  lazy val genOptMap11 = for {
-    fn <- arbitrary[(Int) => Option[Int]]
-    in <- genProd1
-  } yield OptionMappedProducer(in, fn, manifest[Int])
-
-  lazy val genFlatMap11 = for {
-    fn <- arbitrary[(Int) => List[Int]]
-    in <- genProd1
-  } yield FlatMappedProducer(in, fn)
-
-  lazy val genFlatMap12 = for {
-    fn <- arbitrary[(Int) => List[(Int, Int)]]
-    in <- genProd1
-  } yield IdentityKeyedProducer(FlatMappedProducer(in, fn))
-
-  lazy val genOptMap12 = for {
-    fn <- arbitrary[(Int) => Option[(Int,Int)]]
-    in <- genProd1
-  } yield IdentityKeyedProducer(OptionMappedProducer(in, fn, manifest[(Int, Int)]))
-
-  lazy val genMerged1 = for {
-    _  <- Gen.choose(0,1)
-    p1 <- genProd1
-    p2 <- genProd1
-  } yield MergedProducer(p1, p2)
-
-  lazy val genFlatMap22 = for {
-    fn <- arbitrary[((Int, Int)) => List[(Int, Int)]]
-    in <- genProd2
-  } yield IdentityKeyedProducer(FlatMappedProducer(in, fn))
-
-    lazy val genFlatMap21 = for {
-    fn <- arbitrary[((Int, Int)) => List[Int]]
-    in <- genProd2
-  } yield FlatMappedProducer(in, fn)
-
-
-  def aDependency(p: KeyedProducer[Storm, Int, Int]): Gen[KeyedProducer[Storm, Int, Int]] = {
-    val deps = Producer.transitiveDependenciesOf(p).collect{case x:KeyedProducer[_, _, _] => x.asInstanceOf[KeyedProducer[Storm,Int,Int]]}
-    if(deps.size == 1) genProd2 else oneOf(deps)
+  implicit def testStore: Storm#Store[Int, Int] = MergeableStoreSupplier.from {MergeableStore.fromStore[(Int, BatchID), Int](new JMapStore[(Int, BatchID), Int]())}
+  def buildSource() = {
+    println("Creating source1")
+    
   }
-
-  lazy val genMerged2 = for {
-    _  <- Gen.choose(0,1) 
-    p1 <- genProd2
-    p2 <- oneOf(genProd2, aDependency(p1))
-  } yield IdentityKeyedProducer(MergedProducer(p1, p2))
-
-
-  lazy val genWrite22: Gen[KeyedProducer[Storm, Int, Int]] = for {
-    _  <- Gen.choose(0,1) 
-    p1 <- genProd2
-  } yield IdentityKeyedProducer(p1.write(() => {(_) => com.twitter.util.Future.Unit}))
-
-
-  lazy val genOptMap21 = for {
-    fn <- arbitrary[((Int,Int)) => Option[Int]]
-    in <- genProd2
-  } yield OptionMappedProducer(in, fn, manifest[Int])
-
-  lazy val genOptMap22 = for {
-    fn <- arbitrary[((Int,Int)) => Option[(Int,Int)]]
-    in <- genProd2
-  } yield IdentityKeyedProducer(OptionMappedProducer(in, fn, manifest[(Int, Int)]))
-  // TODO (https://github.com/twitter/summingbird/issues/74): add more
-  // nodes, abstract over Platform
-  lazy val summed : Gen[Producer[Storm, _]]= for {
-    in <- genProd2 
-  } yield in.sumByKey(testStore)
-
+  implicit def genSource1: Gen[Producer[Storm, Int]] = Gen.choose(1,100000000).map(x => Storm.source(TraversableSpout(List[Int]())))
+  implicit def genSource2: Gen[KeyedProducer[Storm, Int, Int]] = Gen.choose(1,100000000).map(x => IdentityKeyedProducer(Storm.source(TraversableSpout(List[(Int, Int)]()))))
+  
   lazy val genDag : Gen[StormDag]= for {
     tail <- summed 
   } yield DagBuilder(tail)
 
-  // Removed Summable from here, so we never should recurse
-  def genProd2: Gen[KeyedProducer[Storm, Int, Int]] = frequency((12, genSource2), (5, genOptMap12), (5, genOptMap22), (7, genWrite22), (5, genMerged2), (5, genFlatMap22), (5, genFlatMap12))
-  def genProd1: Gen[Producer[Storm, Int]] = frequency((12, genSource1), (5, genOptMap11), (5, genOptMap21), (5, genMerged1), (5, genFlatMap11), (5, genFlatMap21))
-
   implicit def genProducer: Arbitrary[StormDag] = Arbitrary(genDag)
 
 
+  
   val testFn = { i: Int => List((i -> i)) }
-
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
@@ -248,13 +180,15 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   property("Prior to a summer the StormNode should be a FinalFlatMapStormBolt") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       val firstP = n.members.last
-      firstP match {
+      val success = firstP match {
         case Summer(_, _, _) =>
             dag.dependsOn(n).size > 0 && dag.dependsOn(n).forall {otherN =>
               otherN.isInstanceOf[FinalFlatMapStormBolt]
             }
         case _ => true
       }
+      if(!success) dumpGraph(dag)
+      success 
     }
   }
 
