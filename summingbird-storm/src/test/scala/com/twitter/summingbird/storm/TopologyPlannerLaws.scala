@@ -16,35 +16,16 @@
 
 package com.twitter.summingbird.storm
 
-
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
-import backtype.storm.testing.{ CompleteTopologyParam, MockedSources }
-import com.twitter.algebird.{MapAlgebra, Monoid}
-import com.twitter.storehaus.{ ReadableStore, JMapStore }
+import com.twitter.storehaus.JMapStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.storm.spout.TraversableSpout
-import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
-import java.util.{Collections, HashMap, Map => JMap, UUID}
-import java.util.concurrent.atomic.AtomicInteger
-import org.specs._
-import org.scalacheck._
-import org.scalacheck.Prop._
-import org.scalacheck.Properties
-
-import scala.collection.JavaConverters._
-import com.twitter.storehaus.{ ReadableStore, JMapStore }
-import scala.collection.mutable.{ArrayBuffer, SynchronizedBuffer}
-import com.twitter.summingbird.TestGraphs
-
 import org.scalacheck._
 import Gen._
-import Arbitrary.arbitrary
+import Arbitrary._
 import org.scalacheck.Prop._
-
-import scala.collection.mutable.{Map => MMap}
 
 
 
@@ -58,12 +39,10 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   implicit def sink2: Storm#Sink[(Int, Int)] = (() => ((_) => Future.Unit))
 
   implicit def testStore: Storm#Store[Int, Int] = MergeableStoreSupplier.from {MergeableStore.fromStore[(Int, BatchID), Int](new JMapStore[(Int, BatchID), Int]())}
-  def buildSource() = {
-    println("Creating source1")
-    
-  }
-  implicit def genSource1: Gen[Producer[Storm, Int]] = Gen.choose(1,100000000).map(x => Storm.source(TraversableSpout(List[Int]())))
-  implicit def genSource2: Gen[KeyedProducer[Storm, Int, Int]] = Gen.choose(1,100000000).map(x => IdentityKeyedProducer(Storm.source(TraversableSpout(List[(Int, Int)]()))))
+
+  implicit def arbSource1: Arbitrary[Producer[Storm, Int]] = Arbitrary(Gen.listOfN(5000,arbInt.arbitrary).map{x: List[Int] =>  Storm.source(TraversableSpout(x))})
+  implicit def arbSource2: Arbitrary[KeyedProducer[Storm, Int, Int]] = Arbitrary(Gen.listOfN(5000,arbitaryIntPair.arbitrary).map{x: List[(Int, Int)] => IdentityKeyedProducer(Storm.source(TraversableSpout(x)))})
+
   
   lazy val genDag : Gen[StormDag]= for {
     tail <- summed 
