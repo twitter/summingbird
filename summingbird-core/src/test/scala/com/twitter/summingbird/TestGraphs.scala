@@ -105,7 +105,8 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     run(platform, plan)
     val lookupFn = toLookupFn(currentStore)
     TestGraphs.diamondJobInScala(items)(fnA)(fnB).forall { case (k, v) =>
-      lookupFn(k).exists(Equiv[V].equiv(v, _))
+      val lv = lookupFn(k).getOrElse(Monoid.zero)
+      Equiv[V].equiv(v, lv)
     } && toSinkChecker(currentSink, items)
   }
 
@@ -130,7 +131,8 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     run(platform, plan)
     val lookupFn = toLookupFn(currentStore)
     TestGraphs.singleStepInScala(items)(fn).forall { case (k, v) =>
-      lookupFn(k).exists(Equiv[V].equiv(v, _))
+      val lv = lookupFn(k).getOrElse(Monoid.zero)
+      Equiv[V].equiv(v, lv)
     }
   }
 
@@ -164,7 +166,8 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
           .map { case (k, u) => (k, (u, serviceFn(k))) }
           .flatMap(postJoinFn)
       ).forall { case (k, v) =>
-          lookupFn(k).exists(Equiv[V].equiv(v, _))
+          val lv = lookupFn(k).getOrElse(Monoid.zero)
+          Equiv[V].equiv(v, lv)
       }
     }
 }
