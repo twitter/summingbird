@@ -242,6 +242,22 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
               recurse(r, toSchedule = List.empty, suffix = rightSuffix, jamfs = leftM)
             val parents = leftNodes ++ rightNodes
             (flatMap(parents, toSchedule), rightM)
+
+          /**
+           * Very similar to Merge, just ignore the left.
+           * TODO:
+           * https://github.com/twitter/summingbird/issues/241
+           * if no one consumes the output of a node on storm,
+           * we should not emit.
+           */
+          case AlsoProducer(l, r) =>
+            val leftSuffix = "L-" + suffixOf(toSchedule, suffix)
+            val rightSuffix = "R-" + suffixOf(toSchedule, suffix)
+            val (_, leftM) =
+              recurse(l, toSchedule = List.empty, suffix = leftSuffix)
+            val (rightNodes, rightM) =
+              recurse(r, toSchedule = List.empty, suffix = rightSuffix, jamfs = leftM)
+            (flatMap(rightNodes, toSchedule), rightM)
         }
         (strings, m + (outerProducer -> strings))
     }

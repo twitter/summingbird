@@ -56,6 +56,15 @@ class Memory extends Platform[Memory] {
             val (rightS, rightM) = toStream(r, leftM)
             (leftS ++ rightS, rightM)
 
+          case AlsoProducer(l, r) =>
+            //Plan the first one, but ignore it
+            val (left, leftM) = toStream(l, jamfs)
+            // We need to force all of left to make sure any
+            // side effects in write happen
+            val lforcedEmpty = left.filter(_ => false)
+            val (right, rightM) = toStream(r, leftM)
+            (right ++ lforcedEmpty, rightM)
+
           case WrittenProducer(producer, fn) =>
             val (s, m) = toStream(producer, jamfs)
             (s.map { i => fn(i); i }, m)
