@@ -50,7 +50,7 @@ case class VizGraph(dag: StormDag) {
     }
   }
 
-  def getSubGraphStr(nameLookupTable: NameLookupTable, node: StormNode): (List[String], List[String], NameLookupTable) = {
+  def getSubGraphStr(nameLookupTable: NameLookupTable, node: Node): (List[String], List[String], NameLookupTable) = {
     node.members.foldLeft((List[String](), List[String](), nameLookupTable)) { case ((definitions, mappings, nameLookupTable), nextNode) =>
       val dependants = dependantState.dependantsOf(nextNode).getOrElse(Set())
 
@@ -69,7 +69,7 @@ case class VizGraph(dag: StormDag) {
     }
   }
   def genClusters(): String = {
-    val (clusters, producerMappings, producerNames, nodeToShortLookupTable) = dag.nodes.foldLeft((List[String](), List[String](), emptyNameLookupTable(), Map[StormNode, String]())) { 
+    val (clusters, producerMappings, producerNames, nodeToShortLookupTable) = dag.nodes.foldLeft((List[String](), List[String](), emptyNameLookupTable(), Map[Node, String]())) { 
         case ((clusters, producerMappings, nameLookupTable, nodeShortName), node) =>
 
           val (nodeDefinitions, mappings, newNameLookupTable) = getSubGraphStr(nameLookupTable, node)

@@ -18,8 +18,9 @@ package com.twitter.summingbird.storm
 
 import com.twitter.summingbird._
 
+case class NodeIdentifier(identifier: String)
 
-sealed trait StormNode {
+sealed trait Node {
   val members: List[Producer[Storm, _]] = List()
 
   private val dependantStateOpt = members.headOption.map(h => Dependants(h))
@@ -33,9 +34,9 @@ sealed trait StormNode {
 
   def localDependantsOf(p: Producer[Storm, _]): List[Producer[Storm, _]] = dependantsOf(p).filter(members.contains(_))
 
-  def toSpout: StormSpout = StormSpout(this.members)
+  def toSpout: SourceNode = SourceNode(this.members)
 
-  def toSummer: SummerStormBolt = SummerStormBolt(this.members)
+  def toSummer: SummerNode = SummerNode(this.members)
 
   def contains(p: Producer[Storm, _]): Boolean = members.contains(p)
 
@@ -43,11 +44,11 @@ sealed trait StormNode {
 
   def getName(dag: StormDag): String = dag.getNodeName(this)
 
-  def shortName(): String
+  def shortName(): NodeIdentifier
 
-  def add(node: Producer[Storm, _]): StormNode
+  def add(node: Producer[Storm, _]): Node
 
-  def reverse: StormNode
+  def reverse: Node
 
 
   def toStringWithPrefix(prefix: String): String = {
@@ -62,67 +63,62 @@ sealed trait StormNode {
 
 }
 
-// This is the default state for StormNodes if there is nothing special about them.
+// This is the default state for Nodes if there is nothing special about them.
 // There can be an unbounded number of these and there is no hard restrictions on ordering/where. Other than
 // locations which must be one of the others
-case class IntermediateFlatMapStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
-  def add(node: Producer[Storm, _]): StormNode = if(members.contains(node)) this else this.copy(members=node :: members)
+case class FlatMapNode(override val members: List[Producer[Storm, _]] = List()) extends Node {
+  def add(node: Producer[Storm, _]): Node = if(members.contains(node)) this else this.copy(members=node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName(): String = "IF"
+  override def shortName(): NodeIdentifier = NodeIdentifier("FlatMap")
 }
 
-case class FinalFlatMapStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
-  def add(node: Producer[Storm, _]): StormNode = if(members.contains(node)) this else this.copy(members=node :: members)
+
+case class SummerNode(override val members: List[Producer[Storm, _]] = List()) extends Node {
+  def add(node: Producer[Storm, _]): Node = if(members.contains(node)) this else this.copy(members=node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName(): String = "FF"
+  override def shortName(): NodeIdentifier = NodeIdentifier("Summer")
 }
 
-case class SummerStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
-  def add(node: Producer[Storm, _]): StormNode = if(members.contains(node)) this else this.copy(members=node :: members)
+case class SourceNode(override val members: List[Producer[Storm, _]] = List()) extends Node {
+  def add(node: Producer[Storm, _]): Node = if(members.contains(node)) this else this.copy(members=node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName(): String = "SU"
-}
-
-case class StormSpout(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
-  def add(node: Producer[Storm, _]): StormNode = if(members.contains(node)) this else this.copy(members=node :: members)
-  def reverse = this.copy(members.reverse)
-  override def shortName(): String = "SP"
+  override def shortName(): NodeIdentifier = NodeIdentifier("Source")
 }
 
 
 
-case class StormDag(tail: Producer[Storm, _], producerToNode: Map[Producer[Storm, _], StormNode],
-              nodes: List[StormNode],
-              nodeToName: Map[StormNode, String] = Map(),
-              nameToNode: Map[String, StormNode] = Map(),
-              dependsOnM: Map[StormNode, List[StormNode]] = Map[StormNode, List[StormNode]](),
-              dependantOfM: Map[StormNode, List[StormNode]] = Map[StormNode, List[StormNode]]()) {
-  def connect(src: StormNode, dest: StormNode): StormDag = {
+case class StormDag(tail: Producer[Storm, _], producerToNode: Map[Producer[Storm, _], Node],
+              nodes: List[Node],
+              nodeToName: Map[Node, String] = Map(),
+              nameToNode: Map[String, Node] = Map(),
+              dependsOnM: Map[Node, List[Node]] = Map[Node, List[Node]](),
+              dependantOfM: Map[Node, List[Node]] = Map[Node, List[Node]]()) {
+  def connect(src: Node, dest: Node): StormDag = {
     if (src == dest) {
       this
     } else {
-      assert(!dest.isInstanceOf[StormSpout])
+      assert(!dest.isInstanceOf[SourceNode])
       // We build/maintain two maps,
       // Nodes to which each node depends on
       // and nodes on which each node depends
-      val oldDependsOnTargets = dependsOnM.getOrElse(src, List[StormNode]())
+      val oldDependsOnTargets = dependsOnM.getOrElse(src, List[Node]())
       val dependsOnTargets = if(oldDependsOnTargets.contains(dest)) oldDependsOnTargets else (dest :: oldDependsOnTargets)
-      val oldDependantOfTargets = dependantOfM.getOrElse(dest, List[StormNode]())
+      val oldDependantOfTargets = dependantOfM.getOrElse(dest, List[Node]())
       val dependantOfTargets = if(oldDependantOfTargets.contains(src)) oldDependantOfTargets else (src :: oldDependantOfTargets)
 
       copy(dependsOnM = dependsOnM + (src -> dependsOnTargets) , dependantOfM = dependantOfM + (dest -> dependantOfTargets))
     }
   }
 
-  def locateOpt(p: Producer[Storm, _]): Option[StormNode] = producerToNode.get(p)
-  def locate(p: Producer[Storm, _]): StormNode = locateOpt(p).get
+  def locateOpt(p: Producer[Storm, _]): Option[Node] = producerToNode.get(p)
+  def locate(p: Producer[Storm, _]): Node = locateOpt(p).get
   def connect(src: Producer[Storm, _], dest: Producer[Storm, _]): StormDag = connect(locate(src), locate(dest))
 
-  def getNodeName(n: StormNode): String = nodeToName(n)
-  def tailN: StormNode = producerToNode(tail)
+  def getNodeName(n: Node): String = nodeToName(n)
+  def tailN: Node = producerToNode(tail)
 
-  def dependantsOf(n: StormNode): List[StormNode] = dependsOnM.get(n).getOrElse(List())
-  def dependsOn(n: StormNode): List[StormNode] = dependantOfM.get(n).getOrElse(List())
+  def dependantsOf(n: Node): List[Node] = dependsOnM.get(n).getOrElse(List())
+  def dependsOn(n: Node): List[Node] = dependantOfM.get(n).getOrElse(List())
 
   def toStringWithPrefix(prefix: String): String = {
     prefix + "StormDag\n" + nodes.foldLeft(""){ case (str, node) =>
@@ -134,20 +130,20 @@ case class StormDag(tail: Producer[Storm, _], producerToNode: Map[Producer[Storm
 }
 
 object StormDag {
-  def buildProducerToNodeLookUp(stormNodeSet: List[StormNode]) : Map[Producer[Storm, _], StormNode] = {
-    stormNodeSet.foldLeft(Map[Producer[Storm, _], StormNode]()){ (curRegistry, stormNode) =>
+  def buildProducerToNodeLookUp(stormNodeSet: List[Node]) : Map[Producer[Storm, _], Node] = {
+    stormNodeSet.foldLeft(Map[Producer[Storm, _], Node]()){ (curRegistry, stormNode) =>
       stormNode.members.foldLeft(curRegistry) { (innerRegistry, producer) =>
         (innerRegistry + (producer -> stormNode))
       }
     }
   }
-  def build(tail: Producer[Storm, _], registry: List[StormNode]) : StormDag = {
+  def build(tail: Producer[Storm, _], registry: List[Node]) : StormDag = {
 
-    val seenNames = Set[StormNode]()
+    val seenNames = Set[Node]()
     val producerToNode = buildProducerToNodeLookUp(registry)
     val dag = registry.foldLeft(StormDag(tail, producerToNode, registry)){ (curDag, stormNode) =>
       // Here we are building the StormDag's connection topology.
-      // We visit every producer and connect the StormNode's represented by its dependant and dependancies.
+      // We visit every producer and connect the Node's represented by its dependant and dependancies.
       // Producers which live in the same node will result in a NOP in connect.
 
       stormNode.members.foldLeft(curDag) { (innerDag, dependantProducer) =>
@@ -163,7 +159,7 @@ object StormDag {
       }
     }
 
-    def genNames(dep: StormNode, dag: StormDag, outerNodeToName: Map[StormNode, String], usedNames: Set[String]): (Map[StormNode, String], Set[String]) = {
+    def genNames(dep: Node, dag: StormDag, outerNodeToName: Map[Node, String], usedNames: Set[String]): (Map[Node, String], Set[String]) = {
       dag.dependsOn(dep).foldLeft((outerNodeToName, usedNames)) {case ((nodeToName, taken), n) =>
           val name = tryGetName(nodeToName(dep) + "-" + n.shortName, taken)
           val useName = nodeToName.get(n) match {
@@ -185,25 +181,25 @@ object DagBuilder {
   private type VisitedStore = Set[Prod[_]]
 
   def apply[P](tail: Producer[Storm, P]): StormDag = {
-    val stormNodeSet = buildStormNodesSet(tail)
+    val stormNodeSet = buildNodesSet(tail)
 
     // The nodes are added in a source -> summer way with how we do list prepends
     // but its easier to look at laws in a summer -> source manner
-    // We also drop all StormNodes with no members(may occur when we visit a node already seen and its the first in that Node)
-    val revsersedNodeSet = stormNodeSet.filter(_.members.size > 0).foldLeft(List[StormNode]()){(nodes, n) => n.reverse :: nodes}
+    // We also drop all Nodes with no members(may occur when we visit a node already seen and its the first in that Node)
+    val revsersedNodeSet = stormNodeSet.filter(_.members.size > 0).foldLeft(List[Node]()){(nodes, n) => n.reverse :: nodes}
     StormDag.build(tail, revsersedNodeSet)
   }
 
-  // This takes an initial pass through all of the Producers, assigning them to StormNodes
-  private def buildStormNodesSet[P](tail: Producer[Storm, P]): List[StormNode] = {
+  // This takes an initial pass through all of the Producers, assigning them to Nodes
+  private def buildNodesSet[P](tail: Producer[Storm, P]): List[Node] = {
     val dep = Dependants(tail)
     val forkedNodes = Producer.transitiveDependenciesOf(tail)
                         .filter(dep.fanOut(_).exists(_ > 1)).toSet
     def distinctAddToList[T](l : List[T], n : T): List[T] = if(l.contains(n)) l else (n :: l)
 
-    // Add the dependentProducer to a StormNode along with each of its dependencies in turn.
-    def addWithDependencies[T](dependantProducer: Prod[T], previousBolt: StormNode,
-                                    stormRegistry: List[StormNode], visited: VisitedStore) : (List[StormNode], VisitedStore) = {
+    // Add the dependentProducer to a Node along with each of its dependencies in turn.
+    def addWithDependencies[T](dependantProducer: Prod[T], previousBolt: Node,
+                                    stormRegistry: List[Node], visited: VisitedStore) : (List[Node], VisitedStore) = {
       if (visited.contains(dependantProducer)) {
         (distinctAddToList(stormRegistry, previousBolt), visited)
       } else {
@@ -212,10 +208,10 @@ object DagBuilder {
 
         def recurse[U](
           producer: Prod[U],
-          updatedBolt: StormNode = currentBolt,
-          updatedRegistry: List[StormNode] = stormRegistry,
+          updatedBolt: Node = currentBolt,
+          updatedRegistry: List[Node] = stormRegistry,
           visited: VisitedStore = visitedWithN)
-        : (List[StormNode], VisitedStore) = {
+        : (List[Node], VisitedStore) = {
           addWithDependencies(producer, updatedBolt, updatedRegistry, visited)
         }
 
@@ -236,28 +232,28 @@ object DagBuilder {
          * or if we can continue by adding this producer to the current physical node.
          *
          * This function acts as a look ahead, rather than depending on the state of the current node it depends
-         * on the nodes further along in the dag. That is conditions for spliting into multiple StormNodes are based on as yet
+         * on the nodes further along in the dag. That is conditions for spliting into multiple Nodes are based on as yet
          * unvisisted Producers.
          */
-        def maybeSplitThenRecurse[U, A](currentProducer: Prod[U], dep: Prod[A]): (List[StormNode], VisitedStore) = {
+        def maybeSplitThenRecurse[U, A](currentProducer: Prod[U], dep: Prod[A]): (List[Node], VisitedStore) = {
           val doSplit = dep match {
             case _ if (forkedNodes.contains(dep)) => true
-            case _ if (currentBolt.isInstanceOf[FinalFlatMapStormBolt] && allDepsMergeableWithSource(dep)) => true
+            case _ if (currentBolt.isInstanceOf[FlatMapNode] && allDepsMergeableWithSource(dep)) => true
             case _ if ((!mergableWithSource(currentProducer)) && allDepsMergeableWithSource(dep)) => true
             case _ => false
           }
           if (doSplit) {
-            recurse(dep, updatedBolt = IntermediateFlatMapStormBolt(), updatedRegistry = distinctAddToList(stormRegistry, currentBolt))
+            recurse(dep, updatedBolt = FlatMapNode(), updatedRegistry = distinctAddToList(stormRegistry, currentBolt))
             } else {
             recurse(dep)
           }
         }
 
         /*
-         * This is a peek ahead when we meet a MergedProducer. We pull the directly depended on MergedProducer's into the same StormNode,
+         * This is a peek ahead when we meet a MergedProducer. We pull the directly depended on MergedProducer's into the same Node,
          * only if that MergedProducer is not a fan out node.
          * This has the effect of pulling all of the merged streams in as siblings rather than just the two.
-         * From this we return a list of the MergedProducers which should be combined into the current StormNode, and the list of nodes
+         * From this we return a list of the MergedProducers which should be combined into the current Node, and the list of nodes
          * on which these nodes depends (the producers passing data into these MergedProducer).
          */
 
@@ -274,7 +270,7 @@ object DagBuilder {
         }
 
         dependantProducer match {
-          case Summer(producer, _, _) => recurse(producer, updatedBolt = FinalFlatMapStormBolt(), updatedRegistry = distinctAddToList(stormRegistry, currentBolt.toSummer))
+          case Summer(producer, _, _) => recurse(producer, updatedBolt = FlatMapNode(), updatedRegistry = distinctAddToList(stormRegistry, currentBolt.toSummer))
           case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
           case NamedProducer(producer, newId) => maybeSplitThenRecurse(dependantProducer, producer)
           case Source(spout) => (distinctAddToList(stormRegistry, currentBolt.toSpout), visitedWithN)
@@ -291,12 +287,12 @@ object DagBuilder {
 
             // Recurse down all the newly generated dependencies
             dependencies.foldLeft((distinctAddToList(stormRegistry, newCurrentBolt), visitedWithOther)) { case ((newStormReg, newVisited), n) =>
-              recurse(n, IntermediateFlatMapStormBolt(), newStormReg, newVisited)
+              recurse(n, FlatMapNode(), newStormReg, newVisited)
             }
         }
       }
     }
-    val (stormRegistry, _) = addWithDependencies(tail, IntermediateFlatMapStormBolt(), List[StormNode](), Set())
+    val (stormRegistry, _) = addWithDependencies(tail, FlatMapNode(), List[Node](), Set())
     stormRegistry
   }
 }

@@ -101,7 +101,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       option <- stormOpts.get[T]
     } yield option).getOrElse(default)
 
-  private def scheduleFlatMapper(stormDag: StormDag, node: StormNode, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleFlatMapper(stormDag: StormDag, node: Node, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
     /**
      * Only exists because of the crazy casts we needed.
      */
@@ -109,19 +109,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       FlatMapOperation.combine(
         FlatMapOperation.identity[(K, V)],
         store.asInstanceOf[StoreFactory[K, W]])
-    def producerToHeadOperation(producer: Producer[Storm, _]): FlatMapOperation[Any, Any] = {
-      producer match {
-        case OptionMappedProducer(_, op) => FlatMapOperation(op.andThen(_.iterator))
-        case FlatMappedProducer(_, op) => FlatMapOperation(op)
-        case WrittenProducer(_, sinkSupplier) => FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])])
-        case LeftJoinedProducer(_, StoreWrapper(newService)) => serviceOperation(newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
-        case IdentityKeyedProducer(_) => FlatMapOperation((x:Any) => List((x,x)))
-        case _ => throw new Exception("Invalid producer: " + producer)
-      }
-    }
 
     def foldOperations(producers: List[Producer[Storm, _]]): FlatMapOperation[Any, Any] = {
-      val initialOperation = producerToHeadOperation(producers.head)
       producers.foldLeft(FlatMapOperation.identity[Any]) {
         case (acc, p) =>
           p match {
@@ -132,7 +121,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             case OptionMappedProducer(_, op) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
             case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
             case WrittenProducer(_, sinkSupplier) => acc.andThen(FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])]))
-            case IdentityKeyedProducer(_) => acc // acc.andThen(FlatMapOperation((x:Any) => List((x,x))))
+            case IdentityKeyedProducer(_) => acc
             case _ => throw new Exception("Not found! : " + p)
           }
       }
@@ -142,27 +131,27 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val metrics = getOrElse(topologyName, DEFAULT_FM_STORM_METRICS)
     val anchorTuples = getOrElse(topologyName, AnchorTuples.default)
 
-    val bolt = node match {
-      case _: FinalFlatMapStormBolt =>
-        val summer = stormDag.dependantsOf(node).head.members.collect { case s: Summer[Storm, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
+    val summerOpt:Option[SummerNode] = stormDag.dependantsOf(node).collect{case s: SummerNode => s}.headOption
+    
+    val bolt = summerOpt match {
+      case Some(s) =>
+        val summerProducer = s.members.collect { case s: Summer[Storm, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
         new FinalFlatMapBolt(
           operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
           getOrElse(topologyName, DEFAULT_FM_CACHE),
           getOrElse(topologyName, DEFAULT_FM_STORM_METRICS),
-          anchorTuples)(summer.monoid.asInstanceOf[Monoid[Any]], summer.store.batcher)
-      case _: IntermediateFlatMapStormBolt =>
+          anchorTuples)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
+      case None =>
         new IntermediateFlatMapBolt(operation, metrics, anchorTuples)
-      case _ => throw new Exception("Non-flatmap node passed to the flatmap function")
     }
-
     val parallelism = getOrElse(topologyName, DEFAULT_FM_PARALLELISM)
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
 
-    val dependsOnNames = stormDag.dependsOn(node).collect { case x: StormNode => stormDag.getNodeName(x) }
+    val dependsOnNames = stormDag.dependsOn(node).collect { case x: Node => stormDag.getNodeName(x) }
     dependsOnNames.foreach { declarer.shuffleGrouping(_) }
   }
 
-  private def scheduleSpout[K](stormDag: StormDag, node: StormSpout, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSpout[K](stormDag: StormDag, node: Node, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
     val spout = node.members.collect { case Source(s) => s }.head
     val nodeName = stormDag.getNodeName(node)
 
@@ -176,7 +165,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
-  private def scheduleSinkBolt[K, V](stormDag: StormDag, node: StormNode, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSinkBolt[K, V](stormDag: StormDag, node: Node, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val monoid = summer.monoid
     val nodeName = stormDag.getNodeName(node)
@@ -200,7 +189,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         sinkBolt,
         getOrElse(topologyName, DEFAULT_SINK_PARALLELISM).parHint)
 
-    val dependsOnNames = stormDag.dependsOn(node).collect { case x: StormNode => stormDag.getNodeName(x) }
+    val dependsOnNames = stormDag.dependsOn(node).collect { case x: Node => stormDag.getNodeName(x) }
     dependsOnNames.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
     }
@@ -236,10 +225,9 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
     stormDag.nodes.map { node =>
       node match {
-        case _: SummerStormBolt => scheduleSinkBolt(stormDag, node, name)
-        case _: FinalFlatMapStormBolt => scheduleFlatMapper(stormDag, node, name)
-        case _: IntermediateFlatMapStormBolt => scheduleFlatMapper(stormDag, node, name)
-        case s: StormSpout => scheduleSpout(stormDag, s, name)
+        case _: SummerNode => scheduleSinkBolt(stormDag, node, name)
+        case _: FlatMapNode => scheduleFlatMapper(stormDag, node, name)
+        case _: SourceNode => scheduleSpout(stormDag, node, name)
       }
     }
     topologyBuilder.createTopology
