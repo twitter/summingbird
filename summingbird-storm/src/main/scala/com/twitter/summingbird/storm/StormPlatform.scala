@@ -77,7 +77,7 @@ object Storm {
   * operations that can potentially be optimized.
   */
 sealed trait FMItem
-case class OptionMap[T, U](op: T => Option[U]) extends FMItem
+case class OptionMap[T, U]() extends FMItem
 case class FactoryCell(factory: StoreFactory[_, _]) extends FMItem
 case class FlatMap(op: FlatMapOperation[_, _]) extends FMItem
 
@@ -85,6 +85,7 @@ object FMItem {
   def sink[T](sinkSupplier: () => (T => Future[Unit])): FMItem =
     FlatMap(FlatMapOperation.write(sinkSupplier))
 }
+
 
 abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
   type Source[+T] = Spout[(Long, T)]
@@ -94,280 +95,120 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   type Plan[T] = StormTopology
 
   private type Prod[T] = Producer[Storm, T]
-  private type JamfMap = Map[Prod[_], List[String]]
-
-  val END_SUFFIX = "end"
-  val FM_CONSTANT = "flatMap-"
-
-  /**
-    * Returns true if this producer's suffix indicates that it's the
-    * final flatMapper before the sumByKey call, false otherwise.
-    */
-  def isFinalFlatMap(suffix: String) = !suffix.contains(FM_CONSTANT)
 
   private def getOrElse[T: Manifest](idOpt: Option[String], default: T): T =
     (for {
       id <- idOpt
       stormOpts <- options.get(id)
       option <- stormOpts.get[T]
-    } yield option).getOrElse(default)
+    } yield option).getOrElse(default)  
 
-  def buildTopology[T](
-    topoBuilder: TopologyBuilder,
-    outerProducer: Prod[T],
-    forkedNodes: Set[Prod[_]],
-    jamfs: JamfMap,
-    toSchedule: List[FMItem],
-    path: List[Prod[_]],
-    suffix: String,
-    id: Option[String])
-    (implicit config: Config): (List[String], JamfMap) = {
-
+  private def scheduleFlatMapper(stormDag: StormDag, node: StormNode, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
     /**
-      * Helper method for recursively calling this same function with
-      * all of its arguments set, by default, to the current call's
-      * supplied parameters. (Note that this recursion will loop
-      * infinitely if called directly with no changed parameters.)
-      */
-    def recurse[U](
-      producer: Prod[U],
-      topoBuilder: TopologyBuilder = topoBuilder,
-      outerProducer: Prod[T] = outerProducer,
-      jamfs: JamfMap = jamfs,
-      toSchedule: List[FMItem] = toSchedule,
-      path: List[Prod[_]] = path,
-      suffix: String = suffix,
-      id: Option[String] = id) =
-      buildTopology(
-        topoBuilder, producer, forkedNodes, jamfs,
-        toSchedule, outerProducer :: path, suffix, id
-      )
-
-    /**
-      * TODO: This internal check is duplicating the internal isEmpty
-      * check in scheduleFlatMapper. The idea is that we should only
-      * tag a flatMap- prefix on if there are operations to
-      * schedule. The path is calculated in a separate spot from the
-      * actual scheduling.
-      *
-      * Remove the duplication and do everything in one spot by
-      * changing the return type of scheduleFlatMapper.
-      */
-    def suffixOf(xs: List[_], suffix: String): String =
-      if (xs.isEmpty) suffix else FM_CONSTANT + suffix
-
-    def flatMap(parents: List[String], ops: List[FMItem]) =
-      scheduleFlatMapper(topoBuilder, parents, path, suffix, id, ops)
-
-    /**
-      * This method is called by any nodes that contain Storm
-      * FlatMapOperations. If the calling node is a "forked node" (ie,
-      * has multiple consumers), we can't do any optimization across
-      * the boundary, so we schedule a flatMap operation and push the
-      * contained "op" down into the recursion. If it's not a forked
-      * node, we can continue to optimize the graph by pushing the
-      * current operation onto the toSchedule stack.
-      */
-    def perhapsSchedule[A](parent: Prod[A], op: FMItem) = {
-      val newOps = op :: toSchedule
-      if (forkedNodes.contains(parent)) {
-        val (s, m) = recurse(
-          parent,
-          toSchedule = List.empty,
-          suffix = "fork-" + suffixOf(newOps, suffix)
-        )
-        (flatMap(s, newOps), m)
-      } else recurse(parent, toSchedule = newOps)
-    }
-
-    jamfs.get(outerProducer) match {
-      case Some(s) => (s, jamfs)
-      case None =>
-        val (strings, m): (List[String], JamfMap) = outerProducer match {
-          case Summer(producer, _, _) =>
-            assert(path.isEmpty, "Only a single Summer is supported at this time.")
-            recurse(producer)
-
-          case IdentityKeyedProducer(producer) => recurse(producer)
-
-          case NamedProducer(producer, newId) => recurse(producer, id = Some(newId))
-
-          case Source(spout) =>
-            // The current planner requires a layer of flatMapBolts, even
-            // if calling sumByKey directly on a source.
-            val (optionMaps, remaining) = toSchedule.span {
-              case OptionMap(_) => true
-              case _ => false
-            }
-
-            val operations =
-              if (remaining.isEmpty)
-                List(FlatMap(FlatMapOperation.identity))
-              else remaining
-
-            val spoutName = "spout-" + suffixOf(operations, suffix)
-
-            val stormSpout = optionMaps.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) {
-              case (spout, OptionMap(op)) =>
-                spout.flatMap { case (time, t) =>
-                  op.asInstanceOf[Any => Option[_]].apply(t)
-                    .map { x => (time, x) } }
-              case _ => sys.error("not possible, given the above call to span.")
-            }.getSpout
-            val parallelism = getOrElse(id, DEFAULT_SPOUT_PARALLELISM).parHint
-            topoBuilder.setSpout(spoutName, stormSpout, parallelism)
-            val parents = List(spoutName)
-
-            // Attach a FlatMapBolt after this source.
-            (flatMap(parents, operations), jamfs)
-
-          case OptionMappedProducer(producer, op) =>
-            perhapsSchedule(producer, OptionMap(op))
-
-          case FlatMappedProducer(producer, op) =>
-            perhapsSchedule(producer, FlatMap(FlatMapOperation(op)))
-
-          case WrittenProducer(producer, sinkSupplier) =>
-            perhapsSchedule(producer, FMItem.sink(sinkSupplier))
-
-          case LeftJoinedProducer(producer, StoreWrapper(newService)) =>
-            perhapsSchedule(producer, FactoryCell(newService))
-
-          case MergedProducer(l, r) =>
-            val leftSuffix = "L-" + suffixOf(toSchedule, suffix)
-            val rightSuffix = "R-" + suffixOf(toSchedule, suffix)
-            val (leftNodes, leftM) =
-              recurse(l, toSchedule = List.empty, suffix = leftSuffix)
-            val (rightNodes, rightM) =
-              recurse(r, toSchedule = List.empty, suffix = rightSuffix, jamfs = leftM)
-            val parents = leftNodes ++ rightNodes
-            (flatMap(parents, toSchedule), rightM)
-
-          /**
-           * Very similar to Merge, just ignore the left.
-           * TODO:
-           * https://github.com/twitter/summingbird/issues/241
-           * if no one consumes the output of a node on storm,
-           * we should not emit.
-           */
-          case AlsoProducer(l, r) =>
-            val leftSuffix = "L-" + suffixOf(toSchedule, suffix)
-            val rightSuffix = "R-" + suffixOf(toSchedule, suffix)
-            val (_, leftM) =
-              recurse(l, toSchedule = List.empty, suffix = leftSuffix)
-            val (rightNodes, rightM) =
-              recurse(r, toSchedule = List.empty, suffix = rightSuffix, jamfs = leftM)
-            (flatMap(rightNodes, toSchedule), rightM)
-        }
-        (strings, m + (outerProducer -> strings))
-    }
-  }
-
-  /**
     * Only exists because of the crazy casts we needed.
     */
-  private def serviceOperation[K, V, W](store: StoreFactory[_, _]) =
+     def serviceOperation[K, V, W](store: StoreFactory[_, _]) =
     FlatMapOperation.combine(
       FlatMapOperation.identity[(K, V)],
       store.asInstanceOf[StoreFactory[K, W]]
     )
+		    def producerToHeadOperation(producer: Producer[Storm, _]): FlatMapOperation[Any, Any] = {
+		    producer match {
+		        case OptionMappedProducer(_, op) => FlatMapOperation(op.andThen(_.iterator))
+		        case FlatMappedProducer(_, op) => FlatMapOperation(op)
+		        case WrittenProducer(_, sinkSupplier) => FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])])
+		        case LeftJoinedProducer(_, StoreWrapper(newService)) => serviceOperation(newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]] 
+		        case _ => throw new Exception("Invalid producer: " + producer)
+		    }
+		  }
+		  
+		  def foldOperations(producers: List[Producer[Storm, _]]):FlatMapOperation[Any, Any] = {
+		    val initialOperation = producerToHeadOperation(producers.head)
+		    producers.tail.foldLeft(initialOperation.asInstanceOf[FlatMapOperation[Any, Any]]) {
+		      
+		      case (acc, LeftJoinedProducer(_, StoreWrapper(newService))) => 
+				      FlatMapOperation.combine(
+				        acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
+				        newService.asInstanceOf[StoreFactory[Any, Any]]
+				      ).asInstanceOf[FlatMapOperation[Any, Any]] 
+		      case (acc, OptionMappedProducer(_, op)) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
+		      case (acc, FlatMappedProducer(_, op)) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
+		      case (acc, WrittenProducer(_, sinkSupplier)) => acc.andThen(FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])]))
+		    }
+		  }
+	   	val nodeName = stormDag.getNodeName(node)
+        val operation = foldOperations(node.members)
+        val metrics = getOrElse(topologyName, DEFAULT_FM_STORM_METRICS)
+        val anchorTuples = getOrElse(topologyName, AnchorTuples.default)
 
-  private def foldOperations(head: FMItem, tail: List[FMItem]) = {
-    val operation = head match {
-      case OptionMap(op) => FlatMapOperation(op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]])
-      case FactoryCell(store) => serviceOperation(store)
-      case FlatMap(op) => op
-    }
-    tail.foldLeft(operation.asInstanceOf[FlatMapOperation[Any, Any]]) {
-      case (acc, FactoryCell(store)) => FlatMapOperation.combine(
-        acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-        store.asInstanceOf[StoreFactory[Any, Any]]
-      ).asInstanceOf[FlatMapOperation[Any, Any]]
-      case (acc, OptionMap(op)) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
-      case (acc, FlatMap(op)) => acc.andThen(op.asInstanceOf[FlatMapOperation[Any, Any]])
-    }
-  }
-
-  // TODO https://github.com/twitter/summingbird/issues/84: This
-  // function is returning the Node ID; replace string programming
-  // with a world where the "id" is actually the path to that node
-  // from the root.
-  private def scheduleFlatMapper(
-    topoBuilder: TopologyBuilder,
-    parents: List[String],
-    path: List[Prod[_]],
-    suffix: String,
-    id: Option[String],
-    toSchedule: List[FMItem])
-      : List[String] = {
-    toSchedule match {
-      case Nil => parents
-      case head :: tail =>
-        val operation = foldOperations(head, tail)
-        val metrics = getOrElse(id, DEFAULT_FM_STORM_METRICS)
-        val anchorTuples = getOrElse(id, AnchorTuples.default)
-
-        val bolt = if (isFinalFlatMap(suffix)) {
-          val summer = Producer.retrieveSummer(path)
-            .getOrElse(sys.error("A Summer is required."))
-          new FinalFlatMapBolt(
-            operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-            getOrElse(id, DEFAULT_FM_CACHE),
-            getOrElse(id, DEFAULT_FM_STORM_METRICS),
-            anchorTuples
-          )(summer.monoid.asInstanceOf[Monoid[Any]], summer.store.batcher)
+        val bolt = node match {
+          case _: FinalFlatMapStormBolt => 
+            val summer = stormDag.dependantsOf(node).head.members.collect{case s: Summer[Storm, _, _] => s}.head.asInstanceOf[Summer[Storm, _ , _]]
+            new FinalFlatMapBolt(
+            		operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
+            		getOrElse(topologyName, DEFAULT_FM_CACHE),
+            		getOrElse(topologyName, DEFAULT_FM_STORM_METRICS),
+            		anchorTuples
+            		)(summer.monoid.asInstanceOf[Monoid[Any]], summer.store.batcher)
+          case _: IntermediateFlatMapStormBolt => 
+          	new IntermediateFlatMapBolt(operation, metrics, anchorTuples)
+          case _ => throw new Exception("Non-flatmap node passed to the flatmap function")
         }
-        else
-          new IntermediateFlatMapBolt(operation, metrics, anchorTuples)
 
-        val parallelism = getOrElse(id, DEFAULT_FM_PARALLELISM)
-        val boltName = FM_CONSTANT + suffix
-        val declarer = topoBuilder.setBolt(boltName, bolt, parallelism.parHint)
+          
 
-        parents.foreach { declarer.shuffleGrouping(_) }
-        List(boltName)
-    }
+        val parallelism = getOrElse(topologyName, DEFAULT_FM_PARALLELISM)
+        val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
+
+       val dependsOnNames = stormDag.dependsOn(node).collect{case x:StormNode => stormDag.getNodeName(x)}
+       dependsOnNames.foreach { declarer.shuffleGrouping(_) }
+  }
+  
+  private def scheduleSpout[K](stormDag: StormDag, node: StormSpout, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
+	  val spout = node.members.collect{case Source(s) => s}.head
+	  val nodeName = stormDag.getNodeName(node)
+	  def opFM(op: Any => Option[Any], spout: Spout[(Long, Any)]): Spout[(Long, Any)] = spout.flatMap { case (time, t) => op.apply(t).map {x => (time, x)}} 
+      val stormSpout = node.members.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) {
+	    	  case (spout, Source(_)) => spout // The source is still in the members list so drop it
+	    	  case (spout, OptionMappedProducer(_, op)) => opFM(op, spout)
+	    	  case _ => sys.error("not possible, given the above call to span.")
+            }.getSpout
+            
+            val parallelism = getOrElse(topologyName, DEFAULT_SPOUT_PARALLELISM).parHint
+            topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
-  private def populate[K, V](
-    topologyBuilder: TopologyBuilder,
-    summer: Summer[Storm, K, V],
-    name: Option[String])(implicit config: Config) = {
+            
+  private def scheduleSinkBolt[K,V] (stormDag: StormDag, node: StormNode, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
+    val summer: Summer[Storm, K, V] = node.members.collect{case c: Summer[Storm, K, V] => c}.head
     implicit val monoid = summer.monoid
-
-    val dep = Dependants(summer)
-    val fanOutSet =
-      Producer.transitiveDependenciesOf(summer)
-        .filter(dep.fanOut(_).exists(_ > 1)).toSet
-
-    val (parents, _) = buildTopology(
-      topologyBuilder, summer, fanOutSet, Map.empty,
-      List.empty, List.empty,
-      END_SUFFIX, name)
+    val nodeName = stormDag.getNodeName(node)
+    
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
 
     val sinkBolt = new SinkBolt[K, V](
       supplier,
-      getOrElse(name, DEFAULT_ONLINE_SUCCESS_HANDLER),
-      getOrElse(name, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-      getOrElse(name, DEFAULT_SINK_CACHE),
-      getOrElse(name, DEFAULT_SINK_STORM_METRICS),
-      getOrElse(name, DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(name, IncludeSuccessHandler.default)
+      getOrElse(topologyName: Option[String], DEFAULT_ONLINE_SUCCESS_HANDLER),
+      getOrElse(topologyName: Option[String], DEFAULT_ONLINE_EXCEPTION_HANDLER),
+      getOrElse(topologyName: Option[String], DEFAULT_SINK_CACHE),
+      getOrElse(topologyName: Option[String], DEFAULT_SINK_STORM_METRICS),
+      getOrElse(topologyName: Option[String], DEFAULT_MAX_WAITING_FUTURES),
+      getOrElse(topologyName: Option[String], IncludeSuccessHandler.default)
     )
-
-    val declarer =
+    
+     val declarer =
       topologyBuilder.setBolt(
-        GROUP_BY_SUM,
+        nodeName,
         sinkBolt,
-        getOrElse(name, DEFAULT_SINK_PARALLELISM).parHint)
+        getOrElse(topologyName, DEFAULT_SINK_PARALLELISM).parHint)
+        
+      val dependsOnNames = stormDag.dependsOn(node).collect{case x:StormNode => stormDag.getNodeName(x)}
+	dependsOnNames.foreach { parentName =>
+	      declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
+	    }
 
-    parents.foreach { parentName =>
-      declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
-    }
-    List(GROUP_BY_SUM)
   }
 
   /**
@@ -390,26 +231,21 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   def transformConfig(base: Config): Config = updateConf(base)
   def withConfigUpdater(fn: Config => Config): Storm
 
-  def plan[T](node: Producer[Storm, T]): StormTopology = {
-    val topologyBuilder = new TopologyBuilder
+  def plan[T](tail: Producer[Storm, T]): StormTopology = {
+    implicit val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
 
-    /**
-      * This crippled version of the StormPlatform only supports a
-      * Summer or any number of NamedProducers stacked onto the end of
-      * the DAG.
-      */
-    @tailrec def retrieve(p: Producer[Storm, _], id: Option[String] = None): (Summer[Storm, Any, Any], Option[String]) =
-      p match {
-        case s: Summer[Storm, Any, Any] => (s, id)
-        case NamedProducer(inner, name) => retrieve(inner, Some(name))
-        case _ => sys.error("A Summer is required.")
+    val stormDag = DagBuilder(tail)
+    val name: Option[String] = tail match {case NamedProducer(_, n) => Some(n) case _ => None}
+    
+    stormDag.nodes.map{node =>
+      node match {
+        case _: SummerStormBolt => scheduleSinkBolt(stormDag, node, name)
+        case _: FinalFlatMapStormBolt => scheduleFlatMapper(stormDag, node, name)
+        case _: IntermediateFlatMapStormBolt => scheduleFlatMapper(stormDag, node, name)
+        case s: StormSpout => scheduleSpout(stormDag, s, name)
       }
-    val (summer, name) = retrieve(node)
-
-    // TODO (https://github.com/twitter/summingbird/issues/86):
-    // support topologies that don't end with a sum
-    populate(topologyBuilder, summer, name)
+    }
     topologyBuilder.createTopology
   }
   def run(summer: Producer[Storm, _], jobName: String): Unit = run(plan(summer), jobName)
