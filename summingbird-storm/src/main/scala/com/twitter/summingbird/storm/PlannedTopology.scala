@@ -63,7 +63,7 @@ sealed trait StormNode {
 }
 
 // This is the default state for StormNodes if there is nothing special about them.
-// There can be an unbounded number of these and there is no hard restrictions on ordering/where. Other than 
+// There can be an unbounded number of these and there is no hard restrictions on ordering/where. Other than
 // locations which must be one of the others
 case class IntermediateFlatMapStormBolt(override val members: List[Producer[Storm, _]] = List()) extends StormNode {
   def add(node: Producer[Storm, _]): StormNode = if(members.contains(node)) this else this.copy(members=node :: members)
@@ -202,7 +202,7 @@ object DagBuilder {
     def distinctAddToList[T](l : List[T], n : T): List[T] = if(l.contains(n)) l else (n :: l)
 
     // Add the dependentProducer to a StormNode along with each of its dependencies in turn.
-    def addWithDependencies[T](dependantProducer: Prod[T], previousBolt: StormNode, 
+    def addWithDependencies[T](dependantProducer: Prod[T], previousBolt: StormNode,
                                     stormRegistry: List[StormNode], visited: VisitedStore) : (List[StormNode], VisitedStore) = {
       if (visited.contains(dependantProducer)) {
         (distinctAddToList(stormRegistry, previousBolt), visited)
@@ -223,8 +223,8 @@ object DagBuilder {
           dep match {
             case NamedProducer(producer, _) => true
             case IdentityKeyedProducer(producer) => true
-            case OptionMappedProducer(producer, _, _) => true
-            case Source(_, _) => true
+            case OptionMappedProducer(producer, _) => true
+            case Source(_) => true
             case _ => false
           }
         }
@@ -260,7 +260,7 @@ object DagBuilder {
          * From this we return a list of the MergedProducers which should be combined into the current StormNode, and the list of nodes
          * on which these nodes depends (the producers passing data into these MergedProducer).
          */
-        
+
         def mergeCollapse[A](p: Prod[A]): (List[Prod[A]], List[Prod[A]]) = {
           p match {
             case MergedProducer(subL, subR) if !forkedNodes.contains(p) =>
@@ -277,8 +277,8 @@ object DagBuilder {
           case Summer(producer, _, _) => recurse(producer, updatedBolt = FinalFlatMapStormBolt(), updatedRegistry = distinctAddToList(stormRegistry, currentBolt.toSummer))
           case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
           case NamedProducer(producer, newId) => maybeSplitThenRecurse(dependantProducer, producer)
-          case Source(spout, manifest) => (distinctAddToList(stormRegistry, currentBolt.toSpout), visitedWithN)
-          case OptionMappedProducer(producer, op, manifest) => maybeSplitThenRecurse(dependantProducer, producer)
+          case Source(spout) => (distinctAddToList(stormRegistry, currentBolt.toSpout), visitedWithN)
+          case OptionMappedProducer(producer, op) => maybeSplitThenRecurse(dependantProducer, producer)
           case FlatMappedProducer(producer, op)  => maybeSplitThenRecurse(dependantProducer, producer)
           case WrittenProducer(producer, sinkSupplier)  => maybeSplitThenRecurse(dependantProducer, producer)
           case LeftJoinedProducer(producer, StoreWrapper(newService)) => maybeSplitThenRecurse(dependantProducer, producer)

@@ -192,7 +192,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
           case NamedProducer(producer, newId) => recurse(producer, id = Some(newId))
 
-          case Source(spout, manifest) =>
+          case Source(spout) =>
             // The current planner requires a layer of flatMapBolts, even
             // if calling sumByKey directly on a source.
             val (optionMaps, remaining) = toSchedule.span {
@@ -221,7 +221,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             // Attach a FlatMapBolt after this source.
             (flatMap(parents, operations), jamfs)
 
-          case OptionMappedProducer(producer, op, manifest) =>
+          case OptionMappedProducer(producer, op) =>
             perhapsSchedule(producer, OptionMap(op))
 
           case FlatMappedProducer(producer, op) =>

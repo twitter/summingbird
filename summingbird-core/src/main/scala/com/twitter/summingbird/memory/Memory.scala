@@ -42,8 +42,8 @@ class Memory extends Platform[Memory] {
         val (s, m) = outerProducer match {
           case NamedProducer(producer, _) => toStream(producer, jamfs)
           case IdentityKeyedProducer(producer) => toStream(producer, jamfs)
-          case Source(source, _) => (source.toStream, jamfs)
-          case OptionMappedProducer(producer, fn, mf) =>
+          case Source(source) => (source.toStream, jamfs)
+          case OptionMappedProducer(producer, fn) =>
             val (s, m) = toStream(producer, jamfs)
             (s.flatMap(fn(_)), m)
 

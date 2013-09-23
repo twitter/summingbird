@@ -31,13 +31,13 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val (l, r) = apply(producer)
         (l.map(IdentityKeyedProducer(_)), r.map(IdentityKeyedProducer(_)))
 
-      case Source(source, mf) =>
+      case Source(source) =>
         val (leftSource, rightSource) = source
-        (leftSource.map(Source(_, mf)), rightSource.map(Source(_, mf)))
+        (leftSource.map(Source(_)), rightSource.map(Source(_)))
 
-      case OptionMappedProducer(producer, fn, mf) =>
+      case OptionMappedProducer(producer, fn) =>
         val (l, r) = apply(producer)
-        (l.map(OptionMappedProducer(_, fn, mf)), r.map(OptionMappedProducer(_, fn, mf)))
+        (l.map(OptionMappedProducer(_, fn)), r.map(OptionMappedProducer(_, fn)))
 
       case FlatMappedProducer(producer, fn) =>
         val (l, r) = apply(producer)

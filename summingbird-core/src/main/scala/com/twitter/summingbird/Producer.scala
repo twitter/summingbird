@@ -45,8 +45,7 @@ object Producer {
     * Begin from some base representation. An iterator for in-memory,
     * for example.
     */
-  def source[P <: Platform[P], T](s: P#Source[T])(implicit manifest: Manifest[T]): Producer[P, T] =
-    Source[P, T](s, manifest)
+  def source[P <: Platform[P], T](s: P#Source[T]): Producer[P, T] = Source[P, T](s)
 
   implicit def evToKeyed[P <: Platform[P], T, K, V](producer: Producer[P, T])
     (implicit ev: T <:< (K, V)): KeyedProducer[P, K, V] =
@@ -67,8 +66,8 @@ object Producer {
       case AlsoProducer(_, prod) => List(prod)
       case NamedProducer(producer, _) => List(producer)
       case IdentityKeyedProducer(producer) => List(producer.asInstanceOf[Producer[P, _]])
-      case Source(source, _) => List()
-      case OptionMappedProducer(producer, fn, mf) => List(producer)
+      case Source(_) => List()
+      case OptionMappedProducer(producer, fn) => List(producer)
       case FlatMappedProducer(producer, fn) => List(producer)
       case MergedProducer(l, r) => List(l, r)
       case WrittenProducer(producer, fn) => List(producer)
@@ -102,28 +101,31 @@ sealed trait Producer[P <: Platform[P], T] {
   def name(id: String): Producer[P, T] = NamedProducer(this, id)
   def merge(r: Producer[P, T]): Producer[P, T] = MergedProducer(this, r)
 
-  def filter(fn: T => Boolean)(implicit mf: Manifest[T]): Producer[P, T] =
+  def collect[U](fn: PartialFunction[T,U]): Producer[P, U] =
+    optionMap(fn.lift)
+
+  def filter(fn: T => Boolean): Producer[P, T] =
     // Enforce using the OptionMapped here:
     optionMap(Some(_).filter(fn))
 
-  def map[U](fn: T => U)(implicit mf: Manifest[U]): Producer[P, U] =
+  def map[U](fn: T => U): Producer[P, U] =
     // Enforce using the OptionMapped here:
     optionMap(t => Some(fn(t)))
 
-  def optionMap[U: Manifest](fn: T => Option[U]): Producer[P, U] =
-    OptionMappedProducer[P, T, U](this, fn, manifest[U])
+  def optionMap[U](fn: T => Option[U]): Producer[P, U] =
+    OptionMappedProducer[P, T, U](this, fn)
 
   def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
     FlatMappedProducer[P, T, U](this, fn)
 
   def write(sink: P#Sink[T]): Producer[P, T] = WrittenProducer(this, sink)
 
-  def either[U](other: Producer[P, U])(implicit tmf: Manifest[T], umf: Manifest[U]): Producer[P, Either[T, U]] =
+  def either[U](other: Producer[P, U]): Producer[P, Either[T, U]] =
     map(Left(_): Either[T, U])
       .merge(other.map(Right(_): Either[T, U]))
 }
 
-case class Source[P <: Platform[P], T](source: P#Source[T], manifest: Manifest[T])
+case class Source[P <: Platform[P], T](source: P#Source[T])
     extends Producer[P, T]
 
 /**
@@ -137,7 +139,7 @@ case class NamedProducer[P <: Platform[P], T](producer: Producer[P, T], id: Stri
 /** Represents filters and maps which may be optimized differently
  * Note that "option-mapping" is closed under composition and hence useful to call out
  */
-case class OptionMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => Option[U], manifest: Manifest[U])
+case class OptionMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => Option[U])
     extends Producer[P, U]
 
 case class FlatMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => TraversableOnce[U])

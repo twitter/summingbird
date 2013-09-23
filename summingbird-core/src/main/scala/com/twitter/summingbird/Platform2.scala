@@ -37,13 +37,13 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val (l, r) = apply(producer)
         (IdentityKeyedProducer(l), IdentityKeyedProducer(r))
 
-      case Source(source, mf) =>
+      case Source(source) =>
         val (leftSource, rightSource) = source
-        (Source(leftSource, mf), Source(rightSource, mf))
+        (Source(leftSource), Source(rightSource))
 
-      case OptionMappedProducer(producer, fn, mf) =>
+      case OptionMappedProducer(producer, fn) =>
         val (l, r) = apply(producer)
-        (OptionMappedProducer(l, fn, mf), OptionMappedProducer(r, fn, mf))
+        (OptionMappedProducer(l, fn), OptionMappedProducer(r, fn))
 
       case FlatMappedProducer(producer, fn) =>
         val (l, r) = apply(producer)

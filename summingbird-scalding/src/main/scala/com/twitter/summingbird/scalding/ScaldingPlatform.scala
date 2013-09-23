@@ -279,7 +279,7 @@ object Scalding {
       case Some(pf) => (pf.asInstanceOf[PipeFactory[T]], built)
       case None =>
         val (pf, m) = producer match {
-          case Source(src, manifest) => {
+          case Source(src) => {
             val shards = getOrElse(options, id, FlatMapShards.default).count
             val srcPf = if (shards <= 1)
               src
@@ -325,7 +325,7 @@ object Scalding {
           case WrittenProducer(producer, sink) =>
             val (pf, m) = buildFlow(options, producer, id, fanOuts, built)
             (sink.write(pf), m)
-          case OptionMappedProducer(producer, op, manifest) =>
+          case OptionMappedProducer(producer, op) =>
             // Map in two monads here, first state then reader
             val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
             (fmp.map { flowP =>
