@@ -62,9 +62,9 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   var dumpNumber = 1
   def dumpGraph(dag: StormDag) = {
     import java.io._
-    import com.twitter.summingbird.storm.viz.VizGraph
+    import com.twitter.summingbird.viz.VizGraph
     val writer2 = new PrintWriter(new File("/tmp/failingGraph" + dumpNumber + ".dot"))
-    VizGraph(dag.tail, writer2)
+    VizGraph(dag, writer2)
     writer2.close()
     dumpNumber = dumpNumber + 1
   }
