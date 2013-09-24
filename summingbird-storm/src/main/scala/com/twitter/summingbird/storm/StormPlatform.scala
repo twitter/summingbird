@@ -94,14 +94,17 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private type Prod[T] = Producer[Storm, T]
 
-  private def getOrElse[T: Manifest](idOpt: Option[String], default: T): T =
+  private def getOrElse[T: Manifest](node: Node, default: T): T = {
+    val producer = node.members.last
+    val namedNodes = Producer.transitiveDependenciesOf(producer).collect{case NamedProducer(_, n) => n}
     (for {
-      id <- idOpt
+      id <- namedNodes
       stormOpts <- options.get(id)
       option <- stormOpts.get[T]
-    } yield option).getOrElse(default)
+    } yield option).headOption.getOrElse(default)
+  }
 
-  private def scheduleFlatMapper(stormDag: StormDag, node: Node, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleFlatMapper(stormDag: StormDag, node: Node)(implicit topologyBuilder: TopologyBuilder) = {
     /**
      * Only exists because of the crazy casts we needed.
      */
@@ -128,8 +131,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     }
     val nodeName = stormDag.getNodeName(node)
     val operation = foldOperations(node.members.reverse)
-    val metrics = getOrElse(topologyName, DEFAULT_FM_STORM_METRICS)
-    val anchorTuples = getOrElse(topologyName, AnchorTuples.default)
+    val metrics = getOrElse(node, DEFAULT_FM_STORM_METRICS)
+    val anchorTuples = getOrElse(node, AnchorTuples.default)
 
     val summerOpt:Option[SummerNode] = stormDag.dependantsOf(node).collect{case s: SummerNode => s}.headOption
     
@@ -138,20 +141,20 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         val summerProducer = s.members.collect { case s: Summer[Storm, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
         new FinalFlatMapBolt(
           operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-          getOrElse(topologyName, DEFAULT_FM_CACHE),
-          getOrElse(topologyName, DEFAULT_FM_STORM_METRICS),
+          getOrElse(node, DEFAULT_FM_CACHE),
+          getOrElse(node, DEFAULT_FM_STORM_METRICS),
           anchorTuples)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
       case None =>
         new IntermediateFlatMapBolt(operation, metrics, anchorTuples)
     }
-    val parallelism = getOrElse(topologyName, DEFAULT_FM_PARALLELISM)
+    val parallelism = getOrElse(node, DEFAULT_FM_PARALLELISM)
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
 
     val dependsOnNames = stormDag.dependsOn(node).collect { case x: Node => stormDag.getNodeName(x) }
     dependsOnNames.foreach { declarer.shuffleGrouping(_) }
   }
 
-  private def scheduleSpout[K](stormDag: StormDag, node: Node, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSpout[K](stormDag: StormDag, node: Node)(implicit topologyBuilder: TopologyBuilder) = {
     val spout = node.members.collect { case Source(s) => s }.head
     val nodeName = stormDag.getNodeName(node)
 
@@ -161,11 +164,11 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       case _ => sys.error("not possible, given the above call to span.")
     }.getSpout
 
-    val parallelism = getOrElse(topologyName, DEFAULT_SPOUT_PARALLELISM).parHint
+    val parallelism = getOrElse(node, DEFAULT_SPOUT_PARALLELISM).parHint
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
-  private def scheduleSinkBolt[K, V](stormDag: StormDag, node: Node, topologyName: Option[String])(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSinkBolt[K, V](stormDag: StormDag, node: Node)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val monoid = summer.monoid
     val nodeName = stormDag.getNodeName(node)
@@ -176,18 +179,18 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
     val sinkBolt = new SinkBolt[K, V](
       supplier,
-      getOrElse(topologyName: Option[String], DEFAULT_ONLINE_SUCCESS_HANDLER),
-      getOrElse(topologyName: Option[String], DEFAULT_ONLINE_EXCEPTION_HANDLER),
-      getOrElse(topologyName: Option[String], DEFAULT_SINK_CACHE),
-      getOrElse(topologyName: Option[String], DEFAULT_SINK_STORM_METRICS),
-      getOrElse(topologyName: Option[String], DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(topologyName: Option[String], IncludeSuccessHandler.default))
+      getOrElse(node, DEFAULT_ONLINE_SUCCESS_HANDLER),
+      getOrElse(node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
+      getOrElse(node, DEFAULT_SINK_CACHE),
+      getOrElse(node, DEFAULT_SINK_STORM_METRICS),
+      getOrElse(node, DEFAULT_MAX_WAITING_FUTURES),
+      getOrElse(node, IncludeSuccessHandler.default))
 
     val declarer =
       topologyBuilder.setBolt(
         nodeName,
         sinkBolt,
-        getOrElse(topologyName, DEFAULT_SINK_PARALLELISM).parHint)
+        getOrElse(node, DEFAULT_SINK_PARALLELISM).parHint)
 
     val dependsOnNames = stormDag.dependsOn(node).collect { case x: Node => stormDag.getNodeName(x) }
     dependsOnNames.foreach { parentName =>
@@ -221,13 +224,12 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     implicit val config = baseConfig
 
     val stormDag = DagBuilder(tail)
-    val name: Option[String] = tail match { case NamedProducer(_, n) => Some(n) case _ => None }
 
     stormDag.nodes.map { node =>
       node match {
-        case _: SummerNode => scheduleSinkBolt(stormDag, node, name)
-        case _: FlatMapNode => scheduleFlatMapper(stormDag, node, name)
-        case _: SourceNode => scheduleSpout(stormDag, node, name)
+        case _: SummerNode => scheduleSinkBolt(stormDag, node)
+        case _: FlatMapNode => scheduleFlatMapper(stormDag, node)
+        case _: SourceNode => scheduleSpout(stormDag, node)
       }
     }
     topologyBuilder.createTopology
