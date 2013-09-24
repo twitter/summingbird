@@ -20,7 +20,7 @@ import com.twitter.summingbird.memory._
 
 import org.scalacheck._
 import Gen._
-import Arbitrary.arbitrary
+import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import scala.util.Random
 
@@ -31,10 +31,8 @@ object DependantsTest extends Properties("Dependants") {
   implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
   implicit def sink1: Memory#Sink[Int] = ((_) => Unit)
   implicit def sink2: Memory#Sink[(Int, Int)] = ((_) => Unit)
-  def genIntList = Seq.fill(50)(Random.nextInt).toList
-  def genPairIntList = Seq.fill(50)((Random.nextInt, Random.nextInt)).toList
-  implicit def genSource1: Gen[Producer[Memory, Int]] = Gen.choose(1,1000).map(x => Producer.source[Memory, Int](genIntList))
-  implicit def genSource2: Gen[KeyedProducer[Memory, Int, Int]] = Gen.choose(1,1000).map(x => IdentityKeyedProducer(Producer.source[Memory, (Int, Int)](genPairIntList)))
+  implicit def arbSource1: Arbitrary[Producer[Memory, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[Int]).map(Producer.source[Memory,Int](_)))
+  implicit def arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[(Int, Int)]).map(Producer.source[Memory,(Int, Int)](_)))
 
   implicit def genProducer: Arbitrary[Producer[Memory, _]] = Arbitrary(oneOf(genProd1, genProd2, summed))
 
