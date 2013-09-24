@@ -19,6 +19,8 @@ package com.twitter.summingbird.storm
 import com.twitter.storehaus.JMapStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
+import com.twitter.summingbird.planner._
+import com.twitter.summingbird.storm.planner._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.util.Future
@@ -33,6 +35,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
 
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
   implicit val batcher = Batcher.unit
+  private type StormDag = Dag[Storm]
 
   import TestGraphGenerators._
   implicit def sink1: Storm#Sink[Int] = (() => ((_) => Future.Unit))
@@ -138,7 +141,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   property("Only spouts can have no incoming dependencies") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       n match {
-        case _: SourceNode => true
+        case _: SourceNode[_] => true
         case _ => dag.dependsOn(n).size > 0
       }
     }
@@ -148,7 +151,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   property("Spouts must have no incoming dependencies, and they must have dependants") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       n match {
-        case _: SourceNode => 
+        case _: SourceNode[_] => 
           dag.dependsOn(n).size == 0 && dag.dependantsOf(n).size > 0
         case _ => true
       }
@@ -162,7 +165,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
       val success = firstP match {
         case Summer(_, _, _) =>
             dag.dependsOn(n).size > 0 && dag.dependsOn(n).forall {otherN =>
-              otherN.isInstanceOf[FlatMapNode]
+              otherN.isInstanceOf[FlatMapNode[_]]
             }
         case _ => true
       }
@@ -174,7 +177,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   property("There should be no flatmap producers in the source node") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       val success = n match {
-        case n: SourceNode => n.members.forall{p => !p.isInstanceOf[FlatMappedProducer[_, _, _]]}
+        case n: SourceNode[_] => n.members.forall{p => !p.isInstanceOf[FlatMappedProducer[_, _, _]]}
         case _ => true
       }
       if(!success) dumpGraph(dag)
