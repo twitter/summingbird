@@ -125,6 +125,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
             case WrittenProducer(_, sinkSupplier) => acc.andThen(FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])]))
             case IdentityKeyedProducer(_) => acc
+            case NamedProducer(_, _) => acc
             case _ => throw new Exception("Not found! : " + p)
           }
       }
@@ -161,6 +162,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) {
       case (spout, Source(_)) => spout // The source is still in the members list so drop it
       case (spout, OptionMappedProducer(_, op)) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
+      case (spout, NamedProducer(_, _)) => spout
       case _ => sys.error("not possible, given the above call to span.")
     }.getSpout
 
