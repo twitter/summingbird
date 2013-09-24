@@ -31,8 +31,8 @@ object DagBuilder {
     // The nodes are added in a source -> summer way with how we do list prepends
     // but its easier to look at laws in a summer -> source manner
     // We also drop all Nodes with no members(may occur when we visit a node already seen and its the first in that Node)
-    val revsersedNodeSet = stormNodeSet.filter(_.members.size > 0).foldLeft(List[StormNode]()){(nodes, n) => n.reverse :: nodes}
-    Dag(tail, revsersedNodeSet)
+    val reversedNodeSet = stormNodeSet.filter(_.members.size > 0).foldLeft(List[StormNode]()){(nodes, n) => n.reverse :: nodes}
+    Dag(tail, reversedNodeSet)
   }
 
   // This takes an initial pass through all of the Producers, assigning them to Nodes
