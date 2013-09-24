@@ -245,7 +245,9 @@ object DagBuilder {
         def maybeSplitThenRecurse[U, A](currentProducer: Prod[U], dep: Prod[A]): (List[Node], VisitedStore) = {
           val doSplit = dep match {
             case _ if (forkedNodes.contains(dep)) => true
-            case _ if (currentBolt.isInstanceOf[FlatMapNode] && allDepsMergeableWithSource(dep)) => true
+            // If we are a flatmap, but there haven't been any other flatmaps yet(i.e. the registry is of size 1, the summer).
+            // Then we must split to avoid a 2 level higherarchy
+            case _ if (currentBolt.isInstanceOf[FlatMapNode] && stormRegistry.size == 1 && allDepsMergeableWithSource(dep)) => true
             case _ if ((!mergableWithSource(currentProducer)) && allDepsMergeableWithSource(dep)) => true
             case _ => false
           }
