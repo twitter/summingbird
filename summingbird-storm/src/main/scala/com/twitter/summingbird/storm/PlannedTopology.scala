@@ -18,7 +18,9 @@ package com.twitter.summingbird.storm
 
 import com.twitter.summingbird._
 
-case class NodeIdentifier(identifier: String)
+case class NodeIdentifier(identifier: String) {
+  override def toString:String = identifier
+}
 
 sealed trait Node {
   val members: List[Producer[Storm, _]] = List()
@@ -43,6 +45,11 @@ sealed trait Node {
   def getNameFallback: String = getClass.getName.replaceFirst("com.twitter.summingbird.storm.","")
 
   def getName(dag: StormDag): String = dag.getNodeName(this)
+  
+  def collapseNamedNodes:String = {
+    val membersCombined = members.reverse.collect{case NamedProducer(_, n) => n.replace("-","=")}.mkString(",")
+    if(membersCombined.size > 0 ) "(" + membersCombined + ")" else ""
+  }
 
   def shortName(): NodeIdentifier
 
@@ -69,20 +76,20 @@ sealed trait Node {
 case class FlatMapNode(override val members: List[Producer[Storm, _]] = List()) extends Node {
   def add(node: Producer[Storm, _]): Node = if(members.contains(node)) this else this.copy(members=node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName(): NodeIdentifier = NodeIdentifier("FlatMap")
+  override def shortName(): NodeIdentifier = NodeIdentifier("FlatMap" + collapseNamedNodes )
 }
 
 
 case class SummerNode(override val members: List[Producer[Storm, _]] = List()) extends Node {
   def add(node: Producer[Storm, _]): Node = if(members.contains(node)) this else this.copy(members=node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName(): NodeIdentifier = NodeIdentifier("Summer")
+  override def shortName(): NodeIdentifier = NodeIdentifier("Summer" + collapseNamedNodes)
 }
 
 case class SourceNode(override val members: List[Producer[Storm, _]] = List()) extends Node {
   def add(node: Producer[Storm, _]): Node = if(members.contains(node)) this else this.copy(members=node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName(): NodeIdentifier = NodeIdentifier("Source")
+  override def shortName(): NodeIdentifier = NodeIdentifier("Source" + collapseNamedNodes)
 }
 
 
@@ -170,7 +177,7 @@ object StormDag {
       }
     }
 
-    val (nodeToName, _) = genNames(dag.tailN, dag, Map(dag.tailN -> "T"), Set("T"))
+    val (nodeToName, _) = genNames(dag.tailN, dag, Map(dag.tailN -> "Tail"), Set("Tail"))
     val nameToNode = nodeToName.map((t) => (t._2,t._1))
     dag.copy(nodeToName = nodeToName, nameToNode = nameToNode)
   }
