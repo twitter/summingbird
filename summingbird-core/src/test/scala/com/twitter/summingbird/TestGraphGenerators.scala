@@ -22,13 +22,6 @@ import Arbitrary.arbInt
 import Arbitrary.arbitrary
 
 object TestGraphGenerators {
-  def arbitaryIntPair: Arbitrary[(Int, Int)] = Arbitrary(for {
-    t1Gen <- arbInt.arbitrary
-    t2Gen <- arbInt.arbitrary
-    t1 <- t1Gen
-    t2 <- t2Gen
-  } yield (t1, t2))
-
 	// Put the non-recursive calls first, otherwise you blow the stack
   def genOptMap11[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
     fn <- arbitrary[(Int) => Option[Int]]
