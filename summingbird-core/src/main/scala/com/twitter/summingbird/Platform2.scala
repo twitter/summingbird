@@ -26,6 +26,10 @@ package com.twitter.summingbird
 
   */
 case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
+
+  private def cast[T](p: Any): (Producer[P1, T], Producer[P2, T]) =
+    p.asInstanceOf[(Producer[P1, T], Producer[P2, T])]
+
   def apply[T](root: Producer[Platform2[P1, P2], T])
       : (Producer[P1, T], Producer[P2, T]) =
     root match {
@@ -35,7 +39,7 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
 
       case IdentityKeyedProducer(producer) =>
         val (l, r) = apply(producer)
-        (IdentityKeyedProducer(l), IdentityKeyedProducer(r))
+        cast((IdentityKeyedProducer(l), IdentityKeyedProducer(r)))
 
       case Source(source) =>
         val (leftSource, rightSource) = source
@@ -62,12 +66,12 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
       case LeftJoinedProducer(producer, service) =>
         val (l, r) = apply(producer)
         val (leftService, rightService) = service
-        (l.leftJoin(leftService), r.leftJoin(rightService))
+        cast((l.leftJoin(leftService), r.leftJoin(rightService)))
 
       case Summer(producer, store, monoid) =>
         val (l, r) = apply(producer)
         val (leftStore, rightStore) = store
-        (Summer(l, leftStore, monoid), Summer(r, rightStore, monoid))
+        cast((Summer(l, leftStore, monoid), Summer(r, rightStore, monoid)))
     }
 }
 

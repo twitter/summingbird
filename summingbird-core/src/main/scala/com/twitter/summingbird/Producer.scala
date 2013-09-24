@@ -25,16 +25,13 @@ object Producer {
    * Differs from transitiveDependencies in that this goes up both sides of an either
    * and it returns the input node.
    */
-  def entireGraphOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
-    // The casts can be removed when Producer is covariant:
+  def entireGraphOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
     val parentFn = { (in: Producer[P, Any]) => in match {
-        case AlsoProducer(l, r) =>
-          List(l, r).asInstanceOf[List[Producer[P, Any]]] // the left is not a dep, need a special case
-        case _ => dependenciesOf(in).asInstanceOf[List[Producer[P, Any]]]
+        case AlsoProducer(l, r) => List(l, r)
+        case _ => dependenciesOf(in)
       }
     }
-    val above = graph.depthFirstOf(p.asInstanceOf[Producer[P, Any]])(parentFn)
-      .toList.asInstanceOf[List[Producer[P, _]]]
+    val above = graph.depthFirstOf(p)(parentFn).toList
     p :: above
   }
 
@@ -57,7 +54,7 @@ object Producer {
   implicit def semigroup[P <: Platform[P], T]: Semigroup[Producer[P, T]] =
     Semigroup.from(_ merge _)
 
-  def dependenciesOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
+  def dependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
     /*
      * Keyed producers seem to have some issue with type inference that
      * I work around with the cast.
@@ -65,24 +62,23 @@ object Producer {
     p match {
       case AlsoProducer(_, prod) => List(prod)
       case NamedProducer(producer, _) => List(producer)
-      case IdentityKeyedProducer(producer) => List(producer.asInstanceOf[Producer[P, _]])
+      case IdentityKeyedProducer(producer) => List(producer)
       case Source(_) => List()
       case OptionMappedProducer(producer, fn) => List(producer)
       case FlatMappedProducer(producer, fn) => List(producer)
       case MergedProducer(l, r) => List(l, r)
       case WrittenProducer(producer, fn) => List(producer)
-      case LeftJoinedProducer(producer, service) => List(producer.asInstanceOf[Producer[P, _]])
-      case Summer(producer, store, monoid) => List(producer.asInstanceOf[Producer[P, _]])
+      case LeftJoinedProducer(producer, service) => List(producer)
+      case Summer(producer, store, monoid) => List(producer)
     }
   }
 
   /**
    * Return all dependencies of a given node in depth first, left first order.
    */
-  def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, _]): List[Producer[P, _]] = {
-    // The casts can be removed when Producer is covariant:
-    val nfn = (dependenciesOf _).asInstanceOf[graph.NeighborFn[Producer[P, Any]]]
-    graph.depthFirstOf(p.asInstanceOf[Producer[P, Any]])(nfn).toList.asInstanceOf[List[Producer[P, _]]]
+  def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
+    val nfn = dependenciesOf[P](_)
+    graph.depthFirstOf(p)(nfn).toList
   }
 }
 
@@ -91,7 +87,7 @@ object Producer {
   * have operations applied to it. In Storm, this might be an
   * in-progress TopologyBuilder.
   */
-sealed trait Producer[P <: Platform[P], T] {
+sealed trait Producer[P <: Platform[P], +T] {
   /** Ensure this is scheduled, but return something equivalent to the argument
    * like the function `par` in Haskell.
    * This can be used to combine two independent Producers in a way that ensures
@@ -99,7 +95,7 @@ sealed trait Producer[P <: Platform[P], T] {
    */
   def also[R](that: Producer[P, R]): Producer[P, R] = AlsoProducer(this, that)
   def name(id: String): Producer[P, T] = NamedProducer(this, id)
-  def merge(r: Producer[P, T]): Producer[P, T] = MergedProducer(this, r)
+  def merge[U >: T](r: Producer[P, U]): Producer[P, U] = MergedProducer(this, r)
 
   def collect[U](fn: PartialFunction[T,U]): Producer[P, U] =
     optionMap(fn.lift)
@@ -118,7 +114,7 @@ sealed trait Producer[P <: Platform[P], T] {
   def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
     FlatMappedProducer[P, T, U](this, fn)
 
-  def write(sink: P#Sink[T]): Producer[P, T] = WrittenProducer(this, sink)
+  def write[U >: T](sink: P#Sink[U]): Producer[P, T] = WrittenProducer(this, sink)
 
   def either[U](other: Producer[P, U]): Producer[P, Either[T, U]] =
     map(Left(_): Either[T, U])
@@ -147,7 +143,7 @@ case class FlatMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], 
 
 case class MergedProducer[P <: Platform[P], T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
 
-case class WrittenProducer[P <: Platform[P], T](producer: Producer[P, T], sink: P#Sink[T]) extends Producer[P, T]
+case class WrittenProducer[P <: Platform[P], T, U >: T](producer: Producer[P, T], sink: P#Sink[U]) extends Producer[P, T]
 
 case class Summer[P <: Platform[P], K, V](
   producer: KeyedProducer[P, K, V],
