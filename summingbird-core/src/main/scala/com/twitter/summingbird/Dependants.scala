@@ -21,41 +21,34 @@ import com.twitter.summingbird.graph._
 /** Producers are Directed Acyclic Graphs
  * by the fact that they are immutable.
  */
-case class Dependants[P <: Platform[P]](tail: Producer[P, _]) {
-  lazy val allTails: List[Producer[P, _]] = nodes.filter { fanOut(_).get == 0 }
-  val nodes: List[Producer[P, _]] = Producer.entireGraphOf(tail)
+case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) {
+  lazy val allTails: List[Producer[P, Any]] = nodes.filter { fanOut(_).get == 0 }
+  val nodes: List[Producer[P, Any]] = Producer.entireGraphOf(tail)
 
   /** This is the dependants graph. Each Producer knows who it depends on
    * but not who depends on it without doing this computation
    */
-  private val graph: NeighborFn[Producer[P, _]] = {
-    // The casts can be removed when Producer is covariant:
-    val nfn = (Producer.dependenciesOf _).asInstanceOf[NeighborFn[Producer[P, Any]]]
-    reversed(nodes.asInstanceOf[List[Producer[P, Any]]])(nfn)
-      .asInstanceOf[NeighborFn[Producer[P, _]]]
+  private val graph: NeighborFn[Producer[P, Any]] = {
+    val nfn = Producer.dependenciesOf[P](_)
+    reversed(nodes)(nfn)
   }
-  private val depths: Map[Producer[P, _], Int] = {
-    // The casts can be removed when Producer is covariant:
-    val nfn = (Producer.dependenciesOf _).asInstanceOf[NeighborFn[Producer[P, Any]]]
-    dagDepth(nodes.asInstanceOf[List[Producer[P, Any]]])(nfn)
-      .asInstanceOf[Map[Producer[P, _], Int]]
+  private val depths: Map[Producer[P, Any], Int] = {
+    val nfn = Producer.dependenciesOf[P](_)
+    dagDepth(nodes)(nfn)
   }
   /** The max of zero and 1 + depth of all parents if the node is the graph
    */
-  def isNode(p: Producer[P, _]): Boolean = depth(p).isDefined
-  def depth(p: Producer[P, _]): Option[Int] = depths.get(p)
+  def isNode(p: Producer[P, Any]): Boolean = depth(p).isDefined
+  def depth(p: Producer[P, Any]): Option[Int] = depths.get(p)
 
-  def dependantsOf(p: Producer[P, _]): Option[List[Producer[P, _]]] =
+  def dependantsOf(p: Producer[P, Any]): Option[List[Producer[P, Any]]] =
     if(isNode(p)) Some(graph(p).toList) else None
 
-  def fanOut(p: Producer[P, _]): Option[Int] = dependantsOf(p).map { _.size }
+  def fanOut(p: Producer[P, Any]): Option[Int] = dependantsOf(p).map { _.size }
   /**
    * Return all dependendants of a given node.
    * Does not include itself
    */
-  def transitiveDependantsOf(p: Producer[P, _]): List[Producer[P, _]] = {
-    // The casts can be removed when Producer is covariant:
-    val nfn = graph.asInstanceOf[NeighborFn[Producer[P, Any]]]
-    depthFirstOf(p.asInstanceOf[Producer[P, Any]])(nfn).toList.asInstanceOf[List[Producer[P, _]]]
-  }
+  def transitiveDependantsOf(p: Producer[P, Any]): List[Producer[P, Any]] =
+    depthFirstOf(p.asInstanceOf[Producer[P, Any]])(graph).toList
 }
