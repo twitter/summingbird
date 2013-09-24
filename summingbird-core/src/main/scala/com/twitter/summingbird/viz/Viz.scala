@@ -18,67 +18,12 @@ package com.twitter.summingbird.viz
 
 import java.io.Writer
 import com.twitter.summingbird.{Platform, Producer, Dependants, NamedProducer, IdentityKeyedProducer}
+import com.twitter.summingbird.planner._
 
 
-case class VizGraph[P <: Platform[P]](tail: Producer[P, _]) {
-  private val dependantState = Dependants(tail)
-  private type NameLookupTable = (Map[Producer[P, _], String], Map[String, Int])
-  private val emptyNameLookupTable = (Map[Producer[P, _], String](), Map[String, Int]())
-
-  @annotation.tailrec
-  private def recurseGetNode(n :Producer[P, _], nameOpt: Option[String] = None): (String, Producer[P, _], List[Producer[P, _]])  = {
-    val children: List[Producer[P, _]] = dependantState.dependantsOf(n).getOrElse(List[Producer[P, _]]())
-    val name = nameOpt.getOrElse(n.getClass.getName.replaceFirst("com.twitter.summingbird.", ""))
-    children.headOption match {
-      case Some(child: NamedProducer[_, _]) =>
-        recurseGetNode(child, Some(child.id))
-      case _ =>
-        (name, n, children)
-    }
-  }
-
-  def getName(curLookupTable: NameLookupTable, node: Producer[P, _], preferredName: String): (NameLookupTable, String) = {
-    val (nodeLookupTable, nameLookupTable) = curLookupTable
-
-    nodeLookupTable.get(node) match {
-      case Some(name) => (curLookupTable, name)
-      case None => 
-        nameLookupTable.get(preferredName) match {
-          case Some(count) => {
-            val newNum = count + 1
-            val newName = preferredName + "[" + newNum + "]"
-            (((nodeLookupTable + (node -> newName)), (nameLookupTable + (preferredName -> newNum))), newName)
-          }
-          case None => (((nodeLookupTable + (node -> preferredName)), (nameLookupTable + (preferredName -> 1))), preferredName)
-        }
-    }
-  }
-  override def toString() : String = {
-    val base = "digraph summingbirdGraph {\n"
-    val (graphStr, _) = dependantState.nodes.foldLeft(("", emptyNameLookupTable)) { case ((runningStr, nameLookupTable), nextNode) =>
-      nextNode match {
-        case NamedProducer(parent, name) => (runningStr, nameLookupTable)
-        case _ => 
-          // Compute the lines and new names for the nextNode
-          val (rawNodeName, evalNode, children) = recurseGetNode(nextNode)
-          val (updatedLookupTable, nodeName) = getName(nameLookupTable, evalNode, rawNodeName)
-
-          val (new_str, innerNameLookupTable) = children.foldLeft(("", updatedLookupTable)){ case ((innerRunningStr, innerNameLookupTable), c)  =>
-            val (childName, childNode, _) = recurseGetNode(c)
-
-            val innerNewStr = "\"" + nodeName + "\" -> \"" 
-            val (updatedLookupTable2, pChildName) = getName(innerNameLookupTable, childNode, childName)
-
-            val innerNewStr2 = pChildName + "\"\n"
-            (innerRunningStr + innerNewStr + innerNewStr2, updatedLookupTable2)
-          }
-          (runningStr + new_str, innerNameLookupTable)
-      }
-    }
-    base + graphStr + "\n}"
-  }
-}
-
-object BaseViz {
-  def apply[P <: Platform[P]](tail: Producer[P, _], writer: Writer):Unit = writer.write(VizGraph(tail).toString)
+object VizGraph {
+  def apply[P <: Platform[P]](dag: Dag[P], writer: Writer): Unit = writer.write(apply(dag))
+  def apply[P <: Platform[P]](dag: Dag[P]): String = DagViz(dag).toString
+  def apply[P <: Platform[P]](tail: Producer[P, _], writer: Writer):Unit = writer.write(VizGraph(tail))
+  def apply[P <: Platform[P]](tail: Producer[P, _]):String = ProducerViz(tail).toString
 }

@@ -14,17 +14,16 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.storm.viz
+package com.twitter.summingbird.viz
 
-import java.io.Writer
-import com.twitter.summingbird.{Platform, Producer, Dependants, NamedProducer, IdentityKeyedProducer}
-import com.twitter.summingbird.storm._
+import com.twitter.summingbird._
+import com.twitter.summingbird.planner._
 
-case class VizGraph(dag: StormDag) {
+case class DagViz[P <: Platform[P]](dag: Dag[P]) {
   type BaseLookupTable[T] = (Map[T, String], Map[String, Int])
-  type NameLookupTable = BaseLookupTable[Producer[Storm, _]]
+  type NameLookupTable = BaseLookupTable[Producer[P, _]]
 
-  val dependantState: Dependants[Storm] = Dependants(dag.tail)
+  val dependantState: Dependants[P] = Dependants(dag.tail)
   def buildLookupTable[T]() = (Map[T, String](), Map[String, Int]())
   def emptyNameLookupTable(): NameLookupTable = buildLookupTable()
   private def defaultName[T](node: T): String = node.getClass.getName.replaceFirst("com.twitter.summingbird.","")
@@ -50,7 +49,7 @@ case class VizGraph(dag: StormDag) {
     }
   }
 
-  def getSubGraphStr(nameLookupTable: NameLookupTable, node: Node): (List[String], List[String], NameLookupTable) = {
+  def getSubGraphStr(nameLookupTable: NameLookupTable, node: Node[P]): (List[String], List[String], NameLookupTable) = {
     node.members.foldLeft((List[String](), List[String](), nameLookupTable)) { case ((definitions, mappings, nameLookupTable), nextNode) =>
       val dependants = dependantState.dependantsOf(nextNode).getOrElse(Set())
 
@@ -69,7 +68,7 @@ case class VizGraph(dag: StormDag) {
     }
   }
   def genClusters(): String = {
-    val (clusters, producerMappings, producerNames, nodeToShortLookupTable) = dag.nodes.foldLeft((List[String](), List[String](), emptyNameLookupTable(), Map[Node, String]())) { 
+    val (clusters, producerMappings, producerNames, nodeToShortLookupTable) = dag.nodes.foldLeft((List[String](), List[String](), emptyNameLookupTable(), Map[Node[P], String]())) { 
         case ((clusters, producerMappings, nameLookupTable, nodeShortName), node) =>
 
           val (nodeDefinitions, mappings, newNameLookupTable) = getSubGraphStr(nameLookupTable, node)
@@ -83,10 +82,4 @@ case class VizGraph(dag: StormDag) {
   }
   
   override def toString() : String = genClusters
-}
-
-object VizGraph {
-  def apply(stormDag: StormDag, writer: Writer): Unit = writer.write(apply(stormDag).toString)
-  def apply(tail: Producer[Storm, _], writer: Writer): Unit = apply(DagBuilder(tail), writer)
-  def apply(tail: Producer[Storm, _]): String = apply(DagBuilder(tail)).toString
 }
