@@ -71,20 +71,6 @@ object Storm {
     Producer.source[Storm, T](timedSpout(spout))
 }
 
-/**
- * Object containing helper functions to build up the list of storm
- * operations that can potentially be optimized.
- */
-sealed trait FMItem
-case class OptionMap[T, U]() extends FMItem
-case class FactoryCell(factory: StoreFactory[_, _]) extends FMItem
-case class FlatMap(op: FlatMapOperation[_, _]) extends FMItem
-
-object FMItem {
-  def sink[T](sinkSupplier: () => (T => Future[Unit])): FMItem =
-    FlatMap(FlatMapOperation.write(sinkSupplier))
-}
-
 abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
   type Source[+T] = Spout[(Long, T)]
   type Store[-K, V] = StormStore[K, V]
@@ -96,7 +82,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private def getOrElse[T: Manifest](node: Node, default: T): T = {
     val producer = node.members.last
-    val namedNodes = Producer.transitiveDependenciesOf(producer).collect{case NamedProducer(_, n) => n}
+    
+    val namedNodes = Dependants(producer).transitiveDependantsOf(producer).collect{case NamedProducer(_, n) => n}
     (for {
       id <- namedNodes
       stormOpts <- options.get(id)
@@ -108,11 +95,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     /**
      * Only exists because of the crazy casts we needed.
      */
-    def serviceOperation[K, V, W](store: StoreFactory[_, _]) =
-      FlatMapOperation.combine(
-        FlatMapOperation.identity[(K, V)],
-        store.asInstanceOf[StoreFactory[K, W]])
-
     def foldOperations(producers: List[Producer[Storm, _]]): FlatMapOperation[Any, Any] = {
       producers.foldLeft(FlatMapOperation.identity[Any]) {
         case (acc, p) =>
