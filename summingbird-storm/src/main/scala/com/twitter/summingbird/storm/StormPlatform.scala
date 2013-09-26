@@ -133,7 +133,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val parallelism = getOrElse(node, DEFAULT_FM_PARALLELISM)
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
 
-    val dependsOnNames = stormDag.dependsOn(node).collect { case x: Node => stormDag.getNodeName(x) }
+    val dependsOnNames = stormDag.dependantsOf(node).collect { case x: Node => stormDag.getNodeName(x) }
     dependsOnNames.foreach { declarer.shuffleGrouping(_) }
   }
 
@@ -176,8 +176,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         sinkBolt,
         getOrElse(node, DEFAULT_SINK_PARALLELISM).parHint)
 
-    val dependsOnNames = stormDag.dependsOn(node).collect { case x: Node => stormDag.getNodeName(x) }
-    dependsOnNames.foreach { parentName =>
+    val dependantsOfNames = stormDag.dependantsOf(node).collect { case x: Node => stormDag.getNodeName(x) }
+    dependantsOfNames.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
     }
 

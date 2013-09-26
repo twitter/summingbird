@@ -98,8 +98,8 @@ case class StormDag(tail: Producer[Storm, _], producerToNode: Map[Producer[Storm
               nodes: List[Node],
               nodeToName: Map[Node, String] = Map(),
               nameToNode: Map[String, Node] = Map(),
-              dependsOnM: Map[Node, List[Node]] = Map[Node, List[Node]](),
-              dependantOfM: Map[Node, List[Node]] = Map[Node, List[Node]]()) {
+              dependenciesOfM: Map[Node, List[Node]] = Map[Node, List[Node]](),
+              dependantsOfM: Map[Node, List[Node]] = Map[Node, List[Node]]()) {
   def connect(src: Node, dest: Node): StormDag = {
     if (src == dest) {
       this
@@ -108,12 +108,15 @@ case class StormDag(tail: Producer[Storm, _], producerToNode: Map[Producer[Storm
       // We build/maintain two maps,
       // Nodes to which each node depends on
       // and nodes on which each node depends
-      val oldDependsOnTargets = dependsOnM.getOrElse(src, List[Node]())
-      val dependsOnTargets = if(oldDependsOnTargets.contains(dest)) oldDependsOnTargets else (dest :: oldDependsOnTargets)
-      val oldDependantOfTargets = dependantOfM.getOrElse(dest, List[Node]())
-      val dependantOfTargets = if(oldDependantOfTargets.contains(src)) oldDependantOfTargets else (src :: oldDependantOfTargets)
-
-      copy(dependsOnM = dependsOnM + (src -> dependsOnTargets) , dependantOfM = dependantOfM + (dest -> dependantOfTargets))
+      val oldSrcDependants = dependantsOfM.getOrElse(src, List[Node]())
+      val newSrcDependants = if(oldSrcDependants.contains(dest)) oldSrcDependants else (dest :: oldSrcDependants)
+      val newDependantsOfM = dependantsOfM + (src -> newSrcDependants)
+      
+      val oldDestDependencies = dependenciesOfM.getOrElse(dest, List[Node]())
+      val newDestDependencies = if(oldDestDependencies.contains(src)) oldDestDependencies else (src :: oldDestDependencies)
+      val newDependenciesOfM = dependenciesOfM + (dest -> newDestDependencies)
+      
+      copy(dependenciesOfM = newDependenciesOfM, dependantsOfM = newDependantsOfM)
     }
   }
 
@@ -124,8 +127,8 @@ case class StormDag(tail: Producer[Storm, _], producerToNode: Map[Producer[Storm
   def getNodeName(n: Node): String = nodeToName(n)
   def tailN: Node = producerToNode(tail)
 
-  def dependantsOf(n: Node): List[Node] = dependsOnM.get(n).getOrElse(List())
-  def dependsOn(n: Node): List[Node] = dependantOfM.get(n).getOrElse(List())
+  def dependantsOf(n: Node): List[Node] = dependantsOfM.get(n).getOrElse(List())
+  def dependenciesOf(n: Node): List[Node] = dependenciesOfM.get(n).getOrElse(List())
 
   def toStringWithPrefix(prefix: String): String = {
     prefix + "StormDag\n" + nodes.foldLeft(""){ case (str, node) =>
@@ -167,7 +170,7 @@ object StormDag {
     }
 
     def genNames(dep: Node, dag: StormDag, outerNodeToName: Map[Node, String], usedNames: Set[String]): (Map[Node, String], Set[String]) = {
-      dag.dependsOn(dep).foldLeft((outerNodeToName, usedNames)) {case ((nodeToName, taken), n) =>
+      dag.dependenciesOf(dep).foldLeft((outerNodeToName, usedNames)) {case ((nodeToName, taken), n) =>
           val name = tryGetName(nodeToName(dep) + "-" + n.shortName, taken)
           val useName = nodeToName.get(n) match {
             case None => name
