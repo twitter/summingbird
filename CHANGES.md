@@ -1,5 +1,12 @@
 # summingbird #
 
+## 0.1.5
+* Control how futures are collected in Client Store: https://github.com/twitter/summingbird/pull/254
+* Producer[Platform, T] is covariant on T: https://github.com/twitter/summingbird/pull/251
+* Improve testing generators: https://github.com/twitter/summingbird/pull/249
+* Remove manifests from the core API: https://github.com/twitter/summingbird/pull/247
+* Dot graphs of our storm plan (what SB nodes go to physical nodes): https://github.com/twitter/summingbird/pull/236
+
 ## 0.1.4
 
 * Fix Storm Tests: https://github.com/twitter/summingbird/pull/227
