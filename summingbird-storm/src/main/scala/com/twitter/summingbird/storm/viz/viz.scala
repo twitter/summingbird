@@ -50,7 +50,7 @@ case class VizGraph(dag: StormDag) {
     }
   }
 
-  def getSubGraphStr(nameLookupTable: NameLookupTable, node: StormNode): (List[String], List[String], NameLookupTable) = {
+  def getSubGraphStr(nameLookupTable: NameLookupTable, node: Node): (List[String], List[String], NameLookupTable) = {
     node.members.foldLeft((List[String](), List[String](), nameLookupTable)) { case ((definitions, mappings, nameLookupTable), nextNode) =>
       val dependants = dependantState.dependantsOf(nextNode).getOrElse(Set())
 
@@ -69,7 +69,7 @@ case class VizGraph(dag: StormDag) {
     }
   }
   def genClusters(): String = {
-    val (clusters, producerMappings, producerNames, nodeToShortLookupTable) = dag.nodes.foldLeft((List[String](), List[String](), emptyNameLookupTable(), Map[StormNode, String]())) { 
+    val (clusters, producerMappings, producerNames, nodeToShortLookupTable) = dag.nodes.foldLeft((List[String](), List[String](), emptyNameLookupTable(), Map[Node, String]())) { 
         case ((clusters, producerMappings, nameLookupTable, nodeShortName), node) =>
 
           val (nodeDefinitions, mappings, newNameLookupTable) = getSubGraphStr(nameLookupTable, node)
@@ -78,8 +78,12 @@ case class VizGraph(dag: StormDag) {
           val nextCluster = "subgraph %s {\n\tlabel=\"%s\"\n%s\n}\n".format(shortName, dag.getNodeName(node), nodeDefinitions.mkString("\n"))
           (nextCluster :: clusters, mappings ++ producerMappings, newNameLookupTable, newNodeShortName)
     }
+    
+    val clusterMappings = dag.nodes.flatMap{case node =>
+        dag.dependantsOf(node).collect{case n => "cluster_%s -> cluster_%s [style=dashed]".format(node.hashCode.toHexString, n.hashCode.toHexString)} 
+    }
 
-    "digraph summingbirdGraph {\n" + (clusters ++ producerMappings).mkString("\n") +  "\n}"
+    "digraph summingbirdGraph {\n" + (clusters ++ producerMappings ++ clusterMappings).mkString("\n") +  "\n}"
   }
   
   override def toString() : String = genClusters

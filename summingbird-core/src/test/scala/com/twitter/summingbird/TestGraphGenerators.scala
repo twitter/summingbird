@@ -68,6 +68,14 @@ object TestGraphGenerators {
     fn <- arbitrary[(Int) => List[Int]]
     in <- genProd1
   } yield FlatMappedProducer(in, fn)
+  
+  
+  def genNamedProducer11[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
+    _ <- Gen.choose(0, 1)
+    fn <- arbitrary[(Int) => List[Int]]
+    in <- genProd1
+    name <- Gen.alphaStr
+  } yield NamedProducer(FlatMappedProducer(in, fn), name)
 
   def genMerged1[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
     _  <- Gen.choose(0,1)
@@ -114,10 +122,11 @@ object TestGraphGenerators {
   					frequency((25, genSource2.arbitrary), (3, genOptMap12), (3, genOptMap22), (4, genWrite22), (1, genMerged2),
   							 (0, also2), (3, genFlatMap22), (3, genFlatMap12))
 
+
   def genProd1[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]],
   									 genSource2 : Arbitrary[KeyedProducer[P, Int, Int]],
   									 testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[Producer[P, Int]] = 
-  					frequency((25, genSource1.arbitrary), (3, genOptMap11), (3, genOptMap21), (1, genMerged1), (3, genFlatMap11),
+  					frequency((25, genSource1.arbitrary), (8, genNamedProducer11), (3, genOptMap11), (3, genOptMap21), (1, genMerged1), (3, genFlatMap11),
   							 (0, also1), (3, genFlatMap21))
 
 }

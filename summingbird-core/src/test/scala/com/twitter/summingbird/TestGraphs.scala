@@ -80,8 +80,10 @@ object TestGraphs {
     (preJoinFn: T => TraversableOnce[(K, U)])
     (postJoinFn: ((K, (U, Option[JoinedU]))) => TraversableOnce[(K, V)]): Summer[P, K, V] =
     source
+      .name("My named source")
       .flatMap(preJoinFn)
       .leftJoin(service)
+      .name("My named flatmap")
       .flatMap(postJoinFn)
       .sumByKey(store)
 }

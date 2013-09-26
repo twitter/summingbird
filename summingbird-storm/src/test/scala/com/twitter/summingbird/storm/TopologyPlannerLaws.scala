@@ -114,7 +114,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
       val firstP = n.members.last
       firstP match {
         case Summer(_, _, _) =>
-            dag.dependsOn(n).forall {otherN =>
+            dag.dependantsOf(n).forall {otherN =>
               otherN.members.head.isInstanceOf[KeyedProducer[_, _, _]]
             }
         case _ => true
@@ -138,8 +138,8 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   property("Only spouts can have no incoming dependencies") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       n match {
-        case _: StormSpout => true
-        case _ => dag.dependsOn(n).size > 0
+        case _: SourceNode => true
+        case _ => dag.dependenciesOf(n).size > 0
       }
     }
   }
@@ -148,8 +148,8 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   property("Spouts must have no incoming dependencies, and they must have dependants") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       n match {
-        case _: StormSpout => 
-          dag.dependsOn(n).size == 0 && dag.dependantsOf(n).size > 0
+        case _: SourceNode => 
+          dag.dependenciesOf(n).size == 0 && dag.dependantsOf(n).size > 0
         case _ => true
       }
     }
@@ -161,8 +161,8 @@ object TopologyPlannerLaws extends Properties("StormDag") {
       val firstP = n.members.last
       val success = firstP match {
         case Summer(_, _, _) =>
-            dag.dependsOn(n).size > 0 && dag.dependsOn(n).forall {otherN =>
-              otherN.isInstanceOf[FinalFlatMapStormBolt]
+            dag.dependenciesOf(n).size > 0 && dag.dependenciesOf(n).forall {otherN =>
+              otherN.isInstanceOf[FlatMapNode]
             }
         case _ => true
       }
@@ -171,21 +171,10 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     }
   }
 
-  property("There should only be one final flatmap bolt") = forAll { (dag: StormDag) =>
-    val numFinalFlatmapBolts = dag.nodes.foldLeft(0){(sum, n) =>
-        n match {
-          case _: FinalFlatMapStormBolt => sum + 1
-          case _ => sum
-        }
-    }
-    numFinalFlatmapBolts == 1
-  }
-  
-
   property("There should be no flatmap producers in the source node") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       val success = n match {
-        case n: StormSpout => n.members.forall{p => !p.isInstanceOf[FlatMappedProducer[_, _, _]]}
+        case n: SourceNode => n.members.forall{p => !p.isInstanceOf[FlatMappedProducer[_, _, _]]}
         case _ => true
       }
       if(!success) dumpGraph(dag)
