@@ -135,8 +135,9 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val parallelism = getOrElse(node, DEFAULT_FM_PARALLELISM)
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
 
-    val dependsOnNames = stormDag.dependsOn(node).collect { case x: StormNode => stormDag.getNodeName(x) }
-    dependsOnNames.foreach { declarer.shuffleGrouping(_) }
+
+    val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: Node => stormDag.getNodeName(x) }
+    dependenciesNames.foreach { declarer.shuffleGrouping(_) }
   }
 
   private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
@@ -177,9 +178,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         nodeName,
         sinkBolt,
         getOrElse(node, DEFAULT_SINK_PARALLELISM).parHint)
-
-    val dependsOnNames = stormDag.dependsOn(node).collect { case x: StormNode => stormDag.getNodeName(x) }
-    dependsOnNames.foreach { parentName =>
+    val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
+    dependenciesNames.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
     }
 

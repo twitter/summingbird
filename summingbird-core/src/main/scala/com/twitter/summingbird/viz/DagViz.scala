@@ -77,8 +77,12 @@ case class DagViz[P <: Platform[P]](dag: Dag[P]) {
           val nextCluster = "subgraph %s {\n\tlabel=\"%s\"\n%s\n}\n".format(shortName, dag.getNodeName(node), nodeDefinitions.mkString("\n"))
           (nextCluster :: clusters, mappings ++ producerMappings, newNameLookupTable, newNodeShortName)
     }
+    
+    val clusterMappings = dag.nodes.flatMap{case node =>
+        dag.dependantsOf(node).collect{case n => "cluster_%s -> cluster_%s [style=dashed]".format(node.hashCode.toHexString, n.hashCode.toHexString)} 
+    }
 
-    "digraph summingbirdGraph {\n" + (clusters ++ producerMappings).mkString("\n") +  "\n}"
+    "digraph summingbirdGraph {\n" + (clusters ++ producerMappings ++ clusterMappings).mkString("\n") +  "\n}"
   }
   
   override def toString() : String = genClusters
