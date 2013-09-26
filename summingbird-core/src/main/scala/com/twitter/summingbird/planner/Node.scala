@@ -95,8 +95,8 @@ case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Produ
   nodes: List[Node[P]],
   nodeToName: Map[Node[P], String] = Map[Node[P], String](),
   nameToNode: Map[String, Node[P]] = Map[String, Node[P]](),
-  dependsOnM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]](),
-  dependantOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]]()) {
+  dependenciesOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]](),
+  dependantsOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]]()) {
   def connect(src: Node[P], dest: Node[P]): Dag[P] = {
     if (src == dest) {
       this
@@ -105,12 +105,15 @@ case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Produ
       // We build/maintain two maps,
       // Nodes to which each node depends on
       // and nodes on which each node depends
-      val oldDependsOnTargets = dependsOnM.getOrElse(src, List[Node[P]]())
-      val dependsOnTargets = if (oldDependsOnTargets.contains(dest)) oldDependsOnTargets else (dest :: oldDependsOnTargets)
-      val oldDependantOfTargets = dependantOfM.getOrElse(dest, List[Node[P]]())
-      val dependantOfTargets = if (oldDependantOfTargets.contains(src)) oldDependantOfTargets else (src :: oldDependantOfTargets)
-
-      copy(dependsOnM = dependsOnM + (src -> dependsOnTargets), dependantOfM = dependantOfM + (dest -> dependantOfTargets))
+      val oldSrcDependants = dependantsOfM.getOrElse(src, List[Node[P]]())
+      val newSrcDependants = if(oldSrcDependants.contains(dest)) oldSrcDependants else (dest :: oldSrcDependants)
+      val newDependantsOfM = dependantsOfM + (src -> newSrcDependants)
+      
+      val oldDestDependencies = dependenciesOfM.getOrElse(dest, List[Node[P]]())
+      val newDestDependencies = if(oldDestDependencies.contains(src)) oldDestDependencies else (src :: oldDestDependencies)
+      val newDependenciesOfM = dependenciesOfM + (dest -> newDestDependencies)
+      
+      copy(dependenciesOfM = newDependenciesOfM, dependantsOfM = newDependantsOfM)
     }
   }
 
@@ -121,8 +124,8 @@ case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Produ
   def getNodeName(n: Node[P]): String = nodeToName(n)
   def tailN: Node[P] = producerToNode(tail)
 
-  def dependantsOf(n: Node[P]): List[Node[P]] = dependsOnM.get(n).getOrElse(List())
-  def dependsOn(n: Node[P]): List[Node[P]] = dependantOfM.get(n).getOrElse(List())
+  def dependantsOf(n: Node[P]): List[Node[P]] = dependantsOfM.get(n).getOrElse(List())
+  def dependenciesOf(n: Node[P]): List[Node[P]] = dependenciesOfM.get(n).getOrElse(List())
 
   def toStringWithPrefix(prefix: String): String = {
     prefix + "Dag\n" + nodes.foldLeft("") {
@@ -162,7 +165,7 @@ object Dag {
     }
 
     def genNames(dep: Node[P], dag: Dag[P], outerNodeToName: Map[Node[P], String], usedNames: Set[String]): (Map[Node[P], String], Set[String]) = {
-      dag.dependsOn(dep).foldLeft((outerNodeToName, usedNames)) {
+      dag.dependenciesOf(dep).foldLeft((outerNodeToName, usedNames)) {
         case ((nodeToName, taken), n) =>
           val name = tryGetName(nodeToName(dep) + "-" + n.shortName, taken)
           val useName = nodeToName.get(n) match {

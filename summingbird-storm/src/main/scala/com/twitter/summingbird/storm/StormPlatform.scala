@@ -136,7 +136,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
 
 
-    val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: Node => stormDag.getNodeName(x) }
+    val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     dependenciesNames.foreach { declarer.shuffleGrouping(_) }
   }
 
@@ -211,7 +211,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
     val stormDag = DagBuilder(tail)
 
-    stormDag.nodes.map { node =>
+    stormDag.nodes.foreach { node =>
       node match {
         case _: SummerNode[_] => scheduleSinkBolt(stormDag, node)
         case _: FlatMapNode[_] => scheduleFlatMapper(stormDag, node)
