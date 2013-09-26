@@ -114,7 +114,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
       val firstP = n.members.last
       firstP match {
         case Summer(_, _, _) =>
-            dag.dependsOn(n).forall {otherN =>
+            dag.dependantsOf(n).forall {otherN =>
               otherN.members.head.isInstanceOf[KeyedProducer[_, _, _]]
             }
         case _ => true
@@ -139,7 +139,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     dag.nodes.forall{n =>
       n match {
         case _: SourceNode => true
-        case _ => dag.dependsOn(n).size > 0
+        case _ => dag.dependenciesOf(n).size > 0
       }
     }
   }
@@ -149,7 +149,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     dag.nodes.forall{n =>
       n match {
         case _: SourceNode => 
-          dag.dependsOn(n).size == 0 && dag.dependantsOf(n).size > 0
+          dag.dependenciesOf(n).size == 0 && dag.dependantsOf(n).size > 0
         case _ => true
       }
     }
@@ -161,7 +161,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
       val firstP = n.members.last
       val success = firstP match {
         case Summer(_, _, _) =>
-            dag.dependsOn(n).size > 0 && dag.dependsOn(n).forall {otherN =>
+            dag.dependenciesOf(n).size > 0 && dag.dependenciesOf(n).forall {otherN =>
               otherN.isInstanceOf[FlatMapNode]
             }
         case _ => true
