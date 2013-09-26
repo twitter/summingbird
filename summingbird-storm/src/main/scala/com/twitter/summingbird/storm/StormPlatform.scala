@@ -192,7 +192,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
           case NamedProducer(producer, newId) => recurse(producer, id = Some(newId))
 
-          case Source(spout, manifest) =>
+          case Source(spout) =>
             // The current planner requires a layer of flatMapBolts, even
             // if calling sumByKey directly on a source.
             val (optionMaps, remaining) = toSchedule.span {
@@ -221,7 +221,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             // Attach a FlatMapBolt after this source.
             (flatMap(parents, operations), jamfs)
 
-          case OptionMappedProducer(producer, op, manifest) =>
+          case OptionMappedProducer(producer, op) =>
             perhapsSchedule(producer, OptionMap(op))
 
           case FlatMappedProducer(producer, op) =>
@@ -242,6 +242,22 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
               recurse(r, toSchedule = List.empty, suffix = rightSuffix, jamfs = leftM)
             val parents = leftNodes ++ rightNodes
             (flatMap(parents, toSchedule), rightM)
+
+          /**
+           * Very similar to Merge, just ignore the left.
+           * TODO:
+           * https://github.com/twitter/summingbird/issues/241
+           * if no one consumes the output of a node on storm,
+           * we should not emit.
+           */
+          case AlsoProducer(l, r) =>
+            val leftSuffix = "L-" + suffixOf(toSchedule, suffix)
+            val rightSuffix = "R-" + suffixOf(toSchedule, suffix)
+            val (_, leftM) =
+              recurse(l, toSchedule = List.empty, suffix = leftSuffix)
+            val (rightNodes, rightM) =
+              recurse(r, toSchedule = List.empty, suffix = rightSuffix, jamfs = leftM)
+            (flatMap(rightNodes, toSchedule), rightM)
         }
         (strings, m + (outerProducer -> strings))
     }
@@ -322,7 +338,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val dep = Dependants(summer)
     val fanOutSet =
       Producer.transitiveDependenciesOf(summer)
-        .filter(dep.fanOut(_).exists(_ > 1))
+        .filter(dep.fanOut(_).exists(_ > 1)).toSet
 
     val (parents, _) = buildTopology(
       topologyBuilder, summer, fanOutSet, Map.empty,

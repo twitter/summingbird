@@ -42,8 +42,8 @@ class Memory extends Platform[Memory] {
         val (s, m) = outerProducer match {
           case NamedProducer(producer, _) => toStream(producer, jamfs)
           case IdentityKeyedProducer(producer) => toStream(producer, jamfs)
-          case Source(source, _) => (source.toStream, jamfs)
-          case OptionMappedProducer(producer, fn, mf) =>
+          case Source(source) => (source.toStream, jamfs)
+          case OptionMappedProducer(producer, fn) =>
             val (s, m) = toStream(producer, jamfs)
             (s.flatMap(fn(_)), m)
 
@@ -55,6 +55,15 @@ class Memory extends Platform[Memory] {
             val (leftS, leftM) = toStream(l, jamfs)
             val (rightS, rightM) = toStream(r, leftM)
             (leftS ++ rightS, rightM)
+
+          case AlsoProducer(l, r) =>
+            //Plan the first one, but ignore it
+            val (left, leftM) = toStream(l, jamfs)
+            // We need to force all of left to make sure any
+            // side effects in write happen
+            val lforcedEmpty = left.filter(_ => false)
+            val (right, rightM) = toStream(r, leftM)
+            (right ++ lforcedEmpty, rightM)
 
           case WrittenProducer(producer, fn) =>
             val (s, m) = toStream(producer, jamfs)

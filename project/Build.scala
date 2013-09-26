@@ -16,7 +16,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.1.4",
+    version := "0.1.5",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -104,7 +104,8 @@ object SummingbirdBuild extends Build {
     summingbirdKryo,
     summingbirdStorm,
     summingbirdScalding,
-    summingbirdBuilder
+    summingbirdBuilder,
+    summingbirdExample
   )
 
   val dfsDatastoresVersion = "1.3.4"

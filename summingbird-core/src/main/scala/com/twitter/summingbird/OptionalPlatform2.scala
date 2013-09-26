@@ -20,6 +20,9 @@ package com.twitter.summingbird
   * @author Aaron Siegel
   */
 case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
+  private def cast[T](p: Any): (Option[Producer[P1, T]], Option[Producer[P2, T]]) =
+    p.asInstanceOf[(Option[Producer[P1, T]], Option[Producer[P2, T]])]
+
   def apply[T](root: Producer[OptionalPlatform2[P1, P2], T])
       : (Option[Producer[P1, T]], Option[Producer[P2, T]]) =
     root match {
@@ -29,15 +32,15 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
 
       case IdentityKeyedProducer(producer) =>
         val (l, r) = apply(producer)
-        (l.map(IdentityKeyedProducer(_)), r.map(IdentityKeyedProducer(_)))
+        cast((l.map(IdentityKeyedProducer(_)), r.map(IdentityKeyedProducer(_))))
 
-      case Source(source, mf) =>
+      case Source(source) =>
         val (leftSource, rightSource) = source
-        (leftSource.map(Source(_, mf)), rightSource.map(Source(_, mf)))
+        (leftSource.map(Source(_)), rightSource.map(Source(_)))
 
-      case OptionMappedProducer(producer, fn, mf) =>
+      case OptionMappedProducer(producer, fn) =>
         val (l, r) = apply(producer)
-        (l.map(OptionMappedProducer(_, fn, mf)), r.map(OptionMappedProducer(_, fn, mf)))
+        (l.map(OptionMappedProducer(_, fn)), r.map(OptionMappedProducer(_, fn)))
 
       case FlatMappedProducer(producer, fn) =>
         val (l, r) = apply(producer)
@@ -62,14 +65,14 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val (leftService, rightService) = service
         val left = for (li <- l; leftServicei <- leftService) yield li.leftJoin(leftServicei)
         val right = for (ri <- r; rightServicei <- rightService) yield ri.leftJoin(rightServicei)
-        (left, right)
+        cast((left, right))
 
       case Summer(producer, store, monoid) =>
         val (l, r) = apply(producer)
         val (leftStore, rightStore) = store
         val left = for (li <- l; leftStorei <- leftStore) yield Summer(li, leftStorei, monoid)
         val right = for (ri <- r; rightStorei <- rightStore) yield Summer(ri, rightStorei, monoid)
-        (left, right)
+        cast((left, right))
     }
 }
 
