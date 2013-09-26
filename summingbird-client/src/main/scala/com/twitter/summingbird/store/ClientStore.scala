@@ -44,13 +44,44 @@ object ClientStore {
 
   def defaultOnlineKeyFilter[K] = (k: K) => true
 
+ /** TODO: when storehaus is fixed remove:
+  * https://github.com/twitter/storehaus/pull/148
+  * */
+  def bestEffort[T] = new FutureCollector[T] {
+    override def apply(futureSeq: Seq[Future[T]]) =
+      Future.collect {
+        futureSeq.map { f: Future[T] =>
+          // Don't squash errors, but hide exceptions by default
+          f.map { Some(_) }.handle { case x: Exception => None }
+        }
+      }.map { _.flatten }
+  }
+
+  def apply[K, V](
+    offlineStore: ReadableStore[K, (BatchID, V)],
+    onlineStore: ReadableStore[(K, BatchID), V],
+    batchesToKeep: Int
+  )(implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
+      new ClientStore[K, V](offlineStore, onlineStore,
+        batcher, batchesToKeep, defaultOnlineKeyFilter[K], FutureCollector.bestEffort)
+
   def apply[K, V](
     offlineStore: ReadableStore[K, (BatchID, V)],
     onlineStore: ReadableStore[(K, BatchID), V],
     batchesToKeep: Int,
-    onlineKeyFilter: K => Boolean = defaultOnlineKeyFilter[K]
+    onlineKeyFilter: K => Boolean
   )(implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
-    new ClientStore[K, V](offlineStore, onlineStore, batcher, batchesToKeep, onlineKeyFilter)
+      new ClientStore[K, V](offlineStore, onlineStore,
+        batcher, batchesToKeep, onlineKeyFilter, FutureCollector.bestEffort)
+
+  def apply[K, V](
+    offlineStore: ReadableStore[K, (BatchID, V)],
+    onlineStore: ReadableStore[(K, BatchID), V],
+    batchesToKeep: Int,
+    onlineKeyFilter: K => Boolean,
+    collector: FutureCollector[(K, Iterable[BatchID])]
+  )(implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
+    new ClientStore[K, V](offlineStore, onlineStore, batcher, batchesToKeep, onlineKeyFilter, collector)
 }
 
   /**
@@ -102,7 +133,8 @@ class ClientStore[K, V: Semigroup](
   onlineStore: ReadableStore[(K, BatchID), V],
   batcher: Batcher,
   batchesToKeep: Int,
-  onlineKeyFilter: K => Boolean) extends ReadableStore[K, V] {
+  onlineKeyFilter: K => Boolean,
+  collector: FutureCollector[(K, Iterable[BatchID])]) extends ReadableStore[K, V] {
   import MergeOperations._
 
   override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, FOpt[V]] = {
@@ -112,7 +144,7 @@ class ClientStore[K, V: Semigroup](
     val m: Future[Map[K1, FOpt[V]]] = for {
       onlineKeys <- generateOnlineKeys(possibleOnlineKeys.toSeq, batcher.currentBatch, batchesToKeep)(
         offlineResult.andThen(_.map { _.map { _._1 } })
-      )(FutureCollector.bestEffort)
+      )(collector.asInstanceOf[FutureCollector[(K1, Iterable[BatchID])]])
       onlineResult: Map[(K1, BatchID), FOpt[V]] = onlineStore.multiGet(onlineKeys)
       liftedOnline: Map[K1, Future[Seq[Option[(BatchID, V)]]]] = pivotBatches(onlineResult)
     } yield dropBatches(mergeResults(liftedOffline, liftedOnline))
