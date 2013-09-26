@@ -50,7 +50,7 @@ class ClientStoreLaws extends Specification {
   val retMap = clientStore.multiGet(keys)
 
   def assertPresent[T](f: Future[T], comparison: T) {
-    assert(f.isReturn && f.get == comparison)
+    assert(f.isReturn && Await.result(f) == comparison)
   }
 
   "ClientStore should return a map from multiGet of the same size as the input request" in {

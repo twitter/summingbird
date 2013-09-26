@@ -53,8 +53,16 @@ class FunctionFlatMapOperation[T, U](@transient fm: T => TraversableOnce[U])
   def apply(t: T) = Future.value(boxed.get(t))
 }
 
+class IdentityFlatMapOperation[T] extends FlatMapOperation[T, T] {
+  // By default we do the identity function
+  def apply(t: T): Future[TraversableOnce[T]] = Future.value(Some(t))
+  
+  // But if we are composed with something else, just become it
+  override def andThen[V](fmo: FlatMapOperation[T, V]): FlatMapOperation[T, V] = fmo
+}
+
 object FlatMapOperation {
-  def identity[T] = FlatMapOperation { t: T => Some(t) }
+  def identity[T]: FlatMapOperation[T, T] = new IdentityFlatMapOperation()
 
   def apply[T, U](fm: T => TraversableOnce[U]): FlatMapOperation[T, U] =
     new FunctionFlatMapOperation(fm)
