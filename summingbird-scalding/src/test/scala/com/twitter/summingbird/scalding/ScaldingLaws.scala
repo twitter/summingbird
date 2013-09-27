@@ -374,7 +374,7 @@ class ScaldingSerializationSpecs extends Specification {
         tup => List((1 -> tup._2))
       }
 
-      val mode = HadoopTest(new Configuration, {case x: Source[_, _] => buffer.get(x)})
+      val mode = HadoopTest(new Configuration, {case x: ScaldingSource => buffer.get(x)})
       val intr = Interval.leftClosedRightOpen(0L, inWithTime.size.toLong)
       val scald = new Scalding("scalaCheckJob")
 
