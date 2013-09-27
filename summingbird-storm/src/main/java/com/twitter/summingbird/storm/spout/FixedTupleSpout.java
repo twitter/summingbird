@@ -55,6 +55,7 @@ public class FixedTupleSpout implements IRichSpout, CompletableSpout {
   private List<FixedTuple> _tuples;
   private SpoutOutputCollector _collector;
 
+  @SuppressWarnings("unused")
   private TopologyContext _context;
   private List<FixedTuple> _serveTuples;
   private Map<String, FixedTuple> _pending;

@@ -20,6 +20,21 @@ package com.twitter.summingbird
 import com.twitter.algebird.{ Monoid, Semigroup }
 
 object Producer {
+
+  /** return this and the recursively reachable nodes in depth first, left first order
+   * Differs from transitiveDependencies in that this goes up both sides of an either
+   * and it returns the input node.
+   */
+  def entireGraphOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
+    val parentFn = { (in: Producer[P, Any]) => in match {
+        case AlsoProducer(l, r) => List(l, r)
+        case _ => dependenciesOf(in)
+      }
+    }
+    val above = graph.depthFirstOf(p)(parentFn).toList
+    p :: above
+  }
+
   def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
     paths.collectFirst { case s: Summer[P, _, _] => s }
 
@@ -27,8 +42,7 @@ object Producer {
     * Begin from some base representation. An iterator for in-memory,
     * for example.
     */
-  def source[P <: Platform[P], T](s: P#Source[T])(implicit manifest: Manifest[T]): Producer[P, T] =
-    Source[P, T](s, manifest)
+  def source[P <: Platform[P], T](s: P#Source[T]): Producer[P, T] = Source[P, T](s)
 
   implicit def evToKeyed[P <: Platform[P], T, K, V](producer: Producer[P, T])
     (implicit ev: T <:< (K, V)): KeyedProducer[P, K, V] =
@@ -40,39 +54,31 @@ object Producer {
   implicit def semigroup[P <: Platform[P], T]: Semigroup[Producer[P, T]] =
     Semigroup.from(_ merge _)
 
-  def dependenciesOf[P <: Platform[P]](p: Producer[P, _]): Set[Producer[P, _]] = {
+  def dependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
     /*
      * Keyed producers seem to have some issue with type inference that
      * I work around with the cast.
      */
     p match {
-      case NamedProducer(producer, _) => Set(producer)
-      case IdentityKeyedProducer(producer) => Set(producer.asInstanceOf[Producer[P, _]])
-      case Source(source, _) => Set()
-      case OptionMappedProducer(producer, fn, mf) => Set(producer)
-      case FlatMappedProducer(producer, fn) => Set(producer)
-      case MergedProducer(l, r) => Set(l, r)
-      case WrittenProducer(producer, fn) => Set(producer)
-      case LeftJoinedProducer(producer, service) => Set(producer.asInstanceOf[Producer[P, _]])
-      case Summer(producer, store, monoid) => Set(producer.asInstanceOf[Producer[P, _]])
+      case AlsoProducer(_, prod) => List(prod)
+      case NamedProducer(producer, _) => List(producer)
+      case IdentityKeyedProducer(producer) => List(producer)
+      case Source(_) => List()
+      case OptionMappedProducer(producer, fn) => List(producer)
+      case FlatMappedProducer(producer, fn) => List(producer)
+      case MergedProducer(l, r) => List(l, r)
+      case WrittenProducer(producer, fn) => List(producer)
+      case LeftJoinedProducer(producer, service) => List(producer)
+      case Summer(producer, store, monoid) => List(producer)
     }
   }
 
-  /** Since we know these nodes form a DAG by immutability
-   * the search is easy
+  /**
+   * Return all dependencies of a given node in depth first, left first order.
    */
-  def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, _]): Set[Producer[P, _]] = {
-    @annotation.tailrec
-    def loop(stack: List[Producer[P, _]], acc: Set[Producer[P, _]]): Set[Producer[P, _]] = {
-      stack match {
-        case Nil => acc
-        case h::tail =>
-          val newStack = dependenciesOf(h).filterNot(acc).foldLeft(tail) { (s, it) => it :: s }
-          loop(newStack, acc + h)
-      }
-    }
-    val start = dependenciesOf(p)
-    loop(start.toList, start)
+  def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
+    val nfn = dependenciesOf[P](_)
+    graph.depthFirstOf(p)(nfn).toList
   }
 }
 
@@ -81,40 +87,55 @@ object Producer {
   * have operations applied to it. In Storm, this might be an
   * in-progress TopologyBuilder.
   */
-sealed trait Producer[P <: Platform[P], T] {
+sealed trait Producer[P <: Platform[P], +T] {
+  /** Ensure this is scheduled, but return something equivalent to the argument
+   * like the function `par` in Haskell.
+   * This can be used to combine two independent Producers in a way that ensures
+   * that the Platform will plan both into a single Plan.
+   */
+  def also[R](that: Producer[P, R]): Producer[P, R] = AlsoProducer(this, that)
   def name(id: String): Producer[P, T] = NamedProducer(this, id)
-  def merge(r: Producer[P, T]): Producer[P, T] = MergedProducer(this, r)
+  def merge[U >: T](r: Producer[P, U]): Producer[P, U] = MergedProducer(this, r)
 
-  def filter(fn: T => Boolean)(implicit mf: Manifest[T]): Producer[P, T] =
+  def collect[U](fn: PartialFunction[T,U]): Producer[P, U] =
+    optionMap(fn.lift)
+
+  def filter(fn: T => Boolean): Producer[P, T] =
     // Enforce using the OptionMapped here:
     optionMap(Some(_).filter(fn))
 
-  def map[U](fn: T => U)(implicit mf: Manifest[U]): Producer[P, U] =
+  def map[U](fn: T => U): Producer[P, U] =
     // Enforce using the OptionMapped here:
     optionMap(t => Some(fn(t)))
 
-  def optionMap[U: Manifest](fn: T => Option[U]): Producer[P, U] =
-    OptionMappedProducer[P, T, U](this, fn, manifest[U])
+  def optionMap[U](fn: T => Option[U]): Producer[P, U] =
+    OptionMappedProducer[P, T, U](this, fn)
 
   def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
     FlatMappedProducer[P, T, U](this, fn)
 
-  def write(sink: P#Sink[T]): Producer[P, T] = WrittenProducer(this, sink)
+  def write[U >: T](sink: P#Sink[U]): Producer[P, T] = WrittenProducer(this, sink)
 
-  def either[U](other: Producer[P, U])(implicit tmf: Manifest[T], umf: Manifest[U]): Producer[P, Either[T, U]] =
+  def either[U](other: Producer[P, U]): Producer[P, Either[T, U]] =
     map(Left(_): Either[T, U])
       .merge(other.map(Right(_): Either[T, U]))
 }
 
-case class Source[P <: Platform[P], T](source: P#Source[T], manifest: Manifest[T])
+case class Source[P <: Platform[P], T](source: P#Source[T])
     extends Producer[P, T]
+
+/**
+ * This is a special node that ensures that the first argument is planned, but produces values
+ * equivalent to the result.
+ */
+case class AlsoProducer[P <: Platform[P], T, R](ensure: Producer[P, T], result: Producer[P, R]) extends Producer[P, R]
 
 case class NamedProducer[P <: Platform[P], T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
 /** Represents filters and maps which may be optimized differently
  * Note that "option-mapping" is closed under composition and hence useful to call out
  */
-case class OptionMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => Option[U], manifest: Manifest[U])
+case class OptionMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => Option[U])
     extends Producer[P, U]
 
 case class FlatMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => TraversableOnce[U])
@@ -122,7 +143,7 @@ case class FlatMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], 
 
 case class MergedProducer[P <: Platform[P], T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
 
-case class WrittenProducer[P <: Platform[P], T](producer: Producer[P, T], sink: P#Sink[T]) extends Producer[P, T]
+case class WrittenProducer[P <: Platform[P], T, U >: T](producer: Producer[P, T], sink: P#Sink[U]) extends Producer[P, T]
 
 case class Summer[P <: Platform[P], K, V](
   producer: KeyedProducer[P, K, V],

@@ -65,7 +65,7 @@ object SourceBuilder {
       eventSource.offline.map( s => Scalding.pipeFactory(s.scaldingSource(_)))
     val stormSource = eventSource.spout.map(Storm.timedSpout(_))
     new SourceBuilder[T](
-      Source[PlatformPair, T]((scaldingSource, stormSource), manifest),
+      Source[PlatformPair, T]((scaldingSource, stormSource)),
       CompletedBuilder.injectionRegistrar[T](eventCodec),
       newID
     )

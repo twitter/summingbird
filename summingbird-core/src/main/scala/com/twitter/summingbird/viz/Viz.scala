@@ -18,46 +18,12 @@ package com.twitter.summingbird.viz
 
 import java.io.Writer
 import com.twitter.summingbird.{Platform, Producer, Dependants, NamedProducer, IdentityKeyedProducer}
+import com.twitter.summingbird.planner._
 
 
-case class VizGraph[P <: Platform[P]](tail: Producer[P, _]) {
-  val dependantState = Dependants(tail)
-
-  @annotation.tailrec
-  private def recurseGetNode(n :Producer[P, _], name: String): (String, Set[Producer[P, _]])  = {
-    val children: Set[Producer[P, _]] = dependantState.dependantsOf(n).getOrElse(Set[Producer[P, _]]())
-    children.headOption match {
-      case Some(child: NamedProducer[_, _]) =>
-        recurseGetNode(child, child.id)
-      case Some(child: IdentityKeyedProducer[_, _, _]) =>
-        recurseGetNode(child, name)
-      case _ =>
-        (name, children)
-    }
-  }
-
-
-  override def toString() : String = {
-    val base = "graph summingbirdGraph {\n"
-    val graphStr = dependantState.nodes.foldLeft("") {(runningStr, nextNode) =>
-      nextNode match {
-        case NamedProducer(parent, name) => runningStr
-        case i : IdentityKeyedProducer[_, _, _] => runningStr
-        case _ => {
-          val (nodeName, children) = recurseGetNode(nextNode, nextNode.getClass.toString)
-          runningStr + children.foldLeft("") {(r, c) =>
-            val (childName, _) = recurseGetNode(c, c.getClass.toString)
-            r + "\"" + nodeName + "\" -- \"" + childName + "\"\n"
-          }
-        }
-      }
-    }
-    base + graphStr + "\n}"
-  }
-}
-
-object BaseViz {
-  def apply[P <: Platform[P]](tail: Producer[P, _], writer: Writer):Unit = {
-    writer.write(VizGraph(tail).toString)
-  }
+object VizGraph {
+  def apply[P <: Platform[P]](dag: Dag[P], writer: Writer): Unit = writer.write(apply(dag))
+  def apply[P <: Platform[P]](dag: Dag[P]): String = DagViz(dag).toString
+  def apply[P <: Platform[P]](tail: Producer[P, _], writer: Writer):Unit = writer.write(VizGraph(tail))
+  def apply[P <: Platform[P]](tail: Producer[P, _]):String = ProducerViz(tail).toString
 }

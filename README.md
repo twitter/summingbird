@@ -59,15 +59,15 @@ lazy val config = new ConfigurationBuilder()
 You're all ready to go! Now it's time to unleash Storm on your Twitter stream. Make sure the `memcached` terminal is still open, then start Storm from the `summingbird` directory:
 
 ```bash
-sbt summingbird-example/run
+./sbt summingbird-example/run
 ```
 
 Storm should puke out a bunch of output, then stabilize and hang. This means that Storm is updating your local memcache instance with counts of every word that it sees in each tweet.
 
-To query the aggregate results in Memcached, you'll need to open a repl:
+To query the aggregate results in Memcached, you'll need to open an SBT repl in a new terminal:
 
 ```bash
-sbt summingbird-example/run
+./sbt summingbird-example/console
 ```
 
 At the launched repl, run the following:
@@ -100,7 +100,7 @@ Follow [@summingbird](https://twitter.com/summingbird) on Twitter for updates.
 
 ## Maven
 
-Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.1.4`.
+Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.1.5`.
 
 Current published artifacts are
 
