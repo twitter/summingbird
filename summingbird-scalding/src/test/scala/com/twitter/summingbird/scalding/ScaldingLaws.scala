@@ -37,8 +37,12 @@ import cascading.scheme.local.{TextDelimited => CLTextDelimited}
 import cascading.tuple.{Tuple, Fields, TupleEntry}
 import cascading.flow.FlowDef
 import cascading.tap.Tap
-
+import cascading.scheme.NullScheme
 import java.util.Date
+import org.apache.hadoop.mapred.JobConf
+import org.apache.hadoop.mapred.RecordReader
+import org.apache.hadoop.mapred.OutputCollector
+
 
 import org.specs._
 
@@ -57,7 +61,7 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
   override def hashCode = id.hashCode
 
   override def createTap(readOrWrite : AccessMode)(implicit mode : Mode) : Tap[_,_,_] =
-    TestTapFactory(this, new Fields("T")).createTap(readOrWrite)
+    TestTapFactory(this, new NullScheme[JobConf, RecordReader[_,_], OutputCollector[_,_], T, T](new Fields("T"), new Fields("T"))).createTap(readOrWrite)
 }
 
 
@@ -370,12 +374,12 @@ class ScaldingSerializationSpecs extends Specification {
         tup => List((1 -> tup._2))
       }
 
-      val mode = Hdfs(true, new Configuration)
+      val mode = HadoopTest(new Configuration, buffer.get(_))
       val intr = Interval.leftClosedRightOpen(0L, inWithTime.size.toLong)
       val scald = new Scalding("scalaCheckJob")
 
       (try { scald.toFlow(intr, mode, scald.plan(summer)); true }
-      catch { case t: Throwable => println(t); false }) must beTrue
+      catch { case t: Throwable => println(toTry(t)); false }) must beTrue
     }
   }
 }
