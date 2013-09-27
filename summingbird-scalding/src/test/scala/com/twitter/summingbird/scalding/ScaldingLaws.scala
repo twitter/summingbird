@@ -235,7 +235,7 @@ object ScaldingLaws extends Properties("Scalding") {
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckJob")
       val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
-      val mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
+      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
       scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
@@ -285,7 +285,7 @@ object ScaldingLaws extends Properties("Scalding") {
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckleftJoinJob")
       val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
-      val mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
+      val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
 
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
@@ -316,7 +316,7 @@ object ScaldingLaws extends Properties("Scalding") {
       val scald = new Scalding("scalding-diamond-Job")
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
-      val mode = TestMode(s => (testStore.sourceToBuffer ++ buffer).get(s))
+      val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer).get(s))
 
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
@@ -374,7 +374,7 @@ class ScaldingSerializationSpecs extends Specification {
         tup => List((1 -> tup._2))
       }
 
-      val mode = HadoopTest(new Configuration, buffer.get(_))
+      val mode = HadoopTest(new Configuration, {case x: Source[_, _] => buffer.get(x)})
       val intr = Interval.leftClosedRightOpen(0L, inWithTime.size.toLong)
       val scald = new Scalding("scalaCheckJob")
 
