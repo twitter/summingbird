@@ -35,7 +35,7 @@ class CombinedBatcher(before: Batcher,
 
   def batchOf(d: Date): BatchID =
     if(!beforeBound.contains(d)) {
-      (after.batchOf(d) - afterBatchDelta) + batchAtBound
+      (after.batchOf(d) - afterBatchDelta.id) + batchAtBound.id
     }
     else {
       before.batchOf(d)
@@ -43,7 +43,7 @@ class CombinedBatcher(before: Batcher,
 
   def earliestTimeOf(b: BatchID): Date =
     if(b > batchAtBound) {
-      after.earliestTimeOf((b - batchAtBound) + afterBatchDelta)
+      after.earliestTimeOf((b - batchAtBound.id) + afterBatchDelta.id)
     }
     else if(b == batchAtBound) {
       new Date(beforeBound.upper.getTime) // damn mutable dates

@@ -22,6 +22,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
+import com.twitter.scalding.typed.TypedSink
 
 import org.scalacheck._
 import org.scalacheck.Prop._
@@ -36,8 +37,12 @@ import cascading.scheme.local.{TextDelimited => CLTextDelimited}
 import cascading.tuple.{Tuple, Fields, TupleEntry}
 import cascading.flow.FlowDef
 import cascading.tap.Tap
-
+import cascading.scheme.NullScheme
 import java.util.Date
+import org.apache.hadoop.mapred.JobConf
+import org.apache.hadoop.mapred.RecordReader
+import org.apache.hadoop.mapred.OutputCollector
+
 
 import org.specs._
 
@@ -47,7 +52,7 @@ import org.specs._
 
 class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
     extends ScaldingSource with Mappable[T] {
-  val converter = tconv
+  def converter[U >: T] = TupleConverter.asSuperConverter(tconv)
   override def toString = id
   override def equals(that: Any) = that match {
     case m: MockMappable[_] => m.id == id
@@ -55,16 +60,8 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
   }
   override def hashCode = id.hashCode
 
-  override def localScheme : LocalScheme = {
-    // This is a hack because the MemoryTap doesn't actually care what
-    // the scheme is it just holds the fields
-    //
-    // TODO implement a proper Scheme for MemoryTap
-    new CLTextDelimited(sourceFields, "\t", null : Array[Class[_]])
-  }
-  override def createTap(readOrWrite : AccessMode)(implicit mode : Mode) : Tap[_,_,_] = {
-    scala.util.Try(super.createTap(readOrWrite)(mode)).getOrElse(null)
-  }
+  override def createTap(readOrWrite : AccessMode)(implicit mode : Mode) : Tap[_,_,_] =
+    TestTapFactory(this, new NullScheme[JobConf, RecordReader[_,_], OutputCollector[_,_], T, T](Fields.ALL, Fields.ALL)).createTap(readOrWrite)
 }
 
 
@@ -99,14 +96,14 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
     }
     else {
       val (batch, mappable) = candidates.maxBy { _._1 }
-      val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable)(fd._1, fd._2, mappable.converter) }
+      val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable)(fd._1, fd._2) }
       Right((batch, rdr))
     }
   }
   /** Instances may choose to write out the last or just compute it from the stream */
   override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
     val out = batches(batchID)
-    lastVals.write(out)
+    lastVals.write(TypedSink[(K, V)](out))
   }
 }
 
@@ -141,7 +138,7 @@ class TestService[K, V](service: String,
   override def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, Option[V])]] = {
     streams.get(batchID).map { iter =>
       val mappable = streamMappable(batchID)
-      Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable)(fd._1, fd._2, mappable.converter) }
+      Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable)(fd._1, fd._2) }
     }
   }
   override def readLast(exclusiveUB: BatchID, mode: Mode) = {
@@ -153,7 +150,7 @@ class TestService[K, V](service: String,
       val (batch, _) = candidates.maxBy { _._1 }
       val mappable = lastMappable(batch)
       val rdr = Reader { (fd: (FlowDef, Mode)) =>
-        TypedPipe.from(mappable)(fd._1, fd._2, mappable.converter).values
+        TypedPipe.from(mappable)(fd._1, fd._2).values
       }
       Right((batch, rdr))
     }
@@ -238,7 +235,7 @@ object ScaldingLaws extends Properties("Scalding") {
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckJob")
       val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
-      val mode = TestMode(testStore.sourceToBuffer ++ buffer)
+      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
       scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
@@ -288,7 +285,7 @@ object ScaldingLaws extends Properties("Scalding") {
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckleftJoinJob")
       val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
-      val mode = TestMode(testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer)
+      val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
 
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
@@ -319,7 +316,7 @@ object ScaldingLaws extends Properties("Scalding") {
       val scald = new Scalding("scalding-diamond-Job")
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
-      val mode = TestMode(testStore.sourceToBuffer ++ buffer)
+      val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer).get(s))
 
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
@@ -377,12 +374,12 @@ class ScaldingSerializationSpecs extends Specification {
         tup => List((1 -> tup._2))
       }
 
-      val mode = Hdfs(true, new Configuration)
+      val mode = HadoopTest(new Configuration, {case x: ScaldingSource => buffer.get(x)})
       val intr = Interval.leftClosedRightOpen(0L, inWithTime.size.toLong)
       val scald = new Scalding("scalaCheckJob")
 
       (try { scald.toFlow(intr, mode, scald.plan(summer)); true }
-      catch { case t: Throwable => println(t); false }) must beTrue
+      catch { case t: Throwable => println(toTry(t)); false }) must beTrue
     }
   }
 }
