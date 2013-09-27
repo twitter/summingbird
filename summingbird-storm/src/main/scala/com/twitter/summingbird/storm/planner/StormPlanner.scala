@@ -120,7 +120,7 @@ object DagBuilder {
           case Summer(producer, _, _) => recurse(producer, updatedBolt = FlatMapNode(), updatedRegistry = distinctAddToList(stormRegistry, currentBolt.toSummer))
           case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
           case NamedProducer(producer, newId) => maybeSplitThenRecurse(dependantProducer, producer)
-          case Source(spout) => (distinctAddToList(stormRegistry, currentBolt.toSpout), visitedWithN)
+          case Source(spout) => (distinctAddToList(stormRegistry, currentBolt.toSource), visitedWithN)
           case OptionMappedProducer(producer, op) => maybeSplitThenRecurse(dependantProducer, producer)
           case FlatMappedProducer(producer, op)  => maybeSplitThenRecurse(dependantProducer, producer)
           case WrittenProducer(producer, sinkSupplier)  => maybeSplitThenRecurse(dependantProducer, producer)

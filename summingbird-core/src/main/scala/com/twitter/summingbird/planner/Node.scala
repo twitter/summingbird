@@ -19,7 +19,7 @@ package com.twitter.summingbird.planner
 import com.twitter.summingbird._
 
 case class NodeIdentifier(identifier: String) {
-  override def toString: String = identifier
+  override def toString = identifier
 }
 
 sealed trait Node[P <: Platform[P]] {
@@ -36,7 +36,7 @@ sealed trait Node[P <: Platform[P]] {
 
   def localDependantsOf(p: Producer[P, _]): List[Producer[P, _]] = dependantsOf(p).filter(members.contains(_))
 
-  def toSpout: SourceNode[P] = SourceNode(this.members)
+  def toSource: SourceNode[P] = SourceNode(this.members)
 
   def toSummer: SummerNode[P] = SummerNode(this.members)
 
@@ -51,7 +51,7 @@ sealed trait Node[P <: Platform[P]] {
     if (membersCombined.size > 0) "(" + membersCombined + ")" else ""
   }
 
-  def shortName(): NodeIdentifier
+  def shortName: NodeIdentifier
 
   def add(node: Producer[P, _]): Node[P]
 
@@ -64,9 +64,7 @@ sealed trait Node[P <: Platform[P]] {
     }
   }
 
-  override def toString(): String = {
-    toStringWithPrefix("\t")
-  }
+  override def toString = toStringWithPrefix("\t")
 
 }
 
@@ -76,19 +74,19 @@ sealed trait Node[P <: Platform[P]] {
 case class FlatMapNode[P <: Platform[P]](override val members: List[Producer[P, _]] = List()) extends Node[P] {
   def add(node: Producer[P, _]): Node[P] = if (members.contains(node)) this else this.copy(members = node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName(): NodeIdentifier = NodeIdentifier("FlatMap" + collapseNamedNodes)
+  override def shortName = NodeIdentifier("FlatMap" + collapseNamedNodes)
 }
 
 case class SummerNode[P <: Platform[P]](override val members: List[Producer[P, _]] = List()) extends Node[P] {
   def add(node: Producer[P, _]): Node[P] = if (members.contains(node)) this else this.copy(members = node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName(): NodeIdentifier = NodeIdentifier("Summer" + collapseNamedNodes)
+  override def shortName = NodeIdentifier("Summer" + collapseNamedNodes)
 }
 
 case class SourceNode[P <: Platform[P]](override val members: List[Producer[P, _]] = List()) extends Node[P] {
   def add(node: Producer[P, _]): Node[P] = if (members.contains(node)) this else this.copy(members = node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName(): NodeIdentifier = NodeIdentifier("Source" + collapseNamedNodes)
+  override def shortName = NodeIdentifier("Source" + collapseNamedNodes)
 }
 
 case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Producer[P, _], Node[P]],
@@ -134,7 +132,7 @@ case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Produ
     }
   }
 
-  override def toString(): String = toStringWithPrefix("\t")
+  override def toString = toStringWithPrefix("\t")
 }
 
 object Dag {
