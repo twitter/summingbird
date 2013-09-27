@@ -35,6 +35,8 @@ import com.twitter.summingbird.util.CacheSize
 import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird._
+import com.twitter.summingbird.planner._
+import com.twitter.summingbird.storm.planner._
 import com.twitter.util.Future
 
 import Constants._
@@ -80,7 +82,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private type Prod[T] = Producer[Storm, T]
 
-  private def getOrElse[T: Manifest](node: Node, default: T): T = {
+  private def getOrElse[T: Manifest](node: StormNode, default: T): T = {
     val producer = node.members.last
     
     val namedNodes = Dependants(producer).transitiveDependantsOf(producer).collect{case NamedProducer(_, n) => n}
@@ -91,7 +93,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     } yield option).headOption.getOrElse(default)
   }
 
-  private def scheduleFlatMapper(stormDag: StormDag, node: Node)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleFlatMapper(stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     /**
      * Only exists because of the crazy casts we needed.
      */
@@ -117,11 +119,11 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val metrics = getOrElse(node, DEFAULT_FM_STORM_METRICS)
     val anchorTuples = getOrElse(node, AnchorTuples.default)
 
-    val summerOpt:Option[SummerNode] = stormDag.dependantsOf(node).collect{case s: SummerNode => s}.headOption
+    val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
     
     val bolt = summerOpt match {
       case Some(s) =>
-        val summerProducer = s.members.collect { case s: Summer[Storm, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
+        val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
         new FinalFlatMapBolt(
           operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
           getOrElse(node, DEFAULT_FM_CACHE),
@@ -133,11 +135,12 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val parallelism = getOrElse(node, DEFAULT_FM_PARALLELISM)
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
 
-    val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: Node => stormDag.getNodeName(x) }
+
+    val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     dependenciesNames.foreach { declarer.shuffleGrouping(_) }
   }
 
-  private def scheduleSpout[K](stormDag: StormDag, node: Node)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val spout = node.members.collect { case Source(s) => s }.head
     val nodeName = stormDag.getNodeName(node)
 
@@ -152,7 +155,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
-  private def scheduleSinkBolt[K, V](stormDag: StormDag, node: Node)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSinkBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val monoid = summer.monoid
     val nodeName = stormDag.getNodeName(node)
@@ -175,8 +178,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         nodeName,
         sinkBolt,
         getOrElse(node, DEFAULT_SINK_PARALLELISM).parHint)
-
-    val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: Node => stormDag.getNodeName(x) }
+    val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     dependenciesNames.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
     }
@@ -209,11 +211,11 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
     val stormDag = DagBuilder(tail)
 
-    stormDag.nodes.map { node =>
+    stormDag.nodes.foreach { node =>
       node match {
-        case _: SummerNode => scheduleSinkBolt(stormDag, node)
-        case _: FlatMapNode => scheduleFlatMapper(stormDag, node)
-        case _: SourceNode => scheduleSpout(stormDag, node)
+        case _: SummerNode[_] => scheduleSinkBolt(stormDag, node)
+        case _: FlatMapNode[_] => scheduleFlatMapper(stormDag, node)
+        case _: SourceNode[_] => scheduleSpout(stormDag, node)
       }
     }
     topologyBuilder.createTopology
