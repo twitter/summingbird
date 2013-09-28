@@ -54,7 +54,7 @@ class BatchedOperations(batcher: Batcher) {
     in((inTimes, mode))
       .right
       .map { case ((availableInput, innerm), f2p) =>
-        val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput)
+        val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput.as[Interval[JDate]])
         (batchesWeCanBuild, f2p)
       }
   }

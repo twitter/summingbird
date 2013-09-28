@@ -16,7 +16,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.1.5",
+    version := "0.2.0-SNAPSHOT",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -101,7 +101,6 @@ object SummingbirdBuild extends Build {
     summingbirdCore,
     summingbirdBatch,
     summingbirdClient,
-    summingbirdKryo,
     summingbirdStorm,
     summingbirdScalding,
     summingbirdBuilder,
@@ -109,24 +108,24 @@ object SummingbirdBuild extends Build {
   )
 
   val dfsDatastoresVersion = "1.3.4"
-  val bijectionVersion = "0.4.0"
+  val bijectionVersion = "0.5.3"
   val algebirdVersion = "0.2.0"
-  val scaldingVersion = "0.8.11"
-  val storehausVersion = "0.4.0"
-  val utilVersion = "6.3.0"
-  val chillVersion = "0.2.3"
-  val tormentaVersion = "0.5.1"
+  val scaldingVersion = "0.9.0-SNAPSHOT"
+  val storehausVersion = "0.5.1"
+  val utilVersion = "6.3.8"
+  val chillVersion = "0.3.2"
+  val tormentaVersion = "0.5.2"
 
   /**
     * This returns the youngest jar we released that is compatible with
     * the current.
     */
-  val unreleasedModules = Set[String]("example")
+  val unreleasedModules = Set[String]()
 
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.2") % "0.0.5" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.1.0" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
@@ -139,7 +138,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdBatch = module("batch").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
-      withCross("com.twitter" %% "bijection-core" % bijectionVersion)
+      "com.twitter" %% "bijection-core" % bijectionVersion
     )
   )
 
@@ -147,9 +146,9 @@ object SummingbirdBuild extends Build {
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "algebird-util" % algebirdVersion,
-      withCross("com.twitter" %% "bijection-core" % bijectionVersion),
-      withCross("com.twitter" %% "storehaus-core" % storehausVersion),
-      withCross("com.twitter" %% "storehaus-algebra" % storehausVersion)
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "storehaus-core" % storehausVersion,
+      "com.twitter" %% "storehaus-algebra" % storehausVersion
     )
   ).dependsOn(summingbirdBatch)
 
@@ -157,29 +156,23 @@ object SummingbirdBuild extends Build {
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   )
 
-  lazy val summingbirdKryo = module("kryo").settings(
-    libraryDependencies ++= Seq(
-      withCross("com.twitter" %% "bijection-core" % bijectionVersion),
-      withCross("com.twitter" %% "chill" % chillVersion)
-    )
-  )
-
   lazy val summingbirdStorm = module("storm").settings(
     parallelExecution in Test := false,
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
-      withCross("com.twitter" %% "bijection-core" % bijectionVersion),
-      withCross("com.twitter" %% "chill" % chillVersion),
-      withCross("com.twitter" %% "storehaus-core" % storehausVersion),
-      withCross("com.twitter" %% "storehaus-algebra" % storehausVersion),
-      withCross("com.twitter" %% "tormenta-core" % tormentaVersion),
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" % "chill-storm" % chillVersion,
+      "com.twitter" %% "chill-bijection" % chillVersion,
+      "com.twitter" %% "storehaus-core" % storehausVersion,
+      "com.twitter" %% "storehaus-algebra" % storehausVersion,
+      "com.twitter" %% "tormenta-core" % tormentaVersion,
       withCross("com.twitter" %% "util-core" % utilVersion),
       "storm" % "storm" % "0.9.0-wip15"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
-    summingbirdBatch,
-    summingbirdKryo
+    summingbirdBatch
   )
 
   lazy val summingbirdScalding = module("scalding").settings(
@@ -187,16 +180,19 @@ object SummingbirdBuild extends Build {
       "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
       "com.backtype" % "dfs-datastores-cascading" % dfsDatastoresVersion,
       "com.twitter" %% "algebird-core" % algebirdVersion,
-      withCross("com.twitter" %% "bijection-json" % bijectionVersion),
-      withCross("com.twitter" %% "bijection-algebird" % bijectionVersion),
-      withCross("com.twitter" %% "chill" % chillVersion),
+      "com.twitter" %% "algebird-util" % algebirdVersion,
+      "com.twitter" %% "algebird-bijection" % algebirdVersion,
+      "com.twitter" %% "bijection-json" % bijectionVersion,
+      "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" % "chill-hadoop" % chillVersion,
+      "com.twitter" %% "chill-bijection" % chillVersion,
+      "commons-lang" % "commons-lang" % "2.6",
       "com.twitter" %% "scalding-core" % scaldingVersion,
-      withCross("com.twitter" %% "scalding-commons" % "0.2.0")
+      "com.twitter" %% "scalding-commons" % scaldingVersion
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
-    summingbirdBatch,
-    summingbirdKryo
+    summingbirdBatch
   )
 
   lazy val summingbirdBuilder = module("builder").dependsOn(
@@ -207,9 +203,9 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdExample = module("example").settings(
     libraryDependencies ++= Seq(
-      withCross("com.twitter" %% "bijection-netty" % bijectionVersion),
-      withCross("com.twitter" %% "tormenta-twitter" % tormentaVersion),
-      withCross("com.twitter" %% "storehaus-memcache" % storehausVersion)
+      "com.twitter" %% "bijection-netty" % bijectionVersion,
+      "com.twitter" %% "tormenta-twitter" % tormentaVersion,
+      "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
   ).dependsOn(summingbirdCore, summingbirdStorm)
 }

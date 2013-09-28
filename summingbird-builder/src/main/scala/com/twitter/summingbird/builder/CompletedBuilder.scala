@@ -17,7 +17,8 @@ limitations under the License.
 package com.twitter.summingbird.builder
 
 import com.twitter.bijection.Injection
-import com.twitter.chill.InjectionPair
+import com.twitter.chill.java.IterableRegistrar
+import com.twitter.chill.{ InjectionDefaultRegistrar, InjectionRegistrar, IKryoRegistrar }
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.batch.Batcher
 import com.twitter.summingbird.{ Env, KeyedProducer, Options, Summer, Platform }
@@ -34,23 +35,30 @@ import java.io.Serializable
  */
 
 object CompletedBuilder {
-  def injectionPair[T: Manifest](injection: Injection[T, Array[Byte]]) =
-    InjectionPair(manifest[T].erasure.asInstanceOf[Class[T]], injection)
+  def injectionRegistrar[T: Manifest](injection: Injection[T, Array[Byte]]) =
+    InjectionRegistrar(manifest[T].erasure.asInstanceOf[Class[T]], injection)
+
+  def injectionDefaultRegistrar[T: Manifest](injection: Injection[T, Array[Byte]]) =
+    InjectionDefaultRegistrar(manifest[T].erasure.asInstanceOf[Class[T]], injection)
 }
 
 case class CompletedBuilder[P <: Platform[P], K, V](
   @transient node: Summer[P, K, V],
-  @transient eventCodecPairs: List[InjectionPair[_]],
+  @transient eventRegistrar: IKryoRegistrar,
   @transient batcher: Batcher,
   @transient keyCodec: Injection[K, Array[Byte]],
   @transient valCodec: Injection[V, Array[Byte]],
   id: String,
   @transient opts: Map[String, Options])(implicit val keyMf: Manifest[K], val valMf: Manifest[V]) extends Serializable {
   import SourceBuilder.adjust
-  import CompletedBuilder.injectionPair
+  import CompletedBuilder._
 
-  val keyCodecPair = injectionPair(keyCodec)
-  val valueCodecPair = injectionPair(valCodec)
+  @transient val registrar =
+    new IterableRegistrar(
+      eventRegistrar,
+      injectionDefaultRegistrar(keyCodec),
+      injectionDefaultRegistrar(valCodec)
+    )
 
   // Set any Option
   def set[T](opt: T)(implicit env: Env) = {

@@ -17,13 +17,15 @@ limitations under the License.
 package com.twitter.summingbird.scalding
 
 import com.twitter.bijection.Conversion.asMethod
+import com.twitter.chill.ScalaKryoInstantiator
+import com.twitter.chill.java.IterableRegistrar
+import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird.scalding.store.HDFSMetadata
 import com.twitter.summingbird.{ Env, Unzip2, Summer, Producer, AbstractJob }
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.builder.{ SourceBuilder, Reducers, CompletedBuilder }
 import com.twitter.summingbird.storm.Storm
-import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.summingbird.scalding.store.VersionedState
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
@@ -70,7 +72,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // the starting batch, rendering this unnecessary.
   def startDate: Option[Date] =
     args.optional("start-time")
-      .map(DateOps.stringToRichDate(_)(tz).value)
+      .map(RichDate(_)(tz, DateParser.default).value)
 
   def initialBatch(b: Batcher): Option[BatchID] = startDate.map(b.batchOf(_))
 
@@ -95,16 +97,16 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       // TODO rethink this: https://github.com/twitter/summingbird/issues/136
       // I think we shouldn't pretend Configuration is immutable.
       new GenericOptionsParser(conf, inargs)
-      val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
-      val eventCodecPairs = builder.eventCodecPairs
 
-      // TODO: replace with chill.config
       val jConf: JMap[String,AnyRef] = new JHashMap(fromJavaMap.invert(conf))
-      KryoRegistrationHelper.registerInjections(jConf, eventCodecPairs)
-
-      // Register key and value types. All extensions of either of these
-      // types will be caught by the registered injection.
-      KryoRegistrationHelper.registerInjectionDefaults(jConf, codecPairs)
+      val kryoConfig = new JavaMapConfig(jConf)
+      ConfInst.setSerialized(
+        kryoConfig,
+        classOf[ScalaKryoInstantiator],
+        new ScalaKryoInstantiator()
+          .withRegistrar(builder.registrar)
+          .withRegistrar(new IterableRegistrar(ajob.registrars))
+      )
       fromMap(ajob.transformConfig(jConf.as[Map[String, AnyRef]]))
     }
     val jobName =

@@ -28,7 +28,7 @@ import scala.collection.JavaConverters._
  * @author Ashu Singhal
  */
 
-object ConfigBijection extends Bijection[Map[String,AnyRef],Config] {
+object ConfigBijection extends Bijection[Map[String,AnyRef], Config] {
   override def apply(config: Map[String,AnyRef]) = {
     val stormConf = new Config
     config foreach { case (k,v) => stormConf.put(k,v) }

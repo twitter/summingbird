@@ -20,7 +20,8 @@ import com.twitter.algebird.Interval
 
 import com.twitter.bijection.Conversion.asMethod
 
-import com.twitter.scalding.{Source => SSource, _}
+import com.twitter.scalding.{Source => SSource, _ }
+import com.twitter.scalding.typed.{ TypedPipe => _, _ }
 import cascading.flow.FlowDef
 
 /** A UniqueKeyedService covers the case where Keys are globally
@@ -78,7 +79,7 @@ object UniqueKeyedService extends java.io.Serializable {
       def ordering = Ordering[K]
       def source(dr: DateRange) = fn(dr)
       def toPipe(mappable: Mappable[T])(implicit flow: FlowDef, mode: Mode) =
-        andThen(TypedPipe.from(mappable)(flow, mode, mappable.converter)) // converter is removed in 0.9.0
+        andThen(TypedPipe.from(mappable)(flow, mode)) // converter is removed in 0.9.0
       def reducers: Option[Int] = inputReducers
     }
 }

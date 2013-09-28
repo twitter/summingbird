@@ -16,6 +16,8 @@ limitations under the License.
 
 package com.twitter.summingbird
 
+import com.twitter.chill.IKryoRegistrar
+
 /**
  * Base class for all Summingbird jobs; all summingbird jobs
  * should extend AbstractJob.
@@ -42,4 +44,5 @@ abstract class AbstractJob(env: Env) extends java.io.Serializable {
   implicit lazy val _env = env
   implicit lazy val _args = env.args
   def transformConfig(m: Map[String,AnyRef]): Map[String,AnyRef] = m
+  def registrars: List[IKryoRegistrar] = Nil
 }

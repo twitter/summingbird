@@ -18,9 +18,12 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.Config
 import com.twitter.scalding.Args
+import com.twitter.chill.ScalaKryoInstantiator
+import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
+import com.twitter.chill.java.IterableRegistrar
 import com.twitter.summingbird.{ Env, Unzip2, Producer }
-import com.twitter.summingbird.kryo.KryoRegistrationHelper
 import com.twitter.summingbird.scalding.Scalding
+import scala.collection.JavaConverters._
 
 /**
  * Storm-specific extension to Env. StormEnv handles storm-specific configuration
@@ -39,9 +42,6 @@ case class StormEnv(override val jobName: String, override val args: Args)
     // of the environment and defining the builder).
     val ajob = abstractJob
 
-    val codecPairs = Seq(builder.keyCodecPair, builder.valueCodecPair)
-    val eventCodecPairs = builder.eventCodecPairs
-
     val classSuffix =
       args.optional("name")
         .getOrElse(jobName.split("\\.").last)
@@ -50,8 +50,14 @@ case class StormEnv(override val jobName: String, override val args: Args)
       .withConfigUpdater { config =>
       val c = ConfigBijection.invert(config)
       val transformed = ConfigBijection(ajob.transformConfig(c))
-      KryoRegistrationHelper.registerInjections(transformed, eventCodecPairs)
-      KryoRegistrationHelper.registerInjectionDefaults(transformed, codecPairs)
+      val kryoConfig = new JavaMapConfig(transformed)
+      ConfInst.setSerialized(
+        kryoConfig,
+        classOf[ScalaKryoInstantiator],
+        new ScalaKryoInstantiator()
+          .withRegistrar(builder.registrar)
+          .withRegistrar(new IterableRegistrar(ajob.registrars))
+      )
       transformed
     }.run(
       builder.node.name(builder.id).asInstanceOf[Producer[Storm, _]],

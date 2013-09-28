@@ -17,7 +17,7 @@
 package com.twitter.summingbird.example
 
 import com.twitter.algebird.Monoid
-import com.twitter.bijection.{Base64String, Bijection, Injection}
+import com.twitter.bijection.{Base64String, Bijection, Codec, Injection}
 import com.twitter.bijection.netty.Implicits._
 import com.twitter.conversions.time._
 import com.twitter.finagle.builder.ClientBuilder
@@ -35,7 +35,6 @@ import org.jboss.netty.buffer.ChannelBuffer
   * pull req will make it easier to create Memcache store instances.
   */
 object Memcache {
-  import Serialization.Codec
   val DEFAULT_TIMEOUT = 1.seconds
 
   def client = {
