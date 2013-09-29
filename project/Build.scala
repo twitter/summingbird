@@ -9,8 +9,8 @@ import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 object SummingbirdBuild extends Build {
   def withCross(dep: ModuleID) =
     dep cross CrossVersion.binaryMapped {
-      case "2.9.3" => "2.9.2" // TODO: hack because twitter hasn't built things against 2.9.3
-      case version if version startsWith "2.10" => "2.10" // TODO: hack because sbt is broken
+      case "2.9.3" => "2.9.2" // TODO: hack because twitter has not built things against 2.9.3
+      case version if version startsWith "2.10" => "2.10" // TODO: hack because sbt appears to be broken
       case x => x
     }
 
@@ -32,7 +32,7 @@ object SummingbirdBuild extends Build {
       "Twitter Maven" at "http://maven.twttr.com"
     ),
 
-    parallelExecution in Test := false, // until scalding 0.9.0 we can't do this
+    parallelExecution in Test := false, // until scalding in 0.9.0 we cannot do this
 
     scalacOptions ++= Seq(
       "-unchecked",
