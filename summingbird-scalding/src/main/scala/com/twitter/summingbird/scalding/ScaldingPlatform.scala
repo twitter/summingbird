@@ -331,6 +331,10 @@ object Scalding {
                 }
               }
             }, m)
+          case AggregateProducer(producer, store, reducers, commutative, monoid) =>
+            val (in, m) = buildFlow(options, producer, id, fanOuts, built)
+            val isCommutative = if (commutative) Commutative else NonCommutative
+            (store.group(in, monoid, isCommutative, reducers), m)
           case FlatMappedProducer(producer, op) =>
             // Map in two monads here, first state then reader
             val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)

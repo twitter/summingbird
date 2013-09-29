@@ -42,6 +42,13 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val (l, r) = apply(producer)
         (l.map(OptionMappedProducer(_, fn)), r.map(OptionMappedProducer(_, fn)))
 
+      case AggregateProducer(producer, store, reducers, commutative, monoid) =>
+        val (l, r) = apply(producer)
+        val (leftStore, rightStore) = store
+        val left = for (li <- l; leftStorei <- leftStore) yield AggregateProducer(li, leftStorei, reducers, commutative, monoid)
+        val right = for (ri <- r; rightStorei <- rightStore) yield AggregateProducer(ri, rightStorei, reducers, commutative, monoid)
+        cast((left, right))
+
       case FlatMappedProducer(producer, fn) =>
         val (l, r) = apply(producer)
         (l.map(_.flatMap(fn)), r.map(_.flatMap(fn)))

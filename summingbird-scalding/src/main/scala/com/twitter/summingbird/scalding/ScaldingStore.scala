@@ -42,6 +42,11 @@ trait ScaldingStore[K, V] extends java.io.Serializable {
     sg: Semigroup[V],
     commutativity: Commutativity,
     reducers: Int): PipeFactory[(K, V)]
+
+  def group(delta: PipeFactory[(K, V)],
+    sg: Semigroup[V],
+    commutativity: Commutativity,
+    reducers: Int): PipeFactory[(K, V)]
 }
 
 trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
@@ -225,6 +230,120 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
                   // it is a static (i.e. independent from input) bug if this get ever throws
                   val available = batchOps.intersect(blist, timeSpan).get
                   val filtered = Scalding.limitTimes(available, merged)
+                  Right(((available, mode), filtered))
+                }
+              }
+          }
+        }
+    })
+
+  /** we are guaranteed to have sufficient input and deltas to cover these batches
+   * and that the batches are given in order
+   */
+  private def groupBatched(headBatch: BatchID,
+    deltas: FlowToPipe[(K,V)], sg: Semigroup[V],
+    commutativity: Commutativity, reducers: Int): FlowToPipe[(K,V)] = {
+
+    //Convert to a Grouped by "swapping" Time and K
+    def toGrouped(items: KeyValuePipe[K, V]): Grouped[K, (Long, V)] =
+      items.groupBy { case (_, (k, _)) => k }
+        .mapValues { case (t, (_, v)) => (t, v) }
+        .withReducers(reducers)
+
+    //Unswap the Time and K
+    def toKVPipe(tp: TypedPipe[(K, (Long, V))]): KeyValuePipe[K, V] =
+      tp.map { case (k, (t, v)) => (t, (k, v)) }
+
+    // Return the items in this batch in ._1 and not in this or a
+    // previous batch in ._2
+    def split(b: BatchID, items: KeyValuePipe[K, V]): (KeyValuePipe[K, V], KeyValuePipe[K, V]) = {
+      // we need cascading to see that we are forking this pipe:
+      val forked = Scalding.forcePipe(items)
+      (forked.filter { tkv => batcher.batchOf(new Date(tkv._1)) <= b },
+        forked.filter { tkv => batcher.batchOf(new Date(tkv._1)) > b })
+    }
+
+    Reader[FlowInput, KeyValuePipe[K, V]] { (flowMode: (FlowDef, Mode)) =>
+      implicit val flowDef = flowMode._1
+      implicit val mode = flowMode._2
+
+      val (theseDeltas, _) = split(headBatch, deltas(flowMode))
+
+      val grouped: Grouped[K, (Long, V)] = toGrouped(theseDeltas)
+
+      val sorted = grouped.sortBy { _._1 } // sort by time
+      val maybeSorted = commutativity match {
+        case Commutative => grouped // order does not matter
+        case NonCommutative => sorted
+      }
+
+      /**
+        * If the supplied Semigroup[V] is an instance of
+        * BijectedSemigroup[U, V], Returns the backing Bijection[U, V]
+        * and Semigroup[U]; else None.
+        */
+      def unpackBijectedSemigroup[U]: Option[(Bijection[V, U], Semigroup[U])] =
+        sg match {
+          case innerSg: BijectedSemigroup[_, _] =>
+            Some(innerSg.asInstanceOf[BijectedSemigroup[U, V]].bijection -> innerSg.sg.asInstanceOf[Semigroup[U]])
+          case _ => None
+        }
+
+      def redFn[T: Semigroup]
+          : (((Long, T), (Long, T)) => (Long, T)) = { (left, right) =>
+        val (tl, vl) = left
+        val (tr, vr) = right
+        (tl max tr, Semigroup.plus(vl, vr))
+      }
+
+      // We strip the times
+      def sumNext[U] =
+        unpackBijectedSemigroup[U].map { case (bij, semi) =>
+          maybeSorted.mapValues { case (l, v) => (l, bij(v)) }
+            .reduce(redFn[U](semi))
+            .map { case (k, (l, v)) => (k, (l, (bij.invert(v)))) }
+        }.getOrElse {
+          maybeSorted.reduce(redFn(sg))
+        }
+      toKVPipe(sumNext)
+    }
+  }
+
+  final override def group(delta: PipeFactory[(K, V)],
+    sg: Semigroup[V],
+    commutativity: Commutativity,
+    reducers: Int): PipeFactory[(K, V)] = StateWithError({ in: FactoryInput =>
+      val (timeSpan, mode) = in
+      // This object combines some common scalding batching operations:
+      val batchOps = new BatchedOperations(batcher)
+
+      (batchOps.coverIt(timeSpan).toList match {
+        case Nil => Left(List("Timespan is covered by Nil: %s batcher: %s".format(timeSpan, batcher)))
+        case list => Right((list.min, list.max))
+      })
+      .right
+      .flatMap { case (firstNewBatch, lastNewBatch) =>
+        readLast(firstNewBatch, mode)
+          .right
+          .flatMap { case (actualLast, _) =>
+            val firstDeltaBatch = actualLast.next
+            // Compute the times we need to read of the deltas
+            val deltaBatches = Interval.leftClosedRightOpen(firstDeltaBatch, lastNewBatch.next)
+            batchOps.readBatched(deltaBatches, mode, delta)
+              .right
+              .flatMap { case (batchesWeCanBuild, deltaFlow2Pipe) =>
+
+                // Check that deltas needed can actually be loaded going back to the first new batch
+                if(!batchesWeCanBuild.contains(firstDeltaBatch)) {
+                  Left(List("Cannot load an entire initial batch: " + firstDeltaBatch.toString
+                    + " of deltas at: " + this.toString + " only: " + batchesWeCanBuild.toString))
+                }
+                else {
+                  val blist = BatchID.toIterable(batchesWeCanBuild).toList
+                  val grouped = groupBatched(blist.last, deltaFlow2Pipe, sg, commutativity, reducers)
+                  // it is a static (i.e. independent from input) bug if this get ever throws
+                  val available = batchOps.intersect(blist, timeSpan).get
+                  val filtered = Scalding.limitTimes(available, grouped)
                   Right(((available, mode), filtered))
                 }
               }
