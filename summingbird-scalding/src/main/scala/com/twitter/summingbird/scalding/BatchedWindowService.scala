@@ -57,8 +57,8 @@ trait BatchedWindowService[K, V] extends BatchedService[K, V] {
    * You are guaranteed that all the service data needed
    * to do the join is present
    */
-  override def lookup[W](incoming: TypedPipe[(Time, (K, W))],
-    servStream: TypedPipe[(Time, (K, Option[V]))]): TypedPipe[(Time, (K, (W, Option[V])))] = {
+  override def lookup[K1<:K,W](incoming: TypedPipe[(Time, (K1, W))],
+    servStream: TypedPipe[(Time, (K, Option[V]))]): TypedPipe[(Time, (K1, (W, Option[V])))] = {
 
     def flatOpt[T](o: Option[Option[T]]): Option[T] = o.flatMap(identity)
 

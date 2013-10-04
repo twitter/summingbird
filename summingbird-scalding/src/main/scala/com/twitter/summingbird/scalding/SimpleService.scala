@@ -36,10 +36,10 @@ trait SimpleService[K, V] extends ScaldingService[K, V] {
   /** Return the maximum subset of the requested range that can be handled */
   def satisfiable(requested: DateRange, mode: Mode): Try[DateRange]
 
-  def serve[W](covering: DateRange,
-    input: TypedPipe[(Long, (K, W))])(implicit flowDef: FlowDef, mode: Mode): TypedPipe[(Long, (K, (W, Option[V])))]
+  def serve[K1<:K,W](covering: DateRange,
+    input: TypedPipe[(Long, (K1, W))])(implicit flowDef: FlowDef, mode: Mode): TypedPipe[(Long, (K1, (W, Option[V])))]
 
-  final def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
+  final def lookup[K1<:K,W](getKeys: PipeFactory[(K1, W)]): PipeFactory[(K1, (W, Option[V]))] =
     StateWithError({ intMode: FactoryInput =>
       val (timeSpan, mode) = intMode
       Scalding.toDateRange(timeSpan).right

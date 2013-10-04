@@ -455,10 +455,10 @@ class Scalding(
   @transient options: Map[String, Options] = Map.empty)
     extends Platform[Scalding] {
 
-  type Source[T] = PipeFactory[T]
-  type Store[K, V] = ScaldingStore[K, V]
-  type Sink[T] = ScaldingSink[T]
-  type Service[K, V] = ScaldingService[K, V]
+  type Source[+T] = PipeFactory[T]
+  type Store[-K, V] = ScaldingStore[K, V]
+  type Sink[-T] = ScaldingSink[T]
+  type Service[-K, +V] = ScaldingService[K, V]
   type Plan[T] = PipeFactory[T]
 
   def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] =

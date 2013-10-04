@@ -22,13 +22,13 @@ import com.twitter.scalding.{Mode, TypedPipe}
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import cascading.flow.FlowDef
 
-trait ScaldingService[K, +V] extends java.io.Serializable {
+trait ScaldingService[-K, +V] extends java.io.Serializable {
   // A static, or write-once service can  potentially optimize this without writing the (K, V) stream out
-  def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))]
+  def lookup[K1<:K,W](getKeys: PipeFactory[(K1, W)]): PipeFactory[(K1, (W, Option[V]))]
 }
 
 class EmptyService[K, V] extends ScaldingService[K, V] {
-  def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
+  def lookup[K1<:K,W](getKeys: PipeFactory[(K1, W)]): PipeFactory[(K1, (W, Option[V]))] =
     getKeys.map { _.map { _.map { case (t, (k, v)) => (t, (k, (v, None: Option[V]))) } } }
 }
 
@@ -54,21 +54,23 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
    * You are guaranteed that all the service data needed
    * to do the join is present.
    */
-  def lookup[W](incoming: TypedPipe[(Time, (K, W))],
-    servStream: TypedPipe[(Time, (K, Option[V]))]): TypedPipe[(Time, (K, (W, Option[V])))] = {
+  def lookup[K1<:K,W](incoming: TypedPipe[(Time, (K1, W))],
+    servStream: TypedPipe[(Time, (K, Option[V]))]): TypedPipe[(Time, (K1, (W, Option[V])))] = {
 
     def flatOpt[T](o: Option[Option[T]]): Option[T] = o.flatMap(identity)
 
+    // This cast is safe because we only use compare, which is contravariant
+    // though the class is not
     implicit val ord = ordering
     LookupJoin(incoming, servStream, reducers)
       .map { case (t, (k, (w, optoptv))) => (t, (k, (w, flatOpt(optoptv)))) }
   }
 
-  protected def batchedLookup[W](covers: Interval[Time],
-    getKeys: FlowToPipe[(K, W)],
+  protected def batchedLookup[K1<:K,W](covers: Interval[Time],
+    getKeys: FlowToPipe[(K1, W)],
     last: (BatchID, FlowProducer[TypedPipe[(K, V)]]),
-    streams: Iterable[(BatchID, FlowToPipe[(K, Option[V])])]): FlowToPipe[(K, (W, Option[V]))] =
-      Reader[FlowInput, KeyValuePipe[K, (W, Option[V])]] { (flowMode: (FlowDef, Mode)) =>
+    streams: Iterable[(BatchID, FlowToPipe[(K1, Option[V])])]): FlowToPipe[(K1, (W, Option[V]))] =
+      Reader[FlowInput, KeyValuePipe[K1, (W, Option[V])]] { (flowMode: (FlowDef, Mode)) =>
         val left = getKeys(flowMode)
         val earliestInLast = batcher.earliestTimeOf(last._1).getTime
         val liftedLast: KeyValuePipe[K, Option[V]] = last._2(flowMode)
@@ -83,7 +85,7 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
         lookup(left, right)
       }
 
-  final def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
+  final def lookup[K1<:K,W](getKeys: PipeFactory[(K1, W)]): PipeFactory[(K1, (W, Option[V]))] =
     StateWithError({ (in: FactoryInput) =>
       val (timeSpan, mode) = in
 
@@ -92,13 +94,17 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
 
       val coveringBatches = batchOps.coverIt(timeSpan)
       readLast(coveringBatches.min, mode).right.flatMap { batchLastFlow =>
-        val (startingBatch, init) = batchLastFlow
+        val (startingBatch, _) = batchLastFlow
         val streamBatches = BatchID.range(startingBatch.next, coveringBatches.max)
         val batchStreams = streamBatches.map { b => (b, readStream(b, mode)) }
         // only produce continuous output, so stop at the first none:
         val existing = batchStreams
           .takeWhile { _._2.isDefined }
           .collect { case (batch, Some(flow)) => (batch, flow) }
+          /* This cast is only safe if people don't change the types between
+           * caching.
+           */
+          .asInstanceOf[Iterable[(BatchID, FlowToPipe[(K1, Option[V])])]]
 
         if(existing.isEmpty) {
           Left(List("[ERROR] Could not load any batches of the service stream in: " + toString + " for: " + timeSpan.toString))

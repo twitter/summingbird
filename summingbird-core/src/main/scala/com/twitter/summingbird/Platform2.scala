@@ -82,10 +82,10 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
 class Platform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
     extends Platform[Platform2[P1, P2]] {
   // The type of the inputs for this platform
-  type Source[T] = (P1#Source[T], P2#Source[T])
-  type Store[K, V] = (P1#Store[K, V], P2#Store[K, V])
-  type Sink[T] = (P1#Sink[T], P2#Sink[T])
-  type Service[K, V] = (P1#Service[K, V], P2#Service[K, V])
+  type Source[+T] = (P1#Source[T], P2#Source[T])
+  type Store[-K, V] = (P1#Store[K, V], P2#Store[K, V])
+  type Sink[-T] = (P1#Sink[T], P2#Sink[T])
+  type Service[-K, +V] = (P1#Service[K, V], P2#Service[K, V])
   type Plan[T] = (P1#Plan[T], P2#Plan[T])
 
   def plan[T](producer: Producer[Platform2[P1, P2], T]): Plan[T] = {

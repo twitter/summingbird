@@ -31,17 +31,17 @@ import cascading.flow.FlowDef
 
 import java.util.Date
 
-trait ScaldingStore[K, V] extends java.io.Serializable {
+trait ScaldingStore[-K, V] extends java.io.Serializable {
   /**
     * Accepts deltas along with their timestamps, returns triples of
     * (time, K, V(aggregated up to the time)).
     *
     * Same return as lookup on a ScaldingService.
     */
-  def merge(delta: PipeFactory[(K, V)],
+  def merge[K1<:K](delta: PipeFactory[(K1, V)],
     sg: Semigroup[V],
     commutativity: Commutativity,
-    reducers: Int): PipeFactory[(K, V)]
+    reducers: Int): PipeFactory[(K1, V)]
 }
 
 trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
@@ -190,10 +190,10 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
    * back to the last checkpointed output by calling readLast. In that case, we compute the
    * results by rolling forward
    */
-  final override def merge(delta: PipeFactory[(K, V)],
+  final override def merge[K1<:K](delta: PipeFactory[(K1, V)],
     sg: Semigroup[V],
     commutativity: Commutativity,
-    reducers: Int): PipeFactory[(K, V)] = StateWithError({ in: FactoryInput =>
+    reducers: Int): PipeFactory[(K1, V)] = StateWithError({ in: FactoryInput =>
       val (timeSpan, mode) = in
       // This object combines some common scalding batching operations:
       val batchOps = new BatchedOperations(batcher)
@@ -225,7 +225,10 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
                   // it is a static (i.e. independent from input) bug if this get ever throws
                   val available = batchOps.intersect(blist, timeSpan).get
                   val filtered = Scalding.limitTimes(available, merged)
-                  Right(((available, mode), filtered))
+                  /*
+                   * The cast is needed due to the caching.
+                   */
+                  Right(((available, mode), filtered.asInstanceOf[FlowToPipe[(K1, V)]]))
                 }
               }
           }

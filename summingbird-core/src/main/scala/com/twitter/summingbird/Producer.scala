@@ -114,7 +114,7 @@ sealed trait Producer[P <: Platform[P], +T] {
   def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
     FlatMappedProducer[P, T, U](this, fn)
 
-  def write[U >: T](sink: P#Sink[U]): Producer[P, T] = WrittenProducer(this, sink)
+  def write(sink: P#Sink[T]): Producer[P, T] = WrittenProducer(this, sink)
 
   def either[U](other: Producer[P, U]): Producer[P, Either[T, U]] =
     map(Left(_): Either[T, U])
@@ -150,11 +150,11 @@ case class Summer[P <: Platform[P], K, V](
   store: P#Store[K, V],
   monoid: Monoid[V]) extends KeyedProducer[P, K, V]
 
-sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
+sealed trait KeyedProducer[P <: Platform[P], K, +V] extends Producer[P, (K, V)] {
   def leftJoin[RightV](service: P#Service[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
     LeftJoinedProducer(this, service)
 
-  def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
+  def sumByKey[U >: V](store: P#Store[K, U])(implicit monoid: Monoid[U]): Summer[P, K, U] =
     Summer(this, store, monoid)
 }
 

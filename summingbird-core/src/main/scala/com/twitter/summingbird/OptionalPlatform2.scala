@@ -83,10 +83,10 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
 class OptionalPlatform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
     extends Platform[OptionalPlatform2[P1, P2]] {
   // The type of the inputs for this platform
-  type Source[T] = (Option[P1#Source[T]], Option[P2#Source[T]])
-  type Store[K, V] = (Option[P1#Store[K, V]], Option[P2#Store[K, V]])
-  type Sink[T] = (Option[P1#Sink[T]], Option[P2#Sink[T]])
-  type Service[K, V] = (Option[P1#Service[K, V]], Option[P2#Service[K, V]])
+  type Source[+T] = (Option[P1#Source[T]], Option[P2#Source[T]])
+  type Store[-K, V] = (Option[P1#Store[K, V]], Option[P2#Store[K, V]])
+  type Sink[-T] = (Option[P1#Sink[T]], Option[P2#Sink[T]])
+  type Service[-K, +V] = (Option[P1#Service[K, V]], Option[P2#Service[K, V]])
   type Plan[T] = (Option[P1#Plan[T]], Option[P2#Plan[T]])
 
   override def plan[T](producer: Producer[OptionalPlatform2[P1, P2], T]): Plan[T] = {

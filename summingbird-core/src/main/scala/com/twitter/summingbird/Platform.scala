@@ -21,10 +21,10 @@ package com.twitter.summingbird
   */
 trait Platform[P <: Platform[P]] {
   // The type of the inputs for this platform
-  type Source[_]
-  type Store[_, _]
-  type Sink[_]
-  type Service[_, _]
+  type Source[+t]
+  type Store[-k, v]
+  type Sink[-t]
+  type Service[-k, +v]
   type Plan[_]
 
   def plan[T](completed: Producer[P, T]): Plan[T]

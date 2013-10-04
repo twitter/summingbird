@@ -23,8 +23,8 @@ import com.twitter.scalding.{Mode, TypedPipe}
 import com.twitter.scalding.typed.Grouped
 import cascading.flow.FlowDef
 
-trait ScaldingSink[T] {
-  def write(incoming: PipeFactory[T]): PipeFactory[T]
+trait ScaldingSink[-T] extends java.io.Serializable {
+  def write[U<:T](incoming: PipeFactory[U]): PipeFactory[U]
 }
 
 trait BatchedScaldingSink[T] extends ScaldingSink[T] {
@@ -42,8 +42,8 @@ trait BatchedScaldingSink[T] extends ScaldingSink[T] {
   /** in will completely cover these batches
    * Return a new FlowToPipe with the write as a side effect
    */
-  protected def writeBatches(inter: Interval[BatchID], in: FlowToPipe[T]): FlowToPipe[T] =
-    Reader[FlowInput, TimedPipe[T]] { (flowMode: (FlowDef, Mode)) =>
+  protected def writeBatches[U<:T](inter: Interval[BatchID], in: FlowToPipe[U]): FlowToPipe[U] =
+    Reader[FlowInput, TimedPipe[U]] { (flowMode: (FlowDef, Mode)) =>
       val iter = BatchID.toIterable(inter)
       val inPipe = in(flowMode)
 
@@ -60,7 +60,7 @@ trait BatchedScaldingSink[T] extends ScaldingSink[T] {
       inPipe
     }
 
-  final def write(incoming: PipeFactory[T]): PipeFactory[T] =
+  final def write[U<:T](incoming: PipeFactory[U]): PipeFactory[U] =
     StateWithError({ in: FactoryInput =>
       val (timeSpan, mode) = in
       // This object combines some common scalding batching operations:
@@ -89,7 +89,7 @@ trait BatchedScaldingSink[T] extends ScaldingSink[T] {
         .takeWhile { _._2.isDefined }
         .collect { case (batch, Some(flow)) => (batch, flow) }
 
-      def mergeExistingAndBuilt(optBuilt: Option[(Interval[BatchID], FlowToPipe[T])]): Try[((Interval[Time], Mode), FlowToPipe[T])] = {
+      def mergeExistingAndBuilt[U<:T](optBuilt: Option[(Interval[BatchID], FlowToPipe[U])]): Try[((Interval[Time], Mode), FlowToPipe[U])] = {
         val (aBatches, aFlows) = existing.unzip
         val flows = aFlows ++ (optBuilt.map { _._2 })
         val batches = aBatches ++ (optBuilt.map { pair => BatchID.toIterable(pair._1) }.getOrElse(Iterable.empty))
@@ -100,7 +100,10 @@ trait BatchedScaldingSink[T] extends ScaldingSink[T] {
           // it is a static (i.e. independent from input) bug if this get ever throws
           val available = batchOps.intersect(batches, timeSpan).get
           val merged = Scalding.limitTimes(available, flows.reduce(Scalding.merge(_, _)))
-          Right(((available, mode), merged))
+          /**
+           * TODO: the caching means that in practice, we could violate this type-bound.
+           */
+          Right(((available, mode), merged.asInstanceOf[FlowToPipe[U]]))
         }
       }
 
