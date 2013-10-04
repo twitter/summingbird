@@ -21,7 +21,10 @@ object SummingbirdBuild extends Build {
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
-      "org.scala-tools.testing" %% "specs" % "1.6.9" % "test"
+      "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
+      // These satisify's scaldings log4j needs when in test mode
+      "log4j" % "log4j" % "1.2.16" % "test",
+      "org.slf4j" % "slf4j-log4j12" % "1.6.6" % "test",
     ),
 
     resolvers ++= Seq(
