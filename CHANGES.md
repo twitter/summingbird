@@ -1,5 +1,12 @@
 # summingbird #
 
+## 0.2.0
+* Bump the version numbers of the dependencies https://github.com/twitter/summingbird/pull/260
+* Upgrade to Tormenta 0.5.2, Scalding 0.9.0, Bijection 0.5.3 betas: https://github.com/twitter/summingbird/pull/191
+* Feature/storm new planner: https://github.com/twitter/summingbird/pull/250
+* Feature/move dag to core: https://github.com/twitter/summingbird/pull/255
+
+
 ## 0.1.5
 * Control how futures are collected in Client Store: https://github.com/twitter/summingbird/pull/254
 * Producer[Platform, T] is covariant on T: https://github.com/twitter/summingbird/pull/251
