@@ -27,8 +27,9 @@ import com.twitter.util.Future
   * online/offline ClientStore into some third presenting store every
   * time a key is touched.
   *
-  * TODO: Write a version of this that accepts the most general
-  * presenting function: (K, V) => Iterable[(K2, V2)]
+  * TODO (https://github.com/twitter/summingbird/issues/73): Write a
+  * version of this that accepts the most general presenting function:
+  * (K, V) => Iterable[(K2, V2)] and move to Storehaus.
   *
   * @author Sam Ritchie
   * @author Oscar Boykin

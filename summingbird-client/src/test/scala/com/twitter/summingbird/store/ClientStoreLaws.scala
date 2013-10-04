@@ -1,10 +1,6 @@
 package com.twitter.summingbird.store
 
-import org.scalacheck.Arbitrary
-import org.scalacheck.Prop._
-import org.scalatest.FlatSpec
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.prop.Checkers
+import org.specs._
 
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird.batch._
@@ -24,7 +20,7 @@ case class TestStore[K, +V](m: Map[K, Option[V]]) extends ReadableStore[K, V] {
       .getOrElse(Future.exception(new RuntimeException("fail!")))
 }
 
-class ClientStoreLaws extends FlatSpec with Checkers {
+class ClientStoreLaws extends Specification {
   /** Batcher that always returns a batch of 10. */
   implicit val batcher = new AbstractBatcher {
     def batchOf(t: Date) = BatchID(10)
@@ -54,24 +50,24 @@ class ClientStoreLaws extends FlatSpec with Checkers {
   val retMap = clientStore.multiGet(keys)
 
   def assertPresent[T](f: Future[T], comparison: T) {
-    assert(f.isReturn && f.get == comparison)
+    assert(f.isReturn && Await.result(f) == comparison)
   }
 
-  "ClientStore" should "return a map from multiGet of the same size as the input request" in {
+  "ClientStore should return a map from multiGet of the same size as the input request" in {
     assert(keys == retMap.keySet)
   }
-  it should "return Some(v) (properly merged) if either offline and online have values" in {
+  "ClientStore should return Some(v) (properly merged) if either offline and online have values" in {
     assertPresent(retMap("a"), Some(3))
     assertPresent(retMap("b"), Some(1))
     assertPresent(retMap("c"), Some(2))
   }
-  it should "return None if both offline and online have None for all batches" in {
+  "ClientStore should return None if both offline and online have None for all batches" in {
     assertPresent(retMap("d"), None)
   }
-  it should "fail a key when offline succeeds and online fails" in {
+  "ClientStore should fail a key when offline succeeds and online fails" in {
     assert(retMap("e").isThrow)
   }
-  it should "fail a key when offline fails and online succeeds" in {
+  "ClientStore should fail a key when offline fails and online succeeds" in {
     assert(retMap("f").isThrow)
   }
 }

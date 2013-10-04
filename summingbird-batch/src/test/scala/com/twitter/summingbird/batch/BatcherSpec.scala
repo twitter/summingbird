@@ -23,8 +23,8 @@ class BatcherSpec extends Specification {
 
   def assertRelation(other: Batcher, m: Map[Long, Iterable[Long]]) =
     m.foreach { case (input, expected) =>
-      assert(other.enclosedBy(BatchID(input), hourlyBatcher) ==
-        expected.map(BatchID(_)))
+      other.enclosedBy(BatchID(input), hourlyBatcher).toList must be_==(
+        expected.map(BatchID(_)).toList)
     }
 
   "DurationBatcher should properly enclose a smaller, offset batcher" in {
@@ -39,7 +39,7 @@ class BatcherSpec extends Specification {
   }
   "DurationBatcher should always require n batches to fit into a batcher of n hours" in {
     (10 to 100).foreach { n =>
-      Batcher.ofHours(n).enclosedBy(BatchID(100), hourlyBatcher).size == n
+      Batcher.ofHours(n).enclosedBy(BatchID(100), hourlyBatcher).size must be_==(n)
     }
   }
 }

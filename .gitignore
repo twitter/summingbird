@@ -10,3 +10,7 @@ project/plugins/src_managed/
 /.idea/
 /.idea_modules/
 *.iml
+*/.project
+*/.settings
+*/.cache
+*/.classpath
