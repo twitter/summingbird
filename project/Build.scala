@@ -24,7 +24,7 @@ object SummingbirdBuild extends Build {
       "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
       // These satisify's scaldings log4j needs when in test mode
       "log4j" % "log4j" % "1.2.16" % "test",
-      "org.slf4j" % "slf4j-log4j12" % "1.6.6" % "test",
+      "org.slf4j" % "slf4j-log4j12" % "1.6.6" % "test"
     ),
 
     resolvers ++= Seq(
@@ -165,13 +165,13 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
-      "com.twitter" % "chill-storm" % chillVersion,
+      "com.twitter" % "chill-storm" % chillVersion exclude("org.slf4j", "log4j-over-slf4j"),
       "com.twitter" %% "chill-bijection" % chillVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
-      "com.twitter" %% "tormenta-core" % tormentaVersion,
+      "com.twitter" %% "tormenta-core" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j"),
       withCross("com.twitter" %% "util-core" % utilVersion),
-      "storm" % "storm" % "0.9.0-wip15"
+      "storm" % "storm" % "0.9.0-wip15" % "provided" exclude("org.slf4j", "log4j-over-slf4j")
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -207,7 +207,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdExample = module("example").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "bijection-netty" % bijectionVersion,
-      "com.twitter" %% "tormenta-twitter" % tormentaVersion,
+      "com.twitter" %% "tormenta-twitter" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j"),
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
   ).dependsOn(summingbirdCore, summingbirdStorm)
