@@ -108,13 +108,13 @@ object SummingbirdBuild extends Build {
   )
 
   val dfsDatastoresVersion = "1.3.4"
-  val bijectionVersion = "0.5.3"
-  val algebirdVersion = "0.2.0"
-  val scaldingVersion = "0.9.0-SNAPSHOT"
-  val storehausVersion = "0.5.1"
+  val bijectionVersion = "0.5.4"
+  val algebirdVersion = "0.3.0"
+  val scaldingVersion = "0.9.0rc1"
+  val storehausVersion = "0.6.0"
   val utilVersion = "6.3.8"
-  val chillVersion = "0.3.2"
-  val tormentaVersion = "0.5.2"
+  val chillVersion = "0.3.3"
+  val tormentaVersion = "0.5.3"
 
   /**
     * This returns the youngest jar we released that is compatible with

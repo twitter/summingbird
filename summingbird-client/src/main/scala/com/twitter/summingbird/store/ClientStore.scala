@@ -44,19 +44,6 @@ object ClientStore {
 
   def defaultOnlineKeyFilter[K] = (k: K) => true
 
- /** TODO: when storehaus is fixed remove:
-  * https://github.com/twitter/storehaus/pull/148
-  * */
-  def bestEffort[T] = new FutureCollector[T] {
-    override def apply(futureSeq: Seq[Future[T]]) =
-      Future.collect {
-        futureSeq.map { f: Future[T] =>
-          // Don't squash errors, but hide exceptions by default
-          f.map { Some(_) }.handle { case x: Exception => None }
-        }
-      }.map { _.flatten }
-  }
-
   def apply[K, V](
     offlineStore: ReadableStore[K, (BatchID, V)],
     onlineStore: ReadableStore[(K, BatchID), V],
