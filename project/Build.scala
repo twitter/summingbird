@@ -21,7 +21,10 @@ object SummingbirdBuild extends Build {
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
-      "org.scala-tools.testing" %% "specs" % "1.6.9" % "test"
+      "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
+      // These satisify's scaldings log4j needs when in test mode
+      "log4j" % "log4j" % "1.2.16" % "test",
+      "org.slf4j" % "slf4j-log4j12" % "1.6.6" % "test"
     ),
 
     resolvers ++= Seq(
@@ -108,13 +111,13 @@ object SummingbirdBuild extends Build {
   )
 
   val dfsDatastoresVersion = "1.3.4"
-  val bijectionVersion = "0.5.3"
-  val algebirdVersion = "0.2.0"
-  val scaldingVersion = "0.9.0-SNAPSHOT"
-  val storehausVersion = "0.5.1"
+  val bijectionVersion = "0.5.4"
+  val algebirdVersion = "0.3.0"
+  val scaldingVersion = "0.9.0rc1"
+  val storehausVersion = "0.6.0"
   val utilVersion = "6.3.8"
-  val chillVersion = "0.3.2"
-  val tormentaVersion = "0.5.2"
+  val chillVersion = "0.3.3"
+  val tormentaVersion = "0.5.3"
 
   /**
     * This returns the youngest jar we released that is compatible with
@@ -162,13 +165,13 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
-      "com.twitter" % "chill-storm" % chillVersion,
+      "com.twitter" % "chill-storm" % chillVersion exclude("org.slf4j", "log4j-over-slf4j"),
       "com.twitter" %% "chill-bijection" % chillVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
-      "com.twitter" %% "tormenta-core" % tormentaVersion,
+      "com.twitter" %% "tormenta-core" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j"),
       withCross("com.twitter" %% "util-core" % utilVersion),
-      "storm" % "storm" % "0.9.0-wip15"
+      "storm" % "storm" % "0.9.0-wip15" % "provided" exclude("org.slf4j", "log4j-over-slf4j")
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -204,7 +207,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdExample = module("example").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "bijection-netty" % bijectionVersion,
-      "com.twitter" %% "tormenta-twitter" % tormentaVersion,
+      "com.twitter" %% "tormenta-twitter" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j"),
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
   ).dependsOn(summingbirdCore, summingbirdStorm)
