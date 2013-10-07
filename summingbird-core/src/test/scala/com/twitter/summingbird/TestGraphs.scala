@@ -86,6 +86,14 @@ object TestGraphs {
       .name("My named flatmap")
       .flatMap(postJoinFn)
       .sumByKey(store)
+
+  def mapOnlyJob[P <: Platform[P], T, U](
+    source: Producer[P, T],
+    sink: P#Sink[U]
+    )(mapOp: T => TraversableOnce[U]): Producer[P, U] =
+    source
+      .flatMap(mapOp)
+      .write(sink)
 }
 
 class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbitrary: Equiv: Monoid](platform: P)(

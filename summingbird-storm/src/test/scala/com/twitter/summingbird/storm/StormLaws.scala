@@ -24,6 +24,7 @@ import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.storm.spout.TraversableSpout
+import com.twitter.summingbird.memory._
 import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
 import java.util.{Collections, HashMap, Map => JMap, UUID}
@@ -144,6 +145,48 @@ object StormLaws extends Specification {
     (testFn, globalState(id))
   }
 
+  def memoryPlanWithoutSummer(original: List[Int])(mkJob: (Producer[Memory, Int], Memory#Sink[Int]) => Producer[Memory, Int])
+  : List[Int] = {
+    val memory = new Memory
+    val outputList = ArrayBuffer[Int]()
+    val sink: (Int) => Unit = {x: Int => outputList += x}
+
+    val job = mkJob(
+      Memory.toSource(original),
+      sink
+    )
+    val topo = memory.plan(job)
+    memory.run(topo)
+    outputList.toList
+  }
+
+  val outputList = new ArrayBuffer[Int] with SynchronizedBuffer[Int]
+
+  def append(x: Int):Unit = {
+    StormLaws.outputList += x
+  }
+
+  def runWithOutSummer(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Sink[Int]) => Producer[Storm, Int])
+      : List[Int] = {
+    val cluster = new LocalCluster()
+
+    val sink: () => ((Int) => Future[Unit]) = () => {x: Int =>
+      append(x)
+      Future.Unit
+    }
+    val job = mkJob(
+      Storm.source(TraversableSpout(original)),
+      sink
+    )
+
+    val topo = storm.plan(job)
+    Testing.completeTopology(cluster, topo, completeTopologyParam)
+    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
+    Thread.sleep(1000)
+    cluster.shutdown
+    StormLaws.outputList.toList
+  }
+
   "StormPlatform matches Scala for single step jobs" in {
     val original = sample[List[Int]]
     val (fn, returnedState) =
@@ -208,4 +251,19 @@ object StormLaws extends Specification {
           .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
   }
+
+  "StormPlatform matches Scala for MapOnly/NoSummer" in {
+    val original = sample[List[Int]]
+    val doubler = {x: Int => List(x*2)}
+
+    val stormOutputList =
+      runWithOutSummer(original)(
+        TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler)
+      ).sorted
+    val memoryOutputList = 
+      memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
+    
+    stormOutputList must_==(memoryOutputList)
+  }
+
 }
