@@ -119,6 +119,17 @@ object StormLaws extends Specification {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
+  def genStore: (String, Storm#Store[Int, Int])  = {
+    val id = UUID.randomUUID.toString
+    globalState += (id -> TestState())
+    val store = MergeableStoreSupplier(() => testingStore(id), Batcher.unit)
+    (id, store)
+  }
+
+  def genSink:() => ((Int) => Future[Unit]) = () => {x: Int =>
+      append(x)
+      Future.Unit
+    }
   /**
     * Perform a single run of TestGraphs.singleStepJob using the
     * supplied list of integers and the testFn defined above.
@@ -187,18 +198,7 @@ object StormLaws extends Specification {
     StormLaws.outputList.toList
   }
 
-  "StormPlatform matches Scala for single step jobs" in {
-    val original = sample[List[Int]]
-    val (fn, returnedState) =
-      runOnce(original)(
-        TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(testFn)
-      )
-    Equiv[Map[Int, Int]].equiv(
-      TestGraphs.singleStepInScala(original)(fn),
-      returnedState.store.asScala.toMap
-        .collect { case ((k, batchID), Some(v)) => (k, v) }
-    ) must beTrue
-  }
+
 
   val nextFn = { pair: ((Int, (Int, Option[Int]))) =>
     val (k, (v, joinedV)) = pair
@@ -208,76 +208,125 @@ object StormLaws extends Specification {
   val serviceFn = Arbitrary.arbitrary[Int => Option[Int]].sample.get
   val service = StoreWrapper[Int, Int](() => ReadableStore.fromFn(serviceFn))
 
-  "StormPlatform matches Scala for left join jobs" in {
-    val original = sample[List[Int]]
 
-    val (fn, returnedState) =
-      runOnce(original)(
-        TestGraphs.leftJoinJob[Storm, Int, Int, Int, Int, Int](_, service, _)(testFn)(nextFn)
-      )
-    Equiv[Map[Int, Int]].equiv(
-      TestGraphs.leftJoinInScala(original)(serviceFn)
-        (fn)(nextFn),
-      returnedState.store.asScala.toMap
-        .collect { case ((k, batchID), Some(v)) => (k, v) }
-    ) must beTrue
-  }
+  // "StormPlatform matches Scala for single step jobs" in {
+  //   val original = sample[List[Int]]
+  //   val (fn, returnedState) =
+  //     runOnce(original)(
+  //       TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(testFn)
+  //     )
+  //   Equiv[Map[Int, Int]].equiv(
+  //     TestGraphs.singleStepInScala(original)(fn),
+  //     returnedState.store.asScala.toMap
+  //       .collect { case ((k, batchID), Some(v)) => (k, v) }
+  //   ) must beTrue
+  // }
+  // "StormPlatform matches Scala for left join jobs" in {
+  //   val original = sample[List[Int]]
 
-  "StormPlatform matches Scala for optionMap only jobs" in {
-    val original = sample[List[Int]]
-    val id = UUID.randomUUID.toString
+  //   val (fn, returnedState) =
+  //     runOnce(original)(
+  //       TestGraphs.leftJoinJob[Storm, Int, Int, Int, Int, Int](_, service, _)(testFn)(nextFn)
+  //     )
+  //   Equiv[Map[Int, Int]].equiv(
+  //     TestGraphs.leftJoinInScala(original)(serviceFn)
+  //       (fn)(nextFn),
+  //     returnedState.store.asScala.toMap
+  //       .collect { case ((k, batchID), Some(v)) => (k, v) }
+  //   ) must beTrue
+  // }
 
-    val cluster = new LocalCluster()
+  // "StormPlatform matches Scala for optionMap only jobs" in {
+  //   val original = sample[List[Int]]
+  //   val id = UUID.randomUUID.toString
 
-    globalState += (id -> TestState())
+  //   val cluster = new LocalCluster()
 
-    val producer =
-      Storm.source(TraversableSpout(original))
-        .filter(_ % 2 == 0)
-        .map(_ -> 10)
-        .sumByKey(Storm.store(testingStore(id)))
+  //   globalState += (id -> TestState())
 
-    val topo = storm.plan(producer)
+  //   val producer =
+  //     Storm.source(TraversableSpout(original))
+  //       .filter(_ % 2 == 0)
+  //       .map(_ -> 10)
+  //       .sumByKey(Storm.store(testingStore(id)))
 
-    Testing.completeTopology(cluster, topo, completeTopologyParam)
-    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
-    Thread.sleep(1000)
-    cluster.shutdown
+  //   val topo = storm.plan(producer)
 
-    Equiv[Map[Int, Int]].equiv(
-        MapAlgebra.sumByKey(original.filter(_ % 2 == 0).map(_ -> 10)),
-        globalState(id).store.asScala
-          .toMap
-          .collect { case ((k, batchID), Some(v)) => (k, v) }
-    ) must beTrue
-  }
+  //   Testing.completeTopology(cluster, topo, completeTopologyParam)
+  //   // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
+  //   Thread.sleep(1000)
+  //   cluster.shutdown
 
-  "StormPlatform matches Scala for MapOnly/NoSummer" in {
-    val original = sample[List[Int]]
-    val doubler = {x: Int => List(x*2)}
+  //   Equiv[Map[Int, Int]].equiv(
+  //       MapAlgebra.sumByKey(original.filter(_ % 2 == 0).map(_ -> 10)),
+  //       globalState(id).store.asScala
+  //         .toMap
+  //         .collect { case ((k, batchID), Some(v)) => (k, v) }
+  //   ) must beTrue
+  // }
 
-    val stormOutputList =
-      runWithOutSummer(original)(
-        TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler)
-      ).sorted
-    val memoryOutputList = 
-      memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
+  // "StormPlatform matches Scala for MapOnly/NoSummer" in {
+  //   val original = sample[List[Int]]
+  //   val doubler = {x: Int => List(x*2)}
+
+  //   val stormOutputList =
+  //     runWithOutSummer(original)(
+  //       TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler)
+  //     ).sorted
+  //   val memoryOutputList = 
+  //     memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
     
-    stormOutputList must_==(memoryOutputList)
-  }
+  //   stormOutputList must_==(memoryOutputList)
+  // }
 
-    "StormPlatform matches Scala for MapOnly/NoSummer with dangling FM" in {
-    val original = sample[List[Int]]
-    val doubler = {x: Int => List(x*2)}
+  // "StormPlatform matches Scala for MapOnly/NoSummer with dangling FM" in {
+  //   val original = sample[List[Int]]
+  //   val doubler = {x: Int => List(x*2)}
 
-    val stormOutputList =
-      runWithOutSummer(original)(
-        TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler).map{x:Int  => x*3}
-      ).sorted
-    val memoryOutputList = 
-      memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
+  //   val stormOutputList =
+  //     runWithOutSummer(original)(
+  //       TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler).map{x:Int  => x*3}
+  //     ).sorted
+  //   val memoryOutputList = 
+  //     memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
     
-    stormOutputList must_==(memoryOutputList)
+  //   stormOutputList must_==(memoryOutputList)
+  // }
+
+  "StormPlatform with multiple summers" in {
+    val original = List((1, 1), (2, 2) , (3, 3)) // sample[List[Int]]
+    val doubler = {(x): (Int, Int) => List((x._1 -> x._2*2))}
+
+    val source = Storm.source(TraversableSpout(original))
+    val (summer1Id, summer1) = genStore
+    val (summer2Id, summer2) = genStore
+
+    val preAlso = source
+      .flatMap(doubler)
+
+    val task = preAlso.sumByKey(summer1).also(preAlso).flatMap(doubler)
+      .sumByKey(summer2)
+
+
+      import com.twitter.summingbird.storm.planner._
+    TopologyPlannerLaws.dumpGraph(DagBuilder(task))
+    // val topo = storm.plan(task)
+  
+    // val cluster = new LocalCluster()
+    // Testing.completeTopology(cluster, topo, completeTopologyParam)
+    // // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
+    // Thread.sleep(1000)
+    // cluster.shutdown
+
+
+    // val stormOutputList =
+    //   runWithOutSummer(original)(
+    //     TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler).map{x:Int  => x*3}
+    //   ).sorted
+    // val memoryOutputList = 
+    //   memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
+    
+    // stormOutputList must_==(memoryOutputList)
   }
 
 }
