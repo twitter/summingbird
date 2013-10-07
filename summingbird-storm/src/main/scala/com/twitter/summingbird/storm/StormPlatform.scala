@@ -127,7 +127,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     }
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM)
-    println(parallelism)
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
 
 

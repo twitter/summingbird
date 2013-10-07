@@ -96,7 +96,7 @@ case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Produ
   dependenciesOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]](),
   dependantsOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]]()) {
 
-  val producerDependants = Dependants(tail)
+  lazy val producerDependants = Dependants(tail)
 
   def connect(src: Node[P], dest: Node[P]): Dag[P] = {
     if (src == dest) {
