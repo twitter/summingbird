@@ -34,7 +34,7 @@ class IntermediateFlatMapBolt[T](
   @transient flatMapOp: FlatMapOperation[T, _],
   metrics: FlatMapStormMetrics,
   anchor: AnchorTuples,
-  canEmit: Boolean) extends BaseBolt(metrics.metrics) {
+  shouldEmit: Boolean) extends BaseBolt(metrics.metrics) {
 
   val lockedOp = MeatLocker(flatMapOp)
 
@@ -46,8 +46,8 @@ class IntermediateFlatMapBolt[T](
     val (time, t) = tuple.getValue(0).asInstanceOf[(Long, T)]
 
     lockedOp.get(t).foreach { items =>
-      items.foreach { u =>
-        if(canEmit) {
+      if(shouldEmit) {
+        items.foreach { u =>
           onCollector { col =>
             val values = toValues(time, u)
             if (anchor.anchor)
