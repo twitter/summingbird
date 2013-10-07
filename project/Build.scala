@@ -16,7 +16,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.2.0",
+    version := "0.2.1-SNAPSHOT",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -32,7 +32,7 @@ object SummingbirdBuild extends Build {
       Opts.resolver.sonatypeReleases,
       "Clojars Repository" at "http://clojars.org/repo",
       "Conjars Repository" at "http://conjars.org/repo",
-      "Twitter Maven" at "http://maven.twttr.com"
+      "Twitter Maven" at "http://maven.twttr.com",
     ),
 
     parallelExecution in Test := false, // until scalding 0.9.0 we can't do this
@@ -105,6 +105,7 @@ object SummingbirdBuild extends Build {
     summingbirdBatch,
     summingbirdClient,
     summingbirdStorm,
+    summingbirdAkka,
     summingbirdScalding,
     summingbirdBuilder,
     summingbirdExample
@@ -172,6 +173,23 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "tormenta-core" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j"),
       withCross("com.twitter" %% "util-core" % utilVersion),
       "storm" % "storm" % "0.9.0-wip15" % "provided" exclude("org.slf4j", "log4j-over-slf4j")
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdBatch
+  )
+
+  lazy val summingbirdAkka = module("akka").settings(
+    parallelExecution in Test := false,
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" %% "chill-bijection" % chillVersion,
+      "com.twitter" %% "storehaus-core" % storehausVersion,
+      "com.twitter" %% "storehaus-algebra" % storehausVersion,
+      withCross("com.twitter" %% "util-core" % utilVersion),
+      "com.typesafe.akka" %% "akka-actor" % "2.2.1"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
