@@ -112,7 +112,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     }
   }
 
-  property("The the last producer in any StormNode prior to a summer must be a KeyedProducer") = forAll { (dag: StormDag) =>
+  property("The last producer in any StormNode prior to a summer must be a KeyedProducer") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       val firstP = n.members.last
       firstP match {

@@ -123,7 +123,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
           getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS),
           anchorTuples)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
       case None =>
-        new IntermediateFlatMapBolt(operation, metrics, anchorTuples)
+        new IntermediateFlatMapBolt(operation, metrics, anchorTuples, stormDag.dependenciesOf(node).size > 0)
     }
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM)
