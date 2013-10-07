@@ -266,4 +266,18 @@ object StormLaws extends Specification {
     stormOutputList must_==(memoryOutputList)
   }
 
+    "StormPlatform matches Scala for MapOnly/NoSummer with dangling FM" in {
+    val original = sample[List[Int]]
+    val doubler = {x: Int => List(x*2)}
+
+    val stormOutputList =
+      runWithOutSummer(original)(
+        TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler).map{x:Int  => x*3}
+      ).sorted
+    val memoryOutputList = 
+      memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
+    
+    stormOutputList must_==(memoryOutputList)
+  }
+
 }
