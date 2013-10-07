@@ -95,6 +95,9 @@ case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Produ
   nameToNode: Map[String, Node[P]] = Map[String, Node[P]](),
   dependenciesOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]](),
   dependantsOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]]()) {
+
+  lazy val producerDependants = Dependants(tail)
+
   def connect(src: Node[P], dest: Node[P]): Dag[P] = {
     if (src == dest) {
       this
@@ -124,6 +127,12 @@ case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Produ
 
   def dependantsOf(n: Node[P]): List[Node[P]] = dependantsOfM.get(n).getOrElse(List())
   def dependenciesOf(n: Node[P]): List[Node[P]] = dependenciesOfM.get(n).getOrElse(List())
+
+  def dependantsOf(p: Producer[P, _]) = producerDependants.dependantsOf(p)
+  def transitiveDependantsOf(p: Producer[P, _]) = producerDependants.transitiveDependantsOf(p)
+
+  def dependenciesOf(p: Producer[P, _]) = Producer.dependenciesOf(p)
+  def transitiveDependenciesOf(p: Producer[P, _]) = Producer.transitiveDependenciesOf(p)
 
   def toStringWithPrefix(prefix: String): String = {
     prefix + "Dag\n" + nodes.foldLeft("") {
