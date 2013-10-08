@@ -139,11 +139,14 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val spout = node.members.collect { case Source(s) => s }.head
     val nodeName = stormDag.getNodeName(node)
 
-    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) {
-      case (spout, Source(_)) => spout // The source is still in the members list so drop it
-      case (spout, OptionMappedProducer(_, op)) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
-      case (spout, NamedProducer(_, _)) => spout
-      case _ => sys.error("not possible, given the above call to span.")
+    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) { (spout, p) =>
+      p match {
+        case Source(_) => spout // The source is still in the members list so drop it
+        case OptionMappedProducer(_, op) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
+        case NamedProducer(_, _) => spout
+        case IdentityKeyedProducer(_) => spout
+        case _ => sys.error("not possible, given the above call to span.\n" + p)
+      }
     }.getSpout
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SPOUT_PARALLELISM).parHint
