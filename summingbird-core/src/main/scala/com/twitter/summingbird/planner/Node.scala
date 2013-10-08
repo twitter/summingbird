@@ -48,7 +48,7 @@ sealed trait Node[P <: Platform[P]] {
 
   def collapseNamedNodes: String = {
     val membersCombined = members.reverse.collect { case NamedProducer(_, n) => n.replace("-", "=") }.mkString(",")
-    if (membersCombined.size > 0) "(" + membersCombined + ")" else ""
+    if (membersCombined.size > 0) "|" + membersCombined + "|" else ""
   }
 
   def shortName: NodeIdentifier
