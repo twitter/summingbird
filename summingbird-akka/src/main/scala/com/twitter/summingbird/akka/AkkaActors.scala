@@ -44,20 +44,20 @@ class SourceActor(akkaSrc: AkkaSource[_], targetNames: List[String]) extends Act
   import context._
   val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
 
-  case object Emit()
+  case object Emit
   override def preStart = {
     Thread.sleep(200)
-    self ! Emit()
+    self ! Emit
   }
 
   def receive = {
-    case s: Emit => {
+    case Emit => {
       akkaSrc.isFinished match {
         case true => context.stop(self)
         case false =>
           akkaSrc.poll.map { d =>
             d.foreach { p => targets.foreach { t => t ! FlatMapOutput(p) } }
-            self ! Emit()
+            self ! Emit
           }
       }
     }

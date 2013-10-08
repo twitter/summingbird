@@ -145,7 +145,7 @@ abstract class Akka(options: Map[String, Options]) extends Platform[Akka] {
    */
 
   def plan[T](tail: Producer[Akka, T]): List[(Props, String)] = {
-     val dag = DagBuilder(tail)
+     val dag = OnlinePlan(tail)
      dag.nodes.map{ node =>
      	node match {
          case s: SummerNode[_] => scheduleSummer(dag, s)

@@ -32,8 +32,7 @@ object SummingbirdBuild extends Build {
       Opts.resolver.sonatypeReleases,
       "Clojars Repository" at "http://clojars.org/repo",
       "Conjars Repository" at "http://conjars.org/repo",
-      "Twitter Maven" at "http://maven.twttr.com",
-      "akka repo" at "http://repo.akka.io/releases/"
+      "Twitter Maven" at "http://maven.twttr.com"
     ),
 
     parallelExecution in Test := false, // until scalding 0.9.0 we can't do this
@@ -158,7 +157,11 @@ object SummingbirdBuild extends Build {
   ).dependsOn(summingbirdBatch)
 
   lazy val summingbirdCore = module("core").settings(
-    libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      withCross("com.twitter" %% "util-core" % utilVersion)
+    )
+
   )
 
   lazy val summingbirdStorm = module("storm").settings(
