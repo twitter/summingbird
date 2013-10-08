@@ -14,29 +14,26 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.akka.planner
+package com.twitter.summingbird.planner
 
 import com.twitter.summingbird._
 import com.twitter.summingbird.planner._
-import com.twitter.summingbird.akka._
 
-object DagBuilder {
-  private type Prod[T] = Producer[Akka, T]
+object OnlinePlan
   private type VisitedStore = Set[Prod[_]]
-  private type AkkaFlatMapNode = FlatMapNode[Akka] 
 
-  def apply[P](tail: Producer[Akka, P]): Dag[Akka] = {
+  def apply[P <: Platform[P], T](tail: Producer[P, T]): Dag[P] = {
     val akkaNodeSet = buildNodesSet(tail)
 
     // The nodes are added in a source -> summer way with how we do list prepends
     // but its easier to look at laws in a summer -> source manner
     // We also drop all Nodes with no members(may occur when we visit a node already seen and its the first in that Node)
-    val reversedNodeSet = akkaNodeSet.filter(_.members.size > 0).foldLeft(List[AkkaNode]()){(nodes, n) => n.reverse :: nodes}
+    val reversedNodeSet = akkaNodeSet.filter(_.members.size > 0).foldLeft(List[Node[P]]()){(nodes, n) => n.reverse :: nodes}
     Dag(tail, reversedNodeSet)
   }
 
   // This takes an initial pass through all of the Producers, assigning them to Nodes
-  private def buildNodesSet[P](tail: Producer[Akka, P]): List[AkkaNode] = {
+  private def buildNodesSet[P <: Platform[P], T](tail: Producer[P, T]): List[Node[P]] = {
     val dep = Dependants(tail)
     val forkedNodes = Producer.transitiveDependenciesOf(tail)
                         .filter(dep.fanOut(_).exists(_ > 1)).toSet
