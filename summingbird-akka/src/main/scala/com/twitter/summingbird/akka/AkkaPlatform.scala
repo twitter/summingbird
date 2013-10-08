@@ -70,11 +70,7 @@ abstract class Akka(options: Map[String, Options]) extends Platform[Akka] {
   private type Prod[T] = Producer[Akka, T]
   
   private def cleanName(name: String): String = {
-    name.replaceAllLiterally(" ", "_")
-    .replaceAllLiterally("[", "_")
-    .replaceAllLiterally(")", "_")
-    .replaceAllLiterally("(", "_")
-    .replaceAllLiterally("-", "_")
+    name.replaceAll("""[ \[\]\(\)-]""","_")
   }
 
   private def getOrElse[T: Manifest](node: AkkaNode, default: T): T = {
