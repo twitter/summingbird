@@ -32,7 +32,7 @@ object SummingbirdBuild extends Build {
       Opts.resolver.sonatypeReleases,
       "Clojars Repository" at "http://clojars.org/repo",
       "Conjars Repository" at "http://conjars.org/repo",
-      "Twitter Maven" at "http://maven.twttr.com",
+      "Twitter Maven" at "http://maven.twttr.com"
     ),
 
     parallelExecution in Test := false, // until scalding 0.9.0 we can't do this

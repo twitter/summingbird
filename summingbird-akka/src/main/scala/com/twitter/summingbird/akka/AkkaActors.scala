@@ -44,7 +44,7 @@ class SourceActor(akkaSrc: AkkaSource[_], targetNames: List[String]) extends Act
   import context._
   val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
 
-  case class Emit()
+  case object Emit()
   override def preStart = {
     Thread.sleep(200)
     self ! Emit()
