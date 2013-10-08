@@ -110,8 +110,6 @@ Current published artifacts are
 * `summingbird-batch_2.10`
 * `summingbird-client_2.9.3`
 * `summingbird-client_2.10`
-* `summingbird-kryo_2.9.3`
-* `summingbird-kryo_2.10`
 * `summingbird-storm_2.9.3`
 * `summingbird-storm_2.10`
 * `summingbird-scalding_2.9.3`
