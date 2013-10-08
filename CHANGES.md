@@ -1,5 +1,10 @@
 # summingbird #
 
+## 0.2.1 
+* Add support for map only jobs in producer api https://github.com/twitter/summingbird/pull/269
+* Fixes naming of nodes, options are picked up correctly https://github.com/twitter/summingbird/pull/267
+* Fix missing elements in case statements for applying online graph to storm https://github.com/twitter/summingbird/pull/272
+
 ## 0.2.0
 * Bump the version numbers of the dependencies https://github.com/twitter/summingbird/pull/260
 * Upgrade to Tormenta 0.5.2, Scalding 0.9.0, Bijection 0.5.3 betas: https://github.com/twitter/summingbird/pull/191
