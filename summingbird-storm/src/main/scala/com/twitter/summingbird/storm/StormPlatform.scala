@@ -76,10 +76,9 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private type Prod[T] = Producer[Storm, T]
 
-  private def getOrElse[T: Manifest](node: StormNode, default: T): T = {
+  private def getOrElse[T: Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
     val producer = node.members.last
-    
-    val namedNodes = Dependants(producer).transitiveDependantsOf(producer).collect{case NamedProducer(_, n) => n}
+    val namedNodes = dag.transitiveDependantsOf(producer).collect{case NamedProducer(_, n) => n}
     (for {
       id <- namedNodes
       stormOpts <- options.get(id)
@@ -103,6 +102,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
             case WrittenProducer(_, sinkSupplier) => acc.andThen(FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])]))
             case IdentityKeyedProducer(_) => acc
+            case MergedProducer(_, _) => acc
             case NamedProducer(_, _) => acc
             case _ => throw new Exception("Not found! : " + p)
           }
@@ -110,8 +110,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     }
     val nodeName = stormDag.getNodeName(node)
     val operation = foldOperations(node.members.reverse)
-    val metrics = getOrElse(node, DEFAULT_FM_STORM_METRICS)
-    val anchorTuples = getOrElse(node, AnchorTuples.default)
+    val metrics = getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS)
+    val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
     
@@ -120,13 +120,14 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
         new FinalFlatMapBolt(
           operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-          getOrElse(node, DEFAULT_FM_CACHE),
-          getOrElse(node, DEFAULT_FM_STORM_METRICS),
+          getOrElse(stormDag, node, DEFAULT_FM_CACHE),
+          getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS),
           anchorTuples)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
       case None =>
-        new IntermediateFlatMapBolt(operation, metrics, anchorTuples)
+        new IntermediateFlatMapBolt(operation, metrics, anchorTuples, stormDag.dependenciesOf(node).size > 0)
     }
-    val parallelism = getOrElse(node, DEFAULT_FM_PARALLELISM)
+
+    val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM)
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
 
 
@@ -138,14 +139,17 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val spout = node.members.collect { case Source(s) => s }.head
     val nodeName = stormDag.getNodeName(node)
 
-    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) {
-      case (spout, Source(_)) => spout // The source is still in the members list so drop it
-      case (spout, OptionMappedProducer(_, op)) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
-      case (spout, NamedProducer(_, _)) => spout
-      case _ => sys.error("not possible, given the above call to span.")
+    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) { (spout, p) =>
+      p match {
+        case Source(_) => spout // The source is still in the members list so drop it
+        case OptionMappedProducer(_, op) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
+        case NamedProducer(_, _) => spout
+        case IdentityKeyedProducer(_) => spout
+        case _ => sys.error("not possible, given the above call to span.\n" + p)
+      }
     }.getSpout
 
-    val parallelism = getOrElse(node, DEFAULT_SPOUT_PARALLELISM).parHint
+    val parallelism = getOrElse(stormDag, node, DEFAULT_SPOUT_PARALLELISM).parHint
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
@@ -160,18 +164,18 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
     val sinkBolt = new SinkBolt[K, V](
       supplier,
-      getOrElse(node, DEFAULT_ONLINE_SUCCESS_HANDLER),
-      getOrElse(node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-      getOrElse(node, DEFAULT_SINK_CACHE),
-      getOrElse(node, DEFAULT_SINK_STORM_METRICS),
-      getOrElse(node, DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(node, IncludeSuccessHandler.default))
+      getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
+      getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
+      getOrElse(stormDag, node, DEFAULT_SINK_CACHE),
+      getOrElse(stormDag, node, DEFAULT_SINK_STORM_METRICS),
+      getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
+      getOrElse(stormDag, node, IncludeSuccessHandler.default))
 
     val declarer =
       topologyBuilder.setBolt(
         nodeName,
         sinkBolt,
-        getOrElse(node, DEFAULT_SINK_PARALLELISM).parHint)
+        getOrElse(stormDag, node, DEFAULT_SINK_PARALLELISM).parHint)
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     dependenciesNames.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
