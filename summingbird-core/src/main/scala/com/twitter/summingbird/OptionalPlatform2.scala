@@ -26,6 +26,13 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
   def apply[T](root: Producer[OptionalPlatform2[P1, P2], T])
       : (Option[Producer[P1, T]], Option[Producer[P2, T]]) =
     root match {
+      case AlsoProducer(ensure, result) =>
+        val (le, re) = apply(ensure)
+        val (lr, rr) = apply(result)
+        val alsol = for (e <- le; r <- lr) yield e.also(r)
+        val alsor = for (e <- re; r <- rr) yield e.also(r)
+        (alsol, alsor)
+
       case NamedProducer(producer, id) =>
         val (l, r) = apply(producer)
         (l.map(_.name(id)), r.map(_.name(id)))
