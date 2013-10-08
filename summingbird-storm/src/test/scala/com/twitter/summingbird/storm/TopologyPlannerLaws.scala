@@ -189,4 +189,17 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     val allNames = dag.nodes.toList.map{n => dag.getNodeName(n)}
     allNames.size == allNames.distinct.size
   }
+
+  property("Can plan to a Storm Topology") = forAll { (dag: StormDag) => 
+    try {
+      Storm.local().plan(dag.tail)
+      true
+      } catch {
+        case e: Throwable =>
+        println(e)
+        e.printStackTrace
+        false
+      }
+
+  }
 }
