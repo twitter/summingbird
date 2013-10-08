@@ -61,7 +61,8 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
       case WrittenProducer(producer, sink) =>
         val (l, r) = apply(producer)
         val (leftSink, rightSink) = sink
-        (l.write(leftSink), r.write(rightSink))
+        (l.write(leftSink.asInstanceOf[P1#Sink[T]]),
+          r.write(rightSink.asInstanceOf[P2#Sink[T]]))
 
       case LeftJoinedProducer(producer, service) =>
         val (l, r) = apply(producer)

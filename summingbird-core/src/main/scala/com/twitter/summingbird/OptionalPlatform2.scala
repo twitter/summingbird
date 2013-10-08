@@ -56,8 +56,10 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
       case WrittenProducer(producer, sink) =>
         val (l, r) = apply(producer)
         val (leftSink, rightSink) = sink
-        val sinkl = for (li <- l; leftSinki <- leftSink) yield li.write(leftSinki)
-        val sinkr = for (ri <- r; rightSinki <- rightSink) yield ri.write(rightSinki)
+        val sinkl = for (li <- l; leftSinki <- leftSink)
+          yield li.write(leftSinki.asInstanceOf[P1#Sink[T]])
+        val sinkr = for (ri <- r; rightSinki <- rightSink)
+          yield ri.write(rightSinki.asInstanceOf[P2#Sink[T]])
         (sinkl, sinkr)
 
       case LeftJoinedProducer(producer, service) =>

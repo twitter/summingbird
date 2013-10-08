@@ -40,8 +40,10 @@ object MemoryLaws extends Properties("Memory") {
   def testGraph[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
     new TestGraphs[Memory, T, K, V](new Memory)(
       () => MutableMap.empty[K, V])(() => new BufferFunc[T])(
-      Memory.toSource(_))(s => { s.get(_) })({ (f, items) =>
-        f.asInstanceOf[BufferFunc[T]].buf.toList == items
+      Memory.toSource[T](_))(s => s.get(_))({ (f, items) => f match {
+          case bf: BufferFunc[T] => bf.buf == items
+          case _ => sys.error("unknown sink" + f)
+        }
       })({ (p: Memory, plan: Memory#Plan[_]) => p.run(plan) })
 
   /**

@@ -143,7 +143,7 @@ case class FlatMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], 
 
 case class MergedProducer[P <: Platform[P], T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
 
-case class WrittenProducer[P <: Platform[P], T, U >: T](producer: Producer[P, T], sink: P#Sink[U]) extends Producer[P, T]
+case class WrittenProducer[P <: Platform[P], T](producer: Producer[P, T], sink: P#Sink[T]) extends Producer[P, T]
 
 case class Summer[P <: Platform[P], K, V](
   producer: KeyedProducer[P, K, V],
