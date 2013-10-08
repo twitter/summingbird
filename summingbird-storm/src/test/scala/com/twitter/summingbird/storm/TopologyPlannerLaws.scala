@@ -112,7 +112,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     }
   }
 
-  property("The the last producer in any StormNode prior to a summer must be a KeyedProducer") = forAll { (dag: StormDag) =>
+  property("The last producer in any StormNode prior to a summer must be a KeyedProducer") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       val firstP = n.members.last
       firstP match {
@@ -188,5 +188,18 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   property("Nodes in the storm DAG should have unique names") = forAll { (dag: StormDag) =>
     val allNames = dag.nodes.toList.map{n => dag.getNodeName(n)}
     allNames.size == allNames.distinct.size
+  }
+
+  property("Can plan to a Storm Topology") = forAll { (dag: StormDag) => 
+    try {
+      Storm.local().plan(dag.tail)
+      true
+      } catch {
+        case e: Throwable =>
+        println(e)
+        e.printStackTrace
+        false
+      }
+
   }
 }

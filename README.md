@@ -100,7 +100,7 @@ Follow [@summingbird](https://twitter.com/summingbird) on Twitter for updates.
 
 ## Maven
 
-Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.1.5`.
+Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.2.1`.
 
 Current published artifacts are
 
@@ -110,8 +110,6 @@ Current published artifacts are
 * `summingbird-batch_2.10`
 * `summingbird-client_2.9.3`
 * `summingbird-client_2.10`
-* `summingbird-kryo_2.9.3`
-* `summingbird-kryo_2.10`
 * `summingbird-storm_2.9.3`
 * `summingbird-storm_2.10`
 * `summingbird-scalding_2.9.3`
