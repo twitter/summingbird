@@ -102,6 +102,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
             case WrittenProducer(_, sinkSupplier) => acc.andThen(FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])]))
             case IdentityKeyedProducer(_) => acc
+            case MergedProducer(_, _) => acc
             case NamedProducer(_, _) => acc
             case _ => throw new Exception("Not found! : " + p)
           }
