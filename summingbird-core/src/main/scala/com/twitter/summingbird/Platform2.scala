@@ -33,6 +33,11 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
   def apply[T](root: Producer[Platform2[P1, P2], T])
       : (Producer[P1, T], Producer[P2, T]) =
     root match {
+      case AlsoProducer(ensure, result) =>
+        val (le, re) = apply(ensure)
+        val (lr, rr) = apply(result)
+        (le.also(lr), re.also(rr))
+
       case NamedProducer(producer, id) =>
         val (l, r) = apply(producer)
         (l.name(id), r.name(id))
@@ -58,10 +63,14 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val (rl, rr) = apply(r)
         (ll.merge(rl), lr.merge(rr))
 
-      case WrittenProducer(producer, sink) =>
-        val (l, r) = apply(producer)
-        val (leftSink, rightSink) = sink
-        (l.write(leftSink), r.write(rightSink))
+      case written@WrittenProducer(_, _) =>
+        def handle[W](wp: WrittenProducer[Platform2[P1, P2], W]):
+        (Producer[P1,W], Producer[P2, W]) = {
+          val (l, r) = apply(wp.producer)
+          val (leftSink, rightSink) = wp.sink
+          (l.write(leftSink), r.write(rightSink))
+        }
+        handle(written)
 
       case LeftJoinedProducer(producer, service) =>
         val (l, r) = apply(producer)
@@ -82,10 +91,10 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
 class Platform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
     extends Platform[Platform2[P1, P2]] {
   // The type of the inputs for this platform
-  type Source[T] = (P1#Source[T], P2#Source[T])
-  type Store[K, V] = (P1#Store[K, V], P2#Store[K, V])
-  type Sink[T] = (P1#Sink[T], P2#Sink[T])
-  type Service[K, V] = (P1#Service[K, V], P2#Service[K, V])
+  type Source[+T] = (P1#Source[T], P2#Source[T])
+  type Store[-K, V] = (P1#Store[K, V], P2#Store[K, V])
+  type Sink[-T] = (P1#Sink[T], P2#Sink[T])
+  type Service[-K, +V] = (P1#Service[K, V], P2#Service[K, V])
   type Plan[T] = (P1#Plan[T], P2#Plan[T])
 
   def plan[T](producer: Producer[Platform2[P1, P2], T]): Plan[T] = {

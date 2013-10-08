@@ -163,7 +163,7 @@ class TestService[K, V](service: String,
 class TestSink[T] extends ScaldingSink[T] {
   private var data: Vector[(Long, T)] = Vector.empty
 
-  def write(incoming: PipeFactory[T]): PipeFactory[T] =
+  def write[U<:T](incoming: PipeFactory[U]): PipeFactory[U] =
     // three functors deep:
     incoming.map { state =>
       state.map { reader =>

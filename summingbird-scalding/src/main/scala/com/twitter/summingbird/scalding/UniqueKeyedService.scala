@@ -33,24 +33,30 @@ trait UniqueKeyedService[K, V] extends SimpleService[K, V] {
 
   /** Load the range of data to do a join */
   def readDateRange(requested: DateRange)(implicit flowDef: FlowDef, mode: Mode): TypedPipe[(K, V)]
-  def ordering: Ordering[K]
+  implicit def ordering: Ordering[K]
   def reducers: Option[Int]
 
   /** You can override this to use hashJoin for instance */
-  def doJoin[W](in: TypedPipe[(Time, (K, W))],
-    serv: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): TypedPipe[(Time, (K, (W, Option[V])))] = {
-      implicit val ord: Ordering[K] = ordering
+  def doJoin[K1<:K,W](in: TypedPipe[(Time, (K1, W))],
+    serv: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): TypedPipe[(Time, (K1, (W, Option[V])))] = {
+
+      implicit val ord: Ordering[K1] = ordering.asInstanceOf[Ordering[K1]]
+
       def withReducers[U, T](grouped: Grouped[U, T]) =
         reducers.map { grouped.withReducers(_) }.getOrElse(grouped)
 
       withReducers(in.map { case (t, (k, w)) => (k, (t, w)) }.group)
-        .leftJoin(withReducers(serv.group))
+        /**
+         * TODO: remove this cast with:
+         * https://github.com/twitter/scalding/issues/652
+         */
+        .leftJoin(withReducers(serv.group.asInstanceOf[Grouped[K1, V]]))
         .toTypedPipe
         .map { case (k, ((t, w), optV)) => (t, (k, (w, optV))) }
     }
 
-  final override def serve[W](covering: DateRange,
-    input: TypedPipe[(Long, (K, W))])(implicit flowDef: FlowDef, mode: Mode) =
+  final override def serve[K1<:K,W](covering: DateRange,
+    input: TypedPipe[(Long, (K1, W))])(implicit flowDef: FlowDef, mode: Mode) =
     doJoin(input, readDateRange(covering))
 }
 

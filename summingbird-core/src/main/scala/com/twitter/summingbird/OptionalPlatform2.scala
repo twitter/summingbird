@@ -26,6 +26,13 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
   def apply[T](root: Producer[OptionalPlatform2[P1, P2], T])
       : (Option[Producer[P1, T]], Option[Producer[P2, T]]) =
     root match {
+      case AlsoProducer(ensure, result) =>
+        val (le, re) = apply(ensure)
+        val (lr, rr) = apply(result)
+        val alsol = for (e <- le; r <- lr) yield e.also(r)
+        val alsor = for (e <- re; r <- rr) yield e.also(r)
+        (alsol, alsor)
+
       case NamedProducer(producer, id) =>
         val (l, r) = apply(producer)
         (l.map(_.name(id)), r.map(_.name(id)))
@@ -53,12 +60,19 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val mergedr = for (lri <- lr; rri <- rr) yield lri.merge(rri)
         (mergedl, mergedr)
 
-      case WrittenProducer(producer, sink) =>
-        val (l, r) = apply(producer)
-        val (leftSink, rightSink) = sink
-        val sinkl = for (li <- l; leftSinki <- leftSink) yield li.write(leftSinki)
-        val sinkr = for (ri <- r; rightSinki <- rightSink) yield ri.write(rightSinki)
-        (sinkl, sinkr)
+      case wp@WrittenProducer(_, _) =>
+        // Trick to deal with type inference
+        def handle[W](wp: WrittenProducer[OptionalPlatform2[P1, P2], W]):
+          (Option[Producer[P1,W]], Option[Producer[P2, W]]) = {
+          val (l, r) = apply(wp.producer)
+          val (leftSink, rightSink) = wp.sink
+          val sinkl = for (li <- l; leftSinki <- leftSink)
+            yield li.write(leftSinki)
+          val sinkr = for (ri <- r; rightSinki <- rightSink)
+            yield ri.write(rightSinki)
+          (sinkl, sinkr)
+        }
+        handle(wp)
 
       case LeftJoinedProducer(producer, service) =>
         val (l, r) = apply(producer)
@@ -83,10 +97,10 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
 class OptionalPlatform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
     extends Platform[OptionalPlatform2[P1, P2]] {
   // The type of the inputs for this platform
-  type Source[T] = (Option[P1#Source[T]], Option[P2#Source[T]])
-  type Store[K, V] = (Option[P1#Store[K, V]], Option[P2#Store[K, V]])
-  type Sink[T] = (Option[P1#Sink[T]], Option[P2#Sink[T]])
-  type Service[K, V] = (Option[P1#Service[K, V]], Option[P2#Service[K, V]])
+  type Source[+T] = (Option[P1#Source[T]], Option[P2#Source[T]])
+  type Store[-K, V] = (Option[P1#Store[K, V]], Option[P2#Store[K, V]])
+  type Sink[-T] = (Option[P1#Sink[T]], Option[P2#Sink[T]])
+  type Service[-K, +V] = (Option[P1#Service[K, V]], Option[P2#Service[K, V]])
   type Plan[T] = (Option[P1#Plan[T]], Option[P2#Plan[T]])
 
   override def plan[T](producer: Producer[OptionalPlatform2[P1, P2], T]): Plan[T] = {

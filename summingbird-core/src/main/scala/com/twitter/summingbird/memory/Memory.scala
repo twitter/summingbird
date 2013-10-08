@@ -21,13 +21,29 @@ import com.twitter.summingbird._
 import collection.mutable.{ Map => MutableMap }
 
 object Memory {
-  implicit def toSource[T](traversable: TraversableOnce[T])(implicit mf: Manifest[T]): Producer[Memory, T] =
+  implicit def toSource[T](traversable: TraversableOnce[T]): Producer[Memory, T] =
     Producer.source[Memory, T](traversable)
 }
 
+object MemoryStore {
+ implicit def apply[K,V](map: MutableMap[K, V]): MemoryStore[K, V] =
+   new MemoryStore(map)
+}
+
+class MemoryStore[-K, V](store: MutableMap[K, V]) {
+  def get[K1<:K](k: K1): Option[V] = store.get(k)
+  def merge[K1<:K](k: K1, deltaV: V, monoid: Monoid[V]): V = {
+    val newV = store.get(k)
+      .map { monoid.plus(_, deltaV) }
+      .getOrElse(deltaV)
+    store.update(k, newV)
+    newV
+  }
+}
+
 class Memory extends Platform[Memory] {
-  type Source[T] = TraversableOnce[T]
-  type Store[K, V] = MutableMap[K, V]
+  type Source[+T] = TraversableOnce[T]
+  type Store[-K, V] = MemoryStore[K, V]
   type Sink[-T] = (T => Unit)
   type Service[-K, +V] = (K => Option[V])
   type Plan[T] = Stream[T]
@@ -79,12 +95,7 @@ class Memory extends Platform[Memory] {
           case Summer(producer, store, monoid) =>
             val (s, m) = toStream(producer, jamfs)
             val summed = s.map {
-              case pair @ (k, deltaV) =>
-                val newV = store.get(k)
-                  .map { monoid.plus(_, deltaV) }
-                  .getOrElse(deltaV)
-                store.update(k, newV)
-                pair
+              case (k, deltaV) => (k, store.merge(k, deltaV, monoid))
             }
             (summed, m)
         }

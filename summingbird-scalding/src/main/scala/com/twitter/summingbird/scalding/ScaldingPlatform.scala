@@ -252,10 +252,10 @@ object Scalding {
    * but the output state gives the actual, non-empty, interval that can be produced
    */
   private def buildFlow[T](options: Map[String, Options],
-    producer: Producer[Scalding, T],
+    inproducer: Producer[Scalding, T],
     id: Option[String],
-    fanOuts: Set[Producer[Scalding, _]],
-    built: Map[Producer[Scalding, _], PipeFactory[_]]): (PipeFactory[T], Map[Producer[Scalding, _], PipeFactory[_]]) = {
+    fanOuts: Set[Producer[Scalding, Any]],
+    built: Map[Producer[Scalding, Any], PipeFactory[Any]]): (PipeFactory[T], Map[Producer[Scalding, Any], PipeFactory[Any]]) = {
 
     /**
      * The scalding Typed-API does not deal with TypedPipes with fanout,
@@ -268,17 +268,17 @@ object Scalding {
      * https://github.com/twitter/scalding/issues/513
      */
     def forceNode[U](p: PipeFactory[U]): PipeFactory[U] =
-      if(fanOuts(producer))
+      if(fanOuts(inproducer))
         p.map { flowP =>
           flowP.map { Scalding.forcePipe(_) }
         }
       else
         p
 
-    built.get(producer) match {
+    built.get(inproducer) match {
       case Some(pf) => (pf.asInstanceOf[PipeFactory[T]], built)
       case None =>
-        val (pf, m) = producer match {
+        val (pf, m) = inproducer match {
           case Source(src) => {
             val shards = getOrElse(options, id, FlatMapShards.default).count
             val srcPf = if (shards <= 1)
@@ -318,9 +318,13 @@ object Scalding {
              */
             val (pf, m) = buildFlow(options, left, id, fanOuts, built)
             (service.lookup(pf), m)
-          case WrittenProducer(producer, sink) =>
-            val (pf, m) = buildFlow(options, producer, id, fanOuts, built)
-            (sink.write(pf), m)
+          case wp@WrittenProducer(_, _) =>
+            /* Trick to get around buggy type inference */
+            def write[V](written: WrittenProducer[Scalding, V]) = {
+              val (pf, m) = buildFlow(options, written.producer, id, fanOuts, built)
+              (written.sink.write(pf), m)
+            }
+            write(wp)
           case OptionMappedProducer(producer, op) =>
             // Map in two monads here, first state then reader
             val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
@@ -374,7 +378,7 @@ object Scalding {
         }
         // Make sure that we end any chains of nodes at fanned out nodes:
         val res = memoize(forceNode(pf))
-        (res.asInstanceOf[PipeFactory[T]], m + (producer -> res))
+        (res.asInstanceOf[PipeFactory[T]], m + (inproducer -> res))
     }
   }
 
@@ -455,10 +459,10 @@ class Scalding(
   @transient options: Map[String, Options] = Map.empty)
     extends Platform[Scalding] {
 
-  type Source[T] = PipeFactory[T]
-  type Store[K, V] = ScaldingStore[K, V]
-  type Sink[T] = ScaldingSink[T]
-  type Service[K, V] = ScaldingService[K, V]
+  type Source[+T] = PipeFactory[T]
+  type Store[-K, V] = ScaldingStore[K, V]
+  type Sink[-T] = ScaldingSink[T]
+  type Service[-K, +V] = ScaldingService[K, V]
   type Plan[T] = PipeFactory[T]
 
   def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] =

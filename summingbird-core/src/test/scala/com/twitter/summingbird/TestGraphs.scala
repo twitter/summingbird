@@ -27,10 +27,13 @@ import org.scalacheck.Prop._
   */
 
 object TestGraphs {
+  // scalacheck eats exceptions, by default
+  def printEx[T](t: => T): T = try { t } catch { case th: Throwable => th.printStackTrace; throw th }
+
   def diamondJobInScala[T, K, V: Monoid]
     (source: TraversableOnce[T])
     (fnA: T => TraversableOnce[(K, V)])
-    (fnB: T => TraversableOnce[(K, V)]): Map[K, V] = {
+    (fnB: T => TraversableOnce[(K, V)]): Map[K, V] = printEx {
     val stream = source.toStream
     val left = stream.flatMap(fnA)
     val right = stream.flatMap(fnB)
@@ -40,7 +43,7 @@ object TestGraphs {
   def diamondJob[P <: Platform[P], T, K, V: Monoid]
     (source: Producer[P, T], sink: P#Sink[T], store: P#Store[K, V])
     (fnA: T => TraversableOnce[(K, V)])
-    (fnB: T => TraversableOnce[(K, V)]): Summer[P, K, V] = {
+    (fnB: T => TraversableOnce[(K, V)]): Summer[P, K, V] = printEx {
     val written = source.write(sink)
     val left = written.flatMap(fnA)
     val right = written.flatMap(fnB)
