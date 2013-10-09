@@ -138,14 +138,14 @@ object TestGraphGenerators {
   def genProd2[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], 
   									genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], 
   									testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[KeyedProducer[P, Int, Int]] = 
-  					frequency((25, genSource2.arbitrary), (3, genOptMap12), (3, genOptMap22), (4, genWrite22), (1, genMerged2), (2, also2),
-  							 (0, also2), (3, genFlatMap22), (3, genFlatMap12))
+  					frequency((25, genSource2.arbitrary), (3, genOptMap12), (3, genOptMap22), (4, genWrite22), (1, genMerged2), (1, also2),
+  							 (3, genFlatMap22), (3, genFlatMap12))
 
 
   def genProd1[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]],
   									 genSource2 : Arbitrary[KeyedProducer[P, Int, Int]],
   									 testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[Producer[P, Int]] = 
-  					frequency((25, genSource1.arbitrary), (8, genNamedProducer11), (3, genOptMap11), (3, genOptMap21), (1, genMerged1), (2, also1), (3, genFlatMap11),
-  							 (0, also1), (3, genFlatMap21))
+  					frequency((25, genSource1.arbitrary), (8, genNamedProducer11), (3, genOptMap11), (3, genOptMap21), (1, genMerged1), (1, also1), (3, genFlatMap11),
+  							 (3, genFlatMap21))
 
 }
