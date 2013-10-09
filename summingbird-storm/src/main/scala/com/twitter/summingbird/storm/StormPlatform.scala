@@ -104,6 +104,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             case IdentityKeyedProducer(_) => acc
             case MergedProducer(_, _) => acc
             case NamedProducer(_, _) => acc
+            case AlsoProducer(_, _) => acc
             case _ => throw new Exception("Not found! : " + p)
           }
       }
@@ -145,6 +146,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         case OptionMappedProducer(_, op) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
         case NamedProducer(_, _) => spout
         case IdentityKeyedProducer(_) => spout
+        case AlsoProducer(_, _) => spout
         case _ => sys.error("not possible, given the above call to span.\n" + p)
       }
     }.getSpout

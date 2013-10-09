@@ -88,12 +88,7 @@ object Producer {
   * in-progress TopologyBuilder.
   */
 sealed trait Producer[P <: Platform[P], +T] {
-  /** Ensure this is scheduled, but return something equivalent to the argument
-   * like the function `par` in Haskell.
-   * This can be used to combine two independent Producers in a way that ensures
-   * that the Platform will plan both into a single Plan.
-   */
-  def also[R](that: Producer[P, R]): Producer[P, R] = AlsoProducer(this, that)
+ 
   def name(id: String): Producer[P, T] = NamedProducer(this, id)
   def merge[U >: T](r: Producer[P, U]): Producer[P, U] = MergedProducer(this, r)
 
@@ -114,7 +109,7 @@ sealed trait Producer[P <: Platform[P], +T] {
   def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
     FlatMappedProducer[P, T, U](this, fn)
 
-  def write[U >: T](sink: P#Sink[U]): Producer[P, T] = WrittenProducer(this, sink)
+  def write[U >: T](sink: P#Sink[U]): TailProducer[P, T] = WrittenProducer(this, sink)
 
   def either[U](other: Producer[P, U]): Producer[P, Either[T, U]] =
     map(Left(_): Either[T, U])
@@ -124,11 +119,21 @@ sealed trait Producer[P <: Platform[P], +T] {
 case class Source[P <: Platform[P], T](source: P#Source[T])
     extends Producer[P, T]
 
+
+trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
+   /** Ensure this is scheduled, but return something equivalent to the argument
+   * like the function `par` in Haskell.
+   * This can be used to combine two independent Producers in a way that ensures
+   * that the Platform will plan both into a single Plan.
+   */
+  def also[R](that: Producer[P, R]): Producer[P, R] = AlsoProducer(this, that)
+}
+
 /**
  * This is a special node that ensures that the first argument is planned, but produces values
  * equivalent to the result.
  */
-case class AlsoProducer[P <: Platform[P], T, R](ensure: Producer[P, T], result: Producer[P, R]) extends Producer[P, R]
+case class AlsoProducer[P <: Platform[P], T, R](ensure: TailProducer[P, T], result: Producer[P, R]) extends Producer[P, R]
 
 case class NamedProducer[P <: Platform[P], T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
@@ -143,12 +148,12 @@ case class FlatMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], 
 
 case class MergedProducer[P <: Platform[P], T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
 
-case class WrittenProducer[P <: Platform[P], T, U >: T](producer: Producer[P, T], sink: P#Sink[U]) extends Producer[P, T]
+case class WrittenProducer[P <: Platform[P], T, U >: T](producer: Producer[P, T], sink: P#Sink[U]) extends TailProducer[P, T]
 
 case class Summer[P <: Platform[P], K, V](
   producer: KeyedProducer[P, K, V],
   store: P#Store[K, V],
-  monoid: Monoid[V]) extends KeyedProducer[P, K, V]
+  monoid: Monoid[V]) extends KeyedProducer[P, K, V] with TailProducer[P, (K, V)]
 
 sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def leftJoin[RightV](service: P#Service[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =

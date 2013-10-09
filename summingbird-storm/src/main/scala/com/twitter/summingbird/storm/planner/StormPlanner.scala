@@ -37,9 +37,9 @@ object DagBuilder {
 
   // This takes an initial pass through all of the Producers, assigning them to Nodes
   private def buildNodesSet[P](tail: Producer[Storm, P]): List[StormNode] = {
-    val dep = Dependants(tail)
+    val depData = Dependants(tail)
     val forkedNodes = Producer.transitiveDependenciesOf(tail)
-                        .filter(dep.fanOut(_).exists(_ > 1)).toSet
+                        .filter(depData.fanOut(_).exists(_ > 1)).toSet
     def distinctAddToList[T](l : List[T], n : T): List[T] = if(l.contains(n)) l else (n :: l)
 
     // Add the dependentProducer to a Node along with each of its dependencies in turn.
@@ -66,9 +66,14 @@ object DagBuilder {
             case IdentityKeyedProducer(producer) => true
             case OptionMappedProducer(producer, _) => true
             case Source(_) => true
+            case AlsoProducer(_, _) => true
             case _ => false
           }
         }
+
+        def hasSummerAsNextProducer(p: Prod[_]): Boolean = 
+              depData.dependantsOf(p).get.collect { case s: Summer[_, _, _] => s }.headOption.isDefined
+        
 
         def allDepsMergeableWithSource(p: Prod[_]): Boolean = mergableWithSource(p) && Producer.dependenciesOf(p).forall(allDepsMergeableWithSource)
 
@@ -85,7 +90,7 @@ object DagBuilder {
             case _ if (forkedNodes.contains(dep)) => true
             // If we are a flatmap, but there haven't been any other flatmaps yet(i.e. the registry is of size 1, the summer).
             // Then we must split to avoid a 2 level higherarchy
-            case _ if (currentBolt.isInstanceOf[FlatMapNode[_]] && stormRegistry.size == 1 && allDepsMergeableWithSource(dep)) => true
+            case _ if (currentBolt.isInstanceOf[FlatMapNode[_]] && hasSummerAsNextProducer(currentProducer) && allDepsMergeableWithSource(dep)) => true
             case _ if ((!mergableWithSource(currentProducer)) && allDepsMergeableWithSource(dep)) => true
             case _ => false
           }
@@ -95,6 +100,8 @@ object DagBuilder {
             recurse(dep)
           }
         }
+
+
 
         /*
          * This is a peek ahead when we meet a MergedProducer. We pull the directly depended on MergedProducer's into the same Node,
@@ -120,6 +127,9 @@ object DagBuilder {
           case Summer(producer, _, _) => recurse(producer, updatedBolt = FlatMapNode(), updatedRegistry = distinctAddToList(stormRegistry, currentBolt.toSummer))
           case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
           case NamedProducer(producer, newId) => maybeSplitThenRecurse(dependantProducer, producer)
+          case AlsoProducer(lProducer, rProducer) => 
+                val (updatedReg, updatedVisited) = maybeSplitThenRecurse(dependantProducer, rProducer)
+                recurse(lProducer, FlatMapNode(), updatedReg, updatedVisited)
           case Source(spout) => (distinctAddToList(stormRegistry, currentBolt.toSource), visitedWithN)
           case OptionMappedProducer(producer, op) => maybeSplitThenRecurse(dependantProducer, producer)
           case FlatMappedProducer(producer, op)  => maybeSplitThenRecurse(dependantProducer, producer)

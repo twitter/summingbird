@@ -133,28 +133,32 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   
 
   property("All producers are in a StormNode") = forAll { (dag: StormDag) =>
-    val allProducers = Producer.transitiveDependenciesOf(dag.tail).toSet + dag.tail
+    val allProducers = Producer.entireGraphOf(dag.tail).toSet + dag.tail
     val numAllProducersInDag = dag.nodes.foldLeft(0){(sum, n) => sum + n.members.size}
     allProducers.size == numAllProducersInDag
   }
 
   property("Only spouts can have no incoming dependencies") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
-      n match {
+      val success = n match {
         case _: SourceNode[_] => true
         case _ => dag.dependenciesOf(n).size > 0
       }
+      if(!success) dumpGraph(dag)
+      success 
     }
   }
 
 
   property("Spouts must have no incoming dependencies, and they must have dependants") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
-      n match {
+      val success = n match {
         case _: SourceNode[_] => 
           dag.dependenciesOf(n).size == 0 && dag.dependantsOf(n).size > 0
         case _ => true
       }
+      if(!success) dumpGraph(dag)
+      success 
     }
   }
 
@@ -196,6 +200,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
       true
       } catch {
         case e: Throwable =>
+        dumpGraph(dag)
         println(e)
         e.printStackTrace
         false

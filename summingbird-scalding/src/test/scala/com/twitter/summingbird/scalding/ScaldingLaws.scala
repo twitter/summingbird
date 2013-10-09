@@ -244,6 +244,37 @@ object ScaldingLaws extends Properties("Scalding") {
       Monoid.isNonZero(Group.minus(inMemory, smap)) == false
     }
 
+
+  property("ScaldingPlatform matches Scala for multiple summer jobs, with everything in one Batch") =
+    forAll { (original: List[Int], fnA:(Int) => List[(Int)], fnB: (Int) => List[(Int, Int)], fnC: (Int) => List[(Int, Int)]) =>
+      val (inMemoryA, inMemoryB) = TestGraphs.multipleSummerJobInScala(original)(fnA, fnB, fnC)
+
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = simpleBatcher
+      import Dsl._ // Won't be needed in scalding 0.9.0
+      val testStoreA = new TestStore[Int,Int]("testA", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val testStoreB = new TestStore[Int,Int]("testB", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val (buffer, source) = testSource(inWithTime)
+
+      val tail = TestGraphs.multipleSummerJob[Scalding, (Long, Int), Int, Int, Int, Int, Int](source, testStoreA, testStoreB)({t => fnA(t._2)}, fnB, fnC)
+
+      val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
+      val scald = new Scalding("scalaCheckMultipleSumJob")
+      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val mode: Mode = TestMode(t => (testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(t))
+
+      scald.run(ws, mode, scald.plan(tail))
+      // Now check that the inMemory ==
+
+      val smapA = testStoreA.lastToIterable(BatchID(1)).toMap
+      Monoid.isNonZero(Group.minus(inMemoryB, smapA)) == false
+
+      val smapB = testStoreB.lastToIterable(BatchID(1)).toMap
+      Monoid.isNonZero(Group.minus(inMemoryB, smapB)) == false
+    }
+
+
   property("ScaldingPlatform matches Scala for leftJoin jobs, with everything in one Batch") =
     forAll { (original: List[Int],
       prejoinMap: (Int) => List[(Int, Int)],

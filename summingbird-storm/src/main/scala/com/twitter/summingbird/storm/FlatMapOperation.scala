@@ -27,6 +27,12 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
 
   override def close { }
 
+  /* 
+   * maybeFlush may be periodically called to empty any internal state
+   * Not used yet so commented out
+   */
+  def maybeFlush: Future[TraversableOnce[U]] = Future.value(Seq.empty[U]) 
+
   /**
     * TODO: Think about getting an implicit FutureCollector here, in
     * case we don't want to completely choke on large expansions (and
@@ -42,6 +48,17 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
         Future.collect(next).map(_.flatten) // flatten the inner
       }
 
+      override def maybeFlush = {
+        self.maybeFlush.flatMap{ x: TraversableOnce[U] => 
+          val z: Seq[Future[TraversableOnce[V]]] = x.map(fmo.apply(_)).toSeq
+          val w: Future[Seq[V]] = Future.collect(z).map(_.flatten)
+          for { 
+                ws <- w
+                maybes <- fmo.maybeFlush
+                maybeSeq = maybes.toSeq
+              } yield ws ++ maybeSeq
+        }
+      }
       override def close { self.close; fmo.close }
     }
   }
