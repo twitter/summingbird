@@ -119,6 +119,17 @@ object StormLaws extends Specification {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
+  def genStore: (String, Storm#Store[Int, Int])  = {
+    val id = UUID.randomUUID.toString
+    globalState += (id -> TestState())
+    val store = MergeableStoreSupplier(() => testingStore(id), Batcher.unit)
+    (id, store)
+  }
+
+  def genSink:() => ((Int) => Future[Unit]) = () => {x: Int =>
+      append(x)
+      Future.Unit
+    }
   /**
     * Perform a single run of TestGraphs.singleStepJob using the
     * supplied list of integers and the testFn defined above.
@@ -187,6 +198,17 @@ object StormLaws extends Specification {
     StormLaws.outputList.toList
   }
 
+
+
+  val nextFn = { pair: ((Int, (Int, Option[Int]))) =>
+    val (k, (v, joinedV)) = pair
+    List((k -> joinedV.getOrElse(10)))
+  }
+
+  val serviceFn = Arbitrary.arbitrary[Int => Option[Int]].sample.get
+  val service = StoreWrapper[Int, Int](() => ReadableStore.fromFn(serviceFn))
+
+
   "StormPlatform matches Scala for single step jobs" in {
     val original = sample[List[Int]]
     val (fn, returnedState) =
@@ -199,15 +221,6 @@ object StormLaws extends Specification {
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
   }
-
-  val nextFn = { pair: ((Int, (Int, Option[Int]))) =>
-    val (k, (v, joinedV)) = pair
-    List((k -> joinedV.getOrElse(10)))
-  }
-
-  val serviceFn = Arbitrary.arbitrary[Int => Option[Int]].sample.get
-  val service = StoreWrapper[Int, Int](() => ReadableStore.fromFn(serviceFn))
-
   "StormPlatform matches Scala for left join jobs" in {
     val original = sample[List[Int]]
 
@@ -266,7 +279,7 @@ object StormLaws extends Specification {
     stormOutputList must_==(memoryOutputList)
   }
 
-    "StormPlatform matches Scala for MapOnly/NoSummer with dangling FM" in {
+  "StormPlatform matches Scala for MapOnly/NoSummer with dangling FM" in {
     val original = sample[List[Int]]
     val doubler = {x: Int => List(x*2)}
 
@@ -278,6 +291,44 @@ object StormLaws extends Specification {
       memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
     
     stormOutputList must_==(memoryOutputList)
+  }
+
+  "StormPlatform with multiple summers" in {
+    val original = List(1, 2, 3, 45) // sample[List[Int]]
+    val doubler = {(x): (Int) => List((x -> x*2))}
+    val simpleOp = {(x): (Int) => List(x * 10)}
+
+    val source = Storm.source(TraversableSpout(original))
+    val (store1Id, store1) = genStore
+    val (store2Id, store2) = genStore
+
+    val tail = TestGraphs.multipleSummerJob[Storm, Int, Int, Int, Int, Int, Int](source, store1, store2)(simpleOp, doubler, doubler)
+
+    val topo = storm.plan(tail)
+  
+    val cluster = new LocalCluster()
+    Testing.completeTopology(cluster, topo, completeTopologyParam)
+    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
+    Thread.sleep(1000)
+    cluster.shutdown
+
+    val (scalaA, scalaB) = TestGraphs.multipleSummerJobInScala(original)(simpleOp, doubler, doubler)
+
+    val store1Map = globalState(store1Id).store.asScala.toMap
+    val store2Map = globalState(store2Id).store.asScala.toMap
+    Equiv[Map[Int, Int]].equiv(
+      scalaA,
+      store1Map
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
+
+    Equiv[Map[Int, Int]].equiv(
+      scalaB,
+      store2Map
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
+
+
   }
 
 }
