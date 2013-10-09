@@ -19,7 +19,7 @@ package com.twitter.summingbird.storm
 import backtype.storm.task.{OutputCollector, TopologyContext}
 import backtype.storm.tuple.Tuple
 import com.twitter.algebird.{Monoid, SummingQueue}
-import com.twitter.chill.MeatLocker
+import com.twitter.chill.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.storm.option._
@@ -58,7 +58,7 @@ class SinkBolt[Key, Value: Monoid](
   includeSuccessHandler: IncludeSuccessHandler) extends BaseBolt(metrics.metrics) {
   import Constants._
 
-  val storeBox = MeatLocker(storeSupplier)
+  val storeBox = Externalizer(storeSupplier)
   lazy val store = storeBox.get.apply
 
   // See MaxWaitingFutures for a todo around removing this.
@@ -66,8 +66,8 @@ class SinkBolt[Key, Value: Monoid](
   lazy val buffer = SummingQueue[Map[(Key, BatchID), Value]](cacheCount.getOrElse(0))
   lazy val futureQueue = FutureQueue(Future.Unit, maxWaitingFutures.get)
 
-  val exceptionHandlerBox = MeatLocker(exceptionHandler)
-  val successHandlerBox = MeatLocker(successHandler)
+  val exceptionHandlerBox = Externalizer(exceptionHandler)
+  val successHandlerBox = Externalizer(successHandler)
 
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 

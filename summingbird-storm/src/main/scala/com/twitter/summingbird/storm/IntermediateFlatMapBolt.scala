@@ -17,7 +17,7 @@
 package com.twitter.summingbird.storm
 
 import backtype.storm.tuple.{Fields, Tuple, Values}
-import com.twitter.chill.MeatLocker
+import com.twitter.chill.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.storm.option.{ AnchorTuples, FlatMapStormMetrics }
 
@@ -36,7 +36,7 @@ class IntermediateFlatMapBolt[T](
   anchor: AnchorTuples,
   shouldEmit: Boolean) extends BaseBolt(metrics.metrics) {
 
-  val lockedOp = MeatLocker(flatMapOp)
+  val lockedOp = Externalizer(flatMapOp)
 
   def toValues(time: Long, item: Any): Values = new Values((time, item))
 
