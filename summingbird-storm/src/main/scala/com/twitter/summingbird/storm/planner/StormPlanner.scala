@@ -71,12 +71,9 @@ object DagBuilder {
           }
         }
 
-        def hasSummerAsNextProducer(p: Prod[_]): Boolean = {
-          depData.dependantsOf(p).get.collect { case s: Summer[_, _, _] => s }.headOption match {
-            case Some(_) => true
-            case None => false
-          }
-        }
+        def hasSummerAsNextProducer(p: Prod[_]): Boolean = 
+              depData.dependantsOf(p).get.collect { case s: Summer[_, _, _] => s }.headOption.isDefined
+        
 
         def allDepsMergeableWithSource(p: Prod[_]): Boolean = mergableWithSource(p) && Producer.dependenciesOf(p).forall(allDepsMergeableWithSource)
 
