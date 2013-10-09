@@ -166,7 +166,7 @@ object Dag {
 
     def tryGetName(name: String, seen: Set[String], indxOpt: Option[Int] = None): String = {
       indxOpt match {
-        case None => if (seen.contains(name)) tryGetName(name, seen, Some(1)) else name
+        case None => if (seen.contains(name)) tryGetName(name, seen, Some(2)) else name
         case Some(indx) => if (seen.contains(name + "." + indx)) tryGetName(name, seen, Some(indx + 1)) else name + "." + indx
       }
     }
@@ -183,7 +183,20 @@ object Dag {
       }
     }
 
-    val (nodeToName, _) = genNames(dag.tailN, dag, Map(dag.tailN -> "Tail"), Set("Tail"))
+    def allTails(dag: Dag[P]): List[Node[P]] = {
+      dag.nodes.filter{m => dag.dependantsOf(m).size == 0 }
+    }
+
+    //start with the true tail
+    val (nodeToName, _) = (dag.tailN :: allTails(dag)).foldLeft((Map[Node[P], String](), Set[String]())) { case ((nodeToName, usedNames), curTail) =>
+      if(!nodeToName.contains(curTail)) {
+        val tailN = tryGetName("Tail", usedNames)
+        genNames(curTail, dag, nodeToName + (curTail -> tailN), usedNames + tailN)
+        } else {
+          (nodeToName, usedNames)
+        }
+    }
+
     val nameToNode = nodeToName.map((t) => (t._2, t._1))
     dag.copy(nodeToName = nodeToName, nameToNode = nameToNode)
   }
