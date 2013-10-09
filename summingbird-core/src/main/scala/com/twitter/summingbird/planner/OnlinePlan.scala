@@ -24,9 +24,9 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
   private type CNode = Node[P]
   private type CFlatMapNode = FlatMapNode[P] 
 
-  private val dep = Dependants(tail)
+  private val depData = Dependants(tail)
   private val forkedNodes = Producer.transitiveDependenciesOf(tail)
-                        .filter(dep.fanOut(_).exists(_ > 1)).toSet
+                        .filter(depData.fanOut(_).exists(_ > 1)).toSet
   private def distinctAddToList[T](l : List[T], n : T): List[T] = if(l.contains(n)) l else (n :: l)
 
   private def mergableWithSource(dep: Producer[P, _]): Boolean = {
@@ -35,9 +35,13 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       case IdentityKeyedProducer(producer) => true
       case OptionMappedProducer(producer, _) => true
       case Source(_) => true
+      case AlsoProducer(_, _) => true
       case _ => false
     }
   } 
+
+  private def hasSummerAsNextProducer(p: Prod[_]): Boolean = 
+            depData.dependantsOf(p).get.collect { case s: Summer[_, _, _] => s }.headOption.isDefined
 
   private def allDepsMergeableWithSource(p: Prod[_]): Boolean = mergableWithSource(p) && Producer.dependenciesOf(p).forall(allDepsMergeableWithSource)
 
@@ -73,7 +77,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
           case _ if (forkedNodes.contains(dep)) => true
           // If we are a flatmap, but there haven't been any other flatmaps yet(i.e. the registry is of size 1, the summer).
           // Then we must split to avoid a 2 level higherarchy
-          case _ if (currentBolt.isInstanceOf[FlatMapNode[_]] && akkaRegistry.size == 1 && allDepsMergeableWithSource(dep)) => true
+          case _ if (currentBolt.isInstanceOf[FlatMapNode[_]] && hasSummerAsNextProducer(currentProducer) && allDepsMergeableWithSource(dep)) => true
           case _ if ((!mergableWithSource(currentProducer)) && allDepsMergeableWithSource(dep)) => true
           case _ => false
         }
@@ -108,6 +112,9 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
         case Summer(producer, _, _) => recurse(producer, updatedBolt = FlatMapNode(), updatedRegistry = distinctAddToList(akkaRegistry, currentBolt.toSummer))
         case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
         case NamedProducer(producer, newId) => maybeSplitThenRecurse(dependantProducer, producer)
+        case AlsoProducer(lProducer, rProducer) => 
+              val (updatedReg, updatedVisited) = maybeSplitThenRecurse(dependantProducer, rProducer)
+              recurse(lProducer, FlatMapNode(), updatedReg, updatedVisited)
         case Source(spout) => (distinctAddToList(akkaRegistry, currentBolt.toSource), visitedWithN)
         case OptionMappedProducer(producer, op) => maybeSplitThenRecurse(dependantProducer, producer)
         case FlatMappedProducer(producer, op)  => maybeSplitThenRecurse(dependantProducer, producer)
