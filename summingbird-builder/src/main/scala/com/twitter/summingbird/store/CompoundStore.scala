@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.store
 
-import com.twitter.chill.MeatLocker
+import com.twitter.chill.Externalizer
 import com.twitter.storehaus.ReadableStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.BatchID
@@ -33,8 +33,7 @@ class CompoundStore[K, V] private (
   @transient offline: Option[BatchedScaldingStore[K, V]],
   online: Option[() => MergeableStore[(K, BatchID), V]])
     extends Serializable {
-  // MeatLocker these to protect them from serialization errors.
-  private val offlineBox = MeatLocker(offline)
+  private val offlineBox = Externalizer(offline)
   def offlineStore: Option[BatchedScaldingStore[K, V]] = offlineBox.get
   def onlineSupplier: Option[() => MergeableStore[(K, BatchID), V]] = online
 }
