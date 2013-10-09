@@ -173,8 +173,6 @@ object AkkaLaws extends Specification {
           .sumByKey(Akka.store(testingStore(id)))
   
       runJob(producer)
-      println(globalState(id).store.asScala
-            .toMap)
       Equiv[Map[Int, Int]].equiv(
           MapAlgebra.sumByKey(original.filter(_ % 2 == 0).map(_ -> 10)),
           globalState(id).store.asScala
