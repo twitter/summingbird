@@ -215,7 +215,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
 
-    val stormDag = DagBuilder(tail)
+    val stormDag = OnlinePlan(tail)
 
     stormDag.nodes.foreach { node =>
       node match {

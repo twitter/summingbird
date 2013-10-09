@@ -14,16 +14,13 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.online
 
-import com.twitter.storehaus.JMapStore
-import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.planner._
-import com.twitter.summingbird.storm.planner._
-import com.twitter.summingbird.batch.{BatchID, Batcher}
-import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.util.Future
+import com.twitter.summingbird.memory.Memory
+import scala.collection.mutable.{Map => MMap}
 import org.scalacheck._
 import Gen._
 import Arbitrary._
@@ -31,27 +28,27 @@ import org.scalacheck.Prop._
 
 
 
-object TopologyPlannerLaws extends Properties("StormDag") {
+object TopologyPlannerLaws extends Properties("Online Dag") {
 
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
-  implicit val batcher = Batcher.unit
-  private type StormDag = Dag[Storm]
+  private type MemoryDag = Dag[Memory]
 
   import TestGraphGenerators._
-  implicit def sink1: Storm#Sink[Int] = (() => ((_) => Future.Unit))
-  implicit def sink2: Storm#Sink[(Int, Int)] = (() => ((_) => Future.Unit))
 
-  implicit def testStore: Storm#Store[Int, Int] = MergeableStoreSupplier.from {MergeableStore.fromStore[(Int, BatchID), Int](new JMapStore[(Int, BatchID), Int]())}
+  implicit def sink1: Memory#Sink[Int] =  {x: Int => x}
+  implicit def sink2: Memory#Sink[(Int, Int)] =  {x: (Int, Int) => x}
 
-  implicit def arbSource1: Arbitrary[Producer[Storm, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[Int]).map{x: List[Int] =>  Storm.source(TraversableSpout(x))})
-  implicit def arbSource2: Arbitrary[KeyedProducer[Storm, Int, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[(Int, Int)]).map{x: List[(Int, Int)] => IdentityKeyedProducer(Storm.source(TraversableSpout(x)))})
+  implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
+
+  implicit def arbSource1: Arbitrary[Producer[Memory, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[Int]).map{x: List[Int] =>  Memory.toSource(x)})
+  implicit def arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[(Int, Int)]).map{x: List[(Int, Int)] => IdentityKeyedProducer(Memory.toSource(x))})
 
   
-  lazy val genDag : Gen[StormDag]= for {
+  lazy val genDag : Gen[MemoryDag]= for {
     tail <- summed 
-  } yield DagBuilder(tail)
+  } yield OnlinePlan(tail)
 
-  implicit def genProducer: Arbitrary[StormDag] = Arbitrary(genDag)
+  implicit def genProducer: Arbitrary[MemoryDag] = Arbitrary(genDag)
 
 
   
@@ -60,7 +57,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
   var dumpNumber = 1
-  def dumpGraph(dag: StormDag) = {
+  def dumpGraph(dag: MemoryDag) = {
     import java.io._
     import com.twitter.summingbird.viz.VizGraph
     val writer2 = new PrintWriter(new File("/tmp/failingGraph" + dumpNumber + ".dot"))
@@ -69,17 +66,17 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     dumpNumber = dumpNumber + 1
   }
 
-  property("Dag Nodes must be unique") = forAll { (dag: StormDag) =>
+  property("Dag Nodes must be unique") = forAll { (dag: MemoryDag) =>
     dag.nodes.size == dag.nodes.toSet.size
   }
 
-  property("Must have at least one producer in each StormNode") = forAll { (dag: StormDag) =>
+  property("Must have at least one producer in each MemoryNode") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       n.members.size > 0
     }
   }
 
-  property("If a StormNode contains a Summer, it must be the first Producer in that StormNode") = forAll { (dag: StormDag) =>
+  property("If a MemoryNode contains a Summer, it must be the first Producer in that MemoryNode") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       val firstP = n.members.last
       n.members.forall{p =>
@@ -90,7 +87,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     }
   }
 
-  property("The first producer in a storm node cannot be a NamedProducer") = forAll { (dag: StormDag) =>
+  property("The first producer in a online node cannot be a NamedProducer") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       val inError = n.members.last.isInstanceOf[NamedProducer[_, _]]
       if(inError) dumpGraph(dag)
@@ -98,7 +95,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     }
   }
 
-  property("0 or more merge producers at the start of every storm bolts, followed by 1+ non-merge producers and no other merge producers following those.") = forAll { (dag: StormDag) =>
+  property("0 or more merge producers at the start of every online bolts, followed by 1+ non-merge producers and no other merge producers following those.") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       val (_, inError) = n.members.foldLeft((false, false)) { case ((seenMergeProducer, inError), producer) =>
         producer match {
@@ -112,7 +109,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     }
   }
 
-  property("The last producer in any StormNode prior to a summer must be a KeyedProducer") = forAll { (dag: StormDag) =>
+  property("The last producer in any online prior to a summer must be a KeyedProducer") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       val firstP = n.members.last
       firstP match {
@@ -125,20 +122,20 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     }
   }
 
-  property("No producer is repeated") = forAll { (dag: StormDag) =>
+  property("No producer is repeated") = forAll { (dag: MemoryDag) =>
     val numAllProducers = dag.nodes.foldLeft(0){(sum, n) => sum + n.members.size}
-    val allProducersSet = dag.nodes.foldLeft(Set[Producer[Storm, _]]()){(runningSet, n) => runningSet | n.members.toSet}
+    val allProducersSet = dag.nodes.foldLeft(Set[Producer[Memory, _]]()){(runningSet, n) => runningSet | n.members.toSet}
     numAllProducers == allProducersSet.size
   }
   
 
-  property("All producers are in a StormNode") = forAll { (dag: StormDag) =>
+  property("All producers are in a Node") = forAll { (dag: MemoryDag) =>
     val allProducers = Producer.entireGraphOf(dag.tail).toSet + dag.tail
     val numAllProducersInDag = dag.nodes.foldLeft(0){(sum, n) => sum + n.members.size}
     allProducers.size == numAllProducersInDag
   }
 
-  property("Only spouts can have no incoming dependencies") = forAll { (dag: StormDag) =>
+  property("Only sources can have no incoming dependencies") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       val success = n match {
         case _: SourceNode[_] => true
@@ -150,7 +147,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   }
 
 
-  property("Spouts must have no incoming dependencies, and they must have dependants") = forAll { (dag: StormDag) =>
+  property("Sources must have no incoming dependencies, and they must have dependants") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       val success = n match {
         case _: SourceNode[_] => 
@@ -163,7 +160,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   }
 
 
-  property("Prior to a summer the StormNode should be a FinalFlatMapStormBolt") = forAll { (dag: StormDag) =>
+  property("Prior to a summer the Nonde should be a FlatMap Node") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       val firstP = n.members.last
       val success = firstP match {
@@ -178,7 +175,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     }
   }
 
-  property("There should be no flatmap producers in the source node") = forAll { (dag: StormDag) =>
+  property("There should be no flatmap producers in the source node") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       val success = n match {
         case n: SourceNode[_] => n.members.forall{p => !p.isInstanceOf[FlatMappedProducer[_, _, _]]}
@@ -189,7 +186,7 @@ object TopologyPlannerLaws extends Properties("StormDag") {
     }
   }
 
-  property("Nodes in the storm DAG should have unique names") = forAll { (dag: StormDag) =>
+  property("Nodes in the DAG should have unique names") = forAll { (dag: MemoryDag) =>
     val allNames = dag.nodes.toList.map{n => dag.getNodeName(n)}
     allNames.size == allNames.distinct.size
   }
