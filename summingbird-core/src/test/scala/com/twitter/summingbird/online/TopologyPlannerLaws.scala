@@ -18,7 +18,6 @@ package com.twitter.summingbird.online
 
 import com.twitter.summingbird._
 import com.twitter.summingbird.planner._
-import com.twitter.util.Future
 import com.twitter.summingbird.memory.Memory
 import scala.collection.mutable.{Map => MMap}
 import org.scalacheck._
@@ -191,17 +190,4 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     allNames.size == allNames.distinct.size
   }
 
-  property("Can plan to a Storm Topology") = forAll { (dag: StormDag) => 
-    try {
-      Storm.local().plan(dag.tail)
-      true
-      } catch {
-        case e: Throwable =>
-        dumpGraph(dag)
-        println(e)
-        e.printStackTrace
-        false
-      }
-
-  }
 }
