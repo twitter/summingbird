@@ -33,6 +33,11 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
   def apply[T](root: Producer[Platform2[P1, P2], T])
       : (Producer[P1, T], Producer[P2, T]) =
     root match {
+      case AlsoProducer(ensure, result) =>
+        val (le, re) = apply(ensure)
+        val (lr, rr) = apply(result)
+        (le.also(lr), re.also(rr))
+
       case NamedProducer(producer, id) =>
         val (l, r) = apply(producer)
         (l.name(id), r.name(id))
