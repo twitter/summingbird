@@ -49,7 +49,7 @@ object StormPlanTopology extends Properties("StormDag") {
   
   lazy val genDag : Gen[StormDag]= for {
     tail <- summed 
-  } yield DagBuilder(tail)
+  } yield OnlinePlan(tail)
 
   implicit def genProducer: Arbitrary[StormDag] = Arbitrary(genDag)
 
