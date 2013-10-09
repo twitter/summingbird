@@ -193,8 +193,10 @@ class LoopState[T](init: Interval[T]) extends WaitingState[T] { self =>
   }
 }
 
-object ScaldingLaws extends Properties("Scalding") {
+object ScaldingLaws extends Specification {
   import MapAlgebra.sparseEquiv
+
+  def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
   def testSource[T](iter: Iterable[T])
     (implicit mf: Manifest[T], te: TimeExtractor[T], tc: TupleConverter[T], tset: TupleSetter[T]):
@@ -219,8 +221,11 @@ object ScaldingLaws extends Properties("Scalding") {
     }
   }
 
-  property("ScaldingPlatform matches Scala for single step jobs, with everything in one Batch") =
-    forAll { (original: List[Int], fn: (Int) => List[(Int, Int)]) =>
+  "The ScaldingPlatform" should {
+    //Set up the job:
+    "match scala for single step jobs" in {
+      val original = sample[List[Int]]
+      val fn = sample[(Int) => List[(Int, Int)]]
       val inMemory = TestGraphs.singleStepInScala(original)(fn)
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
@@ -241,15 +246,48 @@ object ScaldingLaws extends Properties("Scalding") {
       // Now check that the inMemory ==
 
       val smap = testStore.lastToIterable(BatchID(1)).toMap
-      Monoid.isNonZero(Group.minus(inMemory, smap)) == false
+      Monoid.isNonZero(Group.minus(inMemory, smap)) must be(false)
     }
 
-  property("ScaldingPlatform matches Scala for leftJoin jobs, with everything in one Batch") =
-    forAll { (original: List[Int],
-      prejoinMap: (Int) => List[(Int, Int)],
-      service: (Int,Int) => Option[Int],
-      postJoin: ((Int, (Int, Option[Int]))) => List[(Int, Int)]) =>
 
+    "match scala for multiple summer jobs" in {
+      val original = sample[List[Int]]
+      val fnA = sample[(Int) => List[(Int)]]
+      val fnB = sample[(Int) => List[(Int, Int)]]
+      val fnC = sample[(Int) => List[(Int, Int)]]
+      val (inMemoryA, inMemoryB) = TestGraphs.multipleSummerJobInScala(original)(fnA, fnB, fnC)
+
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = simpleBatcher
+      import Dsl._ // Won't be needed in scalding 0.9.0
+      val testStoreA = new TestStore[Int,Int]("testA", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val testStoreB = new TestStore[Int,Int]("testB", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val (buffer, source) = testSource(inWithTime)
+
+      val tail = TestGraphs.multipleSummerJob[Scalding, (Long, Int), Int, Int, Int, Int, Int](source, testStoreA, testStoreB)({t => fnA(t._2)}, fnB, fnC)
+
+      val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
+      val scald = new Scalding("scalaCheckMultipleSumJob")
+      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val mode: Mode = TestMode(t => (testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(t))
+
+      scald.run(ws, mode, scald.plan(tail))
+      // Now check that the inMemory ==
+
+      val smapA = testStoreA.lastToIterable(BatchID(1)).toMap
+      Monoid.isNonZero(Group.minus(inMemoryA, smapA)) must be(false)
+
+      val smapB = testStoreB.lastToIterable(BatchID(1)).toMap
+      Monoid.isNonZero(Group.minus(inMemoryB, smapB)) must be(false)
+    }
+
+
+    "match scala for leftJoin jobs" in {
+      val original = sample[List[Int]]
+      val prejoinMap = sample[(Int) => List[(Int, Int)]]
+      val service = sample[(Int,Int) => Option[Int]]
+      val postJoin = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
       // We need to keep track of time correctly to use the service
       var fakeTime = -1
       val timeIncIt = new Iterator[Int] {
@@ -291,13 +329,13 @@ object ScaldingLaws extends Properties("Scalding") {
       // Now check that the inMemory ==
 
       val smap = testStore.lastToIterable(BatchID(1)).toMap
-      Monoid.isNonZero(Group.minus(inMemory, smap)) == false
+      Monoid.isNonZero(Group.minus(inMemory, smap)) must be (false)
     }
 
-  property("ScaldingPlatform matches Scala for diamond jobs with write & everything in one Batch") =
-    forAll { (original: List[Int],
-      fn1: (Int) => List[(Int, Int)],
-      fn2: (Int) => List[(Int, Int)]) =>
+    "match scala for diamond jobs with write & everything in one Batch" in {
+      val original = sample[List[Int]]
+      val fn1 = sample[(Int) => List[(Int, Int)]]
+      val fn2 = sample[(Int) => List[(Int, Int)]]
       val inMemory = TestGraphs.diamondJobInScala(original)(fn1)(fn2)
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
@@ -325,9 +363,11 @@ object ScaldingLaws extends Properties("Scalding") {
         println(sinkOut)
         println(inWithTime)
       val smap = testStore.lastToIterable(BatchID(1)).toMap
-      (Monoid.isNonZero(Group.minus(inMemory, smap)) == false) &&
-      (sinkOut.map { _._2 }.toList == inWithTime )
+      Monoid.isNonZero(Group.minus(inMemory, smap)) must be (false)
+      
+      sinkOut.map { _._2 }.toList must be_== (inWithTime)
     }
+  }
 }
 
 object VersionBatchLaws extends Properties("VersionBatchLaws") {

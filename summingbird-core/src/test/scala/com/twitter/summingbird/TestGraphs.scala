@@ -87,6 +87,23 @@ object TestGraphs {
       .flatMap(postJoinFn)
       .sumByKey(store)
 
+
+  def multipleSummerJobInScala[T1, T2, K1, V1: Monoid, K2, V2: Monoid]
+    (source: List[T1])
+    (fnR: T1 => TraversableOnce[T2], fnA: T2 => TraversableOnce[(K1, V1)], fnB: T2 => TraversableOnce[(K2, V2)])
+    : (Map[K1, V1], Map[K2, V2]) = {
+      val mapA = MapAlgebra.sumByKey(source.flatMap(fnR).flatMap(fnA))
+      val mapB = MapAlgebra.sumByKey(source.flatMap(fnR).flatMap(fnB))
+      (mapA, mapB)
+    }
+
+  def multipleSummerJob[P <: Platform[P], T1, T2, K1, V1: Monoid, K2, V2: Monoid]
+      (source: Producer[P, T1], store1: P#Store[K1, V1], store2: P#Store[K2, V2])
+    (fnR: T1 => TraversableOnce[T2], fnA: T2 => TraversableOnce[(K1, V1)], fnB: T2 => TraversableOnce[(K2, V2)]): Summer[P, K2, V2] = {
+      val combined = source.flatMap(fnR)
+      combined.flatMap(fnA).sumByKey(store1).also(combined).flatMap(fnB).sumByKey(store2)
+    }
+
   def mapOnlyJob[P <: Platform[P], T, U](
     source: Producer[P, T],
     sink: P#Sink[U]
