@@ -150,11 +150,11 @@ object TopologyPlannerLaws extends Properties("StormDag") {
   }
 
 
-  property("Spouts must have no incoming dependencies") = forAll { (dag: StormDag) =>
+  property("Spouts must have no incoming dependencies, and they must have dependants") = forAll { (dag: StormDag) =>
     dag.nodes.forall{n =>
       val success = n match {
         case _: SourceNode[_] => 
-          dag.dependenciesOf(n).size == 0
+          dag.dependenciesOf(n).size == 0 && dag.dependantsOf(n).size > 0
         case _ => true
       }
       if(!success) dumpGraph(dag)
