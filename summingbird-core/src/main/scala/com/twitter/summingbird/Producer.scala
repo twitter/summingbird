@@ -161,6 +161,15 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def leftJoin[RightV](service: P#Service[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
     LeftJoinedProducer(this, service)
 
+  /** Do a windowed join on a stream. You need to provide a sink that manages
+   * the buffer. Offline, this might be a bounded HDFS partition. Online it
+   * might be a cache that evicts after a period of time.
+   */
+  def leftJoin[RightV](stream: KeyedProducer[P, K, RightV],
+    buffer: P#Buffer[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
+      stream.write(buffer)
+        .also(leftJoin(buffer))
+
   def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
     Summer(this, store, monoid)
 }
