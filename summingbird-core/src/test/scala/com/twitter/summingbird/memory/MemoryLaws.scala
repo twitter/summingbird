@@ -86,7 +86,6 @@ object MemoryLaws extends Specification {
      val plan = platform.plan {
        TestGraphs.singleStepMapKeysJob[Memory, T, K1, K2, V](sourceMaker(original), currentStore)(fnA, fnB) 
      }
-    println(currentStore)
      platform.run(plan)
     val lookupFn = currentStore.get(_)
     TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB).forall { case (k, v) =>
@@ -109,7 +108,7 @@ object MemoryLaws extends Specification {
 
     "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must be(true) }
     
-    "fatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must be(true) }
+    "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must be(true) }
   }
 
 }

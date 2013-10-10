@@ -165,10 +165,10 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
     Summer(this, store, monoid)
 
-  def flatMapKeys[U](fn: K => TraversableOnce[U]) = KeyFlatMappedProducer(this, fn)
+  def flatMapKeys[K2](fn: K => TraversableOnce[K2]) = KeyFlatMappedProducer(this, fn)
 }
 
-case class KeyFlatMappedProducer[P <: Platform[P], K, V, U](producer: KeyedProducer[P, K, V], fn: K => TraversableOnce[U]) extends KeyedProducer[P, U, V]
+case class KeyFlatMappedProducer[P <: Platform[P], K, V, K2](producer: KeyedProducer[P, K, V], fn: K => TraversableOnce[K2]) extends KeyedProducer[P, K2, V]
 
 case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
 

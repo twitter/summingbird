@@ -58,7 +58,10 @@ class Memory extends Platform[Memory] {
 
           case KeyFlatMappedProducer(producer, fn) =>
             val (s, m) = toStream(producer, jamfs)
-            (s.flatMap{t => List(t._1).flatMap(fn(_)).map((_, t._2))}
+            (s.flatMap{
+              case (k, v) =>
+                fn(k).map((_, v))
+             }
             , m)
 
           case AlsoProducer(l, r) =>

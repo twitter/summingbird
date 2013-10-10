@@ -65,7 +65,7 @@ object TestGraphs {
     (source: TraversableOnce[T])
     (fnA: T => TraversableOnce[(K1, V)], fnB: K1 => TraversableOnce[K2]): Map[K2, V] =
     MapAlgebra.sumByKey(
-      source.flatMap(fnA).flatMap{x => List(x._1).flatMap(fnB).map((_, x._2))}
+      source.flatMap(fnA).flatMap{x => fnB(x._1).map((_, x._2))}
     )
 
   def singleStepMapKeysJob[P <: Platform[P], T, K1, K2, V: Monoid]
