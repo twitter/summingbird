@@ -96,8 +96,12 @@ class OptionalPlatform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
   type Service[K, V] = (Option[P1#Service[K, V]], Option[P2#Service[K, V]])
   type Plan[T] = (Option[P1#Plan[T]], Option[P2#Plan[T]])
 
-  override def plan[T](producer: Producer[OptionalPlatform2[P1, P2], T]): Plan[T] = {
-    val (leftProducer, rightProducer) = OptionalUnzip2[P1, P2]()(producer)
+  private def tCast[T](p: (Option[Producer[P1, T]], Option[Producer[P2, T]])): (Option[TailProducer[P1, T]], Option[TailProducer[P2, T]]) =
+    p.asInstanceOf[(Option[TailProducer[P1, T]], Option[TailProducer[P2, T]])]
+
+
+  override def plan[T](producer: TailProducer[OptionalPlatform2[P1, P2], T]): Plan[T] = {
+    val (leftProducer, rightProducer) = tCast(OptionalUnzip2[P1, P2]()(producer))
     (leftProducer.map(p1.plan(_)), rightProducer.map(p2.plan(_)))
   }
 }

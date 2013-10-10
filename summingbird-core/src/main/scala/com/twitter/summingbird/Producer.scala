@@ -127,6 +127,8 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
    * that the Platform will plan both into a single Plan.
    */
   def also[R](that: Producer[P, R]): Producer[P, R] = AlsoProducer(this, that)
+
+  override def name(id: String): TailProducer[P, T] = new NamedProducer[P, T](this, id) with TailProducer[P, T]
 }
 
 /**

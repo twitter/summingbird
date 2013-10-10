@@ -25,6 +25,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird.memory._
+import com.twitter.summingbird.planner._
 import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
 import java.util.{Collections, HashMap, Map => JMap, UUID}
@@ -134,7 +135,7 @@ object StormLaws extends Specification {
     * Perform a single run of TestGraphs.singleStepJob using the
     * supplied list of integers and the testFn defined above.
     */
-  def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => Summer[Storm, Int, Int])
+  def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, (Int, Int)])
       : (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
     val id = UUID.randomUUID.toString
     globalState += (id -> TestState())
@@ -156,7 +157,7 @@ object StormLaws extends Specification {
     (testFn, globalState(id))
   }
 
-  def memoryPlanWithoutSummer(original: List[Int])(mkJob: (Producer[Memory, Int], Memory#Sink[Int]) => Producer[Memory, Int])
+  def memoryPlanWithoutSummer(original: List[Int])(mkJob: (Producer[Memory, Int], Memory#Sink[Int]) => TailProducer[Memory, Int])
   : List[Int] = {
     val memory = new Memory
     val outputList = ArrayBuffer[Int]()
@@ -177,7 +178,7 @@ object StormLaws extends Specification {
     StormLaws.outputList += x
   }
 
-  def runWithOutSummer(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Sink[Int]) => Producer[Storm, Int])
+  def runWithOutSummer(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Sink[Int]) => TailProducer[Storm, Int])
       : List[Int] = {
     val cluster = new LocalCluster()
 
@@ -279,22 +280,8 @@ object StormLaws extends Specification {
     stormOutputList must_==(memoryOutputList)
   }
 
-  "StormPlatform matches Scala for MapOnly/NoSummer with dangling FM" in {
-    val original = sample[List[Int]]
-    val doubler = {x: Int => List(x*2)}
-
-    val stormOutputList =
-      runWithOutSummer(original)(
-        TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler).map{x:Int  => x*3}
-      ).sorted
-    val memoryOutputList = 
-      memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
-    
-    stormOutputList must_==(memoryOutputList)
-  }
-
   "StormPlatform with multiple summers" in {
-    val original = List(1, 2, 3, 45) // sample[List[Int]]
+    val original = sample[List[Int]]
     val doubler = {(x): (Int) => List((x -> x*2))}
     val simpleOp = {(x): (Int) => List(x * 10)}
 
@@ -327,6 +314,55 @@ object StormLaws extends Specification {
       store2Map
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
+  }
+
+   "StormPlatform should be efficent in real world job" in {
+    val original1 = sample[List[Int]]
+    val original2 = sample[List[Int]]
+    val original3 = sample[List[Int]]
+    val original4 = sample[List[Int]]
+    val source1 = Storm.source(TraversableSpout(original1))
+    val source2 = Storm.source(TraversableSpout(original2))
+    val source3 = Storm.source(TraversableSpout(original3))
+    val source4 = Storm.source(TraversableSpout(original4))
+
+    val fn1 = sample[(Int) => List[(Int, Int)]]
+    val fn2 = sample[(Int) => List[(Int, Int)]]
+    val fn3 = sample[(Int) => List[(Int, Int)]]
+
+    val (store1Id, store1) = genStore
+
+    val preJoinFn = sample[(Int) => (Int, Int)]
+    val postJoinFn = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
+
+    val serviceFn = sample[Int => Option[Int]]
+    val service = StoreWrapper[Int, Int](() => ReadableStore.fromFn(serviceFn))
+
+
+
+    val tail = TestGraphs.realJoinTestJob[Storm, Int, Int, Int, Int, Int, Int, Int, Int, Int](source1, source2, source3, source4,
+                service, store1, fn1, fn2, fn3, preJoinFn, postJoinFn)
+
+    val topo = storm.plan(tail)
+    OnlinePlan(tail).nodes.size must beLessThan(10)
+
+    StormPlanTopology.dumpGraph(OnlinePlan(tail))
+    val cluster = new LocalCluster()
+    Testing.completeTopology(cluster, topo, completeTopologyParam)
+    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
+    Thread.sleep(1000)
+    cluster.shutdown
+
+    val scalaA = TestGraphs.realJoinTestJobInScala(original1, original2, original3, original4,
+                serviceFn, fn1, fn2, fn3, preJoinFn, postJoinFn)
+
+    val store1Map = globalState(store1Id).store.asScala.toMap
+    Equiv[Map[Int, Int]].equiv(
+      scalaA,
+      store1Map
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
+
 
 
   }

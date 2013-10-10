@@ -31,8 +31,8 @@ object DependantsTest extends Properties("Dependants") {
   implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
   implicit def sink1: Memory#Sink[Int] = ((_) => Unit)
   implicit def sink2: Memory#Sink[(Int, Int)] = ((_) => Unit)
-  implicit def arbSource1: Arbitrary[Producer[Memory, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[Int]).map(Producer.source[Memory,Int](_)))
-  implicit def arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[(Int, Int)]).map(Producer.source[Memory,(Int, Int)](_)))
+  implicit val arbSource1: Arbitrary[Producer[Memory, Int]] = Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[Int]).map(Producer.source[Memory,Int](_)))
+  implicit val arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[(Int, Int)]).map(Producer.source[Memory,(Int, Int)](_)))
 
   implicit def genProducer: Arbitrary[Producer[Memory, _]] = Arbitrary(oneOf(genProd1, genProd2, summed))
 

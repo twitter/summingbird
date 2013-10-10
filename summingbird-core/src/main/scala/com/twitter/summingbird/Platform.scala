@@ -27,5 +27,5 @@ trait Platform[P <: Platform[P]] {
   type Service[_, _]
   type Plan[_]
 
-  def plan[T](completed: Producer[P, T]): Plan[T]
+  def plan[T](completed: TailProducer[P, T]): Plan[T]
 }
