@@ -34,17 +34,17 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
 
   import TestGraphGenerators._
 
-  implicit def sink1: Memory#Sink[Int] =  {x: Int => x}
-  implicit def sink2: Memory#Sink[(Int, Int)] =  {x: (Int, Int) => x}
+  implicit def sink1: Memory#Sink[Int] = sample[Int => Unit]
+  implicit def sink2: Memory#Sink[(Int, Int)] =  sample[((Int, Int)) => Unit]
 
   implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
 
-  implicit def arbSource1: Arbitrary[Producer[Memory, Int]] = 
-          Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[Int]).map{
+  implicit val arbSource1: Arbitrary[Producer[Memory, Int]] = 
+          Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[Int]).map{
               x: List[Int] =>
                 Memory.toSource(x)})
-  implicit def arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = 
-          Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[(Int, Int)]).map{
+  implicit val arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = 
+          Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[(Int, Int)]).map{
             x: List[(Int, Int)] => 
               IdentityKeyedProducer(Memory.toSource(x))})
 
@@ -71,6 +71,16 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     dumpNumber = dumpNumber + 1
   }
 
+  def isNoOpProducer(p: Producer[_, _]): Boolean = {
+    p match {
+      case IdentityKeyedProducer(_) => true
+      case NamedProducer(_, _) => true
+      case MergedProducer(_, _) => true
+      case AlsoProducer(_, _) => true
+      case _ => false
+    }
+  }
+
   property("Dag Nodes must be unique") = forAll { (dag: MemoryDag) =>
     dag.nodes.size == dag.nodes.toSet.size
   }
@@ -81,11 +91,12 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     }
   }
 
-  property("If a MemoryNode contains a Summer, it must be the first Producer in that MemoryNode") = forAll { (dag: MemoryDag) =>
+  property("If a MemoryNode contains a Summer, all other producers must be NOP's") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
-      val firstP = n.members.last
-      n.members.forall{p =>
-        val inError = (p.isInstanceOf[Summer[_, _, _]] && p != firstP)
+      val producersWithoutNOP = n.members.filterNot(isNoOpProducer(_))
+      val firstP = producersWithoutNOP.headOption
+      producersWithoutNOP.forall{p =>
+        val inError = (p.isInstanceOf[Summer[_, _, _]] && producersWithoutNOP.size != 1)
         if(inError) dumpGraph(dag)
         !inError
       }
@@ -111,19 +122,6 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
       }
       if(inError) dumpGraph(dag)
       !inError
-    }
-  }
-
-  property("The last producer in any online prior to a summer must be a KeyedProducer") = forAll { (dag: MemoryDag) =>
-    dag.nodes.forall{n =>
-      val firstP = n.members.last
-      firstP match {
-        case Summer(_, _, _) =>
-            dag.dependantsOf(n).forall {otherN =>
-              otherN.members.head.isInstanceOf[KeyedProducer[_, _, _]]
-            }
-        case _ => true
-      }
     }
   }
 

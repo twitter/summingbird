@@ -22,8 +22,9 @@ import com.twitter.summingbird.graph._
  * by the fact that they are immutable.
  */
 case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) {
+  lazy val nodes: List[Producer[P, Any]] = Producer.entireGraphOf(tail)
   lazy val allTails: List[Producer[P, Any]] = nodes.filter { fanOut(_).get == 0 }
-  val nodes: List[Producer[P, Any]] = Producer.entireGraphOf(tail)
+  private lazy val nodeSet: Set[Producer[P, Any]] = nodes.toSet
 
   /** This is the dependants graph. Each Producer knows who it depends on
    * but not who depends on it without doing this computation
@@ -38,7 +39,7 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) {
   }
   /** The max of zero and 1 + depth of all parents if the node is the graph
    */
-  def isNode(p: Producer[P, Any]): Boolean = depth(p).isDefined
+  def isNode(p: Producer[P, Any]): Boolean = nodeSet.contains(p)
   def depth(p: Producer[P, Any]): Option[Int] = depths.get(p)
 
   def dependantsOf(p: Producer[P, Any]): Option[List[Producer[P, Any]]] =

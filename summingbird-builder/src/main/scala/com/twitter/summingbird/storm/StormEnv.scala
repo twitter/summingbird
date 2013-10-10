@@ -21,7 +21,7 @@ import com.twitter.scalding.Args
 import com.twitter.chill.ScalaKryoInstantiator
 import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
 import com.twitter.chill.java.IterableRegistrar
-import com.twitter.summingbird.{ Env, Unzip2, Producer }
+import com.twitter.summingbird.{ Env, Unzip2, Producer, TailProducer }
 import com.twitter.summingbird.scalding.Scalding
 import scala.collection.JavaConverters._
 
@@ -60,7 +60,7 @@ case class StormEnv(override val jobName: String, override val args: Args)
       )
       transformed
     }.run(
-      builder.node.name(builder.id).asInstanceOf[Producer[Storm, _]],
+      builder.node.name(builder.id).asInstanceOf[TailProducer[Storm, _]],
       classSuffix
     )
   }
