@@ -135,12 +135,12 @@ case class Dag[P <: Platform[P]](tail: TailProducer[P, _], producerToNode: Map[P
 
 object Dag {
   /** The default name sanitizing */
-  def apply[P <: Platform[P], T](tail: Producer[P, Any],
+  def apply[P <: Platform[P], T](tail: TailProducer[P, Any],
     registry: List[Node[P]]): Dag[P] = apply[P, T](tail,
       registry,
       {(s: String) => s.replaceAll("""[\[\]]|\-""","|")})
 
-  def apply[P <: Platform[P], T](tail: Producer[P, Any],
+  def apply[P <: Platform[P], T](tail: TailProducer[P, Any],
     registry: List[Node[P]],
     sanitizeName: String => String): Dag[P] = {
 
