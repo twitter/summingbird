@@ -31,7 +31,7 @@ import com.twitter.summingbird.store.CompoundStore
 import com.twitter.summingbird.storm.{ MergeableStoreSupplier, StoreWrapper, Storm, StormEnv }
 import com.twitter.summingbird.util.CacheSize
 import java.io.Serializable
-import java.util.{ Date, UUID }
+import java.util.Date
 
 /**
   * The (deprecated) Summingbird builder API builds up a single
@@ -59,9 +59,7 @@ object SourceBuilder {
     Semigroup.from(_ ++ _)
 
   def nextName[T:Manifest]: String =
-    // Replace [ ] with | | because of confusion of those strings with
-    // an internal twitter tool
-    manifest[T].toString.replaceAll("""[\[\]]""","|") + "_" + nextId.getAndIncrement
+    "%s_%d".format(manifest[T], nextId.getAndIncrement)
 
   def apply[T](eventSource: EventSource[T], timeOf: T => Date)
     (implicit mf: Manifest[T], eventCodec: Codec[T]) = {
