@@ -121,14 +121,15 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       dependantProducer match { 
         case Summer(producer, _, _) => maybeSplitThenRecurse(dependantProducer, producer, currentBolt.toSummer)
         case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
-        case NamedProducer(producer, newId) => maybeSplitThenRecurse(dependantProducer, producer)
+        case NamedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
         case AlsoProducer(lProducer, rProducer) => 
               val (updatedReg, updatedVisited) = maybeSplitThenRecurse(dependantProducer, rProducer)
               recurse(lProducer, FlatMapNode(), updatedReg, updatedVisited)
         case Source(spout) => (distinctAddToList(nodeSet, currentBolt.toSource), visitedWithN)
-        case OptionMappedProducer(producer, op) => maybeSplitThenRecurse(dependantProducer, producer)
-        case FlatMappedProducer(producer, op)  => maybeSplitThenRecurse(dependantProducer, producer)
-        case WrittenProducer(producer, sinkSupplier)  => maybeSplitThenRecurse(dependantProducer, producer)
+        case OptionMappedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
+        case FlatMappedProducer(producer, _)  => maybeSplitThenRecurse(dependantProducer, producer)
+        case KeyFlatMappedProducer(producer, _)  => maybeSplitThenRecurse(dependantProducer, producer)
+        case WrittenProducer(producer, _)  => maybeSplitThenRecurse(dependantProducer, producer)
         case LeftJoinedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
         case MergedProducer(l, r) =>
           // TODO support de-duping self merges  https://github.com/twitter/summingbird/issues/237

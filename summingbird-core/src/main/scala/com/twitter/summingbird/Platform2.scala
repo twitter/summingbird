@@ -59,6 +59,10 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val (l, r) = apply(producer)
         (l.flatMap(fn), r.flatMap(fn))
 
+      case KeyFlatMappedProducer(producer, fn) =>
+        val (l, r) = apply(producer)
+        cast((l.flatMapKeys(fn), r.flatMapKeys(fn)))
+
       case MergedProducer(l, r) =>
         val (ll, lr) = apply(l)
         val (rl, rr) = apply(r)

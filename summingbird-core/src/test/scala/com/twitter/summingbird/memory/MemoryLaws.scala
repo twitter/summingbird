@@ -72,6 +72,30 @@ object MemoryLaws extends Specification {
     testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn, identity, sample[List[T]], sample[T => List[(K, U)]], sample[((K, (U, Option[JoinedU]))) => List[(K, V)]])
   }
 
+
+  def mapKeysChecker[T: Manifest: Arbitrary, K1: Arbitrary, K2: Arbitrary,
+               V: Monoid: Arbitrary: Equiv](): Boolean = {
+    val platform = new Memory
+    val currentStore: Memory#Store[K2, V] = MutableMap.empty[K2, V]
+    val sourceMaker = Memory.toSource[T](_)
+    val original = sample[List[T]]
+    val fnA =  sample[T => List[(K1, V)]]
+    val fnB = sample[K1 => List[K2]]
+    
+    // Use the supplied platform to execute the source into the
+    // supplied store.
+     val plan = platform.plan {
+       TestGraphs.singleStepMapKeysJob[Memory, T, K1, K2, V](sourceMaker(original), currentStore)(fnA, fnB) 
+     }
+    println(currentStore)
+     platform.run(plan)
+    val lookupFn = currentStore.get(_)
+    TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB).forall { case (k, v) =>
+      val lv = lookupFn(k).getOrElse(Monoid.zero)
+      Equiv[V].equiv(v, lv)
+    }
+  }
+
   "The Memory Platform" should {
     //Set up the job:
     "singleStep w/ Int, Int, Set[Int]" in { singleStepLaw[Int, Int, Set[Int]] must be(true) }
@@ -85,6 +109,8 @@ object MemoryLaws extends Specification {
 
     "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must be(true) }
 
+    
+    "fatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must be(true) }
   }
 
   

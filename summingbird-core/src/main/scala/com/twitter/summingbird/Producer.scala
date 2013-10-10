@@ -64,12 +64,13 @@ object Producer {
       case NamedProducer(producer, _) => List(producer)
       case IdentityKeyedProducer(producer) => List(producer)
       case Source(_) => List()
-      case OptionMappedProducer(producer, fn) => List(producer)
-      case FlatMappedProducer(producer, fn) => List(producer)
+      case OptionMappedProducer(producer, _) => List(producer)
+      case FlatMappedProducer(producer, _) => List(producer)
+      case KeyFlatMappedProducer(producer, _) => List(producer)
       case MergedProducer(l, r) => List(l, r)
-      case WrittenProducer(producer, fn) => List(producer)
-      case LeftJoinedProducer(producer, service) => List(producer)
-      case Summer(producer, store, monoid) => List(producer)
+      case WrittenProducer(producer, _) => List(producer)
+      case LeftJoinedProducer(producer, _) => List(producer)
+      case Summer(producer, _, _) => List(producer)
     }
   }
 
@@ -163,7 +164,11 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
 
   def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
     Summer(this, store, monoid)
+
+  def flatMapKeys[U](fn: K => TraversableOnce[U]) = KeyFlatMappedProducer(this, fn)
 }
+
+case class KeyFlatMappedProducer[P <: Platform[P], K, V, U](producer: KeyedProducer[P, K, V], fn: K => TraversableOnce[U]) extends KeyedProducer[P, U, V]
 
 case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
 

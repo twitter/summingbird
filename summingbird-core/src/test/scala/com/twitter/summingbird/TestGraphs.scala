@@ -61,6 +61,21 @@ object TestGraphs {
       .flatMap(fn)
       .sumByKey(store)
 
+  def singleStepMapKeysInScala[T, K1, K2, V: Monoid]
+    (source: TraversableOnce[T])
+    (fnA: T => TraversableOnce[(K1, V)], fnB: K1 => TraversableOnce[K2]): Map[K2, V] =
+    MapAlgebra.sumByKey(
+      source.flatMap(fnA).flatMap{x => List(x._1).flatMap(fnB).map((_, x._2))}
+    )
+
+  def singleStepMapKeysJob[P <: Platform[P], T, K1, K2, V: Monoid]
+    (source: Producer[P, T], store: P#Store[K2, V])
+    (fnA: T => TraversableOnce[(K1, V)], fnB: K1 => TraversableOnce[K2]): TailProducer[P, (K2, V)] =
+    source
+      .flatMap(fnA)
+      .flatMapKeys(fnB)
+      .sumByKey(store)
+
   def leftJoinInScala[T, U, JoinedU, K, V: Monoid]
     (source: TraversableOnce[T])
     (service: K => Option[JoinedU])
