@@ -122,6 +122,40 @@ case class SourceBuilder[T: Manifest] private (
 
   def set(opt: Any): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(opt)))
 
+  def aggregate[K, V](store: CompoundStore[K, V], reducers: Int, commutative: Boolean)(
+    implicit ev: T <:< (K, V),
+    manifest: Manifest[(K, V)],
+    env: Env,
+    batcher: Batcher,
+    monoid: Monoid[V]): SourceBuilder[(K, V)] = {
+
+    env match {
+      case scalding: ScaldingEnv => {
+        val givenStore = store.offlineStore.getOrElse(sys.error("No offline store given in Scalding mode"))
+        // Set the store to reset if needed
+        val batchSetStore = scalding
+          .initialBatch(batcher)
+          .map { givenStore.withInitialBatch(_) }
+          .getOrElse(givenStore)
+
+        val newStore = (Some(batchSetStore), None)
+
+        SourceBuilder(
+          node = Producer.evToKeyed(node).aggregate(newStore, reducers, commutative),
+          registrar = registrar,
+          id = id,
+          opts = opts
+        )
+      }
+      case _: StormEnv => SourceBuilder(
+        node = Producer.evToKeyed(node),
+        registrar = registrar,
+        id = id,
+        opts = opts
+      )
+    }
+  }
+
   /**
     * Complete this builder instance with a BatchStore. At this point,
     * the Summingbird job can be executed on Hadoop.

@@ -65,6 +65,7 @@ object Producer {
       case IdentityKeyedProducer(producer) => List(producer)
       case Source(_) => List()
       case OptionMappedProducer(producer, fn) => List(producer)
+      case AggregateProducer(producer, _, _, _, _) => List(producer)
       case FlatMappedProducer(producer, fn) => List(producer)
       case MergedProducer(l, r) => List(l, r)
       case WrittenProducer(producer, fn) => List(producer)
@@ -143,6 +144,14 @@ case class NamedProducer[P <: Platform[P], T](producer: Producer[P, T], id: Stri
 case class OptionMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => Option[U])
     extends Producer[P, U]
 
+case class AggregateProducer[P <: Platform[P], K, V](
+  producer: KeyedProducer[P, K, V],
+  store: P#Store[K, V],
+  reducers: Int,
+  commutative: Boolean,
+  monoid: Monoid[V]
+) extends KeyedProducer[P, K, V]
+
 case class FlatMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => TraversableOnce[U])
     extends Producer[P, U]
 
@@ -161,6 +170,15 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
 
   def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
     Summer(this, store, monoid)
+
+  def aggregate(store: P#Store[K, V], reducers: Int, commutative: Boolean)(implicit monoid: Monoid[V]): KeyedProducer[P, K, V] =
+    AggregateProducer[P, K, V](
+      this,
+      store,
+      reducers,
+      commutative,
+      monoid
+    )
 }
 
 case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
