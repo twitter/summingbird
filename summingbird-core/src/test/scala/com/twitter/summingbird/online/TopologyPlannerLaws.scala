@@ -39,12 +39,12 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
 
   implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
 
-  implicit def arbSource1: Arbitrary[Producer[Memory, Int]] = 
-          Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[Int]).map{
+  implicit val arbSource1: Arbitrary[Producer[Memory, Int]] = 
+          Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[Int]).map{
               x: List[Int] =>
                 Memory.toSource(x)})
-  implicit def arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = 
-          Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[(Int, Int)]).map{
+  implicit val arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = 
+          Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[(Int, Int)]).map{
             x: List[(Int, Int)] => 
               IdentityKeyedProducer(Memory.toSource(x))})
 
