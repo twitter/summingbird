@@ -40,7 +40,7 @@ object TestGraphs {
   def diamondJob[P <: Platform[P], T, K, V: Monoid]
     (source: Producer[P, T], sink: P#Sink[T], store: P#Store[K, V])
     (fnA: T => TraversableOnce[(K, V)])
-    (fnB: T => TraversableOnce[(K, V)]): Summer[P, K, V] = {
+    (fnB: T => TraversableOnce[(K, V)]): TailProducer[P, (K, V)] = {
     val written = source.write(sink)
     val left = written.flatMap(fnA)
     val right = written.flatMap(fnB)
@@ -56,7 +56,7 @@ object TestGraphs {
 
   def singleStepJob[P <: Platform[P], T, K, V: Monoid]
     (source: Producer[P, T], store: P#Store[K, V])
-    (fn: T => TraversableOnce[(K, V)]): Summer[P, K, V] =
+    (fn: T => TraversableOnce[(K, V)]): TailProducer[P, (K, V)] =
     source
       .flatMap(fn)
       .sumByKey(store)
@@ -78,7 +78,7 @@ object TestGraphs {
     service: P#Service[K, JoinedU],
     store: P#Store[K, V])
     (preJoinFn: T => TraversableOnce[(K, U)])
-    (postJoinFn: ((K, (U, Option[JoinedU]))) => TraversableOnce[(K, V)]): Summer[P, K, V] =
+    (postJoinFn: ((K, (U, Option[JoinedU]))) => TraversableOnce[(K, V)]): TailProducer[P, (K, V)] =
     source
       .name("My named source")
       .flatMap(preJoinFn)
@@ -86,6 +86,48 @@ object TestGraphs {
       .name("My named flatmap")
       .flatMap(postJoinFn)
       .sumByKey(store)
+
+  def realJoinTestJob[P <: Platform[P], T1, T2, T3, T4, K1, K2, U, JoinedU, V: Monoid] (
+    source1: Producer[P, T1],
+    source2: Producer[P, T2],
+    source3: Producer[P, T3],
+    source4: Producer[P, T4],
+    service: P#Service[K1, JoinedU],
+    store: P#Store[K2, V],
+    simpleFM1: T1 => TraversableOnce[(K2, V)],
+    simpleFM2: T2 => TraversableOnce[(K2, V)],
+    simpleFM3: T3 => TraversableOnce[(K2, V)],
+    preJoin: T4 => (K1, U),
+    postJoin: ((K1, (U, Option[JoinedU]))) => TraversableOnce[(K2, V)]
+    ): TailProducer[P, (K2, V)] = {
+    val data1 = source1.flatMap(simpleFM1)
+    val data2 = source2.flatMap(simpleFM2)
+    val data3 = source3.flatMap(simpleFM3)
+    val data4 = source4.map(preJoin).leftJoin(service).flatMap(postJoin)
+    data1.merge(data2).merge(data3).merge(data4).sumByKey(store).name("Customer Supplied Job")
+  }
+
+ def realJoinTestJobInScala[P <: Platform[P], T1, T2, T3, T4, K1, K2, U, JoinedU, V: Monoid] (
+    source1: List[T1],
+    source2: List[T2],
+    source3: List[T3],
+    source4: List[T4],
+    service: K1 => Option[JoinedU],
+    simpleFM1: T1 => TraversableOnce[(K2, V)],
+    simpleFM2: T2 => TraversableOnce[(K2, V)],
+    simpleFM3: T3 => TraversableOnce[(K2, V)],
+    preJoin: T4 => (K1, U),
+    postJoin: ((K1, (U, Option[JoinedU]))) => TraversableOnce[(K2, V)]
+    ): Map[K2, V] = {
+    val data1 = source1.flatMap(simpleFM1)
+    val data2 = source2.flatMap(simpleFM2)
+    val data3 = source3.flatMap(simpleFM3)
+    val data4 = source4.map(preJoin).map { case (k, v) => (k, (v, service(k))) }
+                .flatMap(postJoin)
+    MapAlgebra.sumByKey(
+      data1 ::: data2 ::: data3 ::: data4
+    )
+ }
 
 
   def multipleSummerJobInScala[T1, T2, K1, V1: Monoid, K2, V2: Monoid]
@@ -99,7 +141,7 @@ object TestGraphs {
 
   def multipleSummerJob[P <: Platform[P], T1, T2, K1, V1: Monoid, K2, V2: Monoid]
       (source: Producer[P, T1], store1: P#Store[K1, V1], store2: P#Store[K2, V2])
-    (fnR: T1 => TraversableOnce[T2], fnA: T2 => TraversableOnce[(K1, V1)], fnB: T2 => TraversableOnce[(K2, V2)]): Summer[P, K2, V2] = {
+    (fnR: T1 => TraversableOnce[T2], fnA: T2 => TraversableOnce[(K1, V1)], fnB: T2 => TraversableOnce[(K2, V2)]): TailProducer[P, (K2, V2)] = {
       val combined = source.flatMap(fnR)
       combined.flatMap(fnA).sumByKey(store1).also(combined).flatMap(fnB).sumByKey(store2)
     }
@@ -107,7 +149,7 @@ object TestGraphs {
   def mapOnlyJob[P <: Platform[P], T, U](
     source: Producer[P, T],
     sink: P#Sink[U]
-    )(mapOp: T => TraversableOnce[U]): Producer[P, U] =
+    )(mapOp: T => TraversableOnce[U]): TailProducer[P, U] =
     source
       .flatMap(mapOp)
       .write(sink)

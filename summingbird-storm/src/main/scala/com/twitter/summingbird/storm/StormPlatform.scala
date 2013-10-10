@@ -211,7 +211,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   def transformConfig(base: Config): Config = updateConf(base)
   def withConfigUpdater(fn: Config => Config): Storm
 
-  def plan[T](tail: Producer[Storm, T]): StormTopology = {
+  def plan[T](tail: TailProducer[Storm, T]): StormTopology = {
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = baseConfig
 
@@ -226,7 +226,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     }
     topologyBuilder.createTopology
   }
-  def run(summer: Producer[Storm, _], jobName: String): Unit = run(plan(summer), jobName)
+  def run(summer: TailProducer[Storm, _], jobName: String): Unit = run(plan(summer), jobName)
   def run(topology: StormTopology, jobName: String): Unit
 }
 

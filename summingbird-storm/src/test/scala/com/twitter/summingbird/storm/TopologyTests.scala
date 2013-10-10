@@ -118,7 +118,7 @@ object ToplogyTests extends Specification {
     * Perform a single run of TestGraphs.singleStepJob using the
     * supplied list of integers and the testFn defined above.
     */
-  def funcToPlan(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => Summer[Storm, Int, Int])
+  def funcToPlan(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, (Int, Int)])
       : StormTopology = {
     val original = sample[List[Int]]
     val id = UUID.randomUUID.toString
