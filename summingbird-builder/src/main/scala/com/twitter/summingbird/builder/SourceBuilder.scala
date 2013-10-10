@@ -50,17 +50,23 @@ object SourceBuilder {
   type PlatformPair = OptionalPlatform2[Scalding, Storm]
   type Node[T] = Producer[PlatformPair, T]
 
-  def freshUUID: String = UUID.randomUUID.toString
+  private val nextId = new java.util.concurrent.atomic.AtomicLong(0)
+
   def adjust[T](m: Map[T, Options], k: T)(f: Options => Options) =
     m.updated(k, f(m.getOrElse(k, Options())))
 
   implicit def sg[T]: Semigroup[SourceBuilder[T]] =
     Semigroup.from(_ ++ _)
 
+  def nextName[T:Manifest]: String =
+    // Replace [ ] with | | because of confusion of those strings with
+    // an internal twitter tool
+    manifest[T].toString.replaceAll("""[\[\]]""","|") + "_" + nextId.getAndIncrement
+
   def apply[T](eventSource: EventSource[T], timeOf: T => Date)
     (implicit mf: Manifest[T], eventCodec: Codec[T]) = {
     implicit val te = TimeExtractor[T](timeOf(_).getTime)
-    val newID = freshUUID
+    val newID = nextName[T]
     val scaldingSource =
       eventSource.offline.map( s => Scalding.pipeFactory(s.scaldingSource(_)))
     val stormSource = eventSource.spout.map(Storm.timedSpout(_))
@@ -78,7 +84,7 @@ case class SourceBuilder[T: Manifest] private (
   id: String,
   @transient opts: Map[String, Options] = Map.empty
 ) extends Serializable {
-  import SourceBuilder.{ adjust, Node }
+  import SourceBuilder.{ adjust, Node, nextName }
 
   def map[U: Manifest](fn: T => U): SourceBuilder[U] = copy(node = node.map(fn))
   def filter(fn: T => Boolean): SourceBuilder[T] = copy(node = node.filter(fn))
@@ -120,6 +126,7 @@ case class SourceBuilder[T: Manifest] private (
       )
     )
 
+  /** Set's an Option on all nodes ABOVE this point */
   def set(opt: Any): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(opt)))
 
   /**
@@ -180,7 +187,7 @@ case class SourceBuilder[T: Manifest] private (
             .name(id)
             .sumByKey(batchSetStore)
         }.getOrElse(sys.error("Scalding mode specified alongside some online-only Source, Service or Sink."))
-        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, nextName[(K,V)], opts)
 
       case storm: StormEnv =>
         val givenStore = MergeableStoreSupplier.from {
@@ -194,7 +201,7 @@ case class SourceBuilder[T: Manifest] private (
             .name(id)
             .sumByKey(givenStore)
         }.getOrElse(sys.error("Storm mode specified alongside some offline-only Source, Service or Sink."))
-        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, nextName[(K,V)], opts)
 
       case _ => sys.error("Unknown environment: " + env)
     }
@@ -207,7 +214,7 @@ case class SourceBuilder[T: Manifest] private (
     copy(
       node = node.name(id).merge(other.node.name(other.id)),
       registrar = new IterableRegistrar(registrar, other.registrar),
-      id = SourceBuilder.freshUUID,
+      id = "merge_" + nextName[T],
       opts = opts ++ other.opts
     )
 }
