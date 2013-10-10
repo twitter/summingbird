@@ -99,6 +99,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
                 acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
                 newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
             case OptionMappedProducer(_, op) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
+            case AggregateProducer(_, _, _, _, _) => acc
             case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
             case WrittenProducer(_, sinkSupplier) => acc.andThen(FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])]))
             case IdentityKeyedProducer(_) => acc
@@ -145,6 +146,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         case OptionMappedProducer(_, op) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
         case NamedProducer(_, _) => spout
         case IdentityKeyedProducer(_) => spout
+        case AggregateProducer(_, _, _, _, _) => spout
         case _ => sys.error("not possible, given the above call to span.\n" + p)
       }
     }.getSpout
