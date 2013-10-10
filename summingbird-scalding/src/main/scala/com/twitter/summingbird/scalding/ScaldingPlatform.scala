@@ -378,12 +378,16 @@ object Scalding {
     }
   }
 
-  def plan[T](options: Map[String, Options], prod: Producer[Scalding, T]): PipeFactory[T] = {
+  private def plan[T](options: Map[String, Options], prod: Producer[Scalding, T]): PipeFactory[T] = {
     val dep = Dependants(prod)
     val fanOutSet =
       Producer.transitiveDependenciesOf(prod)
         .filter(dep.fanOut(_).exists(_ > 1)).toSet
     buildFlow(options, prod, None, fanOutSet, Map.empty)._1
+  }
+
+  def plan[T](options: Map[String, Options], prod: TailProducer[Scalding, T]): PipeFactory[T] = {
+    plan(options, prod)
   }
 
   /** Use this method to interop with existing scalding code
@@ -393,6 +397,7 @@ object Scalding {
   def toPipe[T](dr: DateRange,
     prod: Producer[Scalding, T],
     opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[(DateRange, TypedPipe[(Long, T)])] = {
+      // For interop we are violating our usual laws/type safety here
       val ts = dr.as[Interval[Time]]
       val pf = plan(opts, prod)
       toPipe(ts, fd, mode, pf).right.map { case (ts, pipe) =>
@@ -406,6 +411,7 @@ object Scalding {
   def toPipeExact[T](dr: DateRange,
     prod: Producer[Scalding, T],
     opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[TypedPipe[(Long, T)]] = {
+      // For interop we are violating our usual laws/type safety here
       val ts = dr.as[Interval[Time]]
       val pf = plan(opts, prod)
       toPipeExact(ts, fd, mode, pf)
@@ -461,7 +467,7 @@ class Scalding(
   type Service[K, V] = ScaldingService[K, V]
   type Plan[T] = PipeFactory[T]
 
-  def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] =
+  def plan[T](prod: TailProducer[Scalding, T]): PipeFactory[T] =
     Scalding.plan(options, prod)
 
   protected def ioSerializations: List[Class[_ <: HSerialization[_]]] = List(
@@ -493,7 +499,7 @@ class Scalding(
     }
   }
 
-  def run(state: WaitingState[Date], mode: Mode, pf: Producer[Scalding, _]): WaitingState[Date] =
+  def run(state: WaitingState[Date], mode: Mode, pf: TailProducer[Scalding, _]): WaitingState[Date] =
     run(state, mode, plan(pf))
 
   def run(state: WaitingState[Date], mode: Mode, pf: PipeFactory[_]): WaitingState[Date] = {

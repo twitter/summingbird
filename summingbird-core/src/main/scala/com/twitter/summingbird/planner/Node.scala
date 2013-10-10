@@ -25,17 +25,6 @@ case class NodeIdentifier(identifier: String) {
 sealed trait Node[P <: Platform[P]] {
   val members: List[Producer[P, _]] = List()
 
-  private val dependantStateOpt = members.headOption.map(h => Dependants(h))
-
-  def dependantsOf(p: Producer[P, _]): List[Producer[P, _]] = {
-    dependantStateOpt match {
-      case Some(dependantState) => dependantState.dependantsOf(p).getOrElse(List())
-      case _ => List()
-    }
-  }
-
-  def localDependantsOf(p: Producer[P, _]): List[Producer[P, _]] = dependantsOf(p).filter(members.contains(_))
-
   def toSource: SourceNode[P] = SourceNode(this.members)
 
   def toSummer: SummerNode[P] = SummerNode(this.members)
@@ -89,7 +78,7 @@ case class SourceNode[P <: Platform[P]](override val members: List[Producer[P, _
   override def shortName = NodeIdentifier("Source" + collapseNamedNodes)
 }
 
-case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Producer[P, _], Node[P]],
+case class Dag[P <: Platform[P]](tail: TailProducer[P, _], producerToNode: Map[Producer[P, _], Node[P]],
   nodes: List[Node[P]],
   nodeToName: Map[Node[P], String] = Map[Node[P], String](),
   nameToNode: Map[String, Node[P]] = Map[String, Node[P]](),
@@ -145,7 +134,7 @@ case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Produ
 }
 
 object Dag {
-   def apply[P <: Platform[P], T](tail: Producer[P, _], registry: List[Node[P]]): Dag[P] = {
+   def apply[P <: Platform[P], T](tail: TailProducer[P, _], registry: List[Node[P]]): Dag[P] = {
     def buildProducerToNodeLookUp(stormNodeSet: List[Node[P]]): Map[Producer[P, _], Node[P]] = {
       stormNodeSet.foldLeft(Map[Producer[P, _], Node[P]]()) { (curRegistry, stormNode) =>
         stormNode.members.foldLeft(curRegistry) { (innerRegistry, producer) =>

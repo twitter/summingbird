@@ -91,7 +91,7 @@ class Memory extends Platform[Memory] {
         (s.asInstanceOf[Stream[T]], m + (outerProducer -> s))
     }
 
-  def plan[T](prod: Producer[Memory, T]): Stream[T] =
+  def plan[T](prod: TailProducer[Memory, T]): Stream[T] =
     toStream(prod, Map.empty)._1
 
   def run(iter: Stream[_]) {
