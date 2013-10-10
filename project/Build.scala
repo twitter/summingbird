@@ -35,7 +35,7 @@ object SummingbirdBuild extends Build {
       "Twitter Maven" at "http://maven.twttr.com"
     ),
 
-    parallelExecution in Test := false, // until scalding 0.9.0 we can't do this
+    parallelExecution in Test := true,
 
     scalacOptions ++= Seq(
       "-unchecked",

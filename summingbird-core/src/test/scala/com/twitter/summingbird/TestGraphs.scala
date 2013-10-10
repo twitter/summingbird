@@ -163,7 +163,7 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
   run: (P, P#Plan[_]) => Unit
   ){
 
-  def diamondChecker = forAll { (items: List[T], fnA: T => List[(K, V)], fnB: T => List[(K, V)]) =>
+  def diamondChecker(items: List[T], fnA: T => List[(K, V)], fnB: T => List[(K, V)]): Boolean = {
     val currentStore = store()
     val currentSink = sink()
     // Use the supplied platform to execute the source into the
@@ -190,7 +190,7 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     * initial data source is generated using the supplied sourceMaker
     * function.
       */
-  def singleStepChecker = forAll { (items: List[T], fn: T => List[(K, V)]) =>
+  def singleStepChecker(items: List[T], fn: T => List[(K, V)]): Boolean = {
     val currentStore = store()
     // Use the supplied platform to execute the source into the
     // supplied store.
@@ -217,9 +217,9 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     * and the initial data source is generated using the supplied
     * sourceMaker function.
     */
-  def leftJoinChecker[U: Arbitrary, JoinedU: Arbitrary](service: P#Service[K, JoinedU])
-    (serviceToFn: P#Service[K, JoinedU] => (K => Option[JoinedU])) =
-    forAll { (items: List[T], preJoinFn: T => List[(K, U)], postJoinFn: ((K, (U, Option[JoinedU]))) => List[(K, V)]) =>
+  def leftJoinChecker[U: Arbitrary, JoinedU: Arbitrary](service: P#Service[K, JoinedU], serviceToFn: P#Service[K, JoinedU] => (K => Option[JoinedU]),
+    items: List[T], preJoinFn: T => List[(K, U)],
+    postJoinFn: ((K, (U, Option[JoinedU]))) => List[(K, V)]): Boolean = { 
       val currentStore = store()
 
       val plan = platform.plan {
