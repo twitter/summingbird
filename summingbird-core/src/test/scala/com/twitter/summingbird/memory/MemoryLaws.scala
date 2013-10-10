@@ -40,7 +40,6 @@ object MemoryLaws extends Specification {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
-
   def testGraph[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
     new TestGraphs[Memory, T, K, V](new Memory)(
       () => MutableMap.empty[K, V])(() => new BufferFunc[T])(
@@ -96,23 +95,21 @@ object MemoryLaws extends Specification {
     }
   }
 
+
+
   "The Memory Platform" should {
     //Set up the job:
     "singleStep w/ Int, Int, Set[Int]" in { singleStepLaw[Int, Int, Set[Int]] must be(true) }
     "singleStep w/ Int, String, List[Int]" in { singleStepLaw[Int, String, List[Int]] must be(true) }
     "singleStep w/ String, Short, Map[Set[Int], Long]" in {singleStepLaw[String, Short, Map[Set[Int], Long]] must be(true) }
 
-
     "diamond w/ Int, Int, Set[Int]" in { diamondLaw[Int, Int, Set[Int]] must be(true) }
     "diamond w/ Int, String, List[Int]" in { diamondLaw[Int, String, List[Int]] must be(true) }
     "diamond w/ String, Short, Map[Set[Int], Long]" in { diamondLaw[String, Short, Map[Set[Int], Long]] must be(true) }
 
     "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must be(true) }
-
     
     "fatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must be(true) }
   }
 
-  
-  
 }
