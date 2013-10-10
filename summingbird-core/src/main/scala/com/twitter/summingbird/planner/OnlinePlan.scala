@@ -25,7 +25,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
   private type CFlatMapNode = FlatMapNode[P] 
 
   private val depData = Dependants(tail)
-  private val forkedNodes = Producer.transitiveDependenciesOf(tail)
+  private val forkedNodes = Producer.entireGraphOf(tail)
                         .filter(depData.fanOut(_).exists(_ > 1)).toSet
   private def distinctAddToList[T](l : List[T], n : T): List[T] = if(l.contains(n)) l else (n :: l)
 
@@ -40,6 +40,16 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
     }
   } 
 
+  private def noOpProducer(dep: Producer[P, _]): Boolean = {
+    dep match {
+      case NamedProducer(_, _) => true
+      case IdentityKeyedProducer(_) => true
+      case MergedProducer(_, _) => true
+      case AlsoProducer(_, _) => true
+      case _ => false
+    }
+  }
+
   private def hasSummerAsNextProducer(p: Prod[_]): Boolean = 
             depData.dependantsOf(p).get.collect { case s: Summer[_, _, _] => s }.headOption.isDefined
 
@@ -47,10 +57,10 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
 
   // Add the dependentProducer to a Node along with each of its dependencies in turn.
   private def addWithDependencies[T](dependantProducer: Prod[T], previousBolt: CNode,
-                                  akkaRegistry: List[CNode], visited: VisitedStore) : (List[CNode], VisitedStore) = {
+                                  nodeSet: List[CNode], visited: VisitedStore) : (List[CNode], VisitedStore) = {
 
     if (visited.contains(dependantProducer)) {
-      (distinctAddToList(akkaRegistry, previousBolt), visited)
+      (distinctAddToList(nodeSet, previousBolt), visited)
     } else {
       val currentBolt = previousBolt.add(dependantProducer)
       val visitedWithN = visited + dependantProducer
@@ -58,7 +68,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       def recurse[U](
         producer: Prod[U],
         updatedBolt: CNode = currentBolt,
-        updatedRegistry: List[CNode] = akkaRegistry,
+        updatedRegistry: List[CNode] = nodeSet,
         visited: VisitedStore = visitedWithN)
       : (List[CNode], VisitedStore) = {
         addWithDependencies(producer, updatedBolt, updatedRegistry, visited)
@@ -72,19 +82,19 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
        * on the nodes further along in the dag. That is conditions for spliting into multiple Nodes are based on as yet
        * unvisisted Producers.
        */
-      def maybeSplitThenRecurse[U, A](currentProducer: Prod[U], dep: Prod[A]): (List[CNode], VisitedStore) = {
-        val doSplit = dep match {
-          case _ if (forkedNodes.contains(dep)) => true
-          // If we are a flatmap, but there haven't been any other flatmaps yet(i.e. the registry is of size 1, the summer).
-          // Then we must split to avoid a 2 level higherarchy
-          case _ if (currentBolt.isInstanceOf[FlatMapNode[_]] && hasSummerAsNextProducer(currentProducer) && allDepsMergeableWithSource(dep)) => true
+      def maybeSplitThenRecurse[U, A](currentProducer: Prod[U], dep: Prod[A], activeBolt: CNode = currentBolt): (List[CNode], VisitedStore) = {
+        val doSplit = activeBolt match {
+          case _ if (forkedNodes.contains(dep)) => true // If its forked we must split
+          case SummerNode(_) if !noOpProducer(dep) => true // If its not combinable with a Summer we must split
+          // If we need to have a node between a Source and a Summer, inject it here
+          case FlatMapNode(_) if hasSummerAsNextProducer(currentProducer) && allDepsMergeableWithSource(dep) => true
           case _ if ((!mergableWithSource(currentProducer)) && allDepsMergeableWithSource(dep)) => true
           case _ => false
         }
         if (doSplit) {
-          recurse(dep, updatedBolt = FlatMapNode(), updatedRegistry = distinctAddToList(akkaRegistry, currentBolt))
+          recurse(dep, updatedBolt = FlatMapNode(), updatedRegistry = distinctAddToList(nodeSet, activeBolt))
           } else {
-          recurse(dep)
+          recurse(dep, updatedBolt = activeBolt)
         }
       }
 
@@ -109,13 +119,13 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       }
 
       dependantProducer match { 
-        case Summer(producer, _, _) => recurse(producer, updatedBolt = FlatMapNode(), updatedRegistry = distinctAddToList(akkaRegistry, currentBolt.toSummer))
+        case Summer(producer, _, _) => maybeSplitThenRecurse(dependantProducer, producer, currentBolt.toSummer)
         case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
         case NamedProducer(producer, newId) => maybeSplitThenRecurse(dependantProducer, producer)
         case AlsoProducer(lProducer, rProducer) => 
               val (updatedReg, updatedVisited) = maybeSplitThenRecurse(dependantProducer, rProducer)
               recurse(lProducer, FlatMapNode(), updatedReg, updatedVisited)
-        case Source(spout) => (distinctAddToList(akkaRegistry, currentBolt.toSource), visitedWithN)
+        case Source(spout) => (distinctAddToList(nodeSet, currentBolt.toSource), visitedWithN)
         case OptionMappedProducer(producer, op) => maybeSplitThenRecurse(dependantProducer, producer)
         case FlatMappedProducer(producer, op)  => maybeSplitThenRecurse(dependantProducer, producer)
         case WrittenProducer(producer, sinkSupplier)  => maybeSplitThenRecurse(dependantProducer, producer)
@@ -128,8 +138,8 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
           val visitedWithOther = otherMergeNodes.foldLeft(visitedWithN){ (visited, n) => visited + n }
 
           // Recurse down all the newly generated dependencies
-          dependencies.foldLeft((distinctAddToList(akkaRegistry, newCurrentBolt), visitedWithOther)) { case ((newAkkaReg, newVisited), n) =>
-            recurse(n, FlatMapNode(), newAkkaReg, newVisited)
+          dependencies.foldLeft((distinctAddToList(nodeSet, newCurrentBolt), visitedWithOther)) { case ((newNodeSet, newVisited), n) =>
+            recurse(n, FlatMapNode(), newNodeSet, newVisited)
           }
       }
     }
@@ -137,20 +147,20 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
 
   // This takes an initial pass through all of the Producers, assigning them to Nodes
   private def buildNodesSet: List[CNode] = {
-    val (akkaRegistry, _) = addWithDependencies(tail, FlatMapNode(), List[CNode](), Set())
-    akkaRegistry
+    val (nodeSet, _) = addWithDependencies(tail, FlatMapNode(), List[CNode](), Set())
+    nodeSet
   }
 }
 
 object OnlinePlan {
-  def apply[P <: Platform[P], T](tail: Producer[P, T]): Dag[P] = {
+  def apply[P <: Platform[P], T](tail: TailProducer[P, T]): Dag[P] = {
     val planner = new OnlinePlan(tail)
-    val akkaNodeSet: List[Node[P]] = planner.buildNodesSet
+    val nodesSet: List[Node[P]] = planner.buildNodesSet
 
     // The nodes are added in a source -> summer way with how we do list prepends
     // but its easier to look at laws in a summer -> source manner
     // We also drop all Nodes with no members(may occur when we visit a node already seen and its the first in that Node)
-    val reversedNodeSet = akkaNodeSet.filter(_.members.size > 0).foldLeft(List[Node[P]]()){(nodes, n) => n.reverse :: nodes}
+    val reversedNodeSet = nodesSet.filter(_.members.size > 0).foldLeft(List[Node[P]]()){(nodes, n) => n.reverse :: nodes}
     Dag(tail, reversedNodeSet)
   }  
 }

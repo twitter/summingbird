@@ -23,16 +23,16 @@ import com.twitter.summingbird.graph._
  */
 case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) {
   lazy val allTails: List[Producer[P, Any]] = nodes.filter { fanOut(_).get == 0 }
-  val nodes: List[Producer[P, Any]] = Producer.entireGraphOf(tail)
+  lazy val nodes: List[Producer[P, Any]] = Producer.entireGraphOf(tail)
 
   /** This is the dependants graph. Each Producer knows who it depends on
    * but not who depends on it without doing this computation
    */
-  private val graph: NeighborFn[Producer[P, Any]] = {
+  private lazy val graph: NeighborFn[Producer[P, Any]] = {
     val nfn = Producer.dependenciesOf[P](_)
     reversed(nodes)(nfn)
   }
-  private val depths: Map[Producer[P, Any], Int] = {
+  private lazy val depths: Map[Producer[P, Any], Int] = {
     val nfn = Producer.dependenciesOf[P](_)
     dagDepth(nodes)(nfn)
   }

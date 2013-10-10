@@ -94,8 +94,11 @@ class Platform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
   type Service[K, V] = (P1#Service[K, V], P2#Service[K, V])
   type Plan[T] = (P1#Plan[T], P2#Plan[T])
 
-  def plan[T](producer: Producer[Platform2[P1, P2], T]): Plan[T] = {
-    val (leftProducer, rightProducer) = Unzip2[P1, P2]()(producer)
+private def tCast[T](p: (Producer[P1, T], Producer[P2, T])): (TailProducer[P1, T], TailProducer[P2, T]) =
+    p.asInstanceOf[(TailProducer[P1, T], TailProducer[P2, T])]
+
+  def plan[T](producer: TailProducer[Platform2[P1, P2], T]): Plan[T] = {
+    val (leftProducer, rightProducer) = tCast(Unzip2[P1, P2]()(producer))
     (p1.plan(leftProducer), p2.plan(rightProducer))
   }
 }

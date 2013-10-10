@@ -21,6 +21,8 @@ import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.storm.planner._
+import com.twitter.storehaus.{ ReadableStore, JMapStore }
+import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.util.Future
@@ -46,6 +48,7 @@ object StormPlanTopology extends Properties("StormDag") {
   implicit def arbSource1: Arbitrary[Producer[Storm, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[Int]).map{x: List[Int] =>  Storm.source(TraversableSpout(x))})
   implicit def arbSource2: Arbitrary[KeyedProducer[Storm, Int, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[(Int, Int)]).map{x: List[(Int, Int)] => IdentityKeyedProducer(Storm.source(TraversableSpout(x)))})
 
+  implicit def arbService2: Arbitrary[Storm#Service[Int, Int]] = Arbitrary(Arbitrary.arbitrary[Int => Option[Int]].map{fn => StoreWrapper[Int, Int](() => ReadableStore.fromFn(fn))})
   
   lazy val genDag : Gen[StormDag]= for {
     tail <- summed 

@@ -22,7 +22,7 @@ import com.twitter.chill.java.IterableRegistrar
 import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird.scalding.store.HDFSMetadata
-import com.twitter.summingbird.{ Env, Unzip2, Summer, Producer, AbstractJob }
+import com.twitter.summingbird.{ Env, Unzip2, Summer, Producer, TailProducer, AbstractJob }
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.builder.{ SourceBuilder, Reducers, CompletedBuilder }
 import com.twitter.summingbird.storm.Storm
@@ -130,7 +130,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     val opts = SourceBuilder.adjust(
       scaldingBuilder.opts, scaldingBuilder.id)(_.set(Reducers(reducers)))
     // Support for the old setting based writing
-    val toRun: Producer[Scalding, (K, V)] =
+    val toRun: TailProducer[Scalding, (K, V)] =
       (for {
         opt <- opts.get(scaldingBuilder.id)
         stid <- opt.get[StoreIntermediateData[K,V]]
