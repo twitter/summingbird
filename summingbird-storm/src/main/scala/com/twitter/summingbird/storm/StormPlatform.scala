@@ -50,6 +50,9 @@ case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID)
 sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
+sealed trait StormSource[+T]
+case class SpoutSource[+T](spout: Spout[(Long, T)]) extends StormSource[T]
+
 object Storm {
   def local(options: Map[String, Options] = Map.empty): LocalStorm =
     new LocalStorm(options, identity)
@@ -57,18 +60,18 @@ object Storm {
   def remote(options: Map[String, Options] = Map.empty): RemoteStorm =
     new RemoteStorm(options, identity)
 
-  def timedSpout[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Spout[(Long, T)] =
-    spout.map(t => (timeOf(t), t))
-
   def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier.from(store)
 
-  implicit def source[T: TimeExtractor: Manifest](spout: Spout[T]) =
-    Producer.source[Storm, T](timedSpout(spout))
+  implicit def toStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) = 
+    SpoutSource(spout.map(t => (timeOf(t), t)))
+
+  implicit def source[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) =
+    Producer.source[Storm, T](toStormSource(spout))
 }
 
 abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
-  type Source[+T] = Spout[(Long, T)]
+  type Source[+T] = StormSource[T]
   type Store[-K, V] = StormStore[K, V]
   type Sink[-T] = () => (T => Future[Unit])
   type Service[-K, +V] = StormService[K, V]
@@ -140,7 +143,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   }
 
   private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
-    val spout = node.members.collect { case Source(s) => s }.head
+    val spout = node.members.collect { case Source(SpoutSource(s)) => s }.head
     val nodeName = stormDag.getNodeName(node)
 
     val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) { (spout, p) =>
