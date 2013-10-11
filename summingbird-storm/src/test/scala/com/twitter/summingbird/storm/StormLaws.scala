@@ -137,14 +137,13 @@ object StormLaws extends Specification {
     */
   def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, (Int, Int)])
       : (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
-    val id = UUID.randomUUID.toString
-    globalState += (id -> TestState())
-
+    
+	val (id, store) = genStore
     val cluster = new LocalCluster()
-
+    
     val job = mkJob(
       Storm.source(TraversableSpout(original)),
-      MergeableStoreSupplier(() => testingStore(id), Batcher.unit)
+      store
     )
 
     val topo = storm.plan(job)
@@ -255,17 +254,15 @@ object StormLaws extends Specification {
 
   "StormPlatform matches Scala for optionMap only jobs" in {
     val original = sample[List[Int]]
-    val id = UUID.randomUUID.toString
+    val (id, store) = genStore
 
     val cluster = new LocalCluster()
-
-    globalState += (id -> TestState())
 
     val producer =
       Storm.source(TraversableSpout(original))
         .filter(_ % 2 == 0)
         .map(_ -> 10)
-        .sumByKey(Storm.store(testingStore(id)))
+        .sumByKey(store)
 
     val topo = storm.plan(producer)
 
