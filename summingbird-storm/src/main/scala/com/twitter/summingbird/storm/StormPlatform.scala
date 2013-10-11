@@ -71,7 +71,7 @@ object Storm {
 }
 
 abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
-  type Source[+T] = SpoutSource[T]
+  type Source[+T] = StormSource[T]
   type Store[-K, V] = StormStore[K, V]
   type Sink[-T] = () => (T => Future[Unit])
   type Service[-K, +V] = StormService[K, V]
