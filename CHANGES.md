@@ -1,5 +1,21 @@
 # summingbird #
 
+## 0.2.2
+* Use pipes instead of parentheses when naming online physical nodes: https://github.com/twitter/summingbird/pull/273
+* Add Alsos in Producer2, OptProd2: https://github.com/twitter/summingbird/pull/275
+* Multiple disjoint summers: https://github.com/twitter/summingbird/pull/274
+* Make Tail sealed: https://github.com/twitter/summingbird/pull/276
+* Scalding Laws not to use scalacheck: https://github.com/twitter/summingbird/pull/278
+* Pull Online planner common code into core: https://github.com/twitter/summingbird/pull/281
+* Use externalizer instead of meatlocker: https://github.com/twitter/summingbird/pull/282
+* Standardize SourceBuilder Naming: https://github.com/twitter/summingbird/pull/285
+* Add TailProducer, for graph ending point: https://github.com/twitter/summingbird/pull/286
+* MemoryLaws not use scalacheck: https://github.com/twitter/summingbird/pull/287
+* Added flatMapKeys to all platforms: https://github.com/twitter/summingbird/pull/288
+* Added flatMapKeys to Builder API: https://github.com/twitter/summingbird/pull/290
+* Add better type safety to Storm Spouts: https://github.com/twitter/summingbird/pull/289
+* Add a streaming left join: https://github.com/twitter/summingbird/pull/291
+
 ## 0.2.1 
 * Add support for map only jobs in producer api https://github.com/twitter/summingbird/pull/269
 * Fixes naming of nodes, options are picked up correctly https://github.com/twitter/summingbird/pull/267
