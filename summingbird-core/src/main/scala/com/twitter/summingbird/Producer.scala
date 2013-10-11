@@ -129,8 +129,9 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
    */
   def also[R](that: Producer[P, R]): Producer[P, R] = AlsoProducer(this, that)
 
-  override def name(id: String): TailProducer[P, T] = new NamedProducer[P, T](this, id) with TailProducer[P, T]
+  override def name(id: String): TailProducer[P, T] = new TPNamedProducer[P, T](this, id)
 }
+
 
 /**
  * This is a special node that ensures that the first argument is planned, but produces values
@@ -138,7 +139,9 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
  */
 case class AlsoProducer[P <: Platform[P], T, R](ensure: TailProducer[P, T], result: Producer[P, R]) extends Producer[P, R]
 
-case class NamedProducer[P <: Platform[P], T](producer: Producer[P, T], id: String) extends Producer[P, T]
+case class NamedProducer[P <: Platform[P], +T](producer: Producer[P, T], id: String) extends Producer[P, T]
+
+class TPNamedProducer[P <: Platform[P], +T](producer: Producer[P, T], id: String) extends NamedProducer[P, T](producer, id) with TailProducer[P, T]
 
 /** Represents filters and maps which may be optimized differently
  * Note that "option-mapping" is closed under composition and hence useful to call out

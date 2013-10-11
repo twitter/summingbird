@@ -36,17 +36,28 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       case OptionMappedProducer(producer, _) => true
       case Source(_) => true
       case AlsoProducer(_, _) => true
-      case _ => false
+      case FlatMappedProducer(_, _) => false
+      case KeyFlatMappedProducer(_, _) => false
+      case LeftJoinedProducer(_, _) => false
+      case Summer(_, _, _) => false
+      case WrittenProducer(_, _) => false
+      case MergedProducer(_, _) => false
     }
   } 
-
+ 
   private def noOpProducer(dep: Producer[P, _]): Boolean = {
     dep match {
       case NamedProducer(_, _) => true
       case IdentityKeyedProducer(_) => true
       case MergedProducer(_, _) => true
       case AlsoProducer(_, _) => true
-      case _ => false
+      case FlatMappedProducer(_, _) => false
+      case KeyFlatMappedProducer(_, _) => false
+      case LeftJoinedProducer(_, _) => false
+      case OptionMappedProducer(_, _) => false
+      case Source(_) => false
+      case Summer(_, _, _) => false
+      case WrittenProducer(_, _) => false
     }
   }
 
