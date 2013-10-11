@@ -36,6 +36,12 @@ import com.twitter.summingbird.storm.planner._
 import com.twitter.util.Future
 import scala.annotation.tailrec
 
+
+/*
+ * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
+ * This is needed/used everywhere we partially aggregate, summer's into stores, map side partial aggregation before summers, etc..
+ */
+
 sealed trait StormStore[-K, V] {
   def batcher: Batcher
 }
