@@ -55,6 +55,11 @@ case class TestState[T, K, V](
   placed: AtomicInteger = new AtomicInteger
 )
 
+object TrueGlobalState {
+  val data = new MutableHashMap[String, TestState[Int, Int, Int]]
+        with SynchronizedMap[String, TestState[Int, Int, Int]]
+}
+
 object StormLaws extends Specification {
   import MapAlgebra.sparseEquiv
 
@@ -64,14 +69,10 @@ object StormLaws extends Specification {
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
   implicit val batcher = Batcher.unit
 
-  def createGlobalState[T, K, V] =
-    new MutableHashMap[String, TestState[T, K, V]]
-        with SynchronizedMap[String, TestState[T, K, V]]
-
   /**
     * Global state shared by all tests.
     */
-  val globalState = createGlobalState[Int, Int, Int]
+  val globalState = TrueGlobalState.data
 
   /**
     * Returns a MergeableStore that routes get, put and merge calls
