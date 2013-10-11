@@ -336,8 +336,8 @@ object Scalding {
             val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
             (fmp.map { flowP =>
               flowP.map { typedPipe =>
-                typedPipe.flatMap { case (time, item) =>
-                  op(item._1).map{newK => (time, (newK, item._2))}
+                typedPipe.flatMap { case (time, (k, v)) =>
+                  op(k).map{newK => (time, (newK, v))}
                 }
               }
             }, m)
