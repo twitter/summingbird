@@ -88,6 +88,14 @@ case class SourceBuilder[T: Manifest] private (
   def filter(fn: T => Boolean): SourceBuilder[T] = copy(node = node.filter(fn))
   def flatMap[U: Manifest](fn: T => TraversableOnce[U]): SourceBuilder[U] =
     copy(node = node.flatMap(fn))
+
+  /** This may be more efficient if you know you are not changing the values in
+   * you flatMap.
+   */
+  def flatMapKeys[K1, K2, V](fn: K1 => TraversableOnce[K2])(implicit ev: T <:< (K1, V),
+    key1Mf: Manifest[K1], key2Mf: Manifest[K2], valMf: Manifest[V]): SourceBuilder[(K2,V)] =
+    copy(node = node.asInstanceOf[Node[(K1, V)]].flatMapKeys(fn))
+
   def flatMapBuilder[U: Manifest](newFlatMapper: FlatMapper[T, U]): SourceBuilder[U] =
     flatMap(newFlatMapper(_))
 
