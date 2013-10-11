@@ -55,6 +55,11 @@ case class TestState[T, K, V](
   placed: AtomicInteger = new AtomicInteger
 )
 
+object TrueGlobalState {
+  val data = new MutableHashMap[String, TestState[Int, Int, Int]]
+        with SynchronizedMap[String, TestState[Int, Int, Int]]
+}
+
 object StormLaws extends Specification {
   import MapAlgebra.sparseEquiv
 
@@ -64,14 +69,10 @@ object StormLaws extends Specification {
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
   implicit val batcher = Batcher.unit
 
-  def createGlobalState[T, K, V] =
-    new MutableHashMap[String, TestState[T, K, V]]
-        with SynchronizedMap[String, TestState[T, K, V]]
-
   /**
     * Global state shared by all tests.
     */
-  val globalState = createGlobalState[Int, Int, Int]
+  val globalState = TrueGlobalState.data
 
   /**
     * Returns a MergeableStore that routes get, put and merge calls
@@ -137,14 +138,13 @@ object StormLaws extends Specification {
     */
   def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, (Int, Int)])
       : (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
-    val id = UUID.randomUUID.toString
-    globalState += (id -> TestState())
-
+    
+	val (id, store) = genStore
     val cluster = new LocalCluster()
-
+    
     val job = mkJob(
       Storm.source(TraversableSpout(original)),
-      MergeableStoreSupplier(() => testingStore(id), Batcher.unit)
+      store
     )
 
     val topo = storm.plan(job)
@@ -222,6 +222,22 @@ object StormLaws extends Specification {
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
   }
+   
+   "StormPlatform matches Scala for flatmap keys jobs" in {
+    val original = sample[List[Int]]
+    val fnA = sample[Int => List[(Int, Int)]]
+    val fnB = sample[Int => List[Int]]
+    val (fn, returnedState) =
+      runOnce(original)(
+        TestGraphs.singleStepMapKeysJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
+      )
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB),
+      returnedState.store.asScala.toMap
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
+  }
+  
   "StormPlatform matches Scala for left join jobs" in {
     val original = sample[List[Int]]
 
@@ -239,17 +255,15 @@ object StormLaws extends Specification {
 
   "StormPlatform matches Scala for optionMap only jobs" in {
     val original = sample[List[Int]]
-    val id = UUID.randomUUID.toString
+    val (id, store) = genStore
 
     val cluster = new LocalCluster()
-
-    globalState += (id -> TestState())
 
     val producer =
       Storm.source(TraversableSpout(original))
         .filter(_ % 2 == 0)
         .map(_ -> 10)
-        .sumByKey(Storm.store(testingStore(id)))
+        .sumByKey(store)
 
     val topo = storm.plan(producer)
 

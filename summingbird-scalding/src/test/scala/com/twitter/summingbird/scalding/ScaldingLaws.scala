@@ -248,6 +248,34 @@ object ScaldingLaws extends Specification {
       val smap = testStore.lastToIterable(BatchID(1)).toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) must be(false)
     }
+    
+    "match scala for flatMapKeys jobs" in {
+      val original = sample[List[Int]]
+      val fnA = sample[(Int) => List[(Int, Int)]]
+      val fnB = sample[Int => List[Int]]
+      val inMemory = TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB)
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = simpleBatcher
+      import Dsl._ // Won't be needed in scalding 0.9.0
+      val testStore = new TestStore[Int,Int]("test", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val (buffer, source) = testSource(inWithTime)
+
+      val summer = TestGraphs.singleStepMapKeysJob[Scalding,(Long,Int),Int,Int, Int](source, testStore)(t =>
+          fnA(t._2), fnB)
+
+      val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
+      val scald = new Scalding("scalaCheckJob")
+      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
+
+      scald.run(ws, mode, scald.plan(summer))
+      // Now check that the inMemory ==
+
+      val smap = testStore.lastToIterable(BatchID(1)).toMap
+      Monoid.isNonZero(Group.minus(inMemory, smap)) must be(false)
+    }
+    
 
 
     "match scala for multiple summer jobs" in {

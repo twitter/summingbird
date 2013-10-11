@@ -40,7 +40,6 @@ object MemoryLaws extends Specification {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
-
   def testGraph[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
     new TestGraphs[Memory, T, K, V](new Memory)(
       () => MutableMap.empty[K, V])(() => new BufferFunc[T])(
@@ -72,21 +71,44 @@ object MemoryLaws extends Specification {
     testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn, identity, sample[List[T]], sample[T => List[(K, U)]], sample[((K, (U, Option[JoinedU]))) => List[(K, V)]])
   }
 
+
+  def mapKeysChecker[T: Manifest: Arbitrary, K1: Arbitrary, K2: Arbitrary,
+               V: Monoid: Arbitrary: Equiv](): Boolean = {
+    val platform = new Memory
+    val currentStore: Memory#Store[K2, V] = MutableMap.empty[K2, V]
+    val sourceMaker = Memory.toSource[T](_)
+    val original = sample[List[T]]
+    val fnA =  sample[T => List[(K1, V)]]
+    val fnB = sample[K1 => List[K2]]
+    
+    // Use the supplied platform to execute the source into the
+    // supplied store.
+     val plan = platform.plan {
+       TestGraphs.singleStepMapKeysJob[Memory, T, K1, K2, V](sourceMaker(original), currentStore)(fnA, fnB) 
+     }
+     platform.run(plan)
+    val lookupFn = currentStore.get(_)
+    TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB).forall { case (k, v) =>
+      val lv = lookupFn(k).getOrElse(Monoid.zero)
+      Equiv[V].equiv(v, lv)
+    }
+  }
+
+
+
   "The Memory Platform" should {
     //Set up the job:
     "singleStep w/ Int, Int, Set[Int]" in { singleStepLaw[Int, Int, Set[Int]] must be(true) }
     "singleStep w/ Int, String, List[Int]" in { singleStepLaw[Int, String, List[Int]] must be(true) }
     "singleStep w/ String, Short, Map[Set[Int], Long]" in {singleStepLaw[String, Short, Map[Set[Int], Long]] must be(true) }
 
-
     "diamond w/ Int, Int, Set[Int]" in { diamondLaw[Int, Int, Set[Int]] must be(true) }
     "diamond w/ Int, String, List[Int]" in { diamondLaw[Int, String, List[Int]] must be(true) }
     "diamond w/ String, Short, Map[Set[Int], Long]" in { diamondLaw[String, Short, Map[Set[Int], Long]] must be(true) }
 
     "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must be(true) }
-
+    
+    "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must be(true) }
   }
 
-  
-  
 }
