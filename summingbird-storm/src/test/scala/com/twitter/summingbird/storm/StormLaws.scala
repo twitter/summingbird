@@ -222,6 +222,22 @@ object StormLaws extends Specification {
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
   }
+   
+   "StormPlatform matches Scala for flatmap keys jobs" in {
+    val original = sample[List[Int]]
+    val fnA = sample[Int => List[(Int, Int)]]
+    val fnB = sample[Int => List[Int]]
+    val (fn, returnedState) =
+      runOnce(original)(
+        TestGraphs.singleStepMapKeysJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
+      )
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB),
+      returnedState.store.asScala.toMap
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
+  }
+  
   "StormPlatform matches Scala for left join jobs" in {
     val original = sample[List[Int]]
 
