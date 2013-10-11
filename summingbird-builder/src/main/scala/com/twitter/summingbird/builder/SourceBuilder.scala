@@ -126,10 +126,10 @@ case class SourceBuilder[T: Manifest] private (
     (implicit ev: T <:< (K, V), keyMf: Manifest[K], valMf: Manifest[V], joinedMf: Manifest[JoinedValue])
       : SourceBuilder[(K, (V, Option[JoinedValue]))] =
     copy(
-      node = node.asInstanceOf[Node[(K, V)]].leftJoin(
+      node = node.asInstanceOf[Node[(K, V)]].leftJoin((
         service.offline,
         service.online.map(StoreWrapper[K, JoinedValue](_))
-      )
+      ))
     )
 
   /** Set's an Option on all nodes ABOVE this point */
