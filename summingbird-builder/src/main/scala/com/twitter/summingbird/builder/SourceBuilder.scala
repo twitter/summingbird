@@ -28,7 +28,7 @@ import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.{CompoundSink, BatchedSinkFromOffline}
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
-import com.twitter.summingbird.storm.{ MergeableStoreSupplier, StoreWrapper, Storm, StormEnv }
+import com.twitter.summingbird.storm.{ MergeableStoreSupplier, StoreWrapper, Storm, StormEnv, StormSource }
 import com.twitter.summingbird.util.CacheSize
 import java.io.Serializable
 import java.util.Date
@@ -67,7 +67,7 @@ object SourceBuilder {
     val newID = nextName[T]
     val scaldingSource =
       eventSource.offline.map( s => Scalding.pipeFactory(s.scaldingSource(_)))
-    val stormSource = eventSource.spout.map(Storm.timedSpout(_))
+    val stormSource = eventSource.spout.map(Storm.toStormSource(_))
     new SourceBuilder[T](
       Source[PlatformPair, T]((scaldingSource, stormSource)),
       CompletedBuilder.injectionRegistrar[T](eventCodec),
