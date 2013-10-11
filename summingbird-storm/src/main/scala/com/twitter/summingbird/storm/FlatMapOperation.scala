@@ -70,6 +70,14 @@ class FunctionFlatMapOperation[T, U](@transient fm: T => TraversableOnce[U])
   def apply(t: T) = Future.value(boxed.get(t))
 }
 
+class FunctionKeyFlatMapOperation[K1, K2, V](@transient fm: K1 => TraversableOnce[K2])
+    extends FlatMapOperation[(K1, V), (K2, V)] {
+  val boxed = Externalizer(fm)
+  def apply(t: (K1, V)) = {
+    Future.value(boxed.get(t._1).map{newK => (newK, t._2)})
+  }
+}
+
 class IdentityFlatMapOperation[T] extends FlatMapOperation[T, T] {
   // By default we do the identity function
   def apply(t: T): Future[TraversableOnce[T]] = Future.value(Some(t))
@@ -83,6 +91,9 @@ object FlatMapOperation {
 
   def apply[T, U](fm: T => TraversableOnce[U]): FlatMapOperation[T, U] =
     new FunctionFlatMapOperation(fm)
+ 
+  def keyFlatMap[K1, K2, V](fm: K1 => TraversableOnce[K2]): FlatMapOperation[(K1, V), (K2, V)] = 
+    new FunctionKeyFlatMapOperation(fm)
 
   def combine[T, K, V, JoinedV](fmSupplier: => FlatMapOperation[T, (K, V)],
     storeSupplier: () => ReadableStore[K, JoinedV]): FlatMapOperation[T, (K, (V, Option[JoinedV]))] =

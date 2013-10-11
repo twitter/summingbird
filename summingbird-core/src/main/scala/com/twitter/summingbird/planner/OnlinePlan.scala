@@ -36,17 +36,28 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       case OptionMappedProducer(producer, _) => true
       case Source(_) => true
       case AlsoProducer(_, _) => true
-      case _ => false
+      case FlatMappedProducer(_, _) => false
+      case KeyFlatMappedProducer(_, _) => false
+      case LeftJoinedProducer(_, _) => false
+      case Summer(_, _, _) => false
+      case WrittenProducer(_, _) => false
+      case MergedProducer(_, _) => false
     }
   } 
-
+ 
   private def noOpProducer(dep: Producer[P, _]): Boolean = {
     dep match {
       case NamedProducer(_, _) => true
       case IdentityKeyedProducer(_) => true
       case MergedProducer(_, _) => true
       case AlsoProducer(_, _) => true
-      case _ => false
+      case FlatMappedProducer(_, _) => false
+      case KeyFlatMappedProducer(_, _) => false
+      case LeftJoinedProducer(_, _) => false
+      case OptionMappedProducer(_, _) => false
+      case Source(_) => false
+      case Summer(_, _, _) => false
+      case WrittenProducer(_, _) => false
     }
   }
 
@@ -121,14 +132,15 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       dependantProducer match { 
         case Summer(producer, _, _) => maybeSplitThenRecurse(dependantProducer, producer, currentBolt.toSummer)
         case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
-        case NamedProducer(producer, newId) => maybeSplitThenRecurse(dependantProducer, producer)
+        case NamedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
         case AlsoProducer(lProducer, rProducer) => 
               val (updatedReg, updatedVisited) = maybeSplitThenRecurse(dependantProducer, rProducer)
               recurse(lProducer, FlatMapNode(), updatedReg, updatedVisited)
         case Source(spout) => (distinctAddToList(nodeSet, currentBolt.toSource), visitedWithN)
-        case OptionMappedProducer(producer, op) => maybeSplitThenRecurse(dependantProducer, producer)
-        case FlatMappedProducer(producer, op)  => maybeSplitThenRecurse(dependantProducer, producer)
-        case WrittenProducer(producer, sinkSupplier)  => maybeSplitThenRecurse(dependantProducer, producer)
+        case OptionMappedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
+        case FlatMappedProducer(producer, _)  => maybeSplitThenRecurse(dependantProducer, producer)
+        case KeyFlatMappedProducer(producer, _)  => maybeSplitThenRecurse(dependantProducer, producer)
+        case WrittenProducer(producer, _)  => maybeSplitThenRecurse(dependantProducer, producer)
         case LeftJoinedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
         case MergedProducer(l, r) =>
           // TODO support de-duping self merges  https://github.com/twitter/summingbird/issues/237

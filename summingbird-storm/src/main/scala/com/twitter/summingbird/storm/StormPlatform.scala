@@ -94,7 +94,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       producers.foldLeft(FlatMapOperation.identity[Any]) {
         case (acc, p) =>
           p match {
-            case LeftJoinedProducer(_, StoreWrapper(newService)) =>
+            case LeftJoinedProducer(_, wrapper) =>
+              val newService = wrapper.asInstanceOf[StoreWrapper[Any, Any]].store
               FlatMapOperation.combine(
                 acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
                 newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
@@ -105,7 +106,9 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
             case MergedProducer(_, _) => acc
             case NamedProducer(_, _) => acc
             case AlsoProducer(_, _) => acc
-            case _ => throw new Exception("Not found! : " + p)
+            case Source(_) => sys.error("Should not schedule a source inside a flat mapper")
+            case Summer(_, _, _) => sys.error("Should not schedule a Summer inside a flat mapper")
+            case KeyFlatMappedProducer(_, op) => acc.andThen(FlatMapOperation.keyFlatMap[Any, Any, Any](op).asInstanceOf[FlatMapOperation[Any, Any]])
           }
       }
     }
