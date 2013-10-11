@@ -331,6 +331,16 @@ object Scalding {
                 }
               }
             }, m)
+          case KeyFlatMappedProducer(producer, op) =>
+            // Map in two monads here, first state then reader
+            val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
+            (fmp.map { flowP =>
+              flowP.map { typedPipe =>
+                typedPipe.flatMap { case (time, item) =>
+                  op(item._1).map{newK => (time, (newK, item._2))}
+                }
+              }
+            }, m)
           case FlatMappedProducer(producer, op) =>
             // Map in two monads here, first state then reader
             val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
