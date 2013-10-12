@@ -64,6 +64,14 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
     TestTapFactory(this, new NullScheme[JobConf, RecordReader[_,_], OutputCollector[_,_], T, T](Fields.ALL, Fields.ALL)).createTap(readOrWrite)
 }
 
+object TestStore {
+  def apply[K, V](store: String, inBatcher: Batcher, initTime: Long, initStore: Iterable[(K, V)], lastTime: Long)
+    (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)]) = {
+    val startBatch = inBatcher.batchOf(new Date(initTime))
+    val endBatch = inBatcher.batchOf(new Date(lastTime))
+    new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch)
+  }
+}
 
 class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID)
 (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
@@ -230,8 +238,7 @@ object ScaldingLaws extends Specification {
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = simpleBatcher
-      import Dsl._ // Won't be needed in scalding 0.9.0
-      val testStore = new TestStore[Int,Int]("test", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val testStore = TestStore[Int,Int]("test", batcher, -1, Iterable.empty, inWithTime.size)
       val (buffer, source) = testSource(inWithTime)
 
       val summer = TestGraphs.singleStepJob[Scalding,(Long,Int),Int,Int](source, testStore)(t =>
@@ -248,7 +255,7 @@ object ScaldingLaws extends Specification {
       val smap = testStore.lastToIterable(BatchID(1)).toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) must be(false)
     }
-    
+
     "match scala for flatMapKeys jobs" in {
       val original = sample[List[Int]]
       val fnA = sample[(Int) => List[(Int, Int)]]
@@ -257,8 +264,8 @@ object ScaldingLaws extends Specification {
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = simpleBatcher
-      import Dsl._ // Won't be needed in scalding 0.9.0
-      val testStore = new TestStore[Int,Int]("test", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val testStore = TestStore[Int,Int]("test", batcher, -1, Iterable.empty, inWithTime.size)
+
       val (buffer, source) = testSource(inWithTime)
 
       val summer = TestGraphs.singleStepMapKeysJob[Scalding,(Long,Int),Int,Int, Int](source, testStore)(t =>
@@ -275,7 +282,7 @@ object ScaldingLaws extends Specification {
       val smap = testStore.lastToIterable(BatchID(1)).toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) must be(false)
     }
-    
+
 
 
     "match scala for multiple summer jobs" in {
@@ -288,9 +295,8 @@ object ScaldingLaws extends Specification {
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = simpleBatcher
-      import Dsl._ // Won't be needed in scalding 0.9.0
-      val testStoreA = new TestStore[Int,Int]("testA", batcher, BatchID(0), Iterable.empty, BatchID(1))
-      val testStoreB = new TestStore[Int,Int]("testB", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val testStoreA = TestStore[Int,Int]("testA", batcher, -1, Iterable.empty, inWithTime.size)
+      val testStoreB = TestStore[Int,Int]("testB", batcher, -1, Iterable.empty, inWithTime.size)
       val (buffer, source) = testSource(inWithTime)
 
       val tail = TestGraphs.multipleSummerJob[Scalding, (Long, Int), Int, Int, Int, Int, Int](source, testStoreA, testStoreB)({t => fnA(t._2)}, fnB, fnC)
@@ -336,8 +342,7 @@ object ScaldingLaws extends Specification {
 
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = simpleBatcher
-      import Dsl._ // Won't be needed in scalding 0.9.0
-      val testStore = new TestStore[Int,Int]("test", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val testStore = TestStore[Int,Int]("test", batcher, -1, Iterable.empty, inWithTime.size)
       val testService = new TestService[Int, Int]("srv",
         batcher,
         Map(BatchID(0) -> Iterable.empty),
@@ -368,9 +373,7 @@ object ScaldingLaws extends Specification {
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = simpleBatcher
-      import Dsl._ // Won't be needed in scalding 0.9.0
-      val testStore = new TestStore[Int,Int]("test", batcher, BatchID(0),
-        Iterable.empty, BatchID(1))
+      val testStore = TestStore[Int,Int]("test", batcher, -1, Iterable.empty, inWithTime.size)
       val testSink = new TestSink[(Long,Int)]
       val (buffer, source) = testSource(inWithTime)
 
@@ -392,7 +395,7 @@ object ScaldingLaws extends Specification {
         println(inWithTime)
       val smap = testStore.lastToIterable(BatchID(1)).toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) must be (false)
-      
+
       sinkOut.map { _._2 }.toList must be_== (inWithTime)
     }
   }
@@ -434,8 +437,7 @@ class ScaldingSerializationSpecs extends Specification {
       // Add a time:
       val inWithTime = List(1, 2, 3).zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = ScaldingLaws.simpleBatcher
-      import Dsl._ // Won't be needed in scalding 0.9.0
-      val testStore = new TestStore[Int,Int]("test", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val testStore = TestStore[Int,Int]("test", batcher, -1, Iterable.empty, inWithTime.size)
       val (buffer, source) = ScaldingLaws.testSource(inWithTime)
 
       val summer = TestGraphs.singleStepJob[Scalding,(Long, Int),Int,Int](source, testStore) {
