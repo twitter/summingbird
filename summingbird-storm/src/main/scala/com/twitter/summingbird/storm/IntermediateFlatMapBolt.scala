@@ -39,12 +39,13 @@ class IntermediateFlatMapBolt[T](
 
   val lockedOp = Externalizer(flatMapOp)
 
-  def toValues(time: Timestamp, item: Any): Values = new Values((time, item))
+  def toValues(time: Timestamp, item: Any): Values = new Values((time.milliSinceEpoch, item))
 
   override val fields = Some(new Fields("pair"))
 
   override def execute(tuple: Tuple) {
-    val (time, t) = tuple.getValue(0).asInstanceOf[(Timestamp, T)]
+    val (timeMs, t) = tuple.getValue(0).asInstanceOf[(Long, T)]
+    val time = Timestamp(timeMs)
 
     lockedOp.get(t).foreach { items =>
       if(shouldEmit) {

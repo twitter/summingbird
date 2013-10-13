@@ -68,7 +68,8 @@ class FinalFlatMapBolt[Event, Key, Value](
   }
 
   override def execute(tuple: Tuple) {
-    val (time, event) = tuple.getValue(0).asInstanceOf[(Timestamp, Event)]
+    val (timeMs, event) = tuple.getValue(0).asInstanceOf[(Long, Event)]
+    val time = Timestamp(timeMs)
     val batchID = batcher.batchOf(time)
 
     /**

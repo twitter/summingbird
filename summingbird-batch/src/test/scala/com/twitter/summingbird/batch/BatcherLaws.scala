@@ -26,7 +26,7 @@ import com.twitter.algebird.{Interval, ExclusiveUpper, Empty}
 object BatcherLaws extends Properties("Batcher") {
   import Generators._
 
-  implicit val arbTimestamp : Arbitrary[Timestamp] = Arbitrary(Timestamp((new java.util.Date).getTime))
+  implicit val arbTimestamp : Arbitrary[Timestamp] = Arbitrary(Arbitrary.arbitrary[java.util.Date].map(x => Timestamp(x.getTime)))
 
   def batchIdIdentity(batcher : Batcher) = { (b : BatchID) =>
     batcher.batchOf(batcher.earliestTimeOf(b))
@@ -117,7 +117,7 @@ object BatcherLaws extends Properties("Batcher") {
   property("batchesCoveredBy produces has times in the interval") =
     forAll { (d: Timestamp, sl: SmallLong) =>
       // Make sure we cover at least an hour in the usual case by multiplying by ms per hour
-      val int = Interval.leftClosedRightOpen(d, Timestamp(d.milliSinceEpoch + (60L * 60L * 1000L * sl.get)))
+      val int = Interval.leftClosedRightOpen(d, d.incrementHours(sl.get))
       val covered = hourlyBatcher.batchesCoveredBy(int)
       // If we have empty, we have to have <= 1 hour blocks, 2 or more must cover a 1 hour block
       ((covered == Empty[BatchID]()) && (sl.get <= 1)) || {

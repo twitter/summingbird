@@ -45,7 +45,7 @@ class CombinedBatcher(before: Batcher,
       after.earliestTimeOf((b - batchAtBound.id) + afterBatchDelta.id)
     }
     else if(b == batchAtBound) {
-      Timestamp(beforeBound.upper.milliSinceEpoch) // damn mutable dates
+      beforeBound.upper
     }
     else
       before.earliestTimeOf(b)

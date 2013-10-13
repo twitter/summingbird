@@ -29,7 +29,7 @@ import com.twitter.chill.config.{ ConfiguredInstantiator, JavaMapConfig }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
+import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
@@ -66,7 +66,7 @@ sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 sealed trait StormSource[+T]
-case class SpoutSource[+T](spout: Spout[(Timestamp, T)]) extends StormSource[T]
+case class SpoutSource[+T](spout: Spout[(Long, T)]) extends StormSource[T]
 
 object Storm {
   def local(options: Map[String, Options] = Map.empty): LocalStorm =
@@ -79,7 +79,7 @@ object Storm {
     MergeableStoreSupplier.from(store)
 
   implicit def toStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) = 
-    SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)))
+    SpoutSource(spout.map(t => (timeOf(t), t)))
 
   implicit def source[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) =
     Producer.source[Storm, T](toStormSource(spout))
@@ -161,7 +161,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val spout = node.members.collect { case Source(SpoutSource(s)) => s }.head
     val nodeName = stormDag.getNodeName(node)
 
-    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
+    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) { (spout, p) =>
       p match {
         case Source(_) => spout // The source is still in the members list so drop it
         case OptionMappedProducer(_, op) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}

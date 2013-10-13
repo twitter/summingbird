@@ -125,8 +125,8 @@ trait Batcher extends Serializable {
       case Universe() => Universe()
       case ExclusiveUpper(upper) => ExclusiveUpper(onExcUp(upper))
       case InclusiveLower(lower) => InclusiveLower(onIncLow(lower))
-      case InclusiveUpper(upper) => ExclusiveUpper(onExcUp(next(upper)))
-      case ExclusiveLower(lower) => InclusiveLower(onIncLow(next(lower)))
+      case InclusiveUpper(upper) => ExclusiveUpper(onExcUp(upper.next))
+      case ExclusiveLower(lower) => InclusiveLower(onIncLow(lower.next))
       case Intersection(low, high) =>
         // Convert to inclusive:
         val lowdate = low match {
