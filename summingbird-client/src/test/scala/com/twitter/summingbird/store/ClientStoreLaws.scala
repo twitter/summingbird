@@ -6,8 +6,6 @@ import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird.batch._
 import com.twitter.util.{ Await, Future }
 
-import java.util.Date
-
 /**
   * The backing map of a TestStore holds an Option[V] -- keys that are
   * present in the map will be mapped to successful futures. Missing
@@ -23,8 +21,8 @@ case class TestStore[K, +V](m: Map[K, Option[V]]) extends ReadableStore[K, V] {
 class ClientStoreLaws extends Specification {
   /** Batcher that always returns a batch of 10. */
   implicit val batcher = new AbstractBatcher {
-    def batchOf(t: Date) = BatchID(10)
-    def earliestTimeOf(batch: BatchID) = new Date(0)
+    def batchOf(t: Timestamp) = BatchID(10)
+    def earliestTimeOf(batch: BatchID) = Timestamp(0)
   }
 
   val offline = TestStore[String, (BatchID, Int)](

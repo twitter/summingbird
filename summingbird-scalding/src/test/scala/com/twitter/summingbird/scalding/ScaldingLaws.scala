@@ -19,7 +19,7 @@ package com.twitter.summingbird.scalding
 import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
 import com.twitter.algebird.monad._
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{BatchID, Batcher, MillisecondBatcher}
+import com.twitter.summingbird.batch._
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
 import com.twitter.scalding.typed.TypedSink
@@ -38,7 +38,6 @@ import cascading.tuple.{Tuple, Fields, TupleEntry}
 import cascading.flow.FlowDef
 import cascading.tap.Tap
 import cascading.scheme.NullScheme
-import java.util.Date
 import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
@@ -67,8 +66,8 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
 object TestStore {
   def apply[K, V](store: String, inBatcher: Batcher, initStore: Iterable[(K, V)], lastTime: Long)
     (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)]) = {
-    val startBatch = inBatcher.batchOf(new Date(0)).prev
-    val endBatch = inBatcher.batchOf(new Date(lastTime)).next
+    val startBatch = inBatcher.batchOf(Timestamp(0)).prev
+    val endBatch = inBatcher.batchOf(Timestamp(lastTime)).next
     new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch)
   }
 }
@@ -251,22 +250,22 @@ object ScaldingLaws extends Specification {
     !wrong
   }
 
-  def batchedCover(batcher: Batcher, minTime: Long, maxTime: Long): Interval[Date] =
+  def batchedCover(batcher: Batcher, minTime: Long, maxTime: Long): Interval[Timestamp] =
     batcher.cover(
-      Interval.leftClosedRightOpen(new Date(minTime), new Date(maxTime+1L))
+      Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime+1L))
     ).mapNonDecreasing(b => batcher.earliestTimeOf(b.next))
 
   val simpleBatcher = new Batcher {
-    def batchOf(d: java.util.Date) =
-      if (d.getTime == Long.MaxValue) BatchID(2)
-      else if (d.getTime >= 0L) BatchID(1)
+    def batchOf(d: Timestamp) =
+      if (d == Timestamp.Max) BatchID(2)
+      else if (d.milliSinceEpoch >= 0L) BatchID(1)
       else BatchID(0)
 
     def earliestTimeOf(batch: BatchID) = batch.id match {
-      case 0L => new java.util.Date(Long.MinValue)
-      case 1L => new java.util.Date(0)
-      case 2L => new java.util.Date(Long.MaxValue)
-      case 3L => new java.util.Date(Long.MaxValue)
+      case 0L => Timestamp.Min
+      case 1L => Timestamp(0)
+      case 2L => Timestamp.Max
+      case 3L => Timestamp.Max
     }
   }
 
@@ -401,7 +400,7 @@ object ScaldingLaws extends Specification {
       /**
        * Create the batched service
        */
-      val batchedService = stream.groupBy { case (time, _) => batcher.batchOf(new Date(time)) }
+      val batchedService = stream.groupBy { case (time, _) => batcher.batchOf(Timestamp(time)) }
       val testService = new TestService[Int, Int]("srv", batcher, batchedService)
 
       val (buffer, source) = testSource(inWithTime)
@@ -480,9 +479,9 @@ object VersionBatchLaws extends Properties("VersionBatchLaws") {
     val vbs = new VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
       0, batcher)(null)(null)
     val b = vbs.versionToBatchID(l)
-    (batcher.earliestTimeOf(b.next).getTime <= l) &&
-    (batcher.earliestTimeOf(b).getTime < l)
-    (batcher.earliestTimeOf(b.next.next).getTime > l)
+    (batcher.earliestTimeOf(b.next).milliSinceEpoch <= l) &&
+    (batcher.earliestTimeOf(b).milliSinceEpoch < l)
+    (batcher.earliestTimeOf(b.next.next).milliSinceEpoch > l)
   }
 }
 

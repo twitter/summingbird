@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.scalding.{Mode, TypedPipe, AbsoluteDuration}
 import com.twitter.algebird.monad.Reader
 import cascading.flow.FlowDef
@@ -44,10 +44,10 @@ trait BatchedWindowService[K, V] extends BatchedService[K, V] {
    * an empty pipe that is outside the window.
    */
   def readLast(exclusiveUB: BatchID, mode: Mode):  Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
-    val earliestInput = batcher.earliestTimeOf(exclusiveUB).getTime
+    val earliestInput = batcher.earliestTimeOf(exclusiveUB).milliSinceEpoch
     val earliestNeededKey = earliestInput - windowSize
     // We may need values from this batch:
-    val earliestNeededBatch = batcher.batchOf(new java.util.Date(earliestNeededKey))
+    val earliestNeededBatch = batcher.batchOf(Timestamp(earliestNeededKey))
     // But all of these values are definitly too old:
     val firstZeroBatch = earliestNeededBatch.prev
     Right((firstZeroBatch, Scalding.emptyFlowProducer))

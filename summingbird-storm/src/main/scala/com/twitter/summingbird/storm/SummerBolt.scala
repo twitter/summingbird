@@ -27,7 +27,7 @@ import com.twitter.util.Future
 import java.util.{ Map => JMap }
 
 /**
-  * The SinkBolt takes two related options: CacheSize and MaxWaitingFutures.
+  * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
   * CacheSize sets the number of key-value pairs that the SinkBolt will accept
   * (and sum into an internal map) before committing out to the online store.
   *
@@ -48,7 +48,7 @@ import java.util.{ Map => JMap }
   * @author Ashu Singhal
   */
 
-class SinkBolt[Key, Value: Monoid](
+class SummerBolt[Key, Value: Monoid](
   @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,

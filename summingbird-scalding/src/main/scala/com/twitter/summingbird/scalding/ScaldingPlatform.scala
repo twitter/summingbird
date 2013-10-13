@@ -31,7 +31,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.serializer.{Serialization => HSerialization}
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
-import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
+import java.util.{ HashMap => JHashMap, Map => JMap, TimeZone }
 import cascading.flow.{FlowDef, Flow}
 import com.twitter.scalding.Mode
 
@@ -507,13 +507,13 @@ class Scalding(
     }
   }
 
-  def run(state: WaitingState[Date], mode: Mode, pf: TailProducer[Scalding, _]): WaitingState[Date] =
+  def run(state: WaitingState[Timestamp], mode: Mode, pf: TailProducer[Scalding, _]): WaitingState[Timestamp] =
     run(state, mode, plan(pf))
 
-  def run(state: WaitingState[Date], mode: Mode, pf: PipeFactory[_]): WaitingState[Date] = {
+  def run(state: WaitingState[Timestamp], mode: Mode, pf: PipeFactory[_]): WaitingState[Timestamp] = {
     setIoSerializations(mode)
     val runningState = state.begin
-    val timeSpan = runningState.part.mapNonDecreasing(_.getTime)
+    val timeSpan = runningState.part.mapNonDecreasing(_.milliSinceEpoch)
     toFlow(timeSpan, mode, pf) match {
       case Left(errs) =>
         runningState.fail(FlowPlanException(errs))
@@ -525,7 +525,7 @@ class Scalding(
           }
           flow.complete
           if (flow.getFlowStats.isSuccessful)
-            runningState.succeed(ts.mapNonDecreasing(new Date(_)))
+            runningState.succeed(ts.mapNonDecreasing(Timestamp(_)))
           else
             runningState.fail(new Exception("Flow did not complete."))
         } catch {
