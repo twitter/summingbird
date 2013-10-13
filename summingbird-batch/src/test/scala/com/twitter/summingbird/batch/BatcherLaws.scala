@@ -26,8 +26,6 @@ import com.twitter.algebird.{Interval, ExclusiveUpper, Empty}
 object BatcherLaws extends Properties("Batcher") {
   import Generators._
 
-  implicit val arbTimestamp : Arbitrary[Timestamp] = Arbitrary(Arbitrary.arbitrary[java.util.Date].map(x => Timestamp(x.getTime)))
-
   def batchIdIdentity(batcher : Batcher) = { (b : BatchID) =>
     batcher.batchOf(batcher.earliestTimeOf(b))
   }
