@@ -209,7 +209,7 @@ object ScaldingLaws extends Specification {
 
   val simpleBatcher = new Batcher {
     def batchOf(d: Timestamp) =
-      if (d == d.Max) BatchID(2)
+      if (d == Timestamp.Max) BatchID(2)
       else if (d.milliSinceEpoch >= 0L) BatchID(1)
       else BatchID(0)
 
