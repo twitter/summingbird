@@ -37,6 +37,16 @@ class BatcherSpec extends Specification {
       5L -> List(1L, 2L) // 1 hr, 51 minutes -> 2 hr, 12 minutes
     ))
   }
+
+  "DurationBatcher when called on current batch should be within the last few seconds" in {
+    val batcher = Batcher.ofMinutes(10)
+    val longBatch: BatchID = batcher.currentBatch
+    val curBatch: BatchID = batcher.batchOf(Timestamp((new java.util.Date()).getTime))
+    // For a 10min window, longBatch <= curBatch <= longBatch + 1
+    (longBatch.compare(curBatch - 1) >= 0) must be(true)
+    (longBatch.compare(curBatch) <= 0) must be(true)
+  }
+
   "DurationBatcher should always require n batches to fit into a batcher of n hours" in {
     (10 to 100).foreach { n =>
       Batcher.ofHours(n).enclosedBy(BatchID(100), hourlyBatcher).size must be_==(n)
