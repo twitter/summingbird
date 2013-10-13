@@ -88,9 +88,8 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
     }.toMap
 
   // Call this after you compute to check the results of the
-  def lastToIterable: Iterable[(K, V)] = {
+  def lastToIterable: Iterable[(K, V)] =
     sourceToBuffer(batches(writtenBatches.max)).toIterable.map { tup => tconv(new TupleEntry(tup)) }
-  }
 
   val batcher = inBatcher
   val ordering = ord
