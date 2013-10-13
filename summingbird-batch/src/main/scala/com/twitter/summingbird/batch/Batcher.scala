@@ -68,12 +68,12 @@ object Batcher {
   val unit: Batcher = new AbstractBatcher  {
     override val currentBatch = BatchID(0L)
     def batchOf(t: Timestamp) = currentBatch
-    def earliestTimeOf(batch: BatchID) = Timestamp(Long.MinValue)
+    def earliestTimeOf(batch: BatchID) = Timestamp.Min
     override def toInterval(b: BatchID): Interval[Timestamp] =
       if(b == BatchID(0))
         Intersection(
-          InclusiveLower(Timestamp(Long.MinValue)),
-          InclusiveUpper(Timestamp(Long.MaxValue))
+          InclusiveLower(Timestamp.Min),
+          InclusiveUpper(Timestamp.Max)
         )
       else
         Empty[Timestamp]()
@@ -87,10 +87,10 @@ object Batcher {
         case Universe() => totalBatchInterval
         case ExclusiveUpper(upper) => Empty()
         case InclusiveLower(lower) =>
-          if(lower == Timestamp(Long.MinValue)) totalBatchInterval
+          if(lower == Timestamp.Min) totalBatchInterval
           else Empty()
         case InclusiveUpper(upper) =>
-          if(upper == Timestamp(Long.MaxValue)) totalBatchInterval
+          if(upper == Timestamp.Max) totalBatchInterval
           else Empty()
         case ExclusiveLower(lower) => Empty()
         case Intersection(low, high) => batchesCoveredBy(low) && batchesCoveredBy(high)

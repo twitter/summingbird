@@ -214,9 +214,9 @@ object ScaldingLaws extends Specification {
       else BatchID(0)
 
     def earliestTimeOf(batch: BatchID) = batch.id match {
-      case 0L => Timestamp(Long.MinValue)
+      case 0L => Timestamp.Min
       case 1L => Timestamp(0)
-      case 2L => Timestamp(Long.MaxValue)
+      case 2L => Timestamp.Max
     }
   }
 

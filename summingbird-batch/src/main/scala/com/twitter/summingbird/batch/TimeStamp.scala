@@ -23,12 +23,14 @@ import java.util.Date
 
 case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
   def compare(that: Timestamp) = milliSinceEpoch.compare(that.milliSinceEpoch)
+  def Max = Timestamp.Max
+  def Min = Timestamp.Min
 }
 
 object Timestamp {
   implicit def fromDate(d: Date) = Timestamp(d.getTime)
   implicit val orderingOnTimestamp: Ordering[Timestamp] = Ordering.by(_.milliSinceEpoch)
-  implicit val maxTSMonoid: Monoid[Timestamp] = Monoid.from(Timestamp(Long.MinValue))(orderingOnTimestamp.max(_, _))
+  implicit val maxTSMonoid: Monoid[Timestamp] = Monoid.from(Timestamp.Min)(orderingOnTimestamp.max(_, _))
 
   implicit val timestamp2Date: Bijection[Timestamp, Date] =
     Bijection.build[Timestamp, Date] { ts => new Date(ts.milliSinceEpoch) } { fromDate(_) }
