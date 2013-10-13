@@ -120,6 +120,7 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
 
 class TestService[K, V](service: String,
   inBatcher: Batcher,
+  minBatch: BatchID,
   streams: Map[BatchID, Iterable[(Time, (K, Option[V]))]])
 (implicit ord: Ordering[K],
   tset: TupleSetter[(Time, (K, Option[V]))],
@@ -138,7 +139,6 @@ class TestService[K, V](service: String,
 
   /** The lasts are computed from the streams */
   lazy val lasts: Map[BatchID, Iterable[(Time, (K, V))]] = {
-    val minBatch = streams.keys.min.prev
     (streams
       .toList
       .sortBy(_._1)
@@ -238,13 +238,17 @@ object ScaldingLaws extends Specification {
 
   implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor( _._1 )
 
-  def compareMaps[K,V:Group](original: Any, inMemory: Map[K, V], produced: Map[K, V]): Boolean = {
+  def compareMaps[K,V:Group](original: Iterable[Any], inMemory: Map[K, V], testStore: TestStore[K, V]): Boolean = {
+    val produced = testStore.lastToIterable.toMap
     val diffMap = Group.minus(inMemory, produced)
     val wrong = Monoid.isNonZero(diffMap)
     if(wrong) {
       println("input: " + original)
+      println("input size: " + original.size)
       println("producer extra keys: " + (produced.keySet -- inMemory.keySet))
       println("producer missing keys: " + (inMemory.keySet -- produced.keySet))
+      println("written batches: " + testStore.writtenBatches)
+      println("earliest unwritten time: " + testStore.batcher.earliestTimeOf(testStore.writtenBatches.max.next))
       println("Difference: " + diffMap)
     }
     !wrong
@@ -267,10 +271,15 @@ object ScaldingLaws extends Specification {
       case 2L => Timestamp.Max
       case 3L => Timestamp.Max
     }
+    // this is just for testing, it covers everything with batch 1
+    override def cover(interval: Interval[Timestamp]): Interval[BatchID] =
+      Interval.leftClosedRightOpen(BatchID(1), BatchID(2))
   }
 
-  def randomBatcher(items: Iterable[(Long, Any)]): Batcher =
-    randomBatcher(items.iterator.map(_._1).min, items.iterator.map(_._1).max)
+  def randomBatcher(items: Iterable[(Long, Any)]): Batcher = {
+    if(items.isEmpty) simpleBatcher
+    else randomBatcher(items.iterator.map(_._1).min, items.iterator.map(_._1).max)
+  }
 
   def randomBatcher(mintimeInc: Long, maxtimeInc: Long): Batcher = { //simpleBatcher
     // we can have between 1 and (maxtime - mintime + 1) batches.
@@ -307,8 +316,7 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
 
-      val smap = testStore.lastToIterable.toMap
-      compareMaps(original, inMemory, smap) must be_==(true)
+      compareMaps(original, inMemory, testStore) must be_==(true)
     }
 
     "match scala for flatMapKeys jobs" in {
@@ -334,8 +342,7 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
 
-      val smap = testStore.lastToIterable.toMap
-      compareMaps(original, inMemory, smap) must beTrue
+      compareMaps(original, inMemory, testStore) must beTrue
     }
 
     "match scala for multiple summer jobs" in {
@@ -362,11 +369,8 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, scald.plan(tail))
       // Now check that the inMemory ==
 
-      val smapA = testStoreA.lastToIterable.toMap
-      compareMaps(original, inMemoryA, smapA) must beTrue
-
-      val smapB = testStoreB.lastToIterable.toMap
-      compareMaps(original, inMemoryB, smapB) must beTrue
+      compareMaps(original, inMemoryA, testStoreA) must beTrue
+      compareMaps(original, inMemoryB, testStoreB) must beTrue
     }
 
 
@@ -401,7 +405,7 @@ object ScaldingLaws extends Specification {
        * Create the batched service
        */
       val batchedService = stream.groupBy { case (time, _) => batcher.batchOf(Timestamp(time)) }
-      val testService = new TestService[Int, Int]("srv", batcher, batchedService)
+      val testService = new TestService[Int, Int]("srv", batcher, batcher.batchOf(Timestamp(0)).prev, batchedService)
 
       val (buffer, source) = testSource(inWithTime)
 
@@ -446,8 +450,7 @@ object ScaldingLaws extends Specification {
       // Now check that the inMemory ==
 
       val sinkOut = testSink.reset
-      val smap = testStore.lastToIterable.toMap
-      compareMaps(original, inMemory, smap) must beTrue
+      compareMaps(original, inMemory, testStore) must beTrue
       val wrongSink = sinkOut.map { _._2 }.toList != inWithTime
       wrongSink must be_==(false)
       if(wrongSink) {
