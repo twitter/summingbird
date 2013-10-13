@@ -29,7 +29,7 @@ class CombinedBatcher(before: Batcher,
   beforeBound: ExclusiveUpper[Timestamp],
   after: Batcher) extends Batcher {
 
-  val batchAtBound: BatchID = before.batchOf(Timestamp(beforeBound.upper.milliSinceEpoch - 1L)) + 1L
+  val batchAtBound: BatchID = before.batchOf(beforeBound.upper.prev) + 1L
   val afterBatchDelta: BatchID = after.batchOf(beforeBound.upper)
 
   def batchOf(d: Timestamp): BatchID =

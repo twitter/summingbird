@@ -65,7 +65,7 @@ class VersionedState(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatche
     def succeed(succeedPart: Interval[Timestamp]) = {
       val nextTime = succeedPart match {
         case Intersection(_, ExclusiveUpper(up)) => up
-        case Intersection(_, InclusiveUpper(up)) => Timestamp(up.milliSinceEpoch + 1L)
+        case Intersection(_, InclusiveUpper(up)) => up.next
         case _ => sys.error("We should always be running for a finite interval")
       }
       val batchID = batcher.batchOf(nextTime)

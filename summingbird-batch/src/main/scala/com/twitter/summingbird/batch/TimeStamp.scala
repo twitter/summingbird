@@ -25,6 +25,8 @@ case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
   def compare(that: Timestamp) = milliSinceEpoch.compare(that.milliSinceEpoch)
   def Max = Timestamp.Max
   def Min = Timestamp.Min
+  def prev = copy(milliSinceEpoch = milliSinceEpoch - 1)
+  def next = copy(milliSinceEpoch = milliSinceEpoch + 1)
 }
 
 object Timestamp {

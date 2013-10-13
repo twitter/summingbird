@@ -119,7 +119,6 @@ trait Batcher extends Serializable {
    * the interval of time.
    */
   private def dateToBatch(interval: Interval[Timestamp])(onIncLow: (Timestamp) => BatchID)(onExcUp: (Timestamp) => BatchID): Interval[BatchID] = {
-    def next(d: Timestamp): Timestamp =  Timestamp(d.milliSinceEpoch + 1L)
 
     interval match {
       case Empty() => Empty()
@@ -132,11 +131,11 @@ trait Batcher extends Serializable {
         // Convert to inclusive:
         val lowdate = low match {
           case InclusiveLower(lb) => lb
-          case ExclusiveLower(lb) => next(lb)
+          case ExclusiveLower(lb) => lb.next
         }
         //convert it exclusive:
         val highdate = high match {
-          case InclusiveUpper(hb) => next(hb)
+          case InclusiveUpper(hb) => hb.next
           case ExclusiveUpper(hb) => hb
         }
         val upperBatch = onExcUp(highdate)
@@ -170,7 +169,7 @@ trait Batcher extends Serializable {
     */
   def enclosedBy(batchID: BatchID, other: Batcher): Iterable[BatchID] = {
     val earliestInclusive = earliestTimeOf(batchID)
-    val latestInclusive = Timestamp(earliestTimeOf(batchID.next).milliSinceEpoch - 1L)
+    val latestInclusive = earliestTimeOf(batchID.next).prev
     BatchID.range(
       other.batchOf(earliestInclusive),
       other.batchOf(latestInclusive)

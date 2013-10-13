@@ -44,7 +44,7 @@ object BatcherLaws extends Properties("Batcher") {
   }
 
   def batchesIncreaseByAtMostOne(batcher: Batcher) = forAll { (d: Timestamp) =>
-    val nextTimeB = batcher.batchOf(Timestamp(d.milliSinceEpoch + 1L))
+    val nextTimeB = batcher.batchOf(d.next)
     batcher.batchOf(d) == nextTimeB ||
       batcher.batchOf(d) == nextTimeB.prev
   }
@@ -124,7 +124,7 @@ object BatcherLaws extends Properties("Batcher") {
         val minBatch = BatchID.toIterable(covered).min
         val maxBatch = BatchID.toIterable(covered).max
         int.contains(hourlyBatcher.earliestTimeOf(minBatch)) &&
-          int.contains(Timestamp(hourlyBatcher.earliestTimeOf(maxBatch.next).milliSinceEpoch - 1L))
+          int.contains(hourlyBatcher.earliestTimeOf(maxBatch.next).prev)
       }
     }
 }
