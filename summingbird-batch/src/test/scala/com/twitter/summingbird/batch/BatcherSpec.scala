@@ -41,7 +41,7 @@ class BatcherSpec extends Specification {
   "DurationBatcher when called on current batch should be within the last few seconds" in {
     val batcher = Batcher.ofMinutes(10)
     val longBatch: BatchID = batcher.currentBatch
-    val curBatch: BatchID = batcher.batchOf(Timestamp((new java.util.Date()).getTime))
+    val curBatch: BatchID = batcher.batchOf(Timestamp.now)
     // For a 10min window, longBatch <= curBatch <= longBatch + 1
     (longBatch.compare(curBatch - 1) >= 0) must be(true)
     (longBatch.compare(curBatch) <= 0) must be(true)

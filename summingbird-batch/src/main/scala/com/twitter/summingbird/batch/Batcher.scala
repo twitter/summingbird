@@ -154,7 +154,7 @@ trait Batcher extends Serializable {
   def earliestTimeOf(batch: BatchID): Timestamp
 
   /** Returns the current BatchID. */
-  def currentBatch: BatchID = batchOf(Timestamp((new java.util.Date()).getTime))
+  def currentBatch: BatchID = batchOf(Timestamp.now)
 
   /** What batches are needed to cover the given interval
    * or: for all t in interval, batchOf(t) is in the result

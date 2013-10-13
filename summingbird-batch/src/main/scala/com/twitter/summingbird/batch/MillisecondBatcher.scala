@@ -16,7 +16,6 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import java.util.Date
 
 /**
  * Batcher implementation based on a fixed-width batch of
@@ -43,8 +42,8 @@ class MillisecondBatcher(val durationMillis: Long) extends AbstractBatcher {
     val id = batch.id
     // Correct for the rounding-to-zero issue described above.
     if(id >= 0L)
-      new Date(id * durationMillis)
+      Timestamp(id * durationMillis)
     else
-      new Date(id * durationMillis + 1L)
+      Timestamp(id * durationMillis + 1L)
   }
 }

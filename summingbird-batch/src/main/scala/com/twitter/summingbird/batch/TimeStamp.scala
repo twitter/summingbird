@@ -36,6 +36,7 @@ case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
 object Timestamp {
   val Max = Timestamp(Long.MaxValue)
   val Min = Timestamp(Long.MinValue)
+  def now: Timestamp = Timestamp(System.currentTimeMillis)
 
   implicit def fromDate(d: Date) = Timestamp(d.getTime)
   implicit val orderingOnTimestamp: Ordering[Timestamp] = Ordering.by(_.milliSinceEpoch)
