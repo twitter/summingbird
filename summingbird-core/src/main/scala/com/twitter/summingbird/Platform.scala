@@ -27,5 +27,9 @@ trait Platform[P <: Platform[P]] {
   type Service[_, _]
   type Plan[_]
 
-  def plan[T](completed: Producer[P, T]): Plan[T]
+
+  // derived types, that are used for intermediate graphs
+  type Buffer[k, v] = Service[k, v] with Sink[(k, v)]
+
+  def plan[T](completed: TailProducer[P, T]): Plan[T]
 }

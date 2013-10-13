@@ -21,12 +21,13 @@ import com.twitter.summingbird._
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
 import collection.mutable.{ Map => MutableMap, ListBuffer }
+import org.specs._
 
 /**
   * Tests for Summingbird's in-memory planner.
   */
 
-object MemoryLaws extends Properties("Memory") {
+object MemoryLaws extends Specification {
   // This is dangerous, obviously. The Memory platform tested here
   // doesn't perform any batching, so the actual time extraction isn't
   // needed.
@@ -36,6 +37,8 @@ object MemoryLaws extends Properties("Memory") {
     val buf = ListBuffer[T]()
     def apply(t: T) = buf += t
   }
+
+  def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
   def testGraph[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
     new TestGraphs[Memory, T, K, V](new Memory)(
@@ -49,24 +52,15 @@ object MemoryLaws extends Properties("Memory") {
     * operation.
     */
   def singleStepLaw[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
-    testGraph[T, K, V].singleStepChecker
-
-  property("MemoryPlanner singleStep w/ Int, Int, Set[Int]") = singleStepLaw[Int, Int, Set[Int]]
-  property("MemoryPlanner singleStep w/ Int, String, List[Int]") = singleStepLaw[Int, String, List[Int]]
-  property("MemoryPlanner singleStep w/ String, Short, Map[Set[Int], Long]") =
-    singleStepLaw[String, Short, Map[Set[Int], Long]]
+    testGraph[T, K, V].singleStepChecker(sample[List[T]], sample[T => List[(K, V)]])
 
   /**
     * Tests the in-memory planner against a job with a single flatMap
     * operation.
     */
   def diamondLaw[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
-    testGraph[T, K, V].diamondChecker
+    testGraph[T, K, V].diamondChecker(sample[List[T]], sample[T => List[(K, V)]], sample[T => List[(K, V)]])
 
-  property("MemoryPlanner diamond w/ Int, Int, Set[Int]") = diamondLaw[Int, Int, Set[Int]]
-  property("MemoryPlanner diamond w/ Int, String, List[Int]") = diamondLaw[Int, String, List[Int]]
-  property("MemoryPlanner diamond w/ String, Short, Map[Set[Int], Long]") =
-    diamondLaw[String, Short, Map[Set[Int], Long]]
 
   /**
     * Tests the in-memory planner by generating arbitrary flatMap and
@@ -74,9 +68,47 @@ object MemoryLaws extends Properties("Memory") {
     */
   def leftJoinLaw[T: Manifest: Arbitrary, K: Arbitrary, U: Arbitrary, JoinedU: Arbitrary, V: Monoid: Arbitrary: Equiv] = {
     val serviceFn = Arbitrary.arbitrary[K => Option[JoinedU]].sample.get
-    testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn)(identity)
+    testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn, identity, sample[List[T]], sample[T => List[(K, U)]], sample[((K, (U, Option[JoinedU]))) => List[(K, V)]])
   }
 
-  property("MemoryPlanner leftJoin w/ Int, Int, String, Long, Set[Int]") =
-    leftJoinLaw[Int, Int, String, Long, Set[Int]]
+
+  def mapKeysChecker[T: Manifest: Arbitrary, K1: Arbitrary, K2: Arbitrary,
+               V: Monoid: Arbitrary: Equiv](): Boolean = {
+    val platform = new Memory
+    val currentStore: Memory#Store[K2, V] = MutableMap.empty[K2, V]
+    val sourceMaker = Memory.toSource[T](_)
+    val original = sample[List[T]]
+    val fnA =  sample[T => List[(K1, V)]]
+    val fnB = sample[K1 => List[K2]]
+    
+    // Use the supplied platform to execute the source into the
+    // supplied store.
+     val plan = platform.plan {
+       TestGraphs.singleStepMapKeysJob[Memory, T, K1, K2, V](sourceMaker(original), currentStore)(fnA, fnB) 
+     }
+     platform.run(plan)
+    val lookupFn = currentStore.get(_)
+    TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB).forall { case (k, v) =>
+      val lv = lookupFn(k).getOrElse(Monoid.zero)
+      Equiv[V].equiv(v, lv)
+    }
+  }
+
+
+
+  "The Memory Platform" should {
+    //Set up the job:
+    "singleStep w/ Int, Int, Set[Int]" in { singleStepLaw[Int, Int, Set[Int]] must be(true) }
+    "singleStep w/ Int, String, List[Int]" in { singleStepLaw[Int, String, List[Int]] must be(true) }
+    "singleStep w/ String, Short, Map[Set[Int], Long]" in {singleStepLaw[String, Short, Map[Set[Int], Long]] must be(true) }
+
+    "diamond w/ Int, Int, Set[Int]" in { diamondLaw[Int, Int, Set[Int]] must be(true) }
+    "diamond w/ Int, String, List[Int]" in { diamondLaw[Int, String, List[Int]] must be(true) }
+    "diamond w/ String, Short, Map[Set[Int], Long]" in { diamondLaw[String, Short, Map[Set[Int], Long]] must be(true) }
+
+    "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must be(true) }
+    
+    "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must be(true) }
+  }
+
 }

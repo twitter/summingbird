@@ -64,12 +64,13 @@ object Producer {
       case NamedProducer(producer, _) => List(producer)
       case IdentityKeyedProducer(producer) => List(producer)
       case Source(_) => List()
-      case OptionMappedProducer(producer, fn) => List(producer)
-      case FlatMappedProducer(producer, fn) => List(producer)
+      case OptionMappedProducer(producer, _) => List(producer)
+      case FlatMappedProducer(producer, _) => List(producer)
+      case KeyFlatMappedProducer(producer, _) => List(producer)
       case MergedProducer(l, r) => List(l, r)
-      case WrittenProducer(producer, fn) => List(producer)
-      case LeftJoinedProducer(producer, service) => List(producer)
-      case Summer(producer, store, monoid) => List(producer)
+      case WrittenProducer(producer, _) => List(producer)
+      case LeftJoinedProducer(producer, _) => List(producer)
+      case Summer(producer, _, _) => List(producer)
     }
   }
 
@@ -127,7 +128,10 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
    * that the Platform will plan both into a single Plan.
    */
   def also[R](that: Producer[P, R]): Producer[P, R] = AlsoProducer(this, that)
+
+  override def name(id: String): TailProducer[P, T] = new TPNamedProducer[P, T](this, id)
 }
+
 
 /**
  * This is a special node that ensures that the first argument is planned, but produces values
@@ -135,7 +139,9 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
  */
 case class AlsoProducer[P <: Platform[P], T, R](ensure: TailProducer[P, T], result: Producer[P, R]) extends Producer[P, R]
 
-case class NamedProducer[P <: Platform[P], T](producer: Producer[P, T], id: String) extends Producer[P, T]
+case class NamedProducer[P <: Platform[P], +T](producer: Producer[P, T], id: String) extends Producer[P, T]
+
+class TPNamedProducer[P <: Platform[P], +T](producer: Producer[P, T], id: String) extends NamedProducer[P, T](producer, id) with TailProducer[P, T]
 
 /** Represents filters and maps which may be optimized differently
  * Note that "option-mapping" is closed under composition and hence useful to call out
@@ -159,9 +165,22 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def leftJoin[RightV](service: P#Service[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
     LeftJoinedProducer(this, service)
 
+  /** Do a windowed join on a stream. You need to provide a sink that manages
+   * the buffer. Offline, this might be a bounded HDFS partition. Online it
+   * might be a cache that evicts after a period of time.
+   */
+  def leftJoin[RightV](stream: KeyedProducer[P, K, RightV],
+    buffer: P#Buffer[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
+      stream.write(buffer)
+        .also(leftJoin(buffer))
+
   def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
     Summer(this, store, monoid)
+
+  def flatMapKeys[K2](fn: K => TraversableOnce[K2]) = KeyFlatMappedProducer(this, fn)
 }
+
+case class KeyFlatMappedProducer[P <: Platform[P], K, V, K2](producer: KeyedProducer[P, K, V], fn: K => TraversableOnce[K2]) extends KeyedProducer[P, K2, V]
 
 case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
 

@@ -16,7 +16,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.2.1",
+    version := "0.2.2",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -35,7 +35,7 @@ object SummingbirdBuild extends Build {
       "Twitter Maven" at "http://maven.twttr.com"
     ),
 
-    parallelExecution in Test := false, // until scalding 0.9.0 we can't do this
+    parallelExecution in Test := true,
 
     scalacOptions ++= Seq(
       "-unchecked",

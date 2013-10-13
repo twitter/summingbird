@@ -25,17 +25,6 @@ case class NodeIdentifier(identifier: String) {
 sealed trait Node[P <: Platform[P]] {
   val members: List[Producer[P, _]] = List()
 
-  private val dependantStateOpt = members.headOption.map(h => Dependants(h))
-
-  def dependantsOf(p: Producer[P, _]): List[Producer[P, _]] = {
-    dependantStateOpt match {
-      case Some(dependantState) => dependantState.dependantsOf(p).getOrElse(List())
-      case _ => List()
-    }
-  }
-
-  def localDependantsOf(p: Producer[P, _]): List[Producer[P, _]] = dependantsOf(p).filter(members.contains(_))
-
   def toSource: SourceNode[P] = SourceNode(this.members)
 
   def toSummer: SummerNode[P] = SummerNode(this.members)
@@ -46,12 +35,12 @@ sealed trait Node[P <: Platform[P]] {
 
   def getName(dag: Dag[P]): String = dag.getNodeName(this)
 
-  def collapseNamedNodes: String = {
-    val membersCombined = members.reverse.collect { case NamedProducer(_, n) => n.replace("-", "=") }.mkString(",")
+  def collapseNamedNodes(sanitize: String => String): String = {
+    val membersCombined = members.reverse.collect { case NamedProducer(_, n) => sanitize(n) }.mkString(",")
     if (membersCombined.size > 0) "|" + membersCombined + "|" else ""
   }
 
-  def shortName: NodeIdentifier
+  def shortName(sanitize: String => String): NodeIdentifier
 
   def add(node: Producer[P, _]): Node[P]
 
@@ -74,22 +63,22 @@ sealed trait Node[P <: Platform[P]] {
 case class FlatMapNode[P <: Platform[P]](override val members: List[Producer[P, _]] = List()) extends Node[P] {
   def add(node: Producer[P, _]): Node[P] = if (members.contains(node)) this else this.copy(members = node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName = NodeIdentifier("FlatMap" + collapseNamedNodes)
+  override def shortName(sanitize: String => String) = NodeIdentifier("FlatMap" + collapseNamedNodes(sanitize))
 }
 
 case class SummerNode[P <: Platform[P]](override val members: List[Producer[P, _]] = List()) extends Node[P] {
   def add(node: Producer[P, _]): Node[P] = if (members.contains(node)) this else this.copy(members = node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName = NodeIdentifier("Summer" + collapseNamedNodes)
+  override def shortName(sanitize: String => String) = NodeIdentifier("Summer" + collapseNamedNodes(sanitize))
 }
 
 case class SourceNode[P <: Platform[P]](override val members: List[Producer[P, _]] = List()) extends Node[P] {
   def add(node: Producer[P, _]): Node[P] = if (members.contains(node)) this else this.copy(members = node :: members)
   def reverse = this.copy(members.reverse)
-  override def shortName = NodeIdentifier("Source" + collapseNamedNodes)
+  override def shortName(sanitize: String => String) = NodeIdentifier("Source" + collapseNamedNodes(sanitize))
 }
 
-case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Producer[P, _], Node[P]],
+case class Dag[P <: Platform[P]](tail: TailProducer[P, _], producerToNode: Map[Producer[P, _], Node[P]],
   nodes: List[Node[P]],
   nodeToName: Map[Node[P], String] = Map[Node[P], String](),
   nameToNode: Map[String, Node[P]] = Map[String, Node[P]](),
@@ -109,11 +98,11 @@ case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Produ
       val oldSrcDependants = dependantsOfM.getOrElse(src, List[Node[P]]())
       val newSrcDependants = if(oldSrcDependants.contains(dest)) oldSrcDependants else (dest :: oldSrcDependants)
       val newDependantsOfM = dependantsOfM + (src -> newSrcDependants)
-      
+
       val oldDestDependencies = dependenciesOfM.getOrElse(dest, List[Node[P]]())
       val newDestDependencies = if(oldDestDependencies.contains(src)) oldDestDependencies else (src :: oldDestDependencies)
       val newDependenciesOfM = dependenciesOfM + (dest -> newDestDependencies)
-      
+
       copy(dependenciesOfM = newDependenciesOfM, dependantsOfM = newDependantsOfM)
     }
   }
@@ -145,7 +134,16 @@ case class Dag[P <: Platform[P]](tail: Producer[P, _], producerToNode: Map[Produ
 }
 
 object Dag {
-   def apply[P <: Platform[P], T](tail: Producer[P, _], registry: List[Node[P]]): Dag[P] = {
+  /** The default name sanitizing */
+  def apply[P <: Platform[P], T](tail: TailProducer[P, Any],
+    registry: List[Node[P]]): Dag[P] = apply[P, T](tail,
+      registry,
+      {(s: String) => s.replaceAll("""[\[\]]|\-""","|")})
+
+  def apply[P <: Platform[P], T](tail: TailProducer[P, Any],
+    registry: List[Node[P]],
+    sanitizeName: String => String): Dag[P] = {
+
     def buildProducerToNodeLookUp(stormNodeSet: List[Node[P]]): Map[Producer[P, _], Node[P]] = {
       stormNodeSet.foldLeft(Map[Producer[P, _], Node[P]]()) { (curRegistry, stormNode) =>
         stormNode.members.foldLeft(curRegistry) { (innerRegistry, producer) =>
@@ -174,7 +172,7 @@ object Dag {
     def genNames(dep: Node[P], dag: Dag[P], outerNodeToName: Map[Node[P], String], usedNames: Set[String]): (Map[Node[P], String], Set[String]) = {
       dag.dependenciesOf(dep).foldLeft((outerNodeToName, usedNames)) {
         case ((nodeToName, taken), n) =>
-          val name = tryGetName(nodeToName(dep) + "-" + n.shortName, taken)
+          val name = tryGetName(nodeToName(dep) + "-" + n.shortName(sanitizeName), taken)
           val useName = nodeToName.get(n) match {
             case None => name
             case Some(otherName) => if (otherName.split("-").size > name.split("-").size) name else otherName

@@ -19,7 +19,7 @@ package com.twitter.summingbird.scalding
 import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval}
 import com.twitter.algebird.monad._
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
 import com.twitter.scalding.typed.TypedSink
@@ -38,7 +38,6 @@ import cascading.tuple.{Tuple, Fields, TupleEntry}
 import cascading.flow.FlowDef
 import cascading.tap.Tap
 import cascading.scheme.NullScheme
-import java.util.Date
 import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
@@ -209,15 +208,15 @@ object ScaldingLaws extends Specification {
   implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor( _._1 )
 
   val simpleBatcher = new Batcher {
-    def batchOf(d: java.util.Date) =
-      if (d.getTime == Long.MaxValue) BatchID(2)
-      else if (d.getTime >= 0L) BatchID(1)
+    def batchOf(d: Timestamp) =
+      if (d == Timestamp.Max) BatchID(2)
+      else if (d.milliSinceEpoch >= 0L) BatchID(1)
       else BatchID(0)
 
     def earliestTimeOf(batch: BatchID) = batch.id match {
-      case 0L => new java.util.Date(Long.MinValue)
-      case 1L => new java.util.Date(0)
-      case 2L => new java.util.Date(Long.MaxValue)
+      case 0L => Timestamp.Min
+      case 1L => Timestamp(0)
+      case 2L => Timestamp.Max
     }
   }
 
@@ -239,7 +238,7 @@ object ScaldingLaws extends Specification {
 
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckJob")
-      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val ws = new LoopState(intr.mapNonDecreasing(t => Timestamp(t)))
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
       scald.run(ws, mode, scald.plan(summer))
@@ -248,6 +247,34 @@ object ScaldingLaws extends Specification {
       val smap = testStore.lastToIterable(BatchID(1)).toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) must be(false)
     }
+    
+    "match scala for flatMapKeys jobs" in {
+      val original = sample[List[Int]]
+      val fnA = sample[(Int) => List[(Int, Int)]]
+      val fnB = sample[Int => List[Int]]
+      val inMemory = TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB)
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = simpleBatcher
+      import Dsl._ // Won't be needed in scalding 0.9.0
+      val testStore = new TestStore[Int,Int]("test", batcher, BatchID(0), Iterable.empty, BatchID(1))
+      val (buffer, source) = testSource(inWithTime)
+
+      val summer = TestGraphs.singleStepMapKeysJob[Scalding,(Long,Int),Int,Int, Int](source, testStore)(t =>
+          fnA(t._2), fnB)
+
+      val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
+      val scald = new Scalding("scalaCheckJob")
+      val ws = new LoopState(intr.mapNonDecreasing(t => Timestamp(t)))
+      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
+
+      scald.run(ws, mode, scald.plan(summer))
+      // Now check that the inMemory ==
+
+      val smap = testStore.lastToIterable(BatchID(1)).toMap
+      Monoid.isNonZero(Group.minus(inMemory, smap)) must be(false)
+    }
+    
 
 
     "match scala for multiple summer jobs" in {
@@ -269,7 +296,7 @@ object ScaldingLaws extends Specification {
 
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckMultipleSumJob")
-      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val ws = new LoopState(intr.mapNonDecreasing(t => Timestamp(t)))
       val mode: Mode = TestMode(t => (testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(t))
 
       scald.run(ws, mode, scald.plan(tail))
@@ -322,7 +349,7 @@ object ScaldingLaws extends Specification {
 
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckleftJoinJob")
-      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val ws = new LoopState(intr.mapNonDecreasing(t => Timestamp(t)))
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
 
       scald.run(ws, mode, summer)
@@ -353,7 +380,7 @@ object ScaldingLaws extends Specification {
 
       val scald = new Scalding("scalding-diamond-Job")
       val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
-      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val ws = new LoopState(intr.mapNonDecreasing(t => Timestamp(t)))
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer).get(s))
 
       scald.run(ws, mode, summer)
@@ -390,9 +417,9 @@ object VersionBatchLaws extends Properties("VersionBatchLaws") {
     val vbs = new VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
       0, batcher)(null)(null)
     val b = vbs.versionToBatchID(l)
-    (batcher.earliestTimeOf(b.next).getTime <= l) &&
-    (batcher.earliestTimeOf(b).getTime < l)
-    (batcher.earliestTimeOf(b.next.next).getTime > l)
+    (batcher.earliestTimeOf(b.next).milliSinceEpoch <= l) &&
+    (batcher.earliestTimeOf(b).milliSinceEpoch < l)
+    (batcher.earliestTimeOf(b.next.next).milliSinceEpoch > l)
   }
 }
 

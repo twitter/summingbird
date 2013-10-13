@@ -21,8 +21,8 @@ import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.{ Fields, Tuple, Values }
 
 import com.twitter.algebird.{ Monoid, SummingQueue }
-import com.twitter.chill.MeatLocker
-import com.twitter.summingbird.batch.{ Batcher, BatchID }
+import com.twitter.chill.Externalizer
+import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
 import com.twitter.summingbird.storm.option.{
   AnchorTuples, CacheSize, FlatMapStormMetrics
 }
@@ -46,7 +46,7 @@ class FinalFlatMapBolt[Event, Key, Value](
   (implicit monoid: Monoid[Value], batcher: Batcher)
     extends BaseBolt(metrics.metrics) {
 
-  val lockedOp = MeatLocker(flatMapOp)
+  val lockedOp = Externalizer(flatMapOp)
   var collectorMergeable: MergeableStore[(Key, Tuple, BatchID), Value] = null
 
   override val fields = {
@@ -68,8 +68,9 @@ class FinalFlatMapBolt[Event, Key, Value](
   }
 
   override def execute(tuple: Tuple) {
-    val (time, event) = tuple.getValue(0).asInstanceOf[(Long, Event)]
-    val batchID = batcher.batchOf(new Date(time))
+    val (timeMs, event) = tuple.getValue(0).asInstanceOf[(Long, Event)]
+    val time = Timestamp(timeMs)
+    val batchID = batcher.batchOf(time)
 
     /**
       * the flatMap function returns a future.

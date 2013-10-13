@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.scalding.{Mode, TypedPipe}
 import com.twitter.scalding.typed.Grouped
 import cascading.flow.FlowDef
@@ -52,7 +52,7 @@ trait BatchedScaldingSink[T] extends ScaldingSink[T] {
 
       // We need to write each of these.
       iter.foreach { batch =>
-        val range = batcher.toInterval(batch).mapNonDecreasing { _.getTime }
+        val range = batcher.toInterval(batch).mapNonDecreasing { _.milliSinceEpoch }
         writeStream(batch, inPipe.filter { case (time, _) =>
           range(time)
         })(flowMode._1, flowMode._2)

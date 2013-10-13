@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.storm
 
-import com.twitter.chill.MeatLocker
+import com.twitter.chill.Externalizer
 import com.twitter.storehaus.ReadableStore
 import com.twitter.util.Future
 import java.io.{ Closeable, Serializable }
@@ -66,8 +66,16 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
 
 class FunctionFlatMapOperation[T, U](@transient fm: T => TraversableOnce[U])
     extends FlatMapOperation[T, U] {
-  val boxed = MeatLocker(fm)
+  val boxed = Externalizer(fm)
   def apply(t: T) = Future.value(boxed.get(t))
+}
+
+class FunctionKeyFlatMapOperation[K1, K2, V](@transient fm: K1 => TraversableOnce[K2])
+    extends FlatMapOperation[(K1, V), (K2, V)] {
+  val boxed = Externalizer(fm)
+  def apply(t: (K1, V)) = {
+    Future.value(boxed.get(t._1).map{newK => (newK, t._2)})
+  }
 }
 
 class IdentityFlatMapOperation[T] extends FlatMapOperation[T, T] {
@@ -83,6 +91,9 @@ object FlatMapOperation {
 
   def apply[T, U](fm: T => TraversableOnce[U]): FlatMapOperation[T, U] =
     new FunctionFlatMapOperation(fm)
+ 
+  def keyFlatMap[K1, K2, V](fm: K1 => TraversableOnce[K2]): FlatMapOperation[(K1, V), (K2, V)] = 
+    new FunctionKeyFlatMapOperation(fm)
 
   def combine[T, K, V, JoinedV](fmSupplier: => FlatMapOperation[T, (K, V)],
     storeSupplier: () => ReadableStore[K, JoinedV]): FlatMapOperation[T, (K, (V, Option[JoinedV]))] =

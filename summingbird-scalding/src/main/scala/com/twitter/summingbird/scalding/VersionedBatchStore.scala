@@ -23,7 +23,7 @@ import cascading.flow.FlowDef
 import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, TupleSetter}
 import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.algebird.monad.Reader
-import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp }
 import scala.util.{ Try => ScalaTry }
 
 /**
@@ -81,8 +81,8 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
     * upper bound. Put another way, all events that occured before the
     * version are included in this store.
     */
-  def batchIDToVersion(b: BatchID): Long = batcher.earliestTimeOf(b.next).getTime
-  def versionToBatchID(ver: Long): BatchID = batcher.batchOf(new java.util.Date(ver)).prev
+  def batchIDToVersion(b: BatchID): Long = batcher.earliestTimeOf(b.next).milliSinceEpoch
+  def versionToBatchID(ver: Long): BatchID = batcher.batchOf(Timestamp(ver)).prev
 
   protected def lastBatch(exclusiveUB: BatchID, mode: HdfsMode): Option[(BatchID, FlowProducer[TypedPipe[(K,V)]])] = {
     val meta = HDFSMetadata(mode.conf, rootPath)

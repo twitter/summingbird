@@ -19,7 +19,7 @@ package com.twitter.summingbird.scalding
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.algebird.{Interval, Semigroup}
 import com.twitter.scalding.{Mode, TypedPipe}
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import cascading.flow.FlowDef
 
 trait ScaldingService[K, +V] extends java.io.Serializable {
@@ -70,7 +70,7 @@ trait BatchedService[K, V] extends ScaldingService[K, V] {
     streams: Iterable[(BatchID, FlowToPipe[(K, Option[V])])]): FlowToPipe[(K, (W, Option[V]))] =
       Reader[FlowInput, KeyValuePipe[K, (W, Option[V])]] { (flowMode: (FlowDef, Mode)) =>
         val left = getKeys(flowMode)
-        val earliestInLast = batcher.earliestTimeOf(last._1).getTime
+        val earliestInLast = batcher.earliestTimeOf(last._1).milliSinceEpoch
         val liftedLast: KeyValuePipe[K, Option[V]] = last._2(flowMode)
           .map { case (k, w) => (earliestInLast, (k, Some(w))) }
         // TODO (https://github.com/twitter/summingbird/issues/91): we

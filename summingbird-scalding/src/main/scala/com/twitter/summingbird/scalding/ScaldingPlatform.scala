@@ -31,7 +31,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.serializer.{Serialization => HSerialization}
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
-import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
+import java.util.{ HashMap => JHashMap, Map => JMap, TimeZone }
 import cascading.flow.{FlowDef, Flow}
 import com.twitter.scalding.Mode
 
@@ -331,6 +331,16 @@ object Scalding {
                 }
               }
             }, m)
+          case KeyFlatMappedProducer(producer, op) =>
+            // Map in two monads here, first state then reader
+            val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
+            (fmp.map { flowP =>
+              flowP.map { typedPipe =>
+                typedPipe.flatMap { case (time, (k, v)) =>
+                  op(k).map{newK => (time, (newK, v))}
+                }
+              }
+            }, m)
           case FlatMappedProducer(producer, op) =>
             // Map in two monads here, first state then reader
             val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
@@ -378,12 +388,16 @@ object Scalding {
     }
   }
 
-  def plan[T](options: Map[String, Options], prod: Producer[Scalding, T]): PipeFactory[T] = {
+  private def planProducer[T](options: Map[String, Options], prod: Producer[Scalding, T]): PipeFactory[T] = {
     val dep = Dependants(prod)
     val fanOutSet =
-      Producer.transitiveDependenciesOf(prod)
+      dep.nodes
         .filter(dep.fanOut(_).exists(_ > 1)).toSet
     buildFlow(options, prod, None, fanOutSet, Map.empty)._1
+  }
+
+  def plan[T](options: Map[String, Options], prod: TailProducer[Scalding, T]): PipeFactory[T] = {
+    planProducer(options, prod)
   }
 
   /** Use this method to interop with existing scalding code
@@ -394,7 +408,7 @@ object Scalding {
     prod: Producer[Scalding, T],
     opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[(DateRange, TypedPipe[(Long, T)])] = {
       val ts = dr.as[Interval[Time]]
-      val pf = plan(opts, prod)
+      val pf = planProducer(opts, prod)
       toPipe(ts, fd, mode, pf).right.map { case (ts, pipe) =>
         (ts.as[Option[DateRange]].get, pipe)
       }
@@ -407,7 +421,7 @@ object Scalding {
     prod: Producer[Scalding, T],
     opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[TypedPipe[(Long, T)]] = {
       val ts = dr.as[Interval[Time]]
-      val pf = plan(opts, prod)
+      val pf = planProducer(opts, prod)
       toPipeExact(ts, fd, mode, pf)
     }
 
@@ -461,7 +475,7 @@ class Scalding(
   type Service[K, V] = ScaldingService[K, V]
   type Plan[T] = PipeFactory[T]
 
-  def plan[T](prod: Producer[Scalding, T]): PipeFactory[T] =
+  def plan[T](prod: TailProducer[Scalding, T]): PipeFactory[T] =
     Scalding.plan(options, prod)
 
   protected def ioSerializations: List[Class[_ <: HSerialization[_]]] = List(
@@ -493,13 +507,13 @@ class Scalding(
     }
   }
 
-  def run(state: WaitingState[Date], mode: Mode, pf: Producer[Scalding, _]): WaitingState[Date] =
+  def run(state: WaitingState[Timestamp], mode: Mode, pf: TailProducer[Scalding, _]): WaitingState[Timestamp] =
     run(state, mode, plan(pf))
 
-  def run(state: WaitingState[Date], mode: Mode, pf: PipeFactory[_]): WaitingState[Date] = {
+  def run(state: WaitingState[Timestamp], mode: Mode, pf: PipeFactory[_]): WaitingState[Timestamp] = {
     setIoSerializations(mode)
     val runningState = state.begin
-    val timeSpan = runningState.part.mapNonDecreasing(_.getTime)
+    val timeSpan = runningState.part.mapNonDecreasing(_.milliSinceEpoch)
     toFlow(timeSpan, mode, pf) match {
       case Left(errs) =>
         runningState.fail(FlowPlanException(errs))
@@ -511,7 +525,7 @@ class Scalding(
           }
           flow.complete
           if (flow.getFlowStats.isSuccessful)
-            runningState.succeed(ts.mapNonDecreasing(new Date(_)))
+            runningState.succeed(ts.mapNonDecreasing(Timestamp(_)))
           else
             runningState.fail(new Exception("Flow did not complete."))
         } catch {

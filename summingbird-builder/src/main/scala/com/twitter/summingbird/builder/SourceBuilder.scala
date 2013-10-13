@@ -28,10 +28,10 @@ import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.{CompoundSink, BatchedSinkFromOffline}
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
-import com.twitter.summingbird.storm.{ MergeableStoreSupplier, StoreWrapper, Storm, StormEnv }
+import com.twitter.summingbird.storm.{ MergeableStoreSupplier, StoreWrapper, Storm, StormEnv, StormSource }
 import com.twitter.summingbird.util.CacheSize
 import java.io.Serializable
-import java.util.{ Date, UUID }
+import java.util.Date
 
 /**
   * The (deprecated) Summingbird builder API builds up a single
@@ -50,20 +50,24 @@ object SourceBuilder {
   type PlatformPair = OptionalPlatform2[Scalding, Storm]
   type Node[T] = Producer[PlatformPair, T]
 
-  def freshUUID: String = UUID.randomUUID.toString
+  private val nextId = new java.util.concurrent.atomic.AtomicLong(0)
+
   def adjust[T](m: Map[T, Options], k: T)(f: Options => Options) =
     m.updated(k, f(m.getOrElse(k, Options())))
 
   implicit def sg[T]: Semigroup[SourceBuilder[T]] =
     Semigroup.from(_ ++ _)
 
+  def nextName[T:Manifest]: String =
+    "%s_%d".format(manifest[T], nextId.getAndIncrement)
+
   def apply[T](eventSource: EventSource[T], timeOf: T => Date)
     (implicit mf: Manifest[T], eventCodec: Codec[T]) = {
     implicit val te = TimeExtractor[T](timeOf(_).getTime)
-    val newID = freshUUID
+    val newID = nextName[T]
     val scaldingSource =
       eventSource.offline.map( s => Scalding.pipeFactory(s.scaldingSource(_)))
-    val stormSource = eventSource.spout.map(Storm.timedSpout(_))
+    val stormSource = eventSource.spout.map(Storm.toStormSource(_))
     new SourceBuilder[T](
       Source[PlatformPair, T]((scaldingSource, stormSource)),
       CompletedBuilder.injectionRegistrar[T](eventCodec),
@@ -78,12 +82,20 @@ case class SourceBuilder[T: Manifest] private (
   id: String,
   @transient opts: Map[String, Options] = Map.empty
 ) extends Serializable {
-  import SourceBuilder.{ adjust, Node }
+  import SourceBuilder.{ adjust, Node, nextName }
 
   def map[U: Manifest](fn: T => U): SourceBuilder[U] = copy(node = node.map(fn))
   def filter(fn: T => Boolean): SourceBuilder[T] = copy(node = node.filter(fn))
   def flatMap[U: Manifest](fn: T => TraversableOnce[U]): SourceBuilder[U] =
     copy(node = node.flatMap(fn))
+
+  /** This may be more efficient if you know you are not changing the values in
+   * you flatMap.
+   */
+  def flatMapKeys[K1, K2, V](fn: K1 => TraversableOnce[K2])(implicit ev: T <:< (K1, V),
+    key1Mf: Manifest[K1], key2Mf: Manifest[K2], valMf: Manifest[V]): SourceBuilder[(K2,V)] =
+    copy(node = node.asInstanceOf[Node[(K1, V)]].flatMapKeys(fn))
+
   def flatMapBuilder[U: Manifest](newFlatMapper: FlatMapper[T, U]): SourceBuilder[U] =
     flatMap(newFlatMapper(_))
 
@@ -114,12 +126,13 @@ case class SourceBuilder[T: Manifest] private (
     (implicit ev: T <:< (K, V), keyMf: Manifest[K], valMf: Manifest[V], joinedMf: Manifest[JoinedValue])
       : SourceBuilder[(K, (V, Option[JoinedValue]))] =
     copy(
-      node = node.asInstanceOf[Node[(K, V)]].leftJoin(
+      node = node.asInstanceOf[Node[(K, V)]].leftJoin((
         service.offline,
         service.online.map(StoreWrapper[K, JoinedValue](_))
-      )
+      ))
     )
 
+  /** Set's an Option on all nodes ABOVE this point */
   def set(opt: Any): SourceBuilder[T] = copy(opts = adjust(opts, id)(_.set(opt)))
 
   /**
@@ -180,7 +193,7 @@ case class SourceBuilder[T: Manifest] private (
             .name(id)
             .sumByKey(batchSetStore)
         }.getOrElse(sys.error("Scalding mode specified alongside some online-only Source, Service or Sink."))
-        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, nextName[(K,V)], opts)
 
       case storm: StormEnv =>
         val givenStore = MergeableStoreSupplier.from {
@@ -194,7 +207,7 @@ case class SourceBuilder[T: Manifest] private (
             .name(id)
             .sumByKey(givenStore)
         }.getOrElse(sys.error("Storm mode specified alongside some offline-only Source, Service or Sink."))
-        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, SourceBuilder.freshUUID, opts)
+        CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, nextName[(K,V)], opts)
 
       case _ => sys.error("Unknown environment: " + env)
     }
@@ -207,7 +220,7 @@ case class SourceBuilder[T: Manifest] private (
     copy(
       node = node.name(id).merge(other.node.name(other.id)),
       registrar = new IterableRegistrar(registrar, other.registrar),
-      id = SourceBuilder.freshUUID,
+      id = "merge_" + nextName[T],
       opts = opts ++ other.opts
     )
 }
