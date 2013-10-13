@@ -65,10 +65,10 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
 }
 
 object TestStore {
-  def apply[K, V](store: String, inBatcher: Batcher, initTime: Long, initStore: Iterable[(K, V)], lastTime: Long)
+  def apply[K, V](store: String, inBatcher: Batcher, initStore: Iterable[(K, V)], lastTime: Long)
     (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)]) = {
-    val startBatch = inBatcher.batchOf(new Date(initTime))
-    val endBatch = inBatcher.batchOf(new Date(lastTime))
+    val startBatch = inBatcher.batchOf(new Date(0)).prev
+    val endBatch = inBatcher.batchOf(new Date(lastTime)).next
     new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch)
   }
 }
@@ -77,6 +77,7 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
 (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
   extends BatchedScaldingStore[K, V] {
 
+  var writtenBatches = Set[BatchID](initBatch)
   val batches: Map[BatchID, Mappable[(K, V)]] =
     BatchID.range(initBatch, lastBatch).map { b => (b, mockFor(b)) }.toMap
 
@@ -88,8 +89,9 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
     }.toMap
 
   // Call this after you compute to check the results of the
-  def lastToIterable(b: BatchID = lastBatch): Iterable[(K, V)] =
-    sourceToBuffer(batches(b)).toIterable.map { tup => tconv(new TupleEntry(tup)) }
+  def lastToIterable: Iterable[(K, V)] = {
+    sourceToBuffer(batches(writtenBatches.max)).toIterable.map { tup => tconv(new TupleEntry(tup)) }
+  }
 
   val batcher = inBatcher
   val ordering = ord
@@ -98,12 +100,13 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
     new MockMappable(store + b.toString)
 
   override def readLast(exclusiveUB: BatchID, mode: Mode) = {
-    val candidates = batches.filter { _._1 < exclusiveUB }
+    val candidates = writtenBatches.filter { _ < exclusiveUB }
     if(candidates.isEmpty) {
       Left(List("No batches < :" + exclusiveUB.toString))
     }
     else {
-      val (batch, mappable) = candidates.maxBy { _._1 }
+      val batch = candidates.max
+      val mappable = batches(batch)
       val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable)(fd._1, fd._2) }
       Right((batch, rdr))
     }
@@ -112,6 +115,7 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
   override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
     val out = batches(batchID)
     lastVals.write(TypedSink[(K, V)](out))
+    writtenBatches = writtenBatches + batchID
   }
 }
 
@@ -235,6 +239,23 @@ object ScaldingLaws extends Specification {
 
   implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor( _._1 )
 
+  def compareMaps[K,V:Group](original: Any, inMemory: Map[K, V], produced: Map[K, V]): Boolean = {
+    val diffMap = Group.minus(inMemory, produced)
+    val wrong = Monoid.isNonZero(diffMap)
+    if(wrong) {
+      println("input: " + original)
+      println("producer extra keys: " + (produced.keySet -- inMemory.keySet))
+      println("producer missing keys: " + (inMemory.keySet -- produced.keySet))
+      println("Difference: " + diffMap)
+    }
+    !wrong
+  }
+
+  def batchedCover(batcher: Batcher, minTime: Long, maxTime: Long): Interval[Date] =
+    batcher.cover(
+      Interval.leftClosedRightOpen(new Date(minTime), new Date(maxTime+1L))
+    ).mapNonDecreasing(b => batcher.earliestTimeOf(b.next))
+
   val simpleBatcher = new Batcher {
     def batchOf(d: java.util.Date) =
       if (d.getTime == Long.MaxValue) BatchID(2)
@@ -245,25 +266,24 @@ object ScaldingLaws extends Specification {
       case 0L => new java.util.Date(Long.MinValue)
       case 1L => new java.util.Date(0)
       case 2L => new java.util.Date(Long.MaxValue)
+      case 3L => new java.util.Date(Long.MaxValue)
     }
   }
 
   def randomBatcher(items: Iterable[(Long, Any)]): Batcher =
     randomBatcher(items.iterator.map(_._1).min, items.iterator.map(_._1).max)
 
-  def randomBatcher(mintimeInc: Long, maxtimeInc: Long): Batcher = simpleBatcher
-    /*
-  {
+  def randomBatcher(mintimeInc: Long, maxtimeInc: Long): Batcher = { //simpleBatcher
     // we can have between 1 and (maxtime - mintime + 1) batches.
     val delta = (maxtimeInc - mintimeInc)
-    val MaxBatches = 10L min delta
-    val batches = 1L + Gen.choose(0L, delta).sample.get
+    val MaxBatches = 5L min delta
+    val batches = 1L + Gen.choose(0L, MaxBatches).sample.get
     if(batches == 1L) simpleBatcher
     else {
       val timePerBatch = (delta + 1L)/batches
       new MillisecondBatcher(timePerBatch)
     }
-  }*/
+  }
 
   "The ScaldingPlatform" should {
     //Set up the job:
@@ -274,24 +294,22 @@ object ScaldingLaws extends Specification {
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = randomBatcher(inWithTime)
-      val testStore = TestStore[Int,Int]("test", batcher, -1, Iterable.empty, inWithTime.size)
+      val testStore = TestStore[Int,Int]("test", batcher, Iterable.empty, inWithTime.size)
       val (buffer, source) = testSource(inWithTime)
 
       val summer = TestGraphs.singleStepJob[Scalding,(Long,Int),Int,Int](source, testStore)(t =>
           fn(t._2))
 
-      val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckJob")
-      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val intr = batchedCover(batcher, 0L, original.size.toLong)
+      val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
       scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
 
-      val smap = testStore.lastToIterable().toMap
-      val diffMap = Group.minus(inMemory, smap)
-      println(diffMap)
-      Monoid.isNonZero(diffMap) must be(false)
+      val smap = testStore.lastToIterable.toMap
+      compareMaps(original, inMemory, smap) must be_==(true)
     }
 
     "match scala for flatMapKeys jobs" in {
@@ -302,28 +320,24 @@ object ScaldingLaws extends Specification {
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = randomBatcher(inWithTime)
-      val testStore = TestStore[Int,Int]("test", batcher, -1, Iterable.empty, inWithTime.size)
+      val testStore = TestStore[Int,Int]("test", batcher, Iterable.empty, inWithTime.size)
 
       val (buffer, source) = testSource(inWithTime)
 
       val summer = TestGraphs.singleStepMapKeysJob[Scalding,(Long,Int),Int,Int, Int](source, testStore)(t =>
           fnA(t._2), fnB)
 
-      val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
+      val intr = batchedCover(batcher, 0L, original.size.toLong)
       val scald = new Scalding("scalaCheckJob")
-      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
       scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
 
-      val smap = testStore.lastToIterable().toMap
-      val diffMap = Group.minus(inMemory, smap)
-      println(diffMap)
-      Monoid.isNonZero(diffMap) must be(false)
+      val smap = testStore.lastToIterable.toMap
+      compareMaps(original, inMemory, smap) must beTrue
     }
-
-
 
     "match scala for multiple summer jobs" in {
       val original = sample[List[Int]]
@@ -335,29 +349,25 @@ object ScaldingLaws extends Specification {
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = randomBatcher(inWithTime)
-      val testStoreA = TestStore[Int,Int]("testA", batcher, -1, Iterable.empty, inWithTime.size)
-      val testStoreB = TestStore[Int,Int]("testB", batcher, -1, Iterable.empty, inWithTime.size)
+      val testStoreA = TestStore[Int,Int]("testA", batcher, Iterable.empty, inWithTime.size)
+      val testStoreB = TestStore[Int,Int]("testB", batcher, Iterable.empty, inWithTime.size)
       val (buffer, source) = testSource(inWithTime)
 
       val tail = TestGraphs.multipleSummerJob[Scalding, (Long, Int), Int, Int, Int, Int, Int](source, testStoreA, testStoreB)({t => fnA(t._2)}, fnB, fnC)
 
-      val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
       val scald = new Scalding("scalaCheckMultipleSumJob")
-      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val intr = batchedCover(batcher, 0L, original.size.toLong)
+      val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(t))
 
       scald.run(ws, mode, scald.plan(tail))
       // Now check that the inMemory ==
 
-      val smapA = testStoreA.lastToIterable().toMap
-      val diffMapA = Group.minus(inMemoryA, smapA)
-      println(diffMapA)
-      Monoid.isNonZero(diffMapA) must be(false)
+      val smapA = testStoreA.lastToIterable.toMap
+      compareMaps(original, inMemoryA, smapA) must beTrue
 
-      val smapB = testStoreB.lastToIterable().toMap
-      val diffMapB = Group.minus(inMemoryB, smapB)
-      println(diffMapB)
-      Monoid.isNonZero(diffMapB) must be(false)
+      val smapB = testStoreB.lastToIterable.toMap
+      compareMaps(original, inMemoryB, smapB) must beTrue
     }
 
 
@@ -386,7 +396,7 @@ object ScaldingLaws extends Specification {
 
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = randomBatcher(inWithTime)
-      val testStore = TestStore[Int,Int]("test", batcher, -1, Iterable.empty, inWithTime.size)
+      val testStore = TestStore[Int,Int]("test", batcher, Iterable.empty, inWithTime.size)
 
       /**
        * Create the batched service
@@ -399,19 +409,19 @@ object ScaldingLaws extends Specification {
       val summer =
         TestGraphs.leftJoinJob[Scalding,(Long, Int),Int,Int,Int,Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
 
-      val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
+      val intr = batchedCover(batcher, 0L, original.size.toLong)
       val scald = new Scalding("scalaCheckleftJoinJob")
-      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val ws = new LoopState(intr)
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
 
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
 
-      val smap = testStore.lastToIterable().toMap
+      val smap = testStore.lastToIterable.toMap
       Monoid.isNonZero(Group.minus(inMemory, smap)) must be (false)
     }
 
-    "match scala for diamond jobs with write & everything in one Batch" in {
+    "match scala for diamond jobs with write" in {
       val original = sample[List[Int]]
       val fn1 = sample[(Int) => List[(Int, Int)]]
       val fn2 = sample[(Int) => List[(Int, Int)]]
@@ -419,7 +429,7 @@ object ScaldingLaws extends Specification {
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = randomBatcher(inWithTime)
-      val testStore = TestStore[Int,Int]("test", batcher, -1, Iterable.empty, inWithTime.size)
+      val testStore = TestStore[Int,Int]("test", batcher, Iterable.empty, inWithTime.size)
       val testSink = new TestSink[(Long,Int)]
       val (buffer, source) = testSource(inWithTime)
 
@@ -429,20 +439,23 @@ object ScaldingLaws extends Specification {
           testStore)(t => fn1(t._2))(t => fn2(t._2))
 
       val scald = new Scalding("scalding-diamond-Job")
-      val intr = Interval.leftClosedRightOpen(0L, original.size.toLong)
-      val ws = new LoopState(intr.mapNonDecreasing(t => new Date(t)))
+      val intr = batchedCover(batcher, 0L, original.size.toLong)
+      val ws = new LoopState(intr)
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer).get(s))
 
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
 
-        val sinkOut = testSink.reset
-        println(sinkOut)
-        println(inWithTime)
-      val smap = testStore.lastToIterable().toMap
-      Monoid.isNonZero(Group.minus(inMemory, smap)) must be (false)
-
-      sinkOut.map { _._2 }.toList must be_== (inWithTime)
+      val sinkOut = testSink.reset
+      val smap = testStore.lastToIterable.toMap
+      compareMaps(original, inMemory, smap) must beTrue
+      val wrongSink = sinkOut.map { _._2 }.toList != inWithTime
+      wrongSink must be_==(false)
+      if(wrongSink) {
+        println("input: " + inWithTime)
+        println("SinkExtra: " + (sinkOut.map(_._2).toSet -- inWithTime.toSet))
+        println("SinkMissing: " + (inWithTime.toSet -- sinkOut.map(_._2).toSet))
+      }
     }
   }
 }
@@ -483,7 +496,7 @@ class ScaldingSerializationSpecs extends Specification {
       // Add a time:
       val inWithTime = List(1, 2, 3).zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = ScaldingLaws.randomBatcher(inWithTime)
-      val testStore = TestStore[Int,Int]("test", batcher, -1, Iterable.empty, inWithTime.size)
+      val testStore = TestStore[Int,Int]("test", batcher, Iterable.empty, inWithTime.size)
       val (buffer, source) = ScaldingLaws.testSource(inWithTime)
 
       val summer = TestGraphs.singleStepJob[Scalding,(Long, Int),Int,Int](source, testStore) {
