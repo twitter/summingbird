@@ -92,7 +92,8 @@ abstract class Akka(options: Map[String, Options]) extends Platform[Akka] {
       producers.foldLeft(FlatMapOperation.identity[Any]) {
         case (acc, p) =>
           p match {
-            case LeftJoinedProducer(_, StoreWrapper(newService)) =>
+            case LeftJoinedProducer(_, wrapper) =>
+              val newService = wrapper.asInstanceOf[StoreWrapper[Any, Any]].store
               FlatMapOperation.combine(
                 acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
                 newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
@@ -101,7 +102,11 @@ abstract class Akka(options: Map[String, Options]) extends Platform[Akka] {
             case WrittenProducer(_, sinkSupplier) => acc.andThen(FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])]))
             case IdentityKeyedProducer(_) => acc
             case NamedProducer(_, _) => acc
-            case _ => throw new Exception("Not found! : " + p)
+            case AlsoProducer(_, _) => acc
+            case KeyFlatMappedProducer(_, _) => acc
+            case MergedProducer(_, _) => acc
+            case Source(_) => sys.error("A source should never be in a flatmapper")
+            case Summer(_, _, _) => sys.error("A summer should never be in a flatmapper")
           }
       }
     }
@@ -116,12 +121,22 @@ abstract class Akka(options: Map[String, Options]) extends Platform[Akka] {
     val source = node.members.collect { case Source(s) => s }.head
     val nodeName = cleanName(dag.getNodeName(node))
 
-    val src = node.members.reverse.foldLeft(source.asInstanceOf[AkkaSource[Any]]) {
-      case (spout, Source(_)) => spout // The source is still in the members list so drop it
-      case (spout, OptionMappedProducer(_, op)) => spout.flatMap{x => op.apply(x)}
-      case (spout, NamedProducer(_, _)) => spout
-      case _ => sys.error("not possible, given the above call to span.")
+    val src = node.members.reverse.foldLeft(source.asInstanceOf[AkkaSource[Any]]) { case (spout, producer) =>
+      producer match {
+        case Source(_) => spout // The source is still in the members list so drop it
+        case OptionMappedProducer(_, op) => spout.flatMap{x => op.apply(x)}
+        case NamedProducer(_, _) => spout
+        case AlsoProducer(_, _) => spout
+        case FlatMappedProducer(_, _) => sys.error("Should never include a FlatMapper in a source")
+        case IdentityKeyedProducer(_) => spout
+        case KeyFlatMappedProducer(_, _) => sys.error("Should never include a Key Flat Mapper in a source")
+        case LeftJoinedProducer(_, _) => sys.error("Should never include a LeftJoinedProducer in a source")
+        case MergedProducer(_, _) => sys.error("Should never include a Merged Producer in a source")
+        case Summer(_, _, _) => sys.error("Should never include a Summer in a source")
+        case WrittenProducer(_, _) => sys.error("Should never include a WrittenProducer in a source")
+      }
     }
+
      val targetNames: List[String] = dag.dependantsOf(node).collect{ case x: AkkaNode => cleanName(dag.getNodeName(x)) }
 
     (Props(new SourceActor(src, targetNames)).withRouter(RandomRouter(1)), nodeName)
@@ -144,7 +159,7 @@ abstract class Akka(options: Map[String, Options]) extends Platform[Akka] {
    * The following operations are public.
    */
 
-  def plan[T](tail: Producer[Akka, T]): List[(Props, String)] = {
+  def plan[T](tail: TailProducer[Akka, T]): List[(Props, String)] = {
      val dag = OnlinePlan(tail)
      dag.nodes.map{ node =>
      	node match {
@@ -154,7 +169,7 @@ abstract class Akka(options: Map[String, Options]) extends Platform[Akka] {
        }
      }
   }
-  def run(tail: Producer[Akka, _], jobName: String): Unit = run(plan(tail), jobName)
+  def run(tail: TailProducer[Akka, _], jobName: String): Unit = run(plan(tail), jobName)
   def run(topology: Plan[Akka], jobName: String): Unit
 }
 

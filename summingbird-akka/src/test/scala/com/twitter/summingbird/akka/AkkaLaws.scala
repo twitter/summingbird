@@ -65,7 +65,7 @@ object AkkaLaws extends Specification {
    */
   val globalState = createGlobalState[Int, Int, Int]
 
-  def runJob(p: Producer[Akka, _]) = {
+  def runJob(p: TailProducer[Akka, _]) = {
     val cluster = Akka.local()
     cluster.run(p, "Test Job")
     Thread.sleep(300)
@@ -114,7 +114,7 @@ object AkkaLaws extends Specification {
    * Perform a single run of TestGraphs.singleStepJob using the
    * supplied list of integers and the testFn defined above.
    */
-  def runOnce(original: List[Int])(mkJob: (Producer[Akka, Int], Akka#Store[Int, Int]) => Summer[Akka, Int, Int]): (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
+  def runOnce(original: List[Int])(mkJob: (Producer[Akka, Int], Akka#Store[Int, Int]) => TailProducer[Akka, (Int, Int)]): (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
     val id = UUID.randomUUID.toString
     globalState += (id -> TestState())
 
