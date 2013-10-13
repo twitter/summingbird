@@ -27,6 +27,7 @@ case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
   def Min = Timestamp.Min
   def prev = copy(milliSinceEpoch = milliSinceEpoch - 1)
   def next = copy(milliSinceEpoch = milliSinceEpoch + 1)
+  def toDate = new Date(milliSinceEpoch)
 }
 
 object Timestamp {
