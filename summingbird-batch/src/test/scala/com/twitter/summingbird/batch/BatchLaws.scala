@@ -19,7 +19,6 @@ package com.twitter.summingbird.batch
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
 
-import java.util.Date
 import java.util.concurrent.TimeUnit
 
 import com.twitter.algebird.Interval

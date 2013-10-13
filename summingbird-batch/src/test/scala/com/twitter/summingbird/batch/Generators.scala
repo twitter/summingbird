@@ -28,6 +28,14 @@ object Generators {
   implicit val batchIdArb: Arbitrary[BatchID] =
     Arbitrary { Arbitrary.arbitrary[Long].map { BatchID(_) } }
 
+
+  implicit val arbTimestamp : Arbitrary[Timestamp] = Arbitrary {
+      // a relevant 200 or so year range
+      Gen.choose(-137878042589500L, 137878042589500L)
+        .map { Timestamp(_) }
+    }
+
+
   implicit val dateArb: Arbitrary[java.util.Date] =
     Arbitrary {
       // a relevant 200 or so year range
