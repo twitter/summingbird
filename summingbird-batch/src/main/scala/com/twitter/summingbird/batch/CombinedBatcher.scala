@@ -17,7 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.batch
 
 import com.twitter.algebird.ExclusiveUpper
-import java.util.Date
 
 /** strictly before the beforeBound, we use the before Batcher.
  * At the beforeBound, the batch increments abe switches to using
@@ -27,13 +26,13 @@ import java.util.Date
  * beforeBound is before.batchOf(beforeBound - 1ms) + 1
  */
 class CombinedBatcher(before: Batcher,
-  beforeBound: ExclusiveUpper[Date],
+  beforeBound: ExclusiveUpper[Timestamp],
   after: Batcher) extends Batcher {
 
-  val batchAtBound: BatchID = before.batchOf(new Date(beforeBound.upper.getTime - 1L)) + 1L
+  val batchAtBound: BatchID = before.batchOf(Timestamp(beforeBound.upper.milliSinceEpoch - 1L)) + 1L
   val afterBatchDelta: BatchID = after.batchOf(beforeBound.upper)
 
-  def batchOf(d: Date): BatchID =
+  def batchOf(d: Timestamp): BatchID =
     if(!beforeBound.contains(d)) {
       (after.batchOf(d) - afterBatchDelta.id) + batchAtBound.id
     }
@@ -41,12 +40,12 @@ class CombinedBatcher(before: Batcher,
       before.batchOf(d)
     }
 
-  def earliestTimeOf(b: BatchID): Date =
+  def earliestTimeOf(b: BatchID): Timestamp =
     if(b > batchAtBound) {
       after.earliestTimeOf((b - batchAtBound.id) + afterBatchDelta.id)
     }
     else if(b == batchAtBound) {
-      new Date(beforeBound.upper.getTime) // damn mutable dates
+      Timestamp(beforeBound.upper.milliSinceEpoch) // damn mutable dates
     }
     else
       before.earliestTimeOf(b)

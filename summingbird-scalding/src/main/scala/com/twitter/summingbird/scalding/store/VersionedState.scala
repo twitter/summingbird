@@ -18,25 +18,23 @@ package com.twitter.summingbird.scalding.store
 
 import com.twitter.algebird.{
   Interval, Intersection, ExclusiveUpper, InclusiveUpper }
-import com.twitter.summingbird.batch.{ Batcher, BatchID }
+import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp }
 import com.twitter.summingbird.scalding.{ WaitingState, RunningState }
-
-import java.util.Date
 
 /**
   * State representation used by the builder API for compatibility.
   */
 object VersionedState {
-  def apply(meta: HDFSMetadata, startDate: Option[Date], maxBatches: Int)
+  def apply(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
     (implicit batcher: Batcher): VersionedState =
     new VersionedState(meta, startDate, maxBatches)
 }
 
-class VersionedState(meta: HDFSMetadata, startDate: Option[Date], maxBatches: Int)
-  (implicit batcher: Batcher) extends WaitingState[Date] { outer =>
-  def begin: RunningState[Date] = new VersionedRunningState
+class VersionedState(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
+  (implicit batcher: Batcher) extends WaitingState[Timestamp] { outer =>
+  def begin: RunningState[Timestamp] = new VersionedRunningState
 
-  private class VersionedRunningState extends RunningState[Date] {
+  private class VersionedRunningState extends RunningState[Timestamp] {
     /**
       * Returns a date interval spanning from the beginning of the the
       * batch stored in the most recent metadata file to the current
@@ -64,10 +62,10 @@ class VersionedState(meta: HDFSMetadata, startDate: Option[Date], maxBatches: In
       * Commit the new maximum completed interval to the backing
       * HDFSMetadata instance.
       */
-    def succeed(succeedPart: Interval[Date]) = {
+    def succeed(succeedPart: Interval[Timestamp]) = {
       val nextTime = succeedPart match {
         case Intersection(_, ExclusiveUpper(up)) => up
-        case Intersection(_, InclusiveUpper(up)) => new Date(up.getTime + 1L)
+        case Intersection(_, InclusiveUpper(up)) => Timestamp(up.milliSinceEpoch + 1L)
         case _ => sys.error("We should always be running for a finite interval")
       }
       val batchID = batcher.batchOf(nextTime)

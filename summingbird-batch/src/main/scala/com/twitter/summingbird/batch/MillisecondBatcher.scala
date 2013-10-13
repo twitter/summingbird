@@ -28,8 +28,8 @@ import java.util.Date
  */
 
 class MillisecondBatcher(val durationMillis: Long) extends AbstractBatcher {
-  def batchOf(t : Date) = {
-    val timeInMillis = t.getTime
+  def batchOf(t : Timestamp) = {
+    val timeInMillis = t.milliSinceEpoch
     val batch = BatchID(timeInMillis / durationMillis)
 
     // Because long division rounds to zero instead of rounding down

@@ -21,13 +21,15 @@ import backtype.storm.{Config, LocalCluster, StormSubmitter}
 import backtype.storm.generated.StormTopology
 import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
 import backtype.storm.tuple.Fields
+import backtype.storm.tuple.Tuple
+
 import com.twitter.algebird.Monoid
 import com.twitter.chill.ScalaKryoInstantiator
 import com.twitter.chill.config.{ ConfiguredInstantiator, JavaMapConfig }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
@@ -35,6 +37,7 @@ import com.twitter.summingbird.planner._
 import com.twitter.summingbird.storm.planner._
 import com.twitter.util.Future
 import scala.annotation.tailrec
+import backtype.storm.tuple.Values
 
 
 /*
@@ -49,7 +52,13 @@ sealed trait StormStore[-K, V] {
 object MergeableStoreSupplier {
   def from[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier(() => store, batcher)
+    
+   def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreSupplier[K, V] = {
+    implicit val batcher = Batcher.unit
+    from(store.convert{k: (K, BatchID) => k._1})
+  }
 }
+
 
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
@@ -57,7 +66,7 @@ sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 sealed trait StormSource[+T]
-case class SpoutSource[+T](spout: Spout[(Long, T)]) extends StormSource[T]
+case class SpoutSource[+T](spout: Spout[(Timestamp, T)]) extends StormSource[T]
 
 object Storm {
   def local(options: Map[String, Options] = Map.empty): LocalStorm =
@@ -70,7 +79,7 @@ object Storm {
     MergeableStoreSupplier.from(store)
 
   implicit def toStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) = 
-    SpoutSource(spout.map(t => (timeOf(t), t)))
+    SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)))
 
   implicit def source[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) =
     Producer.source[Storm, T](toStormSource(spout))
@@ -152,7 +161,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val spout = node.members.collect { case Source(SpoutSource(s)) => s }.head
     val nodeName = stormDag.getNodeName(node)
 
-    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) { (spout, p) =>
+    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
       p match {
         case Source(_) => spout // The source is still in the members list so drop it
         case OptionMappedProducer(_, op) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
@@ -167,7 +176,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
-  private def scheduleSinkBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSummerBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val monoid = summer.monoid
     val nodeName = stormDag.getNodeName(node)
@@ -176,7 +185,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       case MergeableStoreSupplier(contained, _) => contained
     }
 
-    val sinkBolt = new SinkBolt[K, V](
+    val sinkBolt = new SummerBolt[K, V](
       supplier,
       getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
       getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
@@ -231,7 +240,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
     stormDag.nodes.foreach { node =>
       node match {
-        case _: SummerNode[_] => scheduleSinkBolt(stormDag, node)
+        case _: SummerNode[_] => scheduleSummerBolt(stormDag, node)
         case _: FlatMapNode[_] => scheduleFlatMapper(stormDag, node)
         case _: SourceNode[_] => scheduleSpout(stormDag, node)
       }
