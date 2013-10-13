@@ -70,9 +70,13 @@ object TrueGlobalState {
 	  override def checkPermission(p: Permission) = {}
   }
   
-object StormRunner {
+/*
+ * This is a wrapper to run a storm topology.
+ * We use the SecurityManager code to catch the System.exit storm calls when it
+ * fails. We wrap it into a normal exception instead so it can report better/retry.
+ */
 
-  
+object StormRunner {
   private val completeTopologyParam = {
     val ret = new CompleteTopologyParam()
     ret.setMockedSources(new MockedSources)
