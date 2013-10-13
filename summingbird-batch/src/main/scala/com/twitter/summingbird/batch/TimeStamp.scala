@@ -21,7 +21,9 @@ import com.twitter.bijection.Bijection
 import java.util.Date
 
 
-case class Timestamp(milliSinceEpoch: Long)
+case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
+  def compare(that: Timestamp) = milliSinceEpoch.compare(that.milliSinceEpoch)
+}
 
 object Timestamp {
   implicit def fromDate(d: Date) = Timestamp(d.getTime)

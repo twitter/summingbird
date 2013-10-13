@@ -20,10 +20,13 @@ import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
 import org.specs._
 
+import com.twitter.summingbird.batch._
 import com.twitter.algebird.{Interval, ExclusiveUpper, Empty}
 
 object BatcherLaws extends Properties("Batcher") {
   import Generators._
+
+  implicit val arbTimestamp : Arbitrary[Timestamp] = Arbitrary(Timestamp((new java.util.Date).getTime))
 
   def batchIdIdentity(batcher : Batcher) = { (b : BatchID) =>
     batcher.batchOf(batcher.earliestTimeOf(b))
@@ -33,7 +36,7 @@ object BatcherLaws extends Properties("Batcher") {
     (batcher.earliestTimeOf(batcher.batchOf(d)).compareTo(d) <= 0)
   }
 
-  def batchesAreWeakOrderings(batcher: Batcher) = forAll { (d1: Timestamp, Timestamp: Date) =>
+  def batchesAreWeakOrderings(batcher: Batcher) = forAll { (d1: Timestamp, d2: Timestamp) =>
     batcher.batchOf(d1).compare(batcher.batchOf(d2)) match {
       case 0 => true // can't say much
       case x => d1.compareTo(d2) == x
@@ -74,7 +77,7 @@ object BatcherLaws extends Properties("Batcher") {
   property("UTC 1D obeys laws") = batcherLaws(CalendarBatcher.ofDaysUtc(1))
 
   property("Combined obeys laws") =
-    batcherLaws(new CombinedBatcher(Batcher.ofHours(1), ExclusiveUpper(Timestamp()), Batcher.ofMinutes(10)))
+    batcherLaws(new CombinedBatcher(Batcher.ofHours(1), ExclusiveUpper(Timestamp((new java.util.Date()).getTime)), Batcher.ofMinutes(10)))
 
   val millisPerHour = 1000 * 60 * 60
 
@@ -121,7 +124,7 @@ object BatcherLaws extends Properties("Batcher") {
         val minBatch = BatchID.toIterable(covered).min
         val maxBatch = BatchID.toIterable(covered).max
         int.contains(hourlyBatcher.earliestTimeOf(minBatch)) &&
-          int.contains(Timestamp(hourlyBatcher.earliestTimeOf(maxBatch.next).getTime - 1L))
+          int.contains(Timestamp(hourlyBatcher.earliestTimeOf(maxBatch.next).milliSinceEpoch - 1L))
       }
     }
 }
