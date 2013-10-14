@@ -18,6 +18,7 @@ package com.twitter.summingbird.storm
 
 import com.twitter.summingbird.option.MonoidIsCommutative
 import com.twitter.summingbird.storm.option._
+import com.twitter.summingbird.online.option._
 
 object Constants {
   val AGG_KEY     = "aggKey"
