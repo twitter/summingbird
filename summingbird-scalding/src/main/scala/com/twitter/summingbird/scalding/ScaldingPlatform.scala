@@ -21,7 +21,7 @@ import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, Inclusive
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
-import com.twitter.scalding.{ Tool => STool, Source => SSource, _ }
+import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _}
 import com.twitter.summingbird._
 import com.twitter.summingbird.scalding.option.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
@@ -77,7 +77,8 @@ object Scalding {
     Either[List[FailureReason], DateRange] = {
       try {
         val available = (mode, factory(desired)) match {
-          case (hdfs: Hdfs, ts: TimePathedSource) => minify(hdfs, ts)
+          case (hdfs: Hdfs, ts: STPS) =>
+            TimePathedSource.satisfiableHdfs(hdfs, desired, factory.asInstanceOf[DateRange => STPS])
           case _ => bisectingMinify(mode, desired)(factory)
         }
         available.flatMap { intersect(desired, _) }
@@ -112,36 +113,6 @@ object Scalding {
       // No good data
       None
     }
-  }
-
-  // TODO move this to scalding:
-  // https://github.com/twitter/scalding/issues/529
-  private def minify(mode: Hdfs, ts: TimePathedSource): Option[DateRange] = {
-    import ts.{pattern, dateRange, tz}
-
-    def combine(prev: DateRange, next: DateRange) = DateRange(prev.start, next.end)
-
-    def pathIsGood(p : String): Boolean = {
-      val path = new Path(p)
-      Option(path.getFileSystem(mode.conf).globStatus(path))
-        .map(_.length > 0)
-        .getOrElse(false)
-    }
-
-    List("%1$tH" -> Hours(1), "%1$td" -> Days(1)(tz),
-      "%1$tm" -> Months(1)(tz), "%1$tY" -> Years(1)(tz))
-      .find { unitDur : (String, Duration) => pattern.contains(unitDur._1) }
-      .map { unitDur =>
-        dateRange.each(unitDur._2)
-          .map { dr : DateRange =>
-            val path = String.format(pattern, dr.start.toCalendar(tz))
-            (dr, path)
-          }
-      }
-      .getOrElse(List((dateRange, pattern))) // This must not have any time after all
-      .takeWhile { case (_, path) => pathIsGood(path) }
-      .map(_._1)
-      .reduceOption { combine(_, _) }
   }
 
   /** This uses minify to find the smallest subset we can run.
