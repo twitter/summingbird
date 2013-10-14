@@ -44,7 +44,7 @@ class SourceActor(akkaSrc: AkkaSource[_], targetNames: List[String]) extends Act
 
   case object Emit
   override def preStart = {
-    Thread.sleep(200)
+    Thread.sleep(50)
     self ! Emit
   }
 
@@ -76,7 +76,7 @@ class FlatMapActor(op: FlatMapOperation[Any, Any], targetNames: List[String]) ex
     case FlatMapOutput(d) =>
       val operated = op(d)
       if (operated.isInstanceOf[com.twitter.util.Future[Any]])
-        operated.asInstanceOf[com.twitter.util.Future[Any]].map {r => send(r) }
+        operated.asInstanceOf[com.twitter.util.Future[Any]].map(send(_))
       else
         send(operated)
   }

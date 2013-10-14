@@ -102,7 +102,7 @@ abstract class Akka(options: Map[String, Options]) extends Platform[Akka] {
             case IdentityKeyedProducer(_) => acc
             case NamedProducer(_, _) => acc
             case AlsoProducer(_, _) => acc
-            case KeyFlatMappedProducer(_, _) => acc
+            case KeyFlatMappedProducer(_, op) => acc.andThen(FlatMapOperation.keyFlatMap[Any, Any, Any](op).asInstanceOf[FlatMapOperation[Any, Any]])
             case MergedProducer(_, _) => acc
             case Source(_) => sys.error("A source should never be in a flatmapper")
             case Summer(_, _, _) => sys.error("A summer should never be in a flatmapper")
@@ -174,7 +174,7 @@ abstract class Akka(options: Map[String, Options]) extends Platform[Akka] {
 
 class LocalAkka(options: Map[String, Options])
   extends Akka(options) {
-  lazy val localCluster = ActorSystem("localSummingBird")
+  lazy val localCluster = ActorSystem("localSummingBird" + scala.util.Random.alphanumeric.take(5).mkString(""))
 
   def shutdown = localCluster.shutdown
   def awaitTermination = localCluster.awaitTermination

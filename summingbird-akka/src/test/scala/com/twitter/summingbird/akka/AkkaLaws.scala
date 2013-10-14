@@ -40,6 +40,11 @@ import scala.collection.mutable.{
  * Tests for Summingbird's Akka planner.
  */
 
+object TrueGlobalState {
+  val data = new MutableHashMap[String, TestState[Int, Int, Int]]
+        with SynchronizedMap[String, TestState[Int, Int, Int]]
+}
+
 /**
  * State required to perform a single Storm test run.
  */
@@ -57,18 +62,15 @@ object AkkaLaws extends Specification {
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
   implicit val batcher = Batcher.unit
 
-  def createGlobalState[T, K, V] =
-    new MutableHashMap[String, TestState[T, K, V]] with SynchronizedMap[String, TestState[T, K, V]]
-
   /**
    * Global state shared by all tests.
    */
-  val globalState = createGlobalState[Int, Int, Int]
+  val globalState = TrueGlobalState.data
 
   def runJob(p: TailProducer[Akka, _]) = {
     val cluster = Akka.local()
     cluster.run(p, "Test Job")
-    Thread.sleep(300)
+    Thread.sleep(400)
     cluster.shutdown
     cluster.awaitTermination
   }
@@ -135,6 +137,21 @@ object AkkaLaws extends Specification {
       TestGraphs.singleStepInScala(original)(fn),
       returnedState.store.asScala.toMap
         .collect { case ((k, batchID), Some(v)) => (k, v) }) must beTrue
+  }
+
+  "AkkaPlatform matches Scala for flatmap keys jobs" in {
+    val original = sample[List[Int]]
+    val fnA = sample[Int => List[(Int, Int)]]
+    val fnB = sample[Int => List[Int]]
+    val (fn, returnedState) =
+      runOnce(original)(
+        TestGraphs.singleStepMapKeysJob[Akka, Int, Int, Int, Int](_,_)(fnA, fnB)
+      )
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB),
+      returnedState.store.asScala.toMap
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
   }
 
   val nextFn = { pair: ((Int, (Int, Option[Int]))) =>
