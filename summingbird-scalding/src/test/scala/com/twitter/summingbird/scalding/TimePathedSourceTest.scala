@@ -60,7 +60,7 @@ object TimePathSourceLaws extends Properties("Time path source") {
     bigger.contains(genEmbiggen(embiggen)(smaller))
   }
 
-  def rangeLength(dr: DateRange): Long = dr.end.timestamp - dr.start.timestamp
+  def rangeLength(dr: DateRange): Long = dr.end.timestamp - dr.start.timestamp + 1
   
 
   property("if the reqRange + embiggen is inside the avail range, return should == requested") = forAll { (data: TestData) =>
@@ -78,7 +78,7 @@ object TimePathSourceLaws extends Properties("Time path source") {
         case Some(range) =>
           (data.availableRange.contains(range)
           && data.requestedRange.contains(range)
-          && (rangeLength(data.requestedRange) - rangeLength(range) < rangeLength(data.requestedRange))
+          && rangeLength(range) > 0
           )
     }
   }
