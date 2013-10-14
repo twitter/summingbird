@@ -141,12 +141,14 @@ class TestService[K, V](service: String,
     (streams
       .toList
       .sortBy(_._1)
-      .foldLeft(Map.empty[BatchID, Map[K, (Time, V)]]) { case (map, (batch: BatchID, writes: Iterable[(Time, (K, Option[V]))])) =>
-        val thisBatch = writes.foldLeft(map.get(batch).getOrElse(Map.empty[K, (Time, V)])) { case (innerMap, (time, (k, v))) =>
-          v match {
-            case None => innerMap - k
-            case Some(v) => innerMap + (k -> (time -> v))
-          }
+      .foldLeft(Map.empty[BatchID, Map[K, (Time, V)]]) {
+        case (map, (batch: BatchID, writes: Iterable[(Time, (K, Option[V]))])) =>
+          val thisBatch = writes.foldLeft(map.get(batch).getOrElse(Map.empty[K, (Time, V)])) {
+            case (innerMap, (time, (k, v))) =>
+              v match {
+                case None => innerMap - k
+                case Some(v) => innerMap + (k -> (time -> v))
+              }
         }
         map + (batch -> thisBatch)
       }
