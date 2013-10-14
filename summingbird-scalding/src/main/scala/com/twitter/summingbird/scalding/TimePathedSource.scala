@@ -16,8 +16,11 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.scalding.{TimePathedSource => sTPS, DateRange, AbsoluteDuration}
+import com.twitter.scalding.{TimePathedSource => STPS, _}
+import org.apache.hadoop.fs.Path
 
+// TODO move this to scalding:
+// https://github.com/twitter/scalding/issues/529
 object TimePathedSource extends java.io.Serializable {
   // Assumes linear expanders
   private def unexpander(init: DateRange, expander: DateRange => DateRange): (DateRange) => Option[DateRange] = {
@@ -53,4 +56,43 @@ object TimePathedSource extends java.io.Serializable {
   def minify(expander: DateRange => DateRange,
     vertractor: DateRange => Option[DateRange]): (DateRange => Option[DateRange]) =
       { (init: DateRange) => minifyRec(init, expander, vertractor) }
+
+
+  def satisfiableHdfs(mode: Hdfs, desired: DateRange, fn: DateRange => STPS): Option[DateRange] = {
+    val expander: (DateRange => DateRange) = fn.andThen(_.dateRange)
+
+    val (tz, pattern) = {
+      val test = fn(desired)
+      (test.tz, test.pattern)
+    }
+    def toPath(date: RichDate): String =
+      String.format(pattern, date.toCalendar(tz))
+
+    val stepSize: Option[Duration] =
+      List("%1$tH" -> Hours(1), "%1$td" -> Days(1)(tz),
+        "%1$tm" -> Months(1)(tz), "%1$tY" -> Years(1)(tz))
+        .find { unitDur : (String, Duration) => pattern.contains(unitDur._1) }
+        .map(_._2)
+
+    def allPaths(dateRange: DateRange): Iterable[(DateRange, String)] =
+      stepSize.map { dateRange.each(_)
+        .map { dr => (dr, toPath(dr.start)) }
+      }
+      .getOrElse(List((dateRange, pattern))) // This must not have any time after all
+
+    def pathIsGood(p : String): Boolean = {
+      val path = new Path(p)
+      Option(path.getFileSystem(mode.conf).globStatus(path))
+        .map(_.length > 0)
+        .getOrElse(false)
+    }
+
+    val vertractor = { (dr: DateRange) =>
+      allPaths(dr)
+        .takeWhile { case (_, path) => pathIsGood(path) }
+        .map(_._1)
+        .reduceOption { (older, newer) => DateRange(older.start, newer.end) }
+    }
+    minify(expander, vertractor)(desired)
+  }
 }
