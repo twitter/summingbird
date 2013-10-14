@@ -39,7 +39,7 @@ object TimePathedSource extends java.io.Serializable {
       val unex = unexpander(init, expander)
       vertractor(expanded) match {
         case None => None
-        case Some(rt) if rt.contains(expanded) => init // we can satisfy init
+        case Some(rt) if rt.contains(expanded) => Some(init) // we can satisfy init
         case Some(subset) =>
           unex(subset) match {
             case None => None
