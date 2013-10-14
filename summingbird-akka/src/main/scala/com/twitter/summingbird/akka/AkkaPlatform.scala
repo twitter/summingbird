@@ -180,7 +180,9 @@ class LocalAkka(options: Map[String, Options])
   def awaitTermination = localCluster.awaitTermination
   override def run(plan: List[(Props, String)], jobName: String): Unit = {
     plan.foreach { case (p, name) =>
-      localCluster.actorOf(p, name = name)
+      Future {
+        localCluster.actorOf(p, name = name)
+      }
     }
   }
 }

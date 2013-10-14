@@ -70,7 +70,7 @@ object AkkaLaws extends Specification {
   def runJob(p: TailProducer[Akka, _]) = {
     val cluster = Akka.local()
     cluster.run(p, "Test Job")
-    Thread.sleep(400)
+    Thread.sleep(2000)
     cluster.shutdown
     cluster.awaitTermination
   }
