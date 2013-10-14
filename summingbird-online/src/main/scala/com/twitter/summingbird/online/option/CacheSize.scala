@@ -14,17 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.akka.option
+package com.twitter.summingbird.online.option
 
+import scala.util.Random
 
 /**
- * Options used by the flatMapping stage of a storm topology.
+ *
+ * Accepts a lower bound and a percentage of fuzz. The internal
+ * "size" function returns a random integer between the lower bound
+ * and the fuzz percentage above that bound.
  *
  * @author Oscar Boykin
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
 
-case class SourceParallelism(parHint: Int)
-
-case class FlatMapParallelism(parHint: Int)
+case class CacheSize(lowerBound: Int, fuzz: Double = 0.2) extends java.io.Serializable {
+  def size: Option[Int] =
+    Some(lowerBound)
+      .filter { _ > 0 }
+      .map { s => s + Random.nextInt((fuzz * s).toInt)  }
+}

@@ -20,13 +20,11 @@ import com.twitter.algebird.{ Monoid, SummingQueue }
 import com.twitter.chill.MeatLocker
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.akka.option._
 import com.twitter.util.Future
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
-import java.util.{ Date, Map => JMap }
-
-import java.util.{ Map => JMap }
-
+import com.twitter.summingbird.online.FlatMapOperation
+import com.twitter.summingbird.online.FutureQueue
+import java.util.Date
 import _root_.akka.routing.ConsistentHashingRouter.ConsistentHashable
 import _root_.akka.actor.Actor
 
@@ -87,7 +85,6 @@ class FlatMapActor(op: FlatMapOperation[Any, Any], targetNames: List[String]) ex
 class SummerActor[Key, Value: Monoid](
   storeBuilder: () => MergeableStore[(Key, BatchID), Value])(implicit batcher: Batcher) extends Actor {
   import context._
-  import Constants._
   val storeBox = MeatLocker(storeBuilder)
   lazy val store = storeBox.get.apply
   lazy val cacheCount = Some(0)

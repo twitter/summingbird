@@ -16,17 +16,15 @@
 
 package com.twitter.summingbird.akka
 
-import Constants._
 import com.twitter.algebird.Monoid
 import com.twitter.chill.ScalaKryoInstantiator
 import com.twitter.chill.config.{ ConfiguredInstantiator, JavaMapConfig }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
+import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.batch.{BatchID, Batcher}
-import com.twitter.summingbird.akka.option.CacheSize
 import com.twitter.summingbird.planner._
-import com.twitter.summingbird.akka.planner._
 import com.twitter.util.Future
 import scala.annotation.tailrec
 import _root_.akka.actor.ActorSystem
@@ -66,6 +64,7 @@ abstract class Akka(options: Map[String, Options]) extends Platform[Akka] {
   type Sink[-T] = () => (T => Future[Unit])
   type Service[-K, +V] = AkkaService[K, V]
   type Plan[T] = List[(Props, String)]
+  type AkkaNode = Node[Akka]
 
   private type Prod[T] = Producer[Akka, T]
   

@@ -14,9 +14,13 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.akka
-import com.twitter.summingbird.planner.Node
+package com.twitter.summingbird
 
-package object planner {
-  type AkkaNode = Node[Akka]
+import com.twitter.storehaus.ReadableStore
+
+/**
+  * Package containing the Summingbird Online platform.
+  */
+package object online {
+  type StoreFactory[K, V] = () => ReadableStore[K, V]
 }
