@@ -213,14 +213,20 @@ class TestSink[T] extends ScaldingSink[T] {
 }
 
 // This is not really usable, just a mock that does the same state over and over
-class LoopState[T](init: Interval[T]) extends WaitingState[T] { self =>
-  def begin = new RunningState[T] {
-    def part = self.init
-    def succeed(nextStart: Interval[T]) = self
+class LoopState[T](init: T) extends WaitingState[T] { self =>
+  def begin = new PrepareState[T] {
+    def requested = self.init
     def fail(err: Throwable) = {
       println(err)
       self
     }
+    def willAccept(intr: T) = Right(new RunningState[T] {
+      def succeed = self
+      def fail(err: Throwable) = {
+        println(err)
+        self
+      }
+    })
   }
 }
 
