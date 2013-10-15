@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.sink
 
 import com.twitter.util.Future
 

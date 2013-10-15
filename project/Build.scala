@@ -159,6 +159,20 @@ object SummingbirdBuild extends Build {
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   )
 
+  lazy val summingbirdOnline = module("online").settings(
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "storehaus-core" % storehausVersion,
+      "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" %% "storehaus-algebra" % storehausVersion,
+      withCross("com.twitter" %% "util-core" % utilVersion)
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdBatch
+  )
+
   lazy val summingbirdStorm = module("storm").settings(
     parallelExecution in Test := false,
     libraryDependencies ++= Seq(
@@ -175,6 +189,7 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdOnline,
     summingbirdBatch
   )
 

@@ -34,6 +34,7 @@ import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.planner._
+import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
 import com.twitter.util.Future
 import scala.annotation.tailrec
