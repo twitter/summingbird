@@ -478,31 +478,40 @@ class Scalding(
     }
   }
 
-  def run(state: WaitingState[Timestamp], mode: Mode, pf: TailProducer[Scalding, _]): WaitingState[Timestamp] =
+  def run(state: WaitingState[Interval[Timestamp]],
+    mode: Mode,
+    pf: TailProducer[Scalding, Any]): WaitingState[Interval[Timestamp]] =
     run(state, mode, plan(pf))
 
-  def run(state: WaitingState[Timestamp], mode: Mode, pf: PipeFactory[_]): WaitingState[Timestamp] = {
+  def run(state: WaitingState[Interval[Timestamp]],
+    mode: Mode,
+    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = {
+
     setIoSerializations(mode)
-    val runningState = state.begin
-    val timeSpan = runningState.part.mapNonDecreasing(_.milliSinceEpoch)
+    val prepareState = state.begin
+    val timeSpan = prepareState.requested.mapNonDecreasing(_.milliSinceEpoch)
     toFlow(timeSpan, mode, pf) match {
       case Left(errs) =>
-        runningState.fail(FlowPlanException(errs))
+        prepareState.fail(FlowPlanException(errs))
       case Right((ts,flow)) =>
-        try {
-          options.get(jobName).foreach { jopt =>
-            jopt.get[WriteDot].foreach { o => flow.writeDOT(o.filename) }
-            jopt.get[WriteStepsDot].foreach { o => flow.writeStepsDOT(o.filename) }
-          }
-          flow.complete
-          if (flow.getFlowStats.isSuccessful)
-            runningState.succeed(ts.mapNonDecreasing(Timestamp(_)))
-          else
-            runningState.fail(new Exception("Flow did not complete."))
-        } catch {
-          case (e: Throwable) => {
-            runningState.fail(e)
-          }
+        prepareState.willAccept(ts.mapNonDecreasing(Timestamp(_))) match {
+          case Right(runningState) =>
+            try {
+              options.get(jobName).foreach { jopt =>
+                jopt.get[WriteDot].foreach { o => flow.writeDOT(o.filename) }
+                jopt.get[WriteStepsDot].foreach { o => flow.writeStepsDOT(o.filename) }
+              }
+              flow.complete
+              if (flow.getFlowStats.isSuccessful)
+                runningState.succeed
+              else
+                runningState.fail(new Exception("Flow did not complete."))
+            } catch {
+              case (e: Throwable) => {
+                runningState.fail(e)
+              }
+            }
+          case Left(waitingState) => waitingState
         }
     }
   }
