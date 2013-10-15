@@ -16,21 +16,22 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.Interval
-
 /**
  * Job state models the memory of when the next job should
  * try to cover
  */
 trait WaitingState[T] {
   // Record that you are running, and get the starting time:
-  def begin: RunningState[T]
+  def begin: PrepareState[T]
+}
+
+trait PrepareState[T] {
+  def requested: T
+  def willAccept(available: T): Either[WaitingState[T], RunningState[T]]
+  def fail(err: Throwable): WaitingState[T]
 }
 
 trait RunningState[T] {
-  def part: Interval[T]
-  /** suceedPart MAY not be equal to part, it might be a subset
-   */
-  def succeed(succeedPart: Interval[T]): WaitingState[T]
+  def succeed: WaitingState[T]
   def fail(err: Throwable): WaitingState[T]
 }
