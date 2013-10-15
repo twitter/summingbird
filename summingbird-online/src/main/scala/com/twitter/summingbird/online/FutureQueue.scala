@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.online
 
 import com.twitter.util.{ Await, Future }
 import scala.collection.mutable.{ Queue => MutableQueue }
