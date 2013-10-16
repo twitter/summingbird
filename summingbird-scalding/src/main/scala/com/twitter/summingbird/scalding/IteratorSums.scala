@@ -37,7 +37,7 @@ object IteratorSums extends java.io.Serializable {
       def next = {
         @annotation.tailrec
         def sum(acc: (K1,V1)): (K1, V1) = {
-          advanced;
+          advanced
           (acc, nextPair) match {
             case ((ka, va), Some((k, v))) if (ka == k) =>
               nextPair = None // consume

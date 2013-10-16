@@ -88,11 +88,12 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
    */
   private def mergeBatched(inBatch: BatchID,
     input: FlowProducer[TypedPipe[(K,V)]],
-    batches: List[BatchID],
+    batchIntr: Interval[BatchID],
     deltas: FlowToPipe[(K,V)],
     commutativity: Commutativity,
     reducers: Int)(implicit sg: Semigroup[V]): FlowToPipe[(K,(Option[V], V))] = {
 
+    val batches = BatchID.toIterable(batchIntr).toList
     val finalBatch = batches.last // batches won't be empty.
     val filteredBatches = select(batches).sorted
     assert(filteredBatches.contains(finalBatch), "select must not remove the final batch.")
@@ -199,10 +200,9 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
                     + " of deltas at: " + this.toString + " only: " + batchesWeCanBuild.toString))
                 }
                 else {
-                  val blist = BatchID.toIterable(batchesWeCanBuild).toList
-                  val merged = mergeBatched(actualLast, input, blist, deltaFlow2Pipe, commutativity, reducers)(sg)
-                  // it is a static (i.e. independent from input) bug if this get ever throws
-                  val available = batchOps.intersect(blist, timeSpan).get
+                  val merged = mergeBatched(actualLast, input, batchesWeCanBuild,
+                    deltaFlow2Pipe, commutativity, reducers)(sg)
+                  val available = batchOps.intersect(batchesWeCanBuild, timeSpan)
                   val filtered = Scalding.limitTimes(available, merged)
                   Right(((available, mode), filtered))
                 }
