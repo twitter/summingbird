@@ -50,7 +50,7 @@ object IteratorSums extends java.io.Serializable {
     }
 
   /**
-   * This assumes the U are safe to ignore and are just passed througt, and it
+   * This assumes the U are safe to ignore and are just passed through. It
    * goes through the values and gives you the sumOption just before
    * this value and the current value
    */

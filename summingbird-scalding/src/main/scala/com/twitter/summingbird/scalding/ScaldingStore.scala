@@ -99,14 +99,14 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
 
     import IteratorSums._ // get the groupedSum, partials function
 
-    def prepareOld(old: TypedPipe[(K, V)]): TypedPipe[(K, (BatchID, V))] =
-      old.map { case (k, v) => (k, (inBatch, v)) }
+    def prepareOld(old: TypedPipe[(K, V)]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
+      old.map { case (k, v) => (k, (inBatch, (Timestamp.Min, v))) }
 
     val capturedBatcher = batcher //avoid a closure on the whole store
     def prepareDeltas(ins: TypedPipe[(Long, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] = {
       val inits = ins.map { case (t, (k, v)) =>
         val ts = Timestamp(t)
-        val batch = batcher.batchOf(ts)
+        val batch = capturedBatcher.batchOf(ts)
         ((k, batch), (ts, v))
       }
       (commutativity match {
@@ -118,13 +118,9 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
 
     /** Produce a merged stream such that each BatchID, Key pair appears only one time.
      */
-    def mergeAll(old: TypedPipe[(K, (BatchID, V))],
-        newkvs: TypedPipe[(K, (BatchID, (Timestamp, V)))]):
-      TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))] = {
-
-      val old1 = old.map { case (k, (b, v)) => (k, (b, (Timestamp.Min, v))) }
-      (old1 ++ newkvs)
-        .group
+    def mergeAll(all: TypedPipe[(K, (BatchID, (Timestamp, V)))]):
+      TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))] =
+      all.group
         .withReducers(reducers)
         .sortBy { case (_, (t, _)) => t } //we are sorted on time, therefore BatchID
         .mapValueStream { it =>
@@ -133,7 +129,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           partials(batches.iterator.map { bid => (bid,  batched.get(bid)) })
         }
         .toTypedPipe
-    }
+
     /**
      * There is no flatten on Option, this adds it
      */
@@ -161,7 +157,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     for {
       pipeInput <- input
       pipeDeltas <- deltas
-      merged = mergeAll(prepareOld(pipeInput), prepareDeltas(pipeDeltas))
+      merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas))
       lastOut = toLastFormat(merged)
       _ <- writeFlow(filteredBatches, lastOut)
     } yield toOutputFormat(merged)
