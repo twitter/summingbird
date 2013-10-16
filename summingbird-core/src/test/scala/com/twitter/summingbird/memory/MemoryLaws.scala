@@ -103,7 +103,7 @@ object MemoryLaws extends Specification {
     mem.run(mem.plan(prod))
     // check it out:
     Equiv[List[(T,U)]].equiv((buffer.toList),
-      input.map { t => (t, srv(t)) }.collect { case (t, Some(u)) => (t,u) })
+      TestGraphs.lookupJobInScala(input, srv))
   }
 
   "The Memory Platform" should {

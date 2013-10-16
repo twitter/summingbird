@@ -173,6 +173,9 @@ object TestGraphs {
   def lookupJob[P <: Platform[P], T, U](
     source: Producer[P, T], srv: P#Service[T, U], sink: P#Sink[(T, U)]): TailProducer[P, (T, U)] =
       source.lookup(srv).collectValues { case Some(v) => v }.write(sink)
+
+  def lookupJobInScala[P <: Platform[P], T, U](in: List[T], srv: (T) => Option[U]): List[(T, U)] =
+    in.map { t => (t, srv(t)) }.collect { case (t, Some(u)) => (t,u) }
 }
 
 class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbitrary: Equiv: Monoid](platform: P)(
