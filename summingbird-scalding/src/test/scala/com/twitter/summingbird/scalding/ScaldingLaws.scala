@@ -252,6 +252,7 @@ object ScaldingLaws extends Specification {
     if(wrong) {
       println("input: " + original)
       println("input size: " + original.size)
+      println("input batches: " + testStore.batcher.batchOf(Timestamp(original.size)))
       println("producer extra keys: " + (produced.keySet -- inMemory.keySet))
       println("producer missing keys: " + (inMemory.keySet -- produced.keySet))
       println("written batches: " + testStore.writtenBatches)

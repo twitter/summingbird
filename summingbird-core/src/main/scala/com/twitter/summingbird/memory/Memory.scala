@@ -88,11 +88,11 @@ class Memory extends Platform[Memory] {
             val (s, m) = toStream(producer, jamfs)
             val summed = s.map {
               case pair @ (k, deltaV) =>
-                val newV = store.get(k)
-                  .map { monoid.plus(_, deltaV) }
+                val oldV = store.get(k)
+                val newV = oldV.map { monoid.plus(_, deltaV) }
                   .getOrElse(deltaV)
                 store.update(k, newV)
-                pair
+                (k, (oldV, deltaV))
             }
             (summed, m)
         }
