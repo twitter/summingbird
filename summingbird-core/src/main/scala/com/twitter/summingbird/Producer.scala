@@ -159,7 +159,7 @@ case class WrittenProducer[P <: Platform[P], T, U >: T](producer: Producer[P, T]
 case class Summer[P <: Platform[P], K, V](
   producer: KeyedProducer[P, K, V],
   store: P#Store[K, V],
-  monoid: Monoid[V]) extends KeyedProducer[P, K, V] with TailProducer[P, (K, V)]
+  monoid: Monoid[V]) extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))]
 
 sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def leftJoin[RightV](service: P#Service[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
@@ -174,6 +174,14 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
       stream.write(buffer)
         .also(leftJoin(buffer))
 
+  /** emits a KeyedProducer with a value that is the store value, just BEFORE a merge,
+   * and the right is a new delta (which may include, depending on the Platform, Store and Options,
+   * more than a single aggregated item).
+   *
+   * so, the sequence out of this has the property that:
+   * (v0, vdelta1), (v0 + vdelta1, vdelta2), (v0 + vdelta1 + vdelta2, vdelta3), ...
+   *
+   */
   def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
     Summer(this, store, monoid)
 

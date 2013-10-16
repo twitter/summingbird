@@ -130,7 +130,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     val opts = SourceBuilder.adjust(
       scaldingBuilder.opts, scaldingBuilder.id)(_.set(Reducers(reducers)))
     // Support for the old setting based writing
-    val toRun: TailProducer[Scalding, (K, V)] =
+    val toRun: TailProducer[Scalding, (K, (Option[V], V))] =
       (for {
         opt <- opts.get(scaldingBuilder.id)
         stid <- opt.get[StoreIntermediateData[K,V]]
