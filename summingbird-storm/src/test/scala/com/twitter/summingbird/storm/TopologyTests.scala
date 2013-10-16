@@ -118,7 +118,7 @@ object ToplogyTests extends Specification {
     * Perform a single run of TestGraphs.singleStepJob using the
     * supplied list of integers and the testFn defined above.
     */
-  def funcToPlan(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, (Int, Int)])
+  def funcToPlan(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, Any])
       : StormTopology = {
     val original = sample[List[Int]]
     val id = UUID.randomUUID.toString
@@ -155,16 +155,16 @@ object ToplogyTests extends Specification {
   	val p = Storm.source(TraversableSpout(sample[List[Int]]))
   		.flatMap(testFn).name(nodeName)
       .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
-      
+
   	val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)))
-  	val storm = Storm.local(opts)  			
+  	val storm = Storm.local(opts)
   	val stormTopo = storm.plan(p)
     // Source producer
     val bolts = stormTopo.get_bolts
 
     // Tail will have 1 -, distance from there should be onwards
     val TDistMap = bolts.map{case (k, v) => (k.split("-").size - 1, v)}
-    
+
 	TDistMap(1).get_common.get_parallelism_hint must be(50)
   }
 
@@ -173,16 +173,16 @@ object ToplogyTests extends Specification {
   	val p = Storm.source(TraversableSpout(sample[List[Int]]))
   		.flatMap(testFn).name(nodeName).name("Throw away name")
       .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
-      
+
   	val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)))
-  	val storm = Storm.local(opts)  			
+  	val storm = Storm.local(opts)
   	val stormTopo = storm.plan(p)
     // Source producer
     val bolts = stormTopo.get_bolts
 
     // Tail will have 1 -, distance from there should be onwards
     val TDistMap = bolts.map{case (k, v) => (k.split("-").size - 1, v)}
-    
+
 	TDistMap(1).get_common.get_parallelism_hint must be(50)
   }
 
@@ -191,15 +191,15 @@ object ToplogyTests extends Specification {
   	val p = Storm.source(TraversableSpout(sample[List[Int]]))
   		.flatMap(testFn).name(nodeName).name("Throw away name")
       .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
-      
+
   	val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)).set(SpoutParallelism(30)))
-  	val storm = Storm.local(opts)  			
+  	val storm = Storm.local(opts)
   	val stormTopo = storm.plan(p)
     // Source producer
     val bolts = stormTopo.get_bolts
     val spouts = stormTopo.get_spouts
     val spout = spouts.head._2
-    
+
 	spout.get_common.get_parallelism_hint must be(30)
   }
 }
