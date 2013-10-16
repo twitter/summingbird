@@ -51,5 +51,16 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) {
    * Does not include itself
    */
   def transitiveDependantsOf(p: Producer[P, Any]): List[Producer[P, Any]] =
-    depthFirstOf(p.asInstanceOf[Producer[P, Any]])(graph).toList
+    depthFirstOf(p)(graph).toList
+
+  /** Return all the dependants of this node, but don't go past any output
+   * nodes, such as Summer or WrittenProducer. This is for searching downstream
+   * until write/sum to see if certain optimizations can be enabled
+   */
+  def transitiveDependantsTillOutput(p: Producer[P, Any]): List[Producer[P, Any]] = {
+    val neighborFn = { (p: Producer[P, Any]) =>
+      if(Producer.isOutput(p)) Iterable.empty else graph(p)
+    }
+    depthFirstOf(p)(neighborFn).toList
+  }
 }

@@ -226,7 +226,14 @@ object Scalding {
     producer: Producer[Scalding, T],
     id: Option[String],
     fanOuts: Set[Producer[Scalding, _]],
+    dependants: Dependants[Scalding],
     built: Map[Producer[Scalding, _], PipeFactory[_]]): (PipeFactory[T], Map[Producer[Scalding, _], PipeFactory[_]]) = {
+
+    def recurse[U](p: Producer[Scalding, U],
+      id: Option[String] = id,
+      built: Map[Producer[Scalding, _], PipeFactory[_]] = built):
+      (PipeFactory[U], Map[Producer[Scalding, _], PipeFactory[_]]) =
+        buildFlow(options, p, id, fanOuts, dependants, built)
 
     /**
      * The scalding Typed-API does not deal with TypedPipes with fanout,
@@ -265,10 +272,8 @@ object Scalding {
               }
             (srcPf, built)
           }
-          case IdentityKeyedProducer(producer) =>
-            buildFlow(options, producer, id, fanOuts, built)
-          case NamedProducer(producer, newId)  =>
-            buildFlow(options, producer, id = Some(newId), fanOuts, built)
+          case IdentityKeyedProducer(producer) => recurse(producer)
+          case NamedProducer(producer, newId)  => recurse(producer, id = Some(newId))
           case Summer(producer, store, monoid) =>
             /*
              * The store may already have materialized values, so we don't need the whole
@@ -276,7 +281,7 @@ object Scalding {
              * So, we pass the full PipeFactory to to the store so it can request only
              * the time ranges that it needs.
              */
-            val (in, m) = buildFlow(options, producer, id, fanOuts, built)
+            val (in, m) = recurse(producer)
             val isCommutative = getOrElse(options, id, MonoidIsCommutative.default)
             (store.merge(in, monoid,
               isCommutative.commutativity,
@@ -287,14 +292,14 @@ object Scalding {
              * join with, so we pass in the left PipeFactory so that the service
              * can compute how wuch it can actually handle and only load that much
              */
-            val (pf, m) = buildFlow(options, left, id, fanOuts, built)
+            val (pf, m) = recurse(left)
             (service.lookup(pf), m)
           case WrittenProducer(producer, sink) =>
-            val (pf, m) = buildFlow(options, producer, id, fanOuts, built)
+            val (pf, m) = recurse(producer)
             (sink.write(pf), m)
           case OptionMappedProducer(producer, op) =>
             // Map in two monads here, first state then reader
-            val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
+            val (fmp, m) = recurse(producer)
             (fmp.map { flowP =>
               flowP.map { typedPipe =>
                 typedPipe.flatMap { case (time, item) =>
@@ -302,9 +307,31 @@ object Scalding {
                 }
               }
             }, m)
-          case KeyFlatMappedProducer(producer, op) =>
+          case kfm@KeyFlatMappedProducer(producer, op) =>
+            /**
+             * If the following is true, it is safe to put a mapside reduce before this node:
+             * 1) there is only one downstream output, which is a Summer
+             * 2) there are only NoOp Producers between this node and the Summer
+             */
+            /*
+            val downStream = dependants.transitiveDependantsTillOutput(kfm)
+            val prepare: TypedPipe[(Any,Any)] => TypedPipe[(Any,Any)] = downStream.collect(Producer.isOutput) match {
+              case List(s@Summer(_, _, monoid)) =>
+                if(downStream.iterator.filterNot(Producer.isNoOp).filterNot(_ != s).isEmpty) {
+                  //only downstream are no-ops and the summer GO!
+                  // we know the types are right, by construction, but we have lost them here:
+                  // TODO, add the batchID to the key, and pivot time into value
+                  // check if the monoid is commutative
+                  { (kv: TypedPipe[(Any,Any)]) => mapsideReduce(kv)(monoid) }
+                }
+                else
+                  indentity[TypedPipe[(Any,Any)]]
+              case _ =>
+                  indentity[TypedPipe[(Any,Any)]]
+            }*/
+
             // Map in two monads here, first state then reader
-            val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
+            val (fmp, m) = recurse(producer)
             (fmp.map { flowP =>
               flowP.map { typedPipe =>
                 typedPipe.flatMap { case (time, (k, v)) =>
@@ -314,7 +341,7 @@ object Scalding {
             }, m)
           case FlatMappedProducer(producer, op) =>
             // Map in two monads here, first state then reader
-            val (fmp, m) = buildFlow(options, producer, id, fanOuts, built)
+            val (fmp, m) = recurse(producer)
             (fmp.map { flowP =>
               flowP.map { typedPipe =>
                 typedPipe.flatMap { case (time, item) =>
@@ -323,8 +350,8 @@ object Scalding {
               }
             }, m)
           case MergedProducer(l, r) => {
-            val (pfl, ml) = buildFlow(options, l, id, fanOuts, built)
-            val (pfr, mr) = buildFlow(options, r, id, fanOuts, ml)
+            val (pfl, ml) = recurse(l)
+            val (pfr, mr) = recurse(r, built = ml)
             val merged = for {
               // concatenate errors (++) and find the intersection (&&) of times
               leftAndRight <- pfl.join(pfr,
@@ -340,8 +367,8 @@ object Scalding {
            * left could do to be consistent with the rest of this code.
            */
           case AlsoProducer(l, r) => {
-            val (pfl, ml) = buildFlow(options, l, id, fanOuts, built)
-            val (pfr, mr) = buildFlow(options, r, id, fanOuts, ml)
+            val (pfl, ml) = recurse(l)
+            val (pfr, mr) = recurse(r, built = ml)
             val onlyRight = for {
               // concatenate errors (++) and find the intersection (&&) of times
               leftAndRight <- pfl.join(pfr,
@@ -364,7 +391,7 @@ object Scalding {
     val fanOutSet =
       dep.nodes
         .filter(dep.fanOut(_).exists(_ > 1)).toSet
-    buildFlow(options, prod, None, fanOutSet, Map.empty)._1
+    buildFlow(options, prod, None, fanOutSet, dep, Map.empty)._1
   }
 
   def plan[T](options: Map[String, Options], prod: TailProducer[Scalding, T]): PipeFactory[T] = {
