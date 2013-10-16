@@ -80,11 +80,11 @@ object MemoryLaws extends Specification {
     val original = sample[List[T]]
     val fnA =  sample[T => List[(K1, V)]]
     val fnB = sample[K1 => List[K2]]
-    
+
     // Use the supplied platform to execute the source into the
     // supplied store.
      val plan = platform.plan {
-       TestGraphs.singleStepMapKeysJob[Memory, T, K1, K2, V](sourceMaker(original), currentStore)(fnA, fnB) 
+       TestGraphs.singleStepMapKeysJob[Memory, T, K1, K2, V](sourceMaker(original), currentStore)(fnA, fnB)
      }
      platform.run(plan)
     val lookupFn = currentStore.get(_)
@@ -94,7 +94,17 @@ object MemoryLaws extends Specification {
     }
   }
 
-
+  def lookupCollectChecker[T:Arbitrary:Equiv:Manifest, U:Arbitrary:Equiv]: Boolean = {
+    val mem = new Memory
+    val input = sample[List[T]]
+    val srv = sample[T => Option[U]]
+    var buffer = Vector[(T,U)]() // closure to mutate this
+    val prod = TestGraphs.lookupJob[Memory,T,U](Memory.toSource(input), srv, { tu: (T,U) => buffer = buffer :+ tu })
+    mem.run(mem.plan(prod))
+    // check it out:
+    Equiv[List[(T,U)]].equiv((buffer.toList),
+      input.map { t => (t, srv(t)) }.collect { case (t, Some(u)) => (t,u) })
+  }
 
   "The Memory Platform" should {
     //Set up the job:
@@ -107,8 +117,10 @@ object MemoryLaws extends Specification {
     "diamond w/ String, Short, Map[Set[Int], Long]" in { diamondLaw[String, Short, Map[Set[Int], Long]] must be(true) }
 
     "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must be(true) }
-    
+
     "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must be(true) }
+
+    "lookupCollect w/ Int, Int" in { lookupCollectChecker[Int, Int] must be(true) }
   }
 
 }

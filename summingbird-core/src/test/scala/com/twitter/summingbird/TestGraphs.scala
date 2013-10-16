@@ -169,6 +169,10 @@ object TestGraphs {
     source
       .flatMap(mapOp)
       .write(sink)
+
+  def lookupJob[P <: Platform[P], T, U](
+    source: Producer[P, T], srv: P#Service[T, U], sink: P#Sink[(T, U)]): TailProducer[P, (T, U)] =
+      source.lookup(srv).collectValues { case Some(v) => v }.write(sink)
 }
 
 class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbitrary: Equiv: Monoid](platform: P)(
@@ -176,8 +180,7 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
   sourceMaker: TraversableOnce[T] => Producer[P, T])(
   toLookupFn: P#Store[K, V] => (K => Option[V]))(
   toSinkChecker: (P#Sink[T], List[T]) => Boolean)(
-  run: (P, P#Plan[_]) => Unit
-  ){
+  run: (P, P#Plan[_]) => Unit){
 
   def diamondChecker(items: List[T], fnA: T => List[(K, V)], fnB: T => List[(K, V)]): Boolean = {
     val currentStore = store()
