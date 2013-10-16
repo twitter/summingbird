@@ -90,28 +90,59 @@ object Producer {
   */
 sealed trait Producer[P <: Platform[P], +T] {
 
+  /** Exactly the same as merge. Here by analogy with the scala.collections API */
+  def ++[U >: T](r: Producer[P, U]): Producer[P, U] = MergedProducer(this, r)
+
+  /** Naming a node is so that you may give Options for that node that may change
+   * the run-time performance of the job (parameter tuning, etc...)
+   */
   def name(id: String): Producer[P, T] = NamedProducer(this, id)
+
+  /** Combine the output into one Producer */
   def merge[U >: T](r: Producer[P, U]): Producer[P, U] = MergedProducer(this, r)
 
+  /** Prefer to flatMap for transforming a subset of items
+   * like optionMap but convenient with case syntax in scala
+   * prod.collect { case x if fn(x) => g(x) }
+   */
   def collect[U](fn: PartialFunction[T,U]): Producer[P, U] =
     optionMap(fn.lift)
 
+  /** Keep only the items that satisfy the fn */
   def filter(fn: T => Boolean): Producer[P, T] =
     // Enforce using the OptionMapped here:
     optionMap(Some(_).filter(fn))
 
+  /** This is identical to a certain leftJoin:
+   * map((_, ())).leftJoin(srv).mapValues{case (_, v) => v}
+   * Useful when you are looking up values from
+   * say a stream of inputs, such as IDs.
+   */
+  def lookup[U >: T, V](service: P#Service[U, V]): KeyedProducer[P, U, Option[V]] =
+    map[(U,Unit)]((_, ())).leftJoin(service).mapValues { case (_, v) => v }
+
+  /** Map each item to a new value */
   def map[U](fn: T => U): Producer[P, U] =
     // Enforce using the OptionMapped here:
     optionMap(t => Some(fn(t)))
 
+  /** Prefer this or collect to flatMap if you are always emitting 0 or 1 items
+   */
   def optionMap[U](fn: T => Option[U]): Producer[P, U] =
     OptionMappedProducer[P, T, U](this, fn)
 
+  /** Only use this function if you may return more than 1 item sometimes.
+   * otherwise use collect or optionMap, which can be pushed up the graph
+   */
   def flatMap[U](fn: T => TraversableOnce[U]): Producer[P, U] =
     FlatMappedProducer[P, T, U](this, fn)
 
+  /** Cause some side effect on the sink, but pass through the values so
+   * they can be consumed downstream
+   */
   def write[U >: T](sink: P#Sink[U]): TailProducer[P, T] = WrittenProducer(this, sink)
 
+  /** Merge a different type of Producer into a single stream */
   def either[U](other: Producer[P, U]): Producer[P, Either[T, U]] =
     map(Left(_): Either[T, U])
       .merge(other.map(Right(_): Either[T, U]))
@@ -161,7 +192,51 @@ case class Summer[P <: Platform[P], K, V](
   store: P#Store[K, V],
   monoid: Monoid[V]) extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))]
 
+/** This has the methods on Key-Value streams.
+ * The rule is: if you can easily express your logic on the keys and values indendently,
+ * do it! This is how you communicate structure to Summingbird and it uses these hints
+ * to attempt the most efficient run of your code.
+ */
 sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
+
+  def collectKeys[K2](pf: PartialFunction[K,K2]): KeyedProducer[P, K2, V] =
+    IdentityKeyedProducer( collect { case (k, v) if pf.isDefinedAt(k) => (pf(k), v) })
+
+  def collectValues[V2](pf: PartialFunction[V,V2]): KeyedProducer[P, K, V2] =
+    IdentityKeyedProducer( collect { case (k, v) if pf.isDefinedAt(v) => (k, pf(v)) })
+
+  /** Prefer this to filter or flatMap/flatMapKeys if you are filtering.
+   * This may be optimized in the future with an intrensic node in the Producer graph.
+   * We know this never increases the number of items, and we know it does not rekey
+   * the partition.
+   */
+  def filterKeys(pred: K => Boolean): KeyedProducer[P, K, V] =
+    IdentityKeyedProducer(filter { case (k, _) => pred(k) })
+
+  /** Prefer this to filter or flatMap/flatMapValues if you are filtering.
+   * This may be optimized in the future with an intrensic node in the Producer graph.
+   * We know this never increases the number of items, and we know it does not rekey
+   * the partition.
+   */
+  def filterValues(pred: V => Boolean): KeyedProducer[P, K, V] =
+    IdentityKeyedProducer(filter { case (_, v) => pred(v) })
+
+  /** Prefer to call this method to flatMap if you are expanding only keys.
+   * It may trigger optimizations, that can significantly improve performance
+   */
+  def flatMapKeys[K2](fn: K => TraversableOnce[K2]): KeyedProducer[P, K2, V] =
+    KeyFlatMappedProducer(this, fn)
+
+  /** Prefer this to a raw map as this may be optimized to avoid a key reshuffle */
+  def flatMapValues[U](fn: V => TraversableOnce[U]): KeyedProducer[P, K, U] =
+    IdentityKeyedProducer(flatMap { case (k, v) => fn(v).map((k, _)) })
+
+  /** Return just the keys */
+  def keys: Producer[P, K] = map(_._1)
+
+  /** Do a lookup/join on a service. This is how you trigger async computation is summingbird.
+   * Any remote API call, DB lookup, etc... happens here
+   */
   def leftJoin[RightV](service: P#Service[K, RightV]): KeyedProducer[P, K, (V, Option[RightV])] =
     LeftJoinedProducer(this, service)
 
@@ -174,6 +249,16 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
       stream.write(buffer)
         .also(leftJoin(buffer))
 
+  /** Prefer to call this method to flatMap/map if you are mapping only keys.
+   * It may trigger optimizations, that can significantly improve performance
+   */
+  def mapKeys[K2](fn: K => K2): KeyedProducer[P, K2, V] =
+    KeyFlatMappedProducer(this, fn.andThen(Set(_)))
+
+  /** Prefer this to a raw map as this may be optimized to avoid a key reshuffle */
+  def mapValues[U](fn: V => U): KeyedProducer[P, K, U] =
+    IdentityKeyedProducer(map { case (k, v) => (k, fn(v)) })
+
   /** emits a KeyedProducer with a value that is the store value, just BEFORE a merge,
    * and the right is a new delta (which may include, depending on the Platform, Store and Options,
    * more than a single aggregated item).
@@ -185,7 +270,11 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
     Summer(this, store, monoid)
 
-  def flatMapKeys[K2](fn: K => TraversableOnce[K2]) = KeyFlatMappedProducer(this, fn)
+  /** Exchange values for keys */
+  def swap: KeyedProducer[P, V, K] = IdentityKeyedProducer(map(_.swap))
+
+  /** Keep only the values */
+  def values: Producer[P, V] = map(_._2)
 }
 
 case class KeyFlatMappedProducer[P <: Platform[P], K, V, K2](producer: KeyedProducer[P, K, V], fn: K => TraversableOnce[K2]) extends KeyedProducer[P, K2, V]
