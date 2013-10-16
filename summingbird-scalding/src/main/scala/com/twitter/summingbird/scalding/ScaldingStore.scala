@@ -157,7 +157,8 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     for {
       pipeInput <- input
       pipeDeltas <- deltas
-      merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas))
+      // fork below so scalding can make sure not to do the operation twice
+      merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas)).fork
       lastOut = toLastFormat(merged)
       _ <- writeFlow(filteredBatches, lastOut)
     } yield toOutputFormat(merged)
