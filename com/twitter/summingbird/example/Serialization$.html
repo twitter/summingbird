@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>com.twitter.summingbird.storm.SummingbirdKryoFactory</title>
+          <title>com.twitter.summingbird.example.Serialization</title>
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
@@ -14,9 +14,9 @@
         </head>
         <body onload="sh_highlightDocument('../lib/', '.min.js');" class="value">
       <div id="definition">
-        <a title="Go to companion" href="SummingbirdKryoFactory.html"><img src="../../../../lib/object_to_class_big.png" /></a>
-        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.storm" class="extype" href="package.html">storm</a></p>
-        <h1><a title="Go to companion" href="SummingbirdKryoFactory.html">SummingbirdKryoFactory</a></h1>
+        <img src="../../../../lib/object_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.example" class="extype" href="package.html">example</a></p>
+        <h1>Serialization</h1>
       </div>
 
       <h4 class="signature" id="signature">
@@ -25,11 +25,19 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">SummingbirdKryoFactory</span><span class="result"> extends AnyRef</span>
+        <span class="name">Serialization</span><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/SummingbirdKryoFactory.scala">SummingbirdKryoFactory.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Serialization is often the most important (and hairy)
+configuration issue for any system that needs to store its data
+over the long term. Summingbird controls serialization through the
+&quot;Injection&quot; interface.</p><p>By maintaining identical Injections from K and V to Array[Byte],
+one can guarantee that data written one day will be readable the
+next. This isn't the case with serialization engines like Kryo,
+where serialization format depends on unstable parameters, like
+the serializer registration order for the given Kryo instance.
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-example/src/main/scala/com/twitter/summingbird/example/Serialization.scala">Serialization.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -45,7 +53,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.storm.SummingbirdKryoFactory" class="in"><span>SummingbirdKryoFactory</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.example.Serialization" class="in"><span>Serialization</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -123,18 +131,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.SummingbirdKryoFactory#apply" data-isabs="false">
-      <a id="apply:SummingbirdKryoFactory"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">apply</span><span class="result">: <a name="com.twitter.summingbird.storm.SummingbirdKryoFactory" class="extype" href="SummingbirdKryoFactory.html">SummingbirdKryoFactory</a></span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -237,6 +233,29 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.Serialization#kInjection" data-isabs="false">
+      <a id="kInjection[T](Codec[T]):Injection[(T, BatchID), Array[Byte]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">kInjection</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Codec[T]</span>)</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[(T, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Summingbird's implementation of the batch/realtime merge
+requires that the Storm-based workflow store (K, BatchID) -&gt; V
+pairs, while the Hadoop-based workflow stores K -&gt; (BatchID, V)
+pairs.</p><div class="fullcomment"><div class="comment cmt"><p>Summingbird's implementation of the batch/realtime merge
+requires that the Storm-based workflow store (K, BatchID) -&gt; V
+pairs, while the Hadoop-based workflow stores K -&gt; (BatchID, V)
+pairs.</p><p>The following two injections use Bijection's &quot;Bufferable&quot; object
+to generate injections that take (T, BatchID) or (BatchID, T) to
+bytes.</p><p>For true production applications, I'd suggest defining a thrift
+or protobuf &quot;pair&quot; structure that can safely store these pairs
+over the long-term.
+</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -273,6 +292,20 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.Serialization#statusCodec" data-isabs="false">
+      <a id="statusCodec:Injection[Status, String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">statusCodec</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[<span name="twitter4j.Status" class="extype">Status</span>, String]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">This Injection converts the twitter4j.</p><div class="fullcomment"><div class="comment cmt"><p>This Injection converts the twitter4j.Status objects that Storm
+and Scalding will process into Strings.
+</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -285,6 +318,27 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.Serialization#toBytes" data-isabs="false">
+      <a id="toBytes:Injection[Status, Array[Byte]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toBytes</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[<span name="twitter4j.Status" class="extype">Status</span>, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">We can chain the Status &lt;-&gt; String injection above with the
+library-supplied String &lt;-&gt; Array[Byte] injection to generate a
+full-on serializer for Status objects of the type
+Injection[Status, Array[Byte]].</p><div class="fullcomment"><div class="comment cmt"><p>We can chain the Status &lt;-&gt; String injection above with the
+library-supplied String &lt;-&gt; Array[Byte] injection to generate a
+full-on serializer for Status objects of the type
+Injection[Status, Array[Byte]]. Our Storm and Scalding sources
+can now pull in this injection using Scala's implicit resolution
+and properly register the serializer.
+</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -297,6 +351,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.Serialization#vInj" data-isabs="false">
+      <a id="vInj[V](Codec[V]):Injection[(BatchID, V), Array[Byte]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">vInj</span><span class="tparams">[<span name="V">V</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Codec[V]</span>)</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, V), <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">

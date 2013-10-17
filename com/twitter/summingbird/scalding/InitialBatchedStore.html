@@ -31,7 +31,7 @@
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
 On write, we throw if batchID is less than firstNonZero
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingStore.scala">ScaldingStore.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingStore.scala">ScaldingStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="BatchedScaldingStore.html">BatchedScaldingStore</a>[K, V], <a name="com.twitter.summingbird.scalding.ScaldingStore" class="extype" href="ScaldingStore.html">ScaldingStore</a>[K, V], <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -267,14 +267,14 @@ On write, we throw if batchID is less than firstNonZero
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedScaldingStore#merge" data-isabs="false">
-      <a id="merge(PipeFactory[(K, V)],Semigroup[V],Commutativity,Int):PipeFactory[(K, V)]"></a>
+      <a id="merge(PipeFactory[(K, V)],Semigroup[V],Commutativity,Int):PipeFactory[(K, (Option[V], V))]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">merge</span><span class="params">(<span name="delta">delta: PipeFactory[(K, V)]</span>, <span name="sg">sg: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>, <span name="commutativity">commutativity: <a name="com.twitter.summingbird.option.Commutativity" class="extype" href="../option/Commutativity.html">Commutativity</a></span>, <span name="reducers">reducers: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: PipeFactory[(K, V)]</span>
+        <span class="name">merge</span><span class="params">(<span name="delta">delta: PipeFactory[(K, V)]</span>, <span name="sg">sg: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>, <span name="commutativity">commutativity: <a name="com.twitter.summingbird.option.Commutativity" class="extype" href="../option/Commutativity.html">Commutativity</a></span>, <span name="reducers">reducers: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: PipeFactory[(K, (<span name="scala.Option" class="extype">Option</span>[V], V))]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">instances of this trait MAY NOT change the logic here.</p><div class="fullcomment"><div class="comment cmt"><p>instances of this trait MAY NOT change the logic here. This always follows the rule
@@ -350,7 +350,7 @@ results by rolling forward
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readLast</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]])]</span>
+        <span class="name">readLast</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[TypedPipe[(K, V)]])]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Get the most recent last batch and the ID (strictly less than the input ID)
@@ -467,7 +467,7 @@ On write, we throw if batchID is less than firstNonZero
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">writeLast</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="lastVals">lastVals: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">writeLast</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="lastVals">lastVals: TypedPipe[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
       <p class="shortcomment cmt">Record a computed batch of code</p><div class="fullcomment"><div class="comment cmt"><p>Record a computed batch of code</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.InitialBatchedStore" class="extype" href="">InitialBatchedStore</a> → <a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="BatchedScaldingStore.html">BatchedScaldingStore</a></dd></dl></div>

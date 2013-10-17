@@ -35,7 +35,7 @@ flatMap, leftJoin, filter, merge, etc, the user calls
 &quot;groupAndSumTo&quot;, equivalent to &quot;sumByKey&quot; in the Producer
 API. This call converts the SourceBuilder into a CompletedBuilder
 and prevents and future flatMap operations.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-builder/src/main/scala/com/twitter/summingbird/builder/SourceBuilder.scala">SourceBuilder.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-builder/src/main/scala/com/twitter/summingbird/builder/SourceBuilder.scala">SourceBuilder.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -169,14 +169,14 @@ and prevents and future flatMap operations.
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#apply" data-isabs="false">
-      <a id="apply[T](EventSource[T],(T) ⇒ Date)(Manifest[T],Injection[T, Array[Byte]]):SourceBuilder[T]"></a>
+      <a id="apply[T](EventSource[T],(T) ⇒ Date)(Manifest[T],Codec[T]):SourceBuilder[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="eventSource">eventSource: <a name="com.twitter.summingbird.source.EventSource" class="extype" href="../source/EventSource.html">EventSource</a>[T]</span>, <span name="timeOf">timeOf: (T) ⇒ <span name="java.util.Date" class="extype">Date</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="mf">mf: Manifest[T]</span>, <span name="eventCodec">eventCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[T, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="SourceBuilder.html">SourceBuilder</a>[T]</span>
+        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="eventSource">eventSource: <a name="com.twitter.summingbird.source.EventSource" class="extype" href="../source/EventSource.html">EventSource</a>[T]</span>, <span name="timeOf">timeOf: (T) ⇒ <span name="java.util.Date" class="extype">Date</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="mf">mf: Manifest[T]</span>, <span name="eventCodec">eventCodec: Codec[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="SourceBuilder.html">SourceBuilder</a>[T]</span>
       </span>
       </h4>
       
@@ -246,18 +246,6 @@ and prevents and future flatMap operations.
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#freshUUID" data-isabs="false">
-      <a id="freshUUID:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">freshUUID</span><span class="result">: String</span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
       <a id="getClass():java.lang.Class[_]"></a>
       <h4 class="signature">
@@ -306,6 +294,18 @@ and prevents and future flatMap operations.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.SourceBuilder#nextName" data-isabs="false">
+      <a id="nextName[T](Manifest[T]):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nextName</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[T]</span>)</span><span class="result">: String</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#notify" data-isabs="false">
       <a id="notify():Unit"></a>
       <h4 class="signature">

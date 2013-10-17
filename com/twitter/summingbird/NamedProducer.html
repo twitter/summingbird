@@ -25,13 +25,16 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">NamedProducer</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>, <span name="T">T</span>]</span><span class="params">(<span name="producer">producer: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>, <span name="id">id: String</span>)</span><span class="result"> extends <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T] with <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
+        <span class="name">NamedProducer</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>, <span name="T">+T</span>]</span><span class="params">(<span name="producer">producer: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>, <span name="id">id: String</span>)</span><span class="result"> extends <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T] with <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-core/src/main/scala/com/twitter/summingbird/Graph.scala">Graph.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/Producer.scala">Producer.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+        </div><div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.TPNamedProducer" class="extype" href="TPNamedProducer.html">TPNamedProducer</a></div>
         </div></div>
     
 
@@ -114,6 +117,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#++" data-isabs="false">
+      <a id="++[U&gt;:T](Producer[P, U]):Producer[P, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $plus$plus">++</span><span class="tparams">[<span name="U">U &gt;: T</span>]</span><span class="params">(<span name="r">r: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Exactly the same as merge.</p><div class="fullcomment"><div class="comment cmt"><p>Exactly the same as merge. Here by analogy with the scala.collections API</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#==" data-isabs="false">
       <a id="==(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -177,18 +192,35 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.Producer#either" data-isabs="false">
-      <a id="either[U](Producer[P, U])(Manifest[T],Manifest[U]):Producer[P, Either[T, U]]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#collect" data-isabs="false">
+      <a id="collect[U](PartialFunction[T, U]):Producer[P, U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">either</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="other">other: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="tmf">tmf: Manifest[T]</span>, <span name="umf">umf: Manifest[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Either" class="extype">Either</span>[T, U]]</span>
+        <span class="name">collect</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: <span name="scala.PartialFunction" class="extype">PartialFunction</span>[T, U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+      <p class="shortcomment cmt">Prefer to flatMap for transforming a subset of items
+like optionMap but convenient with case syntax in scala
+prod.</p><div class="fullcomment"><div class="comment cmt"><p>Prefer to flatMap for transforming a subset of items
+like optionMap but convenient with case syntax in scala
+prod.collect { case x if fn(x) =&gt; g(x) }
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#either" data-isabs="false">
+      <a id="either[U](Producer[P, U]):Producer[P, Either[T, U]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">either</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="other">other: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Either" class="extype">Either</span>[T, U]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Merge a different type of Producer into a single stream</p><div class="fullcomment"><div class="comment cmt"><p>Merge a different type of Producer into a single stream</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -214,17 +246,17 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.NamedProducer" class="extype" href="">NamedProducer</a> → Equals → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Producer#filter" data-isabs="false">
-      <a id="filter((T) ⇒ Boolean)(Manifest[T]):Producer[P, T]"></a>
+      <a id="filter((T) ⇒ Boolean):Producer[P, T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">filter</span><span class="params">(<span name="fn">fn: (T) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="mf">mf: Manifest[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>
+        <span class="name">filter</span><span class="params">(<span name="fn">fn: (T) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+      <p class="shortcomment cmt">Keep only the items that satisfy the fn</p><div class="fullcomment"><div class="comment cmt"><p>Keep only the items that satisfy the fn</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -251,7 +283,9 @@
         <span class="name">flatMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (T) ⇒ TraversableOnce[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+      <p class="shortcomment cmt">Only use this function if you may return more than 1 item sometimes.</p><div class="fullcomment"><div class="comment cmt"><p>Only use this function if you may return more than 1 item sometimes.
+otherwise use collect or optionMap, which can be pushed up the graph
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
       <a id="getClass():java.lang.Class[_]"></a>
       <h4 class="signature">
@@ -300,30 +334,47 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#lookup" data-isabs="false">
+      <a id="lookup[U&gt;:T, V](Service[U, V]):KeyedProducer[P, U, Option[V]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lookup</span><span class="tparams">[<span name="U">U &gt;: T</span>, <span name="V">V</span>]</span><span class="params">(<span name="service">service: Service[U, V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.KeyedProducer" class="extype" href="KeyedProducer.html">KeyedProducer</a>[P, U, <span name="scala.Option" class="extype">Option</span>[V]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">This is identical to a certain leftJoin:
+map((_, ())).</p><div class="fullcomment"><div class="comment cmt"><p>This is identical to a certain leftJoin:
+map((_, ())).leftJoin(srv).mapValues{case (_, v) =&gt; v}
+Useful when you are looking up values from
+say a stream of inputs, such as IDs.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Producer#map" data-isabs="false">
-      <a id="map[U]((T) ⇒ U)(Manifest[U]):Producer[P, U]"></a>
+      <a id="map[U]((T) ⇒ U):Producer[P, U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">map</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (T) ⇒ U</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="mf">mf: Manifest[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
+        <span class="name">map</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (T) ⇒ U</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+      <p class="shortcomment cmt">Map each item to a new value</p><div class="fullcomment"><div class="comment cmt"><p>Map each item to a new value</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Producer#merge" data-isabs="false">
-      <a id="merge(Producer[P, T]):Producer[P, T]"></a>
+      <a id="merge[U&gt;:T](Producer[P, U]):Producer[P, U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">merge</span><span class="params">(<span name="r">r: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>
+        <span class="name">merge</span><span class="tparams">[<span name="U">U &gt;: T</span>]</span><span class="params">(<span name="r">r: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+      <p class="shortcomment cmt">Combine the output into one Producer</p><div class="fullcomment"><div class="comment cmt"><p>Combine the output into one Producer</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Producer#name" data-isabs="false">
       <a id="name(String):Producer[P, T]"></a>
       <h4 class="signature">
@@ -335,7 +386,10 @@
         <span class="name">name</span><span class="params">(<span name="id">id: String</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+      <p class="shortcomment cmt">Naming a node is so that you may give Options for that node that may change
+the run-time performance of the job (parameter tuning, etc.</p><div class="fullcomment"><div class="comment cmt"><p>Naming a node is so that you may give Options for that node that may change
+the run-time performance of the job (parameter tuning, etc...)
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -373,17 +427,19 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Producer#optionMap" data-isabs="false">
-      <a id="optionMap[U]((T) ⇒ Option[U])(Manifest[U]):Producer[P, U]"></a>
+      <a id="optionMap[U]((T) ⇒ Option[U]):Producer[P, U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">optionMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (T) ⇒ <span name="scala.Option" class="extype">Option</span>[U]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
+        <span class="name">optionMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (T) ⇒ <span name="scala.Option" class="extype">Option</span>[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+      <p class="shortcomment cmt">Prefer this or collect to flatMap if you are always emitting 0 or 1 items
+</p><div class="fullcomment"><div class="comment cmt"><p>Prefer this or collect to flatMap if you are always emitting 0 or 1 items
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.NamedProducer#producer" data-isabs="false">
       <a id="producer:Producer[P, T]"></a>
       <h4 class="signature">
@@ -514,17 +570,21 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Producer#write" data-isabs="false">
-      <a id="write(Sink[T]):Producer[P, T]"></a>
+      <a id="write[U&gt;:T](Sink[U]):TailProducer[P, T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">write</span><span class="params">(<span name="sink">sink: Sink[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>
+        <span class="name">write</span><span class="tparams">[<span name="U">U &gt;: T</span>]</span><span class="params">(<span name="sink">sink: Sink[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, T]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+      <p class="shortcomment cmt">Cause some side effect on the sink, but pass through the values so
+they can be consumed downstream
+</p><div class="fullcomment"><div class="comment cmt"><p>Cause some side effect on the sink, but pass through the values so
+they can be consumed downstream
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
     </li></ol>
             </div>
 

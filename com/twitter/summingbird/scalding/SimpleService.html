@@ -33,7 +33,7 @@
 unique and either are not present or have one value.
 Examples could be Keys which are Unique IDs, such as UserIDs,
 content IDs, cryptographic hashes, etc...
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/SimpleService.scala">SimpleService.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/SimpleService.scala">SimpleService.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.ScaldingService" class="extype" href="ScaldingService.html">ScaldingService</a>[K, V], <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div><div class="toggleContainer block">
@@ -88,7 +88,7 @@ content IDs, cryptographic hashes, etc...
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">serve</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="covering">covering: <span name="com.twitter.scalding.DateRange" class="extype">DateRange</span></span>, <span name="input">input: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(<span name="scala.Long" class="extype">Long</span>, (K, W))]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(<span name="scala.Long" class="extype">Long</span>, (K, (W, <span name="scala.Option" class="extype">Option</span>[V])))]</span>
+        <span class="name">serve</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="covering">covering: <span name="com.twitter.scalding.DateRange" class="extype">DateRange</span></span>, <span name="input">input: TypedPipe[(<span name="scala.Long" class="extype">Long</span>, (K, W))]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: TypedPipe[(<span name="scala.Long" class="extype">Long</span>, (K, (W, <span name="scala.Option" class="extype">Option</span>[V])))]</span>
       </span>
       </h4>
       

@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingStore.scala">ScaldingStore.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingStore.scala">ScaldingStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div><div class="toggleContainer block">
@@ -65,14 +65,14 @@
         <div class="values members" id="values">
               <h3>Abstract Value Members</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.scalding.ScaldingStore#merge" data-isabs="true">
-      <a id="merge(PipeFactory[(K, V)],Semigroup[V],Commutativity,Int):PipeFactory[(K, V)]"></a>
+      <a id="merge(PipeFactory[(K, V)],Semigroup[V],Commutativity,Int):PipeFactory[(K, (Option[V], V))]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">merge</span><span class="params">(<span name="delta">delta: PipeFactory[(K, V)]</span>, <span name="sg">sg: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>, <span name="commutativity">commutativity: <a name="com.twitter.summingbird.option.Commutativity" class="extype" href="../option/Commutativity.html">Commutativity</a></span>, <span name="reducers">reducers: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: PipeFactory[(K, V)]</span>
+        <span class="name">merge</span><span class="params">(<span name="delta">delta: PipeFactory[(K, V)]</span>, <span name="sg">sg: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>, <span name="commutativity">commutativity: <a name="com.twitter.summingbird.option.Commutativity" class="extype" href="../option/Commutativity.html">Commutativity</a></span>, <span name="reducers">reducers: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: PipeFactory[(K, (<span name="scala.Option" class="extype">Option</span>[V], V))]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Accepts deltas along with their timestamps, returns triples of

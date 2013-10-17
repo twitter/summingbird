@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingPlatform.scala">ScaldingPlatform.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingPlatform.scala">ScaldingPlatform.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -123,6 +123,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.Scalding#also" data-isabs="false">
+      <a id="also[L, R](FlowToPipe[L],FlowToPipe[R]):FlowToPipe[R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">also</span><span class="tparams">[<span name="L">L</span>, <span name="R">R</span>]</span><span class="params">(<span name="ensure">ensure: FlowToPipe[L]</span>, <span name="result">result: FlowToPipe[R]</span>)</span><span class="result">: FlowToPipe[R]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">This does the AlsoProducer logic of making <code>ensure</code> a part of the
+flow, but not this output.</p>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -170,7 +183,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">emptyFlowProducer</span><span class="tparams">[<span name="T">T</span>]</span><span class="result">: FlowProducer[<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[T]]</span>
+        <span class="name">emptyFlowProducer</span><span class="tparams">[<span name="T">T</span>]</span><span class="result">: FlowProducer[TypedPipe[T]]</span>
       </span>
       </h4>
       
@@ -213,23 +226,6 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.Scalding#forcePipe" data-isabs="false">
-      <a id="forcePipe[U](TimedPipe[U]):TimedPipe[U]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">forcePipe</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="pipe">pipe: TimedPipe[U]</span>)</span><span class="result">: TimedPipe[U]</span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">The typed API (currently, as of 0.</p><div class="fullcomment"><div class="comment cmt"><p>The typed API (currently, as of 0.9.0) hides all flatMaps
-from cascading, so if you fork a pipe, the whole input
-is recomputed. This function forces a cascading node
-so that cascading can see that any forks of the output
-share a common prefix of operations
-</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
       <a id="getClass():java.lang.Class[_]"></a>
       <h4 class="signature">
@@ -287,6 +283,18 @@ share a common prefix of operations
       </span>
       <span class="symbol">
         <span class="name">limitTimes</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="range">range: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[Time]</span>, <span name="in">in: FlowToPipe[T]</span>)</span><span class="result">: FlowToPipe[T]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.Scalding#mapsideReduce" data-isabs="false">
+      <a id="mapsideReduce[K, V](TypedPipe[(K, V)])(Semigroup[V]):TypedPipe[(K, V)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapsideReduce</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="pipe">pipe: TypedPipe[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="sg">sg: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>)</span><span class="result">: TypedPipe[(K, V)]</span>
       </span>
       </h4>
       
@@ -404,14 +412,14 @@ either produces all the DateRange or the whole job fails.
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.Scalding#plan" data-isabs="false">
-      <a id="plan[T](Map[String, Options],Producer[Scalding, T]):PipeFactory[T]"></a>
+      <a id="plan[T](Map[String, Options],TailProducer[Scalding, T]):PipeFactory[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="options">options: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>, <span name="prod">prod: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="Scalding.html">Scalding</a>, T]</span>)</span><span class="result">: PipeFactory[T]</span>
+        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="options">options: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>, <span name="prod">prod: <a name="com.twitter.summingbird.TailProducer" class="extype" href="../TailProducer.html">TailProducer</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="Scalding.html">Scalding</a>, T]</span>)</span><span class="result">: PipeFactory[T]</span>
       </span>
       </h4>
       
@@ -471,7 +479,7 @@ either produces all the DateRange or the whole job fails.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toPipe</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="dr">dr: <span name="com.twitter.scalding.DateRange" class="extype">DateRange</span></span>, <span name="prod">prod: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="Scalding.html">Scalding</a>, T]</span>, <span name="opts">opts: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="fd">fd: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[(<span name="com.twitter.scalding.DateRange" class="extype">DateRange</span>, <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(<span name="scala.Long" class="extype">Long</span>, T)])]</span>
+        <span class="name">toPipe</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="dr">dr: <span name="com.twitter.scalding.DateRange" class="extype">DateRange</span></span>, <span name="prod">prod: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="Scalding.html">Scalding</a>, T]</span>, <span name="opts">opts: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="fd">fd: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[(<span name="com.twitter.scalding.DateRange" class="extype">DateRange</span>, TypedPipe[(<span name="scala.Long" class="extype">Long</span>, T)])]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Use this method to interop with existing scalding code
@@ -497,7 +505,7 @@ If you need an exact DateRange see toPipeExact.</p>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toPipeExact</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="dr">dr: <span name="com.twitter.scalding.DateRange" class="extype">DateRange</span></span>, <span name="prod">prod: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="Scalding.html">Scalding</a>, T]</span>, <span name="opts">opts: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="fd">fd: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(<span name="scala.Long" class="extype">Long</span>, T)]]</span>
+        <span class="name">toPipeExact</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="dr">dr: <span name="com.twitter.scalding.DateRange" class="extype">DateRange</span></span>, <span name="prod">prod: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="Scalding.html">Scalding</a>, T]</span>, <span name="opts">opts: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="fd">fd: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[TypedPipe[(<span name="scala.Long" class="extype">Long</span>, T)]]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Use this method to interop with existing scalding code that expects

@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-core/src/main/scala/com/twitter/summingbird/Graph.scala">Graph.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/Producer.scala">Producer.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -151,17 +151,31 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Producer#dependenciesOf" data-isabs="false">
-      <a id="dependenciesOf[P&lt;:Platform[P]](com.twitter.summingbird.Producer[P, _]):Set[com.twitter.summingbird.Producer[P, _]]"></a>
+      <a id="dependenciesOf[P&lt;:Platform[P]](Producer[P, Any]):List[Producer[P, Any]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dependenciesOf</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="p">p: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result">: Set[com.twitter.summingbird.Producer[P, _]]</span>
+        <span class="name">dependenciesOf</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="p">p: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: List[<a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]]</span>
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#entireGraphOf" data-isabs="false">
+      <a id="entireGraphOf[P&lt;:Platform[P]](Producer[P, Any]):List[Producer[P, Any]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">entireGraphOf</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="p">p: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: List[<a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">return this and the recursively reachable nodes in depth first, left first order
+Differs from transitiveDependencies in that this goes up both sides of an either
+and it returns the input node.</p>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -310,14 +324,14 @@
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.Producer#source" data-isabs="false">
-      <a id="source[P&lt;:Platform[P], T](Source[T])(Manifest[T]):Producer[P, T]"></a>
+      <a id="source[P&lt;:Platform[P], T](Source[T]):Producer[P, T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">source</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>, <span name="T">T</span>]</span><span class="params">(<span name="s">s: Source[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="manifest">manifest: Manifest[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>
+        <span class="name">source</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>, <span name="T">T</span>]</span><span class="params">(<span name="s">s: Source[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Begin from some base representation.</p><div class="fullcomment"><div class="comment cmt"><p>Begin from some base representation. An iterator for in-memory,
@@ -360,19 +374,17 @@ for example.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Producer#transitiveDependenciesOf" data-isabs="false">
-      <a id="transitiveDependenciesOf[P&lt;:Platform[P]](com.twitter.summingbird.Producer[P, _]):Set[com.twitter.summingbird.Producer[P, _]]"></a>
+      <a id="transitiveDependenciesOf[P&lt;:Platform[P]](Producer[P, Any]):List[Producer[P, Any]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">transitiveDependenciesOf</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="p">p: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result">: Set[com.twitter.summingbird.Producer[P, _]]</span>
+        <span class="name">transitiveDependenciesOf</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="p">p: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: List[<a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Since we know these nodes form a DAG by immutability
-the search is easy
-</p>
+      <p class="shortcomment cmt">Return all dependencies of a given node in depth first, left first order.</p>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">

@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/VersionedBatchStore.scala">VersionedBatchStore.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/VersionedBatchStore.scala">VersionedBatchStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.VersionedBatchStoreBase" class="extype" href="VersionedBatchStoreBase.html">VersionedBatchStoreBase</a>[K, V], <a name="com.twitter.summingbird.scalding.BatchedScaldingStore" class="extype" href="BatchedScaldingStore.html">BatchedScaldingStore</a>[K, V], <a name="com.twitter.summingbird.scalding.ScaldingStore" class="extype" href="ScaldingStore.html">ScaldingStore</a>[K, V], <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -278,19 +278,19 @@ version are included in this store.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">lastBatch</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Hdfs" class="extype">Hdfs</span></span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]])]</span>
+        <span class="name">lastBatch</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Hdfs" class="extype">Hdfs</span></span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[TypedPipe[(K, V)]])]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.VersionedBatchStoreBase" class="extype" href="VersionedBatchStoreBase.html">VersionedBatchStoreBase</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedScaldingStore#merge" data-isabs="false">
-      <a id="merge(PipeFactory[(K, V)],Semigroup[V],Commutativity,Int):PipeFactory[(K, V)]"></a>
+      <a id="merge(PipeFactory[(K, V)],Semigroup[V],Commutativity,Int):PipeFactory[(K, (Option[V], V))]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">merge</span><span class="params">(<span name="delta">delta: PipeFactory[(K, V)]</span>, <span name="sg">sg: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>, <span name="commutativity">commutativity: <a name="com.twitter.summingbird.option.Commutativity" class="extype" href="../option/Commutativity.html">Commutativity</a></span>, <span name="reducers">reducers: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: PipeFactory[(K, V)]</span>
+        <span class="name">merge</span><span class="params">(<span name="delta">delta: PipeFactory[(K, V)]</span>, <span name="sg">sg: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>, <span name="commutativity">commutativity: <a name="com.twitter.summingbird.option.Commutativity" class="extype" href="../option/Commutativity.html">Commutativity</a></span>, <span name="reducers">reducers: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: PipeFactory[(K, (<span name="scala.Option" class="extype">Option</span>[V], V))]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">instances of this trait MAY NOT change the logic here.</p><div class="fullcomment"><div class="comment cmt"><p>instances of this trait MAY NOT change the logic here. This always follows the rule
@@ -354,7 +354,7 @@ results by rolling forward
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readLast</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]])]</span>
+        <span class="name">readLast</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[TypedPipe[(K, V)]])]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Returns a snapshot of the store's (K, V) pairs aggregated up to
@@ -372,7 +372,7 @@ upper bound.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readVersion</span><span class="params">(<span name="v">v: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: FlowProducer[<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]]</span>
+        <span class="name">readVersion</span><span class="params">(<span name="v">v: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: FlowProducer[TypedPipe[(K, V)]]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Returns a FlowProducer that supplies all data for the given
@@ -498,7 +498,7 @@ On write, we throw if batchID is less than firstNonZero
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">writeLast</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="lastVals">lastVals: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">writeLast</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="lastVals">lastVals: TypedPipe[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
       <p class="shortcomment cmt">writeLast receives an INCLUSIVE upper bound on batchID and a

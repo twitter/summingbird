@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Wrapped for the new scalding sink API in terms of the above</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-builder/src/main/scala/com/twitter/summingbird/sink/Sink.scala">Sink.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Wrapped for the new scalding sink API in terms of the above</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-builder/src/main/scala/com/twitter/summingbird/sink/Sink.scala">Sink.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="extype" href="../scalding/BatchedScaldingSink.html">BatchedScaldingSink</a>[T], <a name="com.twitter.summingbird.scalding.ScaldingSink" class="extype" href="../scalding/ScaldingSink.html">ScaldingSink</a>[T], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -407,7 +407,7 @@ Return a new FlowToPipe with the write as a side effect
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">writeStream</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="stream">stream: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(<span name="scala.Long" class="extype">Long</span>, T)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">writeStream</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="stream">stream: TypedPipe[(<span name="scala.Long" class="extype">Long</span>, T)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
       <p class="shortcomment cmt">Instances may choose to write out materialized streams

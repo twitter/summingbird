@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>com.twitter.summingbird.storm.FutureQueue</title>
+          <title>com.twitter.summingbird.storm.SpoutSource</title>
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
@@ -16,7 +16,7 @@
       <div id="definition">
         <img src="../../../../lib/class_big.png" />
         <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.storm" class="extype" href="package.html">storm</a></p>
-        <h1>FutureQueue</h1>
+        <h1>SpoutSource</h1>
       </div>
 
       <h4 class="signature" id="signature">
@@ -25,18 +25,13 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">FutureQueue</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="init">init: <span name="com.twitter.util.Future" class="extype">Future</span>[T]</span>, <span name="maxLength">maxLength: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result"> extends <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
+        <span class="name">SpoutSource</span><span class="tparams">[<span name="T">+T</span>]</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[(<span name="scala.Long" class="extype">Long</span>, T)]</span>)</span><span class="result"> extends <a name="com.twitter.summingbird.storm.StormSource" class="extype" href="StormSource.html">StormSource</a>[T] with <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Maintains a rolling window of futures. Future # n is
-forced after Future (n + maxLength) is added to the
-queue.</p><p>TODO (https://github.com/twitter/summingbird/issues/83): remove
-this in favor of BufferingStore in storehaus after further
-performance investigation.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/FutureQueue.scala">FutureQueue.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, <a name="com.twitter.summingbird.storm.StormSource" class="extype" href="StormSource.html">StormSource</a>[T], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -50,7 +45,7 @@ performance investigation.
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.storm.FutureQueue" class="in"><span>FutureQueue</span></li><li name="scala.Serializable" class="in"><span>Serializable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.Product" class="in"><span>Product</span></li><li name="scala.Equals" class="in"><span>Equals</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.storm.SpoutSource" class="in"><span>SpoutSource</span></li><li name="scala.Serializable" class="in"><span>Serializable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.Product" class="in"><span>Product</span></li><li name="scala.Equals" class="in"><span>Equals</span></li><li name="com.twitter.summingbird.storm.StormSource" class="in"><span>StormSource</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -62,15 +57,15 @@ performance investigation.
         <div id="allMembers">
         <div class="members" id="constructors">
               <h3>Instance Constructors</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#this" data-isabs="false">
-      <a id="this:FutureQueue[T]"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#this" data-isabs="false">
+      <a id="this:SpoutSource[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">FutureQueue</span><span class="params">(<span name="init">init: <span name="com.twitter.util.Future" class="extype">Future</span>[T]</span>, <span name="maxLength">maxLength: <span name="scala.Int" class="extype">Int</span></span>)</span>
+        <span class="name">SpoutSource</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[(<span name="scala.Long" class="extype">Long</span>, T)]</span>)</span>
       </span>
       </h4>
       
@@ -119,18 +114,6 @@ performance investigation.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#+=" data-isabs="false">
-      <a id="+=(Future[T]):FutureQueue.this.type"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name" title="gt4s: $plus$eq">+=</span><span class="params">(<span name="future">future: <span name="com.twitter.util.Future" class="extype">Future</span>[T]</span>)</span><span class="result">: FutureQueue.this.type</span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.AnyRef#==" data-isabs="false">
       <a id="==(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -167,7 +150,7 @@ performance investigation.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#canEqual" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#canEqual" data-isabs="false">
       <a id="canEqual(Any):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -178,7 +161,7 @@ performance investigation.
         <span class="name">canEqual</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FutureQueue" class="extype" href="">FutureQueue</a> → Equals</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SpoutSource" class="extype" href="">SpoutSource</a> → Equals</dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -206,7 +189,7 @@ performance investigation.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#equals" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#equals" data-isabs="false">
       <a id="equals(Any):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -217,7 +200,7 @@ performance investigation.
         <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FutureQueue" class="extype" href="">FutureQueue</a> → Equals → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SpoutSource" class="extype" href="">SpoutSource</a> → Equals → AnyRef → Any</dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -245,7 +228,7 @@ performance investigation.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#hashCode" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#hashCode" data-isabs="false">
       <a id="hashCode():Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -256,19 +239,7 @@ performance investigation.
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FutureQueue" class="extype" href="">FutureQueue</a> → AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#init" data-isabs="false">
-      <a id="init:Future[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">init</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[T]</span>
-      </span>
-      </h4>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SpoutSource" class="extype" href="">SpoutSource</a> → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <h4 class="signature">
@@ -281,18 +252,6 @@ performance investigation.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#maxLength" data-isabs="false">
-      <a id="maxLength:Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">maxLength</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -329,7 +288,7 @@ performance investigation.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#productArity" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#productArity" data-isabs="false">
       <a id="productArity:Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -340,8 +299,8 @@ performance investigation.
         <span class="name">productArity</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FutureQueue" class="extype" href="">FutureQueue</a> → Product</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#productElement" data-isabs="false">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SpoutSource" class="extype" href="">SpoutSource</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#productElement" data-isabs="false">
       <a id="productElement(Int):Any"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -352,7 +311,7 @@ performance investigation.
         <span class="name">productElement</span><span class="params">(<span name="arg0">arg0: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Any" class="extype">Any</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FutureQueue" class="extype" href="">FutureQueue</a> → Product</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SpoutSource" class="extype" href="">SpoutSource</a> → Product</dd></dl></div>
     </li><li visbl="pub" name="scala.Product#productIterator" data-isabs="false">
       <a id="productIterator:Iterator[Any]"></a>
       <h4 class="signature">
@@ -365,7 +324,7 @@ performance investigation.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#productPrefix" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#productPrefix" data-isabs="false">
       <a id="productPrefix:String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -376,7 +335,19 @@ performance investigation.
         <span class="name">productPrefix</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FutureQueue" class="extype" href="">FutureQueue</a> → Product</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SpoutSource" class="extype" href="">SpoutSource</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#spout" data-isabs="false">
+      <a id="spout:Spout[(Long, T)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">spout</span><span class="result">: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[(<span name="scala.Long" class="extype">Long</span>, T)]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -389,7 +360,7 @@ performance investigation.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FutureQueue#toString" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -400,7 +371,7 @@ performance investigation.
         <span class="name">toString</span><span class="params">()</span><span class="result">: String</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FutureQueue" class="extype" href="">FutureQueue</a> → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SpoutSource" class="extype" href="">SpoutSource</a> → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">
@@ -479,6 +450,8 @@ performance investigation.
               <h3>Inherited from <span name="scala.Product" class="extype">Product</span></h3>
             </div><div name="scala.Equals" class="parent">
               <h3>Inherited from <span name="scala.Equals" class="extype">Equals</span></h3>
+            </div><div name="com.twitter.summingbird.storm.StormSource" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.storm.StormSource" class="extype" href="StormSource.html">StormSource</a>[T]</h3>
             </div><div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">

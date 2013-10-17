@@ -30,7 +30,7 @@
       </h4>
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Refers to a specific version on disk. Allows reading and writing metadata to specific locations
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/store/HDFSMetadata.scala">HDFSMetadata.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/store/HDFSMetadata.scala">HDFSMetadata.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -191,14 +191,14 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSVersionMetadata#get" data-isabs="false">
-      <a id="get[T](JsonNodeInjection[T]):Option[T]"></a>
+      <a id="get[T](JsonNodeInjection[T]):Try[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">get</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.bijection.json.JsonNodeInjection" class="extype">JsonNodeInjection</span>[T]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[T]</span>
+        <span class="name">get</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.bijection.json.JsonNodeInjection" class="extype">JsonNodeInjection</span>[T]</span>)</span><span class="result">: <span name="scala.util.Try" class="extype">Try</span>[T]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">get an item from the metadata file.</p><div class="fullcomment"><div class="comment cmt"><p>get an item from the metadata file. If there is any failure, you get None.

@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>com.twitter.summingbird.storm.FunctionFlatMapOperation</title>
+          <title>com.twitter.summingbird.planner.Node</title>
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
@@ -14,24 +14,27 @@
         </head>
         <body onload="sh_highlightDocument('../lib/', '.min.js');" class="type">
       <div id="definition">
-        <img src="../../../../lib/class_big.png" />
-        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.storm" class="extype" href="package.html">storm</a></p>
-        <h1>FunctionFlatMapOperation</h1>
+        <img src="../../../../lib/trait_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.planner" class="extype" href="package.html">planner</a></p>
+        <h1>Node</h1>
       </div>
 
       <h4 class="signature" id="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">FunctionFlatMapOperation</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="result"> extends <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[T, U]</span>
+        <span class="name">Node</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[P]</span>]</span><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/FlatMapOperation.scala">FlatMapOperation.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/planner/Node.scala">Node.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[T, U], <span name="java.io.Closeable" class="extype">Closeable</span>, <span name="java.lang.AutoCloseable" class="extype">AutoCloseable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+        </div><div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.planner.FlatMapNode" class="extype" href="FlatMapNode.html">FlatMapNode</a>, <a name="com.twitter.summingbird.planner.SourceNode" class="extype" href="SourceNode.html">SourceNode</a>, <a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="SummerNode.html">SummerNode</a></div>
         </div></div>
     
 
@@ -45,7 +48,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.storm.FunctionFlatMapOperation" class="in"><span>FunctionFlatMapOperation</span></li><li name="com.twitter.summingbird.storm.FlatMapOperation" class="in"><span>FlatMapOperation</span></li><li name="java.io.Closeable" class="in"><span>Closeable</span></li><li name="java.lang.AutoCloseable" class="in"><span>AutoCloseable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.planner.Node" class="in"><span>Node</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -55,29 +58,53 @@
 
       <div id="template">
         <div id="allMembers">
-        <div class="members" id="constructors">
-              <h3>Instance Constructors</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.storm.FunctionFlatMapOperation#this" data-isabs="false">
-      <a id="this:FunctionFlatMapOperation[T, U]"></a>
+        
+
+        
+
+        <div class="values members" id="values">
+              <h3>Abstract Value Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.planner.Node#add" data-isabs="true">
+      <a id="add(com.twitter.summingbird.Producer[P, _]):Node[P]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">new</span>
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">FunctionFlatMapOperation</span><span class="params">(<span name="fm">fm: (T) ⇒ TraversableOnce[U]</span>)</span>
+        <span class="name">add</span><span class="params">(<span name="node">node: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result">: <a name="com.twitter.summingbird.planner.Node" class="extype" href="">Node</a>[P]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#reverse" data-isabs="true">
+      <a id="reverse:Node[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">reverse</span><span class="result">: <a name="com.twitter.summingbird.planner.Node" class="extype" href="">Node</a>[P]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#shortName" data-isabs="true">
+      <a id="shortName((String) ⇒ String):NodeIdentifier"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">shortName</span><span class="params">(<span name="sanitize">sanitize: (String) ⇒ String</span>)</span><span class="result">: <a name="com.twitter.summingbird.planner.NodeIdentifier" class="extype" href="NodeIdentifier.html">NodeIdentifier</a></span>
       </span>
       </h4>
       
     </li></ol>
             </div>
 
-        
-
-        
-
         <div class="values members" id="values">
-              <h3>Value Members</h3>
+              <h3>Concrete Value Members</h3>
               <ol><li visbl="pub" name="scala.AnyRef#!=" data-isabs="false">
       <a id="!=(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -138,35 +165,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation#andThen" data-isabs="false">
-      <a id="andThen[V](FlatMapOperation[U, V]):FlatMapOperation[T, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">andThen</span><span class="tparams">[<span name="V">V</span>]</span><span class="params">(<span name="fmo">fmo: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[U, V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[T, V]</span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">TODO: Think about getting an implicit FutureCollector here, in
-case we don't want to completely choke on large expansions (and
-joins).</p><div class="fullcomment"><div class="comment cmt"><p>TODO: Think about getting an implicit FutureCollector here, in
-case we don't want to completely choke on large expansions (and
-joins).
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a></dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FunctionFlatMapOperation#apply" data-isabs="false">
-      <a id="apply(T):Future[TraversableOnce[U]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="t">t: T</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[TraversableOnce[U]]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FunctionFlatMapOperation" class="extype" href="">FunctionFlatMapOperation</a> → <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a></dd></dl></div>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -179,18 +177,6 @@ joins).
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FunctionFlatMapOperation#boxed" data-isabs="false">
-      <a id="boxed:MeatLocker[(T) ⇒ TraversableOnce[U]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">boxed</span><span class="result">: <span name="com.twitter.chill.MeatLocker" class="extype">MeatLocker</span>[(T) ⇒ TraversableOnce[U]]</span>
-      </span>
-      </h4>
-      
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -206,18 +192,30 @@ joins).
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.FlatMapOperation#close" data-isabs="false">
-      <a id="close():Unit"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#collapseNamedNodes" data-isabs="false">
+      <a id="collapseNamedNodes((String) ⇒ String):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">close</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">collapseNamedNodes</span><span class="params">(<span name="sanitize">sanitize: (String) ⇒ String</span>)</span><span class="result">: String</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a> → Closeable → AutoCloseable</dd></dl></div>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#contains" data-isabs="false">
+      <a id="contains(com.twitter.summingbird.Producer[P, _]):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">contains</span><span class="params">(<span name="p">p: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -269,6 +267,30 @@ joins).
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#getName" data-isabs="false">
+      <a id="getName(Dag[P]):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getName</span><span class="params">(<span name="dag">dag: <a name="com.twitter.summingbird.planner.Dag" class="extype" href="Dag.html">Dag</a>[P]</span>)</span><span class="result">: String</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#getNameFallback" data-isabs="false">
+      <a id="getNameFallback:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNameFallback</span><span class="result">: String</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
       <a id="hashCode():Int"></a>
       <h4 class="signature">
@@ -293,6 +315,18 @@ joins).
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#members" data-isabs="false">
+      <a id="members:List[com.twitter.summingbird.Producer[P, _]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">members</span><span class="result">: List[com.twitter.summingbird.Producer[P, _]]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -341,7 +375,19 @@ joins).
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#toSource" data-isabs="false">
+      <a id="toSource:SourceNode[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toSource</span><span class="result">: <a name="com.twitter.summingbird.planner.SourceNode" class="extype" href="SourceNode.html">SourceNode</a>[P]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -349,10 +395,34 @@ joins).
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
+        <span class="name">toString</span><span class="params">()</span><span class="result">: String</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.Node" class="extype" href="">Node</a> → AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#toStringWithPrefix" data-isabs="false">
+      <a id="toStringWithPrefix(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toStringWithPrefix</span><span class="params">(<span name="prefix">prefix: String</span>)</span><span class="result">: String</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#toSummer" data-isabs="false">
+      <a id="toSummer:SummerNode[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toSummer</span><span class="result">: <a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="SummerNode.html">SummerNode</a>[P]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">
@@ -405,15 +475,7 @@ joins).
         </div>
 
         <div id="inheritedMembers">
-        <div name="com.twitter.summingbird.storm.FlatMapOperation" class="parent">
-              <h3>Inherited from <a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="FlatMapOperation.html">FlatMapOperation</a>[T, U]</h3>
-            </div><div name="java.io.Closeable" class="parent">
-              <h3>Inherited from <span name="java.io.Closeable" class="extype">Closeable</span></h3>
-            </div><div name="java.lang.AutoCloseable" class="parent">
-              <h3>Inherited from <span name="java.lang.AutoCloseable" class="extype">AutoCloseable</span></h3>
-            </div><div name="java.io.Serializable" class="parent">
-              <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
-            </div><div name="scala.AnyRef" class="parent">
+        <div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">
               <h3>Inherited from <span name="scala.Any" class="extype">Any</span></h3>

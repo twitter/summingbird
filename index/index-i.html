@@ -13,8 +13,8 @@
       <div class="name">id</div>
       <div class="occurrences"><a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../com/twitter/summingbird/batch/BatchID.html">BatchID</a> <a name="com.twitter.summingbird.builder.CompletedBuilder" class="extype" href="../com/twitter/summingbird/builder/CompletedBuilder.html">CompletedBuilder</a> <a name="com.twitter.summingbird.builder.SourceBuilder" class="extype" href="../com/twitter/summingbird/builder/SourceBuilder.html">SourceBuilder</a> <a name="com.twitter.summingbird.NamedProducer" class="extype" href="../com/twitter/summingbird/NamedProducer.html">NamedProducer</a> </div>
     </div><div class="entry">
-      <div class="name">identity</div>
-      <div class="occurrences"><a name="com.twitter.summingbird.storm.FlatMapOperation" class="extype" href="../com/twitter/summingbird/storm/FlatMapOperation$.html">FlatMapOperation</a> </div>
+      <div class="name">identifier</div>
+      <div class="occurrences"><a name="com.twitter.summingbird.planner.NodeIdentifier" class="extype" href="../com/twitter/summingbird/planner/NodeIdentifier.html">NodeIdentifier</a> </div>
     </div><div class="entry">
       <div class="name">IdentityKeyedProducer</div>
       <div class="occurrences"><a name="com.twitter.summingbird" class="extype" href="../com/twitter/summingbird/package.html">summingbird</a> </div>
@@ -25,8 +25,20 @@
       <div class="name">IncludeSuccessHandler</div>
       <div class="occurrences"><a name="com.twitter.summingbird.storm.option" class="extype" href="../com/twitter/summingbird/storm/option/package.html">option</a> </div>
     </div><div class="entry">
-      <div class="name">init</div>
-      <div class="occurrences"><a name="com.twitter.summingbird.storm.FutureQueue" class="extype" href="../com/twitter/summingbird/storm/FutureQueue.html">FutureQueue</a> </div>
+      <div class="name">incrementDays</div>
+      <div class="occurrences"><a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../com/twitter/summingbird/batch/Timestamp.html">Timestamp</a> </div>
+    </div><div class="entry">
+      <div class="name">incrementHours</div>
+      <div class="occurrences"><a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../com/twitter/summingbird/batch/Timestamp.html">Timestamp</a> </div>
+    </div><div class="entry">
+      <div class="name">incrementMillis</div>
+      <div class="occurrences"><a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../com/twitter/summingbird/batch/Timestamp.html">Timestamp</a> </div>
+    </div><div class="entry">
+      <div class="name">incrementMinutes</div>
+      <div class="occurrences"><a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../com/twitter/summingbird/batch/Timestamp.html">Timestamp</a> </div>
+    </div><div class="entry">
+      <div class="name">incrementSeconds</div>
+      <div class="occurrences"><a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../com/twitter/summingbird/batch/Timestamp.html">Timestamp</a> </div>
     </div><div class="entry">
       <div class="name">initialBatch</div>
       <div class="occurrences"><a name="com.twitter.summingbird.scalding.ScaldingEnv" class="extype" href="../com/twitter/summingbird/scalding/ScaldingEnv.html">ScaldingEnv</a> </div>
@@ -34,23 +46,14 @@
       <div class="name">InitialBatchedStore</div>
       <div class="occurrences"><a name="com.twitter.summingbird.scalding" class="extype" href="../com/twitter/summingbird/scalding/package.html">scalding</a> </div>
     </div><div class="entry">
-      <div class="name">INJECTION_DEFAULT_PAIRS</div>
-      <div class="occurrences"><a name="com.twitter.summingbird.kryo.KryoRegistrationHelper" class="extype" href="../com/twitter/summingbird/kryo/KryoRegistrationHelper$.html">KryoRegistrationHelper</a> </div>
-    </div><div class="entry">
-      <div class="name">INJECTION_PAIRS</div>
-      <div class="occurrences"><a name="com.twitter.summingbird.kryo.KryoRegistrationHelper" class="extype" href="../com/twitter/summingbird/kryo/KryoRegistrationHelper$.html">KryoRegistrationHelper</a> </div>
-    </div><div class="entry">
-      <div class="name">injectionPair</div>
+      <div class="name">injectionDefaultRegistrar</div>
       <div class="occurrences"><a name="com.twitter.summingbird.builder.CompletedBuilder" class="extype" href="../com/twitter/summingbird/builder/CompletedBuilder$.html">CompletedBuilder</a> </div>
     </div><div class="entry">
-      <div class="name">IntermediateFileStore</div>
-      <div class="occurrences"><a name="com.twitter.summingbird.scalding.store" class="extype" href="../com/twitter/summingbird/scalding/store/package.html">store</a> </div>
+      <div class="name">injectionRegistrar</div>
+      <div class="occurrences"><a name="com.twitter.summingbird.builder.CompletedBuilder" class="extype" href="../com/twitter/summingbird/builder/CompletedBuilder$.html">CompletedBuilder</a> </div>
     </div><div class="entry">
       <div class="name">IntermediateFlatMapBolt</div>
       <div class="occurrences"><a name="com.twitter.summingbird.storm" class="extype" href="../com/twitter/summingbird/storm/package.html">storm</a> </div>
-    </div><div class="entry">
-      <div class="name">IntermediateStore</div>
-      <div class="occurrences"><a name="com.twitter.summingbird.scalding.store" class="extype" href="../com/twitter/summingbird/scalding/store/package.html">store</a> </div>
     </div><div class="entry">
       <div class="name">intersect</div>
       <div class="occurrences"><a name="com.twitter.summingbird.scalding.BatchedOperations" class="extype" href="../com/twitter/summingbird/scalding/BatchedOperations.html">BatchedOperations</a> <a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="../com/twitter/summingbird/scalding/Scalding$.html">Scalding</a> </div>
@@ -59,12 +62,15 @@
       <div class="occurrences"><a name="com.twitter.summingbird.storm.StormMetric" class="extype" href="../com/twitter/summingbird/storm/StormMetric.html">StormMetric</a> </div>
     </div><div class="entry">
       <div class="name">invert</div>
-      <div class="occurrences"><a name="com.twitter.summingbird.kryo.Base64StringUnwrap" class="extype" href="../com/twitter/summingbird/kryo/Base64StringUnwrap$.html">Base64StringUnwrap</a> <a name="com.twitter.summingbird.scalding.store.BytesWritableBijection" class="extype" href="../com/twitter/summingbird/scalding/store/BytesWritableBijection.html">BytesWritableBijection</a> <a name="com.twitter.summingbird.storm.ConfigBijection" class="extype" href="../com/twitter/summingbird/storm/ConfigBijection$.html">ConfigBijection</a> </div>
+      <div class="occurrences"><a name="com.twitter.summingbird.storm.ConfigBijection" class="extype" href="../com/twitter/summingbird/storm/ConfigBijection$.html">ConfigBijection</a> </div>
     </div><div class="entry">
       <div class="name">ioSerializations</div>
       <div class="occurrences"><a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="../com/twitter/summingbird/scalding/Scalding.html">Scalding</a> </div>
     </div><div class="entry">
-      <div class="name">isFinalFlatMap</div>
-      <div class="occurrences"><a name="com.twitter.summingbird.storm.Storm" class="extype" href="../com/twitter/summingbird/storm/Storm.html">Storm</a> </div>
+      <div class="name">isNode</div>
+      <div class="occurrences"><a name="com.twitter.summingbird.Dependants" class="extype" href="../com/twitter/summingbird/Dependants.html">Dependants</a> </div>
+    </div><div class="entry">
+      <div class="name">IteratorSums</div>
+      <div class="occurrences"><a name="com.twitter.summingbird.scalding" class="extype" href="../com/twitter/summingbird/scalding/package.html">scalding</a> </div>
     </div></body>
       </html>

@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/UniqueKeyedService.scala">UniqueKeyedService.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/UniqueKeyedService.scala">UniqueKeyedService.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.UniqueKeyedService" class="extype" href="UniqueKeyedService.html">UniqueKeyedService</a>[K, V], <a name="com.twitter.summingbird.scalding.SimpleService" class="extype" href="SimpleService.html">SimpleService</a>[K, V], <a name="com.twitter.summingbird.scalding.ScaldingService" class="extype" href="ScaldingService.html">ScaldingService</a>[K, V], <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -105,7 +105,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toPipe</span><span class="params">(<span name="s">s: S</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flow">flow: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]</span>
+        <span class="name">toPipe</span><span class="params">(<span name="s">s: S</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flow">flow: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: TypedPipe[(K, V)]</span>
       </span>
       </h4>
       
@@ -209,7 +209,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">doJoin</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="in">in: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, W))]</span>, <span name="serv">serv: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, (W, <span name="scala.Option" class="extype">Option</span>[V])))]</span>
+        <span class="name">doJoin</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="in">in: TypedPipe[(Time, (K, W))]</span>, <span name="serv">serv: TypedPipe[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: TypedPipe[(Time, (K, (W, <span name="scala.Option" class="extype">Option</span>[V])))]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">You can override this to use hashJoin for instance</p><div class="fullcomment"><div class="comment cmt"><p>You can override this to use hashJoin for instance</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.UniqueKeyedService" class="extype" href="UniqueKeyedService.html">UniqueKeyedService</a></dd></dl></div>
@@ -344,7 +344,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readDateRange</span><span class="params">(<span name="req">req: <span name="com.twitter.scalding.DateRange" class="extype">DateRange</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]</span>
+        <span class="name">readDateRange</span><span class="params">(<span name="req">req: <span name="com.twitter.scalding.DateRange" class="extype">DateRange</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: TypedPipe[(K, V)]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Load the range of data to do a join</p><div class="fullcomment"><div class="comment cmt"><p>Load the range of data to do a join</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.SourceUniqueKeyedService" class="extype" href="">SourceUniqueKeyedService</a> → <a name="com.twitter.summingbird.scalding.UniqueKeyedService" class="extype" href="UniqueKeyedService.html">UniqueKeyedService</a></dd></dl></div>
@@ -368,7 +368,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">serve</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="covering">covering: <span name="com.twitter.scalding.DateRange" class="extype">DateRange</span></span>, <span name="input">input: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(<span name="scala.Long" class="extype">Long</span>, (K, W))]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, (W, <span name="scala.Option" class="extype">Option</span>[V])))]</span>
+        <span class="name">serve</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="covering">covering: <span name="com.twitter.scalding.DateRange" class="extype">DateRange</span></span>, <span name="input">input: TypedPipe[(<span name="scala.Long" class="extype">Long</span>, (K, W))]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: TypedPipe[(Time, (K, (W, <span name="scala.Option" class="extype">Option</span>[V])))]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.UniqueKeyedService" class="extype" href="UniqueKeyedService.html">UniqueKeyedService</a> → <a name="com.twitter.summingbird.scalding.SimpleService" class="extype" href="SimpleService.html">SimpleService</a></dd></dl></div>

@@ -29,12 +29,12 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingService.scala">ScaldingService.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingService.scala">ScaldingService.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.ScaldingService" class="extype" href="ScaldingService.html">ScaldingService</a>[K, V], <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div><div class="toggleContainer block">
           <span class="toggle">Known Subclasses</span>
-          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.scalding.BatchedWindowService" class="extype" href="BatchedWindowService.html">BatchedWindowService</a>, <a name="com.twitter.summingbird.scalding.SimpleWindowedService" class="extype" href="SimpleWindowedService.html">SimpleWindowedService</a></div>
+          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.scalding.BatchedDeltaService" class="extype" href="BatchedDeltaService.html">BatchedDeltaService</a>, <a name="com.twitter.summingbird.scalding.BatchedWindowService" class="extype" href="BatchedWindowService.html">BatchedWindowService</a>, <a name="com.twitter.summingbird.scalding.SimpleWindowedService" class="extype" href="SimpleWindowedService.html">SimpleWindowedService</a></div>
         </div></div>
     
 
@@ -96,7 +96,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readLast</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]])]</span>
+        <span class="name">readLast</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[TypedPipe[(K, V)]])]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Get the most recent last batch and the ID (strictly less than the input ID)
@@ -213,7 +213,7 @@ This only has the keys that changed value during this batch.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">batchedLookup</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="covers">covers: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[Time]</span>, <span name="getKeys">getKeys: FlowToPipe[(K, W)]</span>, <span name="last">last: (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[<span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(K, V)]])</span>, <span name="streams">streams: Iterable[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowToPipe[(K, <span name="scala.Option" class="extype">Option</span>[V])])]</span>)</span><span class="result">: FlowToPipe[(K, (W, <span name="scala.Option" class="extype">Option</span>[V]))]</span>
+        <span class="name">batchedLookup</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="covers">covers: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[Time]</span>, <span name="getKeys">getKeys: FlowToPipe[(K, W)]</span>, <span name="last">last: (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowProducer[TypedPipe[(K, V)]])</span>, <span name="streams">streams: Iterable[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>, FlowToPipe[(K, <span name="scala.Option" class="extype">Option</span>[V])])]</span>)</span><span class="result">: FlowToPipe[(K, (W, <span name="scala.Option" class="extype">Option</span>[V]))]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
@@ -327,10 +327,10 @@ This only has the keys that changed value during this batch.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">lookup</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="incoming">incoming: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, W))]</span>, <span name="servStream">servStream: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, <span name="scala.Option" class="extype">Option</span>[V]))]</span>)</span><span class="result">: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, (W, <span name="scala.Option" class="extype">Option</span>[V])))]</span>
+        <span class="name">lookup</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="incoming">incoming: TypedPipe[(Time, (K, W))]</span>, <span name="servStream">servStream: TypedPipe[(Time, (K, <span name="scala.Option" class="extype">Option</span>[V]))]</span>)</span><span class="result">: TypedPipe[(Time, (K, (W, <span name="scala.Option" class="extype">Option</span>[V])))]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">This executes the join algortihm on the streams.</p><div class="fullcomment"><div class="comment cmt"><p>This executes the join algortihm on the streams.
+      <p class="shortcomment cmt">This executes the join algorithm on the streams.</p><div class="fullcomment"><div class="comment cmt"><p>This executes the join algorithm on the streams.
 You are guaranteed that all the service data needed
 to do the join is present.
 </p></div></div>

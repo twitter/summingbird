@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>com.twitter.summingbird.kryo.KryoRegistrationHelper</title>
+          <title>com.twitter.summingbird.viz.ProducerViz</title>
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
@@ -12,26 +12,26 @@
       <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
     
         </head>
-        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="value">
+        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="type">
       <div id="definition">
-        <img src="../../../../lib/object_big.png" />
-        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.kryo" class="extype" href="package.html">kryo</a></p>
-        <h1>KryoRegistrationHelper</h1>
+        <img src="../../../../lib/class_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.viz" class="extype" href="package.html">viz</a></p>
+        <h1>ProducerViz</h1>
       </div>
 
       <h4 class="signature" id="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">object</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">KryoRegistrationHelper</span><span class="result"> extends AnyRef</span>
+        <span class="name">ProducerViz</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="tail">tail: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result"> extends <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-kryo/src/main/scala/com/twitter/summingbird/kryo/KryoRegistrationHelper.scala">KryoRegistrationHelper.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/viz/ProducerViz.scala">ProducerViz.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -45,7 +45,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.kryo.KryoRegistrationHelper" class="in"><span>KryoRegistrationHelper</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.viz.ProducerViz" class="in"><span>ProducerViz</span></li><li name="scala.Serializable" class="in"><span>Serializable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.Product" class="in"><span>Product</span></li><li name="scala.Equals" class="in"><span>Equals</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -55,7 +55,22 @@
 
       <div id="template">
         <div id="allMembers">
-        
+        <div class="members" id="constructors">
+              <h3>Instance Constructors</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz#this" data-isabs="false">
+      <a id="this:ProducerViz[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ProducerViz</span><span class="params">(<span name="tail">tail: com.twitter.summingbird.Producer[P, _]</span>)</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
 
         
 
@@ -123,78 +138,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#CLASS_REGISTRATIONS" data-isabs="false">
-      <a id="CLASS_REGISTRATIONS:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">CLASS_REGISTRATIONS</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#INJECTION_DEFAULT_PAIRS" data-isabs="false">
-      <a id="INJECTION_DEFAULT_PAIRS:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">INJECTION_DEFAULT_PAIRS</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#INJECTION_PAIRS" data-isabs="false">
-      <a id="INJECTION_PAIRS:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">INJECTION_PAIRS</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#SEPARATOR" data-isabs="false">
-      <a id="SEPARATOR:String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">SEPARATOR</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#append" data-isabs="false">
-      <a id="append(Map[String, AnyRef],String,String):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">append</span><span class="params">(<span name="conf">conf: <span name="java.util.Map" class="extype">Map</span>[String, AnyRef]</span>, <span name="key">key: String</span>, <span name="entry">entry: String</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#appendAll" data-isabs="false">
-      <a id="appendAll(Map[String, AnyRef],String,TraversableOnce[AnyRef]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">appendAll</span><span class="params">(<span name="conf">conf: <span name="java.util.Map" class="extype">Map</span>[String, AnyRef]</span>, <span name="k">k: String</span>, <span name="items">items: TraversableOnce[AnyRef]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -207,18 +150,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#base64KryoInjection" data-isabs="false">
-      <a id="base64KryoInjection:Injection[AnyRef, String]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz#canEqual" data-isabs="false">
+      <a id="canEqual(Any):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">base64KryoInjection</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[AnyRef, String]</span>
+        <span class="name">canEqual</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
       </span>
       </h4>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.viz.ProducerViz" class="extype" href="">ProducerViz</a> → Equals</dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -246,7 +189,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#equals" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz#equals" data-isabs="false">
       <a id="equals(Any):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -257,7 +200,7 @@
         <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.viz.ProducerViz" class="extype" href="">ProducerViz</a> → Equals → AnyRef → Any</dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -273,18 +216,6 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#getAll" data-isabs="false">
-      <a id="getAll[T](java.util.Map[_, _],String):Option[Iterable[T]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getAll</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="conf">conf: java.util.Map[_, _]</span>, <span name="key">key: String</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[Iterable[T]]</span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
       <a id="getClass():java.lang.Class[_]"></a>
       <h4 class="signature">
@@ -297,55 +228,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#getConfValue" data-isabs="false">
-      <a id="getConfValue[T](java.util.Map[_, _],String):Option[T]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz#getName" data-isabs="false">
+      <a id="getName((Map[com.twitter.summingbird.Producer[P, _], String], Map[String, Int]),com.twitter.summingbird.Producer[P, _],String):((Map[com.twitter.summingbird.Producer[P, _], String], Map[String, Int]), String)"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getConfValue</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="conf">conf: java.util.Map[_, _]</span>, <span name="key">key: String</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[T]</span>
+        <span class="name">getName</span><span class="params">(<span name="curLookupTable">curLookupTable: (Map[com.twitter.summingbird.Producer[P, _], String], Map[String, <span name="scala.Int" class="extype">Int</span>])</span>, <span name="node">node: com.twitter.summingbird.Producer[P, _]</span>, <span name="preferredName">preferredName: String</span>)</span><span class="result">: ((Map[com.twitter.summingbird.Producer[P, _], String], Map[String, <span name="scala.Int" class="extype">Int</span>]), String)</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#getRegisteredClasses" data-isabs="false">
-      <a id="getRegisteredClasses(java.util.Map[_, _]):Option[Iterable[Class[_]]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getRegisteredClasses</span><span class="params">(<span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[Iterable[Class[_]]]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#getRegisteredInjectionDefaults" data-isabs="false">
-      <a id="getRegisteredInjectionDefaults(java.util.Map[_, _]):Option[Iterable[com.twitter.chill.InjectionPair[_]]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getRegisteredInjectionDefaults</span><span class="params">(<span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[Iterable[com.twitter.chill.InjectionPair[_]]]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#getRegisteredInjections" data-isabs="false">
-      <a id="getRegisteredInjections(java.util.Map[_, _]):Option[Iterable[com.twitter.chill.InjectionPair[_]]]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getRegisteredInjections</span><span class="params">(<span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[Iterable[com.twitter.chill.InjectionPair[_]]]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz#hashCode" data-isabs="false">
       <a id="hashCode():Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -356,7 +251,7 @@
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.viz.ProducerViz" class="extype" href="">ProducerViz</a> → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <h4 class="signature">
@@ -405,114 +300,54 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#registerClasses" data-isabs="false">
-      <a id="registerClasses(Map[String, AnyRef],TraversableOnce[Class[_]]):Unit"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz#productArity" data-isabs="false">
+      <a id="productArity:Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">registerClasses</span><span class="params">(<span name="conf">conf: <span name="java.util.Map" class="extype">Map</span>[String, AnyRef]</span>, <span name="klasses">klasses: TraversableOnce[Class[_]]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">productArity</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
       </span>
       </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#registerInjectionDefaults" data-isabs="false">
-      <a id="registerInjectionDefaults(Kryo,java.util.Map[_, _]):Unit"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.viz.ProducerViz" class="extype" href="">ProducerViz</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz#productElement" data-isabs="false">
+      <a id="productElement(Int):Any"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">registerInjectionDefaults</span><span class="params">(<span name="k">k: <span name="com.esotericsoftware.kryo.Kryo" class="extype">Kryo</span></span>, <span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">productElement</span><span class="params">(<span name="arg0">arg0: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Any" class="extype">Any</span></span>
       </span>
       </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#registerInjectionDefaults" data-isabs="false">
-      <a id="registerInjectionDefaults(Map[String, AnyRef],TraversableOnce[com.twitter.chill.InjectionPair[_]]):Unit"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.viz.ProducerViz" class="extype" href="">ProducerViz</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="scala.Product#productIterator" data-isabs="false">
+      <a id="productIterator:Iterator[Any]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">registerInjectionDefaults</span><span class="params">(<span name="conf">conf: <span name="java.util.Map" class="extype">Map</span>[String, AnyRef]</span>, <span name="pairs">pairs: TraversableOnce[com.twitter.chill.InjectionPair[_]]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">productIterator</span><span class="result">: Iterator[<span name="scala.Any" class="extype">Any</span>]</span>
       </span>
       </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#registerInjections" data-isabs="false">
-      <a id="registerInjections(Kryo,java.util.Map[_, _]):Unit"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz#productPrefix" data-isabs="false">
+      <a id="productPrefix:String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">registerInjections</span><span class="params">(<span name="k">k: <span name="com.esotericsoftware.kryo.Kryo" class="extype">Kryo</span></span>, <span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">productPrefix</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
       </span>
       </h4>
-      <p class="shortcomment cmt">Actual Kryo registration.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#registerInjections" data-isabs="false">
-      <a id="registerInjections(Map[String, AnyRef],TraversableOnce[com.twitter.chill.InjectionPair[_]]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">registerInjections</span><span class="params">(<span name="conf">conf: <span name="java.util.Map" class="extype">Map</span>[String, AnyRef]</span>, <span name="pairs">pairs: TraversableOnce[com.twitter.chill.InjectionPair[_]]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#registerKryoClasses" data-isabs="false">
-      <a id="registerKryoClasses(Kryo,java.util.Map[_, _]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">registerKryoClasses</span><span class="params">(<span name="k">k: <span name="com.esotericsoftware.kryo.Kryo" class="extype">Kryo</span></span>, <span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#resetClasses" data-isabs="false">
-      <a id="resetClasses(java.util.Map[_, _]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">resetClasses</span><span class="params">(<span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">Registration for classes.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#resetInjectionDefaults" data-isabs="false">
-      <a id="resetInjectionDefaults(java.util.Map[_, _]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">resetInjectionDefaults</span><span class="params">(<span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">Injections for subclasses.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper#resetInjections" data-isabs="false">
-      <a id="resetInjections(Map[String, AnyRef]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">resetInjections</span><span class="params">(<span name="conf">conf: <span name="java.util.Map" class="extype">Map</span>[String, AnyRef]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">Injections for specific classes.</p>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.viz.ProducerViz" class="extype" href="">ProducerViz</a> → Product</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -525,7 +360,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz#tail" data-isabs="false">
+      <a id="tail:com.twitter.summingbird.Producer[P, _]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tail</span><span class="result">: com.twitter.summingbird.Producer[P, _]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -533,10 +380,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
+        <span class="name">toString</span><span class="params">()</span><span class="result">: String</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.viz.ProducerViz" class="extype" href="">ProducerViz</a> → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">
@@ -585,11 +432,37 @@
     </li></ol>
             </div>
 
-        
+        <div class="values members" id="values">
+              <h3>Deprecated Value Members</h3>
+              <ol><li visbl="pub" name="scala.Product#productElements" data-isabs="false">
+      <a id="productElements:Iterator[Any]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.8.0) use productIterator instead">productElements</span><span class="result">: Iterator[<span name="scala.Any" class="extype">Any</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.8.0)</i> use productIterator instead</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">
-        <div name="scala.AnyRef" class="parent">
+        <div name="scala.Serializable" class="parent">
+              <h3>Inherited from <span name="scala.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="java.io.Serializable" class="parent">
+              <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="scala.Product" class="parent">
+              <h3>Inherited from <span name="scala.Product" class="extype">Product</span></h3>
+            </div><div name="scala.Equals" class="parent">
+              <h3>Inherited from <span name="scala.Equals" class="extype">Equals</span></h3>
+            </div><div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">
               <h3>Inherited from <span name="scala.Any" class="extype">Any</span></h3>

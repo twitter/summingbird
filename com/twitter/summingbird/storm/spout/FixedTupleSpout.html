@@ -2,36 +2,36 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>com.twitter.summingbird.kryo.Base64StringUnwrap</title>
+          <title>com.twitter.summingbird.storm.spout.FixedTupleSpout</title>
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
-      <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
-      <script type="text/javascript" src="../../../../lib/jquery.js"></script>
-      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
-      <script type="text/javascript" src="../../../../lib/template.js"></script>
-      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      <link type="text/css" media="screen" rel="stylesheet" href="../../../../../lib/template.css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
     
         </head>
-        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="value">
+        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="type">
       <div id="definition">
-        <img src="../../../../lib/object_big.png" />
-        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.kryo" class="extype" href="package.html">kryo</a></p>
-        <h1>Base64StringUnwrap</h1>
+        <a title="Go to companion" href="FixedTupleSpout$.html"><img src="../../../../../lib/class_to_object_big.png" /></a>
+        <p id="owner"><a name="com" class="extype" href="../../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../../package.html">summingbird</a>.<a name="com.twitter.summingbird.storm" class="extype" href="../package.html">storm</a>.<a name="com.twitter.summingbird.storm.spout" class="extype" href="package.html">spout</a></p>
+        <h1><a title="Go to companion" href="FixedTupleSpout$.html">FixedTupleSpout</a></h1>
       </div>
 
       <h4 class="signature" id="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">object</span>
+        <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">Base64StringUnwrap</span><span class="result"> extends <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[<span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>, String]</span>
+        <span class="name">FixedTupleSpout</span><span class="result"> extends <span name="backtype.storm.topology.IRichSpout" class="extype">IRichSpout</span> with <span name="backtype.storm.testing.CompletableSpout" class="extype">CompletableSpout</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-kryo/src/main/scala/com/twitter/summingbird/kryo/KryoRegistrationHelper.scala">KryoRegistrationHelper.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-storm/src/main/java/com/twitter/summingbird/storm/spout/FixedTupleSpout.java.scala">FixedTupleSpout.java</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[<span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>, String], <span name="java.io.Serializable" class="extype">Serializable</span>, (<span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>) ⇒ String, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><span name="backtype.storm.testing.CompletableSpout" class="extype">CompletableSpout</span>, <span name="backtype.storm.topology.IRichSpout" class="extype">IRichSpout</span>, <span name="backtype.storm.topology.IComponent" class="extype">IComponent</span>, <span name="backtype.storm.spout.ISpout" class="extype">ISpout</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -45,7 +45,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.kryo.Base64StringUnwrap" class="in"><span>Base64StringUnwrap</span></li><li name="com.twitter.bijection.Bijection" class="in"><span>Bijection</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.Function1" class="in"><span>Function1</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="in"><span>FixedTupleSpout</span></li><li name="backtype.storm.testing.CompletableSpout" class="in"><span>CompletableSpout</span></li><li name="backtype.storm.topology.IRichSpout" class="in"><span>IRichSpout</span></li><li name="backtype.storm.topology.IComponent" class="in"><span>IComponent</span></li><li name="backtype.storm.spout.ISpout" class="in"><span>ISpout</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -55,7 +55,34 @@
 
       <div id="template">
         <div id="allMembers">
-        
+        <div class="members" id="constructors">
+              <h3>Instance Constructors</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#this" data-isabs="false">
+      <a id="this:FixedTupleSpout"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FixedTupleSpout</span><span class="params">(<span name="tuples">tuples: java.util.List[_]</span>, <span name="fieldName">fieldName: <span name="java.lang.String" class="extype">String</span></span>)</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#this" data-isabs="false">
+      <a id="this:FixedTupleSpout"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FixedTupleSpout</span><span class="params">(<span name="tuples">tuples: java.util.List[_]</span>)</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
 
         
 
@@ -123,54 +150,30 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.bijection.Bijection#andThen" data-isabs="false">
-      <a id="andThen[C](Injection[String, C]):Injection[Base64String, C]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#ack" data-isabs="false">
+      <a id="ack(Any):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">andThen</span><span class="tparams">[<span name="C">C</span>]</span><span class="params">(<span name="g">g: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[String, C]</span>)</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[<span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>, C]</span>
+        <span class="name">ack</span><span class="params">(<span name="msgId">msgId: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bijection</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.bijection.Bijection#andThen" data-isabs="false">
-      <a id="andThen[C](Bijection[String, C]):Bijection[Base64String, C]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → ISpout</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#activate" data-isabs="false">
+      <a id="activate():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">andThen</span><span class="tparams">[<span name="C">C</span>]</span><span class="params">(<span name="g">g: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[String, C]</span>)</span><span class="result">: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[<span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>, C]</span>
+        <span class="name">activate</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bijection</dd></dl></div>
-    </li><li visbl="pub" name="scala.Function1#andThen" data-isabs="false">
-      <a id="andThen[A]((String) ⇒ A):(Base64String) ⇒ A"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">andThen</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="g">g: (String) ⇒ A</span>)</span><span class="result">: (<span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>) ⇒ A</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function1</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.Base64StringUnwrap#apply" data-isabs="false">
-      <a id="apply(Base64String):String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="bs">bs: <span name="com.twitter.bijection.Base64String" class="extype">Base64String</span></span>)</span><span class="result">: String</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.kryo.Base64StringUnwrap" class="extype" href="">Base64StringUnwrap</a> → Bijection → Function1</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → ISpout</dd></dl></div>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -183,6 +186,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#cleanup" data-isabs="false">
+      <a id="cleanup():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cleanup</span><span class="params">()</span><span class="result">: AnyRef</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → CompletableSpout</dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -194,46 +209,46 @@
         <span class="name">clone</span><span class="params">()</span><span class="result">: AnyRef</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a name="java.lang" class="extype" href="../../../../java/lang/package.html">lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a name="java.lang" class="extype" href="../../../../../java/lang/package.html">lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.bijection.Bijection#compose" data-isabs="false">
-      <a id="compose[T](Injection[T, Base64String]):Injection[T, String]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#close" data-isabs="false">
+      <a id="close():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">compose</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="g">g: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[T, <span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>]</span>)</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[T, String]</span>
+        <span class="name">close</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bijection</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.bijection.Bijection#compose" data-isabs="false">
-      <a id="compose[T](Bijection[T, Base64String]):Bijection[T, String]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → ISpout</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#deactivate" data-isabs="false">
+      <a id="deactivate():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">compose</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="g">g: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[T, <span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>]</span>)</span><span class="result">: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[T, String]</span>
+        <span class="name">deactivate</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bijection</dd></dl></div>
-    </li><li visbl="pub" name="scala.Function1#compose" data-isabs="false">
-      <a id="compose[A]((A) ⇒ Base64String):(A) ⇒ String"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → ISpout</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#declareOutputFields" data-isabs="false">
+      <a id="declareOutputFields(OutputFieldsDeclarer):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">compose</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="g">g: (A) ⇒ <span name="com.twitter.bijection.Base64String" class="extype">Base64String</span></span>)</span><span class="result">: (A) ⇒ String</span>
+        <span class="name">declareOutputFields</span><span class="params">(<span name="declarer">declarer: <span name="backtype.storm.topology.OutputFieldsDeclarer" class="extype">OutputFieldsDeclarer</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function1</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → IComponent</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -258,6 +273,30 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#exhausted_QMARK_" data-isabs="false">
+      <a id="exhausted_QMARK_():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">exhausted_QMARK_</span><span class="params">()</span><span class="result">: AnyRef</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → CompletableSpout</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#fail" data-isabs="false">
+      <a id="fail(Any):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fail</span><span class="params">(<span name="msgId">msgId: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → ISpout</dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -269,7 +308,7 @@
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a name="java.lang" class="extype" href="../../../../java/lang/package.html">lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a name="java.lang" class="extype" href="../../../../../java/lang/package.html">lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
@@ -285,6 +324,42 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#getCompleted" data-isabs="false">
+      <a id="getCompleted():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCompleted</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#getComponentConfiguration" data-isabs="false">
+      <a id="getComponentConfiguration():Map[String, AnyRef]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getComponentConfiguration</span><span class="params">()</span><span class="result">: <span name="java.util.Map" class="extype">Map</span>[<span name="java.lang.String" class="extype">String</span>, AnyRef]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → IComponent</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#getSourceTuples" data-isabs="false">
+      <a id="getSourceTuples():List[FixedTuple]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSourceTuples</span><span class="params">()</span><span class="result">: <span name="java.util.List" class="extype">List</span>[<span name="backtype.storm.testing.FixedTuple" class="extype">FixedTuple</span>]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
       <a id="hashCode():Int"></a>
       <h4 class="signature">
@@ -297,30 +372,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.bijection.Bijection#inverse" data-isabs="false">
-      <a id="inverse:Bijection[String, Base64String]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">inverse</span><span class="result">: <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[String, <span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Bijection</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.Base64StringUnwrap#invert" data-isabs="false">
-      <a id="invert(String):Base64String"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">invert</span><span class="params">(<span name="str">str: String</span>)</span><span class="result">: <span name="com.twitter.bijection.Base64String" class="extype">Base64String</span></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.kryo.Base64StringUnwrap" class="extype" href="">Base64StringUnwrap</a> → Bijection</dd></dl></div>
     </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <h4 class="signature">
@@ -345,6 +396,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#nextTuple" data-isabs="false">
+      <a id="nextTuple():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nextTuple</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → ISpout</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#notify" data-isabs="false">
       <a id="notify():Unit"></a>
       <h4 class="signature">
@@ -369,18 +432,30 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.kryo.Base64StringUnwrap#readResolve" data-isabs="false">
-      <a id="readResolve():AnyRef"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#open" data-isabs="false">
+      <a id="open(Map,TopologyContext,SpoutOutputCollector):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readResolve</span><span class="params">()</span><span class="result">: AnyRef</span>
+        <span class="name">open</span><span class="params">(<span name="conf">conf: <span name="java.util.Map" class="extype">Map</span></span>, <span name="context">context: <span name="backtype.storm.task.TopologyContext" class="extype">TopologyContext</span></span>, <span name="collector">collector: <span name="backtype.storm.spout.SpoutOutputCollector" class="extype">SpoutOutputCollector</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → ISpout</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.spout.FixedTupleSpout#startup" data-isabs="false">
+      <a id="startup():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">startup</span><span class="params">()</span><span class="result">: AnyRef</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.spout.FixedTupleSpout" class="extype" href="">FixedTupleSpout</a> → CompletableSpout</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -393,7 +468,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.Function1#toString" data-isabs="false">
+    </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -404,7 +479,7 @@
         <span class="name">toString</span><span class="params">()</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function1 → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">
@@ -457,12 +532,16 @@
         </div>
 
         <div id="inheritedMembers">
-        <div name="com.twitter.bijection.Bijection" class="parent">
-              <h3>Inherited from <span name="com.twitter.bijection.Bijection" class="extype">Bijection</span>[<span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>, String]</h3>
+        <div name="backtype.storm.testing.CompletableSpout" class="parent">
+              <h3>Inherited from <span name="backtype.storm.testing.CompletableSpout" class="extype">CompletableSpout</span></h3>
+            </div><div name="backtype.storm.topology.IRichSpout" class="parent">
+              <h3>Inherited from <span name="backtype.storm.topology.IRichSpout" class="extype">IRichSpout</span></h3>
+            </div><div name="backtype.storm.topology.IComponent" class="parent">
+              <h3>Inherited from <span name="backtype.storm.topology.IComponent" class="extype">IComponent</span></h3>
+            </div><div name="backtype.storm.spout.ISpout" class="parent">
+              <h3>Inherited from <span name="backtype.storm.spout.ISpout" class="extype">ISpout</span></h3>
             </div><div name="java.io.Serializable" class="parent">
               <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
-            </div><div name="scala.Function1" class="parent">
-              <h3>Inherited from (<span name="com.twitter.bijection.Base64String" class="extype">Base64String</span>) ⇒ String</h3>
             </div><div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">

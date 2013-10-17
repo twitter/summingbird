@@ -58,7 +58,7 @@ API nicer.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CompletedBuilder.html"><span class="name">CompletedBuilder</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="node">node: Summer[P, K, V]</span>, <span name="eventCodecPairs">eventCodecPairs: List[com.twitter.chill.InjectionPair[_]]</span>, <span name="batcher">batcher: Batcher</span>, <span name="keyCodec">keyCodec: Injection[K, Array[Byte]]</span>, <span name="valCodec">valCodec: Injection[V, Array[Byte]]</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, Options]</span>, <span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>)</span><span class="result"> extends Serializable with Product with Serializable</span>
+        <a href="CompletedBuilder.html"><span class="name">CompletedBuilder</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="node">node: Summer[P, K, V]</span>, <span name="eventRegistrar">eventRegistrar: IKryoRegistrar</span>, <span name="batcher">batcher: Batcher</span>, <span name="keyCodec">keyCodec: Injection[K, Array[Byte]]</span>, <span name="valCodec">valCodec: Injection[V, Array[Byte]]</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, Options]</span>, <span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>)</span><span class="result"> extends Serializable with Product with Serializable</span>
       </span>
       </h4>
       
@@ -70,7 +70,7 @@ API nicer.
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SourceBuilder.html"><span class="name">SourceBuilder</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="node">node: Node[T]</span>, <span name="pairs">pairs: List[com.twitter.chill.InjectionPair[_]]</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, Options]</span>, <span name="evidence$1">evidence$1: Manifest[T]</span>)</span><span class="result"> extends Serializable with Product with Serializable</span>
+        <a href="SourceBuilder.html"><span class="name">SourceBuilder</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="node">node: Node[T]</span>, <span name="registrar">registrar: IKryoRegistrar</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, Options]</span>, <span name="evidence$2">evidence$2: Manifest[T]</span>)</span><span class="result"> extends Serializable with Product with Serializable</span>
       </span>
       </h4>
       

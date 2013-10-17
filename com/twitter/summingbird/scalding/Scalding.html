@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingPlatform.scala">ScaldingPlatform.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingPlatform.scala">ScaldingPlatform.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="">Scalding</a>], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -74,7 +74,19 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.Scalding#Plan" data-isabs="false">
+              <ol><li visbl="pub" name="com.twitter.summingbird.Platform#Buffer" data-isabs="false">
+      <a id="Buffer:Buffer[k, v]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = Service[k, v] with Sink[(k, v)]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.Scalding#Plan" data-isabs="false">
       <a id="Plan:Plan[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -352,38 +364,38 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.Scalding#plan" data-isabs="false">
-      <a id="plan[T](Producer[Scalding, T]):PipeFactory[T]"></a>
+      <a id="plan[T](TailProducer[Scalding, T]):PipeFactory[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="prod">prod: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="">Scalding</a>, T]</span>)</span><span class="result">: PipeFactory[T]</span>
+        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="prod">prod: <a name="com.twitter.summingbird.TailProducer" class="extype" href="../TailProducer.html">TailProducer</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="">Scalding</a>, T]</span>)</span><span class="result">: PipeFactory[T]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="">Scalding</a> → <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.Scalding#run" data-isabs="false">
-      <a id="run(WaitingState[Date],Mode,com.twitter.summingbird.scalding.package.PipeFactory[_]):WaitingState[Date]"></a>
+      <a id="run(WaitingState[Interval[Timestamp]],Mode,PipeFactory[Any]):WaitingState[Interval[Timestamp]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">run</span><span class="params">(<span name="state">state: <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="WaitingState.html">WaitingState</a>[<span name="java.util.Date" class="extype">Date</span>]</span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>, <span name="pf">pf: com.twitter.summingbird.scalding.package.PipeFactory[_]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="WaitingState.html">WaitingState</a>[<span name="java.util.Date" class="extype">Date</span>]</span>
+        <span class="name">run</span><span class="params">(<span name="state">state: <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="WaitingState.html">WaitingState</a>[<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>]]</span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>, <span name="pf">pf: PipeFactory[<span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="WaitingState.html">WaitingState</a>[<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>]]</span>
       </span>
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.Scalding#run" data-isabs="false">
-      <a id="run(WaitingState[Date],Mode,com.twitter.summingbird.Producer[com.twitter.summingbird.scalding.Scalding, _]):WaitingState[Date]"></a>
+      <a id="run(WaitingState[Interval[Timestamp]],Mode,TailProducer[Scalding, Any]):WaitingState[Interval[Timestamp]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">run</span><span class="params">(<span name="state">state: <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="WaitingState.html">WaitingState</a>[<span name="java.util.Date" class="extype">Date</span>]</span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>, <span name="pf">pf: com.twitter.summingbird.Producer[com.twitter.summingbird.scalding.Scalding, _]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="WaitingState.html">WaitingState</a>[<span name="java.util.Date" class="extype">Date</span>]</span>
+        <span class="name">run</span><span class="params">(<span name="state">state: <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="WaitingState.html">WaitingState</a>[<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>]]</span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>, <span name="pf">pf: <a name="com.twitter.summingbird.TailProducer" class="extype" href="../TailProducer.html">TailProducer</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="">Scalding</a>, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="WaitingState.html">WaitingState</a>[<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>]]</span>
       </span>
       </h4>
       

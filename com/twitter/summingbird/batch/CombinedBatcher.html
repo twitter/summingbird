@@ -35,7 +35,7 @@ the after batcher. The BatchID WON'T be the same as what after
 would produce, as we will subtract batchOf(beforeBound) from
 the BatchID so that the BatchIDs are contiguous. The BatchID of
 beforeBound is before.batchOf(beforeBound - 1ms) + 1
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-batch/src/main/scala/com/twitter/summingbird/batch/CombinedBatcher.scala">CombinedBatcher.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-batch/src/main/scala/com/twitter/summingbird/batch/CombinedBatcher.scala">CombinedBatcher.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -71,7 +71,7 @@ beforeBound is before.batchOf(beforeBound - 1ms) + 1
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CombinedBatcher</span><span class="params">(<span name="before">before: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></span>, <span name="beforeBound">beforeBound: <span name="com.twitter.algebird.ExclusiveUpper" class="extype">ExclusiveUpper</span>[<span name="java.util.Date" class="extype">Date</span>]</span>, <span name="after">after: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></span>)</span>
+        <span class="name">CombinedBatcher</span><span class="params">(<span name="before">before: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></span>, <span name="beforeBound">beforeBound: <span name="com.twitter.algebird.ExclusiveUpper" class="extype">ExclusiveUpper</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="Timestamp.html">Timestamp</a>]</span>, <span name="after">after: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></span>)</span>
       </span>
       </h4>
       
@@ -181,26 +181,26 @@ beforeBound is before.batchOf(beforeBound - 1ms) + 1
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.batch.CombinedBatcher#batchOf" data-isabs="false">
-      <a id="batchOf(Date):BatchID"></a>
+      <a id="batchOf(Timestamp):BatchID"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">batchOf</span><span class="params">(<span name="d">d: <span name="java.util.Date" class="extype">Date</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>
+        <span class="name">batchOf</span><span class="params">(<span name="d">d: <a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="Timestamp.html">Timestamp</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>
       </span>
       </h4>
       <p class="shortcomment cmt">Returns the batch into which the supplied Date is bucketed.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the batch into which the supplied Date is bucketed.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.CombinedBatcher" class="extype" href="">CombinedBatcher</a> → <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#batchesCoveredBy" data-isabs="false">
-      <a id="batchesCoveredBy(Interval[Date]):Interval[BatchID]"></a>
+      <a id="batchesCoveredBy(Interval[Timestamp]):Interval[BatchID]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">batchesCoveredBy</span><span class="params">(<span name="interval">interval: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<span name="java.util.Date" class="extype">Date</span>]</span>)</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
+        <span class="name">batchesCoveredBy</span><span class="params">(<span name="interval">interval: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="Timestamp.html">Timestamp</a>]</span>)</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
@@ -220,14 +220,14 @@ beforeBound is before.batchOf(beforeBound - 1ms) + 1
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#cover" data-isabs="false">
-      <a id="cover(Interval[Date]):Interval[BatchID]"></a>
+      <a id="cover(Interval[Timestamp]):Interval[BatchID]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">cover</span><span class="params">(<span name="interval">interval: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<span name="java.util.Date" class="extype">Date</span>]</span>)</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
+        <span class="name">cover</span><span class="params">(<span name="interval">interval: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="Timestamp.html">Timestamp</a>]</span>)</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">What batches are needed to cover the given interval
@@ -248,14 +248,14 @@ or: for all t in interval, batchOf(t) is in the result
       </h4>
       <p class="shortcomment cmt">Returns the current BatchID.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the current BatchID.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.batch.CombinedBatcher#earliestTimeOf" data-isabs="false">
-      <a id="earliestTimeOf(BatchID):Date"></a>
+      <a id="earliestTimeOf(BatchID):Timestamp"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">earliestTimeOf</span><span class="params">(<span name="b">b: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>)</span><span class="result">: <span name="java.util.Date" class="extype">Date</span></span>
+        <span class="name">earliestTimeOf</span><span class="params">(<span name="b">b: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="Timestamp.html">Timestamp</a></span>
       </span>
       </h4>
       <p class="shortcomment cmt">Returns the (inclusive) earliest time of the supplied batch.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the (inclusive) earliest time of the supplied batch.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.CombinedBatcher" class="extype" href="">CombinedBatcher</a> → <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
@@ -412,14 +412,14 @@ batcher would need to fetch to fully enclose the supplied
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#toInterval" data-isabs="false">
-      <a id="toInterval(BatchID):Interval[Date]"></a>
+      <a id="toInterval(BatchID):Interval[Timestamp]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toInterval</span><span class="params">(<span name="b">b: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>)</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<span name="java.util.Date" class="extype">Date</span>]</span>
+        <span class="name">toInterval</span><span class="params">(<span name="b">b: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>)</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="Timestamp.html">Timestamp</a>]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>

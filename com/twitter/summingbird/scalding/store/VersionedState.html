@@ -25,13 +25,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">VersionedState</span><span class="result"> extends <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="../WaitingState.html">WaitingState</a>[<span name="java.util.Date" class="extype">Date</span>]</span>
+        <span class="name">VersionedState</span><span class="result"> extends <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="../WaitingState.html">WaitingState</a>[<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../../batch/Timestamp.html">Timestamp</a>]]</span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Self Type</dt><dd><a name="com.twitter.summingbird.scalding.store.VersionedState" class="extype" href="">VersionedState</a></dd><dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/store/VersionedState.scala">VersionedState.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Self Type</dt><dd><a name="com.twitter.summingbird.scalding.store.VersionedState" class="extype" href="">VersionedState</a></dd><dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/store/VersionedState.scala">VersionedState.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="../WaitingState.html">WaitingState</a>[<span name="java.util.Date" class="extype">Date</span>], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="../WaitingState.html">WaitingState</a>[<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../../batch/Timestamp.html">Timestamp</a>]], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -65,7 +65,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">VersionedState</span><span class="params">(<span name="meta">meta: <a name="com.twitter.summingbird.scalding.store.HDFSMetadata" class="extype" href="HDFSMetadata.html">HDFSMetadata</a></span>, <span name="startDate">startDate: <span name="scala.Option" class="extype">Option</span>[<span name="java.util.Date" class="extype">Date</span>]</span>, <span name="maxBatches">maxBatches: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../../batch/Batcher.html">Batcher</a></span>)</span>
+        <span class="name">VersionedState</span><span class="params">(<span name="meta">meta: <a name="com.twitter.summingbird.scalding.store.HDFSMetadata" class="extype" href="HDFSMetadata.html">HDFSMetadata</a></span>, <span name="startDate">startDate: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../../batch/Timestamp.html">Timestamp</a>]</span>, <span name="maxBatches">maxBatches: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../../batch/Batcher.html">Batcher</a></span>)</span>
       </span>
       </h4>
       
@@ -151,14 +151,14 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedState#begin" data-isabs="false">
-      <a id="begin:RunningState[Date]"></a>
+      <a id="begin:PrepareState[Interval[Timestamp]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">begin</span><span class="result">: <a name="com.twitter.summingbird.scalding.RunningState" class="extype" href="../RunningState.html">RunningState</a>[<span name="java.util.Date" class="extype">Date</span>]</span>
+        <span class="name">begin</span><span class="result">: <a name="com.twitter.summingbird.scalding.PrepareState" class="extype" href="../PrepareState.html">PrepareState</a>[<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../../batch/Timestamp.html">Timestamp</a>]]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.store.VersionedState" class="extype" href="">VersionedState</a> → <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="../WaitingState.html">WaitingState</a></dd></dl></div>
@@ -365,7 +365,7 @@
 
         <div id="inheritedMembers">
         <div name="com.twitter.summingbird.scalding.WaitingState" class="parent">
-              <h3>Inherited from <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="../WaitingState.html">WaitingState</a>[<span name="java.util.Date" class="extype">Date</span>]</h3>
+              <h3>Inherited from <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="../WaitingState.html">WaitingState</a>[<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../../batch/Timestamp.html">Timestamp</a>]]</h3>
             </div><div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">

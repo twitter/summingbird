@@ -48,7 +48,7 @@ V: value of the key at time T</p><p>Before the time T in the right pipe's very f
 simulated &quot;service&quot; will return None. After this time T, the
 right side will return None only if the key is absent,
 else, the service will return Some(joinedV).
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/LookupJoin.scala">LookupJoin.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/LookupJoin.scala">LookupJoin.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -150,7 +150,7 @@ else, the service will return Some(joinedV).
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="JoinedV">JoinedV</span>]</span><span class="params">(<span name="left">left: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(T, (K, V))]</span>, <span name="right">right: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(T, (K, JoinedV))]</span>, <span name="reducers">reducers: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Ordering[T]</span>, <span name="arg1">arg1: Ordering[K]</span>)</span><span class="result">: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(T, (K, (V, <span name="scala.Option" class="extype">Option</span>[JoinedV])))]</span>
+        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="JoinedV">JoinedV</span>]</span><span class="params">(<span name="left">left: TypedPipe[(T, (K, V))]</span>, <span name="right">right: TypedPipe[(T, (K, JoinedV))]</span>, <span name="reducers">reducers: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Ordering[T]</span>, <span name="arg1">arg1: Ordering[K]</span>)</span><span class="result">: TypedPipe[(T, (K, (V, <span name="scala.Option" class="extype">Option</span>[JoinedV])))]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">This is the &quot;infinite history&quot; join and always joins regardless of how
@@ -306,6 +306,20 @@ much time is between the left and the right
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.LookupJoin#rightSumming" data-isabs="false">
+      <a id="rightSumming[T, K, V, JoinedV](TypedPipe[(T, (K, V))],TypedPipe[(T, (K, JoinedV))],Option[Int])(Ordering[T],Ordering[K],Semigroup[JoinedV]):TypedPipe[(T, (K, (V, Option[JoinedV])))]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rightSumming</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="JoinedV">JoinedV</span>]</span><span class="params">(<span name="left">left: TypedPipe[(T, (K, V))]</span>, <span name="right">right: TypedPipe[(T, (K, JoinedV))]</span>, <span name="reducers">reducers: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Ordering[T]</span>, <span name="arg1">arg1: Ordering[K]</span>, <span name="arg2">arg2: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[JoinedV]</span>)</span><span class="result">: TypedPipe[(T, (K, (V, <span name="scala.Option" class="extype">Option</span>[JoinedV])))]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">In this case, the right pipe is fed through a scanLeft doing a Semigroup.</p><div class="fullcomment"><div class="comment cmt"><p>In this case, the right pipe is fed through a scanLeft doing a Semigroup.plus
+before joined to the left
+</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -383,7 +397,7 @@ much time is between the left and the right
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">withWindow</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="JoinedV">JoinedV</span>]</span><span class="params">(<span name="left">left: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(T, (K, V))]</span>, <span name="right">right: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(T, (K, JoinedV))]</span>, <span name="reducers">reducers: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>)</span><span class="params">(<span name="gate">gate: (T, T) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Ordering[T]</span>, <span name="arg1">arg1: Ordering[K]</span>)</span><span class="result">: <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(T, (K, (V, <span name="scala.Option" class="extype">Option</span>[JoinedV])))]</span>
+        <span class="name">withWindow</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="JoinedV">JoinedV</span>]</span><span class="params">(<span name="left">left: TypedPipe[(T, (K, V))]</span>, <span name="right">right: TypedPipe[(T, (K, JoinedV))]</span>, <span name="reducers">reducers: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>)</span><span class="params">(<span name="gate">gate: (T, T) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Ordering[T]</span>, <span name="arg1">arg1: Ordering[K]</span>)</span><span class="result">: TypedPipe[(T, (K, (V, <span name="scala.Option" class="extype">Option</span>[JoinedV])))]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">This ensures that gate(Tleft, Tright) == true, else the None is emitted
@@ -391,6 +405,21 @@ as the joined value.</p><div class="fullcomment"><div class="comment cmt"><p>Thi
 as the joined value.
 Useful for bounding the time of the join to a recent window
 </p></div></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.LookupJoin#withWindowRightSumming" data-isabs="false">
+      <a id="withWindowRightSumming[T, K, V, JoinedV](TypedPipe[(T, (K, V))],TypedPipe[(T, (K, JoinedV))],Option[Int])((T, T) ⇒ Boolean)(Ordering[T],Ordering[K],Semigroup[JoinedV]):TypedPipe[(T, (K, (V, Option[JoinedV])))]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">withWindowRightSumming</span><span class="tparams">[<span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="JoinedV">JoinedV</span>]</span><span class="params">(<span name="left">left: TypedPipe[(T, (K, V))]</span>, <span name="right">right: TypedPipe[(T, (K, JoinedV))]</span>, <span name="reducers">reducers: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>)</span><span class="params">(<span name="gate">gate: (T, T) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Ordering[T]</span>, <span name="arg1">arg1: Ordering[K]</span>, <span name="arg2">arg2: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[JoinedV]</span>)</span><span class="result">: TypedPipe[(T, (K, (V, <span name="scala.Option" class="extype">Option</span>[JoinedV])))]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">This ensures that gate(Tleft, Tright) == true, else the None is emitted
+as the joined value, and sums are only done as long as they they come
+within the gate interval as well
+</p>
     </li></ol>
             </div>
 

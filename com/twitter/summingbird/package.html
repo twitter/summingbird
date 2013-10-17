@@ -60,6 +60,19 @@
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.AlsoProducer" data-isabs="false">
+      <a id="AlsoProducer:AlsoProducer[P, T, R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AlsoProducer.html"><span class="name">AlsoProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>, <span name="R">R</span>]</span><span class="params">(<span name="ensure">ensure: TailProducer[P, T]</span>, <span name="result">result: Producer[P, R]</span>)</span><span class="result"> extends Producer[P, R] with Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">This is a special node that ensures that the first argument is planned, but produces values
+equivalent to the result.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.Dependants" data-isabs="false">
       <a id="Dependants:Dependants[P]"></a>
       <h4 class="signature">
@@ -68,7 +81,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="Dependants.html"><span class="name">Dependants</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>]</span><span class="params">(<span name="tail">tail: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result"> extends Product with Serializable</span>
+        <a href="Dependants.html"><span class="name">Dependants</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>]</span><span class="params">(<span name="tail">tail: Producer[P, Any]</span>)</span><span class="result"> extends Product with Serializable</span>
       </span>
       </h4>
       <p class="comment cmt">Producers are Directed Acyclic Graphs
@@ -133,6 +146,18 @@ by the fact that they are immutable.</p>
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.KeyFlatMappedProducer" data-isabs="false">
+      <a id="KeyFlatMappedProducer:KeyFlatMappedProducer[P, K, V, K2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="KeyFlatMappedProducer.html"><span class="name">KeyFlatMappedProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="K2">K2</span>]</span><span class="params">(<span name="producer">producer: KeyedProducer[P, K, V]</span>, <span name="fn">fn: (K) ⇒ TraversableOnce[K2]</span>)</span><span class="result"> extends KeyedProducer[P, K2, V] with Product with Serializable</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.KeyedProducer" data-isabs="true">
       <a id="KeyedProducer:KeyedProducer[P, K, V]"></a>
       <h4 class="signature">
@@ -144,7 +169,7 @@ by the fact that they are immutable.</p>
         <a href="KeyedProducer.html"><span class="name">KeyedProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends Producer[P, (K, V)]</span>
       </span>
       </h4>
-      
+      <p class="comment cmt">This has the methods on Key-Value streams.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.LeftJoinedProducer" data-isabs="false">
       <a id="LeftJoinedProducer:LeftJoinedProducer[P, K, V, JoinedV]"></a>
       <h4 class="signature">
@@ -177,7 +202,7 @@ by the fact that they are immutable.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="NamedProducer.html"><span class="name">NamedProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>]</span><span class="params">(<span name="producer">producer: Producer[P, T]</span>, <span name="id">id: String</span>)</span><span class="result"> extends Producer[P, T] with Product with Serializable</span>
+        <a href="NamedProducer.html"><span class="name">NamedProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">+T</span>]</span><span class="params">(<span name="producer">producer: Producer[P, T]</span>, <span name="id">id: String</span>)</span><span class="result"> extends Producer[P, T] with Product with Serializable</span>
       </span>
       </h4>
       
@@ -189,7 +214,7 @@ by the fact that they are immutable.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="OptionMappedProducer.html"><span class="name">OptionMappedProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="producer">producer: Producer[P, T]</span>, <span name="fn">fn: (T) ⇒ Option[U]</span>, <span name="manifest">manifest: Manifest[U]</span>)</span><span class="result"> extends Producer[P, U] with Product with Serializable</span>
+        <a href="OptionMappedProducer.html"><span class="name">OptionMappedProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="producer">producer: Producer[P, T]</span>, <span name="fn">fn: (T) ⇒ Option[U]</span>)</span><span class="result"> extends Producer[P, U] with Product with Serializable</span>
       </span>
       </h4>
       <p class="comment cmt">Represents filters and maps which may be optimized differently
@@ -265,7 +290,7 @@ platforms in parallel.</p>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="Producer.html"><span class="name">Producer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>]</span><span class="result"> extends AnyRef</span>
+        <a href="Producer.html"><span class="name">Producer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">+T</span>]</span><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       <p class="comment cmt">A Producer is a node in our tree, able to generate new items and
@@ -278,7 +303,7 @@ have operations applied to it.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="Source.html"><span class="name">Source</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>]</span><span class="params">(<span name="source">source: Source[T]</span>, <span name="manifest">manifest: Manifest[T]</span>)</span><span class="result"> extends Producer[P, T] with Product with Serializable</span>
+        <a href="Source.html"><span class="name">Source</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>]</span><span class="params">(<span name="source">source: Source[T]</span>)</span><span class="result"> extends Producer[P, T] with Product with Serializable</span>
       </span>
       </h4>
       
@@ -290,10 +315,34 @@ have operations applied to it.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="Summer.html"><span class="name">Summer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="producer">producer: KeyedProducer[P, K, V]</span>, <span name="store">store: Store[K, V]</span>, <span name="monoid">monoid: Monoid[V]</span>)</span><span class="result"> extends KeyedProducer[P, K, V] with Product with Serializable</span>
+        <a href="Summer.html"><span class="name">Summer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="producer">producer: KeyedProducer[P, K, V]</span>, <span name="store">store: Store[K, V]</span>, <span name="monoid">monoid: Monoid[V]</span>)</span><span class="result"> extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))] with Product with Serializable</span>
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.TPNamedProducer" data-isabs="false">
+      <a id="TPNamedProducer:TPNamedProducer[P, T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TPNamedProducer.html"><span class="name">TPNamedProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">+T</span>]</span><span class="result"> extends NamedProducer[P, T] with TailProducer[P, T]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.TailProducer" data-isabs="true">
+      <a id="TailProducer:TailProducer[P, T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TailProducer.html"><span class="name">TailProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">+T</span>]</span><span class="result"> extends Producer[P, T]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Only TailProducers can be planned.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.TimeExtractor" data-isabs="true">
       <a id="TimeExtractor:TimeExtractor[T]"></a>
       <h4 class="signature">
@@ -320,14 +369,14 @@ have operations applied to it.</p>
       <p class="comment cmt">I tried to make Unzip2 an object with an apply method that took
 all three type parameters, but ran into issues:</p>
     </li><li visbl="pub" name="com.twitter.summingbird.WrittenProducer" data-isabs="false">
-      <a id="WrittenProducer:WrittenProducer[P, T]"></a>
+      <a id="WrittenProducer:WrittenProducer[P, T, U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="WrittenProducer.html"><span class="name">WrittenProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>]</span><span class="params">(<span name="producer">producer: Producer[P, T]</span>, <span name="sink">sink: Sink[T]</span>)</span><span class="result"> extends Producer[P, T] with Product with Serializable</span>
+        <a href="WrittenProducer.html"><span class="name">WrittenProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>, <span name="U">U &gt;: T</span>]</span><span class="params">(<span name="producer">producer: Producer[P, T]</span>, <span name="sink">sink: Sink[U]</span>)</span><span class="result"> extends TailProducer[P, T] with Product with Serializable</span>
       </span>
       </h4>
       
@@ -450,18 +499,21 @@ specialized type for implicit resolution and serializability.</p>
       </h4>
       <p class="comment cmt">We put typedefs and vals here to make working with the (deprecated) Builder
 API nicer.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo" data-isabs="false">
-      <a id="kryo:kryo"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.example" data-isabs="false">
+      <a id="example:example"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">package</span>
       </span>
       <span class="symbol">
-        <a href="kryo/package.html"><span class="name">kryo</span></a>
+        <a href="example/package.html"><span class="name">example</span></a>
       </span>
       </h4>
-      
+      <p class="comment cmt">The &quot;example&quot; package contains all of the code and configuration
+necessary to run a basic Summingbird job locally that consumes
+Tweets from the public streaming API and generates counts of the
+number of times each word appears per tweet.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.memory" data-isabs="false">
       <a id="memory:memory"></a>
       <h4 class="signature">
@@ -474,6 +526,18 @@ API nicer.</p>
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.online" data-isabs="false">
+      <a id="online:online"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="online/package.html"><span class="name">online</span></a>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.option" data-isabs="false">
       <a id="option:option"></a>
       <h4 class="signature">
@@ -483,6 +547,18 @@ API nicer.</p>
       </span>
       <span class="symbol">
         <a href="option/package.html"><span class="name">option</span></a>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner" data-isabs="false">
+      <a id="planner:planner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="planner/package.html"><span class="name">planner</span></a>
       </span>
       </h4>
       
@@ -558,6 +634,18 @@ API nicer.</p>
       </span>
       </h4>
       <p class="comment cmt">Package containing the Summingbird Storm platform.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.viz" data-isabs="false">
+      <a id="viz:viz"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="viz/package.html"><span class="name">viz</span></a>
+      </span>
+      </h4>
+      
     </li></ol>
             </div>
 

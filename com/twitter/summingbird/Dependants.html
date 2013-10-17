@@ -25,13 +25,13 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">Dependants</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="tail">tail: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result"> extends <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
+        <span class="name">Dependants</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="tail">tail: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result"> extends <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Producers are Directed Acyclic Graphs
 by the fact that they are immutable.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-core/src/main/scala/com/twitter/summingbird/Dependants.scala">Dependants.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/Dependants.scala">Dependants.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -67,7 +67,7 @@ by the fact that they are immutable.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">Dependants</span><span class="params">(<span name="tail">tail: com.twitter.summingbird.Producer[P, _]</span>)</span>
+        <span class="name">Dependants</span><span class="params">(<span name="tail">tail: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span>
       </span>
       </h4>
       
@@ -140,6 +140,18 @@ by the fact that they are immutable.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Dependants#allTails" data-isabs="false">
+      <a id="allTails:List[Producer[P, Any]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">allTails</span><span class="result">: List[<a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -180,30 +192,29 @@ by the fact that they are immutable.
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Dependants#dependantsOf" data-isabs="false">
-      <a id="dependantsOf(com.twitter.summingbird.Producer[P, _]):Option[Set[com.twitter.summingbird.Producer[P, _]]]"></a>
+      <a id="dependantsOf(Producer[P, Any]):Option[List[Producer[P, Any]]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dependantsOf</span><span class="params">(<span name="p">p: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[Set[com.twitter.summingbird.Producer[P, _]]]</span>
+        <span class="name">dependantsOf</span><span class="params">(<span name="p">p: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[List[<a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]]]</span>
       </span>
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.Dependants#depth" data-isabs="false">
-      <a id="depth(com.twitter.summingbird.Producer[P, _]):Option[Int]"></a>
+      <a id="depth(Producer[P, Any]):Option[Int]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">depth</span><span class="params">(<span name="p">p: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>
+        <span class="name">depth</span><span class="params">(<span name="p">p: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">The max of zero and 1 + depth of all parents if the node is the graph
-</p>
+      
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -229,14 +240,14 @@ by the fact that they are immutable.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Dependants" class="extype" href="">Dependants</a> → Equals → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Dependants#fanOut" data-isabs="false">
-      <a id="fanOut(com.twitter.summingbird.Producer[P, _]):Option[Int]"></a>
+      <a id="fanOut(Producer[P, Any]):Option[Int]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">fanOut</span><span class="params">(<span name="p">p: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>
+        <span class="name">fanOut</span><span class="params">(<span name="p">p: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>
       </span>
       </h4>
       
@@ -291,6 +302,19 @@ by the fact that they are immutable.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Dependants#isNode" data-isabs="false">
+      <a id="isNode(Producer[P, Any]):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNode</span><span class="params">(<span name="p">p: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The max of zero and 1 + depth of all parents if the node is the graph
+</p>
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -303,6 +327,18 @@ by the fact that they are immutable.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Dependants#nodes" data-isabs="false">
+      <a id="nodes:List[Producer[P, Any]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nodes</span><span class="result">: List[<a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#notify" data-isabs="false">
       <a id="notify():Unit"></a>
       <h4 class="signature">
@@ -388,14 +424,14 @@ by the fact that they are immutable.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.Dependants#tail" data-isabs="false">
-      <a id="tail:com.twitter.summingbird.Producer[P, _]"></a>
+      <a id="tail:Producer[P, Any]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">tail</span><span class="result">: com.twitter.summingbird.Producer[P, _]</span>
+        <span class="name">tail</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>
       </span>
       </h4>
       
@@ -411,6 +447,20 @@ by the fact that they are immutable.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Dependants" class="extype" href="">Dependants</a> → AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Dependants#transitiveDependantsOf" data-isabs="false">
+      <a id="transitiveDependantsOf(Producer[P, Any]):List[Producer[P, Any]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">transitiveDependantsOf</span><span class="params">(<span name="p">p: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: List[<a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return all dependendants of a given node.</p><div class="fullcomment"><div class="comment cmt"><p>Return all dependendants of a given node.
+Does not include itself
+</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">

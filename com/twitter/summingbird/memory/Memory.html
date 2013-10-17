@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-core/src/main/scala/com/twitter/summingbird/memory/Memory.scala">Memory.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/memory/Memory.scala">Memory.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[<a name="com.twitter.summingbird.memory.Memory" class="extype" href="">Memory</a>], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -74,7 +74,19 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.memory.Memory#Plan" data-isabs="false">
+              <ol><li visbl="pub" name="com.twitter.summingbird.Platform#Buffer" data-isabs="false">
+      <a id="Buffer:Buffer[k, v]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = (k) ⇒ <span name="scala.Option" class="extype">Option</span>[v] with ((k, v)) ⇒ <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.memory.Memory#Plan" data-isabs="false">
       <a id="Plan:Plan[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -340,14 +352,14 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.memory.Memory#plan" data-isabs="false">
-      <a id="plan[T](Producer[Memory, T]):Stream[T]"></a>
+      <a id="plan[T](TailProducer[Memory, T]):Stream[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="prod">prod: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[<a name="com.twitter.summingbird.memory.Memory" class="extype" href="">Memory</a>, T]</span>)</span><span class="result">: Stream[T]</span>
+        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="prod">prod: <a name="com.twitter.summingbird.TailProducer" class="extype" href="../TailProducer.html">TailProducer</a>[<a name="com.twitter.summingbird.memory.Memory" class="extype" href="">Memory</a>, T]</span>)</span><span class="result">: Stream[T]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.memory.Memory" class="extype" href="">Memory</a> → <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a></dd></dl></div>

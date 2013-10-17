@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-builder/src/main/scala/com/twitter/summingbird/builder/CompletedBuilder.scala">CompletedBuilder.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-builder/src/main/scala/com/twitter/summingbird/builder/CompletedBuilder.scala">CompletedBuilder.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -213,15 +213,27 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder#injectionPair" data-isabs="false">
-      <a id="injectionPair[T](Injection[T, Array[Byte]])(Manifest[T]):InjectionPair[T]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder#injectionDefaultRegistrar" data-isabs="false">
+      <a id="injectionDefaultRegistrar[T](Injection[T, Array[Byte]])(Manifest[T]):InjectionDefaultRegistrar[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">injectionPair</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="injection">injection: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[T, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[T]</span>)</span><span class="result">: <span name="com.twitter.chill.InjectionPair" class="extype">InjectionPair</span>[T]</span>
+        <span class="name">injectionDefaultRegistrar</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="injection">injection: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[T, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[T]</span>)</span><span class="result">: <span name="com.twitter.chill.InjectionDefaultRegistrar" class="extype">InjectionDefaultRegistrar</span>[T]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder#injectionRegistrar" data-isabs="false">
+      <a id="injectionRegistrar[T](Injection[T, Array[Byte]])(Manifest[T]):InjectionRegistrar[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">injectionRegistrar</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="injection">injection: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[T, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: Manifest[T]</span>)</span><span class="result">: <span name="com.twitter.chill.InjectionRegistrar" class="extype">InjectionRegistrar</span>[T]</span>
       </span>
       </h4>
       

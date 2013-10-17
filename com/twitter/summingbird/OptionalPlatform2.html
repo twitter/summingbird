@@ -31,7 +31,7 @@
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Platform capable of planning and executing at most 2 underlying
 platforms in parallel.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-core/src/main/scala/com/twitter/summingbird/OptionalPlatform2.scala">OptionalPlatform2.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/OptionalPlatform2.scala">OptionalPlatform2.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[<a name="com.twitter.summingbird.OptionalPlatform2" class="extype" href="">OptionalPlatform2</a>[P1, P2]], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -76,7 +76,19 @@ platforms in parallel.
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.OptionalPlatform2#Plan" data-isabs="false">
+              <ol><li visbl="pub" name="com.twitter.summingbird.Platform#Buffer" data-isabs="false">
+      <a id="Buffer:Buffer[k, v]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = (<span name="scala.Option" class="extype">Option</span>[Service[k, v]], <span name="scala.Option" class="extype">Option</span>[Service[k, v]]) with (<span name="scala.Option" class="extype">Option</span>[Sink[(k, v)]], <span name="scala.Option" class="extype">Option</span>[Sink[(k, v)]])</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.OptionalPlatform2#Plan" data-isabs="false">
       <a id="Plan:(Option[Plan[T]], Option[Plan[T]])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -342,14 +354,14 @@ platforms in parallel.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.OptionalPlatform2#plan" data-isabs="false">
-      <a id="plan[T](Producer[OptionalPlatform2[P1, P2], T]):(Option[Plan[T]], Option[Plan[T]])"></a>
+      <a id="plan[T](TailProducer[OptionalPlatform2[P1, P2], T]):(Option[Plan[T]], Option[Plan[T]])"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="producer">producer: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[<a name="com.twitter.summingbird.OptionalPlatform2" class="extype" href="">OptionalPlatform2</a>[P1, P2], T]</span>)</span><span class="result">: (<span name="scala.Option" class="extype">Option</span>[Plan[T]], <span name="scala.Option" class="extype">Option</span>[Plan[T]])</span>
+        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="producer">producer: <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[<a name="com.twitter.summingbird.OptionalPlatform2" class="extype" href="">OptionalPlatform2</a>[P1, P2], T]</span>)</span><span class="result">: (<span name="scala.Option" class="extype">Option</span>[Plan[T]], <span name="scala.Option" class="extype">Option</span>[Plan[T]])</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.OptionalPlatform2" class="extype" href="">OptionalPlatform2</a> → <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a></dd></dl></div>

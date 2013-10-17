@@ -25,11 +25,11 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">CompletedBuilder</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[P]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="node">node: <a name="com.twitter.summingbird.Summer" class="extype" href="../Summer.html">Summer</a>[P, K, V]</span>, <span name="eventCodecPairs">eventCodecPairs: List[com.twitter.chill.InjectionPair[_]]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="keyCodec">keyCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[K, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="valCodec">valCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[V, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>, <span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>)</span><span class="result"> extends <span name="java.io.Serializable" class="extype">Serializable</span> with <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
+        <span class="name">CompletedBuilder</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[P]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="node">node: <a name="com.twitter.summingbird.Summer" class="extype" href="../Summer.html">Summer</a>[P, K, V]</span>, <span name="eventRegistrar">eventRegistrar: <span name="com.twitter.chill.IKryoRegistrar" class="extype">IKryoRegistrar</span></span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="keyCodec">keyCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[K, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="valCodec">valCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[V, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>, <span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>)</span><span class="result"> extends <span name="java.io.Serializable" class="extype">Serializable</span> with <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-builder/src/main/scala/com/twitter/summingbird/builder/CompletedBuilder.scala">CompletedBuilder.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-builder/src/main/scala/com/twitter/summingbird/builder/CompletedBuilder.scala">CompletedBuilder.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -65,7 +65,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CompletedBuilder</span><span class="params">(<span name="node">node: <a name="com.twitter.summingbird.Summer" class="extype" href="../Summer.html">Summer</a>[P, K, V]</span>, <span name="eventCodecPairs">eventCodecPairs: List[com.twitter.chill.InjectionPair[_]]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="keyCodec">keyCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[K, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="valCodec">valCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[V, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>)</span>
+        <span class="name">CompletedBuilder</span><span class="params">(<span name="node">node: <a name="com.twitter.summingbird.Summer" class="extype" href="../Summer.html">Summer</a>[P, K, V]</span>, <span name="eventRegistrar">eventRegistrar: <span name="com.twitter.chill.IKryoRegistrar" class="extype">IKryoRegistrar</span></span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>, <span name="keyCodec">keyCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[K, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="valCodec">valCodec: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[V, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>, <span name="id">id: String</span>, <span name="opts">opts: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="keyMf">keyMf: Manifest[K]</span>, <span name="valMf">valMf: Manifest[V]</span>)</span>
       </span>
       </h4>
       
@@ -213,15 +213,15 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.CompletedBuilder" class="extype" href="">CompletedBuilder</a> → Equals → AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder#eventCodecPairs" data-isabs="false">
-      <a id="eventCodecPairs:List[com.twitter.chill.InjectionPair[_]]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder#eventRegistrar" data-isabs="false">
+      <a id="eventRegistrar:IKryoRegistrar"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">eventCodecPairs</span><span class="result">: List[com.twitter.chill.InjectionPair[_]]</span>
+        <span class="name">eventRegistrar</span><span class="result">: <span name="com.twitter.chill.IKryoRegistrar" class="extype">IKryoRegistrar</span></span>
       </span>
       </h4>
       
@@ -297,18 +297,6 @@
       </span>
       <span class="symbol">
         <span class="name">keyCodec</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[K, <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>]]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder#keyCodecPair" data-isabs="false">
-      <a id="keyCodecPair:InjectionPair[K]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">keyCodecPair</span><span class="result">: <span name="com.twitter.chill.InjectionPair" class="extype">InjectionPair</span>[K]</span>
       </span>
       </h4>
       
@@ -432,6 +420,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.builder.CompletedBuilder" class="extype" href="">CompletedBuilder</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder#registrar" data-isabs="false">
+      <a id="registrar:IterableRegistrar"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">registrar</span><span class="result">: <span name="com.twitter.chill.java.IterableRegistrar" class="extype">IterableRegistrar</span></span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder#set" data-isabs="false">
       <a id="set[T](T)(Env):CompletedBuilder[P, K, V]"></a>
       <h4 class="signature">
@@ -489,18 +489,6 @@
       </span>
       <span class="symbol">
         <span class="name">valMf</span><span class="result">: Manifest[V]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.builder.CompletedBuilder#valueCodecPair" data-isabs="false">
-      <a id="valueCodecPair:InjectionPair[V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">valueCodecPair</span><span class="result">: <span name="com.twitter.chill.InjectionPair" class="extype">InjectionPair</span>[V]</span>
       </span>
       </h4>
       

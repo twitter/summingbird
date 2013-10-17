@@ -30,7 +30,7 @@
       </h4>
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Base trait for summingbird compilers.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-core/src/main/scala/com/twitter/summingbird/Platform.scala">Platform.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/Platform.scala">Platform.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div><div class="toggleContainer block">
@@ -63,7 +63,19 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.Platform#Plan" data-isabs="true">
+              <ol><li visbl="pub" name="com.twitter.summingbird.Platform#Buffer" data-isabs="false">
+      <a id="Buffer:Buffer[k, v]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = Service[k, v] with Sink[(k, v)]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.Platform#Plan" data-isabs="true">
       <a id="Plan:Plan[_]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -129,14 +141,14 @@
         <div class="values members" id="values">
               <h3>Abstract Value Members</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.Platform#plan" data-isabs="true">
-      <a id="plan[T](Producer[P, T]):Plan[T]"></a>
+      <a id="plan[T](TailProducer[P, T]):Plan[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="completed">completed: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T]</span>)</span><span class="result">: Plan[T]</span>
+        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="completed">completed: <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, T]</span>)</span><span class="result">: Plan[T]</span>
       </span>
       </h4>
       

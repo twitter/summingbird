@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>com.twitter.summingbird.storm.SummingbirdKryoFactory</title>
+          <title>com.twitter.summingbird.planner.SummerNode</title>
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
@@ -14,24 +14,24 @@
         </head>
         <body onload="sh_highlightDocument('../lib/', '.min.js');" class="type">
       <div id="definition">
-        <a title="Go to companion" href="SummingbirdKryoFactory$.html"><img src="../../../../lib/class_to_object_big.png" /></a>
-        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.storm" class="extype" href="package.html">storm</a></p>
-        <h1><a title="Go to companion" href="SummingbirdKryoFactory$.html">SummingbirdKryoFactory</a></h1>
+        <img src="../../../../lib/class_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.planner" class="extype" href="package.html">planner</a></p>
+        <h1>SummerNode</h1>
       </div>
 
       <h4 class="signature" id="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">class</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">SummingbirdKryoFactory</span><span class="result"> extends <span name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="extype">ScalaKryoFactory</span></span>
+        <span class="name">SummerNode</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="members">members: List[com.twitter.summingbird.Producer[P, _]]</span>)</span><span class="result"> extends <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P] with <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/SummingbirdKryoFactory.scala">SummingbirdKryoFactory.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/planner/Node.scala">Node.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="extype">ScalaKryoFactory</span>, <span name="backtype.storm.serialization.IKryoFactory" class="extype">IKryoFactory</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -45,7 +45,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.storm.SummingbirdKryoFactory" class="in"><span>SummingbirdKryoFactory</span></li><li name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="in"><span>ScalaKryoFactory</span></li><li name="backtype.storm.serialization.IKryoFactory" class="in"><span>IKryoFactory</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.planner.SummerNode" class="in"><span>SummerNode</span></li><li name="scala.Serializable" class="in"><span>Serializable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.Product" class="in"><span>Product</span></li><li name="scala.Equals" class="in"><span>Equals</span></li><li name="com.twitter.summingbird.planner.Node" class="in"><span>Node</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -57,15 +57,15 @@
         <div id="allMembers">
         <div class="members" id="constructors">
               <h3>Instance Constructors</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.storm.SummingbirdKryoFactory#this" data-isabs="false">
-      <a id="this:SummingbirdKryoFactory"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#this" data-isabs="false">
+      <a id="this:SummerNode[P]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SummingbirdKryoFactory</span><span class="params">()</span>
+        <span class="name">SummerNode</span><span class="params">(<span name="members">members: List[com.twitter.summingbird.Producer[P, _]] = <span class="symbol">immutable.this.Nil</span></span>)</span>
       </span>
       </h4>
       
@@ -138,6 +138,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#add" data-isabs="false">
+      <a id="add(com.twitter.summingbird.Producer[P, _]):Node[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">add</span><span class="params">(<span name="node">node: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result">: <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a> → <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -150,6 +162,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#canEqual" data-isabs="false">
+      <a id="canEqual(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEqual</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a> → Equals</dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -165,6 +189,30 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#collapseNamedNodes" data-isabs="false">
+      <a id="collapseNamedNodes((String) ⇒ String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collapseNamedNodes</span><span class="params">(<span name="sanitize">sanitize: (String) ⇒ String</span>)</span><span class="result">: String</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#contains" data-isabs="false">
+      <a id="contains(com.twitter.summingbird.Producer[P, _]):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">contains</span><span class="params">(<span name="p">p: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -177,7 +225,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#equals" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#equals" data-isabs="false">
       <a id="equals(Any):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -188,7 +236,7 @@
         <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a> → Equals → AnyRef → Any</dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -216,19 +264,31 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.tormenta.serialization.ScalaKryoFactory#getKryo" data-isabs="false">
-      <a id="getKryo(java.util.Map[_, _]):Kryo"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#getName" data-isabs="false">
+      <a id="getName(Dag[P]):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getKryo</span><span class="params">(<span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="com.esotericsoftware.kryo.Kryo" class="extype">Kryo</span></span>
+        <span class="name">getName</span><span class="params">(<span name="dag">dag: <a name="com.twitter.summingbird.planner.Dag" class="extype" href="Dag.html">Dag</a>[P]</span>)</span><span class="result">: String</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ScalaKryoFactory → IKryoFactory</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#getNameFallback" data-isabs="false">
+      <a id="getNameFallback:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNameFallback</span><span class="result">: String</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#hashCode" data-isabs="false">
       <a id="hashCode():Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -239,7 +299,7 @@
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a> → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <h4 class="signature">
@@ -252,6 +312,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#members" data-isabs="false">
+      <a id="members:List[com.twitter.summingbird.Producer[P, _]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">members</span><span class="result">: List[com.twitter.summingbird.Producer[P, _]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a> → <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -288,66 +360,78 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.tormenta.serialization.ScalaKryoFactory#populate" data-isabs="false">
-      <a id="populate(Kryo):Unit"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#productArity" data-isabs="false">
+      <a id="productArity:Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">populate</span><span class="params">(<span name="k">k: <span name="com.esotericsoftware.kryo.Kryo" class="extype">Kryo</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">productArity</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ScalaKryoFactory</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.tormenta.serialization.ScalaKryoFactory#postDecorate" data-isabs="false">
-      <a id="postDecorate(Kryo,java.util.Map[_, _]):Unit"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#productElement" data-isabs="false">
+      <a id="productElement(Int):Any"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">postDecorate</span><span class="params">(<span name="k">k: <span name="com.esotericsoftware.kryo.Kryo" class="extype">Kryo</span></span>, <span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">productElement</span><span class="params">(<span name="arg0">arg0: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Any" class="extype">Any</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ScalaKryoFactory → IKryoFactory</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.tormenta.serialization.ScalaKryoFactory#postRegister" data-isabs="false">
-      <a id="postRegister(Kryo,java.util.Map[_, _]):Unit"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="scala.Product#productIterator" data-isabs="false">
+      <a id="productIterator:Iterator[Any]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">postRegister</span><span class="params">(<span name="k">k: <span name="com.esotericsoftware.kryo.Kryo" class="extype">Kryo</span></span>, <span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">productIterator</span><span class="result">: Iterator[<span name="scala.Any" class="extype">Any</span>]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ScalaKryoFactory → IKryoFactory</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.SummingbirdKryoFactory#preRegister" data-isabs="false">
-      <a id="preRegister(Kryo,java.util.Map[_, _]):Unit"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#productPrefix" data-isabs="false">
+      <a id="productPrefix:String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">preRegister</span><span class="params">(<span name="k">k: <span name="com.esotericsoftware.kryo.Kryo" class="extype">Kryo</span></span>, <span name="conf">conf: java.util.Map[_, _]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">productPrefix</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SummingbirdKryoFactory" class="extype" href="">SummingbirdKryoFactory</a> → ScalaKryoFactory → IKryoFactory</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.tormenta.serialization.ScalaKryoFactory#registeredTypes" data-isabs="false">
-      <a id="registeredTypes:List[Class[_]]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#reverse" data-isabs="false">
+      <a id="reverse:SummerNode[P]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">registeredTypes</span><span class="result">: List[Class[_]]</span>
+        <span class="name">reverse</span><span class="result">: <a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a>[P]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ScalaKryoFactory</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a> → <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.SummerNode#shortName" data-isabs="false">
+      <a id="shortName((String) ⇒ String):NodeIdentifier"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">shortName</span><span class="params">(<span name="sanitize">sanitize: (String) ⇒ String</span>)</span><span class="result">: <a name="com.twitter.summingbird.planner.NodeIdentifier" class="extype" href="NodeIdentifier.html">NodeIdentifier</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a> → <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -360,7 +444,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#toSource" data-isabs="false">
+      <a id="toSource:SourceNode[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toSource</span><span class="result">: <a name="com.twitter.summingbird.planner.SourceNode" class="extype" href="SourceNode.html">SourceNode</a>[P]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -368,10 +464,34 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
+        <span class="name">toString</span><span class="params">()</span><span class="result">: String</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a> → AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#toStringWithPrefix" data-isabs="false">
+      <a id="toStringWithPrefix(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toStringWithPrefix</span><span class="params">(<span name="prefix">prefix: String</span>)</span><span class="result">: String</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Node#toSummer" data-isabs="false">
+      <a id="toSummer:SummerNode[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toSummer</span><span class="result">: <a name="com.twitter.summingbird.planner.SummerNode" class="extype" href="">SummerNode</a>[P]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">
@@ -420,14 +540,38 @@
     </li></ol>
             </div>
 
-        
+        <div class="values members" id="values">
+              <h3>Deprecated Value Members</h3>
+              <ol><li visbl="pub" name="scala.Product#productElements" data-isabs="false">
+      <a id="productElements:Iterator[Any]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.8.0) use productIterator instead">productElements</span><span class="result">: Iterator[<span name="scala.Any" class="extype">Any</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.8.0)</i> use productIterator instead</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">
-        <div name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="parent">
-              <h3>Inherited from <span name="com.twitter.tormenta.serialization.ScalaKryoFactory" class="extype">ScalaKryoFactory</span></h3>
-            </div><div name="backtype.storm.serialization.IKryoFactory" class="parent">
-              <h3>Inherited from <span name="backtype.storm.serialization.IKryoFactory" class="extype">IKryoFactory</span></h3>
+        <div name="scala.Serializable" class="parent">
+              <h3>Inherited from <span name="scala.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="java.io.Serializable" class="parent">
+              <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="scala.Product" class="parent">
+              <h3>Inherited from <span name="scala.Product" class="extype">Product</span></h3>
+            </div><div name="scala.Equals" class="parent">
+              <h3>Inherited from <span name="scala.Equals" class="extype">Equals</span></h3>
+            </div><div name="com.twitter.summingbird.planner.Node" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]</h3>
             </div><div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">

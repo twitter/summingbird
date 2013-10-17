@@ -48,7 +48,19 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedOperations" data-isabs="false">
+              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedDeltaService" data-isabs="false">
+      <a id="BatchedDeltaService:BatchedDeltaService[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BatchedDeltaService.html"><span class="name">BatchedDeltaService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedService[K, V]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Use this when you have written JUST BEFORE the store.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedOperations" data-isabs="false">
       <a id="BatchedOperations:BatchedOperations"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -225,7 +237,7 @@ generally T will be some kind of TypedPipe
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">KeyValuePipe</span><span class="tparams">[<span name="K">+K</span>, <span name="V">+V</span>]</span><span class="result"> = <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, V))]</span>
+        <span class="name">KeyValuePipe</span><span class="tparams">[<span name="K">+K</span>, <span name="V">+V</span>]</span><span class="result"> = <span name="com.twitter.scalding.typed.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, V))]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
@@ -265,6 +277,18 @@ generally T will be some kind of TypedPipe
       </span>
       </h4>
       <p class="shortcomment cmt">The recursive planner produces these objects which are Monads</p><div class="fullcomment"><div class="comment cmt"><p>The recursive planner produces these objects which are Monads</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.PrepareState" data-isabs="true">
+      <a id="PrepareState:PrepareState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="PrepareState.html"><span class="name">PrepareState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.RunningState" data-isabs="true">
       <a id="RunningState:RunningState[T]"></a>
       <h4 class="signature">
@@ -388,18 +412,6 @@ the Reader from two other methods
       </span>
       </h4>
       <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.SummingbirdKryoHadoop" data-isabs="false">
-      <a id="SummingbirdKryoHadoop:SummingbirdKryoHadoop"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SummingbirdKryoHadoop.html"><span class="name">SummingbirdKryoHadoop</span></a><span class="result"> extends KryoHadoop</span>
-      </span>
-      </h4>
-      <p class="comment cmt"></p>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#Time" data-isabs="false">
       <a id="Time:Time"></a>
       <h4 class="signature">
@@ -420,7 +432,7 @@ the Reader from two other methods
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">TimedPipe</span><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> = <span name="com.twitter.scalding.TypedPipe" class="extype">TypedPipe</span>[(Time, T)]</span>
+        <span class="name">TimedPipe</span><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> = <span name="com.twitter.scalding.typed.TypedPipe" class="extype">TypedPipe</span>[(Time, T)]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">How we represent the streams in scalding</p><div class="fullcomment"><div class="comment cmt"><p>How we represent the streams in scalding</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
@@ -547,6 +559,18 @@ Use the job name as the key
       </span>
       </h4>
       <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.IteratorSums" data-isabs="false">
+      <a id="IteratorSums:IteratorSums"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="IteratorSums$.html"><span class="name">IteratorSums</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.LookupJoin" data-isabs="false">
       <a id="LookupJoin:LookupJoin"></a>
       <h4 class="signature">
@@ -570,6 +594,18 @@ by performing realtime lookups on a key-value Store.</p>
       </span>
       <span class="symbol">
         <a href="Scalding$.html"><span class="name">Scalding</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.TimePathedSource" data-isabs="false">
+      <a id="TimePathedSource:TimePathedSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TimePathedSource$.html"><span class="name">TimePathedSource</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
       

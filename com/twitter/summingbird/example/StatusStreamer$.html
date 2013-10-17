@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>com.twitter.summingbird.storm.OnlineSink</title>
+          <title>com.twitter.summingbird.example.StatusStreamer</title>
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
@@ -14,9 +14,9 @@
         </head>
         <body onload="sh_highlightDocument('../lib/', '.min.js');" class="value">
       <div id="definition">
-        <a title="Go to companion" href="OnlineSink.html"><img src="../../../../lib/object_to_trait_big.png" /></a>
-        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.storm" class="extype" href="package.html">storm</a></p>
-        <h1><a title="Go to companion" href="OnlineSink.html">OnlineSink</a></h1>
+        <img src="../../../../lib/object_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.example" class="extype" href="package.html">example</a></p>
+        <h1>StatusStreamer</h1>
       </div>
 
       <h4 class="signature" id="signature">
@@ -25,11 +25,11 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">OnlineSink</span><span class="result"> extends AnyRef</span>
+        <span class="name">StatusStreamer</span><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/OnlineSink.scala">OnlineSink.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-example/src/main/scala/com/twitter/summingbird/example/ExampleJob.scala">ExampleJob.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -45,7 +45,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.storm.OnlineSink" class="in"><span>OnlineSink</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.example.StatusStreamer" class="in"><span>StatusStreamer</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -135,6 +135,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StatusStreamer#batcher" data-isabs="false">
+      <a id="batcher:MillisecondBatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batcher</span><span class="result">: <a name="com.twitter.summingbird.batch.MillisecondBatcher" class="extype" href="../batch/MillisecondBatcher.html">MillisecondBatcher</a></span>
+      </span>
+      </h4>
+      
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -273,6 +285,20 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StatusStreamer#timeOf" data-isabs="false">
+      <a id="timeOf:TimeExtractor[Status]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">timeOf</span><span class="result">: <a name="com.twitter.summingbird.TimeExtractor" class="extype" href="../TimeExtractor.html">TimeExtractor</a>[<span name="twitter4j.Status" class="extype">Status</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">These two items are required to run Summingbird in
+batch/realtime mode, across the boundary between storm and
+scalding jobs.</p>
     </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -285,15 +311,15 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.OnlineSink#unit" data-isabs="false">
-      <a id="unit:OnlineSink[Any]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StatusStreamer#tokenize" data-isabs="false">
+      <a id="tokenize(String):TraversableOnce[String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">unit</span><span class="result">: <a name="com.twitter.summingbird.storm.OnlineSink" class="extype" href="OnlineSink.html">OnlineSink</a>[<span name="scala.Any" class="extype">Any</span>]</span>
+        <span class="name">tokenize</span><span class="params">(<span name="text">text: String</span>)</span><span class="result">: TraversableOnce[String]</span>
       </span>
       </h4>
       
@@ -342,6 +368,22 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StatusStreamer#wordCount" data-isabs="false">
+      <a id="wordCount[P&lt;:Platform[P]](Producer[P, Status],Store[String, Long]):Summer[P, String, Long]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wordCount</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="source">source: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[P, <span name="twitter4j.Status" class="extype">Status</span>]</span>, <span name="store">store: Store[String, <span name="scala.Long" class="extype">Long</span>]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Summer" class="extype" href="../Summer.html">Summer</a>[P, String, <span name="scala.Long" class="extype">Long</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The actual Summingbird job.</p><div class="fullcomment"><div class="comment cmt"><p>The actual Summingbird job. Notice that the execution platform
+&quot;P&quot; stays abstract. This job will work just as well in memory,
+in Storm or in Scalding, or in any future platform supported by
+Summingbird.
+</p></div></div>
     </li></ol>
             </div>
 

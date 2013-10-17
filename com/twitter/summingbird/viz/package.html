@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>com.twitter.summingbird.kryo</title>
+          <title>com.twitter.summingbird.viz</title>
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
@@ -16,7 +16,7 @@
       <div id="definition">
         <img src="../../../../lib/package_big.png" />
         <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a></p>
-        <h1>kryo</h1>
+        <h1>viz</h1>
       </div>
 
       <h4 class="signature" id="signature">
@@ -25,7 +25,7 @@
         <span class="kind">package</span>
       </span>
       <span class="symbol">
-        <span class="name">kryo</span>
+        <span class="name">viz</span>
       </span>
       </h4>
       
@@ -46,33 +46,48 @@
         <div id="allMembers">
         
 
-        
+        <div class="types members" id="types">
+              <h3>Type Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.viz.DagViz" data-isabs="false">
+      <a id="DagViz:DagViz[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DagViz.html"><span class="name">DagViz</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>]</span><span class="params">(<span name="dag">dag: Dag[P]</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.viz.ProducerViz" data-isabs="false">
+      <a id="ProducerViz:ProducerViz[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ProducerViz.html"><span class="name">ProducerViz</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>]</span><span class="params">(<span name="tail">tail: com.twitter.summingbird.Producer[P, _]</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
 
         
 
         <div class="values members" id="values">
               <h3>Value Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.kryo.Base64StringUnwrap" data-isabs="false">
-      <a id="Base64StringUnwrap:Base64StringUnwrap"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.viz.VizGraph" data-isabs="false">
+      <a id="VizGraph:VizGraph"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="Base64StringUnwrap$.html"><span class="name">Base64StringUnwrap</span></a><span class="result"> extends Bijection[Base64String, String]</span>
-      </span>
-      </h4>
-      <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.kryo.KryoRegistrationHelper" data-isabs="false">
-      <a id="KryoRegistrationHelper:KryoRegistrationHelper"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="KryoRegistrationHelper$.html"><span class="name">KryoRegistrationHelper</span></a><span class="result"> extends AnyRef</span>
+        <a href="VizGraph$.html"><span class="name">VizGraph</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       

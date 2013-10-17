@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/JobState.scala">JobState.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/JobState.scala">JobState.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -73,31 +73,18 @@
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.RunningState#part" data-isabs="true">
-      <a id="part:Interval[T]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.RunningState#succeed" data-isabs="true">
+      <a id="succeed:WaitingState[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">part</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[T]</span>
+        <span class="name">succeed</span><span class="result">: <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="WaitingState.html">WaitingState</a>[T]</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.RunningState#succeed" data-isabs="true">
-      <a id="succeed(Interval[T]):WaitingState[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">succeed</span><span class="params">(<span name="succeedPart">succeedPart: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.WaitingState" class="extype" href="WaitingState.html">WaitingState</a>[T]</span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">suceedPart MAY not be equal to part, it might be a subset
-</p>
     </li></ol>
             </div>
 

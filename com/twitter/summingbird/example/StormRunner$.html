@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>com.twitter.summingbird.storm.OnlineSink</title>
+          <title>com.twitter.summingbird.example.StormRunner</title>
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
@@ -12,33 +12,29 @@
       <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
     
         </head>
-        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="type">
+        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="value">
       <div id="definition">
-        <a title="Go to companion" href="OnlineSink$.html"><img src="../../../../lib/trait_to_object_big.png" /></a>
-        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.storm" class="extype" href="package.html">storm</a></p>
-        <h1><a title="Go to companion" href="OnlineSink$.html">OnlineSink</a></h1>
+        <img src="../../../../lib/object_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a>.<a name="com.twitter.summingbird.example" class="extype" href="package.html">example</a></p>
+        <h1>StormRunner</h1>
       </div>
 
       <h4 class="signature" id="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">OnlineSink</span><span class="tparams">[<span name="Event">-Event</span>]</span><span class="result"> extends (Event) ⇒ <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</span>
+        <span class="name">StormRunner</span><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Represents a location to which intermediate results of the
-&quot;flatMap&quot; operation can be written for consumption by other
-jobs. This sink can be implemented using, for example, a kestrel
-fanout or kafka topic.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/OnlineSink.scala">OnlineSink.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>The following object contains code to execute the Summingbird
+WordCount job defined in ExampleJob.scala on a local storm
+cluster.
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-example/src/main/scala/com/twitter/summingbird/example/StormRunner.scala">StormRunner.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent">(Event) ⇒ <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
-        </div><div class="toggleContainer block">
-          <span class="toggle">Known Subclasses</span>
-          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.storm.EmptyOnlineSink" class="extype" href="EmptyOnlineSink$.html">EmptyOnlineSink</a></div>
+          <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -52,7 +48,7 @@ fanout or kafka topic.
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.storm.OnlineSink" class="in"><span>OnlineSink</span></li><li name="scala.Function1" class="in"><span>Function1</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.example.StormRunner" class="in"><span>StormRunner</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -66,26 +62,10 @@ fanout or kafka topic.
 
         
 
-        <div class="values members" id="values">
-              <h3>Abstract Value Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.storm.OnlineSink#write" data-isabs="true">
-      <a id="write(Event):Future[Unit]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">write</span><span class="params">(<span name="event">event: Event</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">Note that the flatMap operation WILL error if this future errors, so be sure
-to handle appropriate exceptions here.</p>
-    </li></ol>
-            </div>
+        
 
         <div class="values members" id="values">
-              <h3>Concrete Value Members</h3>
+              <h3>Value Members</h3>
               <ol><li visbl="pub" name="scala.AnyRef#!=" data-isabs="false">
       <a id="!=(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -146,30 +126,6 @@ to handle appropriate exceptions here.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="scala.Function1#andThen" data-isabs="false">
-      <a id="andThen[A]((Future[Unit]) ⇒ A):(Event) ⇒ A"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">andThen</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="g">g: (<span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]) ⇒ A</span>)</span><span class="result">: (Event) ⇒ A</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function1</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.OnlineSink#apply" data-isabs="false">
-      <a id="apply(Event):Future[Unit]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="e">e: Event</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.OnlineSink" class="extype" href="">OnlineSink</a> → Function1</dd></dl></div>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -197,18 +153,20 @@ to handle appropriate exceptions here.</p>
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="scala.Function1#compose" data-isabs="false">
-      <a id="compose[A]((A) ⇒ Event):(A) ⇒ Future[Unit]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StormRunner#config" data-isabs="false">
+      <a id="config:Configuration"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">compose</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="g">g: (A) ⇒ Event</span>)</span><span class="result">: (A) ⇒ <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</span>
+        <span class="name">config</span><span class="result">: <span name="twitter4j.conf.Configuration" class="extype">Configuration</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function1</dd></dl></div>
+      <p class="shortcomment cmt">Configuration for Twitter4j.</p><div class="fullcomment"><div class="comment cmt"><p>Configuration for Twitter4j. Configuration can also be managed
+via a properties file, as described here:</p><p>http://tugdualgrall.blogspot.com/2012/11/couchbase-create-large-dataset-using.html
+</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
       <a id="eq(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -284,6 +242,49 @@ to handle appropriate exceptions here.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StormRunner#lookup" data-isabs="false">
+      <a id="lookup(String):Option[Long]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lookup</span><span class="params">(<span name="word">word: String</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Long" class="extype">Long</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Once you've got this running in the background, fire up another
+repl and query memcached for some counts.</p><div class="fullcomment"><div class="comment cmt"><p>Once you've got this running in the background, fire up another
+repl and query memcached for some counts.</p><p>The following commands will look up words. Hitting a word twice
+will show that Storm is updating Memcache behind the scenes:</p><pre>
+    scala&gt;     lookup(<span class="lit">"i"</span>) <span class="cmt">// Or any other common word</span>
+    res7: <span class="std">Option</span>[<span class="std">Long</span>] = <span class="std">Some</span>(<span class="num">1774</span>)
+
+    scala&gt;     lookup(<span class="lit">"i"</span>)
+    res8: <span class="std">Option</span>[<span class="std">Long</span>] = <span class="std">Some</span>(<span class="num">1779</span>)
+</pre></div></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StormRunner#main" data-isabs="false">
+      <a id="main(Array[String]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">main</span><span class="params">(<span name="args">args: <span name="scala.Array" class="extype">Array</span>[String]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">When this main method is executed, Storm will begin running on a
+separate thread on the local machine, pulling tweets off of the
+TwitterSpout, generating and aggregating key-value pairs and
+merging the incremental counts in the memcache store.</p><div class="fullcomment"><div class="comment cmt"><p>When this main method is executed, Storm will begin running on a
+separate thread on the local machine, pulling tweets off of the
+TwitterSpout, generating and aggregating key-value pairs and
+merging the incremental counts in the memcache store.</p><p>Before running this code, make sure to start a local memcached
+instance with &quot;memcached&quot;. (&quot;brew install memcached&quot; will get
+you all set up if you don't already have memcache installed
+locally.)
+</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -320,6 +321,57 @@ to handle appropriate exceptions here.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StormRunner#spout" data-isabs="false">
+      <a id="spout:TwitterSpout[Status]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">spout</span><span class="result">: <span name="com.twitter.tormenta.spout.TwitterSpout" class="extype">TwitterSpout</span>[<span name="twitter4j.Status" class="extype">Status</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">&quot;spout&quot; is a concrete Storm source for Status data.</p><div class="fullcomment"><div class="comment cmt"><p>&quot;spout&quot; is a concrete Storm source for Status data. This will
+act as the initial producer of Status instances in the
+Summingbird word count job.
+</p></div></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StormRunner#storeSupplier" data-isabs="false">
+      <a id="storeSupplier:MergeableStoreSupplier[String, Long]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">storeSupplier</span><span class="result">: <a name="com.twitter.summingbird.storm.MergeableStoreSupplier" class="extype" href="../storm/MergeableStoreSupplier.html">MergeableStoreSupplier</a>[String, <span name="scala.Long" class="extype">Long</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">And then the supplier:
+</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StormRunner#stringLongStore" data-isabs="false">
+      <a id="stringLongStore:MergeableStore[(String, BatchID), Long]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringLongStore</span><span class="result">: <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(String, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), <span name="scala.Long" class="extype">Long</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">And here's our MergeableStore supplier.</p><div class="fullcomment"><div class="comment cmt"><p>And here's our MergeableStore supplier.</p><p>A supplier is required (vs a bare store) because Storm
+serializes every constructor parameter to its
+&quot;bolts&quot;. Serializing a live memcache store is a no-no, so the
+Storm platform accepts a &quot;supplier&quot;, essentially a function0
+that when called will pop out a new instance of the required
+store. This instance is cached when the bolt starts up and
+starts merging tuples.</p><p>A MergeableStore is a store that's aware of aggregation and
+knows how to merge in new (K, V) pairs using a Monoid[V]. The
+Monoid[Long] used by this particular store is being pulled in
+from the Monoid companion object in Algebird. (Most trivial
+Monoid instances will resolve this way.)</p><p>First, the backing store:
+</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -332,7 +384,7 @@ to handle appropriate exceptions here.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.Function1#toString" data-isabs="false">
+    </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -343,7 +395,7 @@ to handle appropriate exceptions here.</p>
         <span class="name">toString</span><span class="params">()</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Function1 → AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">
@@ -396,9 +448,7 @@ to handle appropriate exceptions here.</p>
         </div>
 
         <div id="inheritedMembers">
-        <div name="scala.Function1" class="parent">
-              <h3>Inherited from (Event) ⇒ <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</h3>
-            </div><div name="scala.AnyRef" class="parent">
+        <div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">
               <h3>Inherited from <span name="scala.Any" class="extype">Any</span></h3>

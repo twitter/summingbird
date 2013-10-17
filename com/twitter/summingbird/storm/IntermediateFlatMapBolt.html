@@ -34,7 +34,7 @@ Its output storm-tuple contains a single scala.Tuple2[Long, U] at
 the 0 position. The Long is the timestamp of the source object
 from which U was derived. Each U is one of the output items of the
 flatMapOp.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.1.2/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/IntermediateFlatMapBolt.scala">IntermediateFlatMapBolt.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/IntermediateFlatMapBolt.scala">IntermediateFlatMapBolt.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="BaseBolt.html">BaseBolt</a>, <span name="backtype.storm.topology.IRichBolt" class="extype">IRichBolt</span>, <span name="backtype.storm.topology.IComponent" class="extype">IComponent</span>, <span name="backtype.storm.task.IBolt" class="extype">IBolt</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -70,7 +70,7 @@ flatMapOp.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">IntermediateFlatMapBolt</span><span class="params">(<span name="flatMapOp">flatMapOp: com.twitter.summingbird.storm.FlatMapOperation[T, _]</span>, <span name="metrics">metrics: <a name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" class="extype" href="option/FlatMapStormMetrics.html">FlatMapStormMetrics</a></span>, <span name="anchor">anchor: <a name="com.twitter.summingbird.storm.option.AnchorTuples" class="extype" href="option/AnchorTuples.html">AnchorTuples</a></span>)</span>
+        <span class="name">IntermediateFlatMapBolt</span><span class="params">(<span name="flatMapOp">flatMapOp: com.twitter.summingbird.online.FlatMapOperation[T, _]</span>, <span name="metrics">metrics: <a name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" class="extype" href="option/FlatMapStormMetrics.html">FlatMapStormMetrics</a></span>, <span name="anchor">anchor: <a name="com.twitter.summingbird.storm.option.AnchorTuples" class="extype" href="option/AnchorTuples.html">AnchorTuples</a></span>, <span name="shouldEmit">shouldEmit: <span name="scala.Boolean" class="extype">Boolean</span></span>)</span>
       </span>
       </h4>
       
@@ -334,14 +334,14 @@ flatMapOp.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.IntermediateFlatMapBolt#lockedOp" data-isabs="false">
-      <a id="lockedOp:com.twitter.chill.MeatLocker[com.twitter.summingbird.storm.FlatMapOperation[T,_$1]] forSome { type _$1 }"></a>
+      <a id="lockedOp:com.twitter.chill.Externalizer[com.twitter.summingbird.online.FlatMapOperation[T,_$1]] forSome { type _$1 }"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">lockedOp</span><span class="result">: com.twitter.chill.MeatLocker[com.twitter.summingbird.storm.FlatMapOperation[T,_$1]] forSome { type _$1 }</span>
+        <span class="name">lockedOp</span><span class="result">: com.twitter.chill.Externalizer[com.twitter.summingbird.online.FlatMapOperation[T,_$1]] forSome { type _$1 }</span>
       </span>
       </h4>
       
@@ -442,14 +442,14 @@ flatMapOp.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.IntermediateFlatMapBolt#toValues" data-isabs="false">
-      <a id="toValues(Long,Any):Values"></a>
+      <a id="toValues(Timestamp,Any):Values"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toValues</span><span class="params">(<span name="time">time: <span name="scala.Long" class="extype">Long</span></span>, <span name="item">item: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="backtype.storm.tuple.Values" class="extype">Values</span></span>
+        <span class="name">toValues</span><span class="params">(<span name="time">time: <a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a></span>, <span name="item">item: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="backtype.storm.tuple.Values" class="extype">Values</span></span>
       </span>
       </h4>
       
