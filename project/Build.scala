@@ -16,7 +16,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.2.3",
+    version := "0.2.4",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -104,6 +104,7 @@ object SummingbirdBuild extends Build {
   ).aggregate(
     summingbirdCore,
     summingbirdBatch,
+    summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
     summingbirdScalding,

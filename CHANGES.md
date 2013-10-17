@@ -1,5 +1,8 @@
 # summingbird #
 
+## 0.2.4
+* Fix off-by-one bug in scalding batched store: https://github.com/twitter/summingbird/pull/311
+
 ## 0.2.3
 * Add convenience methods to Producer: https://github.com/twitter/summingbird/pull/307
 * Massively optimize Scalding merge/sumByKey: https://github.com/twitter/summingbird/pull/303

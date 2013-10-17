@@ -127,7 +127,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
         .mapValueStream { it =>
           // each BatchID appears at most once, so it fits in RAM
           val batched: Map[BatchID, (Timestamp, V)] = groupedSum(it).toMap
-          partials(batches.iterator.map { bid => (bid,  batched.get(bid)) })
+          partials((inBatch :: batches).iterator.map { bid => (bid,  batched.get(bid)) })
         }
         .toTypedPipe
 
