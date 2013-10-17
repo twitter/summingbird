@@ -104,6 +104,7 @@ object SummingbirdBuild extends Build {
   ).aggregate(
     summingbirdCore,
     summingbirdBatch,
+    summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
     summingbirdScalding,
