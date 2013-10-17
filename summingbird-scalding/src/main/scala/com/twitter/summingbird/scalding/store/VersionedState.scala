@@ -18,31 +18,30 @@ package com.twitter.summingbird.scalding.store
 
 import com.twitter.algebird.{
   Interval, Intersection, ExclusiveUpper, InclusiveUpper }
-import com.twitter.summingbird.batch.{ Batcher, BatchID }
-import com.twitter.summingbird.scalding.{ WaitingState, RunningState }
-
-import java.util.Date
+import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp }
+import com.twitter.summingbird.scalding.{ WaitingState, PrepareState, RunningState }
 
 /**
   * State representation used by the builder API for compatibility.
   */
 object VersionedState {
-  def apply(meta: HDFSMetadata, startDate: Option[Date], maxBatches: Int)
+  def apply(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
     (implicit batcher: Batcher): VersionedState =
     new VersionedState(meta, startDate, maxBatches)
 }
 
-class VersionedState(meta: HDFSMetadata, startDate: Option[Date], maxBatches: Int)
-  (implicit batcher: Batcher) extends WaitingState[Date] { outer =>
-  def begin: RunningState[Date] = new VersionedRunningState
+class VersionedState(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
+  (implicit batcher: Batcher) extends WaitingState[Interval[Timestamp]] { outer =>
 
-  private class VersionedRunningState extends RunningState[Date] {
+  def begin: PrepareState[Interval[Timestamp]] = new VersionedPrepareState
+
+  private class VersionedPrepareState extends PrepareState[Interval[Timestamp]] {
     /**
       * Returns a date interval spanning from the beginning of the the
       * batch stored in the most recent metadata file to the current
       * time.
       */
-    def part = {
+    lazy val requested = {
       val beginning: BatchID =
         startDate.map(batcher.batchOf(_))
           .orElse {
@@ -60,14 +59,30 @@ class VersionedState(meta: HDFSMetadata, startDate: Option[Date], maxBatches: In
       )
     }
 
+    def willAccept(available: Interval[Timestamp]) =
+      available match {
+        case intr@Intersection(_, _) => // is finite:
+          Right(new VersionedRunningState(intr))
+        case _ => Left(outer)
+      }
+    /**
+      * failure has no side effect, since any job writing to a
+      * VersionedStore should itself be cleaning up the most recent
+      * failed version's data.
+      */
+    def fail(err: Throwable) = throw err
+  }
+
+  private class VersionedRunningState(succeedPart: Intersection[Timestamp])
+    extends RunningState[Interval[Timestamp]] {
     /**
       * Commit the new maximum completed interval to the backing
       * HDFSMetadata instance.
       */
-    def succeed(succeedPart: Interval[Date]) = {
+    def succeed = {
       val nextTime = succeedPart match {
         case Intersection(_, ExclusiveUpper(up)) => up
-        case Intersection(_, InclusiveUpper(up)) => new Date(up.getTime + 1L)
+        case Intersection(_, InclusiveUpper(up)) => up.next
         case _ => sys.error("We should always be running for a finite interval")
       }
       val batchID = batcher.batchOf(nextTime)

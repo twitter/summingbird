@@ -121,6 +121,6 @@ object CalendarBatcher {
 final case class CalendarBatcher(unitCount: Int,
   calField: CalendarBatcher.CalField)(implicit tz: TimeZone) extends Batcher {
 
-  final def batchOf(t : Date) = BatchID(calField.unitsSinceEpoch(t)(tz)/unitCount)
+  final def batchOf(t : Timestamp) = BatchID(calField.unitsSinceEpoch(t.toDate)(tz)/unitCount)
   final def earliestTimeOf(batch: BatchID) = calField.toDate(batch.id.toInt * unitCount)(tz)
 }

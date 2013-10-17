@@ -23,14 +23,14 @@ import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapCon
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird.scalding.store.HDFSMetadata
 import com.twitter.summingbird.{ Env, Unzip2, Summer, Producer, TailProducer, AbstractJob }
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.builder.{ SourceBuilder, Reducers, CompletedBuilder }
 import com.twitter.summingbird.storm.Storm
 import com.twitter.summingbird.scalding.store.VersionedState
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
-import java.util.{ Date, HashMap => JHashMap, Map => JMap, TimeZone }
+import java.util.{ HashMap => JHashMap, Map => JMap, TimeZone }
 
 import ConfigBijection._
 
@@ -70,7 +70,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // initial batch to process. All runs after the first batch
   // (incremental updates) will use the batch of the previous run as
   // the starting batch, rendering this unnecessary.
-  def startDate: Option[Date] =
+  def startDate: Option[Timestamp] =
     args.optional("start-time")
       .map(RichDate(_)(tz, DateParser.default).value)
 
@@ -130,7 +130,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     val opts = SourceBuilder.adjust(
       scaldingBuilder.opts, scaldingBuilder.id)(_.set(Reducers(reducers)))
     // Support for the old setting based writing
-    val toRun: TailProducer[Scalding, (K, V)] =
+    val toRun: TailProducer[Scalding, (K, (Option[V], V))] =
       (for {
         opt <- opts.get(scaldingBuilder.id)
         stid <- opt.get[StoreIntermediateData[K,V]]

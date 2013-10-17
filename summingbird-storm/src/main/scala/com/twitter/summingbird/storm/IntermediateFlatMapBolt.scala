@@ -19,7 +19,9 @@ package com.twitter.summingbird.storm
 import backtype.storm.tuple.{Fields, Tuple, Values}
 import com.twitter.chill.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore.enrich
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.storm.option.{ AnchorTuples, FlatMapStormMetrics }
+import com.twitter.summingbird.online.FlatMapOperation
 
 import Constants._
 
@@ -38,12 +40,13 @@ class IntermediateFlatMapBolt[T](
 
   val lockedOp = Externalizer(flatMapOp)
 
-  def toValues(time: Long, item: Any): Values = new Values((time, item))
+  def toValues(time: Timestamp, item: Any): Values = new Values((time.milliSinceEpoch, item))
 
   override val fields = Some(new Fields("pair"))
 
   override def execute(tuple: Tuple) {
-    val (time, t) = tuple.getValue(0).asInstanceOf[(Long, T)]
+    val (timeMs, t) = tuple.getValue(0).asInstanceOf[(Long, T)]
+    val time = Timestamp(timeMs)
 
     lockedOp.get(t).foreach { items =>
       if(shouldEmit) {

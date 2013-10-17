@@ -26,10 +26,8 @@ import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, TupleSetter, 
 import com.twitter.scalding.typed.Grouped
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
 import cascading.flow.FlowDef
-
-import java.util.Date
 
 trait ScaldingStore[K, V] extends java.io.Serializable {
   /**
@@ -41,7 +39,7 @@ trait ScaldingStore[K, V] extends java.io.Serializable {
   def merge(delta: PipeFactory[(K, V)],
     sg: Semigroup[V],
     commutativity: Commutativity,
-    reducers: Int): PipeFactory[(K, V)]
+    reducers: Int): PipeFactory[(K, (Option[V], V))]
 }
 
 trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
@@ -74,115 +72,97 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   /** Record a computed batch of code */
   def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit
 
+  /** The writeLast method as a FlowProducer */
+  private def writeFlow(batches: List[BatchID], lastVals: TypedPipe[(BatchID, (K, V))]): FlowProducer[Unit] =
+    Reader[FlowInput, Unit] { case (flow, mode) =>
+      // make sure we checkpoint to disk to avoid double computation:
+      val checked = if(batches.size > 1) lastVals.forceToDisk else lastVals
+      batches.foreach { batchID =>
+        val thisBatch = checked.filter { case (b, _) => b == batchID }
+        writeLast(batchID, thisBatch.values)(flow, mode)
+      }
+    }
+
   /** we are guaranteed to have sufficient input and deltas to cover these batches
    * and that the batches are given in order
    */
-  private def mergeBatched(input: FlowProducer[TypedPipe[(K,V)]], batches: List[BatchID],
-    deltas: FlowToPipe[(K,V)], sg: Semigroup[V],
-    commutativity: Commutativity, reducers: Int): FlowToPipe[(K,V)] = {
+  private def mergeBatched(inBatch: BatchID,
+    input: FlowProducer[TypedPipe[(K,V)]],
+    batchIntr: Interval[BatchID],
+    deltas: FlowToPipe[(K,V)],
+    commutativity: Commutativity,
+    reducers: Int)(implicit sg: Semigroup[V]): FlowToPipe[(K,(Option[V], V))] = {
 
+    val batches = BatchID.toIterable(batchIntr).toList
     val finalBatch = batches.last // batches won't be empty.
     val filteredBatches = select(batches).sorted
-
     assert(filteredBatches.contains(finalBatch), "select must not remove the final batch.")
 
-    //Convert to a Grouped by "swapping" Time and K
-    def toGrouped(items: KeyValuePipe[K, V]): Grouped[K, (Long, V)] =
-      items.groupBy { case (_, (k, _)) => k }
-        .mapValues { case (t, (_, v)) => (t, v) }
-        .withReducers(reducers)
+    import IteratorSums._ // get the groupedSum, partials function
 
-    //Unswap the Time and K
-    def toKVPipe(tp: TypedPipe[(K, (Long, V))]): KeyValuePipe[K, V] =
-      tp.map { case (k, (t, v)) => (t, (k, v)) }
+    def prepareOld(old: TypedPipe[(K, V)]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
+      old.map { case (k, v) => (k, (inBatch, (Timestamp.Min, v))) }
 
-    // Return the items in this batch in ._1 and not in this or a
-    // previous batch in ._2
-    def split(b: BatchID, items: KeyValuePipe[K, V]): (KeyValuePipe[K, V], KeyValuePipe[K, V]) = {
-      // we need cascading to see that we are forking this pipe:
-      val forked = Scalding.forcePipe(items)
-      (forked.filter { tkv => batcher.batchOf(new Date(tkv._1)) <= b },
-        forked.filter { tkv => batcher.batchOf(new Date(tkv._1)) > b })
-    }
-
-    // put the smallest time on these to ensure they come first in a sort:
-    def withMinTime(p: TypedPipe[(K,V)]): KeyValuePipe[K, V] =
-      p.map { t => (Long.MinValue, t) }
-
-    Reader[FlowInput, KeyValuePipe[K, V]] { (flowMode: (FlowDef, Mode)) =>
-      implicit val flowDef = flowMode._1
-      implicit val mode = flowMode._2
-
-      @annotation.tailrec
-      def sumThem(head: BatchID,
-        rest: List[BatchID],
-        lastSummed: TypedPipe[(K, V)],
-        restDeltas: KeyValuePipe[K, V],
-        acc: List[KeyValuePipe[K, V]]): KeyValuePipe[K, V] = {
-        val (theseDeltas, nextDeltas) = split(head, restDeltas)
-
-        val grouped: Grouped[K, (Long, V)] = toGrouped(withMinTime(lastSummed) ++ theseDeltas)
-
-        val sorted = grouped.sortBy { _._1 } // sort by time
-        val maybeSorted = commutativity match {
-          case Commutative => grouped // order does not matter
-          case NonCommutative => sorted
-        }
-
-        /**
-          * If the supplied Semigroup[V] is an instance of
-          * BijectedSemigroup[U, V], Returns the backing Bijection[U, V]
-          * and Semigroup[U]; else None.
-          */
-        def unpackBijectedSemigroup[U]: Option[(Bijection[V, U], Semigroup[U])] =
-          sg match {
-            case innerSg: BijectedSemigroup[_, _] =>
-              Some(innerSg.asInstanceOf[BijectedSemigroup[U, V]].bijection -> innerSg.sg.asInstanceOf[Semigroup[U]])
-            case _ => None
-          }
-
-        def redFn[T: Semigroup]
-            : (((Long, T), (Long, T)) => (Long, T)) = { (left, right) =>
-          val (tl, vl) = left
-          val (tr, vr) = right
-          (tl max tr, Semigroup.plus(vl, vr))
-        }
-
-        // We strip the times
-        def sumNext[U] =
-          unpackBijectedSemigroup[U].map { case (bij, semi) =>
-            maybeSorted.mapValues { case (l, v) => (l, bij(v)) }
-              .reduce(redFn[U](semi))
-              .map { case (k, (l, v)) => (k, (l, (bij.invert(v)))) }
-          }.getOrElse {
-            maybeSorted.reduce(redFn(sg))
-          }
-        val nextSummed = toKVPipe(sumNext).values
-        // could be an empty method, in which case scalding will do nothing here
-        writeLast(head, nextSummed)
-
-        // Make the incremental stream
-        val stream = toKVPipe(sorted.scanLeft(None: Option[(Long, V)]) { (old, item) =>
-            old match {
-              case None => Some(item)
-              case Some(prev) => Some(redFn(sg)(prev, item))
-            }
-          }
-          .mapValueStream { _.flatten /* unbox the option */ }
-          .toTypedPipe
-        )
-        rest match {
-          // When there is no more, merge them all:
-          case Nil => (stream :: acc).reduce { _ ++ _ }
-          case nextHead :: nextTail =>
-            sumThem(nextHead, nextTail, nextSummed, nextDeltas, stream :: acc)
-        }
+    val capturedBatcher = batcher //avoid a closure on the whole store
+    def prepareDeltas(ins: TypedPipe[(Long, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] = {
+      val inits = ins.map { case (t, (k, v)) =>
+        val ts = Timestamp(t)
+        val batch = capturedBatcher.batchOf(ts)
+        ((k, batch), (ts, v))
       }
-      val latestSummed = input(flowMode)
-      val incoming = deltas(flowMode)
-      // This will throw if there is not one batch, but that should never happen and is a failure
-      sumThem(filteredBatches.head, filteredBatches.tail, latestSummed, incoming, Nil)
+      (commutativity match {
+        case Commutative => Scalding.mapsideReduce(inits)
+        case NonCommutative => inits
+        })
+        .map { case ((k, batch), (ts, v)) => (k, (batch, (ts, v))) }
     }
+
+    /** Produce a merged stream such that each BatchID, Key pair appears only one time.
+     */
+    def mergeAll(all: TypedPipe[(K, (BatchID, (Timestamp, V)))]):
+      TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))] =
+      all.group
+        .withReducers(reducers)
+        .sortBy { case (_, (t, _)) => t } //we are sorted on time, therefore BatchID
+        .mapValueStream { it =>
+          // each BatchID appears at most once, so it fits in RAM
+          val batched: Map[BatchID, (Timestamp, V)] = groupedSum(it).toMap
+          partials(batches.iterator.map { bid => (bid,  batched.get(bid)) })
+        }
+        .toTypedPipe
+
+    /**
+     * There is no flatten on Option, this adds it
+     */
+    def flatOpt[T](optopt: Option[Option[T]]): Option[T] = optopt.flatMap(identity)
+
+    // This builds the format we write to disk, which is the total sum
+    def toLastFormat(res: TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))]):
+      TypedPipe[(BatchID, (K, V))] =
+        res.flatMap { case (k, (batchid, (prev, v))) =>
+          val totalSum = Semigroup.plus[Option[(Timestamp, V)]](flatOpt(prev), v)
+          totalSum.map { case (_, sumv) => (batchid, (k, sumv)) }
+        }
+
+    // This builds the format we send to consumer nodes
+    def toOutputFormat(res: TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))]):
+      TypedPipe[(Long, (K, (Option[V], V)))] =
+        res.flatMap { case (k, (batchid, (optopt, opt))) =>
+          opt.map { case (ts, v) =>
+            val prev = flatOpt(optopt).map(_._2)
+            (ts.milliSinceEpoch, (k, (prev, v)))
+          }
+        }
+
+    // Now in the flow-producer monad; do it:
+    for {
+      pipeInput <- input
+      pipeDeltas <- deltas
+      // fork below so scalding can make sure not to do the operation twice
+      merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas)).fork
+      lastOut = toLastFormat(merged)
+      _ <- writeFlow(filteredBatches, lastOut)
+    } yield toOutputFormat(merged)
   }
 
   /** instances of this trait MAY NOT change the logic here. This always follows the rule
@@ -193,7 +173,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   final override def merge(delta: PipeFactory[(K, V)],
     sg: Semigroup[V],
     commutativity: Commutativity,
-    reducers: Int): PipeFactory[(K, V)] = StateWithError({ in: FactoryInput =>
+    reducers: Int): PipeFactory[(K, (Option[V], V))] = StateWithError({ in: FactoryInput =>
       val (timeSpan, mode) = in
       // This object combines some common scalding batching operations:
       val batchOps = new BatchedOperations(batcher)
@@ -220,10 +200,9 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
                     + " of deltas at: " + this.toString + " only: " + batchesWeCanBuild.toString))
                 }
                 else {
-                  val blist = BatchID.toIterable(batchesWeCanBuild).toList
-                  val merged = mergeBatched(input, blist, deltaFlow2Pipe, sg, commutativity, reducers)
-                  // it is a static (i.e. independent from input) bug if this get ever throws
-                  val available = batchOps.intersect(blist, timeSpan).get
+                  val merged = mergeBatched(actualLast, input, batchesWeCanBuild,
+                    deltaFlow2Pipe, commutativity, reducers)(sg)
+                  val available = batchOps.intersect(batchesWeCanBuild, timeSpan)
                   val filtered = Scalding.limitTimes(available, merged)
                   Right(((available, mode), filtered))
                 }

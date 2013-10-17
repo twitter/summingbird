@@ -16,10 +16,11 @@
 
 package com.twitter.summingbird
 
-package object util {
-  @deprecated("Use com.twitter.summingbird.storm.option.CacheSize", "0.1.0")
-  type CacheSize = online.option.CacheSize
+import com.twitter.storehaus.ReadableStore
 
-  @deprecated("Use com.twitter.summingbird.storm.option.CacheSize", "0.1.0")
-  val CacheSize = online.option.CacheSize
+/**
+  * Package containing the Summingbird Online platform.
+  */
+package object online {
+  type StoreFactory[K, V] = () => ReadableStore[K, V]
 }

@@ -19,8 +19,8 @@ package com.twitter.summingbird.scalding
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.bijection.{Injection, Bijection, Conversion}
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.scalding.Mode
-import java.util.{Date => JDate}
 
 import Conversion.asMethod
 
@@ -30,17 +30,17 @@ import Conversion.asMethod
 class BatchedOperations(batcher: Batcher) {
 
   implicit val timeToBatchInterval = Bijection.build { bint: Interval[Time] =>
-    bint.mapNonDecreasing { new JDate(_) } } { bint: Interval[JDate] =>
-    bint.mapNonDecreasing { _.getTime }
-  }
+    bint.mapNonDecreasing { Timestamp(_) } } { bint: Interval[Timestamp] =>
+    bint.mapNonDecreasing { _.milliSinceEpoch }
+  } 
 
   def coverIt[T](timeSpan: Interval[Time]): Iterable[BatchID] = {
-    val batchInterval = batcher.cover(timeSpan.as[Interval[JDate]])
+    val batchInterval = batcher.cover(timeSpan.as[Interval[Timestamp]])
     BatchID.toIterable(batchInterval)
   }
 
   def batchToTime(bint: Interval[BatchID]): Interval[Time] =
-     bint.mapNonDecreasing { batcher.earliestTimeOf(_).getTime }
+     bint.mapNonDecreasing { batcher.earliestTimeOf(_).milliSinceEpoch }
 
   def intersect(batches: Interval[BatchID], ts: Interval[Time]): Interval[Time] =
     batchToTime(batches) && ts
@@ -54,7 +54,7 @@ class BatchedOperations(batcher: Batcher) {
     in((inTimes, mode))
       .right
       .map { case ((availableInput, innerm), f2p) =>
-        val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput.as[Interval[JDate]])
+        val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput.as[Interval[Timestamp]])
         (batchesWeCanBuild, f2p)
       }
   }

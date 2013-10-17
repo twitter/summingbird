@@ -21,6 +21,8 @@ import backtype.storm.{Config, LocalCluster, StormSubmitter}
 import backtype.storm.generated.StormTopology
 import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
 import backtype.storm.tuple.Fields
+import backtype.storm.tuple.Tuple
+
 import com.twitter.algebird.Monoid
 import com.twitter.chill.ScalaKryoInstantiator
 import com.twitter.chill.config.{ ConfiguredInstantiator, JavaMapConfig }
@@ -32,9 +34,17 @@ import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.planner._
+import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
 import com.twitter.util.Future
 import scala.annotation.tailrec
+import backtype.storm.tuple.Values
+
+
+/*
+ * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
+ * This is needed/used everywhere we partially aggregate, summer's into stores, map side partial aggregation before summers, etc..
+ */
 
 sealed trait StormStore[-K, V] {
   def batcher: Batcher
@@ -43,7 +53,13 @@ sealed trait StormStore[-K, V] {
 object MergeableStoreSupplier {
   def from[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier(() => store, batcher)
+    
+   def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreSupplier[K, V] = {
+    implicit val batcher = Batcher.unit
+    from(store.convert{k: (K, BatchID) => k._1})
+  }
 }
+
 
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
@@ -161,7 +177,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
-  private def scheduleSinkBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSummerBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val monoid = summer.monoid
     val nodeName = stormDag.getNodeName(node)
@@ -170,7 +186,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       case MergeableStoreSupplier(contained, _) => contained
     }
 
-    val sinkBolt = new SinkBolt[K, V](
+    val sinkBolt = new SummerBolt[K, V](
       supplier,
       getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
       getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
@@ -225,7 +241,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
     stormDag.nodes.foreach { node =>
       node match {
-        case _: SummerNode[_] => scheduleSinkBolt(stormDag, node)
+        case _: SummerNode[_] => scheduleSummerBolt(stormDag, node)
         case _: FlatMapNode[_] => scheduleFlatMapper(stormDag, node)
         case _: SourceNode[_] => scheduleSpout(stormDag, node)
       }

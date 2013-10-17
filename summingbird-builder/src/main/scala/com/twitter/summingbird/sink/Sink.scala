@@ -21,7 +21,6 @@ import cascading.flow.FlowDef
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.scalding.{ Mode, TypedPipe }
 import com.twitter.summingbird.scalding.{ScaldingEnv, BatchedScaldingSink}
-import com.twitter.summingbird.storm.OnlineSink
 
 /**
  * Represents a location to which intermediate results of the
