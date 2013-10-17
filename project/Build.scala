@@ -141,7 +141,8 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdBatch = module("batch").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
-      "com.twitter" %% "bijection-core" % bijectionVersion
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "scalding-date" % scaldingVersion
     )
   )
 

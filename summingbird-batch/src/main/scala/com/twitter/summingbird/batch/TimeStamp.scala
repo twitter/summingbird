@@ -19,6 +19,7 @@ package com.twitter.summingbird.batch
 import com.twitter.algebird.Monoid
 import com.twitter.bijection.Bijection
 import java.util.Date
+import com.twitter.scalding.RichDate
 
 
 case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
@@ -47,5 +48,8 @@ object Timestamp {
 
   implicit val timestamp2Long: Bijection[Timestamp, Long] =
     Bijection.build[Timestamp, Long] { _.milliSinceEpoch } { Timestamp(_) }
+    
+  implicit val timestamp2RichDate: Bijection[Timestamp, RichDate] =
+    Bijection.build[Timestamp, RichDate] { t => RichDate(t.milliSinceEpoch) } { t => Timestamp(t.timestamp) }
 
 }
