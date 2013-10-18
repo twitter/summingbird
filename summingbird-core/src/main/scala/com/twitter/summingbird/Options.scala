@@ -25,7 +25,6 @@ package com.twitter.summingbird
 object Options {
   def apply(opts: Map[Class[_], Any] = Map.empty): Options = new Options(opts)
 }
-
 class Options(opts: Map[Class[_], Any]) {
   def set(opt: Any) = Options(opts + (opt.getClass -> opt))
 
