@@ -14,12 +14,14 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird
+package com.twitter.summingbird.storm
 
-package object util {
-  @deprecated("Use com.twitter.summingbird.option.CacheSize", "0.1.0")
-  type CacheSize = option.CacheSize
+import com.twitter.summingbird
 
-  @deprecated("Use com.twitter.summingbird.option.CacheSize", "0.1.0")
-  val CacheSize = option.CacheSize
+package object option {
+  @deprecated("Use com.twitter.summingbird.option.CacheSize", "0.2.5")
+  type CacheSize = summingbird.option.CacheSize
+
+  @deprecated("Use com.twitter.summingbird.option.CacheSize", "0.2.5")
+  val CacheSize = summingbird.option.CacheSize
 }

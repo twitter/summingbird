@@ -27,7 +27,7 @@ import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.option.{
   AnchorTuples, FlatMapStormMetrics
 }
-import com.twitter.summingbird.online.option.CacheSize
+import com.twitter.summingbird.option.CacheSize
 import com.twitter.storehaus.algebra.MergeableStore
 
 import MergeableStore.enrich
