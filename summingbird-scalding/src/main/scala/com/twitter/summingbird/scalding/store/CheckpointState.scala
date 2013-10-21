@@ -68,15 +68,14 @@ class CheckpointState (config: CheckpointConfig)
         // TODO log warning
         fixedBatcher.earliestTimeOf(startBatch + 1)  
       )
-	  fixedBatcher.batchOf(endTimestamp)
+      fixedBatcher.batchOf(endTimestamp)
     }
  
     /**
-     * return batches inclusive of startTime and endTime
      * If the batches are running or succeeded as per HDFS checkpoint, start from the next batch
      */
     def requested = {
-	  Interval.leftClosedRightOpen(
+      Interval.leftClosedRightOpen(
         fixedBatcher.earliestTimeOf(startBatch),
         fixedBatcher.earliestTimeOf(endBatch)
       )
