@@ -88,10 +88,11 @@ object ToplogyTests extends Specification {
       }
       override def merge(pair: ((Int, BatchID), Int)) = {
         val (k, v) = pair
-        val newV = Monoid.plus(Some(v), getOpt(k)).flatMap(Monoid.nonZeroOption(_))
+        val oldV = getOpt(k)
+        val newV = Monoid.plus(Some(v), oldV).flatMap(Monoid.nonZeroOption(_))
         wrappedStore.put(k, newV)
         globalState(id).placed.incrementAndGet
-        Future.Unit
+        Future.value(oldV)
       }
     }
 

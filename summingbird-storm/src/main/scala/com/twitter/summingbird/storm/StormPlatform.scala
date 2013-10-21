@@ -185,6 +185,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
+    val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
 
     val sinkBolt = new SummerBolt[K, V](
       supplier,
@@ -193,7 +194,9 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       getOrElse(stormDag, node, DEFAULT_SINK_CACHE),
       getOrElse(stormDag, node, DEFAULT_SINK_STORM_METRICS),
       getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(stormDag, node, IncludeSuccessHandler.default))
+      getOrElse(stormDag, node, IncludeSuccessHandler.default),
+      anchorTuples,
+      stormDag.dependenciesOf(node).size > 0)
 
     val declarer =
       topologyBuilder.setBolt(

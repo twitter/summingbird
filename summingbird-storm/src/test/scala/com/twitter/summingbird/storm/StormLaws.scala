@@ -146,10 +146,11 @@ object StormLaws extends Specification {
       }
       override def merge(pair: ((Int, BatchID), Int)) = {
         val (k, v) = pair
-        val newV = Monoid.plus(Some(v), getOpt(k)).flatMap(Monoid.nonZeroOption(_))
+        val oldV = getOpt(k)
+        val newV = Monoid.plus(Some(v), oldV).flatMap(Monoid.nonZeroOption(_))
         wrappedStore.put(k, newV)
         globalState(id).placed.incrementAndGet
-        Future.Unit
+        Future.value(oldV)
       }
     }
 
@@ -328,7 +329,7 @@ object StormLaws extends Specification {
   }
 
   "StormPlatform with multiple summers" in {
-    val original = sample[List[Int]]
+    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13 ,41, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13 ,41) // sample[List[Int]]
     val doubler = {(x): (Int) => List((x -> x*2))}
     val simpleOp = {(x): (Int) => List(x * 10)}
 
@@ -339,7 +340,6 @@ object StormLaws extends Specification {
     val tail = TestGraphs.multipleSummerJob[Storm, Int, Int, Int, Int, Int, Int](source, store1, store2)(simpleOp, doubler, doubler)
 
     val topo = storm.plan(tail)
-
     StormRunner.run(topo)
 
     val (scalaA, scalaB) = TestGraphs.multipleSummerJobInScala(original)(simpleOp, doubler, doubler)

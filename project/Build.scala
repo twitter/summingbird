@@ -116,7 +116,7 @@ object SummingbirdBuild extends Build {
   val bijectionVersion = "0.5.4"
   val algebirdVersion = "0.3.0"
   val scaldingVersion = "0.9.0rc1"
-  val storehausVersion = "0.6.0"
+  val storehausVersion = "0.7.0-SNAPSHOT-IOC"
   val utilVersion = "6.3.8"
   val chillVersion = "0.3.3"
   val tormentaVersion = "0.5.3"
