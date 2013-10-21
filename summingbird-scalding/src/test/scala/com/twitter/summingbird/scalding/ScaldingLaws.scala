@@ -20,6 +20,9 @@ import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
 import com.twitter.algebird.monad._
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch._
+import com.twitter.summingbird.scalding.store.{CheckpointConfig, CheckpointState}
+
+import java.util.TimeZone
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
 import com.twitter.scalding.typed.TypedSink
@@ -470,6 +473,23 @@ object ScaldingLaws extends Specification {
         println("input: " + inWithTime)
         println("SinkExtra: " + (sinkOut.map(_._2).toSet -- inWithTime.toSet))
         println("SinkMissing: " + (inWithTime.toSet -- sinkOut.map(_._2).toSet))
+      }
+    }
+    
+    "work with CheckpointState" in {
+      // TODO complete this
+      implicit val fixedBatcher : Batcher = new MillisecondBatcher(30*60*1000L)
+      val path:String = "/Users/amokashi/work/apache"
+      def tz = TimeZone.getTimeZone("UTC")
+      def startDate: Option[Timestamp] = Some("2012-12-26T09:45").map(RichDate(_)(tz, DateParser.default).value)
+      def endDate: Option[Timestamp] = Some("2012-12-26T15:30").map(RichDate(_)(tz, DateParser.default).value)
+      val config = CheckpointConfig(new Configuration, path, startDate, endDate)
+      val state = CheckpointState(config)
+      val preparedState = state.begin
+      val runningState = preparedState.willAccept(preparedState.requested)
+      runningState match {
+        case Right(t) => t.succeed
+        case Left(t) => sys.error("test case failed")
       }
     }
   }
