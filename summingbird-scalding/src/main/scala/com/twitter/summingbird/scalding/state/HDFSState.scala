@@ -62,18 +62,15 @@ object HDFSState {
   def apply(config: Config)(implicit batcher: Batcher): HDFSState =
     new HDFSState(config)
 
-  private def alignsLower(t: Timestamp, inter: Interval[Timestamp]) =
-    inter.contains(t) && !inter.contains(t.prev)
-
-  private def alignsExclusiveUpper(t: Timestamp, inter: Interval[Timestamp]) =
-    !inter.contains(t) && inter.contains(t.prev)
-
   /**
    * Returns true if each timestamp represents the first
    * millisecond of a batch.
-   */
-  def alignedToBatchBoundaries(low: Lower[Timestamp], high: Upper[Timestamp])(implicit b: Batcher): Boolean =
-    BatchID.isLowerBatchEdge(extractLower(low)) && BatchID.isLowerBatchEdge(extractUpper(high))
+    */
+  def alignedToBatchBoundaries(
+    low: Lower[Timestamp],
+    high: Upper[Timestamp])(implicit b: Batcher): Boolean =
+    BatchID.isLowerBatchEdge(extractLower(low)) &&
+    BatchID.isLowerBatchEdge(extractUpper(high))
 
   def extractLower(low: Lower[Timestamp]): Timestamp =
     low match {
