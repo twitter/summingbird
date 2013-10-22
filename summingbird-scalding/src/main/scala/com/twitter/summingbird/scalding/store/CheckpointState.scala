@@ -58,7 +58,7 @@ class CheckpointState (config: CheckpointConfig)
           Option(versionedStore.mostRecentVersion)
           .map(t => fixedBatcher.batchOf(Timestamp(t)).next)
         }
-        .getOrElse {sys.error("")}
+        .getOrElse {sys.error("You must provide startTime in config at least for the first run!")}
 	}
     
     private lazy val endBatch : BatchID = {

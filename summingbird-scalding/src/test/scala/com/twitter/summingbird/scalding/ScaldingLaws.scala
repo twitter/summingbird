@@ -31,7 +31,6 @@ import com.twitter.scalding.typed.TypedSink
 import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
-import org.specs.matcher.Matcher
 
 import org.apache.hadoop.conf.Configuration
 
@@ -506,7 +505,6 @@ object ScaldingLaws extends Specification {
     }
     
     "make sure CheckpointState creates partial checkpoint" in {
-      // TODO complete this
       implicit val fixedBatcher : Batcher = new MillisecondBatcher(30*60*1000L)
       implicit def tz = TimeZone.getTimeZone("UTC")
       implicit def parser = DateParser.default
