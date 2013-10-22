@@ -29,7 +29,7 @@ import org.scalacheck.Properties
 import org.specs._
 
 object HDFSStateLaws extends Specification {
-  def tempPath: String = "/tmp/" + UUID.randomUUID
+  def tempPath: String = File.createTempFile("hdfs", "path").getPath
 
   "make sure HDFSState creates checkpoint" in {
     implicit val batcher = Batcher.ofMinutes(30)

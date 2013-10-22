@@ -114,15 +114,9 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher) extends Wai
     private lazy val endBatch: ExclusiveUpper[BatchID] =
       ExclusiveUpper(startBatch.lower + config.numBatches)
 
-    /**
-     * If the batches are running or succeeded as per HDFS checkpoint,
-     * start from the next batch
-     */
-    private lazy val batchInterval = Intersection(startBatch, endBatch)
     override def requested =
-      batchInterval.mapNonDecreasing(batcher.earliestTimeOf(_))
-
-    lazy val batchIterable = BatchID.toIterable(batchInterval)
+      Intersection(startBatch, endBatch)
+        .mapNonDecreasing(batcher.earliestTimeOf(_))
 
     def fitsCurrentBatchStart(low: Lower[Timestamp]): Boolean =
       Equiv[Timestamp].equiv(extractLower(low), earliestTimestamp)
