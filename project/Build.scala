@@ -16,7 +16,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.2.2",
+    version := "0.2.4",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -56,6 +56,7 @@ object SummingbirdBuild extends Build {
           Opts.resolver.sonatypeSnapshots
         else
           Opts.resolver.sonatypeStaging
+          //"twttr" at "http://artifactory.local.twitter.com/libs-releases-local"
       )
     },
 
@@ -103,6 +104,7 @@ object SummingbirdBuild extends Build {
   ).aggregate(
     summingbirdCore,
     summingbirdBatch,
+    summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
     summingbirdAkka,
@@ -115,7 +117,7 @@ object SummingbirdBuild extends Build {
   val bijectionVersion = "0.5.4"
   val algebirdVersion = "0.3.0"
   val scaldingVersion = "0.9.0rc1"
-  val storehausVersion = "0.6.0"
+  val storehausVersion = "0.7.0-SNAPSHOT-IOC"
   val utilVersion = "6.3.8"
   val chillVersion = "0.3.3"
   val tormentaVersion = "0.5.3"

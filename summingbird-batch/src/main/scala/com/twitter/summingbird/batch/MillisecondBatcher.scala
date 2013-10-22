@@ -27,6 +27,7 @@ package com.twitter.summingbird.batch
  */
 
 class MillisecondBatcher(val durationMillis: Long) extends AbstractBatcher {
+  require(durationMillis > 0, "a batch must have a non-zero size")
   def batchOf(t : Timestamp) = {
     val timeInMillis = t.milliSinceEpoch
     val batch = BatchID(timeInMillis / durationMillis)

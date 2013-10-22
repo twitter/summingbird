@@ -53,7 +53,7 @@ sealed trait StormStore[-K, V] {
 object MergeableStoreSupplier {
   def from[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier(() => store, batcher)
-    
+
    def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreSupplier[K, V] = {
     implicit val batcher = Batcher.unit
     from(store.convert{k: (K, BatchID) => k._1})
@@ -79,7 +79,7 @@ object Storm {
   def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier.from(store)
 
-  implicit def toStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) = 
+  implicit def toStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) =
     SpoutSource(spout.map(t => (timeOf(t), t)))
 
   implicit def source[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) =
@@ -137,7 +137,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
-    
+
     val bolt = summerOpt match {
       case Some(s) =>
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
@@ -185,6 +185,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
+    val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
 
     val sinkBolt = new SummerBolt[K, V](
       supplier,
@@ -193,7 +194,9 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       getOrElse(stormDag, node, DEFAULT_SINK_CACHE),
       getOrElse(stormDag, node, DEFAULT_SINK_STORM_METRICS),
       getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(stormDag, node, IncludeSuccessHandler.default))
+      getOrElse(stormDag, node, IncludeSuccessHandler.default),
+      anchorTuples,
+      stormDag.dependenciesOf(node).size > 0)
 
     val declarer =
       topologyBuilder.setBolt(

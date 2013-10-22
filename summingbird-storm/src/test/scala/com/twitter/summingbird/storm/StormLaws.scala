@@ -17,6 +17,7 @@
 package com.twitter.summingbird.storm
 
 import backtype.storm.{ LocalCluster, Testing }
+import backtype.storm.generated.StormTopology
 import backtype.storm.testing.{ CompleteTopologyParam, MockedSources }
 import com.twitter.algebird.{MapAlgebra, Monoid}
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
@@ -42,6 +43,7 @@ import scala.collection.mutable.{
   SynchronizedBuffer,
   SynchronizedMap
 }
+import java.security.Permission
 /**
   * Tests for Summingbird's Storm planner.
   */
@@ -58,6 +60,55 @@ case class TestState[T, K, V](
 object TrueGlobalState {
   val data = new MutableHashMap[String, TestState[Int, Int, Int]]
         with SynchronizedMap[String, TestState[Int, Int, Int]]
+}
+
+  class MySecurityManager extends SecurityManager {
+	  override def checkExit(status: Int): Unit = {
+	    throw new SecurityException();
+	  }
+	  override def checkAccess(t: Thread) = {}
+	  override def checkPermission(p: Permission) = {}
+  }
+
+/*
+ * This is a wrapper to run a storm topology.
+ * We use the SecurityManager code to catch the System.exit storm calls when it
+ * fails. We wrap it into a normal exception instead so it can report better/retry.
+ */
+
+object StormRunner {
+  private val completeTopologyParam = {
+    val ret = new CompleteTopologyParam()
+    ret.setMockedSources(new MockedSources)
+    ret.setStormConf(Storm.local().baseConfig)
+    ret.setCleanupState(false)
+    ret
+  }
+
+  private def tryRun(topo: StormTopology): Unit = {
+    //Before running the external Command
+    val oldSecManager = System.getSecurityManager()
+    System.setSecurityManager(new MySecurityManager());
+    try {
+	    val cluster = new LocalCluster()
+	    Testing.completeTopology(cluster, topo, completeTopologyParam)
+	    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
+	    Thread.sleep(1000)
+	    cluster.shutdown
+    } finally {
+      System.setSecurityManager(oldSecManager)
+    }
+  }
+
+  def run(topo: StormTopology) {
+     try {
+      tryRun(topo)
+    } catch {
+      case _: Throwable =>
+        Thread.sleep(3000)
+        tryRun(topo)
+    }
+  }
 }
 
 object StormLaws extends Specification {
@@ -95,10 +146,11 @@ object StormLaws extends Specification {
       }
       override def merge(pair: ((Int, BatchID), Int)) = {
         val (k, v) = pair
-        val newV = Monoid.plus(Some(v), getOpt(k)).flatMap(Monoid.nonZeroOption(_))
+        val oldV = getOpt(k)
+        val newV = Monoid.plus(Some(v), oldV).flatMap(Monoid.nonZeroOption(_))
         wrappedStore.put(k, newV)
         globalState(id).placed.incrementAndGet
-        Future.Unit
+        Future.value(oldV)
       }
     }
 
@@ -110,14 +162,6 @@ object StormLaws extends Specification {
   val testFn = { i: Int => List((i -> i)) }
 
   val storm = Storm.local()
-
-  val completeTopologyParam = {
-    val ret = new CompleteTopologyParam()
-    ret.setMockedSources(new MockedSources)
-    ret.setStormConf(storm.baseConfig)
-    ret.setCleanupState(false)
-    ret
-  }
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
@@ -132,28 +176,25 @@ object StormLaws extends Specification {
       append(x)
       Future.Unit
     }
+
+
+
   /**
     * Perform a single run of TestGraphs.singleStepJob using the
     * supplied list of integers and the testFn defined above.
     */
-  def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, (Int, Int)])
+  def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, Any])
       : (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
-    
+
 	val (id, store) = genStore
-    val cluster = new LocalCluster()
-    
+
     val job = mkJob(
       Storm.source(TraversableSpout(original)),
       store
     )
-
     val topo = storm.plan(job)
 
-    Testing.completeTopology(cluster, topo, completeTopologyParam)
-    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
-    Thread.sleep(1000)
-    cluster.shutdown
-
+    StormRunner.run(topo)
     (testFn, globalState(id))
   }
 
@@ -192,10 +233,7 @@ object StormLaws extends Specification {
     )
 
     val topo = storm.plan(job)
-    Testing.completeTopology(cluster, topo, completeTopologyParam)
-    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
-    Thread.sleep(1000)
-    cluster.shutdown
+    StormRunner.run(topo)
     StormLaws.outputList.toList
   }
 
@@ -222,7 +260,7 @@ object StormLaws extends Specification {
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
   }
-   
+
    "StormPlatform matches Scala for flatmap keys jobs" in {
     val original = sample[List[Int]]
     val fnA = sample[Int => List[(Int, Int)]]
@@ -237,7 +275,7 @@ object StormLaws extends Specification {
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
   }
-  
+
   "StormPlatform matches Scala for left join jobs" in {
     val original = sample[List[Int]]
 
@@ -266,11 +304,7 @@ object StormLaws extends Specification {
         .sumByKey(store)
 
     val topo = storm.plan(producer)
-
-    Testing.completeTopology(cluster, topo, completeTopologyParam)
-    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
-    Thread.sleep(1000)
-    cluster.shutdown
+    StormRunner.run(topo)
 
     Equiv[Map[Int, Int]].equiv(
         MapAlgebra.sumByKey(original.filter(_ % 2 == 0).map(_ -> 10)),
@@ -288,14 +322,14 @@ object StormLaws extends Specification {
       runWithOutSummer(original)(
         TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler)
       ).sorted
-    val memoryOutputList = 
+    val memoryOutputList =
       memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
-    
+
     stormOutputList must_==(memoryOutputList)
   }
 
   "StormPlatform with multiple summers" in {
-    val original = sample[List[Int]]
+    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13 ,41, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13 ,41) // sample[List[Int]]
     val doubler = {(x): (Int) => List((x -> x*2))}
     val simpleOp = {(x): (Int) => List(x * 10)}
 
@@ -306,12 +340,7 @@ object StormLaws extends Specification {
     val tail = TestGraphs.multipleSummerJob[Storm, Int, Int, Int, Int, Int, Int](source, store1, store2)(simpleOp, doubler, doubler)
 
     val topo = storm.plan(tail)
-  
-    val cluster = new LocalCluster()
-    Testing.completeTopology(cluster, topo, completeTopologyParam)
-    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
-    Thread.sleep(1000)
-    cluster.shutdown
+    StormRunner.run(topo)
 
     val (scalaA, scalaB) = TestGraphs.multipleSummerJobInScala(original)(simpleOp, doubler, doubler)
 
@@ -360,12 +389,8 @@ object StormLaws extends Specification {
     val topo = storm.plan(tail)
     OnlinePlan(tail).nodes.size must beLessThan(10)
 
-    StormPlanTopology.dumpGraph(OnlinePlan(tail))
-    val cluster = new LocalCluster()
-    Testing.completeTopology(cluster, topo, completeTopologyParam)
-    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
-    Thread.sleep(1000)
-    cluster.shutdown
+    StormRunner.run(topo)
+
 
     val scalaA = TestGraphs.realJoinTestJobInScala(original1, original2, original3, original4,
                 serviceFn, fn1, fn2, fn3, preJoinFn, postJoinFn)
@@ -376,8 +401,6 @@ object StormLaws extends Specification {
       store1Map
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
-
-
 
   }
 

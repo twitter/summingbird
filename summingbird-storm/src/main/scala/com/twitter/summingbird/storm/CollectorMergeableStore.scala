@@ -59,6 +59,6 @@ class CollectorMergeableStore[K, V](
     if (anchorTuples.anchor)
       collector.emit(tuple, values)
     else collector.emit(values)
-    Future.Unit
+    Future.value(Some(v))
   }
 }

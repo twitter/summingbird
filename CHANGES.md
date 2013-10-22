@@ -1,5 +1,19 @@
 # summingbird #
 
+## 0.2.4
+* Fix off-by-one bug in scalding batched store: https://github.com/twitter/summingbird/pull/311
+
+## 0.2.3
+* Add convenience methods to Producer: https://github.com/twitter/summingbird/pull/307
+* Massively optimize Scalding merge/sumByKey: https://github.com/twitter/summingbird/pull/303
+* Improve the WaitingState state machine: https://github.com/twitter/summingbird/pull/302
+* Move code for common realtime planners (storm + akka): https://github.com/twitter/summingbird/pull/299
+* Fix an issue with source minify in scalding: https://github.com/twitter/summingbird/pull/298
+* Improve scalding tests: https://github.com/twitter/summingbird/pull/296
+* Improve storm tests: https://github.com/twitter/summingbird/pull/292
+* Use an AnyVal-like class rather than java.util.Date: https://github.com/twitter/summingbird/pull/295
+* improve Batcher documentation: https://github.com/twitter/summingbird/pull/293
+
 ## 0.2.2
 * Use pipes instead of parentheses when naming online physical nodes: https://github.com/twitter/summingbird/pull/273
 * Add Alsos in Producer2, OptProd2: https://github.com/twitter/summingbird/pull/275

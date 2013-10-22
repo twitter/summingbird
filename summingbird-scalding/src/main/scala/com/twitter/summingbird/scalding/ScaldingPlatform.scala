@@ -21,7 +21,7 @@ import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, Inclusive
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
-import com.twitter.scalding.{ Tool => STool, Source => SSource, _ }
+import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _}
 import com.twitter.summingbird._
 import com.twitter.summingbird.scalding.option.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
@@ -77,7 +77,8 @@ object Scalding {
     Either[List[FailureReason], DateRange] = {
       try {
         val available = (mode, factory(desired)) match {
-          case (hdfs: Hdfs, ts: TimePathedSource) => minify(hdfs, ts)
+          case (hdfs: Hdfs, ts: STPS) =>
+            TimePathedSource.satisfiableHdfs(hdfs, desired, factory.asInstanceOf[DateRange => STPS])
           case _ => bisectingMinify(mode, desired)(factory)
         }
         available.flatMap { intersect(desired, _) }
@@ -112,36 +113,6 @@ object Scalding {
       // No good data
       None
     }
-  }
-
-  // TODO move this to scalding:
-  // https://github.com/twitter/scalding/issues/529
-  private def minify(mode: Hdfs, ts: TimePathedSource): Option[DateRange] = {
-    import ts.{pattern, dateRange, tz}
-
-    def combine(prev: DateRange, next: DateRange) = DateRange(prev.start, next.end)
-
-    def pathIsGood(p : String): Boolean = {
-      val path = new Path(p)
-      Option(path.getFileSystem(mode.conf).globStatus(path))
-        .map(_.length > 0)
-        .getOrElse(false)
-    }
-
-    List("%1$tH" -> Hours(1), "%1$td" -> Days(1)(tz),
-      "%1$tm" -> Months(1)(tz), "%1$tY" -> Years(1)(tz))
-      .find { unitDur : (String, Duration) => pattern.contains(unitDur._1) }
-      .map { unitDur =>
-        dateRange.each(unitDur._2)
-          .map { dr : DateRange =>
-            val path = String.format(pattern, dr.start.toCalendar(tz))
-            (dr, path)
-          }
-      }
-      .getOrElse(List((dateRange, pattern))) // This must not have any time after all
-      .takeWhile { case (_, path) => pathIsGood(path) }
-      .map(_._1)
-      .reduceOption { combine(_, _) }
   }
 
   /** This uses minify to find the smallest subset we can run.
@@ -200,17 +171,6 @@ object Scalding {
         .map { Right(_) }
         .getOrElse(Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString)))
 
-  /** The typed API (currently, as of 0.9.0) hides all flatMaps
-   * from cascading, so if you fork a pipe, the whole input
-   * is recomputed. This function forces a cascading node
-   * so that cascading can see that any forks of the output
-   * share a common prefix of operations
-   */
-  def forcePipe[U](pipe: TimedPipe[U]): TimedPipe[U] = {
-    import com.twitter.scalding.Dsl._
-    TypedPipe.from[(Long,U)](pipe.toPipe((0,1)), (0,1))
-  }
-
   def limitTimes[T](range: Interval[Time], in: FlowToPipe[T]): FlowToPipe[T] =
     in.map { pipe => pipe.filter { case (time, _) => range(time) } }
 
@@ -223,6 +183,17 @@ object Scalding {
    */
   def also[L,R](ensure: FlowToPipe[L], result: FlowToPipe[R]): FlowToPipe[R] =
     for { _ <- ensure; r <- result } yield r
+
+  // This could be moved to scalding, but the API needs more design work
+  // This DOES NOT trigger a grouping
+  def mapsideReduce[K,V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] = {
+    import Dsl._
+    val fields = ('key, 'value)
+    val gpipe = pipe.toPipe(fields)(TupleSetter.tup2Setter[(K,V)])
+    val msr = new MapsideReduce(sg, fields._1, fields._2, None)(
+      TupleConverter.singleConverter[V], TupleSetter.singleSetter[V])
+    TypedPipe.from(gpipe.eachTo(fields -> fields) { _ => msr }, fields)(TupleConverter.of[(K, V)])
+  }
 
   /** Memoize the inner reader
    *  This is not a performance optimization, but a correctness one applicable
@@ -270,7 +241,7 @@ object Scalding {
     def forceNode[U](p: PipeFactory[U]): PipeFactory[U] =
       if(fanOuts(producer))
         p.map { flowP =>
-          flowP.map { Scalding.forcePipe(_) }
+          flowP.map { _.fork }
         }
       else
         p
@@ -507,31 +478,40 @@ class Scalding(
     }
   }
 
-  def run(state: WaitingState[Timestamp], mode: Mode, pf: TailProducer[Scalding, _]): WaitingState[Timestamp] =
+  def run(state: WaitingState[Interval[Timestamp]],
+    mode: Mode,
+    pf: TailProducer[Scalding, Any]): WaitingState[Interval[Timestamp]] =
     run(state, mode, plan(pf))
 
-  def run(state: WaitingState[Timestamp], mode: Mode, pf: PipeFactory[_]): WaitingState[Timestamp] = {
+  def run(state: WaitingState[Interval[Timestamp]],
+    mode: Mode,
+    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = {
+
     setIoSerializations(mode)
-    val runningState = state.begin
-    val timeSpan = runningState.part.mapNonDecreasing(_.milliSinceEpoch)
+    val prepareState = state.begin
+    val timeSpan = prepareState.requested.mapNonDecreasing(_.milliSinceEpoch)
     toFlow(timeSpan, mode, pf) match {
       case Left(errs) =>
-        runningState.fail(FlowPlanException(errs))
+        prepareState.fail(FlowPlanException(errs))
       case Right((ts,flow)) =>
-        try {
-          options.get(jobName).foreach { jopt =>
-            jopt.get[WriteDot].foreach { o => flow.writeDOT(o.filename) }
-            jopt.get[WriteStepsDot].foreach { o => flow.writeStepsDOT(o.filename) }
-          }
-          flow.complete
-          if (flow.getFlowStats.isSuccessful)
-            runningState.succeed(ts.mapNonDecreasing(Timestamp(_)))
-          else
-            runningState.fail(new Exception("Flow did not complete."))
-        } catch {
-          case (e: Throwable) => {
-            runningState.fail(e)
-          }
+        prepareState.willAccept(ts.mapNonDecreasing(Timestamp(_))) match {
+          case Right(runningState) =>
+            try {
+              options.get(jobName).foreach { jopt =>
+                jopt.get[WriteDot].foreach { o => flow.writeDOT(o.filename) }
+                jopt.get[WriteStepsDot].foreach { o => flow.writeStepsDOT(o.filename) }
+              }
+              flow.complete
+              if (flow.getFlowStats.isSuccessful)
+                runningState.succeed
+              else
+                runningState.fail(new Exception("Flow did not complete."))
+            } catch {
+              case (e: Throwable) => {
+                runningState.fail(e)
+              }
+            }
+          case Left(waitingState) => waitingState
         }
     }
   }
