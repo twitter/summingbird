@@ -97,7 +97,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private def getOrElse[T: Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
     val producer = node.members.last
-    val namedNodes = dag.transitiveDependantsOf(producer).collect{case NamedProducer(_, n) => n}
+    val namedNodes = dag.producerToPriorityNames(producer)
     (for {
       id <- namedNodes
       stormOpts <- options.get(id)
