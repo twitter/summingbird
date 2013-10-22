@@ -17,7 +17,7 @@
 package com.twitter.summingbird.storm
 
 import backtype.storm.tuple.{Fields, Tuple, Values}
-import com.twitter.chill.Externalizer
+import com.twitter.summingbird.online.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.storm.option.{ AnchorTuples, FlatMapStormMetrics }
