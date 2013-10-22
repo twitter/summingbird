@@ -16,33 +16,27 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
-import com.twitter.algebird.monad._
+import com.twitter.algebird.Interval
+import com.twitter.scalding.{DateParser, RichDate}
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.scalding.state.HDFSState
-
-import java.util.TimeZone
 import java.io.File
-
-import com.twitter.scalding.{ DateParser, RichDate }
-import com.twitter.scalding.typed.TypedSink
-
-import org.scalacheck._
+import java.util.{ TimeZone, UUID }
+import org.apache.hadoop.conf.Configuration
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
-
-import org.apache.hadoop.conf.Configuration
-
 import org.specs._
 
 object HDFSStateLaws extends Specification {
+  def tempPath: String = "/tmp/" + UUID.randomUUID
+
   "make sure HDFSState creates checkpoint" in {
     implicit val batcher = Batcher.ofMinutes(30)
     implicit def tz = TimeZone.getTimeZone("UTC")
     implicit def parser = DateParser.default
 
-    val path:String = "target/cpstate1"
+    val path: String = tempPath
     val startDate: Option[Timestamp] = Some("2012-12-26T09:45").map(RichDate(_).value)
     val numBatches: Long = 10
     val state = HDFSState(path, startTime = startDate, numBatches = numBatches)
@@ -55,39 +49,38 @@ object HDFSStateLaws extends Specification {
 
     BatchID.range(
       batcher.batchOf(startDate.get),
-      batcher.batchOf(startDate.get) + numBatches - 1
-    ).foreach { t =>
-      (path + "/"+
-        batcher.earliestTimeOf(t)
-        .milliSinceEpoch + ".version") must beAnExistingPath
-    }
+      batcher.batchOf(startDate.get) + numBatches - 1).foreach { t =>
+        (path + "/" +
+          batcher.earliestTimeOf(t)
+          .milliSinceEpoch + ".version") must beAnExistingPath
+      }
 
     //cleanup
     BatchID.range(
       batcher.batchOf(startDate.get),
       batcher.batchOf(startDate.get) + numBatches - 1)
       .foreach { t =>
-      new File(path + "/"+ batcher.earliestTimeOf(t)
-        .milliSinceEpoch + ".version").delete
-    }
+        new File(path + "/" + batcher.earliestTimeOf(t)
+          .milliSinceEpoch + ".version").delete
+      }
   }
 
   "make sure HDFSState creates partial checkpoint" in {
-    implicit val batcher : Batcher = new MillisecondBatcher(30*60*1000L)
+    implicit val batcher: Batcher = new MillisecondBatcher(30 * 60 * 1000L)
     implicit def tz = TimeZone.getTimeZone("UTC")
     implicit def parser = DateParser.default
 
-    val path:String = "target/cpstate2"
+    val path: String = tempPath
     val startDate: Option[Timestamp] = Some("2012-12-26T09:45").map(RichDate(_).value)
     val numBatches: Long = 10
-    val config = HDFSState.Config(new Configuration, path, startDate, numBatches)
+    val config = HDFSState.Config(path, new Configuration, startDate, numBatches)
 
     // Not aligned with batch size
-    val partialIncompleteInterval:Interval[Timestamp] = Interval.leftClosedRightOpen(
+    val partialIncompleteInterval: Interval[Timestamp] = Interval.leftClosedRightOpen(
       batcher.earliestTimeOf(batcher.batchOf(startDate.get)),
       RichDate("2012-12-26T10:40").value)
 
-    val partialCompleteInterval:Interval[Timestamp] = Interval.leftClosedRightOpen(
+    val partialCompleteInterval: Interval[Timestamp] = Interval.leftClosedRightOpen(
       batcher.earliestTimeOf(batcher.batchOf(startDate.get)),
       RichDate("2012-12-26T11:30").value)
 
@@ -104,7 +97,7 @@ object HDFSStateLaws extends Specification {
     }
 
     BatchID.range(batcher.batchOf(startDate.get), batcher.batchOf(RichDate("2012-12-26T11:30").value) - 1)
-      .foreach(t => (path + "/"+ batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
+      .foreach(t => (path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
 
     // start from where you left
     val preparedState2 = waitingState2.begin
@@ -114,10 +107,10 @@ object HDFSStateLaws extends Specification {
     }
 
     BatchID.range(batcher.batchOf(startDate.get), batcher.batchOf(startDate.get) + numBatches - 1)
-      .foreach(t => (path + "/"+ batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
+      .foreach(t => (path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
 
     //cleanup
     BatchID.range(batcher.batchOf(startDate.get), batcher.batchOf(startDate.get) + numBatches - 1)
-      .foreach(t => new File(path + "/"+ batcher.earliestTimeOf(t).milliSinceEpoch + ".version").delete)
+      .foreach(t => new File(path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version").delete)
   }
 }

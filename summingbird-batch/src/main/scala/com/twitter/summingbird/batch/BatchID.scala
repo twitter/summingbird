@@ -51,6 +51,16 @@ object BatchID {
       def iterator = iterate(start)(_.next).takeWhile(_ <= end)
     }
 
+  /**
+    * Returns true if the supplied timestamp sits at the floor of the
+    * supplied batch.
+    */
+  def isLowerBatchEdge(ts: Timestamp)(implicit batcher: Batcher, eq: Equiv[BatchID]): Boolean =
+    !eq.equiv(batcher.batchOf(ts), batcher.batchOf(ts.prev))
+
+  /**
+    * Returns true if the supplied interval of BatchID can
+    */
   def toInterval(iter: TraversableOnce[BatchID]): Option[Interval[BatchID]] =
     iter
       .map { b => (b, b, 1L) }
