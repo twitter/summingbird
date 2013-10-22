@@ -70,7 +70,7 @@ object AkkaLaws extends Specification {
   def runJob(p: TailProducer[Akka, _]) = {
     val cluster = Akka.local()
     cluster.run(p, "Test Job")
-    Thread.sleep(2000)
+    Thread.sleep(1500)
     cluster.shutdown
     cluster.awaitTermination
   }
@@ -96,10 +96,11 @@ object AkkaLaws extends Specification {
       }
       override def merge(pair: ((Int, BatchID), Int)) = {
         val (k, v) = pair
-        val newV = Monoid.plus(Some(v), getOpt(k)).flatMap(Monoid.nonZeroOption(_))
+        val oldV = getOpt(k)
+        val newV = Monoid.plus(Some(v), oldV).flatMap(Monoid.nonZeroOption(_))
         wrappedStore.put(k, newV)
         globalState(id).placed.incrementAndGet
-        Future.Unit
+        Future.value(oldV)
       }
     }
 
@@ -116,14 +117,13 @@ object AkkaLaws extends Specification {
    * Perform a single run of TestGraphs.singleStepJob using the
    * supplied list of integers and the testFn defined above.
    */
-  def runOnce(original: List[Int])(mkJob: (Producer[Akka, Int], Akka#Store[Int, Int]) => TailProducer[Akka, (Int, Int)]): (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
+  def runOnce(original: List[Int])(mkJob: (Producer[Akka, Int], Akka#Store[Int, Int]) => TailProducer[Akka, (Int, (Option[Int],Int))]): (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
     val id = UUID.randomUUID.toString
     globalState += (id -> TestState())
 
     val job = mkJob(
       Akka.source(AkkaSource.fromTraversable(original)),
       MergeableStoreSupplier(() => testingStore(id), Batcher.unit))
-
     runJob(job)
     (testFn, globalState(id))
   }
@@ -133,6 +133,7 @@ object AkkaLaws extends Specification {
     val (fn, returnedState) =
       runOnce(original)(
         TestGraphs.singleStepJob[Akka, Int, Int, Int](_, _)(testFn))
+        
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.singleStepInScala(original)(fn),
       returnedState.store.asScala.toMap
