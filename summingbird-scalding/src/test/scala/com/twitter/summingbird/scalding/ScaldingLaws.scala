@@ -20,6 +20,10 @@ import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
 import com.twitter.algebird.monad._
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch._
+import com.twitter.summingbird.scalding.store.{CheckpointConfig, CheckpointState}
+
+import java.util.TimeZone
+import java.io.File
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
 import com.twitter.scalding.typed.TypedSink
@@ -471,6 +475,82 @@ object ScaldingLaws extends Specification {
         println("SinkExtra: " + (sinkOut.map(_._2).toSet -- inWithTime.toSet))
         println("SinkMissing: " + (inWithTime.toSet -- sinkOut.map(_._2).toSet))
       }
+    }
+    
+    "make sure CheckpointState creates checkpoint" in {
+      // TODO complete this
+      implicit val fixedBatcher : Batcher = new MillisecondBatcher(30*60*1000L)
+      implicit def tz = TimeZone.getTimeZone("UTC")
+      implicit def parser = DateParser.default
+      
+      val path:String = "target/cpstate1"
+      val startDate: Option[Timestamp] = Some("2012-12-26T09:45").map(RichDate(_).value)
+      val numBatches: Option[Long] = Some(10)
+      val config = CheckpointConfig(new Configuration, path, startDate, numBatches)
+      
+      val state = CheckpointState(config)
+      val preparedState = state.begin
+      val runningState = preparedState.willAccept(preparedState.requested)
+      runningState match {
+        case Right(t) => t.succeed
+        case Left(t) => sys.error("test case failed")
+      }
+      
+      BatchID.range(fixedBatcher.batchOf(startDate.get), fixedBatcher.batchOf(startDate.get) + numBatches.get - 1)
+      .foreach(t => (path + "/"+ fixedBatcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
+      
+      //cleanup
+      BatchID.range(fixedBatcher.batchOf(startDate.get), fixedBatcher.batchOf(startDate.get) + numBatches.get - 1)
+      .foreach(t => new File(path + "/"+ fixedBatcher.earliestTimeOf(t).milliSinceEpoch + ".version").delete)
+    }
+    
+    "make sure CheckpointState creates partial checkpoint" in {
+      implicit val fixedBatcher : Batcher = new MillisecondBatcher(30*60*1000L)
+      implicit def tz = TimeZone.getTimeZone("UTC")
+      implicit def parser = DateParser.default
+      
+      val path:String = "target/cpstate2"
+      val startDate: Option[Timestamp] = Some("2012-12-26T09:45").map(RichDate(_).value)
+      val numBatches: Option[Long] = Some(10)
+      val config = CheckpointConfig(new Configuration, path, startDate, numBatches)
+      
+      // Not aligned with batch size
+      val partialIncompleteInterval:Interval[Timestamp] = Interval.leftClosedRightOpen(
+          fixedBatcher.earliestTimeOf(fixedBatcher.batchOf(startDate.get)), 
+          RichDate("2012-12-26T10:40").value)
+          
+      val partialCompleteInterval:Interval[Timestamp] = Interval.leftClosedRightOpen(
+          fixedBatcher.earliestTimeOf(fixedBatcher.batchOf(startDate.get)),
+          RichDate("2012-12-26T11:30").value)
+      
+      val runningState = CheckpointState(config).begin.willAccept(partialIncompleteInterval)
+      val waitingState = runningState match {
+        case Right(t) => sys.error("test case failed")
+        case Left(t) => t
+      }
+      
+      // reuse the waitingstate
+      val waitingState2 = waitingState.begin.willAccept(partialCompleteInterval) match {
+        case Right(t) => t.succeed
+        case Left(t) => sys.error("test case failed")
+      }
+      
+      BatchID.range(fixedBatcher.batchOf(startDate.get), fixedBatcher.batchOf(RichDate("2012-12-26T11:30").value) - 1)
+      .foreach(t => (path + "/"+ fixedBatcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
+      
+      // start from where you left
+      val preparedState2 = waitingState2.begin
+      preparedState2.willAccept(preparedState2.requested) match {
+        case Right(t) => t.succeed
+        case Left(t) => sys.error("test case failed")
+      }
+      
+      BatchID.range(fixedBatcher.batchOf(startDate.get), fixedBatcher.batchOf(startDate.get) + numBatches.get - 1)
+      .foreach(t => (path + "/"+ fixedBatcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
+      
+      //cleanup
+      BatchID.range(fixedBatcher.batchOf(startDate.get), fixedBatcher.batchOf(startDate.get) + numBatches.get - 1)
+      .foreach(t => new File(path + "/"+ fixedBatcher.earliestTimeOf(t).milliSinceEpoch + ".version").delete)
     }
   }
 }
