@@ -172,7 +172,8 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher) extends Wai
      * be running at a time.)
      */
     def fail(err: Throwable) = {
-      // mark the state as failed
+      // mark the state as failed. This is defensive, as no one should
+      // have created ANYTHING inside of these folders.
       runningBatches.foreach { b => versionedStore.deleteVersion(version(b)) }
       setStopped
       throw err
