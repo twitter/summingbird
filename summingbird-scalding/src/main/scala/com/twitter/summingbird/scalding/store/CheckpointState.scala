@@ -27,7 +27,7 @@ case class CheckpointConfig(
     conf: Configuration, 
     rootPath: String, 
     startTime: Option[Timestamp], 
-    endTime: Option[Timestamp]) {
+    numBatches: Option[Long]) {
 }
 
 /**
@@ -41,7 +41,7 @@ object CheckpointState {
 }
 
 class CheckpointState (config: CheckpointConfig) 
-   (implicit fixedBatcher: Batcher) extends WaitingState[Interval[Timestamp]] { outer =>
+   (implicit fixedBatcher: Batcher) extends WaitingState[Interval[Timestamp]] {
   
   def begin: PrepareState[Interval[Timestamp]] = new CheckpointPrepareState
   
@@ -52,23 +52,17 @@ class CheckpointState (config: CheckpointConfig)
 
   private class CheckpointPrepareState extends PrepareState[Interval[Timestamp]] {
     
-    private def startBatch : BatchID = config.startTime match {
-	    case Some(t) => {
-	      if(versionedStore.mostRecentVersion != null) {
-	    	List[BatchID](fixedBatcher.batchOf(t), fixedBatcher.batchOf(Timestamp(versionedStore.mostRecentVersion)) + 1).max
-	      } else {
-	        fixedBatcher.batchOf(t)
-	      }
-	    }
-	    case None => fixedBatcher.batchOf(Timestamp(versionedStore.mostRecentVersion)) + 1
-	  }
+    private lazy val startBatch : BatchID = {
+      config.startTime.map(fixedBatcher.batchOf(_))
+        .orElse { 
+          Option(versionedStore.mostRecentVersion)
+          .map(t => fixedBatcher.batchOf(Timestamp(t)).next)
+        }
+        .getOrElse {sys.error("")}
+	}
     
-    private def endBatch : BatchID = {
-      val endTimestamp : Timestamp = config.endTime.getOrElse(
-        // TODO log warning
-        fixedBatcher.earliestTimeOf(startBatch + 1)  
-      )
-      fixedBatcher.batchOf(endTimestamp)
+    private lazy val endBatch : BatchID = {
+      startBatch + config.numBatches.getOrElse {println("Number of batches not specified, defaulting to 1"); 1L}
     }
  
     /**
@@ -105,15 +99,15 @@ class CheckpointState (config: CheckpointConfig)
                 // checkpoint batches until b (exclusive)
                 BatchID.range(startBatch, b.prev)
                   .foreach(t => versionedStore.succeedVersion(fixedBatcher.earliestTimeOf(t).as[Long]));
-              }  
-              case None => Left(outer)
+                Right(new CheckpointRunningState(intr))
+              }
+              case None => Left(CheckpointState(config))
             }
-            Right(new CheckpointRunningState(intr))
           } else {
-            Left(outer)
+            Left(CheckpointState(config))
           }
         }
-        case _ => Left(outer) 
+        case _ => Left(CheckpointState(config))
       }
     }
   
@@ -128,7 +122,7 @@ class CheckpointState (config: CheckpointConfig)
         case Intersection(_, ExclusiveUpper(up)) => up
         case _ => sys.error("We should always be running for a finite interval")
       }
-      outer
+      CheckpointState(config)
     }
 
     def fail(err: Throwable) = {
