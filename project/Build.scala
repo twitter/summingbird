@@ -2,7 +2,6 @@ package summingbird
 
 import sbt._
 import Keys._
-import sbtgitflow.ReleasePlugin._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 
@@ -14,7 +13,7 @@ object SummingbirdBuild extends Build {
       case x => x
     }
 
-  val sharedSettings = Project.defaultSettings ++ releaseSettings ++ Seq(
+  val sharedSettings = Project.defaultSettings ++ Seq(
     organization := "com.twitter",
     version := "0.2.4",
     scalaVersion := "2.9.3",

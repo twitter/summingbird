@@ -19,7 +19,7 @@ package com.twitter.summingbird.storm
 import backtype.storm.task.{OutputCollector, TopologyContext}
 import backtype.storm.tuple.{Tuple, Values, Fields}
 import com.twitter.algebird.{Monoid, SummingQueue}
-import com.twitter.chill.Externalizer
+import com.twitter.summingbird.online.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
 import com.twitter.summingbird.storm.option._
