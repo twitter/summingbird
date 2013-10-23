@@ -58,8 +58,10 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) {
    * until write/sum to see if certain optimizations can be enabled
    */
   def transitiveDependantsTillOutput(p: Producer[P, Any]): List[Producer[P, Any]] = {
-    val neighborFn = { (p: Producer[P, Any]) =>
-      if(Producer.isOutput(p)) Iterable.empty else graph(p)
+    val neighborFn = { (p: Producer[P, Any]) => p match {
+        case t: TailProducer[P, Any] => Iterable.empty // all legit writes are tails
+        case _ => graph(p)
+      }
     }
     depthFirstOf(p)(neighborFn).toList
   }

@@ -317,7 +317,7 @@ object Scalding {
             val downStream = dependants.transitiveDependantsTillOutput(kfm)
             val prepare: TypedPipe[(Any,Any)] => TypedPipe[(Any,Any)] = downStream.collect(Producer.isOutput) match {
               case List(s@Summer(_, _, monoid)) =>
-                if(downStream.iterator.filterNot(Producer.isNoOp).filterNot(_ != s).isEmpty) {
+                if(downstream.forall(d => Producer.isNoOp(d) && d != s)) {
                   //only downstream are no-ops and the summer GO!
                   // we know the types are right, by construction, but we have lost them here:
                   // TODO, add the batchID to the key, and pivot time into value

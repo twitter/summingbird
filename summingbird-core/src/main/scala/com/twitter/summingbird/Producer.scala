@@ -78,7 +78,14 @@ object Producer {
     case NamedProducer(_, _) => true
     case MergedProducer(_, _) => true
     case AlsoProducer(_, _) => true
-    case _ => false
+    // The rest do something
+    case Source(_) => false
+    case OptionMappedProducer(_, _) => false
+    case FlatMappedProducer(_, _) => false
+    case KeyFlatMappedProducer(_, _) => false
+    case WrittenProducer(_, _) => false
+    case LeftJoinedProducer(_, _) => false
+    case Summer(_, _, _) => false
   }
 
   def isOutput[P <: Platform[P]](p: Producer[P, Any]): Boolean = p match {
