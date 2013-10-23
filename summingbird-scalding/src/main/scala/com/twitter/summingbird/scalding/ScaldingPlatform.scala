@@ -184,17 +184,6 @@ object Scalding {
   def also[L,R](ensure: FlowToPipe[L], result: FlowToPipe[R]): FlowToPipe[R] =
     for { _ <- ensure; r <- result } yield r
 
-  // This could be moved to scalding, but the API needs more design work
-  // This DOES NOT trigger a grouping
-  def mapsideReduce[K,V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] = {
-    import Dsl._
-    val fields = ('key, 'value)
-    val gpipe = pipe.toPipe(fields)(TupleSetter.tup2Setter[(K,V)])
-    val msr = new MapsideReduce(sg, fields._1, fields._2, None)(
-      TupleConverter.singleConverter[V], TupleSetter.singleSetter[V])
-    TypedPipe.from(gpipe.eachTo(fields -> fields) { _ => msr }, fields)(TupleConverter.of[(K, V)])
-  }
-
   /** Memoize the inner reader
    *  This is not a performance optimization, but a correctness one applicable
    *  to some cases (namely any function that mutates the FlowDef or does IO).
@@ -218,6 +207,16 @@ object Scalding {
       innerOpts <- options.get(id)
       option <- innerOpts.get[T]
     } yield option).getOrElse(default)
+
+  @annotation.tailrec
+  private def getFirst[T: Manifest](options: Map[String, Options], names: List[String], default: T): T =
+    names match {
+      case Nil => default
+      case h::tail => options.get(h).flatMap { _.get[T] } match {
+        case Some(res) => res
+        case None => getFirst(options, tail, default)
+      }
+    }
 
   /** Return a PipeFactory that can cover as much as possible of the time range requested,
    * but the output state gives the actual, non-empty, interval that can be produced
@@ -308,31 +307,31 @@ object Scalding {
               }
             }, m)
           case kfm@KeyFlatMappedProducer(producer, op) =>
+            val (fmp, m) = recurse(producer)
             /**
              * If the following is true, it is safe to put a mapside reduce before this node:
              * 1) there is only one downstream output, which is a Summer
              * 2) there are only NoOp Producers between this node and the Summer
              */
-            /*
             val downStream = dependants.transitiveDependantsTillOutput(kfm)
-            val prepare: TypedPipe[(Any,Any)] => TypedPipe[(Any,Any)] = downStream.collect(Producer.isOutput) match {
-              case List(s@Summer(_, _, monoid)) =>
-                if(downstream.forall(d => Producer.isNoOp(d) && d != s)) {
-                  //only downstream are no-ops and the summer GO!
-                  // we know the types are right, by construction, but we have lost them here:
-                  // TODO, add the batchID to the key, and pivot time into value
-                  // check if the monoid is commutative
-                  { (kv: TypedPipe[(Any,Any)]) => mapsideReduce(kv)(monoid) }
-                }
-                else
-                  indentity[TypedPipe[(Any,Any)]]
-              case _ =>
-                  indentity[TypedPipe[(Any,Any)]]
-            }*/
+            val maybeMerged = downStream.collect { case t: TailProducer[_, _] => t }
+              match {
+                case List(sAny:Summer[_,_,_]) =>
+                  val s = sAny.asInstanceOf[Summer[Scalding, Any, Any]]
+                  if(downStream.forall(d => Producer.isNoOp(d) || d == s)) {
+                    //only downstream are no-ops and the summer GO!
+                    val isCommutative = getFirst(options,
+                      dependants.namesOf(s).map(_.id),
+                      MonoidIsCommutative.default)
+                    s.store.partialMerge(fmp, s.monoid, isCommutative.commutativity)
+                  }
+                  else
+                    fmp
+                case _ => fmp
+              }
 
             // Map in two monads here, first state then reader
-            val (fmp, m) = recurse(producer)
-            (fmp.map { flowP =>
+            (maybeMerged.map { flowP =>
               flowP.map { typedPipe =>
                 typedPipe.flatMap { case (time, (k, v)) =>
                   op(k).map{newK => (time, (newK, v))}

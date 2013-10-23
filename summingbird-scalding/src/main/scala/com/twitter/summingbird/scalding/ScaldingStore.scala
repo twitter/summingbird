@@ -22,12 +22,25 @@ import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.bijection.{ Bijection, ImplicitBijection }
-import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, TupleSetter, TupleConverter}
+import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, MapsideReduce, TupleSetter, TupleConverter}
 import com.twitter.scalding.typed.Grouped
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
 import cascading.flow.FlowDef
+
+object ScaldingStore extends java.io.Serializable {
+  // This could be moved to scalding, but the API needs more design work
+  // This DOES NOT trigger a grouping
+  def mapsideReduce[K,V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] = {
+    import Dsl._
+    val fields = ('key, 'value)
+    val gpipe = pipe.toPipe(fields)(TupleSetter.tup2Setter[(K,V)])
+    val msr = new MapsideReduce(sg, fields._1, fields._2, None)(
+      TupleConverter.singleConverter[V], TupleSetter.singleSetter[V])
+    TypedPipe.from(gpipe.eachTo(fields -> fields) { _ => msr }, fields)(TupleConverter.of[(K, V)])
+  }
+}
 
 trait ScaldingStore[K, V] extends java.io.Serializable {
   /**
@@ -40,6 +53,14 @@ trait ScaldingStore[K, V] extends java.io.Serializable {
     sg: Semigroup[V],
     commutativity: Commutativity,
     reducers: Int): PipeFactory[(K, (Option[V], V))]
+
+  /** This is an optional method, by default it a pass-through.
+   * it may be called by ScaldingPlatform before a key transformation
+   * that leads only to this store.
+   */
+  def partialMerge[K1](delta: PipeFactory[(K1, V)],
+    sg: Semigroup[V],
+    commutativity: Commutativity): PipeFactory[(K1, V)] = delta
 }
 
 trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
@@ -83,6 +104,39 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
       }
     }
 
+  protected def sumByBatches[K1,V:Semigroup](ins: TypedPipe[(Long, (K1, V))],
+    capturedBatcher: Batcher,
+    commutativity: Commutativity): TypedPipe[((K1, BatchID), (Timestamp, V))] = {
+      val inits = ins.map { case (t, (k, v)) =>
+        val ts = Timestamp(t)
+        val batch = capturedBatcher.batchOf(ts)
+        ((k, batch), (ts, v))
+      }
+      (commutativity match {
+        case Commutative => ScaldingStore.mapsideReduce(inits)
+        case NonCommutative => inits
+        })
+    }
+
+  /** For each batch, collect up values with the same key on mapside
+   * before the keys are expanded.
+   */
+  override def partialMerge[K1](delta: PipeFactory[(K1, V)],
+    sg: Semigroup[V],
+    commutativity: Commutativity): PipeFactory[(K1, V)] = {
+    implicit val semi = sg
+    val capturedBatcher = batcher
+    commutativity match {
+      case Commutative => delta.map { flow =>
+        flow.map { typedP =>
+          sumByBatches(typedP, capturedBatcher, Commutative)
+            .map { case ((k, _), (ts, v)) => (ts.milliSinceEpoch, (k, v)) }
+        }
+      }
+      case NonCommutative => delta
+    }
+  }
+
   /** we are guaranteed to have sufficient input and deltas to cover these batches
    * and that the batches are given in order
    */
@@ -104,18 +158,10 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
       old.map { case (k, v) => (k, (inBatch, (Timestamp.Min, v))) }
 
     val capturedBatcher = batcher //avoid a closure on the whole store
-    def prepareDeltas(ins: TypedPipe[(Long, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] = {
-      val inits = ins.map { case (t, (k, v)) =>
-        val ts = Timestamp(t)
-        val batch = capturedBatcher.batchOf(ts)
-        ((k, batch), (ts, v))
-      }
-      (commutativity match {
-        case Commutative => Scalding.mapsideReduce(inits)
-        case NonCommutative => inits
-        })
+
+    def prepareDeltas(ins: TypedPipe[(Long, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
+      sumByBatches(ins, capturedBatcher, commutativity)
         .map { case ((k, batch), (ts, v)) => (k, (batch, (ts, v))) }
-    }
 
     /** Produce a merged stream such that each BatchID, Key pair appears only one time.
      */

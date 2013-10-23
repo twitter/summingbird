@@ -29,12 +29,15 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) extends Dependan
    * nodes, such as Summer or WrittenProducer. This is for searching downstream
    * until write/sum to see if certain optimizations can be enabled
    */
-  def transitiveDependantsTillOutput(p: Producer[P, Any]): List[Producer[P, Any]] = {
+  def transitiveDependantsTillOutput(inp: Producer[P, Any]): List[Producer[P, Any]] = {
     val neighborFn = { (p: Producer[P, Any]) => p match {
         case t: TailProducer[_, _] => Iterable.empty // all legit writes are tails
-        case _ => graph(p)
+        case _ => dependantsOf(p).getOrElse(Nil)
       }
     }
-    depthFirstOf(p)(neighborFn).toList
+    depthFirstOf(inp)(neighborFn).toList
   }
+
+  def namesOf(inp: Producer[P, Any]): List[NamedProducer[P, Any]] =
+    transitiveDependantsOf(inp).collect { case n@NamedProducer(_,_) => n }
 }
