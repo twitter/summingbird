@@ -89,7 +89,7 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
     extends WaitingState[Interval[Timestamp]] {
   import HDFSState._
 
-  private val hasStarted = new AtomicBoolean
+  private val hasStarted = new AtomicBoolean(false)
 
   def begin: PrepareState[Interval[Timestamp]] = new Prep
 
@@ -131,8 +131,7 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
         case intersection @ Intersection(low, high)
             if (alignedToBatchBoundaries(low, high) &&
               fitsCurrentBatchStart(low) &&
-              !hasStarted.get) =>
-          hasStarted.compareAndSet(false, true)
+              hasStarted.compareAndSet(false, true)) =>
           Right(new Running(intersection, hasStarted))
         case _ => Left(HDFSState(config))
       }
@@ -142,7 +141,10 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
 
   private class Running(succeedPart: Intersection[Timestamp], bool: AtomicBoolean)
     extends RunningState[Interval[Timestamp]] {
-    def setStopped = bool.compareAndSet(true, false)
+    def setStopped = assert(
+      bool.compareAndSet(true, false),
+      "Concurrent modification of HDFSState!"
+    )
     private lazy val runningBatches =
       BatchID.toIterable(batcher.batchesCoveredBy(succeedPart))
 
@@ -153,8 +155,8 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
      * On success, mark a successful version for every BatchID.
      */
     def succeed = {
-      runningBatches.foreach { b => versionedStore.succeedVersion(version(b)) }
       setStopped
+      runningBatches.foreach { b => versionedStore.succeedVersion(version(b)) }
       HDFSState(config)
     }
 
@@ -166,8 +168,8 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
     def fail(err: Throwable) = {
       // mark the state as failed. This is defensive, as no one should
       // have created ANYTHING inside of these folders.
-      runningBatches.foreach { b => versionedStore.deleteVersion(version(b)) }
       setStopped
+      runningBatches.foreach { b => versionedStore.deleteVersion(version(b)) }
       throw err
     }
   }
