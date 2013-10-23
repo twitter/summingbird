@@ -51,11 +51,7 @@ object Producer {
   implicit def semigroup[P <: Platform[P], T]: Semigroup[Producer[P, T]] =
     Semigroup.from(_ merge _)
 
-  def dependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
-    /*
-     * Keyed producers seem to have some issue with type inference that
-     * I work around with the cast.
-     */
+  def dependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] =
     p match {
       case AlsoProducer(_, prod) => List(prod)
       case NamedProducer(producer, _) => List(producer)
@@ -69,7 +65,6 @@ object Producer {
       case LeftJoinedProducer(producer, _) => List(producer)
       case Summer(producer, _, _) => List(producer)
     }
-  }
 
   /** Returns true if this node does not directly change the data (does not apply any transformation)
    */
