@@ -30,6 +30,12 @@ import org.specs._
 
 object HDFSStateLaws extends Specification {
   def tempPath: String = File.createTempFile("hdfs", "path").getPath
+  def completeState[T](either: Either[WaitingState[T], RunningState[T]]): WaitingState[T] = {
+    either match {
+      case Right(t) => t.succeed
+      case Left(t) => sys.error("PreparedState didn't accept its proposed Interval! failed state: " + t)
+    }
+  }
 
   "make sure HDFSState creates checkpoint" in {
     implicit val batcher = Batcher.ofMinutes(30)
@@ -42,10 +48,7 @@ object HDFSStateLaws extends Specification {
     val state = HDFSState(path, startTime = startDate, numBatches = numBatches)
     val preparedState = state.begin
     val runningState = preparedState.willAccept(preparedState.requested)
-    runningState match {
-      case Right(t) => t.succeed
-      case Left(t) => sys.error("test case failed")
-    }
+    completeState(runningState)
 
     BatchID.range(
       batcher.batchOf(startDate.get),
@@ -85,26 +88,17 @@ object HDFSStateLaws extends Specification {
       RichDate("2012-12-26T11:30").value)
 
     val runningState = HDFSState(config).begin.willAccept(partialIncompleteInterval)
-    val waitingState = runningState match {
-      case Right(t) => sys.error("test case failed")
-      case Left(t) => t
-    }
+    val waitingState = completeState(runningState)
 
     // reuse the waitingstate
-    val waitingState2 = waitingState.begin.willAccept(partialCompleteInterval) match {
-      case Right(t) => t.succeed
-      case Left(t) => sys.error("test case failed")
-    }
+    val waitingState2 = completeState(waitingState.begin.willAccept(partialCompleteInterval))
 
     BatchID.range(batcher.batchOf(startDate.get), batcher.batchOf(RichDate("2012-12-26T11:30").value) - 1)
       .foreach(t => (path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
 
     // start from where you left
     val preparedState2 = waitingState2.begin
-    preparedState2.willAccept(preparedState2.requested) match {
-      case Right(t) => t.succeed
-      case Left(t) => sys.error("test case failed")
-    }
+    completeState(preparedState2.willAccept(preparedState2.requested))
 
     BatchID.range(batcher.batchOf(startDate.get), batcher.batchOf(startDate.get) + numBatches - 1)
       .foreach(t => (path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
