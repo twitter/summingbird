@@ -26,7 +26,6 @@ import com.twitter.summingbird.{ Env, Unzip2, Summer, Producer, TailProducer, Ab
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.builder.{ SourceBuilder, Reducers, CompletedBuilder }
 import com.twitter.summingbird.storm.Storm
-import com.twitter.summingbird.scalding.store.VersionedState
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser

@@ -22,6 +22,7 @@ import org.specs._
 
 import com.twitter.summingbird.batch._
 import com.twitter.algebird.{Interval, ExclusiveUpper, Empty}
+import java.util.concurrent.TimeUnit
 
 object BatcherLaws extends Properties("Batcher") {
   import Generators._
@@ -111,6 +112,20 @@ object BatcherLaws extends Properties("Batcher") {
       val covers = hourlyBatcher.cover(int)
       (covers && coveredBy) == coveredBy
     }
+
+  property("Lower batch edge should align") = {
+    implicit val tenSecondBatcher = Batcher(10, TimeUnit.SECONDS)
+    forAll { initialTime: Int =>
+      initialTime > 0 ==> {
+        Stream.iterate(Timestamp(initialTime * 1000L))(_.incrementSeconds(1))
+          .take(100).forall { t =>
+          if (t.milliSinceEpoch % (1000 * 10) == 0)
+            tenSecondBatcher.isLowerBatchEdge(t)
+          else !tenSecondBatcher.isLowerBatchEdge(t)
+        }
+      }
+    }
+  }
 
   property("batchesCoveredBy produces has times in the interval") =
     forAll { (d: Timestamp, sl: SmallLong) =>

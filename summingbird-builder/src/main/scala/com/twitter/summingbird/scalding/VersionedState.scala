@@ -14,23 +14,22 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding.store
+package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{
-  Interval, Intersection, ExclusiveUpper, InclusiveUpper }
+import com.twitter.algebird.{ Interval, Intersection, ExclusiveUpper, InclusiveUpper }
 import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp }
-import com.twitter.summingbird.scalding.{ WaitingState, PrepareState, RunningState }
+import com.twitter.summingbird.scalding.store.HDFSMetadata
 
 /**
   * State representation used by the builder API for compatibility.
   */
-object VersionedState {
+private[scalding] object VersionedState {
   def apply(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
     (implicit batcher: Batcher): VersionedState =
     new VersionedState(meta, startDate, maxBatches)
 }
 
-class VersionedState(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
+private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
   (implicit batcher: Batcher) extends WaitingState[Interval[Timestamp]] { outer =>
 
   def begin: PrepareState[Interval[Timestamp]] = new VersionedPrepareState
