@@ -115,12 +115,14 @@ object BatcherLaws extends Properties("Batcher") {
 
   property("Lower batch edge should align") = {
     implicit val tenSecondBatcher = Batcher(10, TimeUnit.SECONDS)
-    forAll { initialTime: Long =>
-      Stream.iterate(Timestamp(initialTime * 1000))(_.incrementSeconds(1))
-        .take(100).forall { t =>
-        if (t.milliSinceEpoch % (1000 * 10) == 0)
-          BatchID.isLowerBatchEdge(t)
-        else !BatchID.isLowerBatchEdge(t)
+    forAll { initialTime: Int =>
+      initialTime > 0 ==> {
+        Stream.iterate(Timestamp(initialTime * 1000L))(_.incrementSeconds(1))
+          .take(100).forall { t =>
+          if (t.milliSinceEpoch % (1000 * 10) == 0)
+            BatchID.isLowerBatchEdge(t)
+          else !BatchID.isLowerBatchEdge(t)
+        }
       }
     }
   }

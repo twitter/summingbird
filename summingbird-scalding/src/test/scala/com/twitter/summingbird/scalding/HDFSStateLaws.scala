@@ -29,7 +29,11 @@ import org.scalacheck.Properties
 import org.specs._
 
 object HDFSStateLaws extends Specification {
-  def tempPath: String = File.createTempFile("hdfs", "path").getPath
+  def tempPath: String = {
+    val file = File.createTempFile("hdfs", "path")
+    file.deleteOnExit
+    file.getPath
+  }
   def completeState[T](either: Either[WaitingState[T], RunningState[T]]): WaitingState[T] = {
     either match {
       case Right(t) => t.succeed
