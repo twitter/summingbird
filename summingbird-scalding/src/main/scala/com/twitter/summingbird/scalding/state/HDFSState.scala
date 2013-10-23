@@ -85,7 +85,8 @@ object HDFSState {
     }
 }
 
-class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher) extends WaitingState[Interval[Timestamp]] {
+class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
+    extends WaitingState[Interval[Timestamp]] {
   import HDFSState._
 
   private val hasStarted = new AtomicBoolean
@@ -119,7 +120,7 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher) extends Wai
         .mapNonDecreasing(batcher.earliestTimeOf(_))
 
     def fitsCurrentBatchStart(low: Lower[Timestamp]): Boolean =
-      Equiv[Timestamp].equiv(extractLower(low), earliestTimestamp)
+      Equiv[Timestamp].equiv(toInclusiveLower(low), earliestTimestamp)
 
     /**
      * only accept interval that aligns size of the batch interval
