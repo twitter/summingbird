@@ -31,7 +31,7 @@ object Producer {
         case _ => dependenciesOf(in)
       }
     }
-    val above = graph.depthFirstOf(p)(parentFn).toList
+    val above = graph.depthFirstOf(p)(parentFn)
     p :: above
   }
 
@@ -74,7 +74,7 @@ object Producer {
    */
   def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
     val nfn = dependenciesOf[P](_)
-    graph.depthFirstOf(p)(nfn).toList
+    graph.depthFirstOf(p)(nfn)
   }
 }
 
