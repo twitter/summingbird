@@ -79,15 +79,15 @@ object Storm {
   def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier.from(store)
 
-  def toStormSource[T](spout: Spout[T], defaultSourcePar: Option[Int])(implicit timeOf: TimeExtractor[T]) =
+  def toStormSource[T](spout: Spout[T], defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]) =
     SpoutSource(spout.map(t => (timeOf(t), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
 
-  implicit def toStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] = toStormSource(spout, None)(timeOf)
+  implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] = toStormSource(spout, None)(timeOf)
 
-  def source[T](spout: Spout[T], defaultSourcePar: Option[Int])(implicit timeOf: TimeExtractor[T]) =
+  def source[T](spout: Spout[T], defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]) =
     Producer.source[Storm, T](toStormSource(spout, defaultSourcePar))
 
-  implicit def source[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] = source(spout, None)(timeOf)
+  implicit def spoutAsSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] = source(spout, None)(timeOf)
 }
 
 abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
