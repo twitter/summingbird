@@ -38,6 +38,8 @@ import scala.collection.Iterator.iterate
  */
 
 object BatchID {
+  implicit val equiv: Equiv[BatchID] = Equiv.by(_.id)
+
   def apply(long: Long) = new BatchID(long)
   // Enables BatchID(someBatchID.toString) roundtripping
   def apply(str: String) = new BatchID(str.split("\\.")(1).toLong)
@@ -50,13 +52,6 @@ object BatchID {
     new Iterable[BatchID] {
       def iterator = iterate(start)(_.next).takeWhile(_ <= end)
     }
-
-  /**
-    * Returns true if the supplied timestamp sits at the floor of the
-    * supplied batch.
-    */
-  def isLowerBatchEdge(ts: Timestamp)(implicit batcher: Batcher, eq: Equiv[BatchID]): Boolean =
-    !eq.equiv(batcher.batchOf(ts), batcher.batchOf(ts.prev))
 
   /**
     * Returns true if the supplied interval of BatchID can

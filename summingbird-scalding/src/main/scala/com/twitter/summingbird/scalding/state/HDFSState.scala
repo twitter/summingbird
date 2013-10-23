@@ -69,8 +69,8 @@ object HDFSState {
   def alignedToBatchBoundaries(
     low: Lower[Timestamp],
     high: Upper[Timestamp])(implicit b: Batcher): Boolean =
-    BatchID.isLowerBatchEdge(extractLower(low)) &&
-    BatchID.isLowerBatchEdge(extractUpper(high))
+    b.isLowerBatchEdge(toInclusiveLower(low)) &&
+    b.isLowerBatchEdge(toExclusiveUpper(high))
 
   def extractLower(low: Lower[Timestamp]): Timestamp =
     low match {

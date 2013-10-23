@@ -144,6 +144,13 @@ trait Batcher extends Serializable {
     }
   }
 
+  /**
+    * Returns true if the supplied timestamp sits at the floor of the
+    * supplied batch.
+    */
+  def isLowerBatchEdge(ts: Timestamp): Boolean =
+    !BatchID.equiv.equiv(batchOf(ts), batchOf(ts.prev))
+
   def batchesCoveredBy(interval: Interval[Timestamp]): Interval[BatchID] =
     dateToBatch(interval)(truncateUp)(truncateDown)
 
