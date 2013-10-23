@@ -59,7 +59,7 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) {
    */
   def transitiveDependantsTillOutput(p: Producer[P, Any]): List[Producer[P, Any]] = {
     val neighborFn = { (p: Producer[P, Any]) => p match {
-        case t: TailProducer[P, Any] => Iterable.empty // all legit writes are tails
+        case t: TailProducer[_, _] => Iterable.empty // all legit writes are tails
         case _ => graph(p)
       }
     }
