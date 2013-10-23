@@ -30,10 +30,11 @@ import org.specs._
 
 object HDFSStateLaws extends Specification {
   def tempPath: String = {
-    val file = File.createTempFile("hdfs", "path")
-    file.deleteOnExit
-    file.getPath
+    val path = "/tmp/" + UUID.randomUUID
+    new File(path).deleteOnExit
+    path
   }
+
   def completeState[T](either: Either[WaitingState[T], RunningState[T]]): WaitingState[T] = {
     either match {
       case Right(t) => t.succeed
@@ -92,7 +93,10 @@ object HDFSStateLaws extends Specification {
       RichDate("2012-12-26T11:30").value)
 
     val runningState = HDFSState(config).begin.willAccept(partialIncompleteInterval)
-    val waitingState = completeState(runningState)
+    val waitingState = runningState match {
+      case Left(t) => t
+      case Right(t) => sys.error("PreparedState accepted a bad Interval!")
+    }
 
     // reuse the waitingstate
     val waitingState2 = completeState(waitingState.begin.willAccept(partialCompleteInterval))
