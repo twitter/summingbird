@@ -21,13 +21,13 @@ import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.{ Fields, Tuple, Values }
 
 import com.twitter.algebird.{ Monoid, SummingQueue }
-import com.twitter.chill.Externalizer
+import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.option.{
   AnchorTuples, FlatMapStormMetrics
 }
-import com.twitter.summingbird.online.option.CacheSize
+import com.twitter.summingbird.option.CacheSize
 import com.twitter.storehaus.algebra.MergeableStore
 
 import MergeableStore.enrich

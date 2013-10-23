@@ -14,24 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.option
+package com.twitter.summingbird.online
 
-import scala.util.Random
+import com.twitter.chill.{Externalizer => ChillExtern, KryoInstantiator, ScalaKryoInstantiator}
 
-/**
- *
- * Accepts a lower bound and a percentage of fuzz. The internal
- * "size" function returns a random integer between the lower bound
- * and the fuzz percentage above that bound.
- *
- * @author Oscar Boykin
- * @author Sam Ritchie
- * @author Ashu Singhal
- */
+object Externalizer {
+  def apply[T](t: T): Externalizer[T] = {
+    val x = new Externalizer[T]
+    x.set(t)
+    x
+  }
+}
 
-case class CacheSize(lowerBound: Int, fuzz: Double = 0.2) extends java.io.Serializable {
-  def size: Option[Int] =
-    Some(lowerBound)
-      .filter { _ > 0 }
-      .map { s => s + Random.nextInt((fuzz * s).toInt)  }
+class Externalizer[T] extends ChillExtern[T] {
+  // Storm is set on 2.17, hack to avoid setReferences
+  override protected def kryo: KryoInstantiator = new ScalaKryoInstantiator
 }

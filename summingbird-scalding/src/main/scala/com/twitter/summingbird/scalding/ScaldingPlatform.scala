@@ -171,17 +171,6 @@ object Scalding {
         .map { Right(_) }
         .getOrElse(Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString)))
 
-  /** The typed API (currently, as of 0.9.0) hides all flatMaps
-   * from cascading, so if you fork a pipe, the whole input
-   * is recomputed. This function forces a cascading node
-   * so that cascading can see that any forks of the output
-   * share a common prefix of operations
-   */
-  def forcePipe[U](pipe: TimedPipe[U]): TimedPipe[U] = {
-    import com.twitter.scalding.Dsl._
-    TypedPipe.from[(Long,U)](pipe.toPipe((0,1)), (0,1))
-  }
-
   def limitTimes[T](range: Interval[Time], in: FlowToPipe[T]): FlowToPipe[T] =
     in.map { pipe => pipe.filter { case (time, _) => range(time) } }
 
@@ -194,6 +183,17 @@ object Scalding {
    */
   def also[L,R](ensure: FlowToPipe[L], result: FlowToPipe[R]): FlowToPipe[R] =
     for { _ <- ensure; r <- result } yield r
+
+  // This could be moved to scalding, but the API needs more design work
+  // This DOES NOT trigger a grouping
+  def mapsideReduce[K,V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] = {
+    import Dsl._
+    val fields = ('key, 'value)
+    val gpipe = pipe.toPipe(fields)(TupleSetter.tup2Setter[(K,V)])
+    val msr = new MapsideReduce(sg, fields._1, fields._2, None)(
+      TupleConverter.singleConverter[V], TupleSetter.singleSetter[V])
+    TypedPipe.from(gpipe.eachTo(fields -> fields) { _ => msr }, fields)(TupleConverter.of[(K, V)])
+  }
 
   /** Memoize the inner reader
    *  This is not a performance optimization, but a correctness one applicable
@@ -248,7 +248,7 @@ object Scalding {
     def forceNode[U](p: PipeFactory[U]): PipeFactory[U] =
       if(fanOuts(producer))
         p.map { flowP =>
-          flowP.map { Scalding.forcePipe(_) }
+          flowP.map { _.fork }
         }
       else
         p

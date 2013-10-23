@@ -69,7 +69,7 @@ object TrueGlobalState {
 	  override def checkAccess(t: Thread) = {}
 	  override def checkPermission(p: Permission) = {}
   }
-  
+
 /*
  * This is a wrapper to run a storm topology.
  * We use the SecurityManager code to catch the System.exit storm calls when it
@@ -84,9 +84,9 @@ object StormRunner {
     ret.setCleanupState(false)
     ret
   }
-    
+
   private def tryRun(topo: StormTopology): Unit = {
-    //Before running the external Command 
+    //Before running the external Command
     val oldSecManager = System.getSecurityManager()
     System.setSecurityManager(new MySecurityManager());
     try {
@@ -99,7 +99,7 @@ object StormRunner {
       System.setSecurityManager(oldSecManager)
     }
   }
-  
+
   def run(topo: StormTopology) {
      try {
       tryRun(topo)
@@ -175,18 +175,18 @@ object StormLaws extends Specification {
       append(x)
       Future.Unit
     }
-  
-  
-  
+
+
+
   /**
     * Perform a single run of TestGraphs.singleStepJob using the
     * supplied list of integers and the testFn defined above.
     */
-  def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, (Int, Int)])
+  def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, Any])
       : (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
-    
+
 	val (id, store) = genStore
-    
+
     val job = mkJob(
       Storm.source(TraversableSpout(original)),
       store
@@ -259,7 +259,7 @@ object StormLaws extends Specification {
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
   }
-   
+
    "StormPlatform matches Scala for flatmap keys jobs" in {
     val original = sample[List[Int]]
     val fnA = sample[Int => List[(Int, Int)]]
@@ -274,7 +274,7 @@ object StormLaws extends Specification {
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
   }
-  
+
   "StormPlatform matches Scala for left join jobs" in {
     val original = sample[List[Int]]
 
@@ -321,9 +321,9 @@ object StormLaws extends Specification {
       runWithOutSummer(original)(
         TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler)
       ).sorted
-    val memoryOutputList = 
+    val memoryOutputList =
       memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
-    
+
     stormOutputList must_==(memoryOutputList)
   }
 
@@ -388,7 +388,7 @@ object StormLaws extends Specification {
 
     val topo = storm.plan(tail)
     OnlinePlan(tail).nodes.size must beLessThan(10)
-   
+
     StormRunner.run(topo)
 
 

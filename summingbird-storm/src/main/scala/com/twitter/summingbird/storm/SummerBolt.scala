@@ -19,11 +19,11 @@ package com.twitter.summingbird.storm
 import backtype.storm.task.{OutputCollector, TopologyContext}
 import backtype.storm.tuple.Tuple
 import com.twitter.algebird.{Monoid, SummingQueue}
-import com.twitter.chill.Externalizer
+import com.twitter.summingbird.online.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.storm.option._
-import com.twitter.summingbird.online.option.CacheSize
+import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.FutureQueue
 
 import com.twitter.util.Future
