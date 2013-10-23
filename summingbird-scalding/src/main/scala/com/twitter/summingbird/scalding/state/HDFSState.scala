@@ -72,13 +72,13 @@ object HDFSState {
     b.isLowerBatchEdge(toInclusiveLower(low)) &&
     b.isLowerBatchEdge(toExclusiveUpper(high))
 
-  def extractLower(low: Lower[Timestamp]): Timestamp =
+  def toInclusiveLower(low: Lower[Timestamp]): Timestamp =
     low match {
       case InclusiveLower(lb) => lb
       case ExclusiveLower(lb) => lb.next
     }
 
-  def extractUpper(high: Upper[Timestamp]): Timestamp =
+  def toExclusiveUpper(high: Upper[Timestamp]): Timestamp =
     high match {
       case InclusiveUpper(hb) => hb.next
       case ExclusiveUpper(hb) => hb
