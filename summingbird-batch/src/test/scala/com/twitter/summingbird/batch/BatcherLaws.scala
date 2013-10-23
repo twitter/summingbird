@@ -120,8 +120,8 @@ object BatcherLaws extends Properties("Batcher") {
         Stream.iterate(Timestamp(initialTime * 1000L))(_.incrementSeconds(1))
           .take(100).forall { t =>
           if (t.milliSinceEpoch % (1000 * 10) == 0)
-            BatchID.isLowerBatchEdge(t)
-          else !BatchID.isLowerBatchEdge(t)
+            tenSecondBatcher.isLowerBatchEdge(t)
+          else !tenSecondBatcher.isLowerBatchEdge(t)
         }
       }
     }
