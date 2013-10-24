@@ -19,7 +19,9 @@ package com.twitter.summingbird.planner
 import com.twitter.summingbird._
 
 
-case class ProducerF[P <: Platform[P]](oldSources: List[Producer[P, Any]], oldRef: Producer[P, Any], f: List[Producer[P, Any]] => Producer[P, Any])
+case class ProducerF[P <: Platform[P]](oldSources: List[Producer[P, Any]],
+                          oldRef: Producer[P, Any],
+                          f: List[Producer[P, Any]] => Producer[P, Any])
 
 object StripNamedNode {
 
@@ -66,13 +68,11 @@ object StripNamedNode {
                 {producerL: List[Producer[P, Any]] => p}
                 )
 
-
       case p@IdentityKeyedProducer(producer) => ProducerF(
                 List(producer),
                 p,
                 {producerL: List[Producer[P, Any]] => p.copy(producer=castToPair(producerL(0)))}
                 )
-
 
       case p@OptionMappedProducer(producer, _) => ProducerF(
                 List(producer),
@@ -135,7 +135,7 @@ object StripNamedNode {
 
   def stripNamedNodes[P <: Platform[P]](node: Producer[P, Any]): (Map[Producer[P, Any], Producer[P, Any]], Producer[P, Any]) = {
     def removeNamed: PartialFunction[Producer[P, Any], Option[Producer[P, Any]]] =
-    { case p@NamedProducer(_, _) => None }
+      { case p@NamedProducer(p2, _) => None }
     val (optTail, oldNewMap) = mutateGraph(node, removeNamed)
     val newTail = optTail.get
     (oldNewMap.map(x => (x._2, x._1)).toMap, optTail.get)
