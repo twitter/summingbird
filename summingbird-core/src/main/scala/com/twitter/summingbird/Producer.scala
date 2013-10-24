@@ -35,9 +35,6 @@ object Producer {
     p :: above
   }
 
-  def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
-    paths.collectFirst { case s: Summer[P, _, _] => s }
-
   /**
     * Begin from some base representation. An iterator for in-memory,
     * for example.
@@ -69,6 +66,27 @@ object Producer {
       case Summer(producer, _, _) => List(producer)
     }
 
+  /** Returns true if this node does not directly change the data (does not apply any transformation)
+   */
+  def isNoOp[P <: Platform[P]](p: Producer[P, Any]): Boolean = p match {
+    case IdentityKeyedProducer(_) => true
+    case NamedProducer(_, _) => true
+    case MergedProducer(_, _) => true
+    case AlsoProducer(_, _) => true
+    // The rest do something
+    case Source(_) => false
+    case OptionMappedProducer(_, _) => false
+    case FlatMappedProducer(_, _) => false
+    case KeyFlatMappedProducer(_, _) => false
+    case WrittenProducer(_, _) => false
+    case LeftJoinedProducer(_, _) => false
+    case Summer(_, _, _) => false
+  }
+
+  def isOutput[P <: Platform[P]](p: Producer[P, Any]): Boolean = p match {
+    case Summer(_, _, _) | WrittenProducer(_, _) => true
+    case _ => false
+  }
   /**
    * Return all dependencies of a given node in depth first, left first order.
    */
