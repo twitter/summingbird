@@ -170,7 +170,7 @@ object DependantsTest extends Properties("Dependants") {
           case t: TailProducer[_, _] => t
         }.flatMap { n => n :: Producer.transitiveDependenciesOf(n) }.toSet
 
-        writerDependencies.isEmpty || ((depTillWrite.toSet intersect writerDependencies) == depTillWrite.toSet)
+        depTillWrite.collectFirst{ case MergedProducer(_, _) => true}.getOrElse(false) || writerDependencies.isEmpty || ((depTillWrite.toSet intersect writerDependencies) == depTillWrite.toSet)
       }
     }
 
@@ -182,7 +182,7 @@ object DependantsTest extends Properties("Dependants") {
         case s@Summer(_,_,_) => s
         case w@WrittenProducer(_,_) => w
       }.flatMap { dependants.transitiveDependantsOf(_) }.toSet[Producer[Memory, Any]]
-      (tillWrite.toSet & outputChildren.toSet).size == 0
+      tillWrite.collectFirst{ case MergedProducer(_, _) => true}.getOrElse(false) || (tillWrite.toSet & outputChildren.toSet).size == 0
     }
   }
 
