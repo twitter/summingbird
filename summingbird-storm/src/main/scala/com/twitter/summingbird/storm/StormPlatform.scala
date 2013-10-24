@@ -166,7 +166,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     }
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
-    logger.debug("Setting bolt {} parallelism to {}", nodeName, parallelism)
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism)
 
 
@@ -190,7 +189,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
     }.getSpout
 
     val parallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SPOUT_PARALLELISM)).parHint
-    logger.debug("Setting spout {} parallelism to {}", nodeName, parallelism)
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
@@ -213,7 +211,6 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       getOrElse(stormDag, node, IncludeSuccessHandler.default))
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SINK_PARALLELISM).parHint
-    logger.debug("Setting Summer {} parallelism to {}", nodeName, parallelism)
     val declarer =
       topologyBuilder.setBolt(
         nodeName,
