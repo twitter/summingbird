@@ -183,13 +183,13 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
-      "com.twitter" % "chill-storm" % chillVersion exclude("org.slf4j", "log4j-over-slf4j"),
+      "com.twitter" % "chill-storm" % chillVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "chill-bijection" % chillVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
-      "com.twitter" %% "tormenta-core" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j"),
+      "com.twitter" %% "tormenta-core" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       withCross("com.twitter" %% "util-core" % utilVersion),
-      "storm" % "storm" % "0.9.0-wip15" % "provided" exclude("org.slf4j", "log4j-over-slf4j")
+      "storm" % "storm" % "0.9.0-wip15" % "provided" exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic")
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -226,7 +226,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdExample = module("example").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "bijection-netty" % bijectionVersion,
-      "com.twitter" %% "tormenta-twitter" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j"),
+      "com.twitter" %% "tormenta-twitter" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
   ).dependsOn(summingbirdCore, summingbirdStorm)
