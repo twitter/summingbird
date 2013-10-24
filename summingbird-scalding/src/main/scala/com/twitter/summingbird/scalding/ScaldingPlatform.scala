@@ -38,7 +38,11 @@ import com.twitter.scalding.Mode
 import scala.util.{ Success, Failure }
 import scala.util.control.Exception.allCatch
 
+import org.slf4j.LoggerFactory
+
 object Scalding {
+  @transient private val logger = LoggerFactory.getLogger(classOf[Scalding])
+
   implicit val dateRangeInjection: Injection[DateRange, Interval[Time]] = Injection.build {
     (dr: DateRange) => {
       val DateRange(l, u) = dr
@@ -59,9 +63,27 @@ object Scalding {
   }
 
 
-  def emptyFlowProducer[T]: FlowProducer[TypedPipe[T]] = {
-    import Dsl._
-    Reader({implicit fdm: (FlowDef, Mode) => TypedPipe.from(IterableSource(Iterable.empty[T])) })
+  def emptyFlowProducer[T]: FlowProducer[TypedPipe[T]] =
+    Reader({ implicit fdm: (FlowDef, Mode) => TypedPipe.empty })
+
+  def getCommutativity(deps: Dependants[Scalding],
+    options: Map[String, Options],
+    s: Summer[Scalding, _, _]): Commutativity = {
+
+    val storeNames = deps.namesOf(s).map(_.id)
+    val isCommutative = getFirst[MonoidIsCommutative](options, storeNames)
+    isCommutative.map(_.commutativity) match {
+      case Some(Commutative) =>
+        logger.info("Store: {} is commutative", storeNames)
+        Commutative
+      case Some(NonCommutative) =>
+        logger.info("Store: {} is non-commutative (less efficient than commutative)", storeNames)
+        NonCommutative
+      case None =>
+        logger.warn("Store: {} has no commutativity setting. Assuming {}",
+          storeNames, MonoidIsCommutative.default)
+        MonoidIsCommutative.default.commutativity
+    }
   }
 
   def intersect(dr1: DateRange, dr2: DateRange): Option[DateRange] =
@@ -209,12 +231,12 @@ object Scalding {
     } yield option).getOrElse(default)
 
   @annotation.tailrec
-  private def getFirst[T: Manifest](options: Map[String, Options], names: List[String], default: T): T =
+  private def getFirst[T: Manifest](options: Map[String, Options], names: List[String]): Option[T] =
     names match {
-      case Nil => default
+      case Nil => None
       case h::tail => options.get(h).flatMap { _.get[T] } match {
-        case Some(res) => res
-        case None => getFirst(options, tail, default)
+        case s@Some(res) => s
+        case None => getFirst[T](options, tail)
       }
     }
 
@@ -252,6 +274,7 @@ object Scalding {
       else
         p
 
+
     built.get(producer) match {
       case Some(pf) => (pf.asInstanceOf[PipeFactory[T]], built)
       case None =>
@@ -273,7 +296,7 @@ object Scalding {
           }
           case IdentityKeyedProducer(producer) => recurse(producer)
           case NamedProducer(producer, newId)  => recurse(producer, id = Some(newId))
-          case Summer(producer, store, monoid) =>
+          case summer@Summer(producer, store, monoid) =>
             /*
              * The store may already have materialized values, so we don't need the whole
              * input history, but to produce NEW batches, we may need some input.
@@ -281,10 +304,10 @@ object Scalding {
              * the time ranges that it needs.
              */
             val (in, m) = recurse(producer)
-            val isCommutative = getOrElse(options, id, MonoidIsCommutative.default)
-            (store.merge(in, monoid,
-              isCommutative.commutativity,
-              getOrElse(options, id, Reducers.default).count), m)
+            val commutativity = getCommutativity(dependants, options, summer)
+            val storeReducers = getOrElse(options, id, Reducers.default).count
+            logger.info("Store {} using {} reducers (-1 means unset)", store, storeReducers)
+            (store.merge(in, monoid, commutativity, storeReducers), m)
           case LeftJoinedProducer(left, service) =>
             /**
              * There is no point loading more from the left than the service can
@@ -320,10 +343,14 @@ object Scalding {
                   val s = sAny.asInstanceOf[Summer[Scalding, Any, Any]]
                   if(downStream.forall(d => Producer.isNoOp(d) || d == s)) {
                     //only downstream are no-ops and the summer GO!
-                    val isCommutative = getFirst(options,
-                      dependants.namesOf(s).map(_.id),
-                      MonoidIsCommutative.default)
-                    s.store.partialMerge(fmp, s.monoid, isCommutative.commutativity)
+                    getCommutativity(dependants, options, s) match {
+                      case Commutative =>
+                        logger.info("enabling flatMapKeys mapside caching")
+                        s.store.partialMerge(fmp, s.monoid, Commutative)
+                      case NonCommutative =>
+                        logger.info("not enabling flatMapKeys mapside caching, due to non-commutativity")
+                        fmp
+                    }
                   }
                   else
                     fmp
@@ -425,21 +452,25 @@ object Scalding {
   def toPipe[T](timeSpan: Interval[Time],
     flowDef: FlowDef,
     mode: Mode,
-    pf: PipeFactory[T]): Try[(Interval[Time], TimedPipe[T])] =
+    pf: PipeFactory[T]): Try[(Interval[Time], TimedPipe[T])] = {
+    logger.info("Planning on interval: {}", timeSpan.as[Option[DateRange]])
     pf((timeSpan, mode))
       .right
       .map { case (((ts, m), flowDefMutator)) => (ts, flowDefMutator((flowDef, m))) }
+    }
 
   def toPipeExact[T](timeSpan: Interval[Time],
     flowDef: FlowDef,
     mode: Mode,
-    pf: PipeFactory[T]): Try[TimedPipe[T]] =
+    pf: PipeFactory[T]): Try[TimedPipe[T]] = {
+    logger.info("Planning on interval: {}", timeSpan.as[Option[DateRange]])
     pf((timeSpan, mode))
       .right
       .flatMap { case (((ts, m), flowDefMutator)) =>
         if(ts != timeSpan) Left(List("Could not load all of %s, only %s".format(ts, timeSpan)))
         else Right(flowDefMutator((flowDef, m)))
       }
+  }
 }
 
 // Jank to get around serialization issues
@@ -514,6 +545,7 @@ class Scalding(
     pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = {
 
     setIoSerializations(mode)
+
     val prepareState = state.begin
     val timeSpan = prepareState.requested.mapNonDecreasing(_.milliSinceEpoch)
     toFlow(timeSpan, mode, pf) match {
