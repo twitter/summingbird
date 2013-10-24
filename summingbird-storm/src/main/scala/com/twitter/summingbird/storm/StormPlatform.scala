@@ -39,7 +39,7 @@ import com.twitter.summingbird.storm.planner._
 import com.twitter.util.Future
 import scala.annotation.tailrec
 import backtype.storm.tuple.Values
-
+import org.slf4j.LoggerFactory
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
@@ -91,6 +91,8 @@ object Storm {
 }
 
 abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
+  @transient private val logger = LoggerFactory.getLogger(classOf[Storm])
+
   type Source[+T] = StormSource[T]
   type Store[-K, V] = StormStore[K, V]
   type Sink[-T] = () => (T => Future[Unit])
@@ -99,14 +101,23 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private type Prod[T] = Producer[Storm, T]
 
-  private def getOrElse[T: Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
+  private def getOrElse[T <: AnyRef : Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
     val producer = node.members.last
     val namedNodes = dag.transitiveDependantsOf(producer).collect{case NamedProducer(_, n) => n}
-    (for {
+    val maybePair = (for {
       id <- namedNodes
       stormOpts <- options.get(id)
       option <- stormOpts.get[T]
-    } yield option).headOption.getOrElse(default)
+    } yield (id, option)).headOption
+
+    maybePair match {
+      case None =>
+          logger.debug("Node ({}): Using default setting {}", dag.getNodeName(node), default)
+          default
+      case Some((namedSource, option)) =>
+          logger.info("Node {}: Using {} found via NamedProducer \"{}\"", Array[AnyRef](dag.getNodeName(node), option, namedSource))
+          option
+    }
   }
 
   private def scheduleFlatMapper(stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
@@ -154,8 +165,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         new IntermediateFlatMapBolt(operation, metrics, anchorTuples, stormDag.dependenciesOf(node).size > 0)
     }
 
-    val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM)
-    val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
+    val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
+    val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism)
 
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
@@ -199,11 +210,13 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
       getOrElse(stormDag, node, IncludeSuccessHandler.default))
 
+    val parallelism = getOrElse(stormDag, node, DEFAULT_SINK_PARALLELISM).parHint
     val declarer =
       topologyBuilder.setBolt(
         nodeName,
         sinkBolt,
-        getOrElse(stormDag, node, DEFAULT_SINK_PARALLELISM).parHint)
+        parallelism
+        )
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     dependenciesNames.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
