@@ -19,11 +19,12 @@ object SummingbirdBuild extends Build {
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
+      "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
       "org.scala-tools.testing" %% "specs" % "1.6.9" % "test",
       // These satisify's scaldings log4j needs when in test mode
       "log4j" % "log4j" % "1.2.16" % "test",
-      "org.slf4j" % "slf4j-log4j12" % "1.6.6" % "test"
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     ),
 
     resolvers ++= Seq(
@@ -119,6 +120,8 @@ object SummingbirdBuild extends Build {
   val utilVersion = "6.3.8"
   val chillVersion = "0.3.3"
   val tormentaVersion = "0.5.3"
+
+  lazy val slf4jVersion = "1.6.6"
 
   /**
     * This returns the youngest jar we released that is compatible with

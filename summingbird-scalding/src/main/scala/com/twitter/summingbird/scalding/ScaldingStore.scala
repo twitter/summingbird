@@ -29,6 +29,8 @@ import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
 import cascading.flow.FlowDef
 
+import org.slf4j.{Logger, LoggerFactory}
+
 object ScaldingStore extends java.io.Serializable {
   // This could be moved to scalding, but the API needs more design work
   // This DOES NOT trigger a grouping
@@ -93,8 +95,11 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   /** Record a computed batch of code */
   def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit
 
+  @transient private val logger = LoggerFactory.getLogger(classOf[BatchedScaldingStore[_,_]])
+
   /** The writeLast method as a FlowProducer */
-  private def writeFlow(batches: List[BatchID], lastVals: TypedPipe[(BatchID, (K, V))]): FlowProducer[Unit] =
+  private def writeFlow(batches: List[BatchID], lastVals: TypedPipe[(BatchID, (K, V))]): FlowProducer[Unit] = {
+    logger.info("writing batches: {}", batches)
     Reader[FlowInput, Unit] { case (flow, mode) =>
       // make sure we checkpoint to disk to avoid double computation:
       val checked = if(batches.size > 1) lastVals.forceToDisk else lastVals
@@ -103,6 +108,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
         writeLast(batchID, thisBatch.values)(flow, mode)
       }
     }
+  }
 
   protected def sumByBatches[K1,V:Semigroup](ins: TypedPipe[(Long, (K1, V))],
     capturedBatcher: Batcher,
@@ -124,6 +130,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   override def partialMerge[K1](delta: PipeFactory[(K1, V)],
     sg: Semigroup[V],
     commutativity: Commutativity): PipeFactory[(K1, V)] = {
+    logger.info("executing partial merge")
     implicit val semi = sg
     val capturedBatcher = batcher
     commutativity match {
@@ -163,6 +170,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
       val nextBatch = inBatch.next
       old.map { case (k, v) => (k, (nextBatch, (Timestamp.Min, v))) }
     }
+    logger.info("Previous written batch: {}, computing: {}", inBatch, batches)
 
     val capturedBatcher = batcher //avoid a closure on the whole store
 
