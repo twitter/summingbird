@@ -249,11 +249,12 @@ object ScaldingLaws extends Specification {
 
   implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor( _._1 )
 
-  def compareMaps[K,V:Group](original: Iterable[Any], inMemory: Map[K, V], testStore: TestStore[K, V]): Boolean = {
+  def compareMaps[K,V:Group](original: Iterable[Any], inMemory: Map[K, V], testStore: TestStore[K, V], name: String = ""): Boolean = {
     val produced = testStore.lastToIterable.toMap
     val diffMap = Group.minus(inMemory, produced)
     val wrong = Monoid.isNonZero(diffMap)
     if(wrong) {
+      if(!name.isEmpty) println("%s is wrong".format(name))
       println("input: " + original)
       println("input size: " + original.size)
       println("input batches: " + testStore.batcher.batchOf(Timestamp(original.size)))
@@ -475,6 +476,33 @@ object ScaldingLaws extends Specification {
         println("SinkExtra: " + (sinkOut.map(_._2).toSet -- inWithTime.toSet))
         println("SinkMissing: " + (inWithTime.toSet -- sinkOut.map(_._2).toSet))
       }
+    }
+
+    "Correctly aggregate multiple sumByKeys" in {
+      val original = sample[List[(Int,Int)]]
+      val keyExpand = sample[(Int) => List[Int]]
+      val (inMemoryA, inMemoryB) = TestGraphs.twoSumByKeyInScala(original, keyExpand)
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = randomBatcher(inWithTime)
+      val initStore = sample[Map[Int, Int]]
+      val testStoreA = TestStore[Int,Int]("testA", batcher, initStore, inWithTime.size)
+      val testStoreB = TestStore[Int,Int]("testB", batcher, initStore, inWithTime.size)
+      val (buffer, source) = testSource(inWithTime)
+
+      val summer = TestGraphs
+        .twoSumByKey[Scalding,Int,Int,Int](source.map(_._2), testStoreA, keyExpand, testStoreB)
+
+      val scald = new Scalding("scalding-diamond-Job")
+      val intr = batchedCover(batcher, 0L, original.size.toLong)
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode((testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(_))
+
+      scald.run(ws, mode, summer)
+      // Now check that the inMemory ==
+
+      compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") must beTrue
+      compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
     }
   }
 }
