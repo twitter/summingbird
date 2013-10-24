@@ -29,7 +29,7 @@ import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
 import cascading.flow.FlowDef
 
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 
 object ScaldingStore extends java.io.Serializable {
   // This could be moved to scalding, but the API needs more design work

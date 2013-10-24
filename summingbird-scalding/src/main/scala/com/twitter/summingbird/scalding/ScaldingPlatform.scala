@@ -38,7 +38,7 @@ import com.twitter.scalding.Mode
 import scala.util.{ Success, Failure }
 import scala.util.control.Exception.allCatch
 
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 
 object Scalding {
   @transient private val logger = LoggerFactory.getLogger(classOf[Scalding])
@@ -65,6 +65,26 @@ object Scalding {
 
   def emptyFlowProducer[T]: FlowProducer[TypedPipe[T]] =
     Reader({ implicit fdm: (FlowDef, Mode) => TypedPipe.empty })
+
+  def getCommutativity(deps: Dependants[Scalding],
+    options: Map[String, Options],
+    s: Summer[Scalding, _, _]): Commutativity = {
+
+    val storeNames = deps.namesOf(s).map(_.id)
+    val isCommutative = getFirst[MonoidIsCommutative](options, storeNames)
+    isCommutative.map(_.commutativity) match {
+      case Some(Commutative) =>
+        logger.info("Store: {} is commutative", storeNames)
+        Commutative
+      case Some(NonCommutative) =>
+        logger.info("Store: {} is non-commutative (less efficient than commutative)", storeNames)
+        NonCommutative
+      case None =>
+        logger.warn("Store: {} has no commutativity setting. Assuming {}",
+          storeNames, MonoidIsCommutative.default)
+        MonoidIsCommutative.default.commutativity
+    }
+  }
 
   def intersect(dr1: DateRange, dr2: DateRange): Option[DateRange] =
     (dr1.as[Interval[Time]] && (dr2.as[Interval[Time]])).as[Option[DateRange]]
@@ -254,22 +274,6 @@ object Scalding {
       else
         p
 
-    def getCommutativity[K, V](s: Summer[Scalding, K, V]): Commutativity = {
-      val storeNames = dependants.namesOf(s).map(_.id)
-      val isCommutative = getFirst[MonoidIsCommutative](options, storeNames)
-      isCommutative.map(_.commutativity) match {
-        case Some(Commutative) =>
-          logger.info("Store: {} is commutative", storeNames)
-          Commutative
-        case Some(NonCommutative) =>
-          logger.info("Store: {} is non-commutative (less efficient than commutative)", storeNames)
-          NonCommutative
-        case None =>
-          logger.warn("Store: {} has no commutativity setting. Assuming {}",
-            storeNames, MonoidIsCommutative.default)
-          MonoidIsCommutative.default.commutativity
-      }
-    }
 
     built.get(producer) match {
       case Some(pf) => (pf.asInstanceOf[PipeFactory[T]], built)
@@ -300,7 +304,7 @@ object Scalding {
              * the time ranges that it needs.
              */
             val (in, m) = recurse(producer)
-            val commutativity = getCommutativity(summer)
+            val commutativity = getCommutativity(dependants, options, summer)
             val storeReducers = getOrElse(options, id, Reducers.default).count
             logger.info("Store {} using {} reducers (-1 means unset)", store, storeReducers)
             (store.merge(in, monoid, commutativity, storeReducers), m)
@@ -339,7 +343,7 @@ object Scalding {
                   val s = sAny.asInstanceOf[Summer[Scalding, Any, Any]]
                   if(downStream.forall(d => Producer.isNoOp(d) || d == s)) {
                     //only downstream are no-ops and the summer GO!
-                    getCommutativity(s) match {
+                    getCommutativity(dependants, options, s) match {
                       case Commutative =>
                         logger.info("enabling flatMapKeys mapside caching")
                         s.store.partialMerge(fmp, s.monoid, Commutative)
