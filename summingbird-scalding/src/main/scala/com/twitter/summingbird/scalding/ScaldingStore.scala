@@ -154,8 +154,15 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
 
     import IteratorSums._ // get the groupedSum, partials function
 
-    def prepareOld(old: TypedPipe[(K, V)]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
-      old.map { case (k, v) => (k, (inBatch, (Timestamp.Min, v))) }
+    /**
+     * we move all the old into the new batch next batch:
+     * This is done to keep the common case of one new batch such that there
+     * are not twice as many (K, BatchID) keys hitting the mapside caches
+     */
+    def prepareOld(old: TypedPipe[(K, V)]): TypedPipe[(K, (BatchID, (Timestamp, V)))] = {
+      val nextBatch = inBatch.next
+      old.map { case (k, v) => (k, (nextBatch, (Timestamp.Min, v))) }
+    }
 
     val capturedBatcher = batcher //avoid a closure on the whole store
 
@@ -173,7 +180,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
         .mapValueStream { it =>
           // each BatchID appears at most once, so it fits in RAM
           val batched: Map[BatchID, (Timestamp, V)] = groupedSum(it).toMap
-          partials((inBatch :: batches).iterator.map { bid => (bid,  batched.get(bid)) })
+          partials(batches.iterator.map { bid => (bid,  batched.get(bid)) })
         }
         .toTypedPipe
 
@@ -199,6 +206,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
             (ts.milliSinceEpoch, (k, (prev, v)))
           }
         }
+        .filter { _._1 > Long.MinValue } // Make sure to drop the last input bathches
 
     // Now in the flow-producer monad; do it:
     for {
