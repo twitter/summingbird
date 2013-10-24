@@ -53,6 +53,12 @@ object TestGraphGenerators {
     if(deps.size == 1) genProd2 else oneOf(deps)
   }
 
+  def aDependency1[P <: Platform[P]](p: Producer[P, Int])(implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
+                                      testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[Producer[P, Int]] = {
+    val deps = Producer.transitiveDependenciesOf(p).filter(_ == p).collect{case x:Producer[_, _] => x.asInstanceOf[Producer[P, Int]]}
+    if(deps.size == 1) genProd1 else oneOf(deps)
+  }
+
   def aTailDependency[P <: Platform[P]](p: Producer[P, Any])(implicit genSource1 : Arbitrary[Producer[P, Int]],
          genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]], testStore: P#Store[Int, Int],
          sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[TailProducer[P, Any]] = {
@@ -95,11 +101,19 @@ object TestGraphGenerators {
     name <- Gen.alphaStr
   } yield NamedProducer(FlatMappedProducer(in, fn), name)
 
+   def genNamedProducer22[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
+                                      testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
+    _ <- Gen.choose(0, 1)
+    fn <- arbitrary[(Int) => List[Int]]
+    in <- genProd2
+    name <- Gen.alphaStr
+  } yield IdentityKeyedProducer(in.name(name))
+
   def genMerged1[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
                                   testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
     _  <- Gen.choose(0,1)
     p1 <- genProd1
-    p2 <- genProd1
+    p2 <- aDependency1(p1)
   } yield MergedProducer(p1, p2)
 
   def genFlatMap12[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
