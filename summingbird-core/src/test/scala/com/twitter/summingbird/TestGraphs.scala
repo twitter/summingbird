@@ -17,7 +17,7 @@
 package com.twitter.summingbird
 
 import com.twitter.algebird.MapAlgebra
-import com.twitter.algebird.Monoid
+import com.twitter.algebird.{Monoid, Semigroup}
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop._
 
@@ -174,8 +174,39 @@ object TestGraphs {
     source: Producer[P, T], srv: P#Service[T, U], sink: P#Sink[(T, U)]): TailProducer[P, (T, U)] =
       source.lookup(srv).collectValues { case Some(v) => v }.write(sink)
 
-  def lookupJobInScala[P <: Platform[P], T, U](in: List[T], srv: (T) => Option[U]): List[(T, U)] =
+  def lookupJobInScala[T, U](in: List[T], srv: (T) => Option[U]): List[(T, U)] =
     in.map { t => (t, srv(t)) }.collect { case (t, Some(u)) => (t,u) }
+
+  def twoSumByKey[P <: Platform[P], K, V: Monoid, K2](
+    source: Producer[P, (K, V)],
+    store: P#Store[K, V],
+    fn: K => List[K2],
+    store2: P#Store[K2, V]): TailProducer[P, (K2, (Option[V], V))] =
+      source
+        .sumByKey(store)
+        .mapValues(_._2)
+        .flatMapKeys(fn)
+        .sumByKey(store2)
+
+  def scanSum[V: Semigroup](it: Iterator[V]): Iterator[(Option[V], V)] = {
+    var prev: Option[V] = None
+    it.map { v =>
+      val res = (prev, v)
+      prev = prev.map(Semigroup.plus(_, v)).orElse(Some(v))
+      res
+    }
+  }
+
+  def twoSumByKeyInScala[K1, V: Semigroup, K2](in: List[(K1, V)], fn: K1 => List[K2]): (Map[K1, V], Map[K2, V]) = {
+    val sum1 = MapAlgebra.sumByKey(in)
+    val sumStream = in.groupBy(_._1)
+      .mapValues { l => scanSum(l.iterator.map(_._2)).toList }
+      .toIterable
+      .flatMap { case (k, lv) => lv.map((k, _)) }
+    val v2 = sumStream.map { case (k, (_, v)) => fn(k).map { (_, v) } }.flatten
+    val sum2 = MapAlgebra.sumByKey(v2)
+    (sum1, sum2)
+  }
 }
 
 class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbitrary: Equiv: Monoid](platform: P)(

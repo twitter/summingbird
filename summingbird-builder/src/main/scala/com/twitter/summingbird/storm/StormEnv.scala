@@ -18,10 +18,11 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.Config
 import com.twitter.scalding.Args
-import com.twitter.chill.ScalaKryoInstantiator
+import com.twitter.chill.{ScalaKryoInstantiator, Kryo, toRich, IKryoRegistrar}
 import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
 import com.twitter.chill.java.IterableRegistrar
 import com.twitter.summingbird.{ Env, Unzip2, Producer, TailProducer }
+import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import com.twitter.summingbird.scalding.Scalding
 import scala.collection.JavaConverters._
 
@@ -57,6 +58,14 @@ case class StormEnv(override val jobName: String, override val args: Args)
         new ScalaKryoInstantiator()
           .withRegistrar(builder.registrar)
           .withRegistrar(new IterableRegistrar(ajob.registrars))
+          .withRegistrar(new IKryoRegistrar {
+            def apply(k: Kryo) {
+              List(classOf[BatchID], classOf[Timestamp])
+                .foreach { cls =>
+                  if(!k.alreadyRegistered(cls)) k.register(cls)
+                }
+            }
+          })
       )
       transformed
     }.run(

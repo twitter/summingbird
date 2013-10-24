@@ -19,6 +19,7 @@ package com.twitter.summingbird.scalding
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.chill.ScalaKryoInstantiator
 import com.twitter.chill.java.IterableRegistrar
+import com.twitter.chill.{Kryo, IKryoRegistrar, toRich }
 import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
 import com.twitter.scalding.{ Tool => STool, _ }
 import com.twitter.summingbird.scalding.store.HDFSMetadata
@@ -26,6 +27,7 @@ import com.twitter.summingbird.{ Env, Unzip2, Summer, Producer, TailProducer, Ab
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.builder.{ SourceBuilder, Reducers, CompletedBuilder }
 import com.twitter.summingbird.storm.Storm
+
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
@@ -105,6 +107,14 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
         new ScalaKryoInstantiator()
           .withRegistrar(builder.registrar)
           .withRegistrar(new IterableRegistrar(ajob.registrars))
+          .withRegistrar(new IKryoRegistrar {
+            def apply(k: Kryo) {
+              List(classOf[BatchID], classOf[Timestamp])
+                .foreach { cls =>
+                  if(!k.alreadyRegistered(cls)) k.register(cls)
+                }
+            }
+          })
       )
       fromMap(ajob.transformConfig(jConf.as[Map[String, AnyRef]]))
     }
