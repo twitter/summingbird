@@ -107,6 +107,9 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   protected def sumByBatches[K1,V:Semigroup](ins: TypedPipe[(Long, (K1, V))],
     capturedBatcher: Batcher,
     commutativity: Commutativity): TypedPipe[((K1, BatchID), (Timestamp, V))] = {
+      implicit val timeValueSemigroup: Semigroup[(Timestamp, V)] =
+        IteratorSums.optimizedPairSemigroup[Timestamp, V](1000)
+
       val inits = ins.map { case (t, (k, v)) =>
         val ts = Timestamp(t)
         val batch = capturedBatcher.batchOf(ts)
@@ -173,7 +176,12 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     /** Produce a merged stream such that each BatchID, Key pair appears only one time.
      */
     def mergeAll(all: TypedPipe[(K, (BatchID, (Timestamp, V)))]):
-      TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))] =
+      TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))] = {
+
+      // Make sure to use sumOption on V
+      implicit val timeValueSemigroup: Semigroup[(Timestamp, V)] =
+        IteratorSums.optimizedPairSemigroup[Timestamp, V](1000)
+
       all.group
         .withReducers(reducers)
         .sortBy { case (_, (t, _)) => t } //we are sorted on time, therefore BatchID
@@ -183,6 +191,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           partials(batches.iterator.map { bid => (bid,  batched.get(bid)) })
         }
         .toTypedPipe
+      }
 
     /**
      * There is no flatten on Option, this adds it
