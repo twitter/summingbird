@@ -175,7 +175,7 @@ object ToplogyTests extends Specification {
   		.flatMap(testFn).name(nodeName).name(otherNodeName)
       .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
 
-  	 val opts = Map(otherNodeName -> Options().set(SpoutParallelism(40)),
+  	 val opts = Map(otherNodeName -> Options().set(FlatMapParallelism(40)),
                 nodeName -> Options().set(FlatMapParallelism(50)))
 
   	val storm = Storm.local(opts)
