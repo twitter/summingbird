@@ -25,6 +25,7 @@ import com.twitter.summingbird.{ Env, Unzip2, Producer, TailProducer }
 import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import com.twitter.summingbird.scalding.Scalding
 import scala.collection.JavaConverters._
+import com.twitter.summingbird.{MutableStringConfig, StormConfig}
 
 /**
  * Storm-specific extension to Env. StormEnv handles storm-specific configuration
@@ -48,10 +49,11 @@ case class StormEnv(override val jobName: String, override val args: Args)
         .getOrElse(jobName.split("\\.").last)
 
     Storm.remote(builder.opts)
-      .withConfigUpdater { config =>
-      val c = ConfigBijection.invert(config)
-      val transformed = ConfigBijection(ajob.transformConfig(c))
-      val kryoConfig = new JavaMapConfig(transformed)
+      .withConfigUpdater { c =>
+      val transformed = ajob.transformConfig(c.toMap)
+      val kryoConfig = new com.twitter.chill.config.Config with MutableStringConfig {
+        val summingbirdConfig = c.updated(transformed)
+      }
       ConfInst.setSerialized(
         kryoConfig,
         classOf[ScalaKryoInstantiator],
@@ -67,7 +69,7 @@ case class StormEnv(override val jobName: String, override val args: Args)
             }
           })
       )
-      transformed
+      kryoConfig.unwrap
     }.run(
       builder.node.name(builder.id).asInstanceOf[TailProducer[Storm, _]],
       classSuffix

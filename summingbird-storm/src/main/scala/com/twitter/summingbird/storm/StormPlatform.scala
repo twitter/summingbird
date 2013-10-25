@@ -17,7 +17,7 @@
 package com.twitter.summingbird.storm
 
 import Constants._
-import backtype.storm.{Config, LocalCluster, StormSubmitter}
+import backtype.storm.{Config => BacktypeStormConfig, LocalCluster, StormSubmitter}
 import backtype.storm.generated.StormTopology
 import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
 import backtype.storm.tuple.Fields
@@ -90,7 +90,7 @@ object Storm {
   implicit def spoutAsSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] = source(spout, None)(timeOf)
 }
 
-abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
+abstract class Storm(options: Map[String, Options], transformConfig: SummingbirdConfig => SummingbirdConfig) extends Platform[Storm] {
   @transient private val logger = LoggerFactory.getLogger(classOf[Storm])
 
   type Source[+T] = StormSource[T]
@@ -232,7 +232,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
    * Base storm config instances used by the Storm platform.
    */
   def baseConfig = {
-    val config = new Config
+    val config = new BacktypeStormConfig
     config.setFallBackOnJavaSerialization(false)
     config.setKryoFactory(classOf[com.twitter.chill.storm.BlizzardKryoFactory])
     config.setMaxSpoutPending(1000)
@@ -244,11 +244,18 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       classOf[ScalaKryoInstantiator],
       new ScalaKryoInstantiator()
     )
-    transformConfig(config)
+    val state = transformConfig(StormConfig(config))
+
+    logger.debug("User config changes:")
+    logger.debug("Removes: {}", state.removes)
+    logger.debug("Updates: {}", state.updates)
+
+    state.removes.foreach(config.remove(_))
+    state.updates.foreach(kv => config.put(kv._1, kv._2))
+    config
   }
 
-  def transformConfig(base: Config): Config = updateConf(base)
-  def withConfigUpdater(fn: Config => Config): Storm
+  def withConfigUpdater(fn: SummingbirdConfig => SummingbirdConfig): Storm
 
   def plan[T](tail: TailProducer[Storm, T]): StormTopology = {
     implicit val topologyBuilder = new TopologyBuilder
@@ -269,10 +276,10 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   def run(topology: StormTopology, jobName: String): Unit
 }
 
-class RemoteStorm(options: Map[String, Options], updateConf: Config => Config) extends Storm(options, updateConf) {
+class RemoteStorm(options: Map[String, Options], transformConfig: SummingbirdConfig => SummingbirdConfig) extends Storm(options, transformConfig) {
 
-  override def withConfigUpdater(fn: Config => Config) =
-    new RemoteStorm(options, updateConf.andThen(fn))
+  override def withConfigUpdater(fn: SummingbirdConfig => SummingbirdConfig) =
+    new RemoteStorm(options, transformConfig.andThen(fn))
 
   override def run(topology: StormTopology, jobName: String): Unit = {
     val topologyName = "summingbird_" + jobName
@@ -280,12 +287,12 @@ class RemoteStorm(options: Map[String, Options], updateConf: Config => Config) e
   }
 }
 
-class LocalStorm(options: Map[String, Options], updateConf: Config => Config)
-  extends Storm(options, updateConf) {
+class LocalStorm(options: Map[String, Options], transformConfig: SummingbirdConfig => SummingbirdConfig)
+  extends Storm(options, transformConfig) {
   lazy val localCluster = new LocalCluster
 
-  override def withConfigUpdater(fn: Config => Config) =
-    new LocalStorm(options, updateConf.andThen(fn))
+  override def withConfigUpdater(fn: SummingbirdConfig => SummingbirdConfig) =
+    new LocalStorm(options, transformConfig.andThen(fn))
 
   override def run(topology: StormTopology, jobName: String): Unit = {
     val topologyName = "summingbird_" + jobName
