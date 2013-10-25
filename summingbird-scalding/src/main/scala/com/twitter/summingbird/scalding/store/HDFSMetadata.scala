@@ -108,12 +108,18 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
       it <- hmd.get[T].toOption if fn(it)
     } yield (it, hmd)
 
-  /** This touches the filesystem once on each call, newest to oldest
+  /** This touches the filesystem once on each call, newest (largest) to oldest (smallest)
    * This relies on dfs-datastore doing the sorting, which it does
    * last we checked
    */
-  def versions: Stream[Long] =
-    versionedStore.getAllVersions.asScala.toStream.map { _.longValue }
+  def versions: Iterable[Long] =
+    versionedStore
+      .getAllVersions
+      .asScala
+      .toList
+      .sorted
+      .reverse
+      .map { _.longValue }
 
   /** Refer to a specific version, even if it does not exist on disk */
   def apply(version: Long): HDFSVersionMetadata =
@@ -126,7 +132,7 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
 
 /** Refers to a specific version on disk. Allows reading and writing metadata to specific locations
  */
-class HDFSVersionMetadata private[store] (val version: Long, conf: Configuration, path: Path) {
+class HDFSVersionMetadata private[store] (val version: Long, conf: Configuration, val path: Path) {
   private def getString: Try[String] =
     Try {
       val fs = FileSystem.get(conf)
