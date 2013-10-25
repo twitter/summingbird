@@ -55,6 +55,7 @@ class OptionsTest extends Specification {
     val conf = scalding.build.updater(new Configuration)
     conf.get("com.twitter.chill.config.configuredinstantiator") must notBeNull
     conf.get("summingbird.args") must be_==(scalding.args.toString)
+    conf.get("cascading.aggregateby.threshold") must be_==("100000")
 
     val opts = scalding.build.builder.opts
     val dependants = Dependants(scalding.build.builder.node.name(scalding.build.builder.id))
