@@ -18,6 +18,7 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.chill.ScalaKryoInstantiator
+import com.twitter.chill.hadoop.HadoopConfig
 import com.twitter.chill.java.IterableRegistrar
 import com.twitter.chill.{Kryo, IKryoRegistrar, toRich }
 import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
@@ -87,7 +88,11 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // Summingbird job.
   def reducers : Int = args.getOrElse("reducers","20").toInt
 
-  def run {
+  case class Built(name: String,
+    builder: CompletedBuilder[Scalding, _, _],
+    updater: (Configuration => Configuration))
+
+  lazy val build: Built = {
     // Calling abstractJob's constructor and binding it to a variable
     // forces any side effects caused by that constructor (building up
     // of the environment and defining the builder).
@@ -99,8 +104,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
       // I think we shouldn't pretend Configuration is immutable.
       new GenericOptionsParser(conf, inargs)
 
-      val jConf: JMap[String,AnyRef] = new JHashMap(fromJavaMap.invert(conf))
-      val kryoConfig = new JavaMapConfig(jConf)
+      val kryoConfig = new HadoopConfig(conf)
       ConfInst.setSerialized(
         kryoConfig,
         classOf[ScalaKryoInstantiator],
@@ -116,12 +120,18 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
             }
           })
       )
-      fromMap(ajob.transformConfig(jConf.as[Map[String, AnyRef]]))
+      conf.set("summingbird.args", args.toString)
+      ajob.transformConfig(conf.as[Map[String, AnyRef]]).as[Configuration]
     }
     val jobName =
       args.optional("name")
         .getOrElse(ajob.getClass.getName)
-    run(jobName, scaldingBuilder, updater)
+    Built(jobName, scaldingBuilder, updater)
+  }
+
+  def run {
+    val Built(name, builder, updater) = build
+    run(name, builder, updater)
   }
 
   // Used to insert a write just before the store so the store
