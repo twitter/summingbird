@@ -49,27 +49,9 @@ case class StormEnv(override val jobName: String, override val args: Args)
         .getOrElse(jobName.split("\\.").last)
 
     Storm.remote(builder.opts)
+      .withRegistrars(ajob.registrars ++ builder.registrar.getRegistrars.asScala)
       .withConfigUpdater { c =>
-      val transformed = ajob.transformConfig(c.toMap)
-      val kryoConfig = new com.twitter.chill.config.Config with MutableStringConfig {
-        val summingbirdConfig = c.updated(transformed)
-      }
-      ConfInst.setSerialized(
-        kryoConfig,
-        classOf[ScalaKryoInstantiator],
-        new ScalaKryoInstantiator()
-          .withRegistrar(builder.registrar)
-          .withRegistrar(new IterableRegistrar(ajob.registrars))
-          .withRegistrar(new IKryoRegistrar {
-            def apply(k: Kryo) {
-              List(classOf[BatchID], classOf[Timestamp])
-                .foreach { cls =>
-                  if(!k.alreadyRegistered(cls)) k.register(cls)
-                }
-            }
-          })
-      )
-      kryoConfig.unwrap
+      c.updated(ajob.transformConfig(c.toMap))
     }.run(
       builder.node.name(builder.id).asInstanceOf[TailProducer[Storm, _]],
       classSuffix
