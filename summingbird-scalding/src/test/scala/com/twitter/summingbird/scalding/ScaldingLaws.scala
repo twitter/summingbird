@@ -20,7 +20,7 @@ import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
 import com.twitter.algebird.monad._
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch._
-import com.twitter.summingbird.scalding.store.{CheckpointConfig, CheckpointState}
+import com.twitter.summingbird.scalding.state.HDFSState
 
 import java.util.TimeZone
 import java.io.File
@@ -249,11 +249,12 @@ object ScaldingLaws extends Specification {
 
   implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor( _._1 )
 
-  def compareMaps[K,V:Group](original: Iterable[Any], inMemory: Map[K, V], testStore: TestStore[K, V]): Boolean = {
+  def compareMaps[K,V:Group](original: Iterable[Any], inMemory: Map[K, V], testStore: TestStore[K, V], name: String = ""): Boolean = {
     val produced = testStore.lastToIterable.toMap
     val diffMap = Group.minus(inMemory, produced)
     val wrong = Monoid.isNonZero(diffMap)
     if(wrong) {
+      if(!name.isEmpty) println("%s is wrong".format(name))
       println("input: " + original)
       println("input size: " + original.size)
       println("input batches: " + testStore.batcher.batchOf(Timestamp(original.size)))
@@ -476,81 +477,32 @@ object ScaldingLaws extends Specification {
         println("SinkMissing: " + (inWithTime.toSet -- sinkOut.map(_._2).toSet))
       }
     }
-    
-    "make sure CheckpointState creates checkpoint" in {
-      // TODO complete this
-      implicit val fixedBatcher : Batcher = new MillisecondBatcher(30*60*1000L)
-      implicit def tz = TimeZone.getTimeZone("UTC")
-      implicit def parser = DateParser.default
-      
-      val path:String = "target/cpstate1"
-      val startDate: Option[Timestamp] = Some("2012-12-26T09:45").map(RichDate(_).value)
-      val numBatches: Option[Long] = Some(10)
-      val config = CheckpointConfig(new Configuration, path, startDate, numBatches)
-      
-      val state = CheckpointState(config)
-      val preparedState = state.begin
-      val runningState = preparedState.willAccept(preparedState.requested)
-      runningState match {
-        case Right(t) => t.succeed
-        case Left(t) => sys.error("test case failed")
-      }
-      
-      BatchID.range(fixedBatcher.batchOf(startDate.get), fixedBatcher.batchOf(startDate.get) + numBatches.get - 1)
-      .foreach(t => (path + "/"+ fixedBatcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
-      
-      //cleanup
-      BatchID.range(fixedBatcher.batchOf(startDate.get), fixedBatcher.batchOf(startDate.get) + numBatches.get - 1)
-      .foreach(t => new File(path + "/"+ fixedBatcher.earliestTimeOf(t).milliSinceEpoch + ".version").delete)
-    }
-    
-    "make sure CheckpointState creates partial checkpoint" in {
-      implicit val fixedBatcher : Batcher = new MillisecondBatcher(30*60*1000L)
-      implicit def tz = TimeZone.getTimeZone("UTC")
-      implicit def parser = DateParser.default
-      
-      val path:String = "target/cpstate2"
-      val startDate: Option[Timestamp] = Some("2012-12-26T09:45").map(RichDate(_).value)
-      val numBatches: Option[Long] = Some(10)
-      val config = CheckpointConfig(new Configuration, path, startDate, numBatches)
-      
-      // Not aligned with batch size
-      val partialIncompleteInterval:Interval[Timestamp] = Interval.leftClosedRightOpen(
-          fixedBatcher.earliestTimeOf(fixedBatcher.batchOf(startDate.get)), 
-          RichDate("2012-12-26T10:40").value)
-          
-      val partialCompleteInterval:Interval[Timestamp] = Interval.leftClosedRightOpen(
-          fixedBatcher.earliestTimeOf(fixedBatcher.batchOf(startDate.get)),
-          RichDate("2012-12-26T11:30").value)
-      
-      val runningState = CheckpointState(config).begin.willAccept(partialIncompleteInterval)
-      val waitingState = runningState match {
-        case Right(t) => sys.error("test case failed")
-        case Left(t) => t
-      }
-      
-      // reuse the waitingstate
-      val waitingState2 = waitingState.begin.willAccept(partialCompleteInterval) match {
-        case Right(t) => t.succeed
-        case Left(t) => sys.error("test case failed")
-      }
-      
-      BatchID.range(fixedBatcher.batchOf(startDate.get), fixedBatcher.batchOf(RichDate("2012-12-26T11:30").value) - 1)
-      .foreach(t => (path + "/"+ fixedBatcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
-      
-      // start from where you left
-      val preparedState2 = waitingState2.begin
-      preparedState2.willAccept(preparedState2.requested) match {
-        case Right(t) => t.succeed
-        case Left(t) => sys.error("test case failed")
-      }
-      
-      BatchID.range(fixedBatcher.batchOf(startDate.get), fixedBatcher.batchOf(startDate.get) + numBatches.get - 1)
-      .foreach(t => (path + "/"+ fixedBatcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
-      
-      //cleanup
-      BatchID.range(fixedBatcher.batchOf(startDate.get), fixedBatcher.batchOf(startDate.get) + numBatches.get - 1)
-      .foreach(t => new File(path + "/"+ fixedBatcher.earliestTimeOf(t).milliSinceEpoch + ".version").delete)
+
+    "Correctly aggregate multiple sumByKeys" in {
+      val original = sample[List[(Int,Int)]]
+      val keyExpand = sample[(Int) => List[Int]]
+      val (inMemoryA, inMemoryB) = TestGraphs.twoSumByKeyInScala(original, keyExpand)
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = randomBatcher(inWithTime)
+      val initStore = sample[Map[Int, Int]]
+      val testStoreA = TestStore[Int,Int]("testA", batcher, initStore, inWithTime.size)
+      val testStoreB = TestStore[Int,Int]("testB", batcher, initStore, inWithTime.size)
+      val (buffer, source) = testSource(inWithTime)
+
+      val summer = TestGraphs
+        .twoSumByKey[Scalding,Int,Int,Int](source.map(_._2), testStoreA, keyExpand, testStoreB)
+
+      val scald = new Scalding("scalding-diamond-Job")
+      val intr = batchedCover(batcher, 0L, original.size.toLong)
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode((testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(_))
+
+      scald.run(ws, mode, summer)
+      // Now check that the inMemory ==
+
+      compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") must beTrue
+      compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
     }
   }
 }

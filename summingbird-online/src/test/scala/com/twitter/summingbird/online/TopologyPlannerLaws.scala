@@ -48,7 +48,6 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
             x: List[(Int, Int)] =>
               IdentityKeyedProducer(Memory.toSource(x))})
 
-
   lazy val genGraph : Gen[TailProducer[Memory, _]]= for {
     tail <- oneOf(summed, written)
   } yield tail
@@ -56,8 +55,6 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
 
   implicit def genDag: Arbitrary[MemoryDag] = Arbitrary(genGraph.map(OnlinePlan(_)))
   implicit def genProducer: Arbitrary[TailProducer[Memory, _]] = Arbitrary(genGraph)
-
-
 
   val testFn = { i: Int => List((i -> i)) }
 
@@ -82,18 +79,6 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     dumpNumber = dumpNumber + 1
   }
 
-
-
-  def isNoOpProducer(p: Producer[_, _]): Boolean = {
-    p match {
-      case IdentityKeyedProducer(_) => true
-      case NamedProducer(_, _) => true
-      case MergedProducer(_, _) => true
-      case AlsoProducer(_, _) => true
-      case _ => false
-    }
-  }
-
   property("Dag Nodes must be unique") = forAll { (dag: MemoryDag) =>
     dag.nodes.size == dag.nodes.toSet.size
   }
@@ -106,7 +91,7 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
 
   property("If a Node contains a Summer, all other producers must be NOP's") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
-      val producersWithoutNOP = n.members.filterNot(isNoOpProducer(_))
+      val producersWithoutNOP = n.members.filterNot(Producer.isNoOp(_))
       val firstP = producersWithoutNOP.headOption
       producersWithoutNOP.forall{p =>
         val inError = (p.isInstanceOf[Summer[_, _, _]] && producersWithoutNOP.size != 1)

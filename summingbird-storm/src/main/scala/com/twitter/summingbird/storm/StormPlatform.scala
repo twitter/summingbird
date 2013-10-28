@@ -39,7 +39,7 @@ import com.twitter.summingbird.storm.planner._
 import com.twitter.util.Future
 import scala.annotation.tailrec
 import backtype.storm.tuple.Values
-
+import org.slf4j.LoggerFactory
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
@@ -67,7 +67,7 @@ sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 sealed trait StormSource[+T]
-case class SpoutSource[+T](spout: Spout[(Long, T)]) extends StormSource[T]
+case class SpoutSource[+T](spout: Spout[(Long, T)], parallelism: Option[option.SpoutParallelism]) extends StormSource[T]
 
 object Storm {
   def local(options: Map[String, Options] = Map.empty): LocalStorm =
@@ -79,14 +79,20 @@ object Storm {
   def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier.from(store)
 
-  implicit def toStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) =
-    SpoutSource(spout.map(t => (timeOf(t), t)))
+  def toStormSource[T](spout: Spout[T], defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]) =
+    SpoutSource(spout.map(t => (timeOf(t), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
 
-  implicit def source[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]) =
-    Producer.source[Storm, T](toStormSource(spout))
+  implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] = toStormSource(spout, None)(timeOf)
+
+  def source[T](spout: Spout[T], defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]) =
+    Producer.source[Storm, T](toStormSource(spout, defaultSourcePar))
+
+  implicit def spoutAsSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] = source(spout, None)(timeOf)
 }
 
 abstract class Storm(options: Map[String, Options], updateConf: Config => Config) extends Platform[Storm] {
+  @transient private val logger = LoggerFactory.getLogger(classOf[Storm])
+
   type Source[+T] = StormSource[T]
   type Store[-K, V] = StormStore[K, V]
   type Sink[-T] = () => (T => Future[Unit])
@@ -95,14 +101,24 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
 
   private type Prod[T] = Producer[Storm, T]
 
-  private def getOrElse[T: Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
+  private def getOrElse[T <: AnyRef : Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
     val producer = node.members.last
+
     val namedNodes = dag.producerToPriorityNames(producer)
-    (for {
+    val maybePair = (for {
       id <- namedNodes
       stormOpts <- options.get(id)
       option <- stormOpts.get[T]
-    } yield option).headOption.getOrElse(default)
+    } yield (id, option)).headOption
+
+    maybePair match {
+      case None =>
+          logger.debug("Node ({}): Using default setting {}", dag.getNodeName(node), default)
+          default
+      case Some((namedSource, option)) =>
+          logger.info("Node {}: Using {} found via NamedProducer \"{}\"", Array[AnyRef](dag.getNodeName(node), option, namedSource))
+          option
+    }
   }
 
   private def scheduleFlatMapper(stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
@@ -150,8 +166,8 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
         new IntermediateFlatMapBolt(operation, metrics, anchorTuples, stormDag.dependenciesOf(node).size > 0)
     }
 
-    val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM)
-    val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism.parHint)
+    val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
+    val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism)
 
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
@@ -159,7 +175,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
   }
 
   private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
-    val spout = node.members.collect { case Source(SpoutSource(s)) => s }.head
+    val (spout, parOpt) = node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
     val nodeName = stormDag.getNodeName(node)
 
     val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) { (spout, p) =>
@@ -173,7 +189,7 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       }
     }.getSpout
 
-    val parallelism = getOrElse(stormDag, node, DEFAULT_SPOUT_PARALLELISM).parHint
+    val parallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SPOUT_PARALLELISM)).parHint
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
@@ -198,11 +214,13 @@ abstract class Storm(options: Map[String, Options], updateConf: Config => Config
       anchorTuples,
       stormDag.dependenciesOf(node).size > 0)
 
+    val parallelism = getOrElse(stormDag, node, DEFAULT_SINK_PARALLELISM).parHint
     val declarer =
       topologyBuilder.setBolt(
         nodeName,
         sinkBolt,
-        getOrElse(stormDag, node, DEFAULT_SINK_PARALLELISM).parHint)
+        parallelism
+        )
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     dependenciesNames.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))

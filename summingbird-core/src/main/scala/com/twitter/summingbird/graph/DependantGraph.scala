@@ -46,5 +46,5 @@ abstract class DependantGraph[T] {
    * Return all dependendants of a given node.
    * Does not include itself
    */
-  def transitiveDependantsOf(p: T): List[T] = depthFirstOf(p)(graph).toList
+  def transitiveDependantsOf(p: T): List[T] = depthFirstOf(p)(graph)
 }

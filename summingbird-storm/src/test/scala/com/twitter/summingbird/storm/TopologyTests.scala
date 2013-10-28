@@ -171,11 +171,14 @@ object ToplogyTests extends Specification {
 
   "With 2 names in a row we take the closest name" in {
   	val nodeName = "super dooper node"
+    val otherNodeName = "super dooper node"
   	val p = Storm.source(TraversableSpout(sample[List[Int]]))
-  		.flatMap(testFn).name(nodeName).name("Throw away name")
+  		.flatMap(testFn).name(nodeName).name(otherNodeName)
       .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
 
-  	val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)))
+  	 val opts = Map(otherNodeName -> Options().set(FlatMapParallelism(40)),
+                nodeName -> Options().set(FlatMapParallelism(50)))
+
   	val storm = Storm.local(opts)
   	val stormTopo = storm.plan(p)
     // Source producer
@@ -185,6 +188,26 @@ object ToplogyTests extends Specification {
     val TDistMap = bolts.map{case (k, v) => (k.split("-").size - 1, v)}
 
 	TDistMap(1).get_common.get_parallelism_hint must be(50)
+  }
+
+  "If the closes doesnt contain the option we keep going" in {
+    val nodeName = "super dooper node"
+    val otherNodeName = "super dooper node"
+    val p = Storm.source(TraversableSpout(sample[List[Int]]))
+      .flatMap(testFn).name(otherNodeName).name(nodeName)
+      .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
+
+    val opts = Map(otherNodeName -> Options().set(SpoutParallelism(30)),
+                nodeName -> Options().set(FlatMapParallelism(50)))
+    val storm = Storm.local(opts)
+    val stormTopo = storm.plan(p)
+    // Source producer
+    val bolts = stormTopo.get_bolts
+
+    // Tail will have 1 -, distance from there should be onwards
+    val TDistMap = bolts.map{case (k, v) => (k.split("-").size - 1, v)}
+
+  TDistMap(1).get_common.get_parallelism_hint must be(50)
   }
 
   "Options propagate backwards" in {
