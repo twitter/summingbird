@@ -25,7 +25,7 @@ import com.twitter.summingbird.{ Env, Unzip2, Producer, TailProducer }
 import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import com.twitter.summingbird.scalding.Scalding
 import scala.collection.JavaConverters._
-import com.twitter.summingbird.{MutableStringConfig, StormConfig}
+import com.twitter.summingbird.MutableStringConfig
 
 /**
  * Storm-specific extension to Env. StormEnv handles storm-specific configuration

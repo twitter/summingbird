@@ -225,6 +225,7 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdChill,
     summingbirdBatch
   )
 

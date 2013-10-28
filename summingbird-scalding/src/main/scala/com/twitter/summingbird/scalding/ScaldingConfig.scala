@@ -14,22 +14,22 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.scalding
 
-import backtype.storm.{Config => BacktypeStormConfig}
 import scala.collection.JavaConverters._
+import org.apache.hadoop.conf.Configuration
 import com.twitter.summingbird.{WrappingConfig, ReadableMap}
 
-object StormConfig {
-  def apply(backingConfig: BacktypeStormConfig) = WrappingConfig(new WrappedBacktypeStormConfig(backingConfig))
+object ScaldingConfig {
+  def apply(backingConfig: Configuration) = WrappingConfig(new WrappedHadoopConfig(backingConfig))
 }
 
-class WrappedBacktypeStormConfig(backingConfig: BacktypeStormConfig) extends ReadableMap {
+class WrappedHadoopConfig(backingConfig: Configuration) extends ReadableMap {
   def get(key: String): Option[AnyRef] =
-    if(backingConfig.containsKey(key))
+    if(keys.contains(key))
       Some(backingConfig.get(key))
     else
       None
 
-  val keys: Set[String] = backingConfig.keySet.asScala.toSet
+  val keys: Set[String] = backingConfig.iterator.asScala.map(_.getKey).toSet
 }

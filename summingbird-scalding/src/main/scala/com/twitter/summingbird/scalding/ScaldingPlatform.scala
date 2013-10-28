@@ -25,6 +25,8 @@ import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource
 import com.twitter.summingbird._
 import com.twitter.summingbird.scalding.option.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
+import com.twitter.chill.IKryoRegistrar
+import com.twitter.summingbird.chill._
 import com.twitter.summingbird.option._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
@@ -42,6 +44,11 @@ import org.slf4j.LoggerFactory
 
 object Scalding {
   @transient private val logger = LoggerFactory.getLogger(classOf[Scalding])
+
+
+  def apply(jobName: String, options: Map[String, Options] = Map.empty) = {
+    new Scalding(jobName, options, identity, List())
+  }
 
   implicit val dateRangeInjection: Injection[DateRange, Interval[Time]] = Injection.build {
     (dr: DateRange) => {
@@ -494,7 +501,10 @@ case class WriteStepsDot(filename: String)
 
 class Scalding(
   jobName: String,
-  @transient options: Map[String, Options] = Map.empty)
+  @transient options: Map[String, Options],
+  @transient transformConfig: SummingbirdConfig => SummingbirdConfig,
+  @transient passedRegistrars: List[IKryoRegistrar]
+  )
     extends Platform[Scalding] {
 
   type Source[T] = PipeFactory[T]
@@ -511,6 +521,28 @@ class Scalding(
     classOf[cascading.tuple.hadoop.TupleSerialization],
     classOf[com.twitter.chill.hadoop.KryoSerialization]
   )
+
+  def withRegistrars(newRegs: List[IKryoRegistrar]) =
+    new Scalding(jobName, options, transformConfig, newRegs ++ passedRegistrars)
+
+  def withConfigUpdater(fn: SummingbirdConfig => SummingbirdConfig) =
+    new Scalding(jobName, options, transformConfig.andThen(fn), passedRegistrars)
+
+  def updateConfig(conf: Configuration) {
+    val scaldingConfig = SBChillRegistrar(ScaldingConfig(conf), passedRegistrars)
+    Scalding.logger.debug("Serialization config changes:")
+    Scalding.logger.debug("Removes: {}", scaldingConfig.removes)
+    Scalding.logger.debug("Updates: {}", scaldingConfig.updates)
+
+    val transformedConfig = transformConfig(scaldingConfig)
+
+    Scalding.logger.debug("User+Serialization config changes:")
+    Scalding.logger.debug("Removes: {}", transformedConfig.removes)
+    Scalding.logger.debug("Updates: {}", transformedConfig.updates)
+
+    transformedConfig.removes.foreach(conf.set(_, null))
+    transformedConfig.updates.foreach(kv => conf.set(kv._1, kv._2.toString))
+  }
 
   private def setIoSerializations(m: Mode): Unit =
     m match {
@@ -536,14 +568,15 @@ class Scalding(
   }
 
   def run(state: WaitingState[Interval[Timestamp]],
-    mode: Mode,
+    mode: HadoopMode,
     pf: TailProducer[Scalding, Any]): WaitingState[Interval[Timestamp]] =
     run(state, mode, plan(pf))
 
   def run(state: WaitingState[Interval[Timestamp]],
-    mode: Mode,
+    mode: HadoopMode,
     pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = {
 
+    updateConfig(mode.jobConf)
     setIoSerializations(mode)
 
     val prepareState = state.begin

@@ -240,11 +240,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     config.setNumWorkers(12)
 
     val stormConfig = SBChillRegistrar(StormConfig(config), passedRegistrars)
-
+    logger.debug("Serialization config changes:")
+    logger.debug("Removes: {}", stormConfig.removes)
+    logger.debug("Updates: {}", stormConfig.updates)
 
     val transformedConfig = transformConfig(stormConfig)
 
-    logger.debug("User config changes:")
+    logger.debug("User+Serialization config changes:")
     logger.debug("Removes: {}", transformedConfig.removes)
     logger.debug("Updates: {}", transformedConfig.updates)
 
@@ -286,7 +288,8 @@ class RemoteStorm(options: Map[String, Options], transformConfig: SummingbirdCon
     StormSubmitter.submitTopology(topologyName, baseConfig, topology)
   }
 
-  override def withRegistrars(registrars: List[IKryoRegistrar]) = new RemoteStorm(options, transformConfig, passedRegistrars ++ registrars)
+  override def withRegistrars(registrars: List[IKryoRegistrar]) =
+    new RemoteStorm(options, transformConfig, passedRegistrars ++ registrars)
 }
 
 class LocalStorm(options: Map[String, Options], transformConfig: SummingbirdConfig => SummingbirdConfig, passedRegistrars: List[IKryoRegistrar])
@@ -301,5 +304,6 @@ class LocalStorm(options: Map[String, Options], transformConfig: SummingbirdConf
     localCluster.submitTopology(topologyName, baseConfig, topology)
   }
 
-  override def withRegistrars(registrars: List[IKryoRegistrar]) = new LocalStorm(options, transformConfig, passedRegistrars ++ registrars)
+  override def withRegistrars(registrars: List[IKryoRegistrar]) =
+    new LocalStorm(options, transformConfig, passedRegistrars ++ registrars)
 }
