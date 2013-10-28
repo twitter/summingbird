@@ -48,12 +48,15 @@ trait MutableStringConfig {
   protected def summingbirdConfig: SummingbirdConfig
   private var config = summingbirdConfig
   def get(key: String) = {
+    assert(config != null)
     config.get(key) match {
       case Some(s) => s.toString
       case None => null
     }
   }
+
   def set(key: String, value: String) {
+    assert(config != null)
     config = config.put(key, value)
   }
   def unwrap = config

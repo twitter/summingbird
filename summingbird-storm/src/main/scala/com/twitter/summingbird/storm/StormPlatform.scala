@@ -239,7 +239,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     config.setNumAckers(12)
     config.setNumWorkers(12)
 
-    val stormConfig = SBChillRegistrar(StormConfig(config), passedRegistrars)
+    val initialStormConfig = StormConfig(config)
+    val stormConfig = SBChillRegistrar(initialStormConfig, passedRegistrars)
     logger.debug("Serialization config changes:")
     logger.debug("Removes: {}", stormConfig.removes)
     logger.debug("Updates: {}", stormConfig.updates)

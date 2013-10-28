@@ -24,7 +24,7 @@ import com.twitter.summingbird.batch.{BatchID, Timestamp}
 object SBChillRegistrar {
   def apply(cfg: SummingbirdConfig, iterableRegistrars: List[IKryoRegistrar]): SummingbirdConfig = {
     val kryoConfig = new com.twitter.chill.config.Config with MutableStringConfig {
-      val summingbirdConfig = cfg
+      def summingbirdConfig = cfg
     }
 
     ConfInst.setSerialized(
