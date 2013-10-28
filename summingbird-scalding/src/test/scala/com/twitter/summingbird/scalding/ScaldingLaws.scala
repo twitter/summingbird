@@ -47,7 +47,7 @@ import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
 
 
-import org.specs._
+import org.specs2.mutable._
 
 /**
   * Tests for Summingbird's Scalding planner.
@@ -438,7 +438,7 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
 
-      compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must be (true)
+      compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
     }
 
     "match scala for diamond jobs with write" in {
@@ -534,7 +534,7 @@ object VersionBatchLaws extends Properties("VersionBatchLaws") {
 }
 
 class ScaldingSerializationSpecs extends Specification {
-  noDetailedDiffs()
+
 
   implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor( _._1 )
 
