@@ -544,12 +544,8 @@ class Scalding(
     transformedConfig.updates.foreach(kv => conf.set(kv._1, kv._2.toString))
   }
 
-  private def setIoSerializations(m: Mode): Unit =
-    m match {
-      case Hdfs(_, conf) =>
-        conf.set("io.serializations", ioSerializations.map { _.getName }.mkString(","))
-      case _ => ()
-    }
+  private def setIoSerializations(c: Configuration): Unit =
+      c.set("io.serializations", ioSerializations.map { _.getName }.mkString(","))
 
   // This is a side-effect-free computation that is called by run
   def toFlow(timeSpan: Interval[Time], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Time], Flow[_])] = {
@@ -568,16 +564,22 @@ class Scalding(
   }
 
   def run(state: WaitingState[Interval[Timestamp]],
-    mode: HadoopMode,
+    mode: Mode,
     pf: TailProducer[Scalding, Any]): WaitingState[Interval[Timestamp]] =
     run(state, mode, plan(pf))
 
   def run(state: WaitingState[Interval[Timestamp]],
-    mode: HadoopMode,
+    mode: Mode,
     pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = {
 
-    updateConfig(mode.jobConf)
-    setIoSerializations(mode)
+    mode match {
+      case Hdfs(_, conf) =>
+        updateConfig(conf)
+        setIoSerializations(conf)
+      case _ =>
+    }
+
+
 
     val prepareState = state.begin
     val timeSpan = prepareState.requested.mapNonDecreasing(_.milliSinceEpoch)
