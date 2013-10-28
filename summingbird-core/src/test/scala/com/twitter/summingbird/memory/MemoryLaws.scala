@@ -21,7 +21,8 @@ import com.twitter.summingbird._
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
 import collection.mutable.{ Map => MutableMap, ListBuffer }
-import org.specs._
+
+import org.specs2.mutable._
 
 /**
   * Tests for Summingbird's in-memory planner.
@@ -108,19 +109,19 @@ object MemoryLaws extends Specification {
 
   "The Memory Platform" should {
     //Set up the job:
-    "singleStep w/ Int, Int, Set[Int]" in { singleStepLaw[Int, Int, Set[Int]] must be(true) }
-    "singleStep w/ Int, String, List[Int]" in { singleStepLaw[Int, String, List[Int]] must be(true) }
-    "singleStep w/ String, Short, Map[Set[Int], Long]" in {singleStepLaw[String, Short, Map[Set[Int], Long]] must be(true) }
+    "singleStep w/ Int, Int, Set[Int]" in { singleStepLaw[Int, Int, Set[Int]] must beTrue }
+    "singleStep w/ Int, String, List[Int]" in { singleStepLaw[Int, String, List[Int]] must beTrue }
+    "singleStep w/ String, Short, Map[Set[Int], Long]" in {singleStepLaw[String, Short, Map[Set[Int], Long]] must beTrue }
 
-    "diamond w/ Int, Int, Set[Int]" in { diamondLaw[Int, Int, Set[Int]] must be(true) }
-    "diamond w/ Int, String, List[Int]" in { diamondLaw[Int, String, List[Int]] must be(true) }
-    "diamond w/ String, Short, Map[Set[Int], Long]" in { diamondLaw[String, Short, Map[Set[Int], Long]] must be(true) }
+    "diamond w/ Int, Int, Set[Int]" in { diamondLaw[Int, Int, Set[Int]] must beTrue }
+    "diamond w/ Int, String, List[Int]" in { diamondLaw[Int, String, List[Int]] must beTrue }
+    "diamond w/ String, Short, Map[Set[Int], Long]" in { diamondLaw[String, Short, Map[Set[Int], Long]] must beTrue }
 
-    "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must be(true) }
+    "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must beTrue }
 
-    "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must be(true) }
+    "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must beTrue }
 
-    "lookupCollect w/ Int, Int" in { lookupCollectChecker[Int, Int] must be(true) }
+    "lookupCollect w/ Int, Int" in { lookupCollectChecker[Int, Int] must beTrue }
   }
 
 }

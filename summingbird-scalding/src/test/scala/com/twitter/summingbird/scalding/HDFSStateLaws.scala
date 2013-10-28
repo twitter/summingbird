@@ -26,7 +26,7 @@ import java.util.{ TimeZone, UUID }
 import org.apache.hadoop.conf.Configuration
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
-import org.specs._
+import org.specs2.mutable._
 
 object HDFSStateLaws extends Specification {
   def tempPath: String = {

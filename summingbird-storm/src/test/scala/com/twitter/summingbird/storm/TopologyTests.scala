@@ -30,7 +30,7 @@ import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
 import java.util.{Collections, HashMap, Map => JMap, UUID}
 import java.util.concurrent.atomic.AtomicInteger
-import org.specs._
+import org.specs2.mutable._
 import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties

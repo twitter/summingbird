@@ -27,7 +27,7 @@ import com.twitter.summingbird.scalding.store.VersionedStore
 import com.twitter.tormenta.spout.Spout
 import com.twitter.storehaus.JMapStore
 import com.twitter.storehaus.algebra.StoreAlgebra
-import org.specs._
+import org.specs2.mutable._
 import java.util.Date
 import scala.util.Try
 
