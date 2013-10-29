@@ -13,6 +13,11 @@ object SummingbirdBuild extends Build {
       case x => x
     }
 
+  def specs2Import(scalaVersion: String) = scalaVersion match {
+      case version if version startsWith "2.9" => "org.specs2" %% "specs2" % "1.12.4.1" % "test" withSources()
+      case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test" withSources()
+  }
+
   val sharedSettings = Project.defaultSettings ++ Seq(
     organization := "com.twitter",
     version := "0.2.4",
@@ -21,11 +26,12 @@ object SummingbirdBuild extends Build {
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
-      "org.specs2" %% "specs2" % "1.12.4.1" % "test",
       // These satisify's scaldings log4j needs when in test mode
       "log4j" % "log4j" % "1.2.16" % "test",
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     ),
+
+    libraryDependencies <+= scalaVersion(specs2Import(_)),
 
     resolvers ++= Seq(
       Opts.resolver.sonatypeSnapshots,
