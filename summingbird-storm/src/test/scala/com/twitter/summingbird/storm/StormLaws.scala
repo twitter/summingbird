@@ -101,17 +101,20 @@ object StormRunner {
   }
 
   def run(topo: StormTopology) {
-     try {
-      tryRun(topo)
-    } catch {
-      case _: Throwable =>
-        Thread.sleep(3000)
+    this.synchronized {
+       try {
         tryRun(topo)
+      } catch {
+        case _: Throwable =>
+          Thread.sleep(3000)
+          tryRun(topo)
+      }
     }
   }
 }
 
 object StormLaws extends Specification {
+  sequential
   import MapAlgebra.sparseEquiv
 
   // This is dangerous, obviously. The Storm platform graphs tested
