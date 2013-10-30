@@ -49,7 +49,7 @@ import scala.collection.mutable.{
   */
 
 
-object ToplogyTests extends Specification {
+object TopologyTests extends Specification {
   import MapAlgebra.sparseEquiv
 
   // This is dangerous, obviously. The Storm platform graphs tested
