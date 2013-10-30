@@ -143,7 +143,7 @@ object StripNamedNode {
 
   // Priority list of of names for a given producer
   private def getName[P <: Platform[P]](dependants: Dependants[P], producer: Producer[P, Any]): List[String] = {
-    dependants.transitiveDependantsOf(producer).collect{case NamedProducer(_, n) => n}
+    (producer :: dependants.transitiveDependantsOf(producer)).collect{case NamedProducer(_, n) => n}
   }
 
   def apply[P <: Platform[P], T](tail: TailProducer[P, T]): (Map[Producer[P, Any], List[String]], TailProducer[P, T]) = {
