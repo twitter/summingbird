@@ -48,14 +48,13 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
             x: List[(Int, Int)] =>
               IdentityKeyedProducer(Memory.toSource(x))})
 
-
-  lazy val genDag : Gen[MemoryDag]= for {
-    tail <- summed
-  } yield OnlinePlan(tail)
-
-  implicit def genProducer: Arbitrary[MemoryDag] = Arbitrary(genDag)
+  lazy val genGraph : Gen[TailProducer[Memory, _]]= for {
+    tail <- oneOf(summed, written)
+  } yield tail
 
 
+  implicit def genDag: Arbitrary[MemoryDag] = Arbitrary(genGraph.map(OnlinePlan(_)))
+  implicit def genProducer: Arbitrary[TailProducer[Memory, _]] = Arbitrary(genGraph)
 
   val testFn = { i: Int => List((i -> i)) }
 
@@ -71,6 +70,15 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     dumpNumber = dumpNumber + 1
   }
 
+  def dumpGraph(tail: Producer[Memory, Any]) = {
+    import java.io._
+    import com.twitter.summingbird.viz.VizGraph
+    val writer2 = new PrintWriter(new File("/tmp/failingProducerGraph" + dumpNumber + ".dot"))
+    VizGraph(tail, writer2)
+    writer2.close()
+    dumpNumber = dumpNumber + 1
+  }
+
   property("Dag Nodes must be unique") = forAll { (dag: MemoryDag) =>
     dag.nodes.size == dag.nodes.toSet.size
   }
@@ -81,7 +89,7 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     }
   }
 
-  property("If a MemoryNode contains a Summer, all other producers must be NOP's") = forAll { (dag: MemoryDag) =>
+  property("If a Node contains a Summer, all other producers must be NOP's") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       val producersWithoutNOP = n.members.filterNot(Producer.isNoOp(_))
       val firstP = producersWithoutNOP.headOption
@@ -182,6 +190,22 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
   property("Nodes in the DAG should have unique names") = forAll { (dag: MemoryDag) =>
     val allNames = dag.nodes.toList.map{n => dag.getNodeName(n)}
     allNames.size == allNames.distinct.size
+  }
+
+  property("Running through the optimizer should only reduce the number of nodes") = forAll { (tail: TailProducer[Memory, _]) =>
+    val (_, stripped) = StripNamedNode(tail)
+    Producer.entireGraphOf(stripped).size <= Producer.entireGraphOf(tail).size
+  }
+
+  property("The number of non-named nodes should remain constant running with StripNamedNode") = forAll { (tail: TailProducer[Memory, _]) =>
+    def countNonNamed(tail: Producer[Memory, _]): Int = {
+      Producer.entireGraphOf(tail).collect {
+        case NamedProducer(_, _) => 0
+        case _ => 1
+      }.sum
+    }
+    val (_, stripped) = StripNamedNode(tail)
+    countNonNamed(tail) == countNonNamed(stripped)
   }
 
 }
