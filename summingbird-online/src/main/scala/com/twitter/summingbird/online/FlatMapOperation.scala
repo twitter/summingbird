@@ -17,7 +17,7 @@
 package com.twitter.summingbird.online
 
 import com.twitter.storehaus.ReadableStore
-import com.twitter.util.Future
+import com.twitter.util.{Future, Await}
 import java.io.{ Closeable, Serializable }
 
 // Represents the logic in the flatMap bolts
@@ -118,7 +118,7 @@ object FlatMapOperation {
 
       override def close {
         fm.close
-        store.close
+        Await.result(store.close)
       }
     }
 

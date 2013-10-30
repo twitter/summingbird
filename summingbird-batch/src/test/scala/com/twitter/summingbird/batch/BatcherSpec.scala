@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import org.specs._
+import org.specs2.mutable._
 
 class BatcherSpec extends Specification {
   val hourlyBatcher = Batcher.ofHours(1)
@@ -43,8 +43,8 @@ class BatcherSpec extends Specification {
     val longBatch: BatchID = batcher.currentBatch
     val curBatch: BatchID = batcher.batchOf(Timestamp.now)
     // For a 10min window, longBatch <= curBatch <= longBatch + 1
-    (longBatch.compare(curBatch - 1) >= 0) must be(true)
-    (longBatch.compare(curBatch) <= 0) must be(true)
+    (longBatch.compare(curBatch - 1) >= 0) must beTrue
+    (longBatch.compare(curBatch) <= 0) must beTrue
   }
 
   "DurationBatcher should always require n batches to fit into a batcher of n hours" in {

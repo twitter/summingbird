@@ -122,6 +122,14 @@ object TestGraphs {
     data1.merge(data2).merge(data3).merge(data4).sumByKey(store).name("Customer Supplied Job")
   }
 
+  def writtenPostSum[P <: Platform[P], T, K, V: Monoid]
+    (source: Producer[P, T], sink: P#Sink[(K, (Option[V], V))], store: P#Store[K, V])
+    (fnA: T => TraversableOnce[(K, V)])
+    : TailProducer[P, (K, (Option[V], V))] = {
+    val left = source.flatMap(fnA)
+    left.sumByKey(store).write(sink)
+  }
+
  def realJoinTestJobInScala[P <: Platform[P], T1, T2, T3, T4, K1, K2, U, JoinedU, V: Monoid] (
     source1: List[T1],
     source2: List[T2],

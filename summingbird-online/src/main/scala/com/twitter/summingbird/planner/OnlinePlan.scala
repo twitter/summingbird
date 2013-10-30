@@ -22,7 +22,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
   private type Prod[T] = Producer[P, T]
   private type VisitedStore = Set[Prod[_]]
   private type CNode = Node[P]
-  private type CFlatMapNode = FlatMapNode[P] 
+  private type CFlatMapNode = FlatMapNode[P]
 
   private val depData = Dependants(tail)
   private val forkedNodes = depData.nodes
@@ -43,8 +43,8 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       case WrittenProducer(_, _) => false
       case MergedProducer(_, _) => false
     }
-  } 
- 
+  }
+
   private def noOpProducer(dep: Producer[P, _]): Boolean = {
     dep match {
       case NamedProducer(_, _) => true
@@ -61,8 +61,11 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
     }
   }
 
-  private def hasSummerAsNextProducer(p: Prod[_]): Boolean = 
+  private def hasSummerAsDependantProducer(p: Prod[_]): Boolean =
             depData.dependantsOf(p).get.collect { case s: Summer[_, _, _] => s }.headOption.isDefined
+
+  private def dependsOnSummerProducer(p: Prod[_]): Boolean =
+            Producer.dependenciesOf(p).collect { case s: Summer[_, _, _] => s }.headOption.isDefined
 
   private def allDepsMergeableWithSource(p: Prod[_]): Boolean = mergableWithSource(p) && Producer.dependenciesOf(p).forall(allDepsMergeableWithSource)
 
@@ -97,8 +100,9 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
         val doSplit = activeBolt match {
           case _ if (forkedNodes.contains(dep)) => true // If its forked we must split
           case SummerNode(_) if !noOpProducer(dep) => true // If its not combinable with a Summer we must split
+          case _ if (!noOpProducer(currentProducer) && dependsOnSummerProducer(currentProducer)) => true // If its not combinable with a Summer we must split
           // If we need to have a node between a Source and a Summer, inject it here
-          case FlatMapNode(_) if hasSummerAsNextProducer(currentProducer) && allDepsMergeableWithSource(dep) => true
+          case FlatMapNode(_) if hasSummerAsDependantProducer(currentProducer) && allDepsMergeableWithSource(dep) => true
           case _ if ((!mergableWithSource(currentProducer)) && allDepsMergeableWithSource(dep)) => true
           case _ => false
         }
@@ -129,11 +133,11 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
         }
       }
 
-      dependantProducer match { 
+      dependantProducer match {
         case Summer(producer, _, _) => maybeSplitThenRecurse(dependantProducer, producer, currentBolt.toSummer)
         case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
-        case NamedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
-        case AlsoProducer(lProducer, rProducer) => 
+        case NamedProducer(producer, _) => sys.error("Should not try plan a named producer")
+        case AlsoProducer(lProducer, rProducer) =>
               val (updatedReg, updatedVisited) = maybeSplitThenRecurse(dependantProducer, rProducer)
               recurse(lProducer, FlatMapNode(), updatedReg, updatedVisited)
         case Source(spout) => (distinctAddToList(nodeSet, currentBolt.toSource), visitedWithN)
@@ -162,13 +166,14 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
 
 object OnlinePlan {
   def apply[P <: Platform[P], T](tail: TailProducer[P, T]): Dag[P] = {
-    val planner = new OnlinePlan(tail)
+    val (nameMap, strippedTail) = StripNamedNode(tail)
+    val planner = new OnlinePlan(strippedTail)
     val nodesSet = planner.nodeSet
 
     // The nodes are added in a source -> summer way with how we do list prepends
     // but its easier to look at laws in a summer -> source manner
     // We also drop all Nodes with no members(may occur when we visit a node already seen and its the first in that Node)
     val reversedNodeSet = nodesSet.filter(_.members.size > 0).foldLeft(List[Node[P]]()){(nodes, n) => n.reverse :: nodes}
-    Dag(tail, reversedNodeSet)
-  }  
+    Dag(nameMap, strippedTail, reversedNodeSet)
+  }
 }

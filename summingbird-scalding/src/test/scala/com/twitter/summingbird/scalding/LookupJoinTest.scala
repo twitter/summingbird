@@ -15,7 +15,7 @@ limitations under the License.
 */
 package com.twitter.summingbird.scalding
 
-import org.specs._
+import org.specs2.mutable._
 import java.lang.{Integer => JInt}
 import com.twitter.scalding._
 
@@ -58,7 +58,7 @@ class LookupJoinerJob(args : Args) extends Job(args) {
 }
 
 class LookupJoinedTest extends Specification {
-  noDetailedDiffs()
+
   import Dsl._
   import LookupJoinedTest.genList
 
@@ -143,7 +143,7 @@ class WindowLookupJoinerJob(args : Args) extends Job(args) {
 }
 
 class WindowLookupJoinedTest extends Specification {
-  noDetailedDiffs()
+
   import Dsl._
   import LookupJoinedTest.genList
   def windowLookupJoin[K,V,W](in0: Iterable[(Int,K,V)], in1: Iterable[(Int,K,W)], win: Int) = {
