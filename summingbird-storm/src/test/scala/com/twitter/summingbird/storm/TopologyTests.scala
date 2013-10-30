@@ -19,7 +19,7 @@ package com.twitter.summingbird.storm
 import backtype.storm.{ LocalCluster, Testing }
 import backtype.storm.generated.StormTopology
 import backtype.storm.testing.{ CompleteTopologyParam, MockedSources }
-import com.twitter.algebird.{MapAlgebra, Monoid}
+import com.twitter.algebird.{MapAlgebra, Semigroup}
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
@@ -73,7 +73,7 @@ object ToplogyTests extends Specification {
     */
   def testingStore(id: String) =
     new MergeableStore[(Int, BatchID), Int] with java.io.Serializable {
-      val monoid = implicitly[Monoid[Int]]
+      val semigroup = implicitly[Semigroup[Int]]
       def wrappedStore = globalState(id).store
       private def getOpt(k: (Int, BatchID)) = Option(wrappedStore.get(k)).flatMap(i => i)
       override def get(k: (Int, BatchID)) = Future.value(getOpt(k))
@@ -89,7 +89,7 @@ object ToplogyTests extends Specification {
       override def merge(pair: ((Int, BatchID), Int)) = {
         val (k, v) = pair
         val oldV = getOpt(k)
-        val newV = Monoid.plus(Some(v), oldV).flatMap(Monoid.nonZeroOption(_))
+        val newV = Semigroup.plus(Some(v), oldV)
         wrappedStore.put(k, newV)
         globalState(id).placed.incrementAndGet
         Future.value(oldV)
