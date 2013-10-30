@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.{ LocalCluster, Testing }
+import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, Testing }
 import backtype.storm.generated.StormTopology
 import backtype.storm.testing.{ CompleteTopologyParam, MockedSources }
 import com.twitter.algebird.{MapAlgebra, Semigroup}
@@ -77,21 +77,21 @@ object TrueGlobalState {
  */
 
 object StormRunner {
-  private val completeTopologyParam = {
+  private def completeTopologyParam(conf: BacktypeStormConfig) = {
     val ret = new CompleteTopologyParam()
     ret.setMockedSources(new MockedSources)
-    ret.setStormConf(Storm.local().baseConfig)
+    ret.setStormConf(conf)
     ret.setCleanupState(false)
     ret
   }
 
-  private def tryRun(topo: StormTopology): Unit = {
+  private def tryRun(plannedTopology: PlannedTopology): Unit = {
     //Before running the external Command
     val oldSecManager = System.getSecurityManager()
     System.setSecurityManager(new MySecurityManager());
     try {
 	    val cluster = new LocalCluster()
-	    Testing.completeTopology(cluster, topo, completeTopologyParam)
+	    Testing.completeTopology(cluster, plannedTopology.topology, completeTopologyParam(plannedTopology.config))
 	    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
 	    Thread.sleep(1000)
 	    cluster.shutdown
@@ -100,14 +100,14 @@ object StormRunner {
     }
   }
 
-  def run(topo: StormTopology) {
+  def run(plannedTopology: PlannedTopology) {
     this.synchronized {
        try {
-        tryRun(topo)
+        tryRun(plannedTopology)
       } catch {
         case _: Throwable =>
           Thread.sleep(3000)
-          tryRun(topo)
+          tryRun(plannedTopology)
       }
     }
   }
