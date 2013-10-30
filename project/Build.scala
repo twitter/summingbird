@@ -14,8 +14,8 @@ object SummingbirdBuild extends Build {
     }
 
   def specs2Import(scalaVersion: String) = scalaVersion match {
-      case version if version startsWith "2.9" => "org.specs2" %% "specs2" % "1.12.4.1" % "test" withSources()
-      case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test" withSources()
+      case version if version startsWith "2.9" => "org.specs2" %% "specs2" % "1.12.4.1" % "test"
+      case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test"
   }
 
   val sharedSettings = Project.defaultSettings ++ Seq(
@@ -121,8 +121,8 @@ object SummingbirdBuild extends Build {
   val dfsDatastoresVersion = "1.3.4"
   val bijectionVersion = "0.5.4"
   val algebirdVersion = "0.3.0"
-  val scaldingVersion = "0.9.0rc1"
-  val storehausVersion = "0.7.0"
+  val scaldingVersion = "0.9.0rc4"
+  val storehausVersion = "0.7.2"
   val utilVersion = "6.3.8"
   val chillVersion = "0.3.3"
   val tormentaVersion = "0.5.3"
