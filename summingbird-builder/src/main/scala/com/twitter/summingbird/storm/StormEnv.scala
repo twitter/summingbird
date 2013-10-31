@@ -16,16 +16,9 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.Config
 import com.twitter.scalding.Args
-import com.twitter.chill.{ScalaKryoInstantiator, Kryo, toRich, IKryoRegistrar}
-import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
-import com.twitter.chill.java.IterableRegistrar
-import com.twitter.summingbird.{ Env, Unzip2, Producer, TailProducer }
-import com.twitter.summingbird.batch.{ BatchID, Timestamp }
-import com.twitter.summingbird.scalding.Scalding
+import com.twitter.summingbird.{ Env, TailProducer }
 import scala.collection.JavaConverters._
-import com.twitter.summingbird.MutableStringConfig
 
 /**
  * Storm-specific extension to Env. StormEnv handles storm-specific configuration

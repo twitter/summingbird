@@ -16,25 +16,17 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.bijection.Conversion.asMethod
-import com.twitter.chill.ScalaKryoInstantiator
-import com.twitter.chill.java.IterableRegistrar
-import com.twitter.chill.{Kryo, IKryoRegistrar, toRich }
-import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
-import com.twitter.scalding.{ Tool => STool, _ }
+import com.twitter.scalding.{Args, Hdfs, RichDate, DateParser}
 import com.twitter.summingbird.scalding.store.HDFSMetadata
-import com.twitter.summingbird.{ Env, Unzip2, Summer, Producer, TailProducer, AbstractJob }
+import com.twitter.summingbird.{ Env, Summer, TailProducer, AbstractJob }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.builder.{ SourceBuilder, Reducers, CompletedBuilder }
-import com.twitter.summingbird.storm.Storm
 import scala.collection.JavaConverters._
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
-import java.util.{ HashMap => JHashMap, Map => JMap, TimeZone }
+import java.util.TimeZone
 
-import ConfigBijection._
 
 /**
  * @author Oscar Boykin
