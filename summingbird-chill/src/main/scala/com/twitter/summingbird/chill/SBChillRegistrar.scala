@@ -22,6 +22,16 @@ import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst }
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
 
 object SBChillRegistrar {
+  implicit def funcToIKryoReg(f: Function[Kryo, Unit]): IKryoRegistrar = new IKryoRegistrar {
+    def apply(k: Kryo) = f(k)
+  }
+  def kryoRegClass(clazz: Class[_]*) =
+    {k: Kryo =>
+          clazz
+            .filter(k.alreadyRegistered(_))
+            .foreach(k.register(_))
+    }
+
   def apply(cfg: SummingbirdConfig, iterableRegistrars: List[IKryoRegistrar]): SummingbirdConfig = {
     val kryoConfig = new com.twitter.chill.config.Config with MutableStringConfig {
       def summingbirdConfig = cfg
@@ -32,14 +42,7 @@ object SBChillRegistrar {
       classOf[ScalaKryoInstantiator],
       new ScalaKryoInstantiator()
         .withRegistrar(new IterableRegistrar(iterableRegistrars))
-        .withRegistrar(new IKryoRegistrar {
-          def apply(k: Kryo) {
-            List(classOf[BatchID], classOf[Timestamp])
-              .foreach { cls =>
-                if(!k.alreadyRegistered(cls)) k.register(cls)
-              }
-          }
-        })
+        .withRegistrar(kryoRegClass(classOf[BatchID], classOf[Timestamp]))
     )
     kryoConfig.unwrap
   }
