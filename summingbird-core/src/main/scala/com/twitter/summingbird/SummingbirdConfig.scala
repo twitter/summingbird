@@ -62,6 +62,10 @@ trait MutableStringConfig {
   def unwrap = config
 }
 
+/*
+ * The ReadableMap is the trait that must be implemented on the actual underlying config for the WrappingConfig.
+ * That is one of these should exist for an Hadoop Configuration, Storm Configuration, etc..
+ */
 trait ReadableMap {
   def get(key: String): Option[AnyRef]
   def keys: Set[String]
