@@ -46,7 +46,7 @@ import ConfigBijection._
 // the intermediate key-values for using a store as a service
 // in another job.
 // Prefer using .write in the -core API.
-case class StoreIntermediateData(sink: ScaldingSink[(Any, Any)]) extends java.io.Serializable
+case class StoreIntermediateData[K, V](sink: ScaldingSink[(K,V)]) extends java.io.Serializable
 
 // TODO (https://github.com/twitter/summingbird/issues/69): Add
 // documentation later describing command-line args. start-time,
@@ -112,7 +112,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     val toRun: TailProducer[Scalding, (Any, (Option[Any], Any))] =
       (for {
         opt <- opts.get(scaldingBuilder.id)
-        stid <- opt.get[StoreIntermediateData]
+        stid <- opt.get[StoreIntermediateData[Any, Any]]
       } yield addDeltaWrite(scaldingBuilder.node, stid.sink))
         .getOrElse(scaldingBuilder.node)
         .name(scaldingBuilder.id)
