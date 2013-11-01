@@ -85,30 +85,58 @@ object StormRunner {
     ret
   }
 
+  var activeCluster: Option[LocalCluster] = Some(new LocalCluster())
+
   private def tryRun(plannedTopology: PlannedTopology): Unit = {
     //Before running the external Command
     val oldSecManager = System.getSecurityManager()
     System.setSecurityManager(new MySecurityManager());
     try {
-	    val cluster = new LocalCluster()
-	    Testing.completeTopology(cluster, plannedTopology.topology, completeTopologyParam(plannedTopology.config))
-	    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
-	    Thread.sleep(1000)
-	    cluster.shutdown
+	    Testing.completeTopology(activeCluster.get, plannedTopology.topology, completeTopologyParam(plannedTopology.config))
     } finally {
       System.setSecurityManager(oldSecManager)
     }
   }
 
-  def run(plannedTopology: PlannedTopology) {
-    this.synchronized {
-       try {
-        tryRun(plannedTopology)
-      } catch {
-        case _: Throwable =>
-          Thread.sleep(3000)
-          tryRun(plannedTopology)
-      }
+  def start {
+    activeCluster = activeCluster match {
+      case Some(_) => activeCluster
+      case None => Some(new LocalCluster())
+    }
+  }
+
+  def shutdown {
+    activeCluster.map{ c =>
+        val oldSecManager = System.getSecurityManager()
+        System.setSecurityManager(new MySecurityManager());
+        try {
+          Thread.sleep(1000)
+          activeCluster.map(_.shutdown)
+          activeCluster = None
+        } catch {
+          case _: Throwable => println("Storm threw an exception on shutdown")
+        } finally {
+        System.setSecurityManager(oldSecManager)
+        }
+    }
+  }
+
+  def run(plannedTopology: PlannedTopology, runsRemaining: Int = 3) { this.synchronized { innerRun(plannedTopology, runsRemaining) } }
+
+  def innerRun(plannedTopology: PlannedTopology, runsRemaining: Int) {
+    try {
+      start
+      tryRun(plannedTopology)
+    } catch {
+        case e: Throwable =>
+          shutdown
+          if(runsRemaining > 0) {
+            println("Storm topo, failed, will retry in 3 seconds(" + runsRemaining + " remaining attempts...)")
+            Thread.sleep(3000)
+            innerRun(plannedTopology, runsRemaining - 1)
+          } else {
+            throw e
+          }
     }
   }
 }
@@ -406,5 +434,7 @@ object StormLaws extends Specification {
     ) must beTrue
 
   }
+
+  step(StormRunner.shutdown)
 
 }
