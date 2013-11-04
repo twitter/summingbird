@@ -253,7 +253,6 @@ object StormLaws extends Specification {
 
   def runWithOutSummer(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Sink[Int]) => TailProducer[Storm, Int])
       : List[Int] = {
-    val cluster = new LocalCluster()
 
     val sink: () => ((Int) => Future[Unit]) = () => {x: Int =>
       append(x)
@@ -326,8 +325,6 @@ object StormLaws extends Specification {
   "StormPlatform matches Scala for optionMap only jobs" in {
     val original = sample[List[Int]]
     val (id, store) = genStore
-
-    val cluster = new LocalCluster()
 
     val producer =
       Storm.source(TraversableSpout(original))
