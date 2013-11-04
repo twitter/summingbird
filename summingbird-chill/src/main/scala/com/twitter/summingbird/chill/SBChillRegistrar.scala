@@ -18,13 +18,11 @@ package com.twitter.summingbird.chill
 import com.twitter.summingbird.{MutableStringConfig, SummingbirdConfig}
 import com.twitter.chill.{ScalaKryoInstantiator, IKryoRegistrar, Kryo, toRich}
 import com.twitter.chill.java.IterableRegistrar
+import com.twitter.chill._
 import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst }
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
 
 object SBChillRegistrar {
-  implicit def funcToIKryoReg(f: Function[Kryo, Unit]): IKryoRegistrar = new IKryoRegistrar {
-    def apply(k: Kryo) = f(k)
-  }
   def kryoRegClass(clazz: Class[_]*) =
     {k: Kryo =>
           clazz
