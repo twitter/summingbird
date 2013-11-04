@@ -81,7 +81,7 @@ object StormRunner {
     val ret = new CompleteTopologyParam()
     ret.setMockedSources(new MockedSources)
     ret.setStormConf(conf)
-    ret.setCleanupState(false)
+    ret.setCleanupState(true)
     ret
   }
 
@@ -121,7 +121,7 @@ object StormRunner {
     }
   }
 
-  def run(plannedTopology: PlannedTopology, runsRemaining: Int = 3) { this.synchronized { innerRun(plannedTopology, runsRemaining) } }
+  def run(plannedTopology: PlannedTopology, runsRemaining: Int = 4) { this.synchronized { innerRun(plannedTopology, runsRemaining) } }
 
   def innerRun(plannedTopology: PlannedTopology, runsRemaining: Int) {
     try {
