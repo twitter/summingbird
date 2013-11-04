@@ -16,9 +16,7 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.{ LocalCluster, Testing }
 import backtype.storm.generated.StormTopology
-import backtype.storm.testing.{ CompleteTopologyParam, MockedSources }
 import com.twitter.algebird.{MapAlgebra, Semigroup}
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import com.twitter.storehaus.algebra.MergeableStore
@@ -105,14 +103,6 @@ object TopologyTests extends Specification {
 
   val storm = Storm.local()
 
-  val completeTopologyParam = {
-    val ret = new CompleteTopologyParam()
-    ret.setMockedSources(new MockedSources)
-    ret.setStormConf(storm.baseConfig)
-    ret.setCleanupState(false)
-    ret
-  }
-
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
   /**
@@ -130,7 +120,7 @@ object TopologyTests extends Specification {
       MergeableStoreSupplier(() => testingStore(id), Batcher.unit)
     )
 
-    storm.plan(job)
+    storm.plan(job).topology
   }
 
   "Number of bolts should be as expected" in {
@@ -159,7 +149,7 @@ object TopologyTests extends Specification {
 
   	val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)))
   	val storm = Storm.local(opts)
-  	val stormTopo = storm.plan(p)
+  	val stormTopo = storm.plan(p).topology
     // Source producer
     val bolts = stormTopo.get_bolts
 
@@ -180,7 +170,7 @@ object TopologyTests extends Specification {
                 nodeName -> Options().set(FlatMapParallelism(50)))
 
   	val storm = Storm.local(opts)
-  	val stormTopo = storm.plan(p)
+  	val stormTopo = storm.plan(p).topology
     // Source producer
     val bolts = stormTopo.get_bolts
 
@@ -200,7 +190,7 @@ object TopologyTests extends Specification {
     val opts = Map(otherNodeName -> Options().set(SpoutParallelism(30)),
                 nodeName -> Options().set(FlatMapParallelism(50)))
     val storm = Storm.local(opts)
-    val stormTopo = storm.plan(p)
+    val stormTopo = storm.plan(p).topology
     // Source producer
     val bolts = stormTopo.get_bolts
 
@@ -218,7 +208,7 @@ object TopologyTests extends Specification {
 
   	val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)).set(SpoutParallelism(30)))
   	val storm = Storm.local(opts)
-  	val stormTopo = storm.plan(p)
+  	val stormTopo = storm.plan(p).topology
     // Source producer
     val bolts = stormTopo.get_bolts
     val spouts = stormTopo.get_spouts
