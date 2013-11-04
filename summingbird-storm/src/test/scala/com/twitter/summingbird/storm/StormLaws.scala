@@ -16,10 +16,10 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.{ LocalCluster, Testing }
+import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, Testing }
 import backtype.storm.generated.StormTopology
 import backtype.storm.testing.{ CompleteTopologyParam, MockedSources }
-import com.twitter.algebird.{MapAlgebra, Monoid}
+import com.twitter.algebird.{MapAlgebra, Semigroup}
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
@@ -31,7 +31,7 @@ import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
 import java.util.{Collections, HashMap, Map => JMap, UUID}
 import java.util.concurrent.atomic.AtomicInteger
-import org.specs._
+import org.specs2.mutable._
 import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
@@ -77,21 +77,21 @@ object TrueGlobalState {
  */
 
 object StormRunner {
-  private val completeTopologyParam = {
+  private def completeTopologyParam(conf: BacktypeStormConfig) = {
     val ret = new CompleteTopologyParam()
     ret.setMockedSources(new MockedSources)
-    ret.setStormConf(Storm.local().baseConfig)
+    ret.setStormConf(conf)
     ret.setCleanupState(false)
     ret
   }
 
-  private def tryRun(topo: StormTopology): Unit = {
+  private def tryRun(plannedTopology: PlannedTopology): Unit = {
     //Before running the external Command
     val oldSecManager = System.getSecurityManager()
     System.setSecurityManager(new MySecurityManager());
     try {
 	    val cluster = new LocalCluster()
-	    Testing.completeTopology(cluster, topo, completeTopologyParam)
+	    Testing.completeTopology(cluster, plannedTopology.topology, completeTopologyParam(plannedTopology.config))
 	    // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
 	    Thread.sleep(1000)
 	    cluster.shutdown
@@ -100,18 +100,21 @@ object StormRunner {
     }
   }
 
-  def run(topo: StormTopology) {
-     try {
-      tryRun(topo)
-    } catch {
-      case _: Throwable =>
-        Thread.sleep(3000)
-        tryRun(topo)
+  def run(plannedTopology: PlannedTopology) {
+    this.synchronized {
+       try {
+        tryRun(plannedTopology)
+      } catch {
+        case _: Throwable =>
+          Thread.sleep(3000)
+          tryRun(plannedTopology)
+      }
     }
   }
 }
 
 object StormLaws extends Specification {
+  sequential
   import MapAlgebra.sparseEquiv
 
   // This is dangerous, obviously. The Storm platform graphs tested
@@ -131,7 +134,7 @@ object StormLaws extends Specification {
     */
   def testingStore(id: String) =
     new MergeableStore[(Int, BatchID), Int] with java.io.Serializable {
-      val monoid = implicitly[Monoid[Int]]
+      val semigroup = implicitly[Semigroup[Int]]
       def wrappedStore = globalState(id).store
       private def getOpt(k: (Int, BatchID)) = Option(wrappedStore.get(k)).flatMap(i => i)
       override def get(k: (Int, BatchID)) = Future.value(getOpt(k))
@@ -147,7 +150,7 @@ object StormLaws extends Specification {
       override def merge(pair: ((Int, BatchID), Int)) = {
         val (k, v) = pair
         val oldV = getOpt(k)
-        val newV = Monoid.plus(Some(v), oldV).flatMap(Monoid.nonZeroOption(_))
+        val newV = Semigroup.plus(Some(v), oldV)
         wrappedStore.put(k, newV)
         globalState(id).placed.incrementAndGet
         Future.value(oldV)

@@ -21,7 +21,7 @@ import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.{ Fields, Tuple, Values }
 
 import com.twitter.algebird.{ Monoid, SummingQueue, Semigroup }
-import com.twitter.chill.Externalizer
+import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.option.{

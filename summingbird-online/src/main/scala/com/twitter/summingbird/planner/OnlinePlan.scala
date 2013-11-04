@@ -43,8 +43,8 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       case WrittenProducer(_, _) => false
       case MergedProducer(_, _) => false
     }
-  } 
- 
+  }
+
   private def noOpProducer(dep: Producer[P, _]): Boolean = {
     dep match {
       case NamedProducer(_, _) => true
@@ -133,11 +133,11 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
         }
       }
 
-      dependantProducer match { 
+      dependantProducer match {
         case Summer(producer, _, _) => maybeSplitThenRecurse(dependantProducer, producer, currentBolt.toSummer)
         case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
-        case NamedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
-        case AlsoProducer(lProducer, rProducer) => 
+        case NamedProducer(producer, _) => sys.error("Should not try plan a named producer")
+        case AlsoProducer(lProducer, rProducer) =>
               val (updatedReg, updatedVisited) = maybeSplitThenRecurse(dependantProducer, rProducer)
               recurse(lProducer, FlatMapNode(), updatedReg, updatedVisited)
         case Source(spout) => (distinctAddToList(nodeSet, currentBolt.toSource), visitedWithN)
@@ -166,13 +166,14 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
 
 object OnlinePlan {
   def apply[P <: Platform[P], T](tail: TailProducer[P, T]): Dag[P] = {
-    val planner = new OnlinePlan(tail)
+    val (nameMap, strippedTail) = StripNamedNode(tail)
+    val planner = new OnlinePlan(strippedTail)
     val nodesSet = planner.nodeSet
 
     // The nodes are added in a source -> summer way with how we do list prepends
     // but its easier to look at laws in a summer -> source manner
     // We also drop all Nodes with no members(may occur when we visit a node already seen and its the first in that Node)
     val reversedNodeSet = nodesSet.filter(_.members.size > 0).foldLeft(List[Node[P]]()){(nodes, n) => n.reverse :: nodes}
-    Dag(tail, reversedNodeSet)
-  }  
+    Dag(nameMap, strippedTail, reversedNodeSet)
+  }
 }

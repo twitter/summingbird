@@ -78,7 +78,7 @@ case class SourceNode[P <: Platform[P]](override val members: List[Producer[P, _
   override def shortName(sanitize: String => String) = NodeIdentifier("Source" + collapseNamedNodes(sanitize))
 }
 
-case class Dag[P <: Platform[P]](tail: TailProducer[P, _], producerToNode: Map[Producer[P, _], Node[P]],
+case class Dag[P <: Platform[P]](producerToPriorityNames: Map[Producer[P, Any], List[String]], tail: TailProducer[P, _], producerToNode: Map[Producer[P, _], Node[P]],
   nodes: List[Node[P]],
   nodeToName: Map[Node[P], String] = Map[Node[P], String](),
   nameToNode: Map[String, Node[P]] = Map[String, Node[P]](),
@@ -135,12 +135,12 @@ case class Dag[P <: Platform[P]](tail: TailProducer[P, _], producerToNode: Map[P
 
 object Dag {
   /** The default name sanitizing */
-  def apply[P <: Platform[P], T](tail: TailProducer[P, Any],
-    registry: List[Node[P]]): Dag[P] = apply[P, T](tail,
+  def apply[P <: Platform[P], T](producerToPriorityNames: Map[Producer[P, Any], List[String]], tail: TailProducer[P, Any],
+    registry: List[Node[P]]): Dag[P] = apply[P, T](producerToPriorityNames, tail,
       registry,
       {(s: String) => s.replaceAll("""[\[\]]|\-""","|")})
 
-  def apply[P <: Platform[P], T](tail: TailProducer[P, Any],
+  def apply[P <: Platform[P], T](producerToPriorityNames: Map[Producer[P, Any], List[String]], tail: TailProducer[P, Any],
     registry: List[Node[P]],
     sanitizeName: String => String): Dag[P] = {
 
@@ -152,7 +152,7 @@ object Dag {
       }
     }
     val producerToNode = buildProducerToNodeLookUp(registry)
-    val dag = registry.foldLeft(Dag(tail, producerToNode, registry)) { (curDag, stormNode) =>
+    val dag = registry.foldLeft(Dag(producerToPriorityNames, tail, producerToNode, registry)) { (curDag, stormNode) =>
       // Here we are building the Dag's connection topology.
       // We visit every producer and connect the Node's represented by its dependant and dependancies.
       // Producers which live in the same node will result in a NOP in connect.

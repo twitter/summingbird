@@ -19,14 +19,14 @@ package com.twitter.summingbird.storm
 import backtype.storm.task.{OutputCollector, TopologyContext}
 import backtype.storm.tuple.{Tuple, Values, Fields}
 import com.twitter.algebird.{Monoid, SummingQueue}
-import com.twitter.chill.Externalizer
+import com.twitter.summingbird.online.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
 import com.twitter.summingbird.storm.option._
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.FutureQueue
 
-import com.twitter.util.Future
+import com.twitter.util.{Await, Future}
 import java.util.{ Map => JMap }
 
 /**
@@ -128,5 +128,5 @@ class SummerBolt[Key, Value: Monoid](
     onCollector { _.ack(tuple) }
   }
 
-  override def cleanup { store.close }
+  override def cleanup { Await.result(store.close) }
 }

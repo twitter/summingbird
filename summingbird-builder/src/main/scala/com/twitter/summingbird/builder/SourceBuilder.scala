@@ -196,11 +196,8 @@ case class SourceBuilder[T: Manifest] private (
         CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, nextName[(K,V)], opts)
 
       case storm: StormEnv =>
-        val givenStore = MergeableStoreSupplier.from {
-          store.onlineSupplier
-            .getOrElse(sys.error("No online store given in Storm mode"))
-            .apply()
-          }
+        val supplier = store.onlineSupplier.getOrElse(sys.error("No online store given in Storm mode"))
+        val givenStore = MergeableStoreSupplier.from(supplier())
 
         val newNode = OptionalUnzip2[Scalding, Storm]()(node)._2.map {
           Producer.evToKeyed(_)

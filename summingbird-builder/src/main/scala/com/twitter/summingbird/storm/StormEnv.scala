@@ -16,13 +16,8 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.Config
 import com.twitter.scalding.Args
-import com.twitter.chill.ScalaKryoInstantiator
-import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst, JavaMapConfig }
-import com.twitter.chill.java.IterableRegistrar
-import com.twitter.summingbird.{ Env, Unzip2, Producer, TailProducer }
-import com.twitter.summingbird.scalding.Scalding
+import com.twitter.summingbird.{ Env, TailProducer }
 import scala.collection.JavaConverters._
 
 /**
@@ -47,18 +42,9 @@ case class StormEnv(override val jobName: String, override val args: Args)
         .getOrElse(jobName.split("\\.").last)
 
     Storm.remote(builder.opts)
-      .withConfigUpdater { config =>
-      val c = ConfigBijection.invert(config)
-      val transformed = ConfigBijection(ajob.transformConfig(c))
-      val kryoConfig = new JavaMapConfig(transformed)
-      ConfInst.setSerialized(
-        kryoConfig,
-        classOf[ScalaKryoInstantiator],
-        new ScalaKryoInstantiator()
-          .withRegistrar(builder.registrar)
-          .withRegistrar(new IterableRegistrar(ajob.registrars))
-      )
-      transformed
+      .withRegistrars(ajob.registrars ++ builder.registrar.getRegistrars.asScala)
+      .withConfigUpdater { c =>
+      c.updated(ajob.transformConfig(c.toMap))
     }.run(
       builder.node.name(builder.id).asInstanceOf[TailProducer[Storm, _]],
       classSuffix

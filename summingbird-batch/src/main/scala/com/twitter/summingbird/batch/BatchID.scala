@@ -38,6 +38,8 @@ import scala.collection.Iterator.iterate
  */
 
 object BatchID {
+  implicit val equiv: Equiv[BatchID] = Equiv.by(_.id)
+
   def apply(long: Long) = new BatchID(long)
   // Enables BatchID(someBatchID.toString) roundtripping
   def apply(str: String) = new BatchID(str.split("\\.")(1).toLong)
@@ -51,6 +53,9 @@ object BatchID {
       def iterator = iterate(start)(_.next).takeWhile(_ <= end)
     }
 
+  /**
+    * Returns true if the supplied interval of BatchID can
+    */
   def toInterval(iter: TraversableOnce[BatchID]): Option[Interval[BatchID]] =
     iter
       .map { b => (b, b, 1L) }
