@@ -85,7 +85,7 @@ object StormRunner {
     ret
   }
 
-  var activeCluster: Option[LocalCluster] = Some(new LocalCluster())
+  private var activeCluster: Option[LocalCluster] = Some(new LocalCluster())
 
   private def tryRun(plannedTopology: PlannedTopology): Unit = {
     //Before running the external Command
@@ -98,7 +98,7 @@ object StormRunner {
     }
   }
 
-  def start {
+  private def start {
     activeCluster = activeCluster match {
       case Some(_) => activeCluster
       case None => Some(new LocalCluster())
@@ -116,14 +116,14 @@ object StormRunner {
         } catch {
           case _: Throwable => println("Storm threw an exception on shutdown")
         } finally {
-        System.setSecurityManager(oldSecManager)
+          System.setSecurityManager(oldSecManager)
         }
     }
   }
 
   def run(plannedTopology: PlannedTopology, runsRemaining: Int = 4) { this.synchronized { innerRun(plannedTopology, runsRemaining) } }
 
-  def innerRun(plannedTopology: PlannedTopology, runsRemaining: Int) {
+  private def innerRun(plannedTopology: PlannedTopology, runsRemaining: Int) {
     try {
       start
       tryRun(plannedTopology)
@@ -135,6 +135,7 @@ object StormRunner {
             Thread.sleep(3000)
             innerRun(plannedTopology, runsRemaining - 1)
           } else {
+            println("Re-throwing!")
             throw e
           }
     }
