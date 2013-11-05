@@ -238,6 +238,8 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdAkka = module("akka").settings(
     parallelExecution in Test := false,
     skip in compile := !isScala210x(scalaVersion.value),
+    skip in test := !isScala210x(scalaVersion.value),
+    publishArtifact := isScala210x(scalaVersion.value),
     libraryDependencies ++= akkaBuildDeps(scalaVersion.value)
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
