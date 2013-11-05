@@ -66,8 +66,8 @@ class FlatMapActor(op: FlatMapOperation[Any, Any], targetNames: List[String]) ex
   import context._
   val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
 
-  private def send(traversable: TraversableOnce[Any]) = 
-    traversable.foreach {data => 
+  private def send(traversable: TraversableOnce[Any]) =
+    traversable.foreach {data =>
     	targets.foreach { t => t ! FlatMapOutput(data) }
     }
 
@@ -103,9 +103,9 @@ class SummerActor[Key, Value: Monoid](
     }
   }
 
-  override def postStop() { store.close }
+  override def postStop() { store.close(com.twitter.util.Time.fromSeconds(10)) }
 }
 
 
- 
+
 

@@ -13,9 +13,14 @@ object SummingbirdBuild extends Build {
       case x => x
     }
 
-  def specs2Import(scalaVersion: String) = scalaVersion match {
-      case version if version startsWith "2.9" => "org.specs2" %% "specs2" % "1.12.4.1" % "test"
-      case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test"
+  def isScala210x(scalaVersion: String) = scalaVersion match {
+      case version if version startsWith "2.9" => false
+      case version if version startsWith "2.10" => true
+  }
+
+  def specs2Import(scalaVersion: String) = isScala210x(scalaVersion) match {
+      case false => "org.specs2" %% "specs2" % "1.12.4.1" % "test"
+      case true => "org.specs2" %% "specs2" % "1.13" % "test"
   }
 
   val sharedSettings = Project.defaultSettings ++ Seq(
@@ -113,10 +118,10 @@ object SummingbirdBuild extends Build {
     summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
-    summingbirdAkka,
     summingbirdScalding,
     summingbirdBuilder,
     summingbirdChill,
+    summingbirdAkka,
     summingbirdExample
   )
 
@@ -215,9 +220,10 @@ object SummingbirdBuild extends Build {
     summingbirdBatch
   )
 
-  lazy val summingbirdAkka = module("akka").settings(
-    parallelExecution in Test := false,
-    libraryDependencies ++= Seq(
+
+ def akkaBuildDeps(scalaVersion: String): Seq[sbt.ModuleID] = isScala210x(scalaVersion) match {
+      case false => Seq()
+      case true => Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
@@ -227,6 +233,12 @@ object SummingbirdBuild extends Build {
       withCross("com.twitter" %% "util-core" % utilVersion),
       "com.typesafe.akka" %% "akka-actor" % "2.2.1"
     )
+  }
+
+  lazy val summingbirdAkka = module("akka").settings(
+    parallelExecution in Test := false,
+    skip in compile := !isScala210x(scalaVersion.value),
+    libraryDependencies ++= akkaBuildDeps(scalaVersion.value)
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
     summingbirdOnline,
