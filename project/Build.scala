@@ -205,7 +205,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       withCross("com.twitter" %% "util-core" % utilVersion),
-      "storm" % "storm" % "0.9.0-wip15" % "provided" exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic")
+      "storm" % "storm" % "0.9.0-rc2" % "provided" exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic")
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
