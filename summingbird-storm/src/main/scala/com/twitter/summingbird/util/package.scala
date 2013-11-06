@@ -17,9 +17,9 @@
 package com.twitter.summingbird
 
 package object util {
-  @deprecated("Use com.twitter.summingbird.storm.option.CacheSize", "0.1.0")
-  type CacheSize = online.option.CacheSize
+  @deprecated("Use com.twitter.summingbird.option.CacheSize", "0.1.0")
+  type CacheSize = option.CacheSize
 
-  @deprecated("Use com.twitter.summingbird.storm.option.CacheSize", "0.1.0")
-  val CacheSize = online.option.CacheSize
+  @deprecated("Use com.twitter.summingbird.option.CacheSize", "0.1.0")
+  val CacheSize = option.CacheSize
 }

@@ -42,8 +42,9 @@ import com.twitter.util.Future
 class CollectorMergeableStore[K, V](
   collector: OutputCollector,
   anchorTuples: AnchorTuples)
-  (override implicit val monoid: Monoid[V])
+  (implicit monoid: Monoid[V])
     extends MergeableStore[(K, Tuple, BatchID), V] {
+  override val semigroup = monoid
   override def get(k: (K, Tuple, BatchID)) =
     sys.error("Gets out of a CollectorMergeableStore are not supported.")
   override def put(pair: ((K, Tuple, BatchID), Option[V])) =
@@ -59,6 +60,6 @@ class CollectorMergeableStore[K, V](
     if (anchorTuples.anchor)
       collector.emit(tuple, values)
     else collector.emit(values)
-    Future.Unit
+    Future.value(Some(v))
   }
 }

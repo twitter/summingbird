@@ -17,16 +17,16 @@
 package com.twitter.summingbird.storm
 
 import backtype.storm.task.{OutputCollector, TopologyContext}
-import backtype.storm.tuple.Tuple
+import backtype.storm.tuple.{Tuple, Values, Fields}
 import com.twitter.algebird.{Monoid, SummingQueue}
-import com.twitter.chill.Externalizer
+import com.twitter.summingbird.online.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore
-import com.twitter.summingbird.batch.BatchID
+import com.twitter.summingbird.batch.{BatchID, Timestamp}
 import com.twitter.summingbird.storm.option._
-import com.twitter.summingbird.online.option.CacheSize
+import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.FutureQueue
 
-import com.twitter.util.Future
+import com.twitter.util.{Await, Future}
 import java.util.{ Map => JMap }
 
 /**
@@ -58,7 +58,9 @@ class SummerBolt[Key, Value: Monoid](
   cacheSize: CacheSize,
   metrics: SinkStormMetrics,
   maxWaitingFutures: MaxWaitingFutures,
-  includeSuccessHandler: IncludeSuccessHandler) extends BaseBolt(metrics.metrics) {
+  includeSuccessHandler: IncludeSuccessHandler,
+  anchor: AnchorTuples,
+  shouldEmit: Boolean) extends BaseBolt(metrics.metrics) {
   import Constants._
 
   val storeBox = Externalizer(storeSupplier)
@@ -66,7 +68,7 @@ class SummerBolt[Key, Value: Monoid](
 
   // See MaxWaitingFutures for a todo around removing this.
   lazy val cacheCount = cacheSize.size
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), Value]](cacheCount.getOrElse(0))
+  lazy val buffer = SummingQueue[Map[(Key, BatchID), (Timestamp, Value)]](cacheCount.getOrElse(0))
   lazy val futureQueue = FutureQueue(Future.Unit, maxWaitingFutures.get)
 
   val exceptionHandlerBox = Externalizer(exceptionHandler)
@@ -74,7 +76,7 @@ class SummerBolt[Key, Value: Monoid](
 
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
-  override val fields = None
+  override val fields = Some(new Fields("pair"))
 
   override def prepare(
     conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
@@ -92,26 +94,39 @@ class SummerBolt[Key, Value: Monoid](
   def unpack(tuple: Tuple) = {
     val id = tuple.getValue(0).asInstanceOf[BatchID]
     val key = tuple.getValue(1).asInstanceOf[Key]
-    val value = tuple.getValue(2).asInstanceOf[Value]
-    ((key, id), value)
+    val (ts, value) = tuple.getValue(2).asInstanceOf[(Timestamp, Value)]
+    ((key, id), (ts, value))
   }
+
+  def toValues(time: Timestamp, item: Any): Values = new Values((time.milliSinceEpoch, item))
 
   override def execute(tuple: Tuple) {
     // See MaxWaitingFutures for a todo around simplifying this.
     buffer(Map(unpack(tuple))).foreach { pairs =>
-      val futures = pairs.map { pair =>
+      val futures = pairs.map { case ((k, batchID), (ts, delta)) =>
+        val pair = ((k, batchID), delta)
+
         val mergeFuture = store.merge(pair)
           .handle(exceptionHandlerBox.get.handlerFn)
 
         for (handler <- successHandlerOpt)
           mergeFuture.onSuccess { _ => handler.handlerFn() }
 
-        mergeFuture
+        if(shouldEmit) {
+          mergeFuture.map { res =>
+            onCollector { col =>
+              val values = toValues(ts, (k, (res, delta)))
+                if (anchor.anchor)
+                  col.emit(tuple, values)
+                else col.emit(values)
+            }
+          }
+        } else mergeFuture
       }.toList
       futureQueue += Future.collect(futures).unit
     }
     onCollector { _.ack(tuple) }
   }
 
-  override def cleanup { store.close }
+  override def cleanup { Await.result(store.close) }
 }

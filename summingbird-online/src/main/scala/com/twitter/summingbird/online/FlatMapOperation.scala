@@ -16,9 +16,8 @@
 
 package com.twitter.summingbird.online
 
-import com.twitter.chill.Externalizer
 import com.twitter.storehaus.ReadableStore
-import com.twitter.util.Future
+import com.twitter.util.{Future, Await}
 import java.io.{ Closeable, Serializable }
 
 // Represents the logic in the flatMap bolts
@@ -27,11 +26,11 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
 
   override def close { }
 
-  /* 
+  /*
    * maybeFlush may be periodically called to empty any internal state
    * Not used yet so commented out
    */
-  def maybeFlush: Future[TraversableOnce[U]] = Future.value(Seq.empty[U]) 
+  def maybeFlush: Future[TraversableOnce[U]] = Future.value(Seq.empty[U])
 
   /**
     * TODO: Think about getting an implicit FutureCollector here, in
@@ -49,10 +48,10 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
       }
 
       override def maybeFlush = {
-        self.maybeFlush.flatMap{ x: TraversableOnce[U] => 
+        self.maybeFlush.flatMap{ x: TraversableOnce[U] =>
           val z: Seq[Future[TraversableOnce[V]]] = x.map(fmo.apply(_)).toSeq
           val w: Future[Seq[V]] = Future.collect(z).map(_.flatten)
-          for { 
+          for {
                 ws <- w
                 maybes <- fmo.maybeFlush
                 maybeSeq = maybes.toSeq
@@ -81,7 +80,7 @@ class FunctionKeyFlatMapOperation[K1, K2, V](@transient fm: K1 => TraversableOnc
 class IdentityFlatMapOperation[T] extends FlatMapOperation[T, T] {
   // By default we do the identity function
   def apply(t: T): Future[TraversableOnce[T]] = Future.value(Some(t))
-  
+
   // But if we are composed with something else, just become it
   override def andThen[V](fmo: FlatMapOperation[T, V]): FlatMapOperation[T, V] = fmo
 }
@@ -91,8 +90,8 @@ object FlatMapOperation {
 
   def apply[T, U](fm: T => TraversableOnce[U]): FlatMapOperation[T, U] =
     new FunctionFlatMapOperation(fm)
- 
-  def keyFlatMap[K1, K2, V](fm: K1 => TraversableOnce[K2]): FlatMapOperation[(K1, V), (K2, V)] = 
+
+  def keyFlatMap[K1, K2, V](fm: K1 => TraversableOnce[K2]): FlatMapOperation[(K1, V), (K2, V)] =
     new FunctionKeyFlatMapOperation(fm)
 
   def combine[T, K, V, JoinedV](fmSupplier: => FlatMapOperation[T, (K, V)],
@@ -119,7 +118,7 @@ object FlatMapOperation {
 
       override def close {
         fm.close
-        store.close
+        Await.result(store.close)
       }
     }
 

@@ -22,12 +22,27 @@ import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.bijection.{ Bijection, ImplicitBijection }
-import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, TupleSetter, TupleConverter}
+import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, MapsideReduce, TupleSetter, TupleConverter}
 import com.twitter.scalding.typed.Grouped
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
 import cascading.flow.FlowDef
+
+import org.slf4j.LoggerFactory
+
+object ScaldingStore extends java.io.Serializable {
+  // This could be moved to scalding, but the API needs more design work
+  // This DOES NOT trigger a grouping
+  def mapsideReduce[K,V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] = {
+    import Dsl._
+    val fields = ('key, 'value)
+    val gpipe = pipe.toPipe(fields)(TupleSetter.tup2Setter[(K,V)])
+    val msr = new MapsideReduce(sg, fields._1, fields._2, None)(
+      TupleConverter.singleConverter[V], TupleSetter.singleSetter[V])
+    TypedPipe.from(gpipe.eachTo(fields -> fields) { _ => msr }, fields)(TupleConverter.of[(K, V)])
+  }
+}
 
 trait ScaldingStore[K, V] extends java.io.Serializable {
   /**
@@ -40,6 +55,14 @@ trait ScaldingStore[K, V] extends java.io.Serializable {
     sg: Semigroup[V],
     commutativity: Commutativity,
     reducers: Int): PipeFactory[(K, (Option[V], V))]
+
+  /** This is an optional method, by default it a pass-through.
+   * it may be called by ScaldingPlatform before a key transformation
+   * that leads only to this store.
+   */
+  def partialMerge[K1](delta: PipeFactory[(K1, V)],
+    sg: Semigroup[V],
+    commutativity: Commutativity): PipeFactory[(K1, V)] = delta
 }
 
 trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
@@ -72,8 +95,11 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   /** Record a computed batch of code */
   def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit
 
+  @transient private val logger = LoggerFactory.getLogger(classOf[BatchedScaldingStore[_,_]])
+
   /** The writeLast method as a FlowProducer */
-  private def writeFlow(batches: List[BatchID], lastVals: TypedPipe[(BatchID, (K, V))]): FlowProducer[Unit] =
+  private def writeFlow(batches: List[BatchID], lastVals: TypedPipe[(BatchID, (K, V))]): FlowProducer[Unit] = {
+    logger.info("writing batches: {}", batches)
     Reader[FlowInput, Unit] { case (flow, mode) =>
       // make sure we checkpoint to disk to avoid double computation:
       val checked = if(batches.size > 1) lastVals.forceToDisk else lastVals
@@ -82,6 +108,44 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
         writeLast(batchID, thisBatch.values)(flow, mode)
       }
     }
+  }
+
+  protected def sumByBatches[K1,V:Semigroup](ins: TypedPipe[(Long, (K1, V))],
+    capturedBatcher: Batcher,
+    commutativity: Commutativity): TypedPipe[((K1, BatchID), (Timestamp, V))] = {
+      implicit val timeValueSemigroup: Semigroup[(Timestamp, V)] =
+        IteratorSums.optimizedPairSemigroup[Timestamp, V](1000)
+
+      val inits = ins.map { case (t, (k, v)) =>
+        val ts = Timestamp(t)
+        val batch = capturedBatcher.batchOf(ts)
+        ((k, batch), (ts, v))
+      }
+      (commutativity match {
+        case Commutative => ScaldingStore.mapsideReduce(inits)
+        case NonCommutative => inits
+        })
+    }
+
+  /** For each batch, collect up values with the same key on mapside
+   * before the keys are expanded.
+   */
+  override def partialMerge[K1](delta: PipeFactory[(K1, V)],
+    sg: Semigroup[V],
+    commutativity: Commutativity): PipeFactory[(K1, V)] = {
+    logger.info("executing partial merge")
+    implicit val semi = sg
+    val capturedBatcher = batcher
+    commutativity match {
+      case Commutative => delta.map { flow =>
+        flow.map { typedP =>
+          sumByBatches(typedP, capturedBatcher, Commutative)
+            .map { case ((k, _), (ts, v)) => (ts.milliSinceEpoch, (k, v)) }
+        }
+      }
+      case NonCommutative => delta
+    }
+  }
 
   /** we are guaranteed to have sufficient input and deltas to cover these batches
    * and that the batches are given in order
@@ -100,27 +164,26 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
 
     import IteratorSums._ // get the groupedSum, partials function
 
+    logger.info("Previous written batch: {}, computing: {}", inBatch, batches)
+
     def prepareOld(old: TypedPipe[(K, V)]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
       old.map { case (k, v) => (k, (inBatch, (Timestamp.Min, v))) }
 
     val capturedBatcher = batcher //avoid a closure on the whole store
-    def prepareDeltas(ins: TypedPipe[(Long, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] = {
-      val inits = ins.map { case (t, (k, v)) =>
-        val ts = Timestamp(t)
-        val batch = capturedBatcher.batchOf(ts)
-        ((k, batch), (ts, v))
-      }
-      (commutativity match {
-        case Commutative => Scalding.mapsideReduce(inits)
-        case NonCommutative => inits
-        })
+
+    def prepareDeltas(ins: TypedPipe[(Long, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
+      sumByBatches(ins, capturedBatcher, commutativity)
         .map { case ((k, batch), (ts, v)) => (k, (batch, (ts, v))) }
-    }
 
     /** Produce a merged stream such that each BatchID, Key pair appears only one time.
      */
     def mergeAll(all: TypedPipe[(K, (BatchID, (Timestamp, V)))]):
-      TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))] =
+      TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))] = {
+
+      // Make sure to use sumOption on V
+      implicit val timeValueSemigroup: Semigroup[(Timestamp, V)] =
+        IteratorSums.optimizedPairSemigroup[Timestamp, V](1000)
+
       all.group
         .withReducers(reducers)
         .sortBy { case (_, (t, _)) => t } //we are sorted on time, therefore BatchID
@@ -130,6 +193,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           partials((inBatch :: batches).iterator.map { bid => (bid,  batched.get(bid)) })
         }
         .toTypedPipe
+      }
 
     /**
      * There is no flatten on Option, this adds it

@@ -26,13 +26,16 @@ object Producer {
    * and it returns the input node.
    */
   def entireGraphOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
-    val parentFn = { (in: Producer[P, Any]) => in match {
-        case AlsoProducer(l, r) => List(l, r)
-        case _ => dependenciesOf(in)
-      }
-    }
-    val above = graph.depthFirstOf(p)(parentFn).toList
+    val above = graph.depthFirstOf(p)(parentsOf)
     p :: above
+  }
+
+  // The parents of the current node, possibly not its dependencies
+  def parentsOf[P <: Platform[P]](in: Producer[P, Any]): List[Producer[P, Any]] = {
+    in match {
+      case AlsoProducer(l, r) => List(l, r)
+      case _ => dependenciesOf(in)
+    }
   }
 
   def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
@@ -54,11 +57,7 @@ object Producer {
   implicit def semigroup[P <: Platform[P], T]: Semigroup[Producer[P, T]] =
     Semigroup.from(_ merge _)
 
-  def dependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
-    /*
-     * Keyed producers seem to have some issue with type inference that
-     * I work around with the cast.
-     */
+  def dependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] =
     p match {
       case AlsoProducer(_, prod) => List(prod)
       case NamedProducer(producer, _) => List(producer)
@@ -72,14 +71,34 @@ object Producer {
       case LeftJoinedProducer(producer, _) => List(producer)
       case Summer(producer, _, _) => List(producer)
     }
+
+  /** Returns true if this node does not directly change the data (does not apply any transformation)
+   */
+  def isNoOp[P <: Platform[P]](p: Producer[P, Any]): Boolean = p match {
+    case IdentityKeyedProducer(_) => true
+    case NamedProducer(_, _) => true
+    case MergedProducer(_, _) => true
+    case AlsoProducer(_, _) => true
+    // The rest do something
+    case Source(_) => false
+    case OptionMappedProducer(_, _) => false
+    case FlatMappedProducer(_, _) => false
+    case KeyFlatMappedProducer(_, _) => false
+    case WrittenProducer(_, _) => false
+    case LeftJoinedProducer(_, _) => false
+    case Summer(_, _, _) => false
   }
 
+  def isOutput[P <: Platform[P]](p: Producer[P, Any]): Boolean = p match {
+    case Summer(_, _, _) | WrittenProducer(_, _) => true
+    case _ => false
+  }
   /**
    * Return all dependencies of a given node in depth first, left first order.
    */
   def transitiveDependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
     val nfn = dependenciesOf[P](_)
-    graph.depthFirstOf(p)(nfn).toList
+    graph.depthFirstOf(p)(nfn)
   }
 }
 

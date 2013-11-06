@@ -22,19 +22,19 @@ package object graph {
 
   /** Return the depth first enumeration of reachable nodes,
    * NOT INCLUDING INPUT, unless it can be reached via neighbors */
-  def depthFirstOf[T](t: T)(nf: NeighborFn[T]): IndexedSeq[T] = {
+  def depthFirstOf[T](t: T)(nf: NeighborFn[T]): List[T] = {
     @annotation.tailrec
-    def loop(stack: List[T], deps: Vector[T], acc: Set[T]): (Vector[T], Set[T]) = {
+    def loop(stack: List[T], deps: List[T], acc: Set[T]): List[T] = {
       stack match {
-        case Nil => (deps, acc)
+        case Nil => deps
         case h::tail =>
           val newStack = nf(h).filterNot(acc).foldLeft(tail) { (s, it) => it :: s }
-          val newDeps = if(acc(h)) deps else (deps :+ h)
+          val newDeps = if (acc(h)) deps else h :: deps
           loop(newStack, newDeps, acc + h)
       }
     }
-    val start = nf(t)
-    loop(start.toList, Vector(start.toSeq.distinct : _*), start.toSet)._1
+    val start = nf(t).toList
+    loop(start, start.distinct, start.toSet).reverse
   }
 
   /** Return a NeighborFn for the graph of reversed edges defined by

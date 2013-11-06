@@ -21,7 +21,7 @@ import com.twitter.bijection.Injection
 import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe}
 import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
-import com.twitter.summingbird.scalding.{ ScaldingEnv, VersionedBatchStore }
+import com.twitter.summingbird.scalding.VersionedBatchStore
 import scala.util.control.Exception.allCatch
 
 /**

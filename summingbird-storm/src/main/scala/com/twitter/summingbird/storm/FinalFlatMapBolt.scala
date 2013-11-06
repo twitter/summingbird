@@ -20,14 +20,15 @@ import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.{ Fields, Tuple, Values }
 
-import com.twitter.algebird.{ Monoid, SummingQueue }
-import com.twitter.chill.Externalizer
+import com.twitter.algebird.{ Monoid, SummingQueue, Semigroup }
+import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.option.{
   AnchorTuples, FlatMapStormMetrics
 }
-import com.twitter.summingbird.online.option.CacheSize
+import com.twitter.storehaus.algebra.SummerConstructor
+import com.twitter.summingbird.option.CacheSize
 import com.twitter.storehaus.algebra.MergeableStore
 
 import MergeableStore.enrich
@@ -49,7 +50,7 @@ class FinalFlatMapBolt[Event, Key, Value](
     extends BaseBolt(metrics.metrics) {
 
   val lockedOp = Externalizer(flatMapOp)
-  var collectorMergeable: MergeableStore[(Key, Tuple, BatchID), Value] = null
+  var collectorMergeable: MergeableStore[(Key, Tuple, BatchID), (Timestamp, Value)] = null
 
   override val fields = {
     import Constants._
@@ -61,11 +62,14 @@ class FinalFlatMapBolt[Event, Key, Value](
     super.prepare(conf, context, oc)
     onCollector { collector =>
       collectorMergeable =
-        new CollectorMergeableStore[Key, Value](collector, anchor)
-          .withSummer { m =>
-          implicit val monoid: Monoid[Value] = m
-          SummingQueue(cacheSize.size.getOrElse(0))
-        }
+        new CollectorMergeableStore[Key, (Timestamp, Value)](collector, anchor)
+          .withSummer(new SummerConstructor[(Key, Tuple, BatchID)] {
+            def apply[V](sg: Semigroup[V]) = {
+              implicit val semi = sg
+              SummingQueue(cacheSize.size.getOrElse(0))
+            }
+          }
+        )
     }
   }
 
@@ -83,7 +87,7 @@ class FinalFlatMapBolt[Event, Key, Value](
       */
     lockedOp.get.apply(event).foreach { pairs =>
       pairs.foreach { case (k, v) =>
-        onCollector { _ => collectorMergeable.merge((k, tuple, batchID) -> v) }
+        onCollector { _ => collectorMergeable.merge((k, tuple, batchID) -> (time, v)) }
       }
       ack(tuple)
     }

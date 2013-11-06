@@ -21,35 +21,23 @@ import com.twitter.summingbird.graph._
 /** Producers are Directed Acyclic Graphs
  * by the fact that they are immutable.
  */
-case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) {
-  lazy val nodes: List[Producer[P, Any]] = Producer.entireGraphOf(tail)
-  lazy val allTails: List[Producer[P, Any]] = nodes.filter { fanOut(_).get == 0 }
-  private lazy val nodeSet: Set[Producer[P, Any]] = nodes.toSet
+case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) extends DependantGraph[Producer[P, Any]] {
+  override lazy val nodes: List[Producer[P, Any]] = Producer.entireGraphOf(tail)
+  override def dependenciesOf(p: Producer[P, Any]) = Producer.dependenciesOf(p)
 
-  /** This is the dependants graph. Each Producer knows who it depends on
-   * but not who depends on it without doing this computation
+  /** Return all the dependants of this node, but don't go past any output
+   * nodes, such as Summer or WrittenProducer. This is for searching downstream
+   * until write/sum to see if certain optimizations can be enabled
    */
-  private val graph: NeighborFn[Producer[P, Any]] = {
-    val nfn = Producer.dependenciesOf[P](_)
-    reversed(nodes)(nfn)
+  def transitiveDependantsTillOutput(inp: Producer[P, Any]): List[Producer[P, Any]] = {
+    val neighborFn = { (p: Producer[P, Any]) => p match {
+        case t: TailProducer[_, _] => Iterable.empty // all legit writes are tails
+        case _ => dependantsOf(p).getOrElse(Nil)
+      }
+    }
+    depthFirstOf(inp)(neighborFn).toList
   }
-  private val depths: Map[Producer[P, Any], Int] = {
-    val nfn = Producer.dependenciesOf[P](_)
-    dagDepth(nodes)(nfn)
-  }
-  /** The max of zero and 1 + depth of all parents if the node is the graph
-   */
-  def isNode(p: Producer[P, Any]): Boolean = nodeSet.contains(p)
-  def depth(p: Producer[P, Any]): Option[Int] = depths.get(p)
 
-  def dependantsOf(p: Producer[P, Any]): Option[List[Producer[P, Any]]] =
-    if(isNode(p)) Some(graph(p).toList) else None
-
-  def fanOut(p: Producer[P, Any]): Option[Int] = dependantsOf(p).map { _.size }
-  /**
-   * Return all dependendants of a given node.
-   * Does not include itself
-   */
-  def transitiveDependantsOf(p: Producer[P, Any]): List[Producer[P, Any]] =
-    depthFirstOf(p.asInstanceOf[Producer[P, Any]])(graph).toList
+  def namesOf(inp: Producer[P, Any]): List[NamedProducer[P, Any]] =
+    transitiveDependantsOf(inp).collect { case n@NamedProducer(_,_) => n }
 }

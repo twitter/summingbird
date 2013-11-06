@@ -39,24 +39,23 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
 
   implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
 
-  implicit val arbSource1: Arbitrary[Producer[Memory, Int]] = 
+  implicit val arbSource1: Arbitrary[Producer[Memory, Int]] =
           Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[Int]).map{
               x: List[Int] =>
                 Memory.toSource(x)})
-  implicit val arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = 
+  implicit val arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] =
           Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[(Int, Int)]).map{
-            x: List[(Int, Int)] => 
+            x: List[(Int, Int)] =>
               IdentityKeyedProducer(Memory.toSource(x))})
 
-  
-  lazy val genDag : Gen[MemoryDag]= for {
-    tail <- summed 
-  } yield OnlinePlan(tail)
-
-  implicit def genProducer: Arbitrary[MemoryDag] = Arbitrary(genDag)
+  lazy val genGraph : Gen[TailProducer[Memory, _]]= for {
+    tail <- oneOf(summed, written)
+  } yield tail
 
 
-  
+  implicit def genDag: Arbitrary[MemoryDag] = Arbitrary(genGraph.map(OnlinePlan(_)))
+  implicit def genProducer: Arbitrary[TailProducer[Memory, _]] = Arbitrary(genGraph)
+
   val testFn = { i: Int => List((i -> i)) }
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
@@ -71,14 +70,13 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     dumpNumber = dumpNumber + 1
   }
 
-  def isNoOpProducer(p: Producer[_, _]): Boolean = {
-    p match {
-      case IdentityKeyedProducer(_) => true
-      case NamedProducer(_, _) => true
-      case MergedProducer(_, _) => true
-      case AlsoProducer(_, _) => true
-      case _ => false
-    }
+  def dumpGraph(tail: Producer[Memory, Any]) = {
+    import java.io._
+    import com.twitter.summingbird.viz.VizGraph
+    val writer2 = new PrintWriter(new File("/tmp/failingProducerGraph" + dumpNumber + ".dot"))
+    VizGraph(tail, writer2)
+    writer2.close()
+    dumpNumber = dumpNumber + 1
   }
 
   property("Dag Nodes must be unique") = forAll { (dag: MemoryDag) =>
@@ -91,9 +89,9 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     }
   }
 
-  property("If a MemoryNode contains a Summer, all other producers must be NOP's") = forAll { (dag: MemoryDag) =>
+  property("If a Node contains a Summer, all other producers must be NOP's") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
-      val producersWithoutNOP = n.members.filterNot(isNoOpProducer(_))
+      val producersWithoutNOP = n.members.filterNot(Producer.isNoOp(_))
       val firstP = producersWithoutNOP.headOption
       producersWithoutNOP.forall{p =>
         val inError = (p.isInstanceOf[Summer[_, _, _]] && producersWithoutNOP.size != 1)
@@ -130,7 +128,7 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     val allProducersSet = dag.nodes.foldLeft(Set[Producer[Memory, _]]()){(runningSet, n) => runningSet | n.members.toSet}
     numAllProducers == allProducersSet.size
   }
-  
+
 
   property("All producers are in a Node") = forAll { (dag: MemoryDag) =>
     val allProducers = Producer.entireGraphOf(dag.tail).toSet + dag.tail
@@ -145,7 +143,7 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
         case _ => dag.dependenciesOf(n).size > 0
       }
       if(!success) dumpGraph(dag)
-      success 
+      success
     }
   }
 
@@ -153,12 +151,12 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
   property("Sources must have no incoming dependencies, and they must have dependants") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall{n =>
       val success = n match {
-        case _: SourceNode[_] => 
+        case _: SourceNode[_] =>
           dag.dependenciesOf(n).size == 0 && dag.dependantsOf(n).size > 0
         case _ => true
       }
       if(!success) dumpGraph(dag)
-      success 
+      success
     }
   }
 
@@ -174,7 +172,7 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
         case _ => true
       }
       if(!success) dumpGraph(dag)
-      success 
+      success
     }
   }
 
@@ -192,6 +190,22 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
   property("Nodes in the DAG should have unique names") = forAll { (dag: MemoryDag) =>
     val allNames = dag.nodes.toList.map{n => dag.getNodeName(n)}
     allNames.size == allNames.distinct.size
+  }
+
+  property("Running through the optimizer should only reduce the number of nodes") = forAll { (tail: TailProducer[Memory, _]) =>
+    val (_, stripped) = StripNamedNode(tail)
+    Producer.entireGraphOf(stripped).size <= Producer.entireGraphOf(tail).size
+  }
+
+  property("The number of non-named nodes should remain constant running with StripNamedNode") = forAll { (tail: TailProducer[Memory, _]) =>
+    def countNonNamed(tail: Producer[Memory, _]): Int = {
+      Producer.entireGraphOf(tail).collect {
+        case NamedProducer(_, _) => 0
+        case _ => 1
+      }.sum
+    }
+    val (_, stripped) = StripNamedNode(tail)
+    countNonNamed(tail) == countNonNamed(stripped)
   }
 
 }
