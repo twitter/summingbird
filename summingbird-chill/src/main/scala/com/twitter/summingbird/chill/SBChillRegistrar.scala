@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.chill
 import com.twitter.summingbird.{MutableStringConfig, SummingbirdConfig}
-import com.twitter.chill.{ScalaKryoInstantiator, IKryoRegistrar, Kryo, toRich}
+import com.twitter.chill.{ScalaKryoInstantiator, IKryoRegistrar, Kryo, toRich, ReflectingRegistrar}
 import com.twitter.chill.java.IterableRegistrar
 import com.twitter.chill._
 import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst }
@@ -35,12 +35,14 @@ object SBChillRegistrar {
       def summingbirdConfig = cfg
     }
 
+    val defaults = List(new ReflectingRegistrar(classOf[BatchID], classOf[BatchIDSerializer]),
+      new ReflectingRegistrar(classOf[Timestamp], classOf[TimestampSerializer]))
+
     ConfInst.setSerialized(
       kryoConfig,
       classOf[ScalaKryoInstantiator],
       new ScalaKryoInstantiator()
-        .withRegistrar(new IterableRegistrar(iterableRegistrars))
-        .withRegistrar(kryoRegClass(classOf[BatchID], classOf[Timestamp]))
+        .withRegistrar(new IterableRegistrar(iterableRegistrars ++ defaults))
     )
     kryoConfig.unwrap
   }
