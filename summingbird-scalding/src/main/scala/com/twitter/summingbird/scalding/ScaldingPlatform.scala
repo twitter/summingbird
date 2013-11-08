@@ -232,10 +232,10 @@ object Scalding {
 
   private def getOrElse[T: Manifest](options: Map[String, Options], idOpt: Option[String], default: T): T =
     (for {
-      id <- idOpt
+      id <- idOpt.map(List(_, "DEFAULT")).getOrElse(List("DEFAULT"))
       innerOpts <- options.get(id)
       option <- innerOpts.get[T]
-    } yield option).getOrElse(default)
+    } yield option).headOption.getOrElse(default)
 
   @annotation.tailrec
   private def getFirst[T: Manifest](options: Map[String, Options], names: List[String]): Option[T] =
