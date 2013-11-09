@@ -102,8 +102,10 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
     private lazy val startBatch: InclusiveLower[BatchID] =
       config.startTime.map(batcher.batchOf(_))
         .orElse {
-          versionedStore.mostRecentVersion
-            .map(t => batcher.batchOf(Timestamp(t)).next)
+          val mostRecentB = versionedStore.mostRecentVersion
+                .map(t => batcher.batchOf(Timestamp(t)).next)
+          logger.info("Most recent batch found on disk: " + mostRecentB.toString)
+          mostRecentB
         }.map(InclusiveLower(_)).getOrElse {
           sys.error {
             "You must provide startTime in config " +
