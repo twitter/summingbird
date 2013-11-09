@@ -216,7 +216,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
       getOrElse(stormDag, node, IncludeSuccessHandler.default),
       anchorTuples,
-      stormDag.dependenciesOf(node).size > 0)
+      stormDag.dependantsOf(node).size > 0)
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SINK_PARALLELISM).parHint
     val declarer =
