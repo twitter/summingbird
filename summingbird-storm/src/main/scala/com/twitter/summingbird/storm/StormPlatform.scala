@@ -110,7 +110,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val namedNodes = dag.producerToPriorityNames(producer)
     val maybePair = (for {
-      id <- namedNodes
+      id <- namedNodes :+ "DEFAULT"
       stormOpts <- options.get(id)
       option <- stormOpts.get[T]
     } yield (id, option)).headOption
