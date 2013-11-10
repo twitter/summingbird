@@ -15,7 +15,6 @@
  */
 package com.twitter.summingbird.scalding.state
 
-import com.backtype.hadoop.datastores.{ VersionedStore => BacktypeVersionedStore }
 import com.twitter.algebird.ExclusiveLower
 import com.twitter.algebird.InclusiveLower
 import com.twitter.algebird.InclusiveUpper
@@ -31,11 +30,14 @@ import org.apache.hadoop.fs.FileSystem
 
 import Scalding.dateRangeInjection
 
+import org.slf4j.LoggerFactory
 /**
  * State implementation that uses an HDFS folder as a crude key-value
  * store that tracks the batches currently processed.
  */
 object HDFSState {
+  @transient private val logger = LoggerFactory.getLogger(classOf[HDFSState])
+
   case class Config(
     rootPath: String,
     conf: Configuration,
@@ -94,16 +96,16 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
   def begin: PrepareState[Interval[Timestamp]] = new Prep
 
   protected lazy val versionedStore =
-    new BacktypeVersionedStore(
-      FileSystem.get(config.conf),
-      config.rootPath)
+    new FileVersionTracking(config.rootPath, FileSystem.get(config.conf))
 
   private class Prep extends PrepareState[Interval[Timestamp]] {
     private lazy val startBatch: InclusiveLower[BatchID] =
       config.startTime.map(batcher.batchOf(_))
         .orElse {
-          Option(versionedStore.mostRecentVersion)
-            .map(t => batcher.batchOf(Timestamp(t)).next)
+          val mostRecentB = versionedStore.mostRecentVersion
+                .map(t => batcher.batchOf(Timestamp(t)).next)
+          logger.info("Most recent batch found on disk: " + mostRecentB.toString)
+          mostRecentB
         }.map(InclusiveLower(_)).getOrElse {
           sys.error {
             "You must provide startTime in config " +
