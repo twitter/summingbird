@@ -96,7 +96,7 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
   def begin: PrepareState[Interval[Timestamp]] = new Prep
 
   protected lazy val versionedStore =
-    new FileVersionTracking( config.rootPath, FileSystem.get(config.conf))
+    new FileVersionTracking(config.rootPath, FileSystem.get(config.conf))
 
   private class Prep extends PrepareState[Interval[Timestamp]] {
     private lazy val startBatch: InclusiveLower[BatchID] =
