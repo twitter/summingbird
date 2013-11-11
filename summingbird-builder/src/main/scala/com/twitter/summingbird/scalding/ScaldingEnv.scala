@@ -80,10 +80,6 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // Summingbird job.
   def reducers : Int = args.getOrElse("reducers","20").toInt
 
-  case class Built(name: String,
-    builder: CompletedBuilder[Scalding, _, _],
-    updater: (Configuration => Configuration))
-
   // Used to insert a write just before the store so the store
   // can be used as a Service
   private def addDeltaWrite(snode: Summer[Scalding, Any, Any],
