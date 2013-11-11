@@ -500,8 +500,8 @@ case class WriteDot(filename: String)
 case class WriteStepsDot(filename: String)
 
 class Scalding(
-  jobName: String,
-  @transient options: Map[String, Options],
+  val jobName: String,
+  @transient val options: Map[String, Options],
   @transient transformConfig: SummingbirdConfig => SummingbirdConfig,
   @transient passedRegistrars: List[IKryoRegistrar]
   )
@@ -542,6 +542,12 @@ class Scalding(
 
     transformedConfig.removes.foreach(conf.set(_, null))
     transformedConfig.updates.foreach(kv => conf.set(kv._1, kv._2.toString))
+    // Store the options used:
+    conf.set("summingbird.options", options.toString)
+
+    def ifUnset(k: String, v: String) { if(null == conf.get(k)) { conf.set(k, v) } }
+    // Set the mapside cache size, this is important to not be too small
+    ifUnset("cascading.aggregateby.threshold", "100000")
   }
 
   private def setIoSerializations(c: Configuration): Unit =

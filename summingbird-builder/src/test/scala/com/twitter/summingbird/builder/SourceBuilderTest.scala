@@ -26,17 +26,17 @@ class SourceBuilderTest extends Specification {
   "SourceBuilder.adjust should properly update a map" in {
     val empty = Map[String, Options]()
 
-    assert(empty.get("a") == None)
-    assert(empty.get("b") == None)
+    empty.get("a") must be_==(None)
+    empty.get("b") must be_==(None)
 
     val withA = SourceBuilder.adjust(empty, "a")(_.set(One()))
 
-    assert(withA.get("a").flatMap(_.get[One]).exists(Set(One())))
-    assert(withA.get("b") == None)
+    withA.get("a").flatMap(_.get[One]).exists(Set(One())) must beTrue
+    withA.get("b") must be_==(None)
 
     val withB = SourceBuilder.adjust(withA, "b")(_.set(Two()))
 
-    assert(withB.get("a").flatMap(_.get[One]).exists(Set(One())))
-    assert(withB.get("b").flatMap(_.get[Two]).exists(Set(Two())))
+    withB.get("a").flatMap(_.get[One]).exists(Set(One())) must beTrue
+    withB.get("b").flatMap(_.get[Two]).exists(Set(Two())) must beTrue
   }
 }

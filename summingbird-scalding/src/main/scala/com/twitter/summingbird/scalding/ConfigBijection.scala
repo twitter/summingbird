@@ -31,7 +31,7 @@ object ConfigBijection {
   implicit val fromMap: Bijection[Map[String, AnyRef], Configuration] =
     new Bijection[Map[String, AnyRef], Configuration] {
       override def apply(config: Map[String, AnyRef]) = {
-        val conf = new Configuration
+        val conf = new Configuration(false) // false means don't read defaults
         config foreach { case (k,v) => conf.set(k,v.toString) }
         conf
       }
