@@ -1,6 +1,6 @@
 package com.twitter.summingbird.store
 
-import org.specs._
+import org.specs2.mutable._
 
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird.batch._

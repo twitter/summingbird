@@ -17,7 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.builder
 
 import com.twitter.summingbird._
-import org.specs._
+import org.specs2.mutable._
 
 case class One()
 case class Two()

@@ -53,6 +53,12 @@ object TestGraphGenerators {
     if(deps.size == 1) genProd2 else oneOf(deps)
   }
 
+  def aDependency1[P <: Platform[P]](p: Producer[P, Int])(implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
+                                      testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[Producer[P, Int]] = {
+    val deps = Producer.transitiveDependenciesOf(p).filter(_ == p).collect{case x:Producer[_, _] => x.asInstanceOf[Producer[P, Int]]}
+    if(deps.size == 1) genProd1 else oneOf(deps)
+  }
+
   def aTailDependency[P <: Platform[P]](p: Producer[P, Any])(implicit genSource1 : Arbitrary[Producer[P, Int]],
          genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]], testStore: P#Store[Int, Int],
          sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[TailProducer[P, Any]] = {
@@ -63,7 +69,7 @@ object TestGraphGenerators {
 
   def genMerged2[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
                                       testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
-    _  <- Gen.choose(0,1) 
+    _  <- Gen.choose(0,1)
     p1 <- genProd2
     p2 <- oneOf(genProd2, aDependency(p1))
   } yield IdentityKeyedProducer(MergedProducer(p1, p2))
@@ -85,21 +91,29 @@ object TestGraphGenerators {
     fn <- arbitrary[(Int) => List[Int]]
     in <- genProd1
   } yield FlatMappedProducer(in, fn)
-  
-  
+
+
   def genNamedProducer11[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
                                       testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
     _ <- Gen.choose(0, 1)
     fn <- arbitrary[(Int) => List[Int]]
     in <- genProd1
     name <- Gen.alphaStr
-  } yield NamedProducer(FlatMappedProducer(in, fn), name)
+  } yield NamedProducer(in, name)
+
+   def genNamedProducer22[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
+                                      testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
+    _ <- Gen.choose(0, 1)
+    fn <- arbitrary[(Int) => List[Int]]
+    in <- genProd2
+    name <- Gen.alphaStr
+  } yield IdentityKeyedProducer(NamedProducer(in, name))
 
   def genMerged1[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
                                   testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
     _  <- Gen.choose(0,1)
     p1 <- genProd1
-    p2 <- genProd1
+    p2 <- aDependency1(p1)
   } yield MergedProducer(p1, p2)
 
   def genFlatMap12[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
@@ -114,6 +128,13 @@ object TestGraphGenerators {
     _  <- Gen.choose(0,1)
     p1 <- genProd2
   } yield IdentityKeyedProducer(p1.write(sink2))
+
+  def genSumByKey22[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]],
+            genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
+            testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[KeyedProducer[P, Int, Int]] = for {
+    _  <- Gen.choose(0,1)
+    p1 <- genProd2
+  } yield IdentityKeyedProducer(p1.sumByKey(testStore).mapValues(_._2))
 
 
   def also1[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
@@ -138,31 +159,29 @@ def service2[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]]
     service <- genService2.arbitrary
   } yield IdentityKeyedProducer(FlatMappedProducer[P, (Int, (Int, Option[Int])), (Int, Int)](in.leftJoin(service), postMerge))
 
-  // TODO (https://github.com/twitter/summingbird/issues/74): add more
-  // nodes, abstract over Platform
   def summed[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
                                       testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]) = for {
-    in <- genProd2 
+    in <- genProd2
   } yield in.sumByKey(testStore)
 
   def written[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]],
-                              genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]], 
+                              genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
                               testStore: P#Store[Int, Int], sink1: P#Sink[Int],
                                sink2: P#Sink[(Int, Int)]): Gen[TailProducer[P, Int]] = for {
     in <- genProd1
   } yield in.write(sink1)
 
-  def genProd2[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]], 
-  									genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]], 
-  									testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[KeyedProducer[P, Int, Int]] = 
-  					frequency((25, genSource2.arbitrary), (3, genOptMap12), (3, genOptMap22), (4, genWrite22), (1, service2), (1, genMerged2), (1, also2),
-  							 (3, genFlatMap22), (3, genFlatMap12))
+  def genProd2[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]],
+  									genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
+  									testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[KeyedProducer[P, Int, Int]] =
+  					frequency((25, genSource2.arbitrary), (12, genNamedProducer22), (3, genOptMap12), (3, genOptMap22), (4, genWrite22), (1, service2), (1, genMerged2), (1, also2),
+  							 (3, genFlatMap22), (3, genFlatMap12), (5, genSumByKey22))
 
 
   def genProd1[P <: Platform[P]](implicit genSource1 : Arbitrary[Producer[P, Int]],
   									 genSource2 : Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
-  									 testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[Producer[P, Int]] = 
-  					frequency((25, genSource1.arbitrary), (8, genNamedProducer11), (3, genOptMap11), (3, genOptMap21), (1, genMerged1), (1, also1), (3, genFlatMap11),
+  									 testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[Producer[P, Int]] =
+  					frequency((25, genSource1.arbitrary), (12, genNamedProducer11), (3, genOptMap11), (3, genOptMap21), (1, genMerged1), (1, also1), (3, genFlatMap11),
   							 (3, genFlatMap21))
 
 }

@@ -30,7 +30,7 @@ import com.twitter.util.Future
 class SideEffectStore[K, V](store: MergeableStore[K, V])(sideEffectFn: K => Future[Unit])
     extends MergeableStore[K, V] {
 
-  override def monoid = store.monoid
+  override def semigroup = store.semigroup
   override def get(k: K) = store.get(k)
   override def multiGet[K1 <: K](ks: Set[K1]) = store.multiGet(ks)
 

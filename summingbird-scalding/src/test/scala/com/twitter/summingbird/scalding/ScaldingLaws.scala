@@ -47,7 +47,7 @@ import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
 
 
-import org.specs._
+import org.specs2.mutable._
 
 /**
   * Tests for Summingbird's Scalding planner.
@@ -322,7 +322,7 @@ object ScaldingLaws extends Specification {
       val summer = TestGraphs.singleStepJob[Scalding,(Long,Int),Int,Int](source, testStore)(t =>
           fn(t._2))
 
-      val scald = new Scalding("scalaCheckJob")
+      val scald = Scalding("scalaCheckJob")
       val intr = batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
@@ -350,7 +350,7 @@ object ScaldingLaws extends Specification {
           fnA(t._2), fnB)
 
       val intr = batchedCover(batcher, 0L, original.size.toLong)
-      val scald = new Scalding("scalaCheckJob")
+      val scald = Scalding("scalaCheckJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
@@ -378,7 +378,7 @@ object ScaldingLaws extends Specification {
 
       val tail = TestGraphs.multipleSummerJob[Scalding, (Long, Int), Int, Int, Int, Int, Int](source, testStoreA, testStoreB)({t => fnA(t._2)}, fnB, fnC)
 
-      val scald = new Scalding("scalaCheckMultipleSumJob")
+      val scald = Scalding("scalaCheckMultipleSumJob")
       val intr = batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(t))
@@ -431,14 +431,14 @@ object ScaldingLaws extends Specification {
         TestGraphs.leftJoinJob[Scalding,(Long, Int),Int,Int,Int,Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
 
       val intr = batchedCover(batcher, 0L, original.size.toLong)
-      val scald = new Scalding("scalaCheckleftJoinJob")
+      val scald = Scalding("scalaCheckleftJoinJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
 
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
 
-      compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must be (true)
+      compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
     }
 
     "match scala for diamond jobs with write" in {
@@ -459,7 +459,7 @@ object ScaldingLaws extends Specification {
           testSink,
           testStore)(t => fn1(t._2))(t => fn2(t._2))
 
-      val scald = new Scalding("scalding-diamond-Job")
+      val scald = Scalding("scalding-diamond-Job")
       val intr = batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer).get(s))
@@ -493,7 +493,7 @@ object ScaldingLaws extends Specification {
       val summer = TestGraphs
         .twoSumByKey[Scalding,Int,Int,Int](source.map(_._2), testStoreA, keyExpand, testStoreB)
 
-      val scald = new Scalding("scalding-diamond-Job")
+      val scald = Scalding("scalding-diamond-Job")
       val intr = batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode((testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(_))
@@ -534,7 +534,7 @@ object VersionBatchLaws extends Properties("VersionBatchLaws") {
 }
 
 class ScaldingSerializationSpecs extends Specification {
-  noDetailedDiffs()
+
 
   implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor( _._1 )
 
@@ -552,7 +552,7 @@ class ScaldingSerializationSpecs extends Specification {
 
       val mode = HadoopTest(new Configuration, {case x: ScaldingSource => buffer.get(x)})
       val intr = Interval.leftClosedRightOpen(0L, inWithTime.size.toLong)
-      val scald = new Scalding("scalaCheckJob")
+      val scald = Scalding("scalaCheckJob")
 
       (try { scald.toFlow(intr, mode, scald.plan(summer)); true }
       catch { case t: Throwable => println(toTry(t)); false }) must beTrue

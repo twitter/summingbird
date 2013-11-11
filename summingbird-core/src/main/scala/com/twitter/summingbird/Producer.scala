@@ -26,14 +26,20 @@ object Producer {
    * and it returns the input node.
    */
   def entireGraphOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] = {
-    val parentFn = { (in: Producer[P, Any]) => in match {
-        case AlsoProducer(l, r) => List(l, r)
-        case _ => dependenciesOf(in)
-      }
-    }
-    val above = graph.depthFirstOf(p)(parentFn)
+    val above = graph.depthFirstOf(p)(parentsOf)
     p :: above
   }
+
+  // The parents of the current node, possibly not its dependencies
+  def parentsOf[P <: Platform[P]](in: Producer[P, Any]): List[Producer[P, Any]] = {
+    in match {
+      case AlsoProducer(l, r) => List(l, r)
+      case _ => dependenciesOf(in)
+    }
+  }
+
+  def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
+    paths.collectFirst { case s: Summer[P, _, _] => s }
 
   /**
     * Begin from some base representation. An iterator for in-memory,

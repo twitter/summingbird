@@ -49,15 +49,15 @@ object StormPlanTopology extends Properties("StormDag") {
   implicit def arbSource2: Arbitrary[KeyedProducer[Storm, Int, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[(Int, Int)]).map{x: List[(Int, Int)] => IdentityKeyedProducer(Storm.source(TraversableSpout(x)))})
 
   implicit def arbService2: Arbitrary[Storm#Service[Int, Int]] = Arbitrary(Arbitrary.arbitrary[Int => Option[Int]].map{fn => StoreWrapper[Int, Int](() => ReadableStore.fromFn(fn))})
-  
-  lazy val genDag : Gen[StormDag]= for {
-    tail <- summed 
-  } yield OnlinePlan(tail)
 
-  implicit def genProducer: Arbitrary[StormDag] = Arbitrary(genDag)
+  lazy val genDag : Gen[TailProducer[Storm, Any]]= for {
+    tail <- oneOf(summed, written)
+  } yield tail
+
+  implicit def genProducer: Arbitrary[TailProducer[Storm, Any]] = Arbitrary(genDag)
 
 
-  
+
   val testFn = { i: Int => List((i -> i)) }
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
@@ -72,13 +72,25 @@ object StormPlanTopology extends Properties("StormDag") {
     dumpNumber = dumpNumber + 1
   }
 
-  property("Can plan to a Storm Topology") = forAll { (dag: StormDag) => 
+  def dumpGraph(tail: Producer[Storm, Any]) = {
+    import java.io._
+    import com.twitter.summingbird.viz.VizGraph
+    val writer2 = new PrintWriter(new File("/tmp/failingProducerGraph" + dumpNumber + ".dot"))
+    VizGraph(tail, writer2)
+    writer2.close()
+    dumpNumber = dumpNumber + 1
+  }
+
+  property("Can plan to a Storm Topology") = forAll { (prod: TailProducer[Storm, Any]) =>
     try {
-      Storm.local().plan(dag.tail)
+      Storm.local().plan(prod)
       true
       } catch {
         case e: Throwable =>
-        dumpGraph(dag)
+        dumpGraph(OnlinePlan(prod))
+        dumpGraph(prod)
+        val (_, p2) = StripNamedNode(prod)
+        dumpGraph(p2)
         println(e)
         e.printStackTrace
         false

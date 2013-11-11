@@ -1,5 +1,27 @@
 # summingbird #
 
+## 0.2.5
+* Fix issue with externalizer: https://github.com/twitter/summingbird/pull/316
+* Initial implementation of checkpoint state: https://github.com/twitter/summingbird/pull/315
+* Move to sbt 0.13: https://github.com/twitter/summingbird/pull/322
+* Move Dependants common code to graph: https://github.com/twitter/summingbird/pull/321
+* CheckpointState -> HDFSState: https://github.com/twitter/summingbird/pull/318
+* Change depthFirstOf to use List instead of Vector: https://github.com/twitter/summingbird/pull/323
+* Add an optional parameter to set default parallelism for a storm source: https://github.com/twitter/summingbird/pull/319
+* Add a method to prepare for optimizing FlatMapKeys: https://github.com/twitter/summingbird/pull/305
+* fix the increased output issue: https://github.com/twitter/summingbird/pull/327
+* Optimize iterator sums: https://github.com/twitter/summingbird/pull/326
+* Make sure to register BatchID and Timespan: https://github.com/twitter/summingbird/pull/324
+* Sum by key test: https://github.com/twitter/summingbird/pull/330
+* Add slf4j logging to scalding: https://github.com/twitter/summingbird/pull/331
+* Move the versioned store to scalding package: https://github.com/twitter/summingbird/pull/332
+* storm logging: https://github.com/twitter/summingbird/pull/333
+* Adds/extends some storm option tests: https://github.com/twitter/summingbird/pull/334
+* Make VersionedState fail-safe: https://github.com/twitter/summingbird/pull/337
+* Throw on Storm Submission w/ no online store: https://github.com/twitter/summingbird/pull/338
+* General graph support online: https://github.com/twitter/summingbird/pull/340
+* Summingbird config: https://github.com/twitter/summingbird/pull/339
+
 ## 0.2.4
 * Fix off-by-one bug in scalding batched store: https://github.com/twitter/summingbird/pull/311
 
@@ -30,7 +52,7 @@
 * Add better type safety to Storm Spouts: https://github.com/twitter/summingbird/pull/289
 * Add a streaming left join: https://github.com/twitter/summingbird/pull/291
 
-## 0.2.1 
+## 0.2.1
 * Add support for map only jobs in producer api https://github.com/twitter/summingbird/pull/269
 * Fixes naming of nodes, options are picked up correctly https://github.com/twitter/summingbird/pull/267
 * Fix missing elements in case statements for applying online graph to storm https://github.com/twitter/summingbird/pull/272

@@ -96,11 +96,13 @@ The latest ScalaDocs are hosted on Summingbird's [Github Project Page](http://tw
 
 Discussion occurs primarily on the [Summingbird mailing list](https://groups.google.com/forum/#!forum/summingbird). Issues should be reported on the GitHub issue tracker. Simpler issues appropriate for first-time contributors looking to help out are tagged "newbie".
 
+IRC: freenode channel #summingbird
+
 Follow [@summingbird](https://twitter.com/summingbird) on Twitter for updates.
 
 ## Maven
 
-Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.2.4`.
+Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.2.5`.
 
 Current published artifacts are
 
