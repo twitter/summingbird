@@ -22,7 +22,7 @@ import com.twitter.summingbird.batch.{Batcher, BatchID}
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
-import org.specs._
+import org.specs2.mutable._
 
 import org.apache.hadoop.conf.Configuration
 
@@ -50,15 +50,16 @@ class OptionsTest extends Specification {
     val scalding = ScaldingEnv("com.twitter.summingbird.builder.TestJob1",
       Array("-Dcascading.aggregateby.threshold=100000", "--test", "arg"))
 
-    scalding.build.name must be_==("com.twitter.summingbird.builder.TestJob1")
+    scalding.build.platform.jobName must be_==("com.twitter.summingbird.builder.TestJob1")
 
-    val conf = scalding.build.updater(new Configuration)
-    conf.get("com.twitter.chill.config.configuredinstantiator") must notBeNull
-    conf.get("summingbird.args") must be_==(scalding.args.toString)
+    val conf = new Configuration
+    scalding.build.platform.updateConfig(conf)
+    conf.get("com.twitter.chill.config.configuredinstantiator") must not beNull;
+    conf.get("summingbird.options") must be_==(scalding.build.platform.options.toString)
     conf.get("cascading.aggregateby.threshold") must be_==("100000")
 
-    val opts = scalding.build.builder.opts
-    val dependants = Dependants(scalding.build.builder.node.name(scalding.build.builder.id))
+    val opts = scalding.build.platform.options
+    val dependants = Dependants(scalding.build.toRun)
     val summers = dependants.nodes.collect { case s: Summer[_, _, _] => s }
 
     summers.size must be_==(1)
