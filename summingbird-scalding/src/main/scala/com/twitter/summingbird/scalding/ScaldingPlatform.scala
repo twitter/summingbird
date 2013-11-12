@@ -534,6 +534,7 @@ class Scalding(
     Scalding.logger.debug("Removes: {}", scaldingConfig.removes)
     Scalding.logger.debug("Updates: {}", scaldingConfig.updates)
 
+    // now let the user do her thing:
     val transformedConfig = transformConfig(scaldingConfig)
 
     Scalding.logger.debug("User+Serialization config changes:")
@@ -544,6 +545,7 @@ class Scalding(
     transformedConfig.updates.foreach(kv => conf.set(kv._1, kv._2.toString))
     // Store the options used:
     conf.set("summingbird.options", options.toString)
+    conf.set("summingbird.jobname", jobName)
 
     def ifUnset(k: String, v: String) { if(null == conf.get(k)) { conf.set(k, v) } }
     // Set the mapside cache size, this is important to not be too small
