@@ -26,6 +26,7 @@ import backtype.storm.tuple.Tuple
 import com.twitter.bijection.{Base64String, Injection}
 import com.twitter.algebird.Monoid
 import com.twitter.chill.IKryoRegistrar
+import com.twitter.storehaus.ReadableStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
@@ -78,18 +79,34 @@ object Storm {
   def remote(options: Map[String, Options] = Map.empty): RemoteStorm =
     new RemoteStorm(options, identity, List())
 
-  def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+  /**
+   * Below are factory methods for the input output types:
+   */
+
+  def sink[T](fn: => (T => Future[Unit])): Storm#Sink[T] = { () => fn }
+
+  // This can be used in jobs that do not have a batch component
+  def onlineOnlyStore[K, V](store: => MergeableStore[K, V]): StormStore[K, V] =
+    MergeableStoreSupplier.fromOnlineOnly(store)
+
+  def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
     MergeableStoreSupplier.from(store)
 
-  def toStormSource[T](spout: Spout[T], defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]) =
-    SpoutSource(spout.map(t => (timeOf(t), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
+  def service[K, V](serv: => ReadableStore[K, V]): StormService[K, V] = StoreWrapper(() => serv)
 
-  implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] = toStormSource(spout, None)(timeOf)
+  def toStormSource[T](spout: Spout[T],
+    defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): StormSource[T] =
+      SpoutSource(spout.map(t => (timeOf(t), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
 
-  def source[T](spout: Spout[T], defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]) =
-    Producer.source[Storm, T](toStormSource(spout, defaultSourcePar))
+  implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] =
+    toStormSource(spout, None)(timeOf)
 
-  implicit def spoutAsSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] = source(spout, None)(timeOf)
+  def source[T](spout: Spout[T],
+    defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
+      Producer.source[Storm, T](toStormSource(spout, defaultSourcePar))
+
+  implicit def spoutAsSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
+    source(spout, None)(timeOf)
 }
 
 case class PlannedTopology(config: BacktypeStormConfig, topology: StormTopology)
