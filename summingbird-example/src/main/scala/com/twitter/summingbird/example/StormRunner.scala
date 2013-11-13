@@ -17,7 +17,7 @@
 package com.twitter.summingbird.example
 
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.storm.{ MergeableStoreSupplier, Storm }
+import com.twitter.summingbird.storm.{ StormStore, Storm }
 import com.twitter.tormenta.spout.TwitterSpout
 import com.twitter.util.Await
 import twitter4j.TwitterStreamFactory
@@ -81,10 +81,10 @@ object StormRunner {
     Memcache.mergeable[(String, BatchID), Long]("urlCount")
 
   /**
-    * And then the supplier:
+    * the param to store is by name, so this is still not created created
+    * yet
     */
-  val storeSupplier: MergeableStoreSupplier[String, Long] =
-    Storm.store(stringLongStore)
+  val storeSupplier: StormStore[String, Long] = Storm.store(stringLongStore)
 
   /**
     * When this main method is executed, Storm will begin running on a
