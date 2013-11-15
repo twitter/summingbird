@@ -63,9 +63,9 @@ class OptionsTest extends Specification {
     val summers = dependants.nodes.collect { case s: Summer[_, _, _] => s }
 
     summers.size must be_==(1)
-
+    val names = dependants.namesOf(summers.head).map(_.id)
     Scalding
-      .getCommutativity(dependants,
+      .getCommutativity(names,
         opts,
         summers.head.asInstanceOf[Summer[Scalding,_,_]]) must be_==(Commutative)
   }
