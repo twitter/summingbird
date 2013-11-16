@@ -18,16 +18,15 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.task.{OutputCollector, TopologyContext}
 import backtype.storm.tuple.{Tuple, Values, Fields}
-import com.twitter.algebird.{Monoid, SummingQueue}
+import com.twitter.algebird.{Semigroup, SummingQueue}
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
 import com.twitter.summingbird.storm.option._
 import com.twitter.summingbird.option.CacheSize
-import com.twitter.summingbird.online.FutureQueue
 
 import com.twitter.util.{Await, Future}
-import java.util.{ Map => JMap }
+import java.util.{ Arrays => JArrays, List => JList, Map => JMap }
 
 /**
   * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
@@ -44,14 +43,26 @@ import java.util.{ Map => JMap }
   * effectively pushing back against latency bumps in the host.
   *
   * The allowed latency before a future is forced is equal to
-  * (MaxWaitingFutures * execute latency).
+  * (MaxWaitingFutures * execute la`tency).
   *
   * @author Oscar Boykin
   * @author Sam Ritchie
   * @author Ashu Singhal
   */
 
-class SummerBolt[Key, Value: Monoid](
+import java.util.{List => JList}
+object JListSemigroup {
+  implicit def jlistConcat[T]: Semigroup[JList[T]] = new JListSemigroup[T]
+}
+/** Mutably concat java lists */
+class JListSemigroup[T] extends Semigroup[JList[T]] {
+  def plus(old: JList[T], next: JList[T]): JList[T] = {
+    old.addAll(next)
+    old
+  }
+}
+
+class SummerBolt[Key, Value: Semigroup](
   @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
@@ -60,72 +71,63 @@ class SummerBolt[Key, Value: Monoid](
   maxWaitingFutures: MaxWaitingFutures,
   includeSuccessHandler: IncludeSuccessHandler,
   anchor: AnchorTuples,
-  shouldEmit: Boolean) extends BaseBolt(metrics.metrics) {
+  shouldEmit: Boolean) extends
+    AsyncBaseBolt[((Key, BatchID), Value), (Key, (Option[Value], Value))](
+      metrics.metrics,
+      anchor,
+      maxWaitingFutures,
+      shouldEmit) {
+
   import Constants._
+  import JListSemigroup._
 
   val storeBox = Externalizer(storeSupplier)
   lazy val store = storeBox.get.apply
 
   // See MaxWaitingFutures for a todo around removing this.
   lazy val cacheCount = cacheSize.size
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), (Timestamp, Value)]](cacheCount.getOrElse(0))
-  lazy val futureQueue = FutureQueue(Future.Unit, maxWaitingFutures.get)
+  lazy val buffer = SummingQueue[Map[(Key, BatchID), (JList[Tuple], Timestamp, Value)]](cacheCount.getOrElse(0))
 
-  val exceptionHandlerBox = Externalizer(exceptionHandler)
+  val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
 
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
-  override val fields = Some(new Fields("pair"))
+  override val decoder = new KeyValueInjection[(Key,BatchID), Value](AGG_KEY, AGG_VALUE)
+  override val encoder = new SingleItemInjection[(Key, (Option[Value], Value))](VALUE_FIELD)
 
-  override def prepare(
-    conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
+  override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
     super.prepare(conf, context, oc)
-    // see IncludeSuccessHandler for why this is needed
-    successHandlerOpt = if (includeSuccessHandler.get)
-      Some(successHandlerBox.get)
-    else
-      None
+    successHandlerOpt = Some(successHandlerBox.get)
   }
 
-  // TODO (https://github.com/twitter/tormenta/issues/1): Think about
-  // how this can help with Tormenta's open issue for a tuple
-  // conversion library. Storm emits Values and receives Tuples.
-  def unpack(tuple: Tuple) = {
-    val id = tuple.getValue(0).asInstanceOf[BatchID]
-    val key = tuple.getValue(1).asInstanceOf[Key]
-    val (ts, value) = tuple.getValue(2).asInstanceOf[(Timestamp, Value)]
-    ((key, id), (ts, value))
+  protected override def fail(inputs: JList[Tuple], error: Throwable): Unit = {
+    super.fail(inputs, error)
+    exceptionHandlerBox.get.apply(error)
+    ()
   }
 
-  def toValues(time: Timestamp, item: Any): Values = new Values((time.milliSinceEpoch, item))
+  override def apply(tuple: Tuple,
+    tsIn: (Timestamp, ((Key, BatchID), Value))):
+      Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
 
-  override def execute(tuple: Tuple) {
-    // See MaxWaitingFutures for a todo around simplifying this.
-    buffer(Map(unpack(tuple))).foreach { pairs =>
-      val futures = pairs.map { case ((k, batchID), (ts, delta)) =>
-        val pair = ((k, batchID), delta)
-
-        val mergeFuture = store.merge(pair)
-          .handle(exceptionHandlerBox.get.handlerFn)
-
-        for (handler <- successHandlerOpt)
-          mergeFuture.onSuccess { _ => handler.handlerFn() }
-
-        if(shouldEmit) {
-          mergeFuture.map { res =>
-            onCollector { col =>
-              val values = toValues(ts, (k, (res, delta)))
-                if (anchor.anchor)
-                  col.emit(tuple, values)
-                else col.emit(values)
-            }
+    val (ts, (kb, v)) = tsIn
+    Future.value {
+      // See MaxWaitingFutures for a todo around simplifying this.
+      buffer(Map(kb -> ((JArrays.asList(tuple), ts, v))))
+        .map { kvs =>
+          kvs.iterator.map { case ((k, batchID), (tups, stamp, delta)) =>
+            (tups,
+              store.merge(((k, batchID), delta)).map { before =>
+                List((stamp, (k, (before, delta))))
+              }
+              .onSuccess { _ => successHandlerOpt.get.handlerFn.apply() }
+            )
           }
-        } else mergeFuture
-      }.toList
-      futureQueue += Future.collect(futures).unit
+          .toList // force, but order does not matter, so we could optimize this
+        }
+        .getOrElse(Nil)
     }
-    onCollector { _.ack(tuple) }
   }
 
   override def cleanup { Await.result(store.close) }

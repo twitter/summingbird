@@ -172,6 +172,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val operation = foldOperations(node.members.reverse)
     val metrics = getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS)
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
+    val maxWaiting = getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
@@ -181,10 +182,16 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         new FinalFlatMapBolt(
           operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
           getOrElse(stormDag, node, DEFAULT_FM_CACHE),
-          getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS),
-          anchorTuples)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
+          metrics,
+          anchorTuples,
+          maxWaiting)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
       case None =>
-        new IntermediateFlatMapBolt(operation, metrics, anchorTuples, stormDag.dependenciesOf(node).size > 0)
+        new IntermediateFlatMapBolt(
+          operation,
+          metrics,
+          anchorTuples,
+          maxWaiting,
+          stormDag.dependantsOf(node).size > 0)
     }
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
@@ -264,6 +271,11 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     config.setMaxSpoutPending(1000)
     config.setNumAckers(12)
     config.setNumWorkers(12)
+    /**
+     * Set storm to tick our nodes every second to clean up finished futures
+     */
+    config.put(BacktypeStormConfig.TOPOLOGY_TICK_TUPLE_FREQ_SECS,
+      java.lang.Integer.valueOf(1))
 
     val initialStormConfig = StormConfig(config)
     val stormConfig = SBChillRegistrar(initialStormConfig, passedRegistrars)
