@@ -111,7 +111,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
 
   private lazy val futureQueue = new BoundedQueue[Future[Unit]](maxWaitingFutures.get)
   private lazy val futureChannel: FutureChannel[JList[Tuple], TraversableOnce[(Timestamp, O)]] =
-    FutureChannel.array(maxWaitingFutures.get)
+    FutureChannel.linked
 
   override def execute(tuple: Tuple) {
     /**
