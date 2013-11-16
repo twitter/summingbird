@@ -66,7 +66,9 @@ object Channel {
  */
 abstract class Channel[T] {
 
+  // always increment after this
   protected def add(t: T): Unit
+  // always decrement after this
   protected def pollOrNull: T
 
   private val count = new AtomicInteger(0)
@@ -88,7 +90,12 @@ abstract class Channel[T] {
   /**
    * check if something is ready now
    */
-  def poll: Option[T] = Option(pollOrNull)
+  def poll: Option[T] = pollOrNull match {
+    case null => None
+    case item =>
+        count.decrementAndGet
+        Some(item)
+  }
 
   /**
    * Obviously, this might not be the same by the time you
@@ -101,7 +108,10 @@ abstract class Channel[T] {
   final def foreach(fn: T => Unit): Unit =
     pollOrNull match {
       case null => ()
-      case itt => fn(itt); foreach(fn)
+      case itt =>
+        count.decrementAndGet
+        fn(itt)
+        foreach(fn)
     }
 
   // fold on all the elements ready:
@@ -109,7 +119,9 @@ abstract class Channel[T] {
   final def foldLeft[V](init: V)(fn: (V, T) => V): V = {
    pollOrNull match {
       case null => init
-      case itt => foldLeft(fn(init, itt))(fn)
+      case itt =>
+        count.decrementAndGet
+        foldLeft(fn(init, itt))(fn)
     }
   }
 

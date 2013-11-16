@@ -72,6 +72,31 @@ object QueueChannelLaws extends Properties("Channel") {
     q.foreach { case (i, Return(ii)) =>
       works = works && (ii == i*i)
     }
-    works
+    works && (q.size == 0)
+  }
+  property("Channel foldLeft works") = forAll { (items: List[Int]) =>
+    // Make sure we can fit everything
+    val q = Channel.arrayBlocking[(Int,Try[Int])](items.size + 1)
+    items.foreach { i => q.put((i,Try(i*i))) }
+    q.foldLeft(true) { case (works, (i, Return(ii))) =>
+      (ii == i*i)
+    } && (q.size == 0)
+  }
+
+  property("Channel poll + size is correct") = forAll { (items: List[Int]) =>
+    // Make sure we can fit everything
+    val q = Channel[Int]()
+    items.map { i =>
+      q.put(i)
+      val size = q.size
+      if(i % 2 == 0) {
+        // do a poll test
+        q.poll match {
+          case None => q.size == 0
+          case Some(_) => q.size == (size - 1)
+        }
+      }
+      else true
+    }.forall(identity)
   }
 }
