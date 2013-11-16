@@ -32,7 +32,7 @@ import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
-import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
@@ -70,7 +70,7 @@ sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 sealed trait StormSource[+T]
-case class SpoutSource[+T](spout: Spout[(Long, T)], parallelism: Option[option.SpoutParallelism]) extends StormSource[T]
+case class SpoutSource[+T](spout: Spout[(Timestamp, T)], parallelism: Option[option.SpoutParallelism]) extends StormSource[T]
 
 object Storm {
   def local(options: Map[String, Options] = Map.empty): LocalStorm =
@@ -96,7 +96,7 @@ object Storm {
 
   def toStormSource[T](spout: Spout[T],
                        defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): StormSource[T] =
-    SpoutSource(spout.map(t => (timeOf(t), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
+    SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
 
   implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] =
     toStormSource(spout, None)(timeOf)
@@ -199,7 +199,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
-    dependenciesNames.foreach { declarer.shuffleGrouping(_) }
+    dependenciesNames.foreach { declarer.localOrShuffleGrouping(_) }
   }
 
   private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {

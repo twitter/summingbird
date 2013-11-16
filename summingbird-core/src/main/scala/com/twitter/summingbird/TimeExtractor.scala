@@ -28,4 +28,10 @@ object TimeExtractor {
     }
 }
 
-trait TimeExtractor[T] extends (T => Long) with java.io.Serializable
+/** This cannot be a subclass of function and use the pattern
+ * of implicit dependencies, since then you get an implicit function.
+ * Not good
+ */
+trait TimeExtractor[T] extends java.io.Serializable {
+  def apply(t: T): Long
+}

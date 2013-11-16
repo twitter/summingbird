@@ -59,20 +59,25 @@ abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   }
 
   protected def finish(inputs: JList[Tuple], results: TraversableOnce[(Timestamp, O)]) {
+    var emitCount = 0
     if(hasDependants) {
       if(anchorTuples.anchor) {
         results.foreach { result =>
           collector.emit(inputs, encoder(result))
+          emitCount += 1
         }
       }
       else { // don't anchor
         results.foreach { result =>
           collector.emit(encoder(result))
+          emitCount += 1
         }
       }
     }
     // Always ack a tuple on completion:
     inputs.iterator.asScala.foreach(collector.ack(_))
+    logger.debug("bolt finished processed %d linked tuples, emitted: %d"
+      .format(inputs.size, emitCount))
   }
 
   override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
