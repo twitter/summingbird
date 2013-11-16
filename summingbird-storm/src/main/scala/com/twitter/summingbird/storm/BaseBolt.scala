@@ -124,11 +124,22 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
       val fut = apply(tuple, tsIn)
         .onSuccess { iter =>
           // Collect the result onto our channel
-          iter.foreach { case (tups, res) =>
+          val (puts, maxSize) = iter.foldLeft((0, 0)) { case ((p, ms), (tups, res)) =>
             futureChannel.put(tups, res)
             // Make sure there are not too many outstanding:
-            futureQueue.put(res.unit)
-            // todo: log if the size is too large
+            val count = futureQueue.put(res.unit)
+            (p + 1, ms max count)
+          }
+
+          if(maxSize > maxWaitingFutures.get) {
+            /*
+             * This can happen on large key expansion.
+             * May indicate maxWaitingFutures is too low.
+             */
+            logger.warn(
+              "Exceeded maxWaitingFutures(%d): waiting = %d, put = %d"
+                .format(maxWaitingFutures.get, maxSize, puts)
+              )
           }
         }
         .onFailure { thr => fail(JArrays.asList(tuple), thr) }

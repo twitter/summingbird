@@ -31,9 +31,12 @@ class BoundedQueue[T](maxLength: Int) {
   private val count = new AtomicInteger(0)
 
   /** Returns the size immediately after the put */
-  def putAll(seq: Iterable[T]): Int = {
-    seq.foreach(queue.add(_))
-    count.addAndGet(seq.size)
+  def putAll(items: TraversableOnce[T]): Int = {
+    val added = items.foldLeft(0) { (cnt, item) =>
+      queue.add(_)
+      cnt + 1
+    }
+    count.addAndGet(added)
   }
 
   /** Returns the size immediately after the put */
