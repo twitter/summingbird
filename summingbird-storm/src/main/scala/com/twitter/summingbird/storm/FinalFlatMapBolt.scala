@@ -23,7 +23,7 @@ import backtype.storm.tuple.{ Fields, Tuple, Values }
 import com.twitter.algebird.{ SummingQueue, Semigroup, MapAlgebra }
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
-import com.twitter.summingbird.online.{FlatMapOperation, FutureChannel}
+import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.option.{
   AnchorTuples, FlatMapStormMetrics, MaxWaitingFutures
 }

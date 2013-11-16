@@ -21,7 +21,7 @@ import com.twitter.summingbird.online.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.storm.option.{ AnchorTuples, FlatMapStormMetrics, MaxWaitingFutures }
-import com.twitter.summingbird.online.{FlatMapOperation, FutureChannel}
+import com.twitter.summingbird.online.FlatMapOperation
 
 import com.twitter.util.{Future}
 

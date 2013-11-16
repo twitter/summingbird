@@ -34,13 +34,28 @@ object Channel {
   def apply[T]() = linkedNonBlocking[T]
 
   def arrayBlocking[T](size: Int): Channel[T] =
-    new Channel[T](new ArrayBlockingQueue(size))
+    fromBlocking(new ArrayBlockingQueue(size))
 
   def linkedBlocking[T]: Channel[T] =
-    new Channel[T](new LinkedBlockingQueue())
+    fromBlocking(new LinkedBlockingQueue())
 
   def linkedNonBlocking[T]: Channel[T] =
-    new Channel[T](new ConcurrentLinkedQueue())
+    fromQueue(new ConcurrentLinkedQueue())
+
+  def fromBlocking[T](bq: BlockingQueue[T]): Channel[T] = {
+    new Channel[T] {
+      override def add(t: T) = bq.put(t)
+      override def pollOrNull = bq.poll()
+    }
+  }
+
+  // Uses Queue.add to put. This will fail for full blocking queues
+  def fromQueue[T](q: Queue[T]): Channel[T] = {
+    new Channel[T] {
+      override def add(t: T) = q.add(t)
+      override def pollOrNull = q.poll()
+    }
+  }
 }
 
 /**
@@ -49,19 +64,22 @@ object Channel {
  * Storm needs us to touch it's code in one event path (via
  * the execute method in bolts)
  */
-class Channel[T] private (queue: Queue[T]) {
+abstract class Channel[T] {
+
+  protected def add(t: T): Unit
+  protected def pollOrNull: T
 
   private val count = new AtomicInteger(0)
 
   def put(item: T): Int = {
-    queue.add(item)
+    add(item)
     count.incrementAndGet
   }
 
   /** Returns the size immediately after the put */
   def putAll(items: TraversableOnce[T]): Int = {
     val added = items.foldLeft(0) { (cnt, item) =>
-      queue.add(item)
+      add(item)
       cnt + 1
     }
     count.addAndGet(added)
@@ -70,7 +88,7 @@ class Channel[T] private (queue: Queue[T]) {
   /**
    * check if something is ready now
    */
-  def poll: Option[T] = Option(queue.poll())
+  def poll: Option[T] = Option(pollOrNull)
 
   /**
    * Obviously, this might not be the same by the time you
@@ -81,7 +99,7 @@ class Channel[T] private (queue: Queue[T]) {
   // Do something on all the elements ready:
   @annotation.tailrec
   final def foreach(fn: T => Unit): Unit =
-    queue.poll() match {
+    pollOrNull match {
       case null => ()
       case itt => fn(itt); foreach(fn)
     }
@@ -89,7 +107,7 @@ class Channel[T] private (queue: Queue[T]) {
   // fold on all the elements ready:
   @annotation.tailrec
   final def foldLeft[V](init: V)(fn: (V, T) => V): V = {
-    queue.poll() match {
+   pollOrNull match {
       case null => init
       case itt => foldLeft(fn(init, itt))(fn)
     }
@@ -104,7 +122,7 @@ class Channel[T] private (queue: Queue[T]) {
     @annotation.tailrec
     def loop(size: Int, acc: List[T] = Nil): List[T] = {
       if(size > maxLength) {
-        queue.poll match {
+        pollOrNull match {
           case null => acc.reverse // someone else cleared us out
           case item =>
             loop(count.decrementAndGet, item::acc)
