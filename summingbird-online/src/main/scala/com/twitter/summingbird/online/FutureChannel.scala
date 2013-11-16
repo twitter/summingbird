@@ -18,28 +18,42 @@ package com.twitter.summingbird.online
 
 import com.twitter.util.{ Await, Duration, Future, Try }
 
+import java.util.Queue
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, LinkedBlockingQueue, TimeUnit}
+import java.util.concurrent.ConcurrentLinkedQueue
 /**
  *
  * @author Oscar Boykin
  */
 
 object FutureChannel {
-  def array[I,O](size: Int): FutureChannel[I,O] =
+  /**
+   * By default, don't block on put (the future has completed
+   * by then).
+   */
+  def apply[I,O]() = linkedNonBlocking[I, O]
+
+  def arrayBlocking[I,O](size: Int): FutureChannel[I,O] =
     new FutureChannel[I,O](new ArrayBlockingQueue(size))
 
-  def linked[I,O]: FutureChannel[I,O] =
+  def linkedBlocking[I,O]: FutureChannel[I,O] =
     new FutureChannel[I,O](new LinkedBlockingQueue())
+
+  def linkedNonBlocking[I,O]: FutureChannel[I,O] =
+    new FutureChannel[I,O](new ConcurrentLinkedQueue())
 }
 
-class FutureChannel[I,O](queue: BlockingQueue[(I,Try[O])]) {
+/**
+ * Use this class with a thread-safe queue to receive
+ * results from futures in one thread.
+ * Storm needs us to touch it's code in one event path (via
+ * the execute method in bolts)
+ */
+class FutureChannel[I,O] private (queue: Queue[(I,Try[O])]) {
 
   def call(in: I)(fn: I => Future[O]): Unit = put(in, fn(in))
 
-  def put(in: I, f: Future[O]): Unit = f.respond { t => queue.put((in, t)) }
-
-  def poll(d: Duration): Option[(I, Try[O])] =
-    Option(queue.poll(d.inMilliseconds, TimeUnit.MILLISECONDS))
+  def put(in: I, f: Future[O]): Unit = f.respond { t => queue.add((in, t)) }
 
   /**
    * check if something is ready now

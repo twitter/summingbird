@@ -33,7 +33,7 @@ class BoundedQueue[T](maxLength: Int) {
   /** Returns the size immediately after the put */
   def putAll(items: TraversableOnce[T]): Int = {
     val added = items.foldLeft(0) { (cnt, item) =>
-      queue.add(_)
+      queue.add(item)
       cnt + 1
     }
     count.addAndGet(added)

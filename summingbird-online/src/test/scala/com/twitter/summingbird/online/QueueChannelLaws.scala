@@ -45,7 +45,17 @@ object QueueChannelLaws extends Properties("Queue and Channel") {
     q.spill == items
   }
   property("FutureChannel works with finished futures") = forAll { (items: List[Int]) =>
-    val q = FutureChannel.linked[Int,Int]
+    val q = FutureChannel.linkedBlocking[Int,Int]
+    items.foreach { i => q.put(i, Future(i*i)) }
+    q.foldLeft((0, true)) { case ((cnt, good), (i, ti)) =>
+      ti match {
+        case Return(ii) => (cnt + 1, good)
+        case Throw(e) => (cnt + 1, false)
+      }
+    } == (items.size, true)
+  }
+  property("FutureChannel.linkedNonBlocking works with finished futures") = forAll { (items: List[Int]) =>
+    val q = FutureChannel.linkedNonBlocking[Int,Int]
     items.foreach { i => q.put(i, Future(i*i)) }
     q.foldLeft((0, true)) { case ((cnt, good), (i, ti)) =>
       ti match {
@@ -56,7 +66,7 @@ object QueueChannelLaws extends Properties("Queue and Channel") {
   }
   property("FutureChannel foreach works") = forAll { (items: List[Int]) =>
     // Make sure we can fit everything
-    val q = FutureChannel.array[Int,Int](items.size + 1)
+    val q = FutureChannel.arrayBlocking[Int,Int](items.size + 1)
     items.foreach { q.call(_) { i => Future(i*i) } }
     var works = true
     q.foreach { case (i, Return(ii)) =>

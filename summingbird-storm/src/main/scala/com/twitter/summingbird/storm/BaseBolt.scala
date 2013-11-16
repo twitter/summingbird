@@ -110,8 +110,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
   def apply(tup: Tuple, in: (Timestamp, I)): Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])]]
 
   private lazy val futureQueue = new BoundedQueue[Future[Unit]](maxWaitingFutures.get)
-  private lazy val futureChannel: FutureChannel[JList[Tuple], TraversableOnce[(Timestamp, O)]] =
-    FutureChannel.linked
+  private lazy val futureChannel = FutureChannel[JList[Tuple], TraversableOnce[(Timestamp, O)]]()
 
   override def execute(tuple: Tuple) {
     /**
@@ -136,7 +135,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
              * This can happen on large key expansion.
              * May indicate maxWaitingFutures is too low.
              */
-            logger.warn(
+            logger.debug(
               "Exceeded maxWaitingFutures(%d): waiting = %d, put = %d"
                 .format(maxWaitingFutures.get, maxSize, puts)
               )
