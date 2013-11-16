@@ -98,7 +98,7 @@ class SummerBolt[Key, Value: Semigroup](
 
   override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
     super.prepare(conf, context, oc)
-    successHandlerOpt = Some(successHandlerBox.get)
+    successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
   protected override def fail(inputs: JList[Tuple], error: Throwable): Unit = {
