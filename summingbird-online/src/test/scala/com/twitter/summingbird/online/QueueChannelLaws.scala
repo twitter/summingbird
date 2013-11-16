@@ -21,32 +21,32 @@ import Gen._
 import Arbitrary._
 import org.scalacheck.Prop._
 
-import com.twitter.util.{Return, Throw, Future}
+import com.twitter.util.{Return, Throw, Future, Try}
 
-object QueueChannelLaws extends Properties("Queue and Channel") {
+object QueueChannelLaws extends Properties("Channel") {
 
   property("Putting into a BoundedQueue gets size right") = forAll { (items: List[String]) =>
-    val q = new BoundedQueue[String](10)
+    val q = Channel[String]()
     q.putAll(items)
     q.size == items.size
   }
   property("not spill if capacity is enough") = forAll { (items: List[Int]) =>
-    val q = new BoundedQueue[Int](items.size)
+    val q = Channel[Int]()
     q.putAll(items)
-    q.spill.size == 0
+    q.trimTo(items.size).size == 0
   }
   property("Work with indepent additions") = forAll { (items: List[Int]) =>
-    val q = new BoundedQueue[Int](items.size)
+    val q = Channel[Int]()
     items.map(q.put(_)) == (1 to items.size).toList
   }
   property("spill all with zero capacity") = forAll { (items: List[Int]) =>
-    val q = new BoundedQueue[Int](0)
+    val q = Channel[Int]()
     q.putAll(items)
-    q.spill == items
+    q.trimTo(0) == items
   }
-  property("FutureChannel works with finished futures") = forAll { (items: List[Int]) =>
-    val q = FutureChannel.linkedBlocking[Int,Int]
-    items.foreach { i => q.put(i, Future(i*i)) }
+  property("Channel works with finished futures") = forAll { (items: List[Int]) =>
+    val q = Channel.linkedBlocking[(Int,Try[Int])]
+    items.foreach { i => q.put((i, Try(i*i))) }
     q.foldLeft((0, true)) { case ((cnt, good), (i, ti)) =>
       ti match {
         case Return(ii) => (cnt + 1, good)
@@ -54,9 +54,9 @@ object QueueChannelLaws extends Properties("Queue and Channel") {
       }
     } == (items.size, true)
   }
-  property("FutureChannel.linkedNonBlocking works with finished futures") = forAll { (items: List[Int]) =>
-    val q = FutureChannel.linkedNonBlocking[Int,Int]
-    items.foreach { i => q.put(i, Future(i*i)) }
+  property("Channel.linkedNonBlocking works") = forAll { (items: List[Int]) =>
+    val q = Channel.linkedNonBlocking[(Int,Try[Int])]
+    items.foreach { i => q.put((i, Try(i*i))) }
     q.foldLeft((0, true)) { case ((cnt, good), (i, ti)) =>
       ti match {
         case Return(ii) => (cnt + 1, good)
@@ -64,10 +64,10 @@ object QueueChannelLaws extends Properties("Queue and Channel") {
       }
     } == (items.size, true)
   }
-  property("FutureChannel foreach works") = forAll { (items: List[Int]) =>
+  property("Channel foreach works") = forAll { (items: List[Int]) =>
     // Make sure we can fit everything
-    val q = FutureChannel.arrayBlocking[Int,Int](items.size + 1)
-    items.foreach { q.call(_) { i => Future(i*i) } }
+    val q = Channel.arrayBlocking[(Int,Try[Int])](items.size + 1)
+    items.foreach { i => q.put((i,Try(i*i))) }
     var works = true
     q.foreach { case (i, Return(ii)) =>
       works = works && (ii == i*i)

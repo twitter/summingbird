@@ -25,9 +25,9 @@ import java.util.{ Map => JMap, Arrays => JArrays, List => JList, ArrayList => J
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
 
-import com.twitter.summingbird.online.{BoundedQueue, FutureChannel}
+import com.twitter.summingbird.online.Channel
 
-import com.twitter.util.{Await, Future, Return, Throw}
+import com.twitter.util.{Await, Future, Return, Throw, Try}
 import scala.collection.JavaConverters._
 
 import org.slf4j.{LoggerFactory, Logger}
@@ -109,8 +109,8 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
    */
   def apply(tup: Tuple, in: (Timestamp, I)): Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])]]
 
-  private lazy val futureQueue = new BoundedQueue[Future[Unit]](maxWaitingFutures.get)
-  private lazy val futureChannel = FutureChannel[JList[Tuple], TraversableOnce[(Timestamp, O)]]()
+  private lazy val futureQueue = Channel[Future[Unit]]()
+  private lazy val channel = Channel[(JList[Tuple], Try[TraversableOnce[(Timestamp, O)]])]()
 
   override def execute(tuple: Tuple) {
     /**
@@ -124,7 +124,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
         .onSuccess { iter =>
           // Collect the result onto our channel
           val (puts, maxSize) = iter.foldLeft((0, 0)) { case ((p, ms), (tups, res)) =>
-            futureChannel.put(tups, res)
+            res.respond { t => channel.put((tups, t)) }
             // Make sure there are not too many outstanding:
             val count = futureQueue.put(res.unit)
             (p + 1, ms max count)
@@ -150,7 +150,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
   }
 
   protected def forceExtraFutures {
-    val toForce = futureQueue.spill
+    val toForce = futureQueue.trimTo(maxWaitingFutures.get)
     if(!toForce.isEmpty) Await.result(Future.collect(toForce))
   }
 
@@ -158,7 +158,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
     // don't let too many futures build up
     forceExtraFutures
     // Handle all ready results now:
-    futureChannel.foreach { case (tups, res) =>
+    channel.foreach { case (tups, res) =>
       res match {
         case Return(outs) => finish(tups, outs)
         case Throw(t) => fail(tups, t)
