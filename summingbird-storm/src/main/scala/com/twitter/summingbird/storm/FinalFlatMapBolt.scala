@@ -73,7 +73,7 @@ class FinalFlatMapBolt[Event, Key, Value](
             items: TraversableOnce[(Key, Value)]): Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, KBV)]])] = {
 
     val batchID = batcher.batchOf(time)
-    squeue(MapAlgebra.sumByKey(items.map { case (k, v) => (k, batchID) -> (JArrays.asList(tuple), time, v) }))
+    squeue(MapAlgebra.sumByKey(items.map { case (k, v) => (k, batchID) -> (lift(tuple), time, v) }))
       .map { kvs =>
           kvs.iterator
             .map { case ((k, b), (tups, ts, v)) =>

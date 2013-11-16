@@ -26,7 +26,7 @@ import com.twitter.summingbird.storm.option._
 import com.twitter.summingbird.option.CacheSize
 
 import com.twitter.util.{Await, Future}
-import java.util.{ Arrays => JArrays, List => JList, Map => JMap }
+import java.util.{ Arrays => JArrays, List => JList, Map => JMap, ArrayList => JAList }
 
 /**
   * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
@@ -50,13 +50,14 @@ import java.util.{ Arrays => JArrays, List => JList, Map => JMap }
   * @author Ashu Singhal
   */
 
-import java.util.{List => JList}
 object JListSemigroup {
-  implicit def jlistConcat[T]: Semigroup[JList[T]] = new JListSemigroup[T]
+  def lift[T](t: T): JAList[T] = { val l = new JAList[T](); l.add(t); l }
+
+  implicit def jlistConcat[T]: Semigroup[JAList[T]] = new JListSemigroup[T]
 }
 /** Mutably concat java lists */
-class JListSemigroup[T] extends Semigroup[JList[T]] {
-  def plus(old: JList[T], next: JList[T]): JList[T] = {
+class JListSemigroup[T] extends Semigroup[JAList[T]] {
+  def plus(old: JAList[T], next: JAList[T]): JAList[T] = {
     old.addAll(next)
     old
   }
@@ -114,7 +115,7 @@ class SummerBolt[Key, Value: Semigroup](
     val (ts, (kb, v)) = tsIn
     Future.value {
       // See MaxWaitingFutures for a todo around simplifying this.
-      buffer(Map(kb -> ((JArrays.asList(tuple), ts, v))))
+      buffer(Map(kb -> ((lift(tuple), ts, v))))
         .map { kvs =>
           kvs.iterator.map { case ((k, batchID), (tups, stamp, delta)) =>
             (tups,

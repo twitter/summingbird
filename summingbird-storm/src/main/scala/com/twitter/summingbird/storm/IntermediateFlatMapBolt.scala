@@ -25,7 +25,7 @@ import com.twitter.summingbird.online.{FlatMapOperation, FutureChannel}
 
 import com.twitter.util.{Future}
 
-import java.util.{ Date, Arrays => JArrays, List => JList, Map => JMap }
+import java.util.{ Date, Arrays => JArrays, List => JList, Map => JMap, ArrayList => JAList }
 
 import Constants._
 
