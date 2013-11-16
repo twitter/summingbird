@@ -15,7 +15,8 @@
  */
 
 package com.twitter.summingbird.storm
-package com.twitter.summingbird.batch.Timestamp
+
+import com.twitter.summingbird.batch.Timestamp
 
 import org.scalacheck._
 import Gen._
@@ -27,11 +28,11 @@ object InjectionLaws extends Properties("InjectionTests") {
     Arbitrary(Arbitrary.arbitrary[Long].map(Timestamp(_)))
 
   property("Single injection works") = forAll { in: (Timestamp, String) =>
-    val inj = new SingleItemInjection("item")
+    val inj = new SingleItemInjection[String]("item")
     inj.invert(inj(in)).get == in
   }
   property("KV injection works") = forAll { in: (Timestamp, (String, List[Int])) =>
-    val inj = new KeyValueInjection("k", "v")
+    val inj = new KeyValueInjection[String, List[Int]]("k", "v")
     inj.invert(inj(in)).get == in
   }
 }

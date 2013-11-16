@@ -206,7 +206,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val (spout, parOpt) = node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
     val nodeName = stormDag.getNodeName(node)
 
-    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) { (spout, p) =>
+    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
       p match {
         case Source(_) => spout // The source is still in the members list so drop it
         case OptionMappedProducer(_, op) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
