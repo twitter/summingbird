@@ -208,7 +208,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val (spout, parOpt) = node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
     val nodeName = stormDag.getNodeName(node)
 
-    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
+    val tormentaSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
       p match {
         case Source(_) => spout // The source is still in the members list so drop it
         case OptionMappedProducer(_, op) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
@@ -217,8 +217,12 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         case AlsoProducer(_, _) => spout
         case _ => sys.error("not possible, given the above call to span.\n" + p)
       }
-    }.getSpout
+    }
 
+    val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
+    tormentaSpout.registerMetrics(metrics.toSpoutMetrics)
+
+    val stormSpout = tormentaSpout.getSpout
     val parallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SPOUT_PARALLELISM)).parHint
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
@@ -237,14 +241,14 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       supplier,
       getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
       getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-      getOrElse(stormDag, node, DEFAULT_SINK_CACHE),
-      getOrElse(stormDag, node, DEFAULT_SINK_STORM_METRICS),
+      getOrElse(stormDag, node, DEFAULT_SUMMER_CACHE),
+      getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS),
       getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
       getOrElse(stormDag, node, IncludeSuccessHandler.default),
       anchorTuples,
       stormDag.dependantsOf(node).size > 0)
 
-    val parallelism = getOrElse(stormDag, node, DEFAULT_SINK_PARALLELISM).parHint
+    val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint
     val declarer =
       topologyBuilder.setBolt(
         nodeName,

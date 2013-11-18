@@ -68,7 +68,7 @@ class SummerBolt[Key, Value: Semigroup](
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
   cacheSize: CacheSize,
-  metrics: SinkStormMetrics,
+  metrics: SummerStormMetrics,
   maxWaitingFutures: MaxWaitingFutures,
   includeSuccessHandler: IncludeSuccessHandler,
   anchor: AnchorTuples,

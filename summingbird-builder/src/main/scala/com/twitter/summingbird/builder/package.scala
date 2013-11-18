@@ -80,11 +80,11 @@ package object builder {
   @deprecated("Use com.twitter.summingbird.storm.option.OnlineExceptionHandler", "0.1.0")
   val OnlineExceptionHandler = storm.option.OnlineExceptionHandler
 
-  @deprecated("Use com.twitter.summingbird.storm.option.SinkStormMetrics", "0.1.0")
-  type SinkStormMetrics = storm.option.SinkStormMetrics
+  @deprecated("Use com.twitter.summingbird.storm.option.SummerStormMetrics", "0.1.0")
+  type SummerStormMetrics = storm.option.SummerStormMetrics
 
-  @deprecated("Use com.twitter.summingbird.storm.option.SinkStormMetrics", "0.1.0")
-  val SinkStormMetrics = storm.option.SinkStormMetrics
+  @deprecated("Use com.twitter.summingbird.storm.option.SummerStormMetrics", "0.1.0")
+  val SummerStormMetrics = storm.option.SummerStormMetrics
 
   @deprecated("Use com.twitter.summingbird.storm.option.MaxWaitingFutures", "0.1.0")
   type MaxWaitingFutures = storm.option.MaxWaitingFutures

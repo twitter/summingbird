@@ -17,6 +17,8 @@ limitations under the License.
 package com.twitter.summingbird.storm.option
 
 import com.twitter.summingbird.storm.StormMetric
+import backtype.storm.metric.api.IMetric
+import com.twitter.tormenta.spout.Metric
 
 /**
  * Options used by the flatMapping stage of a storm topology.
@@ -39,8 +41,19 @@ case class FlatMapParallelism(parHint: Int)
   * job.
   */
 object FlatMapStormMetrics {
-  def apply(metrics: => TraversableOnce[StormMetric[_]]) = new FlatMapStormMetrics(() => metrics)
+  def apply(metrics: => TraversableOnce[StormMetric[IMetric]]) = new FlatMapStormMetrics(() => metrics)
   def unapply(metrics: FlatMapStormMetrics) = Some(metrics.metrics)
 }
 
-class FlatMapStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
+class FlatMapStormMetrics(val metrics: () => TraversableOnce[StormMetric[IMetric]])
+
+
+object SpoutStormMetrics {
+  def apply(metrics: => TraversableOnce[StormMetric[IMetric]]) = new SpoutStormMetrics(() => metrics)
+  def unapply(metrics: SpoutStormMetrics) = Some(metrics.metrics)
+}
+
+class SpoutStormMetrics(val metrics: () => TraversableOnce[StormMetric[IMetric]]) {
+  def toSpoutMetrics: () => TraversableOnce[Metric[IMetric]] =
+    {() => metrics().map{ x: StormMetric[IMetric] => Metric(x.name, x.metric, x.interval.inSeconds)}}
+}

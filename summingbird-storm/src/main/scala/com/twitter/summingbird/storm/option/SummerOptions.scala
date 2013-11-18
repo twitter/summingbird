@@ -26,6 +26,8 @@ import com.twitter.summingbird.storm.StormMetric
   * @author Ashu Singhal
   */
 
+
+
 /**
   * SinkParallelism controls the number of executors storm allocates to
   * the groupAndSum bolts. Each of these bolt executors is responsible
@@ -33,7 +35,7 @@ import com.twitter.summingbird.storm.StormMetric
   * Sink's store, so higher parallelism will result in higher load on
   * the store. The default sink parallelism is 5.
   */
-case class SinkParallelism(parHint: Int)
+case class SummerParallelism(parHint: Int)
 
 case class OnlineSuccessHandler(handlerFn: Unit => Unit)
 
@@ -54,11 +56,11 @@ case class OnlineExceptionHandler(handlerFn: PartialFunction[Throwable, Unit])
 /**
   * See FlatMapOptions.scala for an explanation.
   */
-object SinkStormMetrics {
-  def apply(metrics: => TraversableOnce[StormMetric[_]]) = new SinkStormMetrics(() => metrics)
-  def unapply(metrics: SinkStormMetrics) = Some(metrics.metrics)
+object SummerStormMetrics {
+  def apply(metrics: => TraversableOnce[StormMetric[_]]) = new SummerStormMetrics(() => metrics)
+  def unapply(metrics: SummerStormMetrics) = Some(metrics.metrics)
 }
-class SinkStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
+class SummerStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
 
 /**
   * MaxWaitingFutures is the maximum number of key-value pairs that the
