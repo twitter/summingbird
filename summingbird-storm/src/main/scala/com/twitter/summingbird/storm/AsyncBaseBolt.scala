@@ -20,7 +20,7 @@ import backtype.storm.tuple.Tuple
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.Queue
 import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
-import com.twitter.util.{Await, Future, Return, Throw, Try}
+import com.twitter.util.{Await, Duration, Future, Return, Throw, Try}
 import java.util.{ Arrays => JArrays, List => JList }
 
 abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]],
@@ -76,7 +76,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
 
   protected def forceExtraFutures {
     val toForce = outstandingFutures.trimTo(maxWaitingFutures.get)
-    if(!toForce.isEmpty) Await.result(Future.collect(toForce))
+    if(!toForce.isEmpty) Await.all(toForce, Duration.Top)
   }
 
   /**
