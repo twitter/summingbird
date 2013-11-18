@@ -158,7 +158,8 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdChill = module("chill").settings(
     libraryDependencies ++= Seq(
-      "com.twitter" %% "chill" % chillVersion
+      "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" %% "chill-bijection" % chillVersion
     )
   ).dependsOn(
       summingbirdCore,
@@ -203,6 +204,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "chill-bijection" % chillVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
+      "com.twitter" %% "scalding-args" % scaldingVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       withCross("com.twitter" %% "util-core" % utilVersion),
       "storm" % "storm" % "0.9.0-wip15" % "provided" exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic")
