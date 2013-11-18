@@ -114,8 +114,6 @@ object StormRunner {
   def apply(args: Args): StormExecutionConfig = {
     new StormExecutionConfig {
       override val name = "SummingbirdExample"
-      // Extra Kryo Registrars
-      override def registrars = List()
 
       // No Ackers
       override def transformConfig(config: Map[String, AnyRef]): Map[String, AnyRef] = {

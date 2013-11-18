@@ -30,10 +30,10 @@ import com.twitter.summingbird.batch.{BatchID, Timestamp}
 
 object SBChillRegistrar {
 
-  def injectionRegistrar[T: Manifest: Codec] =
+  def injectionRegistrar[T: Manifest: Codec]: InjectionRegistrar[T] =
     InjectionRegistrar(manifest[T].erasure.asInstanceOf[Class[T]], implicitly[Codec[T]])
 
-  def injectionDefaultRegistrar[T: Manifest: Codec] =
+  def injectionDefaultRegistrar[T: Manifest: Codec]: InjectionDefaultRegistrar[T] =
     InjectionDefaultRegistrar(manifest[T].erasure.asInstanceOf[Class[T]], implicitly[Codec[T]])
 
   def kryoRegClass(clazz: Class[_]*) =

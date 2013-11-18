@@ -27,6 +27,7 @@ import org.apache.hadoop.util.GenericOptionsParser
 
 import java.util.TimeZone
 import option.{FlatMapShards, Reducers}
+import org.slf4j.LoggerFactory
 
 /**
  * @author Ian O Connell
@@ -38,6 +39,7 @@ trait ScaldingExecutionConfig extends ChillExecutionConfig[Scalding] {
 }
 
 object Executor {
+  @transient private val logger = LoggerFactory.getLogger(Executor.getClass)
 
   def buildHadoopConf(inArgs: Array[String]): (Configuration, Args) = {
     val baseConfig = new Configuration
@@ -69,6 +71,9 @@ object Executor {
 
     def reducers : Int = args.getOrElse("reducers","20").toInt
 
+    // Immediately shuffles the input data into the supplied number of shards
+    // Should only be used if the mapper tasks are doing heavy work
+    // and would be faster to force a shuffle immediately after the data is read
     def shards : Int = args.getOrElse("shards","0").toInt
 
     val options = Map("DEFAULT" -> Options().set(Reducers(reducers)).set(FlatMapShards(shards))) ++ config.getNamedOptions
@@ -87,13 +92,13 @@ object Executor {
       case f@FlowPlanException(errs) =>
         /* This is generally due to data not being ready, don't give a failed error code */
        if(!args.boolean("scalding.nothrowplan")) {
-         println("use: --scalding.nothrowplan to not give a failing error code in this case")
+         logger.error("use: --scalding.nothrowplan to not give a failing error code in this case")
          throw f
        }
        else {
-         println("[ERROR]: ========== FlowPlanException =========")
-         errs.foreach { println(_) }
-         println("========== FlowPlanException =========")
+         logger.info("[ERROR]: ========== FlowPlanException =========")
+         errs.foreach { logger.info(_) }
+         logger.info("========== FlowPlanException =========")
        }
     }
   }

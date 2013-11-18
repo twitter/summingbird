@@ -27,10 +27,10 @@ trait ExecutionConfig[P <: Platform[P]] {
   def name: String
 
   // Summingbird platform options for named entities in the graph
-  def getNamedOptions: Map[String, Options]
+  def getNamedOptions: Map[String, Options] = Map.empty
 
-  // Supply a monad to mutate the platform specific config
-  def transformConfig(m: Map[String,AnyRef]): Map[String,AnyRef]
+  // Supply a method to mutate the platform specific config
+  def transformConfig(m: Map[String,AnyRef]): Map[String,AnyRef] = m
 
   def graph: TailProducer[P, Any]
 }
