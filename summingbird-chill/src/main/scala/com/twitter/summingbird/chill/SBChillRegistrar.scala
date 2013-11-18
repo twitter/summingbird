@@ -16,13 +16,26 @@ limitations under the License.
 
 package com.twitter.summingbird.chill
 import com.twitter.summingbird.{MutableStringConfig, SummingbirdConfig}
-import com.twitter.chill.{ScalaKryoInstantiator, IKryoRegistrar, Kryo, toRich, ReflectingRegistrar}
+import com.twitter.chill.{ScalaKryoInstantiator, IKryoRegistrar, Kryo, toRich, ReflectingRegistrar, InjectionDefaultRegistrar, InjectionRegistrar}
 import com.twitter.chill.java.IterableRegistrar
+import com.twitter.bijection.Codec
 import com.twitter.chill._
 import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst }
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
 
+/**
+ * @author Oscar Boykin
+ * @author Ian O Connell
+ */
+
 object SBChillRegistrar {
+
+  def injectionRegistrar[T: Manifest: Codec]: InjectionRegistrar[T] =
+    InjectionRegistrar(manifest[T].erasure.asInstanceOf[Class[T]], implicitly[Codec[T]])
+
+  def injectionDefaultRegistrar[T: Manifest: Codec]: InjectionDefaultRegistrar[T] =
+    InjectionDefaultRegistrar(manifest[T].erasure.asInstanceOf[Class[T]], implicitly[Codec[T]])
+
   def kryoRegClass(clazz: Class[_]*) =
     {k: Kryo =>
           clazz
