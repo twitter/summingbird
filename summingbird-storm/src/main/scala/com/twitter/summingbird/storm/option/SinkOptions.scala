@@ -51,7 +51,6 @@ object IncludeSuccessHandler {
 
 case class OnlineExceptionHandler(handlerFn: PartialFunction[Throwable, Unit])
 
-
 /**
   * See FlatMapOptions.scala for an explanation.
   */

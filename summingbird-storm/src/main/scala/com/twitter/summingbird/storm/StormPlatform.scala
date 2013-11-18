@@ -32,7 +32,7 @@ import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
-import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
@@ -70,7 +70,7 @@ sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 sealed trait StormSource[+T]
-case class SpoutSource[+T](spout: Spout[(Long, T)], parallelism: Option[option.SpoutParallelism]) extends StormSource[T]
+case class SpoutSource[+T](spout: Spout[(Timestamp, T)], parallelism: Option[option.SpoutParallelism]) extends StormSource[T]
 
 object Storm {
   def local(options: Map[String, Options] = Map.empty): LocalStorm =
@@ -96,7 +96,7 @@ object Storm {
 
   def toStormSource[T](spout: Spout[T],
                        defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): StormSource[T] =
-    SpoutSource(spout.map(t => (timeOf(t), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
+    SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
 
   implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] =
     toStormSource(spout, None)(timeOf)
@@ -172,6 +172,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val operation = foldOperations(node.members.reverse)
     val metrics = getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS)
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
+    val maxWaiting = getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
@@ -181,10 +182,16 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         new FinalFlatMapBolt(
           operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
           getOrElse(stormDag, node, DEFAULT_FM_CACHE),
-          getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS),
-          anchorTuples)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
+          metrics,
+          anchorTuples,
+          maxWaiting)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
       case None =>
-        new IntermediateFlatMapBolt(operation, metrics, anchorTuples, stormDag.dependenciesOf(node).size > 0)
+        new IntermediateFlatMapBolt(
+          operation,
+          metrics,
+          anchorTuples,
+          maxWaiting,
+          stormDag.dependantsOf(node).size > 0)
     }
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
@@ -192,6 +199,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
+    // TODO: https://github.com/twitter/summingbird/issues/366
+    // test localOrShuffleGrouping here. may give big wins for serialization heavy jobs.
     dependenciesNames.foreach { declarer.shuffleGrouping(_) }
   }
 
@@ -199,7 +208,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val (spout, parOpt) = node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
     val nodeName = stormDag.getNodeName(node)
 
-    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) { (spout, p) =>
+    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
       p match {
         case Source(_) => spout // The source is still in the members list so drop it
         case OptionMappedProducer(_, op) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
@@ -264,6 +273,11 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     config.setMaxSpoutPending(1000)
     config.setNumAckers(12)
     config.setNumWorkers(12)
+    /**
+     * Set storm to tick our nodes every second to clean up finished futures
+     */
+    config.put(BacktypeStormConfig.TOPOLOGY_TICK_TUPLE_FREQ_SECS,
+      java.lang.Integer.valueOf(1))
 
     val initialStormConfig = StormConfig(config)
     val stormConfig = SBChillRegistrar(initialStormConfig, passedRegistrars)
