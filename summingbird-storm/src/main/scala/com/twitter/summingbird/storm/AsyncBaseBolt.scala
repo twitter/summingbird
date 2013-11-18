@@ -34,8 +34,8 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
    */
   def apply(tup: Tuple, in: (Timestamp, I)): Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])]]
 
-  private lazy val futureQueue = Queue[Future[Unit]]()
-  private lazy val channel = Queue[(JList[Tuple], Try[TraversableOnce[(Timestamp, O)]])]()
+  private lazy val outstandingFutures = Queue[Future[Unit]]()
+  private lazy val responses = Queue[(JList[Tuple], Try[TraversableOnce[(Timestamp, O)]])]()
 
   override def execute(tuple: Tuple) {
     /**
@@ -47,11 +47,11 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
 
       val fut = apply(tuple, tsIn)
         .onSuccess { iter =>
-          // Collect the result onto our channel
+          // Collect the result onto our responses
           val (putCount, maxSize) = iter.foldLeft((0, 0)) { case ((p, ms), (tups, res)) =>
-            res.respond { t => channel.put((tups, t)) }
+            res.respond { t => responses.put((tups, t)) }
             // Make sure there are not too many outstanding:
-            val count = futureQueue.put(res.unit)
+            val count = outstandingFutures.put(res.unit)
             (p + 1, ms max count)
           }
 
@@ -66,24 +66,29 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
               )
           }
         }
-        .onFailure { thr => fail(JArrays.asList(tuple), thr) }
+        .onFailure { thr => responses.put((JArrays.asList(tuple), Throw(thr))) }
 
-      futureQueue.put(fut.unit)
+      outstandingFutures.put(fut.unit)
     }
-    // always empty the channel, even on tick
+    // always empty the responses, even on tick
     emptyQueue
   }
 
   protected def forceExtraFutures {
-    val toForce = futureQueue.trimTo(maxWaitingFutures.get)
+    val toForce = outstandingFutures.trimTo(maxWaitingFutures.get)
     if(!toForce.isEmpty) Await.result(Future.collect(toForce))
   }
 
+  /**
+   * NOTE: this is the only place where we call finish/fail and this method
+   * is only called from execute. This is what makes this code thread-safe with
+   * respect to storm.
+   */
   protected def emptyQueue = {
     // don't let too many futures build up
     forceExtraFutures
     // Handle all ready results now:
-    channel.foreach { case (tups, res) =>
+    responses.foreach { case (tups, res) =>
       res match {
         case Return(outs) => finish(tups, outs)
         case Throw(t) => fail(tups, t)
