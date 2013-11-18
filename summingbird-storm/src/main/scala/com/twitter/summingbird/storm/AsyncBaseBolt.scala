@@ -80,7 +80,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
   }
 
   /**
-   * NOTE: this is the only place where we call finish/fail and this method
+   * NOTE: this is the only place where we call finish/fail in this method
    * is only called from execute. This is what makes this code thread-safe with
    * respect to storm.
    */
