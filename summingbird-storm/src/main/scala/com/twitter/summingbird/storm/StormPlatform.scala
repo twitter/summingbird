@@ -142,6 +142,15 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     }
   }
 
+  /**
+   * Set storm to tick our nodes every second to clean up finished futures
+   */
+  private def tickConfig = {
+    val boltConfig = new BacktypeStormConfig
+    boltConfig.put(BacktypeStormConfig.TOPOLOGY_TICK_TUPLE_FREQ_SECS, java.lang.Integer.valueOf(1))
+    boltConfig
+  }
+
   private def scheduleFlatMapper(stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     /**
      * Only exists because of the crazy casts we needed.
@@ -195,7 +204,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     }
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
-    val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism)
+    val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism).addConfigurations(tickConfig)
 
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
@@ -250,7 +259,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         nodeName,
         sinkBolt,
         parallelism
-        )
+        ).addConfigurations(tickConfig)
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     dependenciesNames.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
@@ -273,11 +282,6 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     config.setMaxSpoutPending(1000)
     config.setNumAckers(12)
     config.setNumWorkers(12)
-    /**
-     * Set storm to tick our nodes every second to clean up finished futures
-     */
-    config.put(BacktypeStormConfig.TOPOLOGY_TICK_TUPLE_FREQ_SECS,
-      java.lang.Integer.valueOf(1))
 
     val initialStormConfig = StormConfig(config)
     val stormConfig = SBChillRegistrar(initialStormConfig, passedRegistrars)
