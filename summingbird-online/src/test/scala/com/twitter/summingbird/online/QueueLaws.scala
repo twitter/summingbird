@@ -23,29 +23,29 @@ import org.scalacheck.Prop._
 
 import com.twitter.util.{Return, Throw, Future, Try}
 
-object QueueChannelLaws extends Properties("Channel") {
+object QueueLaws extends Properties("Queue") {
 
   property("Putting into a BoundedQueue gets size right") = forAll { (items: List[String]) =>
-    val q = Channel[String]()
+    val q = Queue[String]()
     q.putAll(items)
     q.size == items.size
   }
   property("not spill if capacity is enough") = forAll { (items: List[Int]) =>
-    val q = Channel[Int]()
+    val q = Queue[Int]()
     q.putAll(items)
     q.trimTo(items.size).size == 0
   }
   property("Work with indepent additions") = forAll { (items: List[Int]) =>
-    val q = Channel[Int]()
+    val q = Queue[Int]()
     items.map(q.put(_)) == (1 to items.size).toList
   }
   property("spill all with zero capacity") = forAll { (items: List[Int]) =>
-    val q = Channel[Int]()
+    val q = Queue[Int]()
     q.putAll(items)
     q.trimTo(0) == items
   }
-  property("Channel works with finished futures") = forAll { (items: List[Int]) =>
-    val q = Channel.linkedBlocking[(Int,Try[Int])]
+  property("Queue works with finished futures") = forAll { (items: List[Int]) =>
+    val q = Queue.linkedBlocking[(Int,Try[Int])]
     items.foreach { i => q.put((i, Try(i*i))) }
     q.foldLeft((0, true)) { case ((cnt, good), (i, ti)) =>
       ti match {
@@ -54,8 +54,8 @@ object QueueChannelLaws extends Properties("Channel") {
       }
     } == (items.size, true)
   }
-  property("Channel.linkedNonBlocking works") = forAll { (items: List[Int]) =>
-    val q = Channel.linkedNonBlocking[(Int,Try[Int])]
+  property("Queue.linkedNonBlocking works") = forAll { (items: List[Int]) =>
+    val q = Queue.linkedNonBlocking[(Int,Try[Int])]
     items.foreach { i => q.put((i, Try(i*i))) }
     q.foldLeft((0, true)) { case ((cnt, good), (i, ti)) =>
       ti match {
@@ -64,9 +64,9 @@ object QueueChannelLaws extends Properties("Channel") {
       }
     } == (items.size, true)
   }
-  property("Channel foreach works") = forAll { (items: List[Int]) =>
+  property("Queue foreach works") = forAll { (items: List[Int]) =>
     // Make sure we can fit everything
-    val q = Channel.arrayBlocking[(Int,Try[Int])](items.size + 1)
+    val q = Queue.arrayBlocking[(Int,Try[Int])](items.size + 1)
     items.foreach { i => q.put((i,Try(i*i))) }
     var works = true
     q.foreach { case (i, Return(ii)) =>
@@ -74,18 +74,18 @@ object QueueChannelLaws extends Properties("Channel") {
     }
     works && (q.size == 0)
   }
-  property("Channel foldLeft works") = forAll { (items: List[Int]) =>
+  property("Queue foldLeft works") = forAll { (items: List[Int]) =>
     // Make sure we can fit everything
-    val q = Channel.arrayBlocking[(Int,Try[Int])](items.size + 1)
+    val q = Queue.arrayBlocking[(Int,Try[Int])](items.size + 1)
     items.foreach { i => q.put((i,Try(i*i))) }
     q.foldLeft(true) { case (works, (i, Return(ii))) =>
       (ii == i*i)
     } && (q.size == 0)
   }
 
-  property("Channel poll + size is correct") = forAll { (items: List[Int]) =>
+  property("Queue poll + size is correct") = forAll { (items: List[Int]) =>
     // Make sure we can fit everything
-    val q = Channel[Int]()
+    val q = Queue[Int]()
     items.map { i =>
       q.put(i)
       val size = q.size
@@ -98,5 +98,14 @@ object QueueChannelLaws extends Properties("Channel") {
       }
       else true
     }.forall(identity)
+  }
+  property("Queue is fifo") = forAll { (items: List[Int]) =>
+    val q = Queue[Int]()
+    q.putAll(items)
+    (q.trimTo(0).toList == items) && {
+      val q2 = Queue[Int]()
+      q2.putAll(items)
+      q2.foldLeft(List[Int]()) { (l, it) => it :: l }.reverse == items
+    }
   }
 }

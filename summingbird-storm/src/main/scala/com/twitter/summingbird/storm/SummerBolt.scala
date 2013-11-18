@@ -43,7 +43,7 @@ import java.util.{ Arrays => JArrays, List => JList, Map => JMap, ArrayList => J
   * effectively pushing back against latency bumps in the host.
   *
   * The allowed latency before a future is forced is equal to
-  * (MaxWaitingFutures * execute la`tency).
+  * (MaxWaitingFutures * execute latency).
   *
   * @author Oscar Boykin
   * @author Sam Ritchie

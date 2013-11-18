@@ -18,7 +18,7 @@ package com.twitter.summingbird.online
 
 import com.twitter.util.{ Await, Duration, Future, Try }
 
-import java.util.Queue
+import java.util.{Queue => JQueue}
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, LinkedBlockingQueue, TimeUnit}
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
@@ -27,33 +27,35 @@ import java.util.concurrent.atomic.AtomicInteger
  * @author Oscar Boykin
  */
 
-object Channel {
+object Queue {
   /**
    * By default, don't block on put
    */
   def apply[T]() = linkedNonBlocking[T]
 
-  def arrayBlocking[T](size: Int): Channel[T] =
+  /** Use this for blocking puts when the size is reached
+   */
+  def arrayBlocking[T](size: Int): Queue[T] =
     fromBlocking(new ArrayBlockingQueue(size))
 
-  def linkedBlocking[T]: Channel[T] =
+  def linkedBlocking[T]: Queue[T] =
     fromBlocking(new LinkedBlockingQueue())
 
-  def linkedNonBlocking[T]: Channel[T] =
+  def linkedNonBlocking[T]: Queue[T] =
     fromQueue(new ConcurrentLinkedQueue())
 
-  def fromBlocking[T](bq: BlockingQueue[T]): Channel[T] = {
-    new Channel[T] {
+  def fromBlocking[T](bq: BlockingQueue[T]): Queue[T] = {
+    new Queue[T] {
       override def add(t: T) = bq.put(t)
-      override def pollOrNull = bq.poll()
+      override def pollNonBlocking = Option(bq.poll())
     }
   }
 
   // Uses Queue.add to put. This will fail for full blocking queues
-  def fromQueue[T](q: Queue[T]): Channel[T] = {
-    new Channel[T] {
+  def fromQueue[T](q: JQueue[T]): Queue[T] = {
+    new Queue[T] {
       override def add(t: T) = q.add(t)
-      override def pollOrNull = q.poll()
+      override def pollNonBlocking = Option(q.poll())
     }
   }
 }
@@ -64,12 +66,13 @@ object Channel {
  * Storm needs us to touch it's code in one event path (via
  * the execute method in bolts)
  */
-abstract class Channel[T] {
+abstract class Queue[T] {
 
-  // always increment after this
+  /** These are the only two methods to implement.
+   * these must be thread-safe.
+   */
   protected def add(t: T): Unit
-  // always decrement after this
-  protected def pollOrNull: T
+  protected def pollNonBlocking: Option[T]
 
   private val count = new AtomicInteger(0)
 
@@ -90,43 +93,39 @@ abstract class Channel[T] {
   /**
    * check if something is ready now
    */
-  def poll: Option[T] = pollOrNull match {
-    case null => None
-    case item =>
-        count.decrementAndGet
-        Some(item)
+  def poll: Option[T] = {
+    val res = pollNonBlocking
+    // This is for performance sensitive code. Prefering if to match defensively
+    if(res.isDefined) count.decrementAndGet
+    res
   }
 
   /**
    * Obviously, this might not be the same by the time you
-   * call spill
+   * call trimTo or poll
    */
   def size: Int = count.get
 
   // Do something on all the elements ready:
   @annotation.tailrec
   final def foreach(fn: T => Unit): Unit =
-    pollOrNull match {
-      case null => ()
-      case itt =>
-        count.decrementAndGet
-        fn(itt)
+    poll match {
+      case None => ()
+      case Some(it) =>
+        fn(it)
         foreach(fn)
     }
 
   // fold on all the elements ready:
   @annotation.tailrec
-  final def foldLeft[V](init: V)(fn: (V, T) => V): V = {
-   pollOrNull match {
-      case null => init
-      case itt =>
-        count.decrementAndGet
-        foldLeft(fn(init, itt))(fn)
+  final def foldLeft[V](init: V)(fn: (V, T) => V): V =
+   poll match {
+      case None => init
+      case Some(it) => foldLeft(fn(init, it))(fn)
     }
-  }
 
   /**
-   * Take enough elements to get the queue under the maxLength
+   * Take enough elements to get .size == maxLength
    */
   def trimTo(maxLength: Int): Seq[T] = {
     require(maxLength >= 0, "maxLength must be >= 0.")
@@ -134,9 +133,9 @@ abstract class Channel[T] {
     @annotation.tailrec
     def loop(size: Int, acc: List[T] = Nil): List[T] = {
       if(size > maxLength) {
-        pollOrNull match {
-          case null => acc.reverse // someone else cleared us out
-          case item =>
+        pollNonBlocking match {
+          case None => acc.reverse // someone else cleared us out
+          case Some(item) =>
             loop(count.decrementAndGet, item::acc)
         }
       }
