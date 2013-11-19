@@ -210,7 +210,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     // TODO: https://github.com/twitter/summingbird/issues/366
     // test localOrShuffleGrouping here. may give big wins for serialization heavy jobs.
-    dependenciesNames.foreach { declarer.shuffleGrouping(_) }
+    dependenciesNames.foreach { declarer.localOrShuffleGrouping(_) }
   }
 
   private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
