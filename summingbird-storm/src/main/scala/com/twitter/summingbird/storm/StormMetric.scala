@@ -30,7 +30,7 @@ import backtype.storm.metric.api.IMetric
  * @author Ashutosh Singhal
  */
 
-case class StormMetric[T <: IMetric](metric: T, name: String, interval: Duration) {
+case class StormMetric[+T <: IMetric](metric: T, name: String, interval: Duration) {
   def register(context: TopologyContext) {
     context.registerMetric(name, metric, interval.inSeconds)
   }
