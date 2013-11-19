@@ -296,8 +296,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val inj = Injection.connect[String, Array[Byte], Base64String]
     logger.debug("Adding serialized copy of graphs")
-    val withViz = stormConfig.put("summingbird_producer_dot_graph_base64", inj.apply(VizGraph(dag.tail)).str)
-                            .put("summingbird_planned_dot_graph_base64", inj.apply(VizGraph(dag)).str)
+    val withViz = stormConfig.put("summingbird.base64_graph.producer", inj.apply(VizGraph(dag.tail)).str)
+                            .put("summingbird.base64_graph.planned", inj.apply(VizGraph(dag)).str)
     val transformedConfig = transformConfig(withViz)
 
     logger.debug("Config diff to be applied:")
