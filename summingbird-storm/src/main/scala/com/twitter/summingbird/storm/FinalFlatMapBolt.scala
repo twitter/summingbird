@@ -20,78 +20,73 @@ import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.{ Fields, Tuple, Values }
 
-import com.twitter.algebird.{ Monoid, SummingQueue, Semigroup }
+import com.twitter.algebird.{ SummingQueue, Semigroup, MapAlgebra }
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.option.{
-  AnchorTuples, FlatMapStormMetrics
+  AnchorTuples, FlatMapStormMetrics, MaxWaitingFutures
 }
+
+import com.twitter.util.{Return, Throw}
 import com.twitter.storehaus.algebra.SummerConstructor
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.storehaus.algebra.MergeableStore
 
+import com.twitter.util.{Future}
+
 import MergeableStore.enrich
 
-import java.util.{ Date, Map => JMap }
+import java.util.{ Date, Arrays => JArrays, List => JList, Map => JMap }
+
+import scala.collection.JavaConverters._
+import scala.collection.breakOut
 
 /**
  * @author Oscar Boykin
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
-
 class FinalFlatMapBolt[Event, Key, Value](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
   cacheSize: CacheSize,
   metrics: FlatMapStormMetrics,
-  anchor: AnchorTuples)
-  (implicit monoid: Monoid[Value], batcher: Batcher)
-    extends BaseBolt(metrics.metrics) {
+  anchor: AnchorTuples,
+  maxWaitingFutures: MaxWaitingFutures)
+  (implicit monoid: Semigroup[Value], batcher: Batcher)
+    extends AsyncBaseBolt[Event, ((Key, BatchID), Value)](metrics.metrics, anchor, maxWaitingFutures, true) {
+
+  import JListSemigroup._
+  import Constants._
+
+  type KBV = ((Key, BatchID), Value)
 
   val lockedOp = Externalizer(flatMapOp)
-  var collectorMergeable: MergeableStore[(Key, Tuple, BatchID), (Timestamp, Value)] = null
+  val squeue: SummingQueue[Map[(Key, BatchID), (JList[Tuple], Timestamp, Value)]] =
+    SummingQueue(cacheSize.size.getOrElse(0))
 
-  override val fields = {
-    import Constants._
-    Some(new Fields(AGG_BATCH, AGG_KEY, AGG_VALUE))
-  }
+  override val decoder = new SingleItemInjection[Event](VALUE_FIELD)
+  override val encoder = new KeyValueInjection[(Key, BatchID), Value](AGG_KEY, AGG_VALUE)
 
-  override def prepare(
-    conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
-    super.prepare(conf, context, oc)
-    onCollector { collector =>
-      collectorMergeable =
-        new CollectorMergeableStore[Key, (Timestamp, Value)](collector, anchor)
-          .withSummer(new SummerConstructor[(Key, Tuple, BatchID)] {
-            def apply[V](sg: Semigroup[V]) = {
-              implicit val semi = sg
-              SummingQueue(cacheSize.size.getOrElse(0))
-            }
-          }
-        )
-    }
-  }
+  def cache(tuple: Tuple,
+            time: Timestamp,
+            items: TraversableOnce[(Key, Value)]): Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, KBV)]])] = {
 
-  override def execute(tuple: Tuple) {
-    val (timeMs, event) = tuple.getValue(0).asInstanceOf[(Long, Event)]
-    val time = Timestamp(timeMs)
     val batchID = batcher.batchOf(time)
-
-    /**
-      * the flatMap function returns a future.
-      *
-      *  each resulting key value pair is merged into the output once
-      * the future completes the input tuple is acked once the future
-      * completes.
-      */
-    lockedOp.get.apply(event).foreach { pairs =>
-      pairs.foreach { case (k, v) =>
-        onCollector { _ => collectorMergeable.merge((k, tuple, batchID) -> (time, v)) }
+    squeue(MapAlgebra.sumByKey(items.map { case (k, v) => (k, batchID) -> (lift(tuple), time, v) }))
+      .map { kvs =>
+          kvs.iterator
+            .map { case ((k, b), (tups, ts, v)) =>
+              (tups, Future.value(List((ts, ((k,b), v)))))
+            }
+            .toList // don't need the ordering, so we could save by pushing a stack or something
       }
-      ack(tuple)
-    }
+      .getOrElse(Nil)
   }
+
+  override def apply(tup: Tuple,
+                     timeIn: (Timestamp, Event)) =
+    lockedOp.get.apply(timeIn._2).map { cache(tup, timeIn._1, _) }
 
   override def cleanup { lockedOp.get.close }
 }

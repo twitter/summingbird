@@ -19,8 +19,15 @@ package com.twitter.summingbird.storm
 import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.IRichBolt
 import backtype.storm.topology.OutputFieldsDeclarer
-import backtype.storm.tuple.{ Fields, Tuple }
-import java.util.{ Map => JMap }
+import backtype.storm.tuple.Tuple
+import java.util.{ Map => JMap, Arrays => JArrays, List => JList }
+
+import com.twitter.summingbird.batch.Timestamp
+import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
+
+import scala.collection.JavaConverters._
+
+import org.slf4j.{LoggerFactory, Logger}
 
 /**
  *
@@ -28,35 +35,64 @@ import java.util.{ Map => JMap }
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
+abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
+  anchorTuples: AnchorTuples,
+  hasDependants: Boolean
+  ) extends IRichBolt {
 
-abstract class BaseBolt(metrics: () => TraversableOnce[StormMetric[_]]) extends IRichBolt {
-  class Mutex extends java.io.Serializable
+  def decoder: StormTupleInjection[I]
+  def encoder: StormTupleInjection[O]
 
-  /**
-    * The fields this bolt plans on returning.
-    */
-  def fields: Option[Fields]
+  @transient protected lazy val logger: Logger =
+    LoggerFactory.getLogger(getClass)
 
   private var collector: OutputCollector = null
 
-  val mutex = new Mutex
-  def onCollector[U](fn: OutputCollector => U): U =
-    mutex.synchronized { fn(collector) }
+  /**
+   * IMPORTANT: only call this inside of an execute method.
+   * storm is not safe to call methods on the emitter from other
+   * threads.
+   */
+  protected def fail(inputs: JList[Tuple], error: Throwable): Unit = {
+    inputs.iterator.asScala.foreach(collector.fail(_))
+    collector.reportError(error)
+    logger.error("Storm DAG of: %d tuples failed".format(inputs.size), error)
+  }
 
-  def ack(tuple: Tuple) { onCollector { _.ack(tuple) } }
+  /**
+   * IMPORTANT: only call this inside of an execute method.
+   * storm is not safe to call methods on the emitter from other
+   * threads.
+   */
+  protected def finish(inputs: JList[Tuple], results: TraversableOnce[(Timestamp, O)]) {
+    var emitCount = 0
+    if(hasDependants) {
+      if(anchorTuples.anchor) {
+        results.foreach { result =>
+          collector.emit(inputs, encoder(result))
+          emitCount += 1
+        }
+      }
+      else { // don't anchor
+        results.foreach { result =>
+          collector.emit(encoder(result))
+          emitCount += 1
+        }
+      }
+    }
+    // Always ack a tuple on completion:
+    inputs.iterator.asScala.foreach(collector.ack(_))
+    logger.debug("bolt finished processed %d linked tuples, emitted: %d"
+      .format(inputs.size, emitCount))
+  }
 
-  override def prepare(
-    conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
-    /**
-      * No need for a mutex here because this called once on
-      * start
-      */
+  override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
     collector = oc
     metrics().foreach { _.register(context) }
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    fields.foreach(declarer.declare(_))
+    if(hasDependants) { declarer.declare(encoder.fields) }
   }
 
   override val getComponentConfiguration = null

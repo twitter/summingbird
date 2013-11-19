@@ -25,7 +25,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.2.4",
+    version := "0.2.5",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -132,7 +132,7 @@ object SummingbirdBuild extends Build {
   val storehausVersion = "0.7.2"
   val utilVersion = "6.3.8"
   val chillVersion = "0.3.3"
-  val tormentaVersion = "0.5.3"
+  val tormentaVersion = "0.5.4"
 
   lazy val slf4jVersion = "1.6.6"
 
@@ -145,7 +145,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.1.0" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.2.4" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
@@ -164,7 +164,8 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdChill = module("chill").settings(
     libraryDependencies ++= Seq(
-      "com.twitter" %% "chill" % chillVersion
+      "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" %% "chill-bijection" % chillVersion
     )
   ).dependsOn(
       summingbirdCore,
@@ -209,6 +210,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "chill-bijection" % chillVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
+      "com.twitter" %% "scalding-args" % scaldingVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       withCross("com.twitter" %% "util-core" % utilVersion),
       "storm" % "storm" % "0.9.0-wip15" % "provided" exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic")

@@ -24,4 +24,12 @@ package object option {
 
   @deprecated("Use com.twitter.summingbird.option.CacheSize", "0.2.5")
   val CacheSize = summingbird.option.CacheSize
+
+  @deprecated("Use com.twitter.summingbird.option.SummerParallelism", "0.3.0")
+  type SinkParallelism = SummerParallelism
+  val SinkParallelism = SummerParallelism
+
+  @deprecated("Use com.twitter.summingbird.option.SummerStormMetrics", "0.3.0")
+  type SinkStormMetrics = SummerStormMetrics
+  val SinkStormMetrics = SummerStormMetrics
 }

@@ -26,12 +26,13 @@ import backtype.storm.tuple.Tuple
 import com.twitter.bijection.{Base64String, Injection}
 import com.twitter.algebird.Monoid
 import com.twitter.chill.IKryoRegistrar
+import com.twitter.storehaus.ReadableStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
-import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
@@ -69,7 +70,7 @@ sealed trait StormService[-K, +V]
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 sealed trait StormSource[+T]
-case class SpoutSource[+T](spout: Spout[(Long, T)], parallelism: Option[option.SpoutParallelism]) extends StormSource[T]
+case class SpoutSource[+T](spout: Spout[(Timestamp, T)], parallelism: Option[option.SpoutParallelism]) extends StormSource[T]
 
 object Storm {
   def local(options: Map[String, Options] = Map.empty): LocalStorm =
@@ -78,18 +79,34 @@ object Storm {
   def remote(options: Map[String, Options] = Map.empty): RemoteStorm =
     new RemoteStorm(options, identity, List())
 
-  def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+  /**
+   * Below are factory methods for the input output types:
+   */
+
+  def sink[T](fn: => (T => Future[Unit])): Storm#Sink[T] = { () => fn }
+
+  // This can be used in jobs that do not have a batch component
+  def onlineOnlyStore[K, V](store: => MergeableStore[K, V]): StormStore[K, V] =
+    MergeableStoreSupplier.fromOnlineOnly(store)
+
+  def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
     MergeableStoreSupplier.from(store)
 
-  def toStormSource[T](spout: Spout[T], defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]) =
-    SpoutSource(spout.map(t => (timeOf(t), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
+  def service[K, V](serv: => ReadableStore[K, V]): StormService[K, V] = StoreWrapper(() => serv)
 
-  implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] = toStormSource(spout, None)(timeOf)
+  def toStormSource[T](spout: Spout[T],
+                       defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): StormSource[T] =
+    SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
 
-  def source[T](spout: Spout[T], defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]) =
+  implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] =
+    toStormSource(spout, None)(timeOf)
+
+  def source[T](spout: Spout[T],
+                defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
     Producer.source[Storm, T](toStormSource(spout, defaultSourcePar))
 
-  implicit def spoutAsSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] = source(spout, None)(timeOf)
+  implicit def spoutAsSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
+    source(spout, None)(timeOf)
 }
 
 case class PlannedTopology(config: BacktypeStormConfig, topology: StormTopology)
@@ -110,7 +127,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val namedNodes = dag.producerToPriorityNames(producer)
     val maybePair = (for {
-      id <- namedNodes
+      id <- namedNodes :+ "DEFAULT"
       stormOpts <- options.get(id)
       option <- stormOpts.get[T]
     } yield (id, option)).headOption
@@ -123,6 +140,15 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           logger.info("Node {}: Using {} found via NamedProducer \"{}\"", Array[AnyRef](dag.getNodeName(node), option, namedSource))
           option
     }
+  }
+
+  /**
+   * Set storm to tick our nodes every second to clean up finished futures
+   */
+  private def tickConfig = {
+    val boltConfig = new BacktypeStormConfig
+    boltConfig.put(BacktypeStormConfig.TOPOLOGY_TICK_TUPLE_FREQ_SECS, java.lang.Integer.valueOf(1))
+    boltConfig
   }
 
   private def scheduleFlatMapper(stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
@@ -155,6 +181,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val operation = foldOperations(node.members.reverse)
     val metrics = getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS)
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
+    val maxWaiting = getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
@@ -164,25 +191,33 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         new FinalFlatMapBolt(
           operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
           getOrElse(stormDag, node, DEFAULT_FM_CACHE),
-          getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS),
-          anchorTuples)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
+          metrics,
+          anchorTuples,
+          maxWaiting)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
       case None =>
-        new IntermediateFlatMapBolt(operation, metrics, anchorTuples, stormDag.dependenciesOf(node).size > 0)
+        new IntermediateFlatMapBolt(
+          operation,
+          metrics,
+          anchorTuples,
+          maxWaiting,
+          stormDag.dependantsOf(node).size > 0)
     }
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
-    val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism)
+    val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism).addConfigurations(tickConfig)
 
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
-    dependenciesNames.foreach { declarer.shuffleGrouping(_) }
+    // TODO: https://github.com/twitter/summingbird/issues/366
+    // test localOrShuffleGrouping here. may give big wins for serialization heavy jobs.
+    dependenciesNames.foreach { declarer.localOrShuffleGrouping(_) }
   }
 
   private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val (spout, parOpt) = node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
     val nodeName = stormDag.getNodeName(node)
 
-    val stormSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Long, Any)]]) { (spout, p) =>
+    val tormentaSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
       p match {
         case Source(_) => spout // The source is still in the members list so drop it
         case OptionMappedProducer(_, op) => spout.flatMap {case (time, t) => op.apply(t).map { x => (time, x) }}
@@ -191,8 +226,12 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         case AlsoProducer(_, _) => spout
         case _ => sys.error("not possible, given the above call to span.\n" + p)
       }
-    }.getSpout
+    }
 
+    val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
+    tormentaSpout.registerMetrics(metrics.toSpoutMetrics)
+
+    val stormSpout = tormentaSpout.getSpout
     val parallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SPOUT_PARALLELISM)).parHint
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
@@ -211,20 +250,20 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       supplier,
       getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
       getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-      getOrElse(stormDag, node, DEFAULT_SINK_CACHE),
-      getOrElse(stormDag, node, DEFAULT_SINK_STORM_METRICS),
+      getOrElse(stormDag, node, DEFAULT_SUMMER_CACHE),
+      getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS),
       getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
       getOrElse(stormDag, node, IncludeSuccessHandler.default),
       anchorTuples,
-      stormDag.dependenciesOf(node).size > 0)
+      stormDag.dependantsOf(node).size > 0)
 
-    val parallelism = getOrElse(stormDag, node, DEFAULT_SINK_PARALLELISM).parHint
+    val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint
     val declarer =
       topologyBuilder.setBolt(
         nodeName,
         sinkBolt,
         parallelism
-        )
+        ).addConfigurations(tickConfig)
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     dependenciesNames.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
@@ -257,8 +296,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val inj = Injection.connect[String, Array[Byte], Base64String]
     logger.debug("Adding serialized copy of graphs")
-    val withViz = stormConfig.put("producer_dot_graph_base64", inj.apply(VizGraph(dag.tail)).str)
-                            .put("planned_dot_graph_base64", inj.apply(VizGraph(dag)).str)
+    val withViz = stormConfig.put("summingbird.base64_graph.producer", inj.apply(VizGraph(dag.tail)).str)
+                            .put("summingbird.base64_graph.planned", inj.apply(VizGraph(dag)).str)
     val transformedConfig = transformConfig(withViz)
 
     logger.debug("Config diff to be applied:")
