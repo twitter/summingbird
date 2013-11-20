@@ -273,8 +273,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   private def dumpOptions: String = {
     options.map{case (k, opts) =>
-      "%s -> %s".format(k, opts.opts.values.mkString("\n        "))
-    }.mkString("\n")
+      "%s -> [%s]".format(k, opts.opts.values.mkString(", "))
+    }.mkString("\n || ")
   }
   /**
    * The following operations are public.
