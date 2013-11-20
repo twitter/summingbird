@@ -102,7 +102,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
    */
   private val valuesField = {
     val tupleClass = classOf[TupleImpl]
-    val vf = tupleClass.getField("values")
+    val vf = tupleClass.getDeclaredField("values")
     vf.setAccessible(true)
     vf
   }
