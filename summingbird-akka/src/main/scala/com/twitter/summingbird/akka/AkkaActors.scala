@@ -1,110 +1,107 @@
-/*
- Copyright 2013 Twitter, Inc.
+// /*
+//  Copyright 2013 Twitter, Inc.
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
 
- http://www.apache.org/licenses/LICENSE-2.0
+//  http://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- */
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+//  */
 
-package com.twitter.summingbird.akka
+// package com.twitter.summingbird.akka
 
-import com.twitter.algebird.{ Monoid, SummingQueue }
-import com.twitter.chill.MeatLocker
-import com.twitter.storehaus.algebra.MergeableStore
-import com.twitter.summingbird.batch.BatchID
-import com.twitter.util.Future
-import com.twitter.summingbird.batch.{ Batcher, BatchID }
-import com.twitter.summingbird.online.FlatMapOperation
-import com.twitter.summingbird.online.FutureQueue
-import java.util.Date
-import _root_.akka.routing.ConsistentHashingRouter.ConsistentHashable
-import _root_.akka.actor.Actor
+// import com.twitter.algebird.{ Monoid, SummingQueue }
+// import com.twitter.chill.MeatLocker
+// import com.twitter.storehaus.algebra.MergeableStore
+// import com.twitter.summingbird.batch.BatchID
+// import com.twitter.util.Future
+// import com.twitter.summingbird.batch.{ Batcher, BatchID }
+// import com.twitter.summingbird.online.FlatMapOperation
+// import java.util.Date
+// import _root_.akka.routing.ConsistentHashingRouter.ConsistentHashable
+// import _root_.akka.actor.Actor
 
-case class FlatMapOutput(data: Any) extends ConsistentHashable {
-  override def consistentHashKey: Any = {
-    try {
-      data.asInstanceOf[Tuple2[Any, Any]]._1
-    } catch {
-      case _: Throwable => data
-    }
-  }
-}
+// case class FlatMapOutput(data: Any) extends ConsistentHashable {
+//   override def consistentHashKey: Any = {
+//     try {
+//       data.asInstanceOf[Tuple2[Any, Any]]._1
+//     } catch {
+//       case _: Throwable => data
+//     }
+//   }
+// }
 
-class SourceActor(akkaSrc: AkkaSource[_], targetNames: List[String]) extends Actor {
-  import context._
-  val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
+// class SourceActor(akkaSrc: AkkaSource[_], targetNames: List[String]) extends Actor {
+//   import context._
+//   val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
 
-  case object Emit
-  override def preStart = {
-    Thread.sleep(200)
-    self ! Emit
-  }
+//   case object Emit
+//   override def preStart = {
+//     Thread.sleep(200)
+//     self ! Emit
+//   }
 
-  def receive = {
-    case Emit => {
-      akkaSrc.isFinished match {
-        case true => context.stop(self)
-        case false =>
-          akkaSrc.poll.map { d =>
-            d.foreach { p => targets.foreach { t => t ! FlatMapOutput(p) } }
-            self ! Emit
-          }
-      }
-    }
-  }
-}
+//   def receive = {
+//     case Emit => {
+//       akkaSrc.isFinished match {
+//         case true => context.stop(self)
+//         case false =>
+//           akkaSrc.poll.map { d =>
+//             d.foreach { p => targets.foreach { t => t ! FlatMapOutput(p) } }
+//             self ! Emit
+//           }
+//       }
+//     }
+//   }
+// }
 
-class FlatMapActor(op: FlatMapOperation[Any, Any], targetNames: List[String]) extends Actor {
-  import context._
-  val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
+// class FlatMapActor(op: FlatMapOperation[Any, Any], targetNames: List[String]) extends Actor {
+//   import context._
+//   val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
 
-  private def send(traversable: TraversableOnce[Any]) =
-    traversable.foreach {data =>
-    	targets.foreach { t => t ! FlatMapOutput(data) }
-    }
+//   private def send(traversable: TraversableOnce[Any]) =
+//     traversable.foreach {data =>
+//     	targets.foreach { t => t ! FlatMapOutput(data) }
+//     }
 
-  def receive = {
-    case FlatMapOutput(data) =>
-      op(data).map(send(_))
-  }
-}
+//   def receive = {
+//     case FlatMapOutput(data) =>
+//       op(data).map(send(_))
+//   }
+// }
 
-class SummerActor[Key, Value: Monoid](
-  storeBuilder: () => MergeableStore[(Key, BatchID), Value])(implicit batcher: Batcher) extends Actor {
-  import context._
-  val storeBox = MeatLocker(storeBuilder)
-  lazy val store = storeBox.get.apply
-  lazy val cacheCount = Some(0)
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), Value]](cacheCount.getOrElse(0))
-  lazy val futureQueue = FutureQueue(Future.Unit, 10)
-  // TODO (https://github.com/twitter/tormenta/issues/1): Think about
-  // how this can help with Tormenta's open issue for a tuple
-  // conversion library. Storm emits Values and receives Tuples.
-  def unpack(x: (Any, Any)) = {
-    val batchID = batcher.batchOf(new Date(0))
-    val key = x._1.asInstanceOf[Key]
-    val value = x._2.asInstanceOf[Value]
-    ((key, batchID), value)
-  }
+// class SummerActor[Key, Value: Monoid](
+//   storeBuilder: () => MergeableStore[(Key, BatchID), Value])(implicit batcher: Batcher) extends Actor {
+//   import context._
+//   val storeBox = MeatLocker(storeBuilder)
+//   lazy val store = storeBox.get.apply
+//   lazy val cacheCount = Some(0)
+//   lazy val buffer = SummingQueue[Map[(Key, BatchID), Value]](cacheCount.getOrElse(0))
+//   lazy val futureQueue = FutureQueue(Future.Unit, 10)
 
-  def receive = {
-    case FlatMapOutput(input) =>
-      buffer(Map(unpack(input.asInstanceOf[(Any, Any)]))).foreach { pairs =>
-      val futures = pairs.map(store.merge(_)).toList
-      futureQueue += Future.collect(futures).unit
-    }
-  }
+//   def unpack(x: (Any, Any)) = {
+//     val batchID = batcher.batchOf(new Date(0))
+//     val key = x._1.asInstanceOf[Key]
+//     val value = x._2.asInstanceOf[Value]
+//     ((key, batchID), value)
+//   }
 
-  override def postStop() { store.close(com.twitter.util.Time.fromSeconds(10)) }
-}
+//   def receive = {
+//     case FlatMapOutput(input) =>
+//       buffer(Map(unpack(input.asInstanceOf[(Any, Any)]))).foreach { pairs =>
+//       val futures = pairs.map(store.merge(_)).toList
+//       futureQueue += Future.collect(futures).unit
+//     }
+//   }
+
+//   override def postStop() { store.close(com.twitter.util.Time.fromSeconds(10)) }
+// }
 
 
 
