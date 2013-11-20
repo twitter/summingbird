@@ -271,9 +271,15 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   }
 
+  private def dumpOptions: String = {
+    options.map{case (k, opts) =>
+      "%s -> [%s]".format(k, opts.opts.values.mkString(", "))
+    }.mkString("\n || ")
+  }
   /**
    * The following operations are public.
    */
+
 
   /**
    * Base storm config instances used by the Storm platform.
@@ -298,7 +304,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     logger.debug("Adding serialized copy of graphs")
     val withViz = stormConfig.put("summingbird.base64_graph.producer", inj.apply(VizGraph(dag.tail)).str)
                             .put("summingbird.base64_graph.planned", inj.apply(VizGraph(dag)).str)
-    val transformedConfig = transformConfig(withViz)
+
+    val withOptions = withViz.put("summingbird.options", dumpOptions)
+    val transformedConfig = transformConfig(withOptions)
 
     logger.debug("Config diff to be applied:")
     logger.debug("Removes: {}", transformedConfig.removes)
