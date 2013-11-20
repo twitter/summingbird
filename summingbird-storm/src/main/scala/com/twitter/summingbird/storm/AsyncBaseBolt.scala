@@ -100,7 +100,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
   /** This is clearly not safe, but done to deal with GC issues since
    * storm keeps references to values
    */
-  private val valuesField = {
+  private lazy val valuesField = {
     val tupleClass = classOf[TupleImpl]
     val vf = tupleClass.getDeclaredField("values")
     vf.setAccessible(true)
