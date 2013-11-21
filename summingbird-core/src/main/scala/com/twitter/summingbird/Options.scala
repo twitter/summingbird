@@ -38,4 +38,6 @@ class Options(val opts: Map[Class[_], Any]) {
 
   def get[T: ClassManifest]: Option[T] = get(klass[T])
   def getOrElse[T: ClassManifest](default: T): T = getOrElse(klass[T], default)
+
+  override def toString = "Options(%s)".format(opts.toString)
 }
