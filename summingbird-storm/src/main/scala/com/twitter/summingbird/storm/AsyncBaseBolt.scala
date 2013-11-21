@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.tuple.Tuple
+import backtype.storm.tuple.{Tuple, TupleImpl}
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.Queue
 import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
@@ -44,7 +44,8 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
     if(!tuple.getSourceStreamId.equals("__tick")) {
       // This not a tick tuple so we need to start an async operation
       val tsIn = decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
-
+      // Don't hold on to the input values
+      clearValues(tuple)
       val fut = apply(tuple, tsIn)
         .onSuccess { iter =>
           // Collect the result onto our responses
@@ -94,5 +95,19 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
         case Throw(t) => fail(tups, t)
       }
     }
+  }
+
+  /** This is clearly not safe, but done to deal with GC issues since
+   * storm keeps references to values
+   */
+  private lazy val valuesField = {
+    val tupleClass = classOf[TupleImpl]
+    val vf = tupleClass.getDeclaredField("values")
+    vf.setAccessible(true)
+    vf
+  }
+
+  private def clearValues(t: Tuple): Unit = {
+    valuesField.set(t, null)
   }
 }
