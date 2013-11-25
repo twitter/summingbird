@@ -149,6 +149,11 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
   implicit @transient injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])
     extends VersionedBatchStoreBase[K, V](rootPath) {
 
+  /** Make sure not to keep more than versionsToKeep when we write out.
+   * If this is out of sync with VersionedKeyValSource we can have issues
+   */
+  override def select(b: List[BatchID]): List[BatchID] = b.takeRight(versionsToKeep)
+
   /**
     * writeLast receives an INCLUSIVE upper bound on batchID and a
     * pipe of all key-value pairs aggregated up to (and including)
