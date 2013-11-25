@@ -18,6 +18,8 @@ package com.twitter.summingbird.storm.option
 
 import com.twitter.summingbird.storm.StormMetric
 
+import com.twitter.util.Duration
+
 /**
   * Options used by the sink phase of the Storm Platform's topology.
   *
@@ -75,3 +77,16 @@ class SummerStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
   * cache.
   */
 case class MaxWaitingFutures(get: Int)
+
+object MaxFutureWaitTime {
+  // By default, wait 1 minute
+  val default = MaxFutureWaitTime(Duration.fromSeconds(60))
+}
+/**
+ * All futures should return in a reasonable period of time, otherwise
+ * there will be memory issues keeping all of them open. This option is
+ * to set the longest we wait on a future. It is not a substitute for correctly
+ * configured and implemented stores, services and sinks. All of those should
+ * return or fail fairly quickly (on the order of a second or so).
+ */
+case class MaxFutureWaitTime(get: Duration)

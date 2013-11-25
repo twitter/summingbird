@@ -19,13 +19,15 @@ package com.twitter.summingbird.storm
 import backtype.storm.tuple.{Tuple, TupleImpl}
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.Queue
-import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
+import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures, MaxFutureWaitTime}
 import com.twitter.util.{Await, Duration, Future, Return, Throw, Try}
 import java.util.{ Arrays => JArrays, List => JList }
+import java.util.concurrent.TimeoutException
 
 abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   maxWaitingFutures: MaxWaitingFutures,
+  maxWaitingTime: MaxFutureWaitTime,
   hasDependants: Boolean) extends BaseBolt[I, O](metrics, anchorTuples, hasDependants) {
 
   /** If you can use Future.value below, do so. The double Future is here to deal with
@@ -77,7 +79,15 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
 
   protected def forceExtraFutures {
     val toForce = outstandingFutures.trimTo(maxWaitingFutures.get)
-    if(!toForce.isEmpty) Await.all(toForce, Duration.Top)
+    if(!toForce.isEmpty) {
+      try {
+        Await.ready(Future.collect(toForce), maxWaitingTime.get)
+      }
+      catch {
+        case te: TimeoutException =>
+          logError("forceExtra failed on %d Futures".format(toForce.size), te)
+      }
+    }
   }
 
   /**

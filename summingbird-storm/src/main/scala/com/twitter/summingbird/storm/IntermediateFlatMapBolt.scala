@@ -20,7 +20,12 @@ import backtype.storm.tuple.{Fields, Tuple, Values}
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.storm.option.{ AnchorTuples, FlatMapStormMetrics, MaxWaitingFutures }
+import com.twitter.summingbird.storm.option.{
+  AnchorTuples,
+  FlatMapStormMetrics,
+  MaxWaitingFutures,
+  MaxFutureWaitTime
+}
 import com.twitter.summingbird.online.FlatMapOperation
 
 import com.twitter.util.{Future}
@@ -41,8 +46,9 @@ class IntermediateFlatMapBolt[T,U](
   metrics: FlatMapStormMetrics,
   anchor: AnchorTuples,
   maxWaitingFutures: MaxWaitingFutures,
+  maxWaitingTime: MaxFutureWaitTime,
   shouldEmit: Boolean) extends
-    AsyncBaseBolt[T,U](metrics.metrics, anchor, maxWaitingFutures, shouldEmit) {
+    AsyncBaseBolt[T,U](metrics.metrics, anchor, maxWaitingFutures, maxWaitingTime, shouldEmit) {
 
   val lockedOp = Externalizer(flatMapOp)
 

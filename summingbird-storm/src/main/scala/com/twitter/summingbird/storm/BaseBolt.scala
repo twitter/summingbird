@@ -48,6 +48,12 @@ abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
 
   private var collector: OutputCollector = null
 
+
+  protected def logError(message: String, err: Throwable) {
+    collector.reportError(err)
+    logger.error(message, err)
+  }
+
   /**
    * IMPORTANT: only call this inside of an execute method.
    * storm is not safe to call methods on the emitter from other
@@ -55,8 +61,7 @@ abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
    */
   protected def fail(inputs: JList[Tuple], error: Throwable): Unit = {
     inputs.iterator.asScala.foreach(collector.fail(_))
-    collector.reportError(error)
-    logger.error("Storm DAG of: %d tuples failed".format(inputs.size), error)
+    logError("Storm DAG of: %d tuples failed".format(inputs.size), error)
   }
 
   /**

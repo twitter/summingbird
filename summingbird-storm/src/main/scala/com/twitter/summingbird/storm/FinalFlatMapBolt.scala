@@ -25,9 +25,11 @@ import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.option.{
-  AnchorTuples, FlatMapStormMetrics, MaxWaitingFutures
+  AnchorTuples,
+  FlatMapStormMetrics,
+  MaxWaitingFutures,
+  MaxFutureWaitTime
 }
-
 import com.twitter.util.{Return, Throw}
 import com.twitter.storehaus.algebra.SummerConstructor
 import com.twitter.summingbird.option.CacheSize
@@ -52,9 +54,14 @@ class FinalFlatMapBolt[Event, Key, Value](
   cacheSize: CacheSize,
   metrics: FlatMapStormMetrics,
   anchor: AnchorTuples,
-  maxWaitingFutures: MaxWaitingFutures)
+  maxWaitingFutures: MaxWaitingFutures,
+  maxWaitingTime: MaxFutureWaitTime)
   (implicit monoid: Semigroup[Value], batcher: Batcher)
-    extends AsyncBaseBolt[Event, ((Key, BatchID), Value)](metrics.metrics, anchor, maxWaitingFutures, true) {
+    extends AsyncBaseBolt[Event, ((Key, BatchID), Value)](metrics.metrics,
+                                                          anchor,
+                                                          maxWaitingFutures,
+                                                          maxWaitingTime,
+                                                          true) {
 
   import JListSemigroup._
   import Constants._
