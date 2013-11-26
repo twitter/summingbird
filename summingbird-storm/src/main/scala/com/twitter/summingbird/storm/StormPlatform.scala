@@ -181,7 +181,10 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val operation = foldOperations(node.members.reverse)
     val metrics = getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS)
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
+    logger.info("[{}] Anchoring: {}", nodeName, anchorTuples.anchor)
+
     val maxWaiting = getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES)
+    logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
