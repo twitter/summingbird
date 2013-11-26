@@ -79,7 +79,7 @@ class FinalFlatMapBolt[Event, Key, Value](
                         : Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
     m match {
       case Some(outData) =>
-        outData.map{ case ((key, batchID), (tupList, ts, value)) =>
+        outData.toList.map{ case ((key, batchID), (tupList, ts, value)) =>
             (tupList, Future.value(List((ts, ((key, batchID), value)))))
         }
       case None => Nil
