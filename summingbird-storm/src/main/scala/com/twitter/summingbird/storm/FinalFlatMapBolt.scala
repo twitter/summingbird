@@ -66,8 +66,6 @@ class FinalFlatMapBolt[Event, Key, Value](
   import JListSemigroup._
   import Constants._
 
-  type KBV = ((Key, BatchID), Value)
-
   val lockedOp = Externalizer(flatMapOp)
   val squeue: SummingQueue[Map[(Key, BatchID), (JList[Tuple], Timestamp, Value)]] =
     SummingQueue(cacheSize.size.getOrElse(0))
@@ -77,10 +75,13 @@ class FinalFlatMapBolt[Event, Key, Value](
 
   def cache(tuple: Tuple,
             time: Timestamp,
-            items: TraversableOnce[(Key, Value)]): Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, KBV)]])] = {
+            items: TraversableOnce[(Key, Value)]): Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
 
     val batchID = batcher.batchOf(time)
-    squeue(MapAlgebra.sumByKey(items.map { case (k, v) => (k, batchID) -> (lift(tuple), time, v) }))
+    val jListTup = lift(tuple)
+    val insertForm = items.map { case (k, v) => Map((k, batchID) -> (jListTup, time, v)) }
+    insertForm.flatMap { item =>
+      squeue(item)
       .map { kvs =>
           kvs.iterator
             .map { case ((k, b), (tups, ts, v)) =>
@@ -88,7 +89,7 @@ class FinalFlatMapBolt[Event, Key, Value](
             }
             .toList // don't need the ordering, so we could save by pushing a stack or something
       }
-      .getOrElse(Nil)
+    }.flatten.toList
   }
 
   override def apply(tup: Tuple,

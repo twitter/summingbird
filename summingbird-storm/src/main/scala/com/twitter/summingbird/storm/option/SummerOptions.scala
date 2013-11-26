@@ -78,10 +78,6 @@ class SummerStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
   */
 case class MaxWaitingFutures(get: Int)
 
-object MaxFutureWaitTime {
-  // By default, wait 1 minute
-  val default = MaxFutureWaitTime(Duration.fromSeconds(60))
-}
 /**
  * All futures should return in a reasonable period of time, otherwise
  * there will be memory issues keeping all of them open. This option is

@@ -33,7 +33,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
-import com.twitter.summingbird.storm.option.{AnchorTuples, MaxFutureWaitTime, IncludeSuccessHandler}
+import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.planner._
@@ -181,8 +181,11 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val operation = foldOperations(node.members.reverse)
     val metrics = getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS)
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
+    logger.info("[{}] Anchoring: {}", nodeName, anchorTuples.anchor)
+
     val maxWaiting = getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES)
-    val maxWaitTime = getOrElse(stormDag, node, MaxFutureWaitTime.default)
+    val maxWaitTime = getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME)
+    logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
@@ -256,7 +259,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       getOrElse(stormDag, node, DEFAULT_SUMMER_CACHE),
       getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS),
       getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(stormDag, node, MaxFutureWaitTime.default),
+      getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
       getOrElse(stormDag, node, IncludeSuccessHandler.default),
       anchorTuples,
       stormDag.dependantsOf(node).size > 0)
@@ -306,7 +309,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val inj = Injection.connect[String, Array[Byte], Base64String]
     logger.debug("Adding serialized copy of graphs")
-    val withViz = stormConfig.put("summingbird.base64_graph.producer", inj.apply(VizGraph(dag.tail)).str)
+    val withViz = stormConfig.put("summingbird.base64_graph.producer", inj.apply(VizGraph(dag.originalTail)).str)
                             .put("summingbird.base64_graph.planned", inj.apply(VizGraph(dag)).str)
 
     val withOptions = withViz.put("summingbird.options", dumpOptions)

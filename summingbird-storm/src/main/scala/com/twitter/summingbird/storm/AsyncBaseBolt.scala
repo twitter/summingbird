@@ -49,7 +49,7 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
       // Don't hold on to the input values
       clearValues(tuple)
       val fut = apply(tuple, tsIn)
-        .onSuccess { iter =>
+        .onSuccess { iter: Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])] =>
           // Collect the result onto our responses
           val (putCount, maxSize) = iter.foldLeft((0, 0)) { case ((p, ms), (tups, res)) =>
             res.respond { t => responses.put((tups, t)) }
