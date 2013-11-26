@@ -193,6 +193,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val flushFrequency = getOrElse(stormDag, node, DEFAULT_FLUSH_FREQUENCY)
     logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
 
+    val useLocalOrShuffle = getOrElse(stormDag, node, DEFAULT_FM_LOCAL_OR_SHUFFLE)
+    logger.info("[{}] useLocalOrShuffle: {}", nodeName, useLocalOrShuffle.get)
+
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
     val bolt = summerOpt match {
@@ -207,7 +210,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           maxWaiting,
           maxWaitTime)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
       case None =>
-        new IntermediateFlatMapBolt(
+        new IntermediateFlatMapBolt[Any, Any](
           operation,
           metrics,
           anchorTuples,
