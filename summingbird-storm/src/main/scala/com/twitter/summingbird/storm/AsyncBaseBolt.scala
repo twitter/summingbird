@@ -47,17 +47,19 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
      */
 
     // This not a tick tuple so we need to start an async operation
-    val tsIn = decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
-    // Don't hold on to the input values
-    clearValues(tuple)
+
     val fut = if(!tuple.getSourceStreamId.equals("__tick")) {
+      val tsIn = decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
+      // Don't hold on to the input values
+      clearValues(tuple)
       apply(tuple, tsIn)
     }
     else {
       tick
     }
 
-    fut.onSuccess { iter: Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])] =>
+    fut
+      .onSuccess { iter: Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])] =>
 
         // Collect the result onto our responses
         val (putCount, maxSize) = iter.foldLeft((0, 0)) { case ((p, ms), (tups, res)) =>
