@@ -33,7 +33,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
-import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler}
+import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler, FlushFrequency}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.planner._
@@ -190,14 +190,18 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val useLocalOrShuffle = getOrElse(stormDag, node, DEFAULT_FM_LOCAL_OR_SHUFFLE)
     logger.info("[{}] useLocalOrShuffle: {}", nodeName, useLocalOrShuffle.get)
 
+    val flushFrequency = getOrElse(stormDag, node, DEFAULT_FLUSH_FREQUENCY)
+    logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
+
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
     val bolt = summerOpt match {
       case Some(s) =>
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
-        new FinalFlatMapBolt(
+        new FinalFlatMapBolt[Any, Any, Any](
           operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
           getOrElse(stormDag, node, DEFAULT_FM_CACHE),
+          flushFrequency,
           metrics,
           anchorTuples,
           maxWaiting,
