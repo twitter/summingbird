@@ -36,7 +36,7 @@ import scala.collection.mutable.{Queue => MQueue, Map => MMap}
 import org.slf4j.{LoggerFactory, Logger}
 
 /**
- * @author Ian O COnnell
+ * @author Ian O Connell
  */
 case class StormCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency)
   (implicit monoid: Semigroup[Value]) {
@@ -74,10 +74,10 @@ case class StormCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: Flush
   }
 
   def insert(vals: TraversableOnce[(Key, Value)]): Option[Map[Key, Value]] = {
-    //val resMap = MapAlgebra.sumByKey(vals)
+    val resMap = MapAlgebra.sumByKey(vals)
 
     this.synchronized {
-      vals.map {case (k, v) =>
+      resMap.map {case (k, v) =>
         keyMap.get(k) match {
           case Some(vQueue) =>
             vQueue += v
