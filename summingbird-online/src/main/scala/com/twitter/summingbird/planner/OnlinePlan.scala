@@ -174,6 +174,6 @@ object OnlinePlan {
     // but its easier to look at laws in a summer -> source manner
     // We also drop all Nodes with no members(may occur when we visit a node already seen and its the first in that Node)
     val reversedNodeSet = nodesSet.filter(_.members.size > 0).foldLeft(List[Node[P]]()){(nodes, n) => n.reverse :: nodes}
-    Dag(nameMap, strippedTail, reversedNodeSet)
+    Dag(tail, nameMap, strippedTail, reversedNodeSet)
   }
 }

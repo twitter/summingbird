@@ -181,7 +181,10 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val operation = foldOperations(node.members.reverse)
     val metrics = getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS)
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
+    logger.info("[{}] Anchoring: {}", nodeName, anchorTuples.anchor)
+
     val maxWaiting = getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES)
+    logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
@@ -302,7 +305,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val inj = Injection.connect[String, Array[Byte], Base64String]
     logger.debug("Adding serialized copy of graphs")
-    val withViz = stormConfig.put("summingbird.base64_graph.producer", inj.apply(VizGraph(dag.tail)).str)
+    val withViz = stormConfig.put("summingbird.base64_graph.producer", inj.apply(VizGraph(dag.originalTail)).str)
                             .put("summingbird.base64_graph.planned", inj.apply(VizGraph(dag)).str)
 
     val withOptions = withViz.put("summingbird.options", dumpOptions)
