@@ -184,6 +184,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     logger.info("[{}] Anchoring: {}", nodeName, anchorTuples.anchor)
 
     val maxWaiting = getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES)
+    val maxWaitTime = getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME)
     logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
@@ -196,13 +197,15 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           getOrElse(stormDag, node, DEFAULT_FM_CACHE),
           metrics,
           anchorTuples,
-          maxWaiting)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
+          maxWaiting,
+          maxWaitTime)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
       case None =>
         new IntermediateFlatMapBolt(
           operation,
           metrics,
           anchorTuples,
           maxWaiting,
+          maxWaitTime,
           stormDag.dependantsOf(node).size > 0)
     }
 
@@ -256,6 +259,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       getOrElse(stormDag, node, DEFAULT_SUMMER_CACHE),
       getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS),
       getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
+      getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
       getOrElse(stormDag, node, IncludeSuccessHandler.default),
       anchorTuples,
       stormDag.dependantsOf(node).size > 0)

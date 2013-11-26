@@ -70,6 +70,7 @@ class SummerBolt[Key, Value: Semigroup](
   cacheSize: CacheSize,
   metrics: SummerStormMetrics,
   maxWaitingFutures: MaxWaitingFutures,
+  maxWaitingTime: MaxFutureWaitTime,
   includeSuccessHandler: IncludeSuccessHandler,
   anchor: AnchorTuples,
   shouldEmit: Boolean) extends
@@ -77,6 +78,7 @@ class SummerBolt[Key, Value: Semigroup](
       metrics.metrics,
       anchor,
       maxWaitingFutures,
+      maxWaitingTime,
       shouldEmit) {
 
   import Constants._

@@ -20,6 +20,8 @@ import com.twitter.summingbird.option.MonoidIsCommutative
 import com.twitter.summingbird.storm.option.{CacheSize => DEPCacheSize, _ }
 import com.twitter.summingbird.option._
 
+import com.twitter.util.Duration
+
 object Constants {
   val AGG_KEY     = "aggKey"
   val AGG_VALUE   = "aggValue"
@@ -41,4 +43,5 @@ object Constants {
   val DEFAULT_SUMMER_STORM_METRICS = SummerStormMetrics(None)
   val DEFAULT_MONOID_IS_COMMUTATIVE = MonoidIsCommutative.default
   val DEFAULT_MAX_WAITING_FUTURES = MaxWaitingFutures(10)
+  val DEFAULT_MAX_FUTURE_WAIT_TIME =  MaxFutureWaitTime(Duration.fromSeconds(60))
 }
