@@ -76,6 +76,12 @@ abstract class Queue[T] {
 
   private val count = new AtomicInteger(0)
 
+  def dequeueAll(fn: T => Boolean): Seq[T] = {
+    val (result, putBack) = toSeq.partition(fn)
+    putAll(putBack)
+    result
+  }
+
   def put(item: T): Int = {
     add(item)
     count.incrementAndGet
@@ -123,6 +129,9 @@ abstract class Queue[T] {
       case None => init
       case Some(it) => foldLeft(fn(init, it))(fn)
     }
+
+  /** Take all the items currently in the queue */
+  def toSeq: Seq[T] = trimTo(0)
 
   /**
    * Take enough elements to get .size == maxLength
