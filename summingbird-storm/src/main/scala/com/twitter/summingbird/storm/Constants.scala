@@ -44,7 +44,6 @@ object Constants {
   val DEFAULT_MONOID_IS_COMMUTATIVE = MonoidIsCommutative.default
   val DEFAULT_MAX_WAITING_FUTURES = MaxWaitingFutures(10)
   val DEFAULT_MAX_FUTURE_WAIT_TIME =  MaxFutureWaitTime(Duration.fromSeconds(60))
-  val DEFAULT_FM_LOCAL_OR_SHUFFLE =  LocalOrShuffle(false)
-  val DEFAULT_FLUSH_FREQUENCY =  FlushFrequency(Duration.fromSeconds(120))
+  val DEFAULT_FLUSH_FREQUENCY =  FlushFrequency(Duration.fromSeconds(4))
   val DEFAULT_FM_LOCAL_OR_SHUFFLE =  LocalOrShuffle(false)
 }
