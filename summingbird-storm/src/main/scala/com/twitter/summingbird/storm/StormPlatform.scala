@@ -33,7 +33,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
-import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler}
+import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler, FlushFrequency}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.planner._
@@ -187,20 +187,27 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val maxWaitTime = getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME)
     logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
 
+    val useLocalOrShuffle = getOrElse(stormDag, node, DEFAULT_FM_LOCAL_OR_SHUFFLE)
+    logger.info("[{}] useLocalOrShuffle: {}", nodeName, useLocalOrShuffle.get)
+
+    val flushFrequency = getOrElse(stormDag, node, DEFAULT_FLUSH_FREQUENCY)
+    logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
+
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
     val bolt = summerOpt match {
       case Some(s) =>
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
-        new FinalFlatMapBolt(
+        new FinalFlatMapBolt[Any, Any, Any](
           operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
           getOrElse(stormDag, node, DEFAULT_FM_CACHE),
+          flushFrequency,
           metrics,
           anchorTuples,
           maxWaiting,
           maxWaitTime)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
       case None =>
-        new IntermediateFlatMapBolt(
+        new IntermediateFlatMapBolt[Any, Any](
           operation,
           metrics,
           anchorTuples,
@@ -214,9 +221,12 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
-    // TODO: https://github.com/twitter/summingbird/issues/366
-    // test localOrShuffleGrouping here. may give big wins for serialization heavy jobs.
-    dependenciesNames.foreach { declarer.shuffleGrouping(_) }
+    if (useLocalOrShuffle.get) {
+      dependenciesNames.foreach { declarer.localOrShuffleGrouping(_) }
+    } else {
+      dependenciesNames.foreach { declarer.shuffleGrouping(_) }
+    }
+
   }
 
   private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {

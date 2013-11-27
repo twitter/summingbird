@@ -36,6 +36,8 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
    */
   def apply(tup: Tuple, in: (Timestamp, I)): Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])]]
 
+  def tick: Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
+
   private lazy val outstandingFutures = Queue[Future[Unit]]()
   private lazy val responses = Queue[(JList[Tuple], Try[TraversableOnce[(Timestamp, O)]])]()
 
@@ -43,36 +45,45 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
     /**
      * System ticks come with a fixed stream id
      */
-    if(!tuple.getSourceStreamId.equals("__tick")) {
-      // This not a tick tuple so we need to start an async operation
+
+    // This not a tick tuple so we need to start an async operation
+
+    val fut = if(!tuple.getSourceStreamId.equals("__tick")) {
       val tsIn = decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
       // Don't hold on to the input values
       clearValues(tuple)
-      val fut = apply(tuple, tsIn)
-        .onSuccess { iter: Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])] =>
-          // Collect the result onto our responses
-          val (putCount, maxSize) = iter.foldLeft((0, 0)) { case ((p, ms), (tups, res)) =>
-            res.respond { t => responses.put((tups, t)) }
-            // Make sure there are not too many outstanding:
-            val count = outstandingFutures.put(res.unit)
-            (p + 1, ms max count)
-          }
-
-          if(maxSize > maxWaitingFutures.get) {
-            /*
-             * This can happen on large key expansion.
-             * May indicate maxWaitingFutures is too low.
-             */
-            logger.debug(
-              "Exceeded maxWaitingFutures(%d): waiting = %d, put = %d"
-                .format(maxWaitingFutures.get, maxSize, putCount)
-              )
-          }
-        }
-        .onFailure { thr => responses.put((JArrays.asList(tuple), Throw(thr))) }
-
-      outstandingFutures.put(fut.unit)
+      apply(tuple, tsIn)
     }
+    else {
+      tick
+    }
+
+    fut
+      .onSuccess { iter: Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])] =>
+
+        // Collect the result onto our responses
+        val (putCount, maxSize) = iter.foldLeft((0, 0)) { case ((p, ms), (tups, res)) =>
+          res.respond { t => responses.put((tups, t)) }
+          // Make sure there are not too many outstanding:
+          val count = outstandingFutures.put(res.unit)
+          (p + 1, ms max count)
+        }
+
+        if(maxSize > maxWaitingFutures.get) {
+          /*
+           * This can happen on large key expansion.
+           * May indicate maxWaitingFutures is too low.
+           */
+          logger.debug(
+            "Exceeded maxWaitingFutures(%d): waiting = %d, put = %d"
+              .format(maxWaitingFutures.get, maxSize, putCount)
+            )
+        }
+      }
+      .onFailure { thr =>
+       responses.put((JArrays.asList(tuple), Throw(thr))) }
+
+    outstandingFutures.put(fut.unit)
     // always empty the responses, even on tick
     emptyQueue
   }

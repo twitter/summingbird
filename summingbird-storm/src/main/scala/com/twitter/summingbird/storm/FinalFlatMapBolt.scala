@@ -28,7 +28,8 @@ import com.twitter.summingbird.storm.option.{
   AnchorTuples,
   FlatMapStormMetrics,
   MaxWaitingFutures,
-  MaxFutureWaitTime
+  MaxFutureWaitTime,
+  FlushFrequency
 }
 import com.twitter.util.{Return, Throw}
 import com.twitter.storehaus.algebra.SummerConstructor
@@ -52,6 +53,7 @@ import scala.collection.breakOut
 class FinalFlatMapBolt[Event, Key, Value](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
   cacheSize: CacheSize,
+  flushFrequency: FlushFrequency,
   metrics: FlatMapStormMetrics,
   anchor: AnchorTuples,
   maxWaitingFutures: MaxWaitingFutures,
@@ -67,29 +69,33 @@ class FinalFlatMapBolt[Event, Key, Value](
   import Constants._
 
   val lockedOp = Externalizer(flatMapOp)
-  val squeue: SummingQueue[Map[(Key, BatchID), (JList[Tuple], Timestamp, Value)]] =
-    SummingQueue(cacheSize.size.getOrElse(0))
+  val sCache: StormCache[(Key, BatchID), (JList[Tuple], Timestamp, Value)] = new StormCache(cacheSize, flushFrequency)
+
 
   override val decoder = new SingleItemInjection[Event](VALUE_FIELD)
   override val encoder = new KeyValueInjection[(Key, BatchID), Value](AGG_KEY, AGG_VALUE)
+
+  private def formatResult(m: Option[Map[(Key, BatchID), (JList[Tuple], Timestamp, Value)]])
+                        : Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
+    m match {
+      case Some(outData) =>
+        outData.toList.map{ case ((key, batchID), (tupList, ts, value)) =>
+            (tupList, Future.value(List((ts, ((key, batchID), value)))))
+        }
+      case None => Nil
+    }
+  }
+
+  override def tick: Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
+    Future.value(formatResult(sCache.tick))
+  }
 
   def cache(tuple: Tuple,
             time: Timestamp,
             items: TraversableOnce[(Key, Value)]): Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
 
     val batchID = batcher.batchOf(time)
-    val jListTup = lift(tuple)
-    val insertForm = items.map { case (k, v) => Map((k, batchID) -> (jListTup, time, v)) }
-    insertForm.flatMap { item =>
-      squeue(item)
-      .map { kvs =>
-          kvs.iterator
-            .map { case ((k, b), (tups, ts, v)) =>
-              (tups, Future.value(List((ts, ((k,b), v)))))
-            }
-            .toList // don't need the ordering, so we could save by pushing a stack or something
-      }
-    }.flatten.toList
+    formatResult(sCache.insert(items.map{case (k, v) => (k, batchID) -> (lift(tuple), time, v)}))
   }
 
   override def apply(tup: Tuple,
