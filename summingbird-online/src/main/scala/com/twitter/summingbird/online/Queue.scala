@@ -17,9 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.online
 
 import com.twitter.util.{ Await, Duration, Future, Try }
-
-import java.util.{Queue => JQueue}
-import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, LinkedBlockingQueue, TimeUnit}
+import scala.collection.mutable.{Queue => MQueue}
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 /**
@@ -27,120 +25,55 @@ import java.util.concurrent.atomic.AtomicInteger
  * @author Oscar Boykin
  */
 
-object Queue {
-  /**
-   * By default, don't block on put
-   */
-  def apply[T]() = linkedNonBlocking[T]
 
-  /** Use this for blocking puts when the size is reached
-   */
-  def arrayBlocking[T](size: Int): Queue[T] =
-    fromBlocking(new ArrayBlockingQueue(size))
+case class Queue[T]() {
+  val backingQueue = MQueue[T]()
 
-  def linkedBlocking[T]: Queue[T] =
-    fromBlocking(new LinkedBlockingQueue())
-
-  def linkedNonBlocking[T]: Queue[T] =
-    fromQueue(new ConcurrentLinkedQueue())
-
-  def fromBlocking[T](bq: BlockingQueue[T]): Queue[T] = {
-    new Queue[T] {
-      override def add(t: T) = bq.put(t)
-      override def pollNonBlocking = Option(bq.poll())
+  protected def add(t: T) {
+    this.synchronized {
+      backingQueue += t
     }
   }
-
-  // Uses Queue.add to put. This will fail for full blocking queues
-  def fromQueue[T](q: JQueue[T]): Queue[T] = {
-    new Queue[T] {
-      override def add(t: T) = q.add(t)
-      override def pollNonBlocking = Option(q.poll())
-    }
-  }
-}
-
-/**
- * Use this class with a thread-safe queue to receive
- * results from futures in one thread.
- * Storm needs us to touch it's code in one event path (via
- * the execute method in bolts)
- */
-abstract class Queue[T] {
-
-  /** These are the only two methods to implement.
-   * these must be thread-safe.
-   */
-  protected def add(t: T): Unit
-  protected def pollNonBlocking: Option[T]
-
-  private val count = new AtomicInteger(0)
 
   def put(item: T): Int = {
     add(item)
-    count.incrementAndGet
+    backingQueue.size
   }
 
   /** Returns the size immediately after the put */
   def putAll(items: TraversableOnce[T]): Int = {
-    val added = items.foldLeft(0) { (cnt, item) =>
-      add(item)
-      cnt + 1
-    }
-    count.addAndGet(added)
-  }
-
-  /**
-   * check if something is ready now
-   */
-  def poll: Option[T] = {
-    val res = pollNonBlocking
-    // This is for performance sensitive code. Prefering if to match defensively
-    if(res.isDefined) count.decrementAndGet
-    res
+    items.foreach(add(_))
+    size
   }
 
   /**
    * Obviously, this might not be the same by the time you
    * call trimTo or poll
    */
-  def size: Int = count.get
+  def size: Int = backingQueue.size
 
-  // Do something on all the elements ready:
-  @annotation.tailrec
+  final def dequeueWhere(fn: T => Boolean): Seq[T] =
+    this.synchronized {
+      backingQueue.dequeueAll(fn)
+    }
+
+
   final def foreach(fn: T => Unit): Unit =
-    poll match {
-      case None => ()
-      case Some(it) =>
-        fn(it)
-        foreach(fn)
-    }
+    backingQueue.dequeueAll(x => true).foreach(fn(_))
 
-  // fold on all the elements ready:
-  @annotation.tailrec
-  final def foldLeft[V](init: V)(fn: (V, T) => V): V =
-   poll match {
-      case None => init
-      case Some(it) => foldLeft(fn(init, it))(fn)
-    }
-
-  /**
-   * Take enough elements to get .size == maxLength
-   */
   def trimTo(maxLength: Int): Seq[T] = {
     require(maxLength >= 0, "maxLength must be >= 0.")
 
+
     @annotation.tailrec
-    def loop(size: Int, acc: List[T] = Nil): List[T] = {
-      if(size > maxLength) {
-        pollNonBlocking match {
-          case None => acc.reverse // someone else cleared us out
-          case Some(item) =>
-            loop(count.decrementAndGet, item::acc)
-        }
+    def loop(acc: List[T] = Nil): List[T] = {
+      if(backingQueue.size > maxLength) {
+        loop(backingQueue.dequeue :: acc)
       }
       else acc.reverse
     }
-    loop(count.get)
+    this.synchronized {
+      loop()
+    }
   }
 }
