@@ -187,8 +187,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val maxWaitTime = getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME)
     logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
 
-    val usePreferLocalDependant = getOrElse(stormDag, node, DEFAULT_FM_PREFER_LOCAL_DEPENDANT)
-    logger.info("[{}] usePreferLocalDependant: {}", nodeName, usePreferLocalDependant.get)
+    val usePreferLocalDependency = getOrElse(stormDag, node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
+    logger.info("[{}] usePreferLocalDependency: {}", nodeName, usePreferLocalDependency.get)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
@@ -217,7 +217,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
-    if (usePreferLocalDependant.get) {
+    if (usePreferLocalDependency.get) {
       dependenciesNames.foreach { declarer.localOrShuffleGrouping(_) }
     } else {
       dependenciesNames.foreach { declarer.shuffleGrouping(_) }

@@ -58,4 +58,4 @@ class SpoutStormMetrics(val metrics: () => TraversableOnce[StormMetric[IMetric]]
     {() => metrics().map{ x: StormMetric[IMetric] => Metric(x.name, x.metric, x.interval.inSeconds)}}
 }
 
-case class PreferLocalDependant(get: Boolean)
+case class PreferLocalDependency(get: Boolean)
