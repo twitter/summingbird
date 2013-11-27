@@ -18,8 +18,9 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.tuple.{Tuple, TupleImpl}
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.online.Queue
+import com.twitter.summingbird.online.TrimmableQueue
 import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures, MaxFutureWaitTime}
+import scala.collection.mutable.SynchronizedQueue
 import com.twitter.util.{Await, Duration, Future, Return, Throw, Try}
 import java.util.{ Arrays => JArrays, List => JList }
 import java.util.concurrent.TimeoutException
@@ -38,8 +39,8 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
 
   def tick: Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
 
-  private lazy val outstandingFutures = Queue[Future[Unit]]()
-  private lazy val responses = Queue[(JList[Tuple], Try[TraversableOnce[(Timestamp, O)]])]()
+  private lazy val outstandingFutures = new SynchronizedQueue[Future[Unit]] with TrimmableQueue[Future[Unit]]
+  private lazy val responses = new SynchronizedQueue[(JList[Tuple], Try[TraversableOnce[(Timestamp, O)]])]()
 
   override def execute(tuple: Tuple) {
     /**
@@ -62,33 +63,39 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
       .onSuccess { iter: Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])] =>
 
         // Collect the result onto our responses
-        val (putCount, maxSize) = iter.foldLeft((0, 0)) { case ((p, ms), (tups, res)) =>
-          res.respond { t => responses.put((tups, t)) }
+        val iterSize = iter.foldLeft(0) { case (iterSize, (tups, res)) =>
+          res.respond { t => responses.enqueue((tups, t)) }
           // Make sure there are not too many outstanding:
-          val count = outstandingFutures.put(res.unit)
-          (p + 1, ms max count)
+          if(!res.isDefined) {
+            outstandingFutures.enqueue(res.unit)
+            iterSize + 1
+          } else {
+            iterSize
+          }
         }
 
-        if(maxSize > maxWaitingFutures.get) {
+        if(outstandingFutures.size > maxWaitingFutures.get) {
           /*
            * This can happen on large key expansion.
            * May indicate maxWaitingFutures is too low.
            */
           logger.debug(
-            "Exceeded maxWaitingFutures(%d): waiting = %d, put = %d"
-              .format(maxWaitingFutures.get, maxSize, putCount)
-            )
+            "Exceeded maxWaitingFutures({}), put {} futures", maxWaitingFutures.get, iterSize
+          )
         }
       }
       .onFailure { thr =>
-       responses.put((JArrays.asList(tuple), Throw(thr))) }
+       responses.enqueue((JArrays.asList(tuple), Throw(thr))) }
 
-    outstandingFutures.put(fut.unit)
+    if(!fut.isDefined) {
+      outstandingFutures.enqueue(fut.unit)
+    }
     // always empty the responses, even on tick
     emptyQueue
   }
 
   protected def forceExtraFutures {
+    outstandingFutures.dequeueAll(_.isDefined)
     val toForce = outstandingFutures.trimTo(maxWaitingFutures.get)
     if(!toForce.isEmpty) {
       try {

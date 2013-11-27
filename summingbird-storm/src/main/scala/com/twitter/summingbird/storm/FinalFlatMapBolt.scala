@@ -69,38 +69,35 @@ class FinalFlatMapBolt[Event, Key, Value](
   import Constants._
 
   val lockedOp = Externalizer(flatMapOp)
-  val sCache: StormCache[(Key, BatchID), (JList[Tuple], Timestamp, Value)] = new StormCache(cacheSize, flushFrequency)
+  lazy val sCache: StormCache[(Key, BatchID), (JList[Tuple], Timestamp, Value)] = new StormCache(cacheSize, flushFrequency)
 
 
   override val decoder = new SingleItemInjection[Event](VALUE_FIELD)
   override val encoder = new KeyValueInjection[(Key, BatchID), Value](AGG_KEY, AGG_VALUE)
 
-  private def formatResult(m: Option[Map[(Key, BatchID), (JList[Tuple], Timestamp, Value)]])
+  private def formatResult(outData: Map[(Key, BatchID), (JList[Tuple], Timestamp, Value)])
                         : Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
-    m match {
-      case Some(outData) =>
-        outData.toList.map{ case ((key, batchID), (tupList, ts, value)) =>
-            (tupList, Future.value(List((ts, ((key, batchID), value)))))
-        }
-      case None => Nil
+
+    outData.toList.map{ case ((key, batchID), (tupList, ts, value)) =>
+      (tupList, Future.value(List((ts, ((key, batchID), value)))))
     }
   }
 
   override def tick: Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
-    Future.value(formatResult(sCache.tick))
+    sCache.tick.map(formatResult(_))
   }
 
   def cache(tuple: Tuple,
             time: Timestamp,
-            items: TraversableOnce[(Key, Value)]): Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
+            items: TraversableOnce[(Key, Value)]): Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
 
     val batchID = batcher.batchOf(time)
-    formatResult(sCache.insert(items.map{case (k, v) => (k, batchID) -> (lift(tuple), time, v)}))
+    sCache.insert(items.map{case (k, v) => (k, batchID) -> (lift(tuple), time, v)}).map(formatResult(_))
   }
 
   override def apply(tup: Tuple,
                      timeIn: (Timestamp, Event)) =
-    lockedOp.get.apply(timeIn._2).map { cache(tup, timeIn._1, _) }
+    lockedOp.get.apply(timeIn._2).map { cache(tup, timeIn._1, _) }.flatten
 
   override def cleanup { lockedOp.get.close }
 }

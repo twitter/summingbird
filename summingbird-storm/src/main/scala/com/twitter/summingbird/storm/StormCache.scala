@@ -25,13 +25,14 @@ import com.twitter.storehaus.algebra.SummerConstructor
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.storm.option.FlushFrequency
-
+import java.util.concurrent._
 import com.twitter.util.{Future}
 
 import MergeableStore.enrich
 
 import scala.collection.breakOut
 import scala.collection.mutable.{Queue => MQueue, Map => MMap}
+import com.twitter.util.FuturePool
 
 import org.slf4j.{LoggerFactory, Logger}
 
@@ -40,6 +41,10 @@ import org.slf4j.{LoggerFactory, Logger}
  */
 case class StormCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency)
   (implicit monoid: Semigroup[Value]) {
+
+
+  val executor = new ThreadPoolExecutor(120, 120, 60, TimeUnit.SECONDS, new LinkedBlockingQueue(1000))
+  val pool     = FuturePool(executor)
 
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
@@ -57,43 +62,49 @@ case class StormCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: Flush
   private def timedOut = (System.currentTimeMillis - lastDump) > flushFrequency.get.inMilliseconds
   private def keySpaceTooBig = keyMap.size > cacheSize
 
-  def tick: Option[Map[Key, Value]] = {
-    innerTick
-  }
-
-  private def innerTick: Option[Map[Key, Value]] = {
-    logger.debug("Timedout {}", timedOut)
-    logger.debug("keySpaceTooBig {}", keySpaceTooBig)
-    logger.debug("memoryWaterMark {}", memoryWaterMark)
+  def tick: Future[Map[Key, Value]] = {
     if (timedOut || keySpaceTooBig || memoryWaterMark) {
-        Some(doFlushCache)
-      }
-    else {
-      None
-    }
-  }
-
-  def insert(vals: TraversableOnce[(Key, Value)]): Option[Map[Key, Value]] = {
-    val resMap = MapAlgebra.sumByKey(vals)
-
-    this.synchronized {
-      resMap.map {case (k, v) =>
-        keyMap.get(k) match {
-          case Some(vQueue) =>
-            vQueue += v
-            if(vQueue.size > cacheSize && vQueue.size > 1) {
-              val newV = monoid.sumOption(vQueue).get
-              vQueue.clear
-              vQueue += newV
-            }
-          case None => keyMap.put(k, MQueue(v))
+        pool {
+          innerTick
         }
       }
+    else {
+      Future.value(Map.empty)
     }
-    innerTick
   }
 
-  def doFlushCache: Map[Key, Value] = {
+  private def innerTick: Map[Key, Value] = {
+    if (timedOut || keySpaceTooBig || memoryWaterMark) {
+        doFlushCache
+    }
+    else {
+      Map()
+    }
+  }
+
+
+  def insert(vals: TraversableOnce[(Key, Value)]): Future[Map[Key, Value]] = {
+    pool {
+      val valList = vals.toList
+      this.synchronized {
+        valList.map {case (k, v) =>
+          keyMap.get(k) match {
+            case Some(vQueue) => vQueue += v
+              if(vQueue.size > cacheSize && vQueue.size > 1) {
+                  val newV = monoid.sumOption(vQueue).get
+                  vQueue.clear
+                  vQueue += newV
+                }
+            case None => keyMap.put(k, MQueue(v))
+          }
+        }
+      }
+
+      innerTick
+    }
+  }
+
+  private def doFlushCache: Map[Key, Value] = {
     val oldKeyMap = this.synchronized {
       val oldKeyMap = keyMap
       keyMap = MMap[Key, MQueue[Value]]()
