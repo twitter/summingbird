@@ -187,6 +187,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val maxWaitTime = getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME)
     logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
 
+    val useLocalOrShuffle = getOrElse(stormDag, node, DEFAULT_FM_LOCAL_OR_SHUFFLE)
+    logger.info("[{}] useLocalOrShuffle: {}", nodeName, useLocalOrShuffle.get)
+
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
     val bolt = summerOpt match {
@@ -214,9 +217,12 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
-    // TODO: https://github.com/twitter/summingbird/issues/366
-    // test localOrShuffleGrouping here. may give big wins for serialization heavy jobs.
-    dependenciesNames.foreach { declarer.shuffleGrouping(_) }
+    if (useLocalOrShuffle.get) {
+      dependenciesNames.foreach { declarer.localOrShuffleGrouping(_) }
+    } else {
+      dependenciesNames.foreach { declarer.shuffleGrouping(_) }
+    }
+
   }
 
   private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
