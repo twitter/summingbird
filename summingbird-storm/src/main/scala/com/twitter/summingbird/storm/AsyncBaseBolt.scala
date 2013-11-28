@@ -22,7 +22,6 @@ import com.twitter.summingbird.online.TrimmableQueue
 import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures, MaxFutureWaitTime}
 import scala.collection.mutable.SynchronizedQueue
 import com.twitter.util.{Await, Duration, Future, Return, Throw, Try}
-import java.util.{ Arrays => JArrays, List => JList }
 import java.util.concurrent.TimeoutException
 
 abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]],
@@ -35,12 +34,12 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
    * cases that need to complete operations after or before doing a FlatMapOperation or
    * doing a store merge
    */
-  def apply(tup: Tuple, in: (Timestamp, I)): Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])]]
+  def apply(tup: TupleWrapper, in: (Timestamp, I)): Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, O)]])]]
 
-  def tick: Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
+  def tick: Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
 
   private lazy val outstandingFutures = new SynchronizedQueue[Future[Unit]] with TrimmableQueue[Future[Unit]]
-  private lazy val responses = new SynchronizedQueue[(JList[Tuple], Try[TraversableOnce[(Timestamp, O)]])]()
+  private lazy val responses = new SynchronizedQueue[(List[TupleWrapper], Try[TraversableOnce[(Timestamp, O)]])]()
 
   override def execute(tuple: Tuple) {
     /**
@@ -48,26 +47,26 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
      */
 
     // This not a tick tuple so we need to start an async operation
-
+    val wrappedTuple = TupleWrapper(tuple)
     val fut = if(!tuple.getSourceStreamId.equals("__tick")) {
       val tsIn = decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
       // Don't hold on to the input values
       clearValues(tuple)
-      apply(tuple, tsIn)
+      apply(wrappedTuple, tsIn)
     }
     else {
       tick
     }
 
     fut
-      .onSuccess { iter: Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])] =>
+      .onSuccess { iter: Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, O)]])] =>
 
         // Collect the result onto our responses
         val iterSize = iter.foldLeft(0) { case (iterSize, (tups, res)) =>
-          res.respond { t => responses.enqueue((tups, t)) }
+          res.respond { t => responses += ((tups, t)) }
           // Make sure there are not too many outstanding:
           if(!res.isDefined) {
-            outstandingFutures.enqueue(res.unit)
+            outstandingFutures += res.unit
             iterSize + 1
           } else {
             iterSize
@@ -85,10 +84,11 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
         }
       }
       .onFailure { thr =>
-       responses.enqueue((JArrays.asList(tuple), Throw(thr))) }
+        throw thr
+       responses += ((List(wrappedTuple), Throw(thr))) }
 
     if(!fut.isDefined) {
-      outstandingFutures.enqueue(fut.unit)
+      outstandingFutures += fut.unit
     }
     // always empty the responses, even on tick
     emptyQueue
@@ -116,10 +116,11 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
   protected def emptyQueue = {
     // don't let too many futures build up
     forceExtraFutures
-    // Handle all ready results now:
-    responses.foreach { case (tups, res) =>
+    // Take all results that have been placed for writing to the network
+    responses.dequeueAll(_ => true).foreach { case (tups, res) =>
       res match {
-        case Return(outs) => finish(tups, outs)
+        case Return(outs) =>
+        finish(tups, outs)
         case Throw(t) => fail(tups, t)
       }
     }

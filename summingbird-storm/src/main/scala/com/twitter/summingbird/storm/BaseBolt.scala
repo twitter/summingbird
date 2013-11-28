@@ -20,7 +20,7 @@ import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.IRichBolt
 import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.Tuple
-import java.util.{ Map => JMap, Arrays => JArrays, List => JList }
+import java.util.{ Map => JMap }
 
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
@@ -59,8 +59,8 @@ abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
    * storm is not safe to call methods on the emitter from other
    * threads.
    */
-  protected def fail(inputs: JList[Tuple], error: Throwable): Unit = {
-    inputs.iterator.asScala.foreach(collector.fail(_))
+  protected def fail(inputs: List[TupleWrapper], error: Throwable): Unit = {
+    inputs.foreach(_.fail(collector.fail(_)))
     logError("Storm DAG of: %d tuples failed".format(inputs.size), error)
   }
 
@@ -69,12 +69,12 @@ abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
    * storm is not safe to call methods on the emitter from other
    * threads.
    */
-  protected def finish(inputs: JList[Tuple], results: TraversableOnce[(Timestamp, O)]) {
+  protected def finish(inputs: List[TupleWrapper], results: TraversableOnce[(Timestamp, O)]) {
     var emitCount = 0
     if(hasDependants) {
       if(anchorTuples.anchor) {
         results.foreach { result =>
-          collector.emit(inputs, encoder(result))
+          collector.emit(inputs.map(_.t).asJava, encoder(result))
           emitCount += 1
         }
       }
@@ -86,15 +86,19 @@ abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
       }
     }
     // Always ack a tuple on completion:
-    inputs.iterator.asScala.foreach(collector.ack(_))
-    logger.debug("bolt finished processed %d linked tuples, emitted: %d"
-      .format(inputs.size, emitCount))
+    inputs.foreach(_.ack(collector.ack(_)))
+
+    logger.debug("bolt finished processed {} linked tuples, emitted: {}", inputs.size, emitCount)
   }
 
   override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
     collector = oc
     metrics().foreach { _.register(context) }
+    init
   }
+
+  // This is the Summingbird init function. Avoids bleeding the prepare types everywhere.
+  def init {}
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
     if(hasDependants) { declarer.declare(encoder.fields) }

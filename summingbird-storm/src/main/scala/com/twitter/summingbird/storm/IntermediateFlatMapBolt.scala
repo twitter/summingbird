@@ -16,23 +16,18 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.tuple.{Fields, Tuple, Values}
-import com.twitter.summingbird.online.Externalizer
-import com.twitter.storehaus.algebra.MergeableStore.enrich
+import com.twitter.util.Future
+
 import com.twitter.summingbird.batch.Timestamp
+import com.twitter.summingbird.online.Externalizer
+import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.option.{
   AnchorTuples,
   FlatMapStormMetrics,
   MaxWaitingFutures,
   MaxFutureWaitTime
 }
-import com.twitter.summingbird.online.FlatMapOperation
 
-import com.twitter.util.{Future}
-
-import java.util.{ Date, Arrays => JArrays, List => JList, Map => JMap, ArrayList => JAList }
-
-import Constants._
 
 /**
   * This bolt is used for intermediate flatMapping before a grouping.
@@ -50,15 +45,17 @@ class IntermediateFlatMapBolt[T,U](
   shouldEmit: Boolean) extends
     AsyncBaseBolt[T,U](metrics.metrics, anchor, maxWaitingFutures, maxWaitingTime, shouldEmit) {
 
+  import Constants._
   val lockedOp = Externalizer(flatMapOp)
 
   override val decoder = new SingleItemInjection[T](VALUE_FIELD)
   override val encoder = new SingleItemInjection[U](VALUE_FIELD)
 
-  override def apply(tup: Tuple,
-                     timeT: (Timestamp, T)) =
-    Future.value(List((JArrays.asList(tup),
-      lockedOp.get.apply(timeT._2).map { res => res.map((timeT._1, _)) })))
+  override def apply(tup: TupleWrapper,
+                     timeT: (Timestamp, T)): Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, U)]])]] =
+    lockedOp.get.apply(timeT._2).map { res =>
+      List((List(tup.expand(res.size)), Future.value(res.map((timeT._1, _)))))
+    }
 
   override def cleanup { lockedOp.get.close }
 }

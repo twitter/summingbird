@@ -16,14 +16,13 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.task.{ OutputCollector, TopologyContext }
-import backtype.storm.topology.OutputFieldsDeclarer
-import backtype.storm.tuple.{ Fields, Tuple, Values }
+import com.twitter.algebird.Semigroup
+import com.twitter.util.Future
 
-import com.twitter.algebird.{ SummingQueue, Semigroup, MapAlgebra }
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
 import com.twitter.summingbird.online.FlatMapOperation
+import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.storm.option.{
   AnchorTuples,
   FlatMapStormMetrics,
@@ -31,25 +30,15 @@ import com.twitter.summingbird.storm.option.{
   MaxFutureWaitTime,
   FlushFrequency
 }
-import com.twitter.util.{Return, Throw}
-import com.twitter.storehaus.algebra.SummerConstructor
-import com.twitter.summingbird.option.CacheSize
-import com.twitter.storehaus.algebra.MergeableStore
 
-import com.twitter.util.{Future}
-
-import MergeableStore.enrich
-
-import java.util.{ Date, Arrays => JArrays, List => JList, Map => JMap }
-
-import scala.collection.JavaConverters._
-import scala.collection.breakOut
 
 /**
  * @author Oscar Boykin
  * @author Sam Ritchie
  * @author Ashu Singhal
+ * @author Ian O Connell
  */
+
 class FinalFlatMapBolt[Event, Key, Value](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
   cacheSize: CacheSize,
@@ -64,38 +53,37 @@ class FinalFlatMapBolt[Event, Key, Value](
                                                           maxWaitingFutures,
                                                           maxWaitingTime,
                                                           true) {
-
-  import JListSemigroup._
   import Constants._
 
   val lockedOp = Externalizer(flatMapOp)
-  lazy val sCache: StormCache[(Key, BatchID), (JList[Tuple], Timestamp, Value)] = new StormCache(cacheSize, flushFrequency)
+  lazy val sCache: StormCache[(Key, BatchID), (List[TupleWrapper], Timestamp, Value)] = new StormCache(cacheSize, flushFrequency)
 
 
   override val decoder = new SingleItemInjection[Event](VALUE_FIELD)
   override val encoder = new KeyValueInjection[(Key, BatchID), Value](AGG_KEY, AGG_VALUE)
 
-  private def formatResult(outData: Map[(Key, BatchID), (JList[Tuple], Timestamp, Value)])
-                        : Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
+  private def formatResult(outData: Map[(Key, BatchID), (List[TupleWrapper], Timestamp, Value)])
+                        : Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
 
     outData.toList.map{ case ((key, batchID), (tupList, ts, value)) =>
       (tupList, Future.value(List((ts, ((key, batchID), value)))))
     }
   }
 
-  override def tick: Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
+  override def tick: Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
     sCache.tick.map(formatResult(_))
   }
 
-  def cache(tuple: Tuple,
+  def cache(tuple: TupleWrapper,
             time: Timestamp,
-            items: TraversableOnce[(Key, Value)]): Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
+            items: TraversableOnce[(Key, Value)]): Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
 
     val batchID = batcher.batchOf(time)
-    sCache.insert(items.map{case (k, v) => (k, batchID) -> (lift(tuple), time, v)}).map(formatResult(_))
+    val itemL = items.toList
+    sCache.insert(itemL.map{case (k, v) => (k, batchID) -> (List(tuple.expand(1)), time, v)}).map(formatResult(_))
   }
 
-  override def apply(tup: Tuple,
+  override def apply(tup: TupleWrapper,
                      timeIn: (Timestamp, Event)) =
     lockedOp.get.apply(timeIn._2).map { cache(tup, timeIn._1, _) }.flatten
 
