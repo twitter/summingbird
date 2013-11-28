@@ -21,7 +21,7 @@ package com.twitter.summingbird.online
  * @author Oscar Boykin
  */
 
-trait TrimmableQueue[T] { self =>
+trait TrimmableQueue[T] {
   def dequeue: T
   def size: Int
 

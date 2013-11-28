@@ -19,17 +19,17 @@ package com.twitter.summingbird.storm
 import backtype.storm.tuple.Tuple
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
-case class TupleWrapper(t: Tuple) {
+abstract class InputState[T] { self =>
   private val count = new AtomicInteger(0)
   private val failed = new AtomicBoolean(false)
 
   def expand(by: Int): TupleWrapper = {
     val newVal = count.addAndGet(by)
-    this
+    self
   }
 
   // Returns true if it should be acked
-  def ack(fn: (Tuple => Unit)): Boolean = {
+  def ack(fn: (T => Unit)): Boolean = {
     if(count.decrementAndGet == 0 && !failed.get) {
       fn(t)
       true
@@ -39,9 +39,12 @@ case class TupleWrapper(t: Tuple) {
     }
   }
 
-  def fail(fn: (Tuple => Unit)) {
+  def fail(fn: (T => Unit)) {
     failed.set(true)
     fn(t)
   }
-  override def toString: String = "Tuple Wrapper(count: %d, failed:%s)".format(count.get, failed.get.toString)
+  override def toString: String = "Input State Wrapper(count: %d, failed:%s)".format(count.get, failed.get.toString)
 }
+
+
+case class TupleWrapper(t: Tuple) extends InputState[Tuple]
