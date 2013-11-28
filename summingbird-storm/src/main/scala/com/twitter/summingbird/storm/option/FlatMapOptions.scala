@@ -57,3 +57,5 @@ class SpoutStormMetrics(val metrics: () => TraversableOnce[StormMetric[IMetric]]
   def toSpoutMetrics: () => TraversableOnce[Metric[IMetric]] =
     {() => metrics().map{ x: StormMetric[IMetric] => Metric(x.name, x.metric, x.interval.inSeconds)}}
 }
+
+case class LocalOrShuffle(get: Boolean)

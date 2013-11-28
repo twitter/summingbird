@@ -546,6 +546,11 @@ class Scalding(
     // Store the options used:
     conf.set("summingbird.options", options.toString)
     conf.set("summingbird.jobname", jobName)
+    // legacy name to match scalding
+    conf.set("scalding.flow.submitted.timestamp",
+          System.currentTimeMillis.toString)
+    conf.set("summingbird.submitted.timestamp",
+          System.currentTimeMillis.toString)
 
     def ifUnset(k: String, v: String) { if(null == conf.get(k)) { conf.set(k, v) } }
     // Set the mapside cache size, this is important to not be too small

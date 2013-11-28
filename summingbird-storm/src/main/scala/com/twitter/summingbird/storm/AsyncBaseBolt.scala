@@ -16,67 +16,96 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.tuple.Tuple
+import backtype.storm.tuple.{Tuple, TupleImpl}
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.online.Queue
-import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
+import com.twitter.summingbird.online.TrimmableQueue
+import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures, MaxFutureWaitTime}
+import scala.collection.mutable.SynchronizedQueue
 import com.twitter.util.{Await, Duration, Future, Return, Throw, Try}
-import java.util.{ Arrays => JArrays, List => JList }
+import java.util.concurrent.TimeoutException
 
 abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   maxWaitingFutures: MaxWaitingFutures,
+  maxWaitingTime: MaxFutureWaitTime,
   hasDependants: Boolean) extends BaseBolt[I, O](metrics, anchorTuples, hasDependants) {
 
   /** If you can use Future.value below, do so. The double Future is here to deal with
    * cases that need to complete operations after or before doing a FlatMapOperation or
    * doing a store merge
    */
-  def apply(tup: Tuple, in: (Timestamp, I)): Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, O)]])]]
+  def apply(tup: TupleWrapper, in: (Timestamp, I)): Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, O)]])]]
 
-  private lazy val outstandingFutures = Queue[Future[Unit]]()
-  private lazy val responses = Queue[(JList[Tuple], Try[TraversableOnce[(Timestamp, O)]])]()
+  def tick: Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
+
+  private lazy val outstandingFutures = new SynchronizedQueue[Future[Unit]] with TrimmableQueue[Future[Unit]]
+  private lazy val responses = new SynchronizedQueue[(List[TupleWrapper], Try[TraversableOnce[(Timestamp, O)]])]()
 
   override def execute(tuple: Tuple) {
     /**
      * System ticks come with a fixed stream id
      */
-    if(!tuple.getSourceStreamId.equals("__tick")) {
-      // This not a tick tuple so we need to start an async operation
+
+    // This not a tick tuple so we need to start an async operation
+    val wrappedTuple = TupleWrapper(tuple)
+    val fut = if(!tuple.getSourceStreamId.equals("__tick")) {
       val tsIn = decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
+      // Don't hold on to the input values
+      clearValues(tuple)
+      apply(wrappedTuple, tsIn)
+    }
+    else {
+      tick
+    }
 
-      val fut = apply(tuple, tsIn)
-        .onSuccess { iter =>
-          // Collect the result onto our responses
-          val (putCount, maxSize) = iter.foldLeft((0, 0)) { case ((p, ms), (tups, res)) =>
-            res.respond { t => responses.put((tups, t)) }
-            // Make sure there are not too many outstanding:
-            val count = outstandingFutures.put(res.unit)
-            (p + 1, ms max count)
-          }
+    fut
+      .onSuccess { iter: Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, O)]])] =>
 
-          if(maxSize > maxWaitingFutures.get) {
-            /*
-             * This can happen on large key expansion.
-             * May indicate maxWaitingFutures is too low.
-             */
-            logger.debug(
-              "Exceeded maxWaitingFutures(%d): waiting = %d, put = %d"
-                .format(maxWaitingFutures.get, maxSize, putCount)
-              )
+        // Collect the result onto our responses
+        val iterSize = iter.foldLeft(0) { case (iterSize, (tups, res)) =>
+          res.respond { t => responses += ((tups, t)) }
+          // Make sure there are not too many outstanding:
+          if(!res.isDefined) {
+            outstandingFutures += res.unit
+            iterSize + 1
+          } else {
+            iterSize
           }
         }
-        .onFailure { thr => responses.put((JArrays.asList(tuple), Throw(thr))) }
 
-      outstandingFutures.put(fut.unit)
+        if(outstandingFutures.size > maxWaitingFutures.get) {
+          /*
+           * This can happen on large key expansion.
+           * May indicate maxWaitingFutures is too low.
+           */
+          logger.debug(
+            "Exceeded maxWaitingFutures({}), put {} futures", maxWaitingFutures.get, iterSize
+          )
+        }
+      }
+      .onFailure { thr =>
+        throw thr
+       responses += ((List(wrappedTuple), Throw(thr))) }
+
+    if(!fut.isDefined) {
+      outstandingFutures += fut.unit
     }
     // always empty the responses, even on tick
     emptyQueue
   }
 
   protected def forceExtraFutures {
+    outstandingFutures.dequeueAll(_.isDefined)
     val toForce = outstandingFutures.trimTo(maxWaitingFutures.get)
-    if(!toForce.isEmpty) Await.all(toForce, Duration.Top)
+    if(!toForce.isEmpty) {
+      try {
+        Await.ready(Future.collect(toForce), maxWaitingTime.get)
+      }
+      catch {
+        case te: TimeoutException =>
+          logError("forceExtra failed on %d Futures".format(toForce.size), te)
+      }
+    }
   }
 
   /**
@@ -87,12 +116,27 @@ abstract class AsyncBaseBolt[I, O](metrics: () => TraversableOnce[StormMetric[_]
   protected def emptyQueue = {
     // don't let too many futures build up
     forceExtraFutures
-    // Handle all ready results now:
-    responses.foreach { case (tups, res) =>
+    // Take all results that have been placed for writing to the network
+    responses.dequeueAll(_ => true).foreach { case (tups, res) =>
       res match {
-        case Return(outs) => finish(tups, outs)
+        case Return(outs) =>
+        finish(tups, outs)
         case Throw(t) => fail(tups, t)
       }
     }
+  }
+
+  /** This is clearly not safe, but done to deal with GC issues since
+   * storm keeps references to values
+   */
+  private lazy val valuesField = {
+    val tupleClass = classOf[TupleImpl]
+    val vf = tupleClass.getDeclaredField("values")
+    vf.setAccessible(true)
+    vf
+  }
+
+  private def clearValues(t: Tuple): Unit = {
+    valuesField.set(t, null)
   }
 }

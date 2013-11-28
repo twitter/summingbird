@@ -25,6 +25,7 @@ import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.storm.spout.TraversableSpout
+import com.twitter.summingbird.storm.option._
 import com.twitter.summingbird.memory._
 import com.twitter.summingbird.planner._
 import com.twitter.tormenta.spout.Spout
@@ -164,7 +165,7 @@ object StormLaws extends Specification {
     */
   val testFn = { i: Int => List((i -> i)) }
 
-  val storm = Storm.local()
+  val storm = Storm.local(Map("DEFAULT" -> Options().set(AnchorTuples(true))))
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
