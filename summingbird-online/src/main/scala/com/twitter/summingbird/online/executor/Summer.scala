@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.online.executor
 
 import com.twitter.util.{Await, Future}
 import com.twitter.algebird.{Semigroup, SummingQueue}
@@ -22,7 +22,7 @@ import com.twitter.storehaus.algebra.MergeableStore
 
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
-import com.twitter.summingbird.storm.option._
+import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
 
@@ -50,19 +50,22 @@ import com.twitter.summingbird.option.CacheSize
   */
 
 
-class SummerBolt[Key, Value: Semigroup, S](
+class Summer[Key, Value: Semigroup, S, D](
   @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
   cacheSize: CacheSize,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
-  includeSuccessHandler: IncludeSuccessHandler) extends
-    AsyncBaseBolt[((Key, BatchID), Value), (Key, (Option[Value], Value)), S](
+  includeSuccessHandler: IncludeSuccessHandler,
+  pDecoder: DataInjection[((Key, BatchID), Value), D],
+  pEncoder: DataInjection[(Key, (Option[Value], Value)), D]) extends
+    AsyncBase[((Key, BatchID), Value), (Key, (Option[Value], Value)), S, D](
       maxWaitingFutures,
       maxWaitingTime) {
 
-  import Constants._
+  val encoder = pEncoder
+  val decoder = pDecoder
 
   val storeBox = Externalizer(storeSupplier)
   lazy val store = storeBox.get.apply
@@ -75,9 +78,6 @@ class SummerBolt[Key, Value: Semigroup, S](
   val successHandlerBox = Externalizer(successHandler)
 
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
-
-  override val decoder = new KeyValueInjection[(Key,BatchID), Value](AGG_KEY, AGG_VALUE)
-  override val encoder = new SingleItemInjection[(Key, (Option[Value], Value))](VALUE_FIELD)
 
   override def init {
     super.init

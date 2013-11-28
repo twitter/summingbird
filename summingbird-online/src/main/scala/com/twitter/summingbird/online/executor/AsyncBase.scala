@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.online.executor
 
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.TrimmableQueue
-import com.twitter.summingbird.storm.option.{MaxWaitingFutures, MaxFutureWaitTime}
+import com.twitter.summingbird.online.option.{MaxWaitingFutures, MaxFutureWaitTime}
 import scala.collection.mutable.SynchronizedQueue
 import com.twitter.util.{Await, Duration, Future}
 import scala.util.{Try, Success, Failure}
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeoutException
 import org.slf4j.{LoggerFactory, Logger}
 
 
-abstract class AsyncBaseBolt[I,O,S](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime) extends Serializable with OperationContainer[I,O,S] {
+abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime) extends Serializable with OperationContainer[I,O,S,D] {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 

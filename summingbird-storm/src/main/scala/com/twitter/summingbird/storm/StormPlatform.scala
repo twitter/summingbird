@@ -33,10 +33,12 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
-import com.twitter.summingbird.storm.option.{AnchorTuples, IncludeSuccessHandler, FlushFrequency}
+import com.twitter.summingbird.storm.option.AnchorTuples
+import com.twitter.summingbird.online.option.{IncludeSuccessHandler, FlushFrequency}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.planner._
+import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
 import com.twitter.util.Future
@@ -202,22 +204,27 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           metrics.metrics,
           anchorTuples,
           true,
-          new FinalFlatMapBolt(
+          new executor.FinalFlatMap(
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
             getOrElse(stormDag, node, DEFAULT_FM_CACHE),
             flushFrequency,
             maxWaiting,
-            maxWaitTime)(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
+            maxWaitTime,
+            new SingleItemInjection[Any](VALUE_FIELD),
+            new KeyValueInjection[(Any, BatchID), Any](AGG_KEY, AGG_VALUE)
+            )(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
             )
       case None =>
       BaseBolt(
           metrics.metrics,
           anchorTuples,
           stormDag.dependantsOf(node).size > 0,
-          new IntermediateFlatMapBolt(
+          new executor.IntermediateFlatMap(
             operation,
             maxWaiting,
-            maxWaitTime
+            maxWaitTime,
+            new SingleItemInjection[Any](VALUE_FIELD),
+            new SingleItemInjection[Any](VALUE_FIELD)
             )
           )
     }
@@ -270,22 +277,21 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
-    val summerExecutor = new SummerBolt[K, V, Tuple](
-      supplier,
-      getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
-      getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-      getOrElse(stormDag, node, DEFAULT_SUMMER_CACHE),
-      getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
-      getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
-      getOrElse(stormDag, node, IncludeSuccessHandler.default))
-
-
-
     val sinkBolt = BaseBolt(
           metrics.metrics,
           anchorTuples,
           shouldEmit,
-          summerExecutor)
+          new executor.Summer(
+              supplier,
+              getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
+              getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
+              getOrElse(stormDag, node, DEFAULT_SUMMER_CACHE),
+              getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
+              getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
+              getOrElse(stormDag, node, IncludeSuccessHandler.default),
+              new KeyValueInjection[(K,BatchID), V](AGG_KEY, AGG_VALUE),
+              new SingleItemInjection[(K, (Option[V], V))](VALUE_FIELD))
+        )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint
     val declarer =

@@ -21,25 +21,21 @@ import scala.util.{Try, Success, Failure}
 import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.IRichBolt
 import backtype.storm.topology.OutputFieldsDeclarer
-import backtype.storm.tuple.{Tuple, TupleImpl}
+import backtype.storm.tuple.{Tuple, TupleImpl, Fields}
+
 import java.util.{ Map => JMap }
 
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
+import com.twitter.summingbird.online.executor.OperationContainer
+import com.twitter.summingbird.online.executor.InputState
 
 import scala.collection.JavaConverters._
 
-
+import java.util.{List => JList}
 import org.slf4j.{LoggerFactory, Logger}
 
-trait OperationContainer[I,O,S] {
-  def decoder: StormTupleInjection[I]
-  def encoder: StormTupleInjection[O]
-  def execute(inputState: InputState[S], data: Option[(Timestamp, I)]): TraversableOnce[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])]
-  def init {}
-  def cleanup {}
-  def notifyFailure(inputs: List[InputState[S]], e: Throwable) {}
-}
+
 
 /**
  *
@@ -50,7 +46,7 @@ trait OperationContainer[I,O,S] {
 case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   hasDependants: Boolean,
-  executor: OperationContainer[I, O, Tuple]
+  executor: OperationContainer[I, O, Tuple, JList[AnyRef]]
   ) extends IRichBolt {
 
 
@@ -122,7 +118,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    if(hasDependants) { declarer.declare(executor.encoder.fields) }
+    if(hasDependants) { declarer.declare(new Fields(executor.encoder.fields.asJava)) }
   }
 
   override val getComponentConfiguration = null
