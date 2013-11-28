@@ -16,22 +16,21 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.tuple.Tuple
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
-case class TupleWrapper(t: Tuple) {
+case class InputState[T](state: T) {
   private val count = new AtomicInteger(0)
   private val failed = new AtomicBoolean(false)
 
-  def expand(by: Int): TupleWrapper = {
+  def expand(by: Int): InputState[T] = {
     val newVal = count.addAndGet(by)
     this
   }
 
   // Returns true if it should be acked
-  def ack(fn: (Tuple => Unit)): Boolean = {
+  def ack(fn: (T => Unit)): Boolean = {
     if(count.decrementAndGet == 0 && !failed.get) {
-      fn(t)
+      fn(state)
       true
     } else {
       if(count.get < 0) throw new Exception("Invalid ack number, logic has failed")
@@ -39,9 +38,9 @@ case class TupleWrapper(t: Tuple) {
     }
   }
 
-  def fail(fn: (Tuple => Unit)) {
+  def fail(fn: (T => Unit)) {
     failed.set(true)
-    fn(t)
+    fn(state)
   }
-  override def toString: String = "Tuple Wrapper(count: %d, failed:%s)".format(count.get, failed.get.toString)
+  override def toString: String = "Input State Wrapper(count: %d, failed:%s)".format(count.get, failed.get.toString)
 }

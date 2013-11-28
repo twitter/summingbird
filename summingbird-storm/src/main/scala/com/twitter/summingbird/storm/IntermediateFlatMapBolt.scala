@@ -22,8 +22,6 @@ import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.option.{
-  AnchorTuples,
-  FlatMapStormMetrics,
   MaxWaitingFutures,
   MaxFutureWaitTime
 }
@@ -36,14 +34,11 @@ import com.twitter.summingbird.storm.option.{
   * from which U was derived. Each U is one of the output items of the
   * flatMapOp.
   */
-class IntermediateFlatMapBolt[T,U](
+class IntermediateFlatMapBolt[T,U,S](
   @transient flatMapOp: FlatMapOperation[T, U],
-  metrics: FlatMapStormMetrics,
-  anchor: AnchorTuples,
   maxWaitingFutures: MaxWaitingFutures,
-  maxWaitingTime: MaxFutureWaitTime,
-  shouldEmit: Boolean) extends
-    AsyncBaseBolt[T,U](metrics.metrics, anchor, maxWaitingFutures, maxWaitingTime, shouldEmit) {
+  maxWaitingTime: MaxFutureWaitTime
+  ) extends AsyncBaseBolt[T,U,S](maxWaitingFutures, maxWaitingTime) {
 
   import Constants._
   val lockedOp = Externalizer(flatMapOp)
@@ -51,8 +46,8 @@ class IntermediateFlatMapBolt[T,U](
   override val decoder = new SingleItemInjection[T](VALUE_FIELD)
   override val encoder = new SingleItemInjection[U](VALUE_FIELD)
 
-  override def apply(tup: TupleWrapper,
-                     timeT: (Timestamp, T)): Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, U)]])]] =
+  override def apply(tup: InputState[S],
+                     timeT: (Timestamp, T)): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, U)]])]] =
     lockedOp.get.apply(timeT._2).map { res =>
       List((List(tup.expand(res.size)), Future.value(res.map((timeT._1, _)))))
     }

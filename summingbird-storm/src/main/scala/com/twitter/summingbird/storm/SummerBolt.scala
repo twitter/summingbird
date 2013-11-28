@@ -50,23 +50,17 @@ import com.twitter.summingbird.option.CacheSize
   */
 
 
-class SummerBolt[Key, Value: Semigroup](
+class SummerBolt[Key, Value: Semigroup, S](
   @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
   cacheSize: CacheSize,
-  metrics: SummerStormMetrics,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
-  includeSuccessHandler: IncludeSuccessHandler,
-  anchor: AnchorTuples,
-  shouldEmit: Boolean) extends
-    AsyncBaseBolt[((Key, BatchID), Value), (Key, (Option[Value], Value))](
-      metrics.metrics,
-      anchor,
+  includeSuccessHandler: IncludeSuccessHandler) extends
+    AsyncBaseBolt[((Key, BatchID), Value), (Key, (Option[Value], Value)), S](
       maxWaitingFutures,
-      maxWaitingTime,
-      shouldEmit) {
+      maxWaitingTime) {
 
   import Constants._
 
@@ -75,7 +69,7 @@ class SummerBolt[Key, Value: Semigroup](
 
   // See MaxWaitingFutures for a todo around removing this.
   lazy val cacheCount = cacheSize.size
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), (List[TupleWrapper], Timestamp, Value)]](cacheCount.getOrElse(0))
+  lazy val buffer = SummingQueue[Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)]](cacheCount.getOrElse(0))
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
@@ -90,15 +84,14 @@ class SummerBolt[Key, Value: Semigroup](
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  protected override def fail(inputs: List[TupleWrapper], error: Throwable): Unit = {
-    super.fail(inputs, error)
+  override def notifyFailure(inputs: List[InputState[S]], error: Throwable): Unit = {
+    super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
-    ()
   }
 
-  override def apply(tuple: TupleWrapper,
+  override def apply(tuple: InputState[S],
     tsIn: (Timestamp, ((Key, BatchID), Value))):
-      Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
+      Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
 
     val (ts, (kb, v)) = tsIn
     Future.value {
