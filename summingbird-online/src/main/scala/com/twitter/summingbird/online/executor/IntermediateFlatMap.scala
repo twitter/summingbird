@@ -14,45 +14,35 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.online.executor
 
 import com.twitter.util.Future
 
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.FlatMapOperation
-import com.twitter.summingbird.storm.option.{
-  AnchorTuples,
-  FlatMapStormMetrics,
+import com.twitter.summingbird.online.option.{
   MaxWaitingFutures,
   MaxFutureWaitTime
 }
 
 
-/**
-  * This bolt is used for intermediate flatMapping before a grouping.
-  * Its output storm-tuple contains a single scala.Tuple2[Long, U] at
-  * the 0 position. The Long is the timestamp of the source object
-  * from which U was derived. Each U is one of the output items of the
-  * flatMapOp.
-  */
-class IntermediateFlatMapBolt[T,U](
+class IntermediateFlatMap[T,U,S,D](
   @transient flatMapOp: FlatMapOperation[T, U],
-  metrics: FlatMapStormMetrics,
-  anchor: AnchorTuples,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
-  shouldEmit: Boolean) extends
-    AsyncBaseBolt[T,U](metrics.metrics, anchor, maxWaitingFutures, maxWaitingTime, shouldEmit) {
+  pDecoder: DataInjection[T, D],
+  pEncoder: DataInjection[U, D]
+  ) extends AsyncBase[T,U,S,D](maxWaitingFutures, maxWaitingTime) {
 
-  import Constants._
+  val encoder = pEncoder
+  val decoder = pDecoder
+
   val lockedOp = Externalizer(flatMapOp)
 
-  override val decoder = new SingleItemInjection[T](VALUE_FIELD)
-  override val encoder = new SingleItemInjection[U](VALUE_FIELD)
 
-  override def apply(tup: TupleWrapper,
-                     timeT: (Timestamp, T)): Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, U)]])]] =
+  override def apply(tup: InputState[S],
+                     timeT: (Timestamp, T)): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, U)]])]] =
     lockedOp.get.apply(timeT._2).map { res =>
       List((List(tup.expand(res.size)), Future.value(res.map((timeT._1, _)))))
     }

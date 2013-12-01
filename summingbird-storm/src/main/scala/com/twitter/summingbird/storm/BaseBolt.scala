@@ -16,26 +16,24 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
+import scala.util.{Try, Success, Failure}
+
 import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.IRichBolt
 import backtype.storm.topology.OutputFieldsDeclarer
-import backtype.storm.tuple.{Tuple, TupleImpl}
+import backtype.storm.tuple.{Tuple, TupleImpl, Fields}
+
 import java.util.{ Map => JMap }
 
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
+import com.twitter.summingbird.online.executor.OperationContainer
+import com.twitter.summingbird.online.executor.InputState
 
 import scala.collection.JavaConverters._
 
+import java.util.{List => JList}
 import org.slf4j.{LoggerFactory, Logger}
-
-trait Executor[I,O,S] {
-  def decoder: StormTupleInjection[I]
-  def encoder: StormTupleInjection[O]
-  def execute(inputState: InputState[S], data: Option[(Timestamp, I)]): TraversableOnce[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])]
-  def init = {}
-  def cleanup = {}
-}
 
 /**
  *
@@ -43,10 +41,10 @@ trait Executor[I,O,S] {
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
-abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
+case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   hasDependants: Boolean,
-  executor: Executor[I, O, Tuple]
+  executor: OperationContainer[I, O, Tuple, JList[AnyRef]]
   ) extends IRichBolt {
 
 
@@ -62,18 +60,20 @@ abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   }
 
  private def fail(inputs: List[InputState[Tuple]], error: Throwable): Unit = {
+    executor.notifyFailure(inputs, error)
     inputs.foreach(_.fail(collector.fail(_)))
     logError("Storm DAG of: %d tuples failed".format(inputs.size), error)
   }
 
 
   override def execute(tuple: Tuple) = {
-    val wrappedTuple = TupleWrapper(tuple)
+    val wrappedTuple = InputState(tuple)
+
     /**
      * System ticks come with a fixed stream id
      */
     val curResults = if(!tuple.getSourceStreamId.equals("__tick")) {
-      val tsIn = decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
+      val tsIn = executor.decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
       // Don't hold on to the input values
       clearValues(tuple)
       executor.execute(wrappedTuple, Some(tsIn))
@@ -82,8 +82,8 @@ abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
     }
     curResults.foreach{ case (tups, res) =>
       res match {
-        case Return(outs) => finish(tups, outs)
-        case Throw(t) => fail(tups, t)
+        case Success(outs) => finish(tups, outs)
+        case Failure(t) => fail(tups, t)
       }
     }
   }
@@ -93,13 +93,13 @@ abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
     if(hasDependants) {
       if(anchorTuples.anchor) {
         results.foreach { result =>
-          collector.emit(inputs.map(_.t).asJava, encoder(result))
+          collector.emit(inputs.map(_.state).asJava, executor.encoder(result))
           emitCount += 1
         }
       }
       else { // don't anchor
         results.foreach { result =>
-          collector.emit(encoder(result))
+          collector.emit(executor.encoder(result))
           emitCount += 1
         }
       }
@@ -113,17 +113,17 @@ abstract class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
     collector = oc
     metrics().foreach { _.register(context) }
-    execute.init
+    executor.init
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    if(hasDependants) { declarer.declare(encoder.fields) }
+    if(hasDependants) { declarer.declare(new Fields(executor.encoder.fields.asJava)) }
   }
 
   override val getComponentConfiguration = null
 
   override def cleanup {
-    execute.cleanup
+    executor.cleanup
   }
 
     /** This is clearly not safe, but done to deal with GC issues since

@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.online.executor
 
 import com.twitter.util.{Await, Future}
 import com.twitter.algebird.{Semigroup, SummingQueue}
@@ -22,7 +22,7 @@ import com.twitter.storehaus.algebra.MergeableStore
 
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
-import com.twitter.summingbird.storm.option._
+import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
 
@@ -50,55 +50,48 @@ import com.twitter.summingbird.option.CacheSize
   */
 
 
-class SummerBolt[Key, Value: Semigroup](
+class Summer[Key, Value: Semigroup, S, D](
   @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
   cacheSize: CacheSize,
-  metrics: SummerStormMetrics,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   includeSuccessHandler: IncludeSuccessHandler,
-  anchor: AnchorTuples,
-  shouldEmit: Boolean) extends
-    AsyncBaseBolt[((Key, BatchID), Value), (Key, (Option[Value], Value))](
-      metrics.metrics,
-      anchor,
+  pDecoder: DataInjection[((Key, BatchID), Value), D],
+  pEncoder: DataInjection[(Key, (Option[Value], Value)), D]) extends
+    AsyncBase[((Key, BatchID), Value), (Key, (Option[Value], Value)), S, D](
       maxWaitingFutures,
-      maxWaitingTime,
-      shouldEmit) {
+      maxWaitingTime) {
 
-  import Constants._
+  val encoder = pEncoder
+  val decoder = pDecoder
 
   val storeBox = Externalizer(storeSupplier)
   lazy val store = storeBox.get.apply
 
   // See MaxWaitingFutures for a todo around removing this.
   lazy val cacheCount = cacheSize.size
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), (List[TupleWrapper], Timestamp, Value)]](cacheCount.getOrElse(0))
+  lazy val buffer = SummingQueue[Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)]](cacheCount.getOrElse(0))
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
 
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
-  override val decoder = new KeyValueInjection[(Key,BatchID), Value](AGG_KEY, AGG_VALUE)
-  override val encoder = new SingleItemInjection[(Key, (Option[Value], Value))](VALUE_FIELD)
-
   override def init {
     super.init
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  protected override def fail(inputs: List[TupleWrapper], error: Throwable): Unit = {
-    super.fail(inputs, error)
+  override def notifyFailure(inputs: List[InputState[S]], error: Throwable): Unit = {
+    super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
-    ()
   }
 
-  override def apply(tuple: TupleWrapper,
+  override def apply(tuple: InputState[S],
     tsIn: (Timestamp, ((Key, BatchID), Value))):
-      Future[Iterable[(List[TupleWrapper], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
+      Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
 
     val (ts, (kb, v)) = tsIn
     Future.value {

@@ -14,23 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.online
 
-import com.twitter.algebird.{ SummingQueue, Semigroup, MapAlgebra }
-import com.twitter.summingbird.online.Externalizer
-import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
-import com.twitter.summingbird.online.FlatMapOperation
+import com.twitter.algebird.{ Semigroup, MapAlgebra }
 import com.twitter.util.{Return, Throw}
-import com.twitter.storehaus.algebra.SummerConstructor
 import com.twitter.summingbird.option.CacheSize
-import com.twitter.storehaus.algebra.MergeableStore
-import com.twitter.summingbird.storm.option.FlushFrequency
+import com.twitter.summingbird.online.option.FlushFrequency
 import java.util.concurrent._
-import com.twitter.util.{Future}
-
-import MergeableStore.enrich
-
-import scala.collection.breakOut
+import com.twitter.util.Future
 import scala.collection.mutable.{Queue => MQueue, Map => MMap}
 import com.twitter.util.FuturePool
 
@@ -39,7 +30,7 @@ import org.slf4j.{LoggerFactory, Logger}
 /**
  * @author Ian O Connell
  */
-case class StormCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency)
+case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency)
   (implicit monoid: Semigroup[Value]) {
 
 

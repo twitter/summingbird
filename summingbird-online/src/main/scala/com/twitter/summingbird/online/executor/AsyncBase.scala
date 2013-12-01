@@ -14,16 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.online.executor
 
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.TrimmableQueue
-import com.twitter.summingbird.storm.option.{MaxWaitingFutures, MaxFutureWaitTime}
+import com.twitter.summingbird.online.option.{MaxWaitingFutures, MaxFutureWaitTime}
 import scala.collection.mutable.SynchronizedQueue
-import com.twitter.util.{Await, Duration, Future, Return, Throw, Try}
+import com.twitter.util.{Await, Duration, Future}
+import scala.util.{Try, Success, Failure}
 import java.util.concurrent.TimeoutException
+import org.slf4j.{LoggerFactory, Logger}
 
-abstract class AsyncBaseBolt[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime) {
+
+abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime) extends Serializable with OperationContainer[I,O,S,D] {
+
+  @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
   /** If you can use Future.value below, do so. The double Future is here to deal with
    * cases that need to complete operations after or before doing a FlatMapOperation or
@@ -46,7 +51,8 @@ abstract class AsyncBaseBolt[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxW
 
         // Collect the result onto our responses
         val iterSize = iter.foldLeft(0) { case (iterSize, (tups, res)) =>
-          res.respond { t => responses += ((tups, t)) }
+          res.onSuccess { t => responses += ((tups, Success(t))) }
+          res.onFailure { t => responses += ((tups, Failure(t))) }
           // Make sure there are not too many outstanding:
           if(!res.isDefined) {
             outstandingFutures += res.unit
@@ -68,7 +74,7 @@ abstract class AsyncBaseBolt[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxW
       }
       .onFailure { thr =>
         throw thr
-       responses += ((List(inputState), Throw(thr))) }
+       responses += ((List(inputState), Failure(thr))) }
 
     if(!fut.isDefined) {
       outstandingFutures += fut.unit
@@ -87,7 +93,7 @@ abstract class AsyncBaseBolt[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxW
       }
       catch {
         case te: TimeoutException =>
-          logError("forceExtra failed on %d Futures".format(toForce.size), te)
+          logger.error("forceExtra failed on %d Futures".format(toForce.size), te)
       }
     }
   }
@@ -96,6 +102,6 @@ abstract class AsyncBaseBolt[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxW
     // don't let too many futures build up
     forceExtraFutures
     // Take all results that have been placed for writing to the network
-    responses.dequeueAll(_ => true)
+    responses.dequeueAll(_ => true).toList
   }
 }
