@@ -20,8 +20,8 @@ import scala.util.Try
 import com.twitter.summingbird.batch.Timestamp
 
 trait OperationContainer[Input, Output, InputWireFmt, OutputWireFmt] {
-  def decoder: DataInjection[Input, InputWireFmt]
-  def encoder: DataInjection[Output, OutputWireFmt]
+  def decoder: DataSer[Input, InputWireFmt]
+  def encoder: DataSer[Output, OutputWireFmt]
   def execute(inputState: Option[InputState[InputWireFmt]],
               data: Option[(Timestamp, Input)]):
                TraversableOnce[(List[InputState[InputWireFmt]], Try[TraversableOnce[(Timestamp, Output)]])]

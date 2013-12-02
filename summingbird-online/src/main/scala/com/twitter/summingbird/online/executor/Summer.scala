@@ -58,8 +58,8 @@ class Summer[Key, Value: Semigroup, InputWireFmnt, OutputWireFmnt](
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: DataInjection[((Key, BatchID), Value), InputWireFmnt],
-  pEncoder: DataInjection[(Key, (Option[Value], Value)), OutputWireFmnt]) extends
+  pDecoder: DataSer[((Key, BatchID), Value), InputWireFmnt],
+  pEncoder: DataSer[(Key, (Option[Value], Value)), OutputWireFmnt]) extends
     AsyncBase[((Key, BatchID), Value), (Key, (Option[Value], Value)), InputWireFmnt, OutputWireFmnt](
       maxWaitingFutures,
       maxWaitingTime) {

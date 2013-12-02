@@ -43,8 +43,8 @@ class FinalFlatMap[Event, Key, Value, InputWireFmnt, OutputWireFmnt](
   flushFrequency: FlushFrequency,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
-  pDecoder: DataInjection[Event, InputWireFmnt],
-  pEncoder: DataInjection[((Key, BatchID), Value), OutputWireFmnt]
+  pDecoder: DataSer[Event, InputWireFmnt],
+  pEncoder: DataSer[((Key, BatchID), Value), OutputWireFmnt]
   )
   (implicit monoid: Semigroup[Value], batcher: Batcher)
     extends AsyncBase[Event, ((Key, BatchID), Value), InputWireFmnt, OutputWireFmnt](maxWaitingFutures,

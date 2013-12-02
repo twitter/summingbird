@@ -17,43 +17,38 @@ limitations under the License.
 package com.twitter.summingbird.storm
 
 
-import com.twitter.bijection.{Injection, Inversion, AbstractInjection}
+import com.twitter.bijection.{Injection, Inversion, AbstractInjection, InversionFailure}
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.online.executor.DataInjection
+import backtype.storm.tuple.Tuple
+import scala.util.{ Failure, Success, Try }
+
 import java.util.{List => JList, ArrayList => JAList}
-import scala.util.Try
 
-class SingleItemInjection[T](fieldName: String) extends DataInjection[T, JList[AnyRef]] {
+object StormInjections {
+  def TupleInjection =  new AbstractInjection[JList[AnyRef], Tuple] {
+      override def apply(b: JList[AnyRef]) = null
+      override def invert(a: Tuple) = Success(a.getValues)
+    }
 
-  val fields = List(fieldName)
+  def SingleItemInjection[T] = Injection.buildCatchInvert[(Timestamp, T), JList[AnyRef]] { t =>
+      val list = new JAList[AnyRef](1)
+      list.add(t)
+      list
+    }
+    {
+      _.get(0).asInstanceOf[(Timestamp, T)]
+    }
 
-  override def apply(t: (Timestamp, T)) = {
-    val list = new JAList[AnyRef](1)
-    list.add(t)
-    list
-  }
-
-  override def invert(vin: JList[AnyRef]) = Inversion.attempt(vin) { v =>
-    v.get(0).asInstanceOf[(Timestamp, T)]
-  }
-}
-
-class KeyValueInjection[K, V](keyField: String, timeValField: String)
-  extends DataInjection[(K, V), JList[AnyRef]] {
-
-  val fields = List(keyField, timeValField)
-
-  override def apply(item: (Timestamp, (K, V))) = {
-    val (ts, (key, v)) = item
-    val list = new JAList[AnyRef](2)
-    list.add(key.asInstanceOf[AnyRef])
-    list.add((ts, v))
-    list
-  }
-
-  override def invert(vin: JList[AnyRef]) = Inversion.attempt(vin) { v =>
-    val key = v.get(0).asInstanceOf[K]
-    val (ts, value) = v.get(1).asInstanceOf[(Timestamp, V)]
-    (ts, (key, value))
-  }
+    def KeyValueInjection[K, V] = Injection.buildCatchInvert[(Timestamp, (K, V)), JList[AnyRef]] { item =>
+      val (ts, (key, v)) = item
+      val list = new JAList[AnyRef](2)
+      list.add(key.asInstanceOf[AnyRef])
+      list.add((ts, v))
+      list
+    }
+    { v =>
+      val key = v.get(0).asInstanceOf[K]
+      val (ts, value) = v.get(1).asInstanceOf[(Timestamp, V)]
+      (ts, (key, value))
+    }
 }

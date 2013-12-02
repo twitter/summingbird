@@ -22,12 +22,12 @@ import java.util.{List => JList, ArrayList => JAList}
 import scala.util.Try
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.online.executor.DataInjection
+import com.twitter.summingbird.online.executor.DataSer
 
 import scala.util.{Try, Success, Failure}
 
 
-class SingleItemInjection[T] extends DataInjection[T, WireType[T]] {
+class SingleItemInjection[T] extends DataSer[T, WireType[T]] {
   override def apply(t: (Timestamp, T)) = ValueType(t._1, t._2)
 
   override def fields = List()
@@ -37,7 +37,7 @@ class SingleItemInjection[T] extends DataInjection[T, WireType[T]] {
   }
 }
 
-class KeyValueInjection[K, V] extends DataInjection[(K, V), WireType[(K, V)]] {
+class KeyValueInjection[K, V] extends DataSer[(K, V), WireType[(K, V)]] {
   override def fields = List()
   override def apply(t: (Timestamp, (K, V))) = KeyValueType(t._1, t._2._1, t._2._2)
 

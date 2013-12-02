@@ -154,6 +154,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   }
 
   private def scheduleFlatMapper(stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+    import StormInjections._
     /**
      * Only exists because of the crazy casts we needed.
      */
@@ -210,8 +211,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
             flushFrequency,
             maxWaiting,
             maxWaitTime,
-            new SingleItemInjection[Any](VALUE_FIELD),
-            new KeyValueInjection[(Any, BatchID), Any](AGG_KEY, AGG_VALUE)
+            executor.DataSer(List(VALUE_FIELD), SingleItemInjection[Any].andThen(TupleInjection)),
+            executor.DataSer(List(AGG_KEY, AGG_VALUE), KeyValueInjection[(Any, BatchID), Any])
             )(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
             )
       case None =>
@@ -223,8 +224,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
             operation,
             maxWaiting,
             maxWaitTime,
-            new SingleItemInjection[Any](VALUE_FIELD),
-            new SingleItemInjection[Any](VALUE_FIELD)
+            executor.DataSer(List(VALUE_FIELD), SingleItemInjection[Any].andThen(TupleInjection)),
+            executor.DataSer(List(VALUE_FIELD), SingleItemInjection[Any])
             )
           )
     }
@@ -266,6 +267,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   }
 
   private def scheduleSummerBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+    import StormInjections._
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val monoid = summer.monoid
     val nodeName = stormDag.getNodeName(node)
@@ -289,8 +291,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
-              new KeyValueInjection[(K,BatchID), V](AGG_KEY, AGG_VALUE),
-              new SingleItemInjection[(K, (Option[V], V))](VALUE_FIELD))
+              executor.DataSer(List(AGG_KEY, AGG_VALUE), KeyValueInjection[(K, BatchID), V].andThen(TupleInjection)),
+              executor.DataSer(List(VALUE_FIELD), SingleItemInjection[(K, (Option[V], V))])
+              )
         )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint

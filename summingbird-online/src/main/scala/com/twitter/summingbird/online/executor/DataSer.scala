@@ -19,6 +19,4 @@ package com.twitter.summingbird.online.executor
 import com.twitter.bijection.Injection
 import com.twitter.summingbird.batch.Timestamp
 
-trait DataInjection[T, D] extends Injection[(Timestamp, T), D] {
-  def fields: List[String]
-}
+case class DataSer[T, D](fields: List[String], inj: Injection[(Timestamp, T), D])

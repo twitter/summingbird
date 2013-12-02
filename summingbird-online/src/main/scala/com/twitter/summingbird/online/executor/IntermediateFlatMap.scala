@@ -31,8 +31,8 @@ class IntermediateFlatMap[T,U,InputWireFmnt,OutputWireFmnt](
   @transient flatMapOp: FlatMapOperation[T, U],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
-  pDecoder: DataInjection[T, InputWireFmnt],
-  pEncoder: DataInjection[U, OutputWireFmnt]
+  pDecoder: DataSer[T, InputWireFmnt],
+  pEncoder: DataSer[U, OutputWireFmnt]
   ) extends AsyncBase[T,U,InputWireFmnt,OutputWireFmnt](maxWaitingFutures, maxWaitingTime) {
 
   val encoder = pEncoder

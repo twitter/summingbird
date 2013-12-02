@@ -26,12 +26,12 @@ import com.twitter.summingbird.online.FlatMapOperation
 import java.util.Date
 import _root_.akka.routing.ConsistentHashingRouter.ConsistentHashable
 import _root_.akka.actor.Actor
-import com.twitter.summingbird.online.executor.DataInjection
+import com.twitter.summingbird.online.executor.DataSer
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
 
 
 class SourceActor[Input, InputWireFmt <: ConsistentHashable]
-    (akkaSrc: AkkaSource[Input], targetNames: List[String], encoder: DataInjection[Input, InputWireFmt]) extends Actor {
+    (akkaSrc: AkkaSource[Input], targetNames: List[String], encoder: DataSer[Input, InputWireFmt]) extends Actor {
   import context._
   val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
 

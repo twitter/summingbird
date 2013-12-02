@@ -73,12 +73,14 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
      * System ticks come with a fixed stream id
      */
     val curResults = if(!tuple.getSourceStreamId.equals("__tick")) {
-      val tsIn = executor.decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
+      val tsIn = executor.decoder.inj.invert(tuple).get // Failing to decode here is an ERROR
       // Don't hold on to the input values
       clearValues(tuple)
-      executor.execute(wrappedTuple, Some(tsIn))
+      executor.execute(Some(wrappedTuple), Some(tsIn))
     } else {
-      executor.execute(wrappedTuple, None)
+      // Don't bother doing complicated tracking for ticks
+      collector.ack(tuple)
+      executor.execute(None, None)
     }
     curResults.foreach{ case (tups, res) =>
       res match {
@@ -93,13 +95,13 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
     if(hasDependants) {
       if(anchorTuples.anchor) {
         results.foreach { result =>
-          collector.emit(inputs.map(_.state).asJava, executor.encoder(result))
+          collector.emit(inputs.map(_.state).asJava, executor.encoder.inj(result))
           emitCount += 1
         }
       }
       else { // don't anchor
         results.foreach { result =>
-          collector.emit(executor.encoder(result))
+          collector.emit(executor.encoder.inj(result))
           emitCount += 1
         }
       }

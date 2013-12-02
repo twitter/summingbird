@@ -67,7 +67,7 @@ case class BaseActor[I,O](
     case Data(raw) =>
       val w = raw.asInstanceOf[WireType[I]]
       val wrappedTuple = InputState(w)
-      val tsIn = executor.decoder.invert(w).get // Failing to decode here is an ERROR
+      val tsIn = executor.decoder.inj.invert(w).get // Failing to decode here is an ERROR
       processResults(executor.execute(Some(wrappedTuple), Some(tsIn)))
     case t@_ => logger.error("Got unknown tuple: " + t)
   }
@@ -78,7 +78,7 @@ case class BaseActor[I,O](
     if(hasDependants) {
       results.foreach { result =>
         targets.foreach { t =>
-          t ! Data(executor.encoder(result)) }
+          t ! Data(executor.encoder.inj(result)) }
         emitCount += 1
       }
     }
