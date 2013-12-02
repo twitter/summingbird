@@ -33,7 +33,6 @@ import org.slf4j.{LoggerFactory, Logger}
 case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency)
   (implicit monoid: Semigroup[Value]) {
 
-
   val executor = new ThreadPoolExecutor(120, 120, 60, TimeUnit.SECONDS, new LinkedBlockingQueue(1000))
   val pool     = FuturePool(executor)
 
@@ -90,7 +89,6 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
           }
         }
       }
-
       innerTick
     }
   }

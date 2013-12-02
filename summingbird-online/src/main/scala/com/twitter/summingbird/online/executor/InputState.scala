@@ -18,13 +18,12 @@ package com.twitter.summingbird.online.executor
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
-case class InputState[T](state: T) {
-  private val count = new AtomicInteger(0)
+case class InputState[T](state: T, initValue: Int) {
+  private val count = new AtomicInteger(initValue)
   private val failed = new AtomicBoolean(false)
 
-  def expand(by: Int): InputState[T] = {
-    val newVal = count.addAndGet(by)
-    this
+  if(initValue == 0) {
+    throw new Exception("Invalid initial value, input state must start >= 1")
   }
 
   // Returns true if it should be acked
@@ -34,6 +33,7 @@ case class InputState[T](state: T) {
       true
     } else {
       if(count.get < 0) throw new Exception("Invalid ack number, logic has failed")
+      println("Not acking, count is:" + count.get + ", initial was: " + initValue)
       false
     }
   }

@@ -69,7 +69,6 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
 
 
   override def execute(tuple: Tuple) = {
-    val wrappedTuple = InputState(tuple)
     /**
      * System ticks come with a fixed stream id
      */
@@ -77,10 +76,11 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
       val tsIn = executor.decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
       // Don't hold on to the input values
       clearValues(tuple)
-      executor.execute(wrappedTuple, Some(tsIn))
+      executor.execute(tuple, Some(tsIn))
     } else {
-      executor.execute(wrappedTuple, None)
+      executor.execute(tuple, None)
     }
+
     curResults.foreach{ case (tups, res) =>
       res match {
         case Success(outs) => finish(tups, outs)

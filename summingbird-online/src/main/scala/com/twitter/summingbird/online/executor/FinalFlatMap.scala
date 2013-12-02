@@ -53,11 +53,11 @@ class FinalFlatMap[Event, Key, Value, S, D](
   val decoder = pDecoder
 
   val lockedOp = Externalizer(flatMapOp)
-  lazy val sCache: MultiTriggerCache[(Key, BatchID), (List[InputState[S]], Timestamp, Value)] = new MultiTriggerCache(cacheSize, flushFrequency)
+  lazy val sCache: MultiTriggerCache[(Key, BatchID), (List[InputState[S]], Timestamp, Value)] =
+                                        new MultiTriggerCache(cacheSize, flushFrequency)
 
   private def formatResult(outData: Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)])
                         : Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
-
     outData.toList.map{ case ((key, batchID), (tupList, ts, value)) =>
       (tupList, Future.value(List((ts, ((key, batchID), value)))))
     }
@@ -67,16 +67,26 @@ class FinalFlatMap[Event, Key, Value, S, D](
     sCache.tick.map(formatResult(_))
   }
 
-  def cache(tuple: InputState[S],
+  def cache(tuple: S,
             time: Timestamp,
             items: TraversableOnce[(Key, Value)]): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
 
     val batchID = batcher.batchOf(time)
     val itemL = items.toList
-    sCache.insert(itemL.map{case (k, v) => (k, batchID) -> (List(tuple.expand(1)), time, v)}).map(formatResult(_))
+    if(itemL.size > 0) {
+      val wrapper = InputState(tuple, itemL.size)
+      sCache.insert(itemL.map{case (k, v) => (k, batchID) -> (List(wrapper), time, v)}).map(formatResult(_))
+    }
+    else { // Here we handle mapping to nothing, option map et. al
+        Future.value(
+          List(
+            (List(InputState(tuple, 1)), Future.value(Nil))
+          )
+        )
+      }
   }
 
-  override def apply(tup: InputState[S],
+  override def apply(tup: S,
                      timeIn: (Timestamp, Event)) =
     lockedOp.get.apply(timeIn._2).map { cache(tup, timeIn._1, _) }.flatten
 

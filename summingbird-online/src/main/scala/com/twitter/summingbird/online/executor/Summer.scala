@@ -89,14 +89,15 @@ class Summer[Key, Value: Semigroup, S, D](
     exceptionHandlerBox.get.apply(error)
   }
 
-  override def apply(tuple: InputState[S],
+  override def apply(tuple: S,
     tsIn: (Timestamp, ((Key, BatchID), Value))):
       Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
 
     val (ts, (kb, v)) = tsIn
+    val wrappedData = Map(kb -> ((List(InputState(tuple, 1)), ts, v)))
     Future.value {
       // See MaxWaitingFutures for a todo around simplifying this.
-      buffer(Map(kb -> ((List(tuple.expand(1)), ts, v))))
+      buffer(wrappedData)
         .map { kvs =>
           kvs.iterator.map { case ((k, batchID), (tups, stamp, delta)) =>
             (tups,

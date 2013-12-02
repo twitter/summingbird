@@ -22,7 +22,7 @@ import com.twitter.summingbird.batch.Timestamp
 trait OperationContainer[Input, Output, State, WireFmt] {
   def decoder: DataInjection[Input, WireFmt]
   def encoder: DataInjection[Output, WireFmt]
-  def execute(inputState: InputState[State],
+  def execute(inputState: State,
               data: Option[(Timestamp, Input)]):
                TraversableOnce[(List[InputState[State]], Try[TraversableOnce[(Timestamp, Output)]])]
   def init {}

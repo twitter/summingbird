@@ -61,6 +61,21 @@ object TestGraphs {
       .flatMap(fn)
       .sumByKey(store)
 
+  def twinStepOptionMapFlatMapScala[T1, T2, K, V: Monoid]
+    (source: TraversableOnce[T1])
+    (fnA: T1 => Option[T2], fnB: T2 => TraversableOnce[(K, V)]): Map[K, V] =
+    MapAlgebra.sumByKey(
+      source.flatMap(fnA(_).iterator).flatMap(fnB)
+    )
+
+  def twinStepOptionMapFlatMapJob[P <: Platform[P], T1, T2, K, V: Monoid]
+    (source: Producer[P, T1], store: P#Store[K, V])
+    (fnA: T1 => Option[T2], fnB: T2 => TraversableOnce[(K, V)]): TailProducer[P, (K, (Option[V], V))] =
+    source
+      .optionMap(fnA)
+      .flatMap(fnB)
+      .sumByKey(store)
+
   def singleStepMapKeysInScala[T, K1, K2, V: Monoid]
     (source: TraversableOnce[T])
     (fnA: T => TraversableOnce[(K1, V)], fnB: K1 => TraversableOnce[K2]): Map[K2, V] =
