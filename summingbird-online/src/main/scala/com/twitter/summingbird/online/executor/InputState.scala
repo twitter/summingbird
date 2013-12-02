@@ -16,11 +16,33 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.atomic.AtomicReference
+
+class AtomicStateTransformer[T](initState: T) {
+  private val curState = new AtomicReference(initState)
+  def cur: T = curState.get
+
+  @annotation.tailrec
+  final def updateState(oper: T => T): T = {
+    val oldState = curState.get
+    val newState = oper(oldState)
+    if(curState.compareAndSet(oldState, newState)) {
+      newState
+    } else {
+      updateState(oper)
+    }
+  }
+}
 
 case class InputState[T](state: T, initValue: Int) {
-  private val count = new AtomicInteger(initValue)
-  private val failed = new AtomicBoolean(false)
+  case class State(counter: Int, failed: Boolean) {
+    def decr = this.copy(counter = counter - 1)
+    def fail = this.copy(failed = true, counter = counter - 1)
+    def doAck = (counter == 0 && !failed)
+    def invalidState = counter < 0
+  }
+
+  val stateTracking = new AtomicStateTransformer(State(initValue, false))
 
   if(initValue == 0) {
     throw new Exception("Invalid initial value, input state must start >= 1")
@@ -28,19 +50,25 @@ case class InputState[T](state: T, initValue: Int) {
 
   // Returns true if it should be acked
   def ack(fn: (T => Unit)): Boolean = {
-    if(count.decrementAndGet == 0 && !failed.get) {
+    val newState = stateTracking.updateState(_.decr)
+    if(newState.doAck) {
       fn(state)
+      println("Acking, count is:" + newState.counter + ", initial was: " + initValue)
       true
     } else {
-      if(count.get < 0) throw new Exception("Invalid ack number, logic has failed")
-      println("Not acking, count is:" + count.get + ", initial was: " + initValue)
+      if(newState.invalidState) throw new Exception("Invalid ack number, logic has failed")
+      println("Not acking, count is:" + newState.counter + ", initial was: " + initValue)
       false
     }
   }
 
   def fail(fn: (T => Unit)) {
-    failed.set(true)
+    val newState = stateTracking.updateState(_.fail)
     fn(state)
   }
-  override def toString: String = "Input State Wrapper(count: %d, failed:%s)".format(count.get, failed.get.toString)
+
+  override def toString: String = {
+    val curState = stateTracking.cur
+    "Input State Wrapper(count: %d, failed: %s)".format(curState.counter, curState.failed.toString)
+  }
 }
