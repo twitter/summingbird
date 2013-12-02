@@ -50,7 +50,7 @@ import com.twitter.summingbird.option.CacheSize
   */
 
 
-class Summer[Key, Value: Semigroup, S, D](
+class Summer[Key, Value: Semigroup, InputWireFmnt, OutputWireFmnt](
   @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
@@ -58,9 +58,9 @@ class Summer[Key, Value: Semigroup, S, D](
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: DataInjection[((Key, BatchID), Value), D],
-  pEncoder: DataInjection[(Key, (Option[Value], Value)), D]) extends
-    AsyncBase[((Key, BatchID), Value), (Key, (Option[Value], Value)), S, D](
+  pDecoder: DataInjection[((Key, BatchID), Value), InputWireFmnt],
+  pEncoder: DataInjection[(Key, (Option[Value], Value)), OutputWireFmnt]) extends
+    AsyncBase[((Key, BatchID), Value), (Key, (Option[Value], Value)), InputWireFmnt, OutputWireFmnt](
       maxWaitingFutures,
       maxWaitingTime) {
 
@@ -72,7 +72,7 @@ class Summer[Key, Value: Semigroup, S, D](
 
   // See MaxWaitingFutures for a todo around removing this.
   lazy val cacheCount = cacheSize.size
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)]](cacheCount.getOrElse(0))
+  lazy val buffer = SummingQueue[Map[(Key, BatchID), (List[InputState[InputWireFmnt]], Timestamp, Value)]](cacheCount.getOrElse(0))
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
@@ -84,14 +84,14 @@ class Summer[Key, Value: Semigroup, S, D](
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  override def notifyFailure(inputs: List[InputState[S]], error: Throwable): Unit = {
+  override def notifyFailure(inputs: List[InputState[InputWireFmnt]], error: Throwable): Unit = {
     super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
   }
 
-  override def apply(tuple: InputState[S],
+  override def apply(tuple: InputState[InputWireFmnt],
     tsIn: (Timestamp, ((Key, BatchID), Value))):
-      Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
+      Future[Iterable[(List[InputState[InputWireFmnt]], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
 
     val (ts, (kb, v)) = tsIn
     Future.value {

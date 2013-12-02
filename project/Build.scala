@@ -13,10 +13,8 @@ object SummingbirdBuild extends Build {
       case x => x
     }
 
-  def isScala210x(scalaVersion: String) = scalaVersion match {
-      case version if version startsWith "2.9" => false
-      case version if version startsWith "2.10" => true
-  }
+  def isScala210x(scalaVersion: String) = scalaVersion startsWith "2.10"
+
 
   def specs2Import(scalaVersion: String) = isScala210x(scalaVersion) match {
       case false => "org.specs2" %% "specs2" % "1.12.4.1" % "test"

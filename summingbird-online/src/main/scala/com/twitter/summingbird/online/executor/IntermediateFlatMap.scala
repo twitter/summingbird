@@ -27,13 +27,13 @@ import com.twitter.summingbird.online.option.{
 }
 
 
-class IntermediateFlatMap[T,U,S,D](
+class IntermediateFlatMap[T,U,InputWireFmnt,OutputWireFmnt](
   @transient flatMapOp: FlatMapOperation[T, U],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
-  pDecoder: DataInjection[T, D],
-  pEncoder: DataInjection[U, D]
-  ) extends AsyncBase[T,U,S,D](maxWaitingFutures, maxWaitingTime) {
+  pDecoder: DataInjection[T, InputWireFmnt],
+  pEncoder: DataInjection[U, OutputWireFmnt]
+  ) extends AsyncBase[T,U,InputWireFmnt,OutputWireFmnt](maxWaitingFutures, maxWaitingTime) {
 
   val encoder = pEncoder
   val decoder = pDecoder
@@ -41,8 +41,8 @@ class IntermediateFlatMap[T,U,S,D](
   val lockedOp = Externalizer(flatMapOp)
 
 
-  override def apply(tup: InputState[S],
-                     timeT: (Timestamp, T)): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, U)]])]] =
+  override def apply(tup: InputState[InputWireFmnt],
+                     timeT: (Timestamp, T)): Future[Iterable[(List[InputState[InputWireFmnt]], Future[TraversableOnce[(Timestamp, U)]])]] =
     lockedOp.get.apply(timeT._2).map { res =>
       List((List(tup.expand(res.size)), Future.value(res.map((timeT._1, _)))))
     }

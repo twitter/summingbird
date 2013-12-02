@@ -19,13 +19,13 @@ package com.twitter.summingbird.online.executor
 import scala.util.Try
 import com.twitter.summingbird.batch.Timestamp
 
-trait OperationContainer[Input, Output, State, WireFmt] {
-  def decoder: DataInjection[Input, WireFmt]
-  def encoder: DataInjection[Output, WireFmt]
-  def execute(inputState: InputState[State],
+trait OperationContainer[Input, Output, InputWireFmt, OutputWireFmt] {
+  def decoder: DataInjection[Input, InputWireFmt]
+  def encoder: DataInjection[Output, OutputWireFmt]
+  def execute(inputState: Option[InputState[InputWireFmt]],
               data: Option[(Timestamp, Input)]):
-               TraversableOnce[(List[InputState[State]], Try[TraversableOnce[(Timestamp, Output)]])]
+               TraversableOnce[(List[InputState[InputWireFmt]], Try[TraversableOnce[(Timestamp, Output)]])]
   def init {}
   def cleanup {}
-  def notifyFailure(inputs: List[InputState[State]], e: Throwable) {}
+  def notifyFailure(inputs: List[InputState[InputWireFmt]], e: Throwable) {}
 }

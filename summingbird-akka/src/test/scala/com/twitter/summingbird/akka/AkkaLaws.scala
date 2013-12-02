@@ -19,12 +19,14 @@ package com.twitter.summingbird.akka
 import com.twitter.algebird.{ MapAlgebra, Monoid }
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import com.twitter.storehaus.algebra.MergeableStore
+import com.twitter.algebird.{MapAlgebra, Semigroup}
+
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.util.Future
 import java.util.{ Collections, HashMap, Map => JMap, UUID }
 import java.util.concurrent.atomic.AtomicInteger
-import org.specs._
+import org.specs2.mutable._
 import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
@@ -54,6 +56,7 @@ case class TestState[T, K, V](
   placed: AtomicInteger = new AtomicInteger)
 
 object AkkaLaws extends Specification {
+   sequential
   import MapAlgebra.sparseEquiv
 
   // This is dangerous, obviously. The Storm platform graphs tested
@@ -63,29 +66,22 @@ object AkkaLaws extends Specification {
   implicit val batcher = Batcher.unit
 
   /**
-   * Global state shared by all tests.
-   */
+    * Global state shared by all tests.
+    */
   val globalState = TrueGlobalState.data
 
-  def runJob(p: TailProducer[Akka, _]) = {
-    val cluster = Akka.local()
-    cluster.run(p, "Test Job")
-    Thread.sleep(1500)
-    cluster.shutdown
-    cluster.awaitTermination
-  }
-
   /**
-   * Returns a MergeableStore that routes get, put and merge calls
-   * through to the backing store in the proper globalState entry.
-   */
+    * Returns a MergeableStore that routes get, put and merge calls
+    * through to the backing store in the proper globalState entry.
+    */
   def testingStore(id: String) =
     new MergeableStore[(Int, BatchID), Int] with java.io.Serializable {
-      val monoid = implicitly[Monoid[Int]]
+      val semigroup = implicitly[Semigroup[Int]]
       def wrappedStore = globalState(id).store
       private def getOpt(k: (Int, BatchID)) = Option(wrappedStore.get(k)).flatMap(i => i)
       override def get(k: (Int, BatchID)) = Future.value(getOpt(k))
       override def put(pair: ((Int, BatchID), Option[Int])) = {
+        println("Putting into store!!")
         val (k, optV) = pair
         if (optV.isDefined)
           wrappedStore.put(k, optV)
@@ -97,12 +93,22 @@ object AkkaLaws extends Specification {
       override def merge(pair: ((Int, BatchID), Int)) = {
         val (k, v) = pair
         val oldV = getOpt(k)
-        val newV = Monoid.plus(Some(v), oldV).flatMap(Monoid.nonZeroOption(_))
+        val newV = Semigroup.plus(Some(v), oldV)
         wrappedStore.put(k, newV)
         globalState(id).placed.incrementAndGet
         Future.value(oldV)
       }
     }
+
+  def runJob(p: TailProducer[Akka, _]) = {
+    val cluster = Akka.local()
+    cluster.run(p, "Test Job")
+    Thread.sleep(1500)
+    cluster.shutdown
+    cluster.awaitTermination
+  }
+
+
 
   /**
    * The function tested below. We can't generate a function with
@@ -129,11 +135,18 @@ object AkkaLaws extends Specification {
   }
 
   "AkkaPlatform matches Scala for single step jobs" in {
-    val original = sample[List[Int]]
+    val original = sample[List[Int]].take(10)
     val (fn, returnedState) =
       runOnce(original)(
         TestGraphs.singleStepJob[Akka, Int, Int, Int](_, _)(testFn))
-        
+
+      println("SCALA VERSION::")
+TestGraphs.singleStepInScala(original)(fn).foreach(println(_))
+
+  println("\n\n\n\nAKKA Version:::")
+  returnedState.store.asScala.toMap
+        .collect { case ((k, batchID), Some(v)) => (k, v) }.foreach(println(_))
+
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.singleStepInScala(original)(fn),
       returnedState.store.asScala.toMap
@@ -165,7 +178,7 @@ object AkkaLaws extends Specification {
 
     "AkkaPlatform matches Scala for left join jobs" in {
       val original = sample[List[Int]]
-  
+
       val (fn, returnedState) =
         runOnce(original)(
           TestGraphs.leftJoinJob[Akka, Int, Int, Int, Int, Int](_, service, _)(testFn)(nextFn)
@@ -181,15 +194,15 @@ object AkkaLaws extends Specification {
     "AkkaPlatform matches Scala for optionMap only jobs" in {
       val original = List(3, 4, 5) //sample[List[Int]]
       val id = UUID.randomUUID.toString
-  
+
       globalState += (id -> TestState())
-  
+
       val producer =
         Akka.source(AkkaSource.fromTraversable(original))
           .filter(_ % 2 == 0)
           .map(_ -> 10)
           .sumByKey(Akka.store(testingStore(id)))
-  
+
       runJob(producer)
       Equiv[Map[Int, Int]].equiv(
           MapAlgebra.sumByKey(original.filter(_ % 2 == 0).map(_ -> 10)),

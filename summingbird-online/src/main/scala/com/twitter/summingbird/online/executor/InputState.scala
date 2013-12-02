@@ -18,13 +18,13 @@ package com.twitter.summingbird.online.executor
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
-case class InputState[T](state: T) {
+case class InputState[+T](state: T) {
   private val count = new AtomicInteger(0)
   private val failed = new AtomicBoolean(false)
 
   def expand(by: Int): InputState[T] = {
     val newVal = count.addAndGet(by)
-    self
+    this
   }
 
   // Returns true if it should be acked

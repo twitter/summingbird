@@ -26,7 +26,9 @@ import java.util.concurrent.TimeoutException
 import org.slf4j.{LoggerFactory, Logger}
 
 
-abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime) extends Serializable with OperationContainer[I,O,S,D] {
+abstract class AsyncBase[I,O,InputWireFmnt,OutputWireFmnt]
+            (maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime)
+               extends Serializable with OperationContainer[I, O, InputWireFmnt, OutputWireFmnt] {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -34,20 +36,20 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
    * cases that need to complete operations after or before doing a FlatMapOperation or
    * doing a store merge
    */
-  def apply(tup: InputState[S], in: (Timestamp, I)): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]
-  def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
+  def apply(tup: InputState[InputWireFmnt], in: (Timestamp, I)): Future[Iterable[(List[InputState[InputWireFmnt]], Future[TraversableOnce[(Timestamp, O)]])]]
+  def tick: Future[Iterable[(List[InputState[InputWireFmnt]], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
 
   private lazy val outstandingFutures = new SynchronizedQueue[Future[Unit]] with TrimmableQueue[Future[Unit]]
-  private lazy val responses = new SynchronizedQueue[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])]()
+  private lazy val responses = new SynchronizedQueue[(List[InputState[InputWireFmnt]], Try[TraversableOnce[(Timestamp, O)]])]()
 
   // No data means its just a tick packet
-  override def execute(inputState: InputState[S], data: Option[(Timestamp, I)]) = {
-    val fut = data match {
-      case Some(tsIn) => apply(inputState, tsIn)
-      case None => tick
+  override def execute(inputState: Option[InputState[InputWireFmnt]], data: Option[(Timestamp, I)]) = {
+    val fut = (inputState, data) match {
+      case (Some(state), Some(tsIn)) => apply(state, tsIn)
+      case _ => tick
     }
 
-    fut.onSuccess { iter: Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])] =>
+    fut.onSuccess { iter: Iterable[(List[InputState[InputWireFmnt]], Future[TraversableOnce[(Timestamp, O)]])] =>
 
         // Collect the result onto our responses
         val iterSize = iter.foldLeft(0) { case (iterSize, (tups, res)) =>
@@ -74,7 +76,7 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
       }
       .onFailure { thr =>
         throw thr
-       responses += ((List(inputState), Failure(thr))) }
+       responses += ((inputState.map(List(_)).getOrElse(Nil), Failure(thr))) }
 
     if(!fut.isDefined) {
       outstandingFutures += fut.unit

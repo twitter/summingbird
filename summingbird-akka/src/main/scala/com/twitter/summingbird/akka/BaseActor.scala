@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.akka
 
 import scala.util.{Try, Success, Failure}
 
@@ -24,25 +24,35 @@ import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.InputState
 import org.slf4j.{LoggerFactory, Logger}
 
+import com.twitter.algebird.{ Monoid, SummingQueue }
+import com.twitter.summingbird.batch.BatchID
+import com.twitter.util.Future
+import _root_.akka.actor.Actor
+import scala.concurrent.duration.FiniteDuration
+import java.util.concurrent.TimeUnit
 /**
  *
  * @author Ian O Connell
  */
 case class BaseActor[I,O](
+  targetNames: List[String],
   hasDependants: Boolean,
-  executor: OperationContainer[I, O, WireType, WireType]
+  executor: OperationContainer[I, O, WireType[I], WireType[O]]
   ) extends Actor {
+  import context._
+  val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
 
+  system.scheduler.schedule(new FiniteDuration(1, TimeUnit.SECONDS), new FiniteDuration(200, TimeUnit.MILLISECONDS), self, TimedTick)
 
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
 
-  private def fail(inputs: List[InputState[WireType]], error: Throwable): Unit = {
+  private def fail(inputs: List[InputState[WireType[I]]], error: Throwable): Unit = {
     executor.notifyFailure(inputs, error)
     logger.error("Akka DAG of: {} tuples failed", inputs.size, error)
   }
 
-  def processResults(curResults: Data) {
+  def processResults(curResults: TraversableOnce[(List[InputState[WireType[I]]], Try[TraversableOnce[(Timestamp, O)]])]) {
     curResults.foreach{ case (tups, res) =>
       res match {
         case Success(outs) => finish(tups, outs)
@@ -52,64 +62,35 @@ case class BaseActor[I,O](
   }
 
  def receive = {
-    case Tick =>
-      val wrappedTuple = InputState(tuple)
-      processResults(executor.execute(wrappedTuple, None))
-    case w@WireType =>
-      val tsIn = executor.decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
-      processResults(executor.execute(wrappedTuple, Some(tsIn)))
+    case t@TimedTick =>
+      processResults(executor.execute(None, None))
+    case Data(raw) =>
+      val w = raw.asInstanceOf[WireType[I]]
+      val wrappedTuple = InputState(w)
+      val tsIn = executor.decoder.invert(w).get // Failing to decode here is an ERROR
+      processResults(executor.execute(Some(wrappedTuple), Some(tsIn)))
+    case t@_ => logger.error("Got unknown tuple: " + t)
   }
 
 
-  private def finish(inputs: List[InputState[Tuple]], results: TraversableOnce[(Timestamp, O)]) {
+  private def finish(inputs: List[InputState[WireType[I]]], results: TraversableOnce[(Timestamp, O)]) {
     var emitCount = 0
     if(hasDependants) {
-      if(anchorTuples.anchor) {
-        results.foreach { result =>
-          collector.emit(inputs.map(_.state).asJava, executor.encoder(result))
-          emitCount += 1
-        }
-      }
-      else { // don't anchor
-        results.foreach { result =>
-          collector.emit(executor.encoder(result))
-          emitCount += 1
-        }
+      results.foreach { result =>
+        targets.foreach { t =>
+          t ! Data(executor.encoder(result)) }
+        emitCount += 1
       }
     }
-    // Always ack a tuple on completion:
-    inputs.foreach(_.ack(collector.ack(_)))
 
-    logger.debug("bolt finished processed {} linked tuples, emitted: {}", inputs.size, emitCount)
+    logger.debug("actor finished processed {} linked tuples, emitted: {}", inputs.size, emitCount)
   }
 
-  override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
-    collector = oc
-    metrics().foreach { _.register(context) }
+  override def preStart {
     executor.init
   }
 
-  override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    if(hasDependants) { declarer.declare(new Fields(executor.encoder.fields.asJava)) }
-  }
-
-  override val getComponentConfiguration = null
-
-  override def cleanup {
+  override def postStop {
     executor.cleanup
-  }
-
-    /** This is clearly not safe, but done to deal with GC issues since
-   * storm keeps references to values
-   */
-  private lazy val valuesField = {
-    val tupleClass = classOf[TupleImpl]
-    val vf = tupleClass.getDeclaredField("values")
-    vf.setAccessible(true)
-    vf
-  }
-
-  private def clearValues(t: Tuple): Unit = {
-    valuesField.set(t, null)
   }
 }

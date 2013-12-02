@@ -26,18 +26,12 @@ import com.twitter.summingbird.online.FlatMapOperation
 import java.util.Date
 import _root_.akka.routing.ConsistentHashingRouter.ConsistentHashable
 import _root_.akka.actor.Actor
+import com.twitter.summingbird.online.executor.DataInjection
+import com.twitter.summingbird.batch.{BatchID, Timestamp}
 
-case class FlatMapOutput(data: Any) extends ConsistentHashable {
-  override def consistentHashKey: Any = {
-    try {
-      data.asInstanceOf[Tuple2[Any, Any]]._1
-    } catch {
-      case _: Throwable => data
-    }
-  }
-}
 
-class SourceActor(akkaSrc: AkkaSource[_], targetNames: List[String]) extends Actor {
+class SourceActor[Input, InputWireFmt <: ConsistentHashable]
+    (akkaSrc: AkkaSource[Input], targetNames: List[String], encoder: DataInjection[Input, InputWireFmt]) extends Actor {
   import context._
   val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
 
@@ -53,56 +47,14 @@ class SourceActor(akkaSrc: AkkaSource[_], targetNames: List[String]) extends Act
         case true => context.stop(self)
         case false =>
           akkaSrc.poll.map { d =>
-            d.foreach { p => targets.foreach { t => t ! FlatMapOutput(p) } }
+            d.foreach { p => targets.foreach { t =>
+              t ! Data(encoder(p)) } }
             self ! Emit
           }
       }
     }
   }
 }
-
-class FlatMapActor(op: FlatMapOperation[Any, Any], targetNames: List[String]) extends Actor {
-  import context._
-  val targets = targetNames.map { actorName => context.actorSelection("../../" + actorName) }
-
-  private def send(traversable: TraversableOnce[Any]) =
-    traversable.foreach {data =>
-    	targets.foreach { t => t ! FlatMapOutput(data) }
-    }
-
-  def receive = {
-    case FlatMapOutput(data) =>
-      op(data).map(send(_))
-  }
-}
-
-class SummerActor[Key, Value: Monoid](
-  storeBuilder: () => MergeableStore[(Key, BatchID), Value])(implicit batcher: Batcher) extends Actor {
-  import context._
-  val storeBox = MeatLocker(storeBuilder)
-  lazy val store = storeBox.get.apply
-  lazy val cacheCount = Some(0)
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), Value]](cacheCount.getOrElse(0))
-  lazy val futureQueue = FutureQueue(Future.Unit, 10)
-
-  def unpack(x: (Any, Any)) = {
-    val batchID = batcher.batchOf(new Date(0))
-    val key = x._1.asInstanceOf[Key]
-    val value = x._2.asInstanceOf[Value]
-    ((key, batchID), value)
-  }
-
-  def receive = {
-    case FlatMapOutput(input) =>
-      buffer(Map(unpack(input.asInstanceOf[(Any, Any)]))).foreach { pairs =>
-      val futures = pairs.map(store.merge(_)).toList
-      futureQueue += Future.collect(futures).unit
-    }
-  }
-
-  override def postStop() { store.close(com.twitter.util.Time.fromSeconds(10)) }
-}
-
 
 
 

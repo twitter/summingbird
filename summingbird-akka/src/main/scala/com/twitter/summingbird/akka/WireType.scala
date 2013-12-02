@@ -18,15 +18,22 @@ package com.twitter.summingbird.akka
 import _root_.akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
 
-sealed trait WireType[T] extends ConsistentHashable {
+case class Data(d: ConsistentHashable) extends ConsistentHashable {
+  def consistentHashKey = d.consistentHashKey
+}
+
+sealed trait WireType[+T] extends ConsistentHashable {
   def toFMInput: (Timestamp, T)
 }
 
-case class ValueType[V](t: Timestamp, v: V) extends WireType[V] {
+case class TimedTick()
+
+
+case class ValueType[+V](t: Timestamp, v: V) extends WireType[V] {
   def consistentHashKey = v
   def toFMInput: (Timestamp, V) = (t, v)
 }
-case class KeyValueType[K, V](t: Timestamp, k: K, v: V) extends WireType[(K, V)] {
+case class KeyValueType[+K, +V](t: Timestamp, k: K, v: V) extends WireType[(K, V)] {
   def consistentHashKey = k
   def toFMInput: (Timestamp, (K, V)) = (t, (k, v))
 }

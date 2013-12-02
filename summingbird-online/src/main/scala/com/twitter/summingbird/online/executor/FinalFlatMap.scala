@@ -37,46 +37,46 @@ import com.twitter.summingbird.online.option.{
  * @author Ian O Connell
  */
 
-class FinalFlatMap[Event, Key, Value, S, D](
+class FinalFlatMap[Event, Key, Value, InputWireFmnt, OutputWireFmnt](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
   cacheSize: CacheSize,
   flushFrequency: FlushFrequency,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
-  pDecoder: DataInjection[Event, D],
-  pEncoder: DataInjection[((Key, BatchID), Value), D]
+  pDecoder: DataInjection[Event, InputWireFmnt],
+  pEncoder: DataInjection[((Key, BatchID), Value), OutputWireFmnt]
   )
   (implicit monoid: Semigroup[Value], batcher: Batcher)
-    extends AsyncBase[Event, ((Key, BatchID), Value), S, D](maxWaitingFutures,
+    extends AsyncBase[Event, ((Key, BatchID), Value), InputWireFmnt, OutputWireFmnt](maxWaitingFutures,
                                                           maxWaitingTime) {
   val encoder = pEncoder
   val decoder = pDecoder
 
   val lockedOp = Externalizer(flatMapOp)
-  lazy val sCache: MultiTriggerCache[(Key, BatchID), (List[InputState[S]], Timestamp, Value)] = new MultiTriggerCache(cacheSize, flushFrequency)
+  lazy val sCache: MultiTriggerCache[(Key, BatchID), (List[InputState[InputWireFmnt]], Timestamp, Value)] = new MultiTriggerCache(cacheSize, flushFrequency)
 
-  private def formatResult(outData: Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)])
-                        : Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
+  private def formatResult(outData: Map[(Key, BatchID), (List[InputState[InputWireFmnt]], Timestamp, Value)])
+                        : Iterable[(List[InputState[InputWireFmnt]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
 
     outData.toList.map{ case ((key, batchID), (tupList, ts, value)) =>
       (tupList, Future.value(List((ts, ((key, batchID), value)))))
     }
   }
 
-  override def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
+  override def tick: Future[Iterable[(List[InputState[InputWireFmnt]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
     sCache.tick.map(formatResult(_))
   }
 
-  def cache(tuple: InputState[S],
+  def cache(tuple: InputState[InputWireFmnt],
             time: Timestamp,
-            items: TraversableOnce[(Key, Value)]): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
+            items: TraversableOnce[(Key, Value)]): Future[Iterable[(List[InputState[InputWireFmnt]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
 
     val batchID = batcher.batchOf(time)
     val itemL = items.toList
     sCache.insert(itemL.map{case (k, v) => (k, batchID) -> (List(tuple.expand(1)), time, v)}).map(formatResult(_))
   }
 
-  override def apply(tup: InputState[S],
+  override def apply(tup: InputState[InputWireFmnt],
                      timeIn: (Timestamp, Event)) =
     lockedOp.get.apply(timeIn._2).map { cache(tup, timeIn._1, _) }.flatten
 

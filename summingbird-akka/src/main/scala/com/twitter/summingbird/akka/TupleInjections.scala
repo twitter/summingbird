@@ -21,24 +21,24 @@ import com.twitter.summingbird.batch.Timestamp
 import java.util.{List => JList, ArrayList => JAList}
 import scala.util.Try
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
+import com.twitter.summingbird.batch.Timestamp
+import com.twitter.summingbird.online.executor.DataInjection
 
 import scala.util.{Try, Success, Failure}
 
-trait AkkaTupleInjection[T] extends Injection[(Timestamp, T), WireType[T]] {
-}
 
-class SingleItemInjection[T] extends AkkaTupleInjection[T] {
+class SingleItemInjection[T] extends DataInjection[T, WireType[T]] {
   override def apply(t: (Timestamp, T)) = ValueType(t._1, t._2)
 
+  override def fields = List()
   override def invert(vin: WireType[T]) = vin match {
     case ValueType(t, v) => Success((t, v.asInstanceOf[T]))
     case _ => Failure(new Exception("Not the correct type"))
   }
 }
 
-class KeyValueInjection[K, V]
-  extends AkkaTupleInjection[(K, V)] {
-
+class KeyValueInjection[K, V] extends DataInjection[(K, V), WireType[(K, V)]] {
+  override def fields = List()
   override def apply(t: (Timestamp, (K, V))) = KeyValueType(t._1, t._2._1, t._2._2)
 
   override def invert(vin: WireType[(K, V)]) = vin match {
