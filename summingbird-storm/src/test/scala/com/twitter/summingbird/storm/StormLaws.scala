@@ -158,12 +158,7 @@ object StormLaws extends Specification {
       }
     }
 
-  /**
-    * The function tested below. We can't generate a function with
-    * ScalaCheck, as we need to know the number of tuples that the
-    * flatMap will produce.
-    */
-  val testFn = { i: Int => List((i -> i)) }
+  val testFn = sample[Int => List[(Int, Int)]]
 
   val storm = Storm.local(Map("DEFAULT" -> Options().set(AnchorTuples(true))))
 
@@ -181,25 +176,22 @@ object StormLaws extends Specification {
       Future.Unit
     }
 
-
-
   /**
     * Perform a single run of TestGraphs.singleStepJob using the
     * supplied list of integers and the testFn defined above.
     */
   def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, Any])
-      : (Int => TraversableOnce[(Int, Int)], TestState[Int, Int, Int]) = {
+      : TestState[Int, Int, Int] = {
 
-	val (id, store) = genStore
+	  val (id, store) = genStore
 
     val job = mkJob(
       Storm.source(TraversableSpout(original)),
       store
     )
     val topo = storm.plan(job)
-
     StormRunner.run(topo)
-    (testFn, globalState(id))
+    globalState(id)
   }
 
   def memoryPlanWithoutSummer(original: List[Int])(mkJob: (Producer[Memory, Int], Memory#Sink[Int]) => TailProducer[Memory, Int])
@@ -251,15 +243,31 @@ object StormLaws extends Specification {
   val serviceFn = Arbitrary.arbitrary[Int => Option[Int]].sample.get
   val service = StoreWrapper[Int, Int](() => ReadableStore.fromFn(serviceFn))
 
+  // ALL TESTS START AFTER THIS LINE
 
   "StormPlatform matches Scala for single step jobs" in {
     val original = sample[List[Int]]
-    val (fn, returnedState) =
+    val returnedState =
       runOnce(original)(
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(testFn)
       )
     Equiv[Map[Int, Int]].equiv(
-      TestGraphs.singleStepInScala(original)(fn),
+      TestGraphs.singleStepInScala(original)(testFn),
+      returnedState.store.asScala.toMap
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
+  }
+
+  "StormPlatform matches Scala for large expansion single step jobs" in {
+    val original = sample[List[Int]]
+    val expansionFunc = sample[Int => List[(Int, Int)]]
+    val returnedState =
+      runOnce(original)(
+        TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(expansionFunc)
+      )
+
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.singleStepInScala(original)(expansionFunc),
       returnedState.store.asScala.toMap
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
@@ -269,7 +277,7 @@ object StormLaws extends Specification {
     val original = sample[List[Int]]
     val fnA = sample[Int => List[(Int, Int)]]
     val fnB = sample[Int => List[Int]]
-    val (fn, returnedState) =
+    val returnedState =
       runOnce(original)(
         TestGraphs.singleStepMapKeysJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
       )
@@ -282,14 +290,13 @@ object StormLaws extends Specification {
 
   "StormPlatform matches Scala for left join jobs" in {
     val original = sample[List[Int]]
-
-    val (fn, returnedState) =
+    val returnedState =
       runOnce(original)(
         TestGraphs.leftJoinJob[Storm, Int, Int, Int, Int, Int](_, service, _)(testFn)(nextFn)
       )
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.leftJoinInScala(original)(serviceFn)
-        (fn)(nextFn),
+        (testFn)(nextFn),
       returnedState.store.asScala.toMap
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
@@ -333,7 +340,7 @@ object StormLaws extends Specification {
   }
 
   "StormPlatform with multiple summers" in {
-    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13 ,41, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13 ,41) // sample[List[Int]]
+    val original = sample[List[Int]]
     val doubler = {(x): (Int) => List((x -> x*2))}
     val simpleOp = {(x): (Int) => List(x * 10)}
 
@@ -384,8 +391,6 @@ object StormLaws extends Specification {
 
     val serviceFn = sample[Int => Option[Int]]
     val service = StoreWrapper[Int, Int](() => ReadableStore.fromFn(serviceFn))
-
-
 
     val tail = TestGraphs.realJoinTestJob[Storm, Int, Int, Int, Int, Int, Int, Int, Int, Int](source1, source2, source3, source4,
                 service, store1, fn1, fn2, fn3, preJoinFn, postJoinFn)
