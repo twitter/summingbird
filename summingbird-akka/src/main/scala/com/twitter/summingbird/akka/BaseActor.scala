@@ -19,37 +19,36 @@ package com.twitter.summingbird.storm
 import scala.util.{Try, Success, Failure}
 
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
+import com.twitter.summingbird.online.option.MaxWaitingFutures
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.InputState
 import org.slf4j.{LoggerFactory, Logger}
 
 /**
  *
- * @author Oscar Boykin
- * @author Sam Ritchie
- * @author Ashu Singhal
+ * @author Ian O Connell
  */
-case class BaseBolt[I,O](
+case class BaseActor[I,O](
   hasDependants: Boolean,
   executor: OperationContainer[I, O, WireType, WireType]
-  ) extends IRichBolt {
+  ) extends Actor {
 
 
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
 
-  protected def logError(message: String, err: Throwable) {
-    logger.error(message, err)
-  }
-
- private def fail(inputs: List[InputState[WireType]], error: Throwable): Unit = {
+  private def fail(inputs: List[InputState[WireType]], error: Throwable): Unit = {
     executor.notifyFailure(inputs, error)
-    logError("Akka DAG of: %d tuples failed".format(inputs.size), error)
+    logger.error("Akka DAG of: {} tuples failed", inputs.size, error)
   }
 
-  def processResults(d: Data) {
-
+  def processResults(curResults: Data) {
+    curResults.foreach{ case (tups, res) =>
+      res match {
+        case Success(outs) => finish(tups, outs)
+        case Failure(t) => fail(tups, t)
+      }
+    }
   }
 
  def receive = {
@@ -61,23 +60,6 @@ case class BaseBolt[I,O](
       processResults(executor.execute(wrappedTuple, Some(tsIn)))
   }
 
-  override def execute(tuple: WireType) = {
-
-
-    /**
-     * System ticks come with a fixed stream id
-     */
-    val curResults = if(!tuple.getSourceStreamId.equals("__tick")) {
-    } else {
-
-    }
-    curResults.foreach{ case (tups, res) =>
-      res match {
-        case Success(outs) => finish(tups, outs)
-        case Failure(t) => fail(tups, t)
-      }
-    }
-  }
 
   private def finish(inputs: List[InputState[Tuple]], results: TraversableOnce[(Timestamp, O)]) {
     var emitCount = 0
