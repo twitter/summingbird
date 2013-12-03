@@ -26,6 +26,8 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird.storm.option._
+import com.twitter.summingbird.online.option.FlushFrequency
+import com.twitter.util.Duration
 import com.twitter.summingbird.memory._
 import com.twitter.summingbird.planner._
 import com.twitter.tormenta.spout.Spout
@@ -45,6 +47,7 @@ import scala.collection.mutable.{
   SynchronizedMap
 }
 import java.security.Permission
+import com.twitter.summingbird.online.executor.InflightTuples
 /**
   * Tests for Summingbird's Storm planner.
   */
@@ -160,7 +163,10 @@ object StormLaws extends Specification {
 
   val testFn = sample[Int => List[(Int, Int)]]
 
-  val storm = Storm.local(Map("DEFAULT" -> Options().set(AnchorTuples(true))))
+  val storm = Storm.local(Map(
+      "DEFAULT" -> Options().set(AnchorTuples(true)),
+      "FM" -> Options().set(CacheSize(10)).set(FlushFrequency(Duration.fromMilliseconds(400))))
+      )
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
@@ -293,10 +299,14 @@ object StormLaws extends Specification {
 
   "StormPlatform matches Scala for single step jobs" in {
     val original = sample[List[Int]]
+    // val simpleFunc = {i: Int => List((i, i))}
     val returnedState =
       runOnce(original)(
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(testFn)
       )
+
+    InflightTuples.query must be_==(0)
+
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.singleStepInScala(original)(testFn),
       returnedState.store.asScala.toMap
@@ -314,6 +324,7 @@ object StormLaws extends Specification {
       runOnce(original)(
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(expansionFunc)
       )
+    InflightTuples.query must be_==(0)
 
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.singleStepInScala(original)(expansionFunc),
@@ -330,6 +341,8 @@ object StormLaws extends Specification {
       runOnce(original)(
         TestGraphs.singleStepMapKeysJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
       )
+    InflightTuples.query must be_==(0)
+
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB),
       returnedState.store.asScala.toMap
@@ -344,6 +357,8 @@ object StormLaws extends Specification {
       runOnce(original)(
         TestGraphs.leftJoinJob[Storm, Int, Int, Int, Int, Int](_, service, _)(staticFunc)(nextFn)
       )
+          InflightTuples.query must be_==(0)
+
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.leftJoinInScala(original)(serviceFn)
         (staticFunc)(nextFn),
@@ -366,6 +381,7 @@ object StormLaws extends Specification {
 
     val topo = storm.plan(producer)
     StormRunner.run(topo)
+    InflightTuples.query must be_==(0)
 
     Equiv[Map[Int, Int]].equiv(
         MapAlgebra.sumByKey(original.filter(_ % 2 == 0).map(_ -> 10)),
@@ -383,6 +399,8 @@ object StormLaws extends Specification {
       runWithOutSummer(original)(
         TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler)
       ).sorted
+          InflightTuples.query must be_==(0)
+
     val memoryOutputList =
       memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
 
@@ -402,6 +420,7 @@ object StormLaws extends Specification {
 
     val topo = storm.plan(tail)
     StormRunner.run(topo)
+    InflightTuples.query must be_==(0)
 
     val (scalaA, scalaB) = TestGraphs.multipleSummerJobInScala(original)(simpleOp, doubler, doubler)
 
@@ -449,6 +468,7 @@ object StormLaws extends Specification {
     OnlinePlan(tail).nodes.size must beLessThan(10)
 
     StormRunner.run(topo)
+    InflightTuples.query must be_==(0)
 
 
     val scalaA = TestGraphs.realJoinTestJobInScala(original1, original2, original3, original4,
@@ -460,7 +480,6 @@ object StormLaws extends Specification {
       store1Map
         .collect { case ((k, batchID), Some(v)) => (k, v) }
     ) must beTrue
-
   }
 
 }

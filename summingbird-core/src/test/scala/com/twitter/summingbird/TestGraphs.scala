@@ -58,7 +58,7 @@ object TestGraphs {
     (source: Producer[P, T], store: P#Store[K, V])
     (fn: T => TraversableOnce[(K, V)]): TailProducer[P, (K, (Option[V], V))] =
     source
-      .flatMap(fn)
+      .flatMap(fn).name("FM")
       .sumByKey(store)
 
   def twinStepOptionMapFlatMapScala[T1, T2, K, V: Monoid]

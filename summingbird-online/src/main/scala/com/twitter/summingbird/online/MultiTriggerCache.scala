@@ -33,8 +33,8 @@ import org.slf4j.{LoggerFactory, Logger}
 case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency)
   (implicit monoid: Semigroup[Value]) {
 
-  val executor = new ThreadPoolExecutor(120, 120, 60, TimeUnit.SECONDS, new LinkedBlockingQueue(1000))
-  val pool     = FuturePool(executor)
+  val executor = new ThreadPoolExecutor(10, 10, 60, TimeUnit.SECONDS, new LinkedBlockingQueue(1000))
+  val pool     =  FuturePool(executor) //FuturePool.immediatePool
 
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
@@ -94,12 +94,14 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
   }
 
   private def doFlushCache: Map[Key, Value] = {
+
     val oldKeyMap = this.synchronized {
       val oldKeyMap = keyMap
       keyMap = MMap[Key, MQueue[Value]]()
       lastDump = System.currentTimeMillis
       oldKeyMap
     }
+
     // The get is valid since by construction we must have elements in the value
     oldKeyMap.mapValues(monoid.sumOption(_).get).toMap
   }

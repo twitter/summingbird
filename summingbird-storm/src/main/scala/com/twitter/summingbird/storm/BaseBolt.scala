@@ -78,6 +78,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
       clearValues(tuple)
       executor.execute(tuple, Some(tsIn))
     } else {
+      collector.ack(tuple)
       executor.execute(tuple, None)
     }
 

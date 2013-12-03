@@ -16,25 +16,45 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{AtomicReference, AtomicInteger}
 
 class AtomicStateTransformer[T](initState: T) {
   private val curState = new AtomicReference(initState)
   def cur: T = curState.get
 
+
   @annotation.tailrec
-  final def updateState(oper: T => T): T = {
+  final def updateWithState[S](oper: T => (S, T)): (S, T) = {
     val oldState = curState.get
-    val newState = oper(oldState)
+    val (s, newState) = oper(oldState)
     if(curState.compareAndSet(oldState, newState)) {
-      newState
+      (s, newState)
     } else {
-      updateState(oper)
+      updateWithState(oper)
     }
+  }
+
+  final def update(oper: T => T): T =
+    updateWithState({x: T => (Unit, oper(x))})._2
+
+}
+
+object InflightTuples {
+  private val data = new AtomicInteger(0)
+  def incr {
+    data.incrementAndGet
+  }
+  def decr {
+    data.decrementAndGet
+  }
+  def query = {
+    data.get
   }
 }
 
 case class InputState[T](state: T, initValue: Int) {
+  InflightTuples.incr
+
   case class State(counter: Int, failed: Boolean) {
     def decr = this.copy(counter = counter - 1)
     def fail = this.copy(failed = true, counter = counter - 1)
@@ -50,20 +70,22 @@ case class InputState[T](state: T, initValue: Int) {
 
   // Returns true if it should be acked
   def ack(fn: (T => Unit)): Boolean = {
-    val newState = stateTracking.updateState(_.decr)
+    val newState = stateTracking.update(_.decr)
     if(newState.doAck) {
+      InflightTuples.decr
       fn(state)
-      println("Acking, count is:" + newState.counter + ", initial was: " + initValue)
+      // println("Acking, count is:" + newState.counter + ", initial was: " + initValue)
       true
     } else {
       if(newState.invalidState) throw new Exception("Invalid ack number, logic has failed")
-      println("Not acking, count is:" + newState.counter + ", initial was: " + initValue)
+      // println("Not acking, count is:" + newState.counter + ", initial was: " + initValue)
       false
     }
   }
 
   def fail(fn: (T => Unit)) {
-    val newState = stateTracking.updateState(_.fail)
+    val newState = stateTracking.update(_.fail)
+    InflightTuples.decr
     fn(state)
   }
 
