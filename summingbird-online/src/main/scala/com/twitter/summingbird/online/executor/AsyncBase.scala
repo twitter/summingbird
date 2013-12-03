@@ -34,19 +34,37 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
    * cases that need to complete operations after or before doing a FlatMapOperation or
    * doing a store merge
    */
-  def apply(tup: S, in: (Timestamp, I)): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]
+  def apply(state: InputState[S], in: (Timestamp, I)): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]
   def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
 
   private lazy val outstandingFutures = new SynchronizedQueue[Future[Unit]] with TrimmableQueue[Future[Unit]]
   private lazy val responses = new SynchronizedQueue[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])]()
 
-  // No data means its just a tick packet
-  override def execute(input: S, data: Option[(Timestamp, I)]) = {
-    val fut = data match {
-      case Some(tsIn) => apply(input, tsIn)
-      case None => tick
+  override def executeTick = {
+    val futWithFail = tick.onFailure { thr =>
+                              responses += ((List(), Failure(thr)))
+                            }
+    val fut = handleSuccess(futWithFail)
+    if(!fut.isDefined) {
+      outstandingFutures += fut.unit
     }
+    // always empty the responses
+    emptyQueue
+  }
 
+  override def execute(state: InputState[S], data: (Timestamp, I)) = {
+    val futWithFail = apply(state, data).onFailure { thr =>
+                              responses += ((List(state), Failure(thr)))
+                            }
+    val fut = handleSuccess(futWithFail)
+    if(!fut.isDefined) {
+      outstandingFutures += fut.unit
+    }
+    // always empty the responses
+    emptyQueue
+  }
+
+  def handleSuccess(fut: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]) =
     fut.onSuccess { iter: Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])] =>
 
         // Collect the result onto our responses
@@ -61,7 +79,6 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
             iterSize
           }
         }
-
         if(outstandingFutures.size > maxWaitingFutures.get) {
           /*
            * This can happen on large key expansion.
@@ -72,16 +89,6 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
           )
         }
       }
-      .onFailure { thr =>
-       responses += ((List(InputState(input, 1)), Failure(thr))) }
-
-    if(!fut.isDefined) {
-      outstandingFutures += fut.unit
-    }
-
-    // always empty the responses
-    emptyQueue
-  }
 
   private def forceExtraFutures {
     outstandingFutures.dequeueAll(_.isDefined)

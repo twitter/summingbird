@@ -43,3 +43,5 @@ case class MaxWaitingFutures(get: Int)
 case class MaxFutureWaitTime(get: Duration)
 
 case class FlushFrequency(get: Duration)
+
+case class UseAsyncCache(get: Boolean)

@@ -76,10 +76,10 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
       val tsIn = executor.decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
       // Don't hold on to the input values
       clearValues(tuple)
-      executor.execute(tuple, Some(tsIn))
+      executor.execute(InputState(tuple), tsIn)
     } else {
       collector.ack(tuple)
-      executor.execute(tuple, None)
+      executor.executeTick
     }
 
     curResults.foreach{ case (tups, res) =>

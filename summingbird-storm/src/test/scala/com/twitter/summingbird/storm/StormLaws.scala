@@ -251,55 +251,9 @@ object StormLaws extends Specification {
 
   // ALL TESTS START AFTER THIS LINE
 
-  "FlatMap to nothing" in {
-    val original = sample[List[Int]]
-    val fn = {(x: Int) => List[(Int, Int)]()}
-    val returnedState =
-      runOnce(original)(
-        TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(fn)
-      )
-    Equiv[Map[Int, Int]].equiv(
-      TestGraphs.singleStepInScala(original)(fn),
-      returnedState.store.asScala.toMap
-        .collect { case ((k, batchID), Some(v)) => (k, v) }
-    ) must beTrue
-  }
-
-  "OptionMap and FlatMap" in {
-    val original = sample[List[Int]]
-    val fnA = sample[Int => Option[Int]]
-    val fnB = sample[Int => List[(Int,Int)]]
-
-    val returnedState =
-      runOnce(original)(
-        TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
-      )
-    Equiv[Map[Int, Int]].equiv(
-      TestGraphs.twinStepOptionMapFlatMapScala(original)(fnA, fnB),
-      returnedState.store.asScala.toMap
-        .collect { case ((k, batchID), Some(v)) => (k, v) }
-    ) must beTrue
-  }
-
-  "OptionMap to nothing and FlatMap" in {
-    val original = sample[List[Int]]
-    val fnA = {(x: Int) => None }
-    val fnB = sample[Int => List[(Int,Int)]]
-
-    val returnedState =
-      runOnce(original)(
-        TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
-      )
-    Equiv[Map[Int, Int]].equiv(
-      TestGraphs.twinStepOptionMapFlatMapScala(original)(fnA, fnB),
-      returnedState.store.asScala.toMap
-        .collect { case ((k, batchID), Some(v)) => (k, v) }
-    ) must beTrue
-  }
-
   "StormPlatform matches Scala for single step jobs" in {
+    InflightTuples.reset
     val original = sample[List[Int]]
-    // val simpleFunc = {i: Int => List((i, i))}
     val returnedState =
       runOnce(original)(
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(testFn)
@@ -314,7 +268,66 @@ object StormLaws extends Specification {
     ) must beTrue
   }
 
+  "FlatMap to nothing" in {
+    InflightTuples.reset
+    val original = sample[List[Int]]
+    val fn = {(x: Int) => List[(Int, Int)]()}
+    val returnedState =
+      runOnce(original)(
+        TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(fn)
+      )
+
+    InflightTuples.query must be_==(0)
+
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.singleStepInScala(original)(fn),
+      returnedState.store.asScala.toMap
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
+  }
+
+  "OptionMap and FlatMap" in {
+    InflightTuples.reset
+    val original = sample[List[Int]]
+    val fnA = sample[Int => Option[Int]]
+    val fnB = sample[Int => List[(Int,Int)]]
+
+    val returnedState =
+      runOnce(original)(
+        TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
+      )
+
+    InflightTuples.query must be_==(0)
+
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.twinStepOptionMapFlatMapScala(original)(fnA, fnB),
+      returnedState.store.asScala.toMap
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
+  }
+
+  "OptionMap to nothing and FlatMap" in {
+    InflightTuples.reset
+    val original = sample[List[Int]]
+    val fnA = {(x: Int) => None }
+    val fnB = sample[Int => List[(Int,Int)]]
+
+    val returnedState =
+      runOnce(original)(
+        TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
+      )
+
+    InflightTuples.query must be_==(0)
+
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.twinStepOptionMapFlatMapScala(original)(fnA, fnB),
+      returnedState.store.asScala.toMap
+        .collect { case ((k, batchID), Some(v)) => (k, v) }
+    ) must beTrue
+  }
+
   "StormPlatform matches Scala for large expansion single step jobs" in {
+    InflightTuples.reset
     val original = sample[List[Int]]
     val expander = sample[Int => List[(Int, Int)]]
     val expansionFunc = {(x: Int) =>
@@ -324,6 +337,7 @@ object StormLaws extends Specification {
       runOnce(original)(
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(expansionFunc)
       )
+
     InflightTuples.query must be_==(0)
 
     Equiv[Map[Int, Int]].equiv(
@@ -334,6 +348,7 @@ object StormLaws extends Specification {
   }
 
    "StormPlatform matches Scala for flatmap keys jobs" in {
+    InflightTuples.reset
     val original = sample[List[Int]]
     val fnA = sample[Int => List[(Int, Int)]]
     val fnB = sample[Int => List[Int]]
@@ -341,6 +356,7 @@ object StormLaws extends Specification {
       runOnce(original)(
         TestGraphs.singleStepMapKeysJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
       )
+
     InflightTuples.query must be_==(0)
 
     Equiv[Map[Int, Int]].equiv(
@@ -351,13 +367,15 @@ object StormLaws extends Specification {
   }
 
   "StormPlatform matches Scala for left join jobs" in {
+    InflightTuples.reset
     val original = sample[List[Int]]
     val staticFunc = { i: Int => List((i -> i)) }
     val returnedState =
       runOnce(original)(
         TestGraphs.leftJoinJob[Storm, Int, Int, Int, Int, Int](_, service, _)(staticFunc)(nextFn)
       )
-          InflightTuples.query must be_==(0)
+
+    InflightTuples.query must be_==(0)
 
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.leftJoinInScala(original)(serviceFn)
@@ -368,6 +386,7 @@ object StormLaws extends Specification {
   }
 
   "StormPlatform matches Scala for optionMap only jobs" in {
+    InflightTuples.reset
     val original = sample[List[Int]]
     val (id, store) = genStore
 
@@ -381,6 +400,7 @@ object StormLaws extends Specification {
 
     val topo = storm.plan(producer)
     StormRunner.run(topo)
+
     InflightTuples.query must be_==(0)
 
     Equiv[Map[Int, Int]].equiv(
@@ -392,6 +412,7 @@ object StormLaws extends Specification {
   }
 
   "StormPlatform matches Scala for MapOnly/NoSummer" in {
+    InflightTuples.reset
     val original = sample[List[Int]]
     val doubler = {x: Int => List(x*2)}
 
@@ -399,7 +420,8 @@ object StormLaws extends Specification {
       runWithOutSummer(original)(
         TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler)
       ).sorted
-          InflightTuples.query must be_==(0)
+
+    InflightTuples.query must be_==(0)
 
     val memoryOutputList =
       memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
@@ -408,6 +430,7 @@ object StormLaws extends Specification {
   }
 
   "StormPlatform with multiple summers" in {
+    InflightTuples.reset
     val original = sample[List[Int]]
     val doubler = {(x): (Int) => List((x -> x*2))}
     val simpleOp = {(x): (Int) => List(x * 10)}
@@ -420,6 +443,7 @@ object StormLaws extends Specification {
 
     val topo = storm.plan(tail)
     StormRunner.run(topo)
+
     InflightTuples.query must be_==(0)
 
     val (scalaA, scalaB) = TestGraphs.multipleSummerJobInScala(original)(simpleOp, doubler, doubler)
@@ -440,6 +464,7 @@ object StormLaws extends Specification {
   }
 
    "StormPlatform should be efficent in real world job" in {
+    InflightTuples.reset
     val original1 = sample[List[Int]]
     val original2 = sample[List[Int]]
     val original3 = sample[List[Int]]
@@ -468,8 +493,8 @@ object StormLaws extends Specification {
     OnlinePlan(tail).nodes.size must beLessThan(10)
 
     StormRunner.run(topo)
-    InflightTuples.query must be_==(0)
 
+    InflightTuples.query must be_==(0)
 
     val scalaA = TestGraphs.realJoinTestJobInScala(original1, original2, original3, original4,
                 serviceFn, fn1, fn2, fn3, preJoinFn, postJoinFn)

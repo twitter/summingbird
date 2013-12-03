@@ -24,7 +24,7 @@ import backtype.storm.tuple.Fields
 import backtype.storm.tuple.Tuple
 
 import com.twitter.bijection.{Base64String, Injection}
-import com.twitter.algebird.Monoid
+import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.storehaus.ReadableStore
 import com.twitter.storehaus.algebra.MergeableStore
@@ -34,6 +34,8 @@ import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.AnchorTuples
+import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache}
+import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{IncludeSuccessHandler, FlushFrequency}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
@@ -195,19 +197,30 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val flushFrequency = getOrElse(stormDag, node, DEFAULT_FLUSH_FREQUENCY)
     logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
 
+    val cacheSize = getOrElse(stormDag, node, DEFAULT_FM_CACHE)
+    logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
+
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
+
+    val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
+    logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
 
     val bolt = summerOpt match {
       case Some(s) =>
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
+        val cacheBuilder = if(useAsyncCache.get) {
+          MultiTriggerCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency)
+        } else {
+         SummingQueueCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency)
+        }
+
         BaseBolt(
           metrics.metrics,
           anchorTuples,
           true,
           new executor.FinalFlatMap(
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-            getOrElse(stormDag, node, DEFAULT_FM_CACHE),
-            flushFrequency,
+            cacheBuilder,
             maxWaiting,
             maxWaitTime,
             new SingleItemInjection[Any](VALUE_FIELD),

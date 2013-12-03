@@ -50,22 +50,37 @@ object InflightTuples {
   def query = {
     data.get
   }
+
+  // WARNING, only use this in testing!!
+  def reset {
+    data.set(0)
+  }
 }
 
-case class InputState[T](state: T, initValue: Int) {
+case class InputState[T](state: T) {
   InflightTuples.incr
 
   case class State(counter: Int, failed: Boolean) {
     def decr = this.copy(counter = counter - 1)
     def fail = this.copy(failed = true, counter = counter - 1)
+    def incrBy(by: Int) = this.copy(counter = counter + by )
     def doAck = (counter == 0 && !failed)
     def invalidState = counter < 0
   }
 
-  val stateTracking = new AtomicStateTransformer(State(initValue, false))
+  val stateTracking = new AtomicStateTransformer(State(1, false))
 
-  if(initValue == 0) {
-    throw new Exception("Invalid initial value, input state must start >= 1")
+  def fanOut(by: Int) = {
+    if(by < 0) {
+      throw new Exception("Invalid fanout, by should be >= 0")
+    }
+    val newS = stateTracking.update(_.incrBy(by))
+    // If we incremented on something that was 0 or negative
+    // And not in a failed state, then this is an error
+    if((newS.counter - by <= 0) && !newS.failed) {
+      throw new Exception("Invalid call on an inputstate, we had already decremented to 0 and not failed.")
+    }
+    this
   }
 
   // Returns true if it should be acked
@@ -74,11 +89,9 @@ case class InputState[T](state: T, initValue: Int) {
     if(newState.doAck) {
       InflightTuples.decr
       fn(state)
-      // println("Acking, count is:" + newState.counter + ", initial was: " + initValue)
       true
     } else {
       if(newState.invalidState) throw new Exception("Invalid ack number, logic has failed")
-      // println("Not acking, count is:" + newState.counter + ", initial was: " + initValue)
       false
     }
   }

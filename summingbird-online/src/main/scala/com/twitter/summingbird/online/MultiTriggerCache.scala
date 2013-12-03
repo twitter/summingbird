@@ -21,8 +21,9 @@ import com.twitter.util.{Return, Throw}
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.option.FlushFrequency
 import java.util.concurrent._
+import scala.collection.JavaConversions._
 import com.twitter.util.Future
-import scala.collection.mutable.{Queue => MQueue, Map => MMap}
+import scala.collection.mutable.{Set => MSet, Queue => MQueue, Map => MMap}
 import com.twitter.util.FuturePool
 
 import org.slf4j.{LoggerFactory, Logger}
@@ -30,17 +31,24 @@ import org.slf4j.{LoggerFactory, Logger}
 /**
  * @author Ian O Connell
  */
+
+object MultiTriggerCache {
+  def builder[Key, Value](cacheSize: CacheSize, flushFrequency: FlushFrequency) =
+      {(sg: Semigroup[Value]) =>
+            new MultiTriggerCache[Key, Value](cacheSize, flushFrequency)(sg) }
+}
+
 case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency)
-  (implicit monoid: Semigroup[Value]) {
+  (implicit monoid: Semigroup[Value]) extends AsyncCache[Key, Value] {
 
   val executor = new ThreadPoolExecutor(10, 10, 60, TimeUnit.SECONDS, new LinkedBlockingQueue(1000))
-  val pool     =  FuturePool(executor) //FuturePool.immediatePool
+  val pool     =  FuturePool(executor) // FuturePool.immediatePool //
 
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
 
   private val cacheSize = cacheSizeOpt.size.getOrElse(0)
-  @volatile private var keyMap = MMap[Key, MQueue[Value]]()
+  private val keyMap = new ConcurrentHashMap[Key, List[Value]]()
   @volatile private var lastDump:Long = System.currentTimeMillis
 
   private lazy val runtime  = Runtime.getRuntime
@@ -52,11 +60,15 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
   private def timedOut = (System.currentTimeMillis - lastDump) > flushFrequency.get.inMilliseconds
   private def keySpaceTooBig = keyMap.size > cacheSize
 
+  def forceTick: Future[Map[Key, Value]] = {
+    pool {
+      innerTick
+    }
+  }
+
   def tick: Future[Map[Key, Value]] = {
     if (timedOut || keySpaceTooBig || memoryWaterMark) {
-        pool {
-          innerTick
-        }
+        forceTick
       }
     else {
       Future.value(Map.empty)
@@ -68,41 +80,37 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
         doFlushCache
     }
     else {
-      Map()
+      Map.empty
     }
   }
 
+  @annotation.tailrec
+  private def merge(key: Key, extraVals: List[Value]) {
+    val oldValue = Option(keyMap.remove(key)).getOrElse(List[Value]())
+    val newVal = extraVals ::: oldValue
+    val mutated = if(newVal.size > cacheSize) {
+      List(monoid.sumOption(newVal).get)
+    } else newVal
+    if(keyMap.putIfAbsent(key, mutated) != null) {
+      merge(key, mutated)
+    }
+  }
+
+  private def merge(key: Key, extraValue: Value): Unit = merge(key, List(extraValue))
 
   def insert(vals: TraversableOnce[(Key, Value)]): Future[Map[Key, Value]] = {
+    val valList = vals.toList
     pool {
-      val valList = vals.toList
-      this.synchronized {
-        valList.map {case (k, v) =>
-          keyMap.get(k) match {
-            case Some(vQueue) => vQueue += v
-              if(vQueue.size > cacheSize && vQueue.size > 1) {
-                  val newV = monoid.sumOption(vQueue).get
-                  vQueue.clear
-                  vQueue += newV
-                }
-            case None => keyMap.put(k, MQueue(v))
-          }
-        }
-      }
+      valList.map{case (k, v) => merge(k, v) }
       innerTick
     }
   }
 
   private def doFlushCache: Map[Key, Value] = {
-
-    val oldKeyMap = this.synchronized {
-      val oldKeyMap = keyMap
-      keyMap = MMap[Key, MQueue[Value]]()
-      lastDump = System.currentTimeMillis
-      oldKeyMap
-    }
-
-    // The get is valid since by construction we must have elements in the value
-    oldKeyMap.mapValues(monoid.sumOption(_).get).toMap
+    val startKeyset: Set[Key] = keyMap.keySet.toSet
+    lastDump = System.currentTimeMillis
+    startKeyset.flatMap{case k =>
+      Option(keyMap.remove(k)).map(monoid.sumOption(_).get).map((k, _))
+    }.toMap
   }
 }
