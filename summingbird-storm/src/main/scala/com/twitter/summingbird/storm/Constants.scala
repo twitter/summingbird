@@ -18,7 +18,7 @@ package com.twitter.summingbird.storm
 
 import com.twitter.summingbird.option.MonoidIsCommutative
 import com.twitter.summingbird.storm.option.{SpoutParallelism, SpoutStormMetrics, FlatMapParallelism,
-                                              FlatMapStormMetrics, SummerParallelism, SummerStormMetrics, LocalOrShuffle}
+                                              FlatMapStormMetrics, SummerParallelism, SummerStormMetrics, PreferLocalDependency}
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option._
 
@@ -45,8 +45,8 @@ object Constants {
   val DEFAULT_SUMMER_STORM_METRICS = SummerStormMetrics(None)
   val DEFAULT_MONOID_IS_COMMUTATIVE = MonoidIsCommutative.default
   val DEFAULT_MAX_WAITING_FUTURES = MaxWaitingFutures(10)
-  val DEFAULT_MAX_FUTURE_WAIT_TIME =  MaxFutureWaitTime(Duration.fromSeconds(120))
-  val DEFAULT_FLUSH_FREQUENCY =  FlushFrequency(Duration.fromSeconds(40))
-  val DEFAULT_FM_LOCAL_OR_SHUFFLE =  LocalOrShuffle(false)
+  val DEFAULT_MAX_FUTURE_WAIT_TIME =  MaxFutureWaitTime(Duration.fromSeconds(60))
+val DEFAULT_FM_PREFER_LOCAL_DEPENDENCY =  PreferLocalDependency(false)
+  val DEFAULT_FLUSH_FREQUENCY =  FlushFrequency(Duration.fromSeconds(10))
   val DEFAULT_USE_ASYNC_CACHE = UseAsyncCache(false)
 }
