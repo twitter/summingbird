@@ -286,6 +286,8 @@ class InitialBatchedStore[K,V](val firstNonZero: BatchID, val proxy: BatchedScal
 
   def batcher = proxy.batcher
   def ordering = proxy.ordering
+  // This one is dangerous and marked override because it has a default
+  override def select(b: List[BatchID]) = proxy.select(b)
   def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) =
     if (batchID >= firstNonZero) proxy.writeLast(batchID, lastVals)
     else sys.error("Earliest batch set at :" + firstNonZero + " but tried to write: " + batchID)
