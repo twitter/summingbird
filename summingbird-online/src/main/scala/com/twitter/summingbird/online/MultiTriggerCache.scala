@@ -19,8 +19,9 @@ package com.twitter.summingbird.online
 import com.twitter.algebird.{ Semigroup, MapAlgebra }
 import com.twitter.util.{Return, Throw}
 import com.twitter.summingbird.option.CacheSize
+import scala.collection.mutable.SynchronizedQueue
 import com.twitter.summingbird.online.option.{AsyncPoolSize, FlushFrequency}
-import java.util.concurrent._
+import java.util.concurrent.{Executors, ConcurrentHashMap, TimeUnit}
 import scala.collection.JavaConversions._
 import com.twitter.util.Future
 import scala.collection.mutable.{Set => MSet, Queue => MQueue, Map => MMap}
@@ -38,11 +39,15 @@ object MultiTriggerCache {
             new MultiTriggerCache[Key, Value](cacheSize, flushFrequency, poolSize)(sg) }
 }
 
+class SynchronizedQueueWithSimpleEQ[T] extends SynchronizedQueue[T] with TrimmableQueue[T] {
+  override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
+}
+
 case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency, poolSize: AsyncPoolSize)
   (implicit monoid: Semigroup[Value]) extends AsyncCache[Key, Value] {
 
   private val (executor, pool) = if(poolSize.get > 0) {
-      val executor = new ThreadPoolExecutor(poolSize.get, poolSize.get, 60, TimeUnit.SECONDS, new LinkedBlockingQueue(1000))
+      val executor = Executors.newFixedThreadPool(poolSize.get)
       (Some(executor), FuturePool(executor))
     } else {
       (None, FuturePool.immediatePool)
@@ -52,7 +57,8 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
     LoggerFactory.getLogger(getClass)
 
   private val cacheSize = cacheSizeOpt.size.getOrElse(0)
-  private val keyMap = new ConcurrentHashMap[Key, List[Value]]()
+
+  private val keyMap = new ConcurrentHashMap[Key, SynchronizedQueueWithSimpleEQ[Value]]()
   @volatile private var lastDump:Long = System.currentTimeMillis
 
   private lazy val runtime  = Runtime.getRuntime
@@ -61,12 +67,13 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
     used > 0.8
   }
 
-  private def timedOut = (System.currentTimeMillis - lastDump) > flushFrequency.get.inMilliseconds
+  private def timedOut = (System.currentTimeMillis - lastDump) >= flushFrequency.get.inMilliseconds
   private def keySpaceTooBig = keyMap.size > cacheSize
 
   override def cleanup {
     executor.map{e =>
       e.shutdown
+      e.awaitTermination(60, TimeUnit.SECONDS)
     }
     super.cleanup
   }
@@ -91,7 +98,11 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
   def insert(vals: TraversableOnce[(Key, Value)]): Future[Map[Key, Value]] = {
     val valList = vals.toList
     pool {
-      valList.map{case (k, v) => merge(k, v) }
+      valList.foreach {case (k, v) =>
+        if(k == null || v == null) {
+          throw new Exception("Unable to store nulls in cache")
+        }
+        merge(k, List(v)) }
       innerTick
     }
   }
@@ -109,24 +120,27 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
   }
 
   @annotation.tailrec
-  private def merge(key: Key, extraVals: List[Value]) {
-    val oldValue = Option(keyMap.remove(key)).getOrElse(List[Value]())
-    val newVal = extraVals ::: oldValue
-    val mutated = if(newVal.size > cacheSize) {
-      List(monoid.sumOption(newVal).get)
-    } else newVal
-    if(keyMap.putIfAbsent(key, mutated) != null) {
-      merge(key, mutated)
-    }
-  }
+  private def merge(key: Key, extraVals: TraversableOnce[Value]) {
+    val oldQueue = Option(keyMap.get(key)).getOrElse(new SynchronizedQueueWithSimpleEQ[Value]())
+    oldQueue ++= extraVals
 
-  private def merge(key: Key, extraValue: Value): Unit = merge(key, List(extraValue))
+    if(keyMap.putIfAbsent(key, oldQueue) != null) { // Not there
+      if(oldQueue.size > 0 && !keyMap.replace(key, oldQueue, oldQueue)) { // We were there before
+          merge(key, oldQueue.trimTo(0))
+      }
+    }
+    // val newVal:List[Value] = extraVals ::: oldValue
+    // val mutated = newVal //if(newVal.size > cacheSize) {
+    //   println("Crushing..")
+    //   List(monoid.sumOption(newVal).get)
+    // } els
+  }
 
   private def doFlushCache: Map[Key, Value] = {
     val startKeyset: Set[Key] = keyMap.keySet.toSet
     lastDump = System.currentTimeMillis
     startKeyset.flatMap{case k =>
-      Option(keyMap.remove(k)).map(monoid.sumOption(_).get).map((k, _))
+      Option(keyMap.remove(k)).map(_.trimTo(0)).flatMap(x => monoid.sumOption(x)).map((k, _))
     }.toMap
   }
 }

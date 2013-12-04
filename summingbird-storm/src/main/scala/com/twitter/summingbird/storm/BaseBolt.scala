@@ -28,7 +28,7 @@ import java.util.{ Map => JMap }
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
 import com.twitter.summingbird.online.executor.OperationContainer
-import com.twitter.summingbird.online.executor.InputState
+import com.twitter.summingbird.online.executor.{InflightTuples, InputState}
 
 import scala.collection.JavaConverters._
 

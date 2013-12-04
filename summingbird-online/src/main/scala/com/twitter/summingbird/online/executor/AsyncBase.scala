@@ -38,7 +38,7 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
   def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
 
   private lazy val outstandingFutures = new SynchronizedQueue[Future[Unit]] with TrimmableQueue[Future[Unit]]
-  private lazy val responses = new SynchronizedQueue[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])]()
+  private lazy val responses = new SynchronizedQueue[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])] with TrimmableQueue[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])]
 
   override def executeTick = {
     val futWithFail = tick.onFailure { thr =>
@@ -108,6 +108,6 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
     // don't let too many futures build up
     forceExtraFutures
     // Take all results that have been placed for writing to the network
-    responses.dequeueAll(_ => true).toList
+    responses.trimTo(0).toList
   }
 }

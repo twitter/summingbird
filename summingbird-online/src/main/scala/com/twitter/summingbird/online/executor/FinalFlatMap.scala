@@ -89,5 +89,8 @@ class FinalFlatMap[Event, Key, Value, S, D](
                      timeIn: (Timestamp, Event)) =
     lockedOp.get.apply(timeIn._2).map { cache(state, timeIn._1, _) }.flatten
 
-  override def cleanup { lockedOp.get.close }
+  override def cleanup {
+    lockedOp.get.close
+    sCache.cleanup
+  }
 }

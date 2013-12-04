@@ -21,20 +21,22 @@ package com.twitter.summingbird.online
  * @author Oscar Boykin
  */
 
-trait TrimmableQueue[T] {
+trait TrimmableQueue[T] { self =>
   def dequeue: T
   def size: Int
 
    def trimTo(maxLength: Int): Seq[T] = {
+    self.synchronized {
     require(maxLength >= 0, "maxLength must be >= 0.")
 
-    @annotation.tailrec
-    def loop(acc: List[T] = Nil): List[T] = {
-      if(size > maxLength) {
-        loop(dequeue :: acc)
+      @annotation.tailrec
+      def loop(acc: List[T] = Nil): List[T] = {
+        if(size > maxLength) {
+          loop(dequeue :: acc)
+        }
+        else acc.reverse
       }
-      else acc.reverse
-    }
     loop()
+    }
   }
 }

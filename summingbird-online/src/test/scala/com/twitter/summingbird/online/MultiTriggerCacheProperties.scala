@@ -54,10 +54,12 @@ object MultiTriggerCacheProperties extends Properties("MultiTriggerCache") {
       cacheSize <- Arbitrary.arbitrary[CacheSize]
       flushFreq <- Arbitrary.arbitrary[FlushFrequency]
       asyncPoolSize <- Arbitrary.arbitrary[AsyncPoolSize]
-     } yield MultiTriggerCache[K, V](cacheSize, flushFreq, asyncPoolSize)
+     } yield new MultiTriggerCache[K, V](cacheSize, flushFreq, asyncPoolSize)
   }
+  def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
-  property("Summing with and without the cache should match") = forAll { (cache: MultiTriggerCache[Int, Int], inputs: List[List[(Int, Int)]]) =>
+  property("Summing with and without the cache should match") = forAll { inputs: List[List[(Int, Int)]] =>
+    val cache = new MultiTriggerCache[Int, (List[Int], Int)](sample[CacheSize], sample[FlushFrequency], sample[AsyncPoolSize])
     val reference = MapAlgebra.sumByKey(inputs.flatten)
     val resA = Await.result(Future.collect(inputs.map(cache.insert(_)))).map(_.toList).flatten
     val resB = Await.result(cache.forceTick)
@@ -66,38 +68,45 @@ object MultiTriggerCacheProperties extends Properties("MultiTriggerCache") {
       reference,
       other
     )
+
     cache.cleanup
     res
   }
 
-  property("Input Set must not get duplicates") = forAll { (cache: MultiTriggerCache[Int, (List[Int], Int)], ids: Set[Int], inputs: List[List[(Int, Int)]]) =>
-    val idList = (ids ++ Set(1)).toList
-    var refCount = MMap[Int, Int]()
-    val realInputs = inputs.map{ iList =>
-        iList.map{ case (k, v) =>
-          val id = idList(Random.nextInt(idList.size))
-          refCount += (id -> (refCount.getOrElse(id, 0) + 1))
-          (k, (List(id), v))
-        }
-    }.toList
+  property("Input Set must not get duplicates") = forAll { (ids: Set[Int], inputs: List[List[(Int, Int)]]) =>
+    try {
+      val cache = new MultiTriggerCache[Int, (List[Int], Int)](sample[CacheSize], sample[FlushFrequency], sample[AsyncPoolSize])
+      val idList = (ids ++ Set(1)).toList
+      var refCount = MMap[Int, Int]()
+      val realInputs = inputs.map{ iList =>
+          iList.map{ case (k, v) =>
+            val id = idList(Random.nextInt(idList.size))
+            refCount += (id -> (refCount.getOrElse(id, 0) + 1))
+            (k, (List(id), v))
+          }
+      }.toList
 
-    val reference = MapAlgebra.sumByKey(realInputs.flatten).mapValues(tupV => (tupV._1.sorted, tupV._2))
-    val resA = realInputs.map(cache.insert(_)).map(Await.result(_)).map(_.toList).flatten
-    val resB = Await.result(cache.forceTick)
-    val other = MapAlgebra.sumByKey(resA.toList ++ resB.toList).mapValues(tupV => (tupV._1.sorted, tupV._2))
-    cache.cleanup
-    val equiv = Equiv[Map[Int, (List[Int], Int)]].equiv(
-      reference,
-      other
-    )
-    if(equiv) {
-      val postFreq = MapAlgebra.sumByKey(other.map(_._2._1).flatten.map((_, 1)))
-      Equiv[Map[Int, Int]].equiv(
-        refCount.toMap,
-        postFreq
-        )
-    } else {
-      equiv
+      val reference = MapAlgebra.sumByKey(realInputs.flatten).mapValues(tupV => (tupV._1.sorted, tupV._2))
+      val resA = realInputs.map(cache.insert(_)).map(Await.result(_)).map(_.toList).flatten
+      val resB = Await.result(cache.forceTick)
+      val other = MapAlgebra.sumByKey(resA.toList ++ resB.toList).mapValues(tupV => (tupV._1.sorted, tupV._2))
+      cache.cleanup
+      val equiv = Equiv[Map[Int, (List[Int], Int)]].equiv(
+        reference,
+        other
+      )
+      if(equiv) {
+        val postFreq = MapAlgebra.sumByKey(other.map(_._2._1).flatten.map((_, 1)))
+        Equiv[Map[Int, Int]].equiv(
+          refCount.toMap,
+          postFreq
+          )
+      } else {
+        equiv
+      }
+    } catch {
+      case e: Throwable => e.printStackTrace
+            throw e
     }
   }
 }
