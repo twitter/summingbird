@@ -108,4 +108,17 @@ object QueueLaws extends Properties("Queue") {
       q2.foldLeft(List[Int]()) { (l, it) => it :: l }.reverse == items
     }
   }
+  property("toSeq works") = forAll { (items: List[Int]) =>
+    val q = Queue[Int]()
+    q.putAll(items)
+    q.toSeq == items && (q.size == 0)
+  }
+
+  property("dequeueAll works") = forAll { (items: List[Int]) =>
+    val q = Queue[Int]()
+    q.putAll(items)
+    val evens = q.dequeueAll(_ % 2 == 0)
+    val odds = q.toSeq
+    evens.forall(_ % 2 == 0) && odds.forall(_ % 2 != 0)
+  }
 }
