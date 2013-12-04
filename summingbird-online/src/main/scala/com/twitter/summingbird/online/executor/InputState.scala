@@ -61,9 +61,11 @@ case class InputState[T](state: T) {
   InflightTuples.incr
 
   case class State(counter: Int, failed: Boolean) {
-    def decr = this.copy(counter = counter - 1)
     def fail = this.copy(failed = true, counter = counter - 1)
+    def decrBy(by: Int) = this.copy(counter = counter - by )
     def incrBy(by: Int) = this.copy(counter = counter + by )
+    def incr = incrBy(1)
+    def decr = decrBy(1)
     def doAck = (counter == 0 && !failed)
     def invalidState = counter < 0
   }
