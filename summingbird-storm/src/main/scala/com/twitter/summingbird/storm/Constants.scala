@@ -17,7 +17,9 @@ limitations under the License.
 package com.twitter.summingbird.storm
 
 import com.twitter.summingbird.option.MonoidIsCommutative
-import com.twitter.summingbird.storm.option.{CacheSize => DEPCacheSize, _ }
+import com.twitter.summingbird.storm.option.{AckOnEntry, SpoutParallelism, SpoutStormMetrics, FlatMapParallelism,
+                                              FlatMapStormMetrics, SummerParallelism, SummerStormMetrics, PreferLocalDependency}
+import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option._
 
 import com.twitter.util.Duration
@@ -45,4 +47,8 @@ object Constants {
   val DEFAULT_MAX_WAITING_FUTURES = MaxWaitingFutures(10)
   val DEFAULT_MAX_FUTURE_WAIT_TIME =  MaxFutureWaitTime(Duration.fromSeconds(60))
   val DEFAULT_FM_PREFER_LOCAL_DEPENDENCY =  PreferLocalDependency(false)
+  val DEFAULT_FLUSH_FREQUENCY =  FlushFrequency(Duration.fromSeconds(10))
+  val DEFAULT_USE_ASYNC_CACHE = UseAsyncCache(false)
+  val DEFAULT_ASYNCPOOLSIZE = AsyncPoolSize(10)
+  val DEFAULT_ACKONENTRY = AckOnEntry(false)
 }

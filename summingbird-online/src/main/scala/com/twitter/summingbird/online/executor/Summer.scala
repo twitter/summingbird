@@ -14,19 +14,18 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.storm
-
-import backtype.storm.task.{OutputCollector, TopologyContext}
-import backtype.storm.tuple.{Tuple, Values, Fields}
-import com.twitter.algebird.{Semigroup, SummingQueue}
-import com.twitter.summingbird.online.Externalizer
-import com.twitter.storehaus.algebra.MergeableStore
-import com.twitter.summingbird.batch.{BatchID, Timestamp}
-import com.twitter.summingbird.storm.option._
-import com.twitter.summingbird.option.CacheSize
+package com.twitter.summingbird.online.executor
 
 import com.twitter.util.{Await, Future}
-import java.util.{ Arrays => JArrays, List => JList, Map => JMap, ArrayList => JAList }
+import com.twitter.algebird.{Semigroup, SummingQueue}
+import com.twitter.storehaus.algebra.MergeableStore
+
+import com.twitter.summingbird.online.Externalizer
+import com.twitter.summingbird.batch.{BatchID, Timestamp}
+import com.twitter.summingbird.online.option._
+import com.twitter.summingbird.option.CacheSize
+
+
 
 /**
   * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
@@ -50,74 +49,55 @@ import java.util.{ Arrays => JArrays, List => JList, Map => JMap, ArrayList => J
   * @author Ashu Singhal
   */
 
-object JListSemigroup {
-  def lift[T](t: T): JAList[T] = { val l = new JAList[T](); l.add(t); l }
 
-  implicit def jlistConcat[T]: Semigroup[JAList[T]] = new JListSemigroup[T]
-}
-/** Mutably concat java lists */
-class JListSemigroup[T] extends Semigroup[JAList[T]] {
-  def plus(old: JAList[T], next: JAList[T]): JAList[T] = {
-    old.addAll(next)
-    old
-  }
-}
-
-class SummerBolt[Key, Value: Semigroup](
+class Summer[Key, Value: Semigroup, S, D](
   @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
   cacheSize: CacheSize,
-  metrics: SummerStormMetrics,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   includeSuccessHandler: IncludeSuccessHandler,
-  anchor: AnchorTuples,
-  shouldEmit: Boolean) extends
-    AsyncBaseBolt[((Key, BatchID), Value), (Key, (Option[Value], Value))](
-      metrics.metrics,
-      anchor,
+  pDecoder: DataInjection[((Key, BatchID), Value), D],
+  pEncoder: DataInjection[(Key, (Option[Value], Value)), D]) extends
+    AsyncBase[((Key, BatchID), Value), (Key, (Option[Value], Value)), S, D](
       maxWaitingFutures,
-      maxWaitingTime,
-      shouldEmit) {
+      maxWaitingTime) {
 
-  import Constants._
-  import JListSemigroup._
+  val encoder = pEncoder
+  val decoder = pDecoder
 
   val storeBox = Externalizer(storeSupplier)
   lazy val store = storeBox.get.apply
 
   // See MaxWaitingFutures for a todo around removing this.
   lazy val cacheCount = cacheSize.size
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), (JList[Tuple], Timestamp, Value)]](cacheCount.getOrElse(0))
+  lazy val buffer = SummingQueue[Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)]](cacheCount.getOrElse(0))
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
 
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
-  override val decoder = new KeyValueInjection[(Key,BatchID), Value](AGG_KEY, AGG_VALUE)
-  override val encoder = new SingleItemInjection[(Key, (Option[Value], Value))](VALUE_FIELD)
-
-  override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
-    super.prepare(conf, context, oc)
+  override def init {
+    super.init
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  protected override def fail(inputs: JList[Tuple], error: Throwable): Unit = {
-    super.fail(inputs, error)
+  override def notifyFailure(inputs: List[InputState[S]], error: Throwable): Unit = {
+    super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
-    ()
   }
 
-  override def apply(tuple: Tuple,
+  override def apply(state: InputState[S],
     tsIn: (Timestamp, ((Key, BatchID), Value))):
-      Future[Iterable[(JList[Tuple], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
+      Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
 
     val (ts, (kb, v)) = tsIn
+    val wrappedData = Map(kb -> ((List(state), ts, v)))
     Future.value {
       // See MaxWaitingFutures for a todo around simplifying this.
-      buffer(Map(kb -> ((lift(tuple), ts, v))))
+      buffer(wrappedData)
         .map { kvs =>
           kvs.iterator.map { case ((k, batchID), (tups, stamp, delta)) =>
             (tups,
