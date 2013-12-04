@@ -17,9 +17,8 @@ limitations under the License.
 package com.twitter.summingbird.online.executor
 
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.online.TrimmableQueue
+import com.twitter.summingbird.online.Queue
 import com.twitter.summingbird.online.option.{MaxWaitingFutures, MaxFutureWaitTime}
-import scala.collection.mutable.SynchronizedQueue
 import com.twitter.util.{Await, Duration, Future}
 import scala.util.{Try, Success, Failure}
 import java.util.concurrent.TimeoutException
@@ -37,16 +36,16 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
   def apply(state: InputState[S], in: (Timestamp, I)): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]
   def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
 
-  private lazy val outstandingFutures = new SynchronizedQueue[Future[Unit]] with TrimmableQueue[Future[Unit]]
-  private lazy val responses = new SynchronizedQueue[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])] with TrimmableQueue[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])]
+  private lazy val outstandingFutures = Queue.linkedNonBlocking[Future[Unit]]
+  private lazy val responses = Queue.linkedNonBlocking[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])]
 
   override def executeTick = {
     val futWithFail = tick.onFailure { thr =>
-                              responses += ((List(), Failure(thr)))
+                              responses.put(((List(), Failure(thr))))
                             }
     val fut = handleSuccess(futWithFail)
     if(!fut.isDefined) {
-      outstandingFutures += fut.unit
+      outstandingFutures.put(fut.unit)
     }
     // always empty the responses
     emptyQueue
@@ -54,11 +53,11 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
 
   override def execute(state: InputState[S], data: (Timestamp, I)) = {
     val futWithFail = apply(state, data).onFailure { thr =>
-                              responses += ((List(state), Failure(thr)))
+                              responses.put(((List(state), Failure(thr))))
                             }
     val fut = handleSuccess(futWithFail)
     if(!fut.isDefined) {
-      outstandingFutures += fut.unit
+      outstandingFutures.put(fut.unit)
     }
     // always empty the responses
     emptyQueue
@@ -69,11 +68,11 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
 
         // Collect the result onto our responses
         val iterSize = iter.foldLeft(0) { case (iterSize, (tups, res)) =>
-          res.onSuccess { t => responses += ((tups, Success(t))) }
-          res.onFailure { t => responses += ((tups, Failure(t))) }
+          res.onSuccess { t => responses.put(((tups, Success(t)))) }
+          res.onFailure { t => responses.put(((tups, Failure(t)))) }
           // Make sure there are not too many outstanding:
           if(!res.isDefined) {
-            outstandingFutures += res.unit
+            outstandingFutures.put(fut.unit)
             iterSize + 1
           } else {
             iterSize

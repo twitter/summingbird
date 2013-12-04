@@ -24,7 +24,7 @@ import com.twitter.summingbird.online.option.{AsyncPoolSize, FlushFrequency}
 import java.util.concurrent.{Executors, ConcurrentHashMap, TimeUnit}
 import scala.collection.JavaConversions._
 import com.twitter.util.Future
-import scala.collection.mutable.{Set => MSet, Queue => MQueue, Map => MMap}
+import scala.collection.mutable.{Set => MSet, Map => MMap}
 import com.twitter.util.FuturePool
 
 import org.slf4j.{LoggerFactory, Logger}
@@ -37,10 +37,6 @@ object MultiTriggerCache {
   def builder[Key, Value](cacheSize: CacheSize, flushFrequency: FlushFrequency, poolSize: AsyncPoolSize) =
       {(sg: Semigroup[Value]) =>
             new MultiTriggerCache[Key, Value](cacheSize, flushFrequency, poolSize)(sg) }
-}
-
-class SynchronizedQueueWithSimpleEQ[T] extends SynchronizedQueue[T] with TrimmableQueue[T] {
-  override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
 }
 
 case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency, poolSize: AsyncPoolSize)
@@ -58,7 +54,7 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
 
   private val cacheSize = cacheSizeOpt.size.getOrElse(0)
 
-  private val keyMap = new ConcurrentHashMap[Key, SynchronizedQueueWithSimpleEQ[Value]]()
+  private val keyMap = new ConcurrentHashMap[Key, Queue[Value]]()
   @volatile private var lastDump:Long = System.currentTimeMillis
 
   private lazy val runtime  = Runtime.getRuntime
@@ -121,8 +117,8 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
 
   @annotation.tailrec
   private def merge(key: Key, extraVals: TraversableOnce[Value]) {
-    val oldQueue = Option(keyMap.get(key)).getOrElse(new SynchronizedQueueWithSimpleEQ[Value]())
-    oldQueue ++= extraVals
+    val oldQueue = Option(keyMap.get(key)).getOrElse(Queue.linkedNonBlocking[Value])
+    oldQueue.putAll(extraVals)
     if(oldQueue.size > cacheSize) { // We have a high locality  for a single tuple, crush it down
       val dataCP = oldQueue.trimTo(0)
       if(dataCP.size > 0) {
