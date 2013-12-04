@@ -39,31 +39,20 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
   private lazy val outstandingFutures = Queue.linkedNonBlocking[Future[Unit]]
   private lazy val responses = Queue.linkedNonBlocking[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])]
 
-  override def executeTick = {
-    val futWithFail = tick.onFailure { thr =>
-                              responses.put(((List(), Failure(thr))))
-                            }
-    val fut = handleSuccess(futWithFail)
-    if(!fut.isDefined) {
-      outstandingFutures.put(fut.unit)
-    }
+  override def executeTick =
+    finishExecute(tick.onFailure{ thr => responses.put(((List(), Failure(thr)))) })
+
+  override def execute(state: InputState[S], data: (Timestamp, I)) =
+    finishExecute(apply(state, data).onFailure { thr => responses.put(((List(state), Failure(thr)))) })
+
+  private def finishExecute(fIn: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]) = {
+    addOutstandingFuture(handleSuccess(fIn).unit)
+
     // always empty the responses
     emptyQueue
   }
 
-  override def execute(state: InputState[S], data: (Timestamp, I)) = {
-    val futWithFail = apply(state, data).onFailure { thr =>
-                              responses.put(((List(state), Failure(thr))))
-                            }
-    val fut = handleSuccess(futWithFail)
-    if(!fut.isDefined) {
-      outstandingFutures.put(fut.unit)
-    }
-    // always empty the responses
-    emptyQueue
-  }
-
-  def handleSuccess(fut: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]) =
+  private def handleSuccess(fut: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]) =
     fut.onSuccess { iter: Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])] =>
 
         // Collect the result onto our responses
@@ -71,8 +60,7 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
           res.onSuccess { t => responses.put(((tups, Success(t)))) }
           res.onFailure { t => responses.put(((tups, Failure(t)))) }
           // Make sure there are not too many outstanding:
-          if(!res.isDefined) {
-            outstandingFutures.put(fut.unit)
+          if(addOutstandingFuture(res.unit)) {
             iterSize + 1
           } else {
             iterSize
@@ -88,6 +76,15 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
           )
         }
       }
+
+  private def addOutstandingFuture(fut: Future[Unit]): Boolean = {
+    if(!fut.isDefined) {
+      outstandingFutures.put(fut.unit)
+      true
+    } else {
+      false
+    }
+  }
 
   private def forceExtraFutures {
     outstandingFutures.dequeueAll(_.isDefined)
