@@ -46,6 +46,7 @@ import org.slf4j.{LoggerFactory, Logger}
 case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   hasDependants: Boolean,
+  outputFields: Fields,
   executor: OperationContainer[I, O, Tuple, JList[AnyRef]]
   ) extends IRichBolt {
 
@@ -118,7 +119,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    if(hasDependants) { declarer.declare(new Fields(executor.encoder.fields.asJava)) }
+    if(hasDependants) { declarer.declare(outputFields) }
   }
 
   override val getComponentConfiguration = null

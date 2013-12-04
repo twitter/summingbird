@@ -19,13 +19,10 @@ package com.twitter.summingbird.storm
 
 import com.twitter.bijection.{Injection, Inversion, AbstractInjection}
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.online.executor.DataInjection
 import java.util.{List => JList, ArrayList => JAList}
 import scala.util.Try
 
-class SingleItemInjection[T](fieldName: String) extends DataInjection[T, JList[AnyRef]] {
-
-  val fields = List(fieldName)
+class SingleItemInjection[T] extends Injection[(Timestamp, T), JList[AnyRef]] {
 
   override def apply(t: (Timestamp, T)) = {
     val list = new JAList[AnyRef](1)
@@ -38,10 +35,8 @@ class SingleItemInjection[T](fieldName: String) extends DataInjection[T, JList[A
   }
 }
 
-class KeyValueInjection[K, V](keyField: String, timeValField: String)
-  extends DataInjection[(K, V), JList[AnyRef]] {
-
-  val fields = List(keyField, timeValField)
+class KeyValueInjection[K, V]
+  extends Injection[(Timestamp, (K, V)), JList[AnyRef]] {
 
   override def apply(item: (Timestamp, (K, V))) = {
     val (ts, (key, v)) = item

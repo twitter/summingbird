@@ -206,13 +206,14 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           metrics.metrics,
           anchorTuples,
           true,
+          new Fields(AGG_KEY, AGG_VALUE),
           new executor.FinalFlatMap(
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
             cacheSize,
             maxWaiting,
             maxWaitTime,
-            new SingleItemInjection[Any](VALUE_FIELD),
-            new KeyValueInjection[(Any, BatchID), Any](AGG_KEY, AGG_VALUE)
+            new SingleItemInjection[Any],
+            new KeyValueInjection[(Any, BatchID), Any]
             )(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
             )
       case None =>
@@ -220,12 +221,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           metrics.metrics,
           anchorTuples,
           stormDag.dependantsOf(node).size > 0,
+          new Fields(VALUE_FIELD),
           new executor.IntermediateFlatMap(
             operation,
             maxWaiting,
             maxWaitTime,
-            new SingleItemInjection[Any](VALUE_FIELD),
-            new SingleItemInjection[Any](VALUE_FIELD)
+            new SingleItemInjection[Any],
+            new SingleItemInjection[Any]
             )
           )
     }
@@ -282,6 +284,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           metrics.metrics,
           anchorTuples,
           shouldEmit,
+          new Fields(VALUE_FIELD),
           new executor.Summer(
               supplier,
               getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
@@ -290,8 +293,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
-              new KeyValueInjection[(K,BatchID), V](AGG_KEY, AGG_VALUE),
-              new SingleItemInjection[(K, (Option[V], V))](VALUE_FIELD))
+              new KeyValueInjection[(K,BatchID), V],
+              new SingleItemInjection[(K, (Option[V], V))])
         )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint

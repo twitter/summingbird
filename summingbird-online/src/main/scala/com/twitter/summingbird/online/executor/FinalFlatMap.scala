@@ -17,6 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.online.executor
 
 import com.twitter.algebird.{SummingQueue, Semigroup, MapAlgebra}
+import com.twitter.bijection.Injection
 import com.twitter.util.Future
 
 import com.twitter.summingbird.online.Externalizer
@@ -41,8 +42,8 @@ class FinalFlatMap[Event, Key, Value, S, D](
   cacheSize: CacheSize,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
-  pDecoder: DataInjection[Event, D],
-  pEncoder: DataInjection[((Key, BatchID), Value), D]
+  pDecoder: Injection[(Timestamp, Event), D],
+  pEncoder: Injection[(Timestamp, ((Key, BatchID), Value)), D]
   )
   (implicit monoid: Semigroup[Value], batcher: Batcher)
     extends AsyncBase[Event, ((Key, BatchID), Value), S, D](maxWaitingFutures,

@@ -19,6 +19,7 @@ package com.twitter.summingbird.online.executor
 import com.twitter.util.{Await, Future}
 import com.twitter.algebird.{Semigroup, SummingQueue}
 import com.twitter.storehaus.algebra.MergeableStore
+import com.twitter.bijection.Injection
 
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
@@ -58,8 +59,8 @@ class Summer[Key, Value: Semigroup, S, D](
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: DataInjection[((Key, BatchID), Value), D],
-  pEncoder: DataInjection[(Key, (Option[Value], Value)), D]) extends
+  pDecoder: Injection[(Timestamp, ((Key, BatchID), Value)), D],
+  pEncoder: Injection[(Timestamp, (Key, (Option[Value], Value))), D]) extends
     AsyncBase[((Key, BatchID), Value), (Key, (Option[Value], Value)), S, D](
       maxWaitingFutures,
       maxWaitingTime) {
