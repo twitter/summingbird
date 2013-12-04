@@ -96,7 +96,7 @@ case class InputState[T](state: T) {
     }
   }
 
-  def fail(fn: (T => Unit)) {
+  def fail[U](fn: (T => U)): U = {
     val newState = stateTracking.update(_.fail)
     InflightTuples.decr
     fn(state)
