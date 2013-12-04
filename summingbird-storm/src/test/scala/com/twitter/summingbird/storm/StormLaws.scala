@@ -161,8 +161,7 @@ object StormLaws extends Specification {
   val testFn = sample[Int => List[(Int, Int)]]
 
   val storm = Storm.local(Map(
-      "DEFAULT" -> Options().set(AnchorTuples(true)),
-      )
+      ))
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
@@ -323,8 +322,6 @@ object StormLaws extends Specification {
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(expansionFunc)
       )
 
-    InflightTuples.query must be_==(0)
-
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.singleStepInScala(original)(expansionFunc),
       returnedState.store.asScala.toMap
@@ -340,8 +337,6 @@ object StormLaws extends Specification {
       runOnce(original)(
         TestGraphs.singleStepMapKeysJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
       )
-
-    InflightTuples.query must be_==(0)
 
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB),
