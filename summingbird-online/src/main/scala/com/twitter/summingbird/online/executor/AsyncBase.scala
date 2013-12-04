@@ -104,6 +104,6 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
     // don't let too many futures build up
     forceExtraFutures
     // Take all results that have been placed for writing to the network
-    responses.trimTo(0).toList
+    responses.toSeq
   }
 }
