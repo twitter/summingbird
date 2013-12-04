@@ -75,7 +75,7 @@ case class InputState[T](state: T) {
   val stateTracking = new AtomicStateTransformer(State(1, false))
 
   def fanOut(by: Int) = {
-    require(by < 0, "Invalid fanout: %d, by should be >= 0".format(by))
+    require(by >= 0, "Invalid fanout: %d, by should be >= 0".format(by))
     val newS = stateTracking.update(_.incrBy(by))
     // If we incremented on something that was 0 or negative
     // And not in a failed state, then this is an error
