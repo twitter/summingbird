@@ -20,9 +20,10 @@ import java.util.concurrent.atomic.{AtomicReference, AtomicInteger}
 
 class AtomicStateTransformer[T](initState: T) {
   private val curState = new AtomicReference(initState)
-  def cur: T = curState.get
+  def get: T = curState.get
 
 
+  //oper cannot side effect (or re-running might break things).
   @annotation.tailrec
   final def updateWithState[S](oper: T => (S, T)): (S, T) = {
     val oldState = curState.get
@@ -41,20 +42,15 @@ class AtomicStateTransformer[T](initState: T) {
 
 object InflightTuples {
   private val data = new AtomicInteger(0)
-  def incr {
-    data.incrementAndGet
-  }
-  def decr {
-    data.decrementAndGet
-  }
-  def query = {
-    data.get
-  }
+  def incr = data.incrementAndGet
+
+  def decr = data.decrementAndGet
+
+  def get = data.get
 
   // WARNING, only use this in testing!!
-  def reset {
-    data.set(0)
-  }
+  def reset = data.set(0)
+
 }
 
 case class InputState[T](state: T) {
@@ -62,8 +58,16 @@ case class InputState[T](state: T) {
 
   case class State(counter: Int, failed: Boolean) {
     def fail = this.copy(failed = true, counter = counter - 1)
-    def decrBy(by: Int) = this.copy(counter = counter - by )
-    def incrBy(by: Int) = this.copy(counter = counter + by )
+    def decrBy(by: Int) = {
+      if(counter - by < 0) {
+        throw new Exception("Invalid decrement counter cannot be less than 0")
+      }
+      this.copy(counter = counter - by )
+    }
+    def incrBy(by: Int) = {
+      if(failed) throw new Exception("Cannot increment when already failed")
+      this.copy(counter = counter + by )
+    }
     def incr = incrBy(1)
     def decr = decrBy(1)
     def doAck = (counter == 0 && !failed)
@@ -73,9 +77,7 @@ case class InputState[T](state: T) {
   val stateTracking = new AtomicStateTransformer(State(1, false))
 
   def fanOut(by: Int) = {
-    if(by < 0) {
-      throw new Exception("Invalid fanout, by should be >= 0")
-    }
+    require(by < 0, "Invalid fanout: %d, by should be >= 0".format(by))
     val newS = stateTracking.update(_.incrBy(by))
     // If we incremented on something that was 0 or negative
     // And not in a failed state, then this is an error
@@ -93,7 +95,6 @@ case class InputState[T](state: T) {
       fn(state)
       true
     } else {
-      if(newState.invalidState) throw new Exception("Invalid ack number, logic has failed")
       false
     }
   }
@@ -105,7 +106,7 @@ case class InputState[T](state: T) {
   }
 
   override def toString: String = {
-    val curState = stateTracking.cur
+    val curState = stateTracking.get
     "Input State Wrapper(count: %d, failed: %s)".format(curState.counter, curState.failed.toString)
   }
 }
