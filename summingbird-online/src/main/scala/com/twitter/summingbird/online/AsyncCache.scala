@@ -25,4 +25,5 @@ trait AsyncCache[Key, Value] {
   def forceTick: Future[Map[Key, Value]]
   def tick: Future[Map[Key, Value]]
   def insert(vals: TraversableOnce[(Key, Value)]): Future[Map[Key, Value]]
+  def cleanup {}
 }

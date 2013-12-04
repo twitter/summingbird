@@ -45,3 +45,6 @@ case class MaxFutureWaitTime(get: Duration)
 case class FlushFrequency(get: Duration)
 
 case class UseAsyncCache(get: Boolean)
+
+case class AsyncPoolSize(get: Int)
+

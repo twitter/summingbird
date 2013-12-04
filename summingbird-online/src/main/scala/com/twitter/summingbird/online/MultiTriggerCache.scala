@@ -19,7 +19,7 @@ package com.twitter.summingbird.online
 import com.twitter.algebird.{ Semigroup, MapAlgebra }
 import com.twitter.util.{Return, Throw}
 import com.twitter.summingbird.option.CacheSize
-import com.twitter.summingbird.online.option.FlushFrequency
+import com.twitter.summingbird.online.option.{AsyncPoolSize, FlushFrequency}
 import java.util.concurrent._
 import scala.collection.JavaConversions._
 import com.twitter.util.Future
@@ -33,16 +33,20 @@ import org.slf4j.{LoggerFactory, Logger}
  */
 
 object MultiTriggerCache {
-  def builder[Key, Value](cacheSize: CacheSize, flushFrequency: FlushFrequency) =
+  def builder[Key, Value](cacheSize: CacheSize, flushFrequency: FlushFrequency, poolSize: AsyncPoolSize) =
       {(sg: Semigroup[Value]) =>
-            new MultiTriggerCache[Key, Value](cacheSize, flushFrequency)(sg) }
+            new MultiTriggerCache[Key, Value](cacheSize, flushFrequency, poolSize)(sg) }
 }
 
-case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency)
+case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency, poolSize: AsyncPoolSize)
   (implicit monoid: Semigroup[Value]) extends AsyncCache[Key, Value] {
 
-  val executor = new ThreadPoolExecutor(10, 10, 60, TimeUnit.SECONDS, new LinkedBlockingQueue(1000))
-  val pool     =  FuturePool(executor) // FuturePool.immediatePool //
+  private val (executor, pool) = if(poolSize.get > 0) {
+      val executor = new ThreadPoolExecutor(poolSize.get, poolSize.get, 60, TimeUnit.SECONDS, new LinkedBlockingQueue(1000))
+      (Some(executor), FuturePool(executor))
+    } else {
+      (None, FuturePool.immediatePool)
+    }
 
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
@@ -60,25 +64,45 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
   private def timedOut = (System.currentTimeMillis - lastDump) > flushFrequency.get.inMilliseconds
   private def keySpaceTooBig = keyMap.size > cacheSize
 
+  override def cleanup {
+    executor.map{e =>
+      e.shutdown
+    }
+    super.cleanup
+  }
+
   def forceTick: Future[Map[Key, Value]] = {
     pool {
-      innerTick
+      doFlushCache
     }
   }
 
   def tick: Future[Map[Key, Value]] = {
     if (timedOut || keySpaceTooBig || memoryWaterMark) {
-        forceTick
+        pool {
+          doFlushCache
+        }
       }
     else {
       Future.value(Map.empty)
     }
   }
 
+  def insert(vals: TraversableOnce[(Key, Value)]): Future[Map[Key, Value]] = {
+    val valList = vals.toList
+    pool {
+      valList.map{case (k, v) => merge(k, v) }
+      innerTick
+    }
+  }
+
+  // All internal functions from here down, should be private
+  // And unable to use the pool
+
   private def innerTick: Map[Key, Value] = {
     if (timedOut || keySpaceTooBig || memoryWaterMark) {
         doFlushCache
-    }
+      }
     else {
       Map.empty
     }
@@ -97,14 +121,6 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
   }
 
   private def merge(key: Key, extraValue: Value): Unit = merge(key, List(extraValue))
-
-  def insert(vals: TraversableOnce[(Key, Value)]): Future[Map[Key, Value]] = {
-    val valList = vals.toList
-    pool {
-      valList.map{case (k, v) => merge(k, v) }
-      innerTick
-    }
-  }
 
   private def doFlushCache: Map[Key, Value] = {
     val startKeyset: Set[Key] = keyMap.keySet.toSet

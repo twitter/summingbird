@@ -49,4 +49,5 @@ object Constants {
   val DEFAULT_FM_PREFER_LOCAL_DEPENDENCY =  PreferLocalDependency(false)
   val DEFAULT_FLUSH_FREQUENCY =  FlushFrequency(Duration.fromSeconds(10))
   val DEFAULT_USE_ASYNC_CACHE = UseAsyncCache(false)
+  val DEFAULT_ASYNCPOOLSIZE = AsyncPoolSize(10)
 }

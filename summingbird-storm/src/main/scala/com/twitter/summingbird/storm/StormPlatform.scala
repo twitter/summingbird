@@ -36,7 +36,7 @@ import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.AnchorTuples
 import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache}
 import com.twitter.summingbird.online.executor.InputState
-import com.twitter.summingbird.online.option.{IncludeSuccessHandler, FlushFrequency}
+import com.twitter.summingbird.online.option.{IncludeSuccessHandler, FlushFrequency, AsyncPoolSize}
 import com.twitter.summingbird.util.CacheSize
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.planner._
@@ -205,13 +205,16 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
     logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
 
+    val asyncPoolSize = getOrElse(stormDag, node, DEFAULT_ASYNCPOOLSIZE)
+    logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
+
     val bolt = summerOpt match {
       case Some(s) =>
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
         val cacheBuilder = if(useAsyncCache.get) {
-          MultiTriggerCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency)
+          MultiTriggerCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency, asyncPoolSize)
         } else {
-         SummingQueueCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency)
+          SummingQueueCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency)
         }
 
         BaseBolt(

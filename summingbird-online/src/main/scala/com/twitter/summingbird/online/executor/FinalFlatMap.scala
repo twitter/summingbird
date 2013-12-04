@@ -73,8 +73,8 @@ class FinalFlatMap[Event, Key, Value, S, D](
     val batchID = batcher.batchOf(time)
     val itemL = items.toList
     if(itemL.size > 0) {
-      val wrapper = state.fanOut(itemL.size - 1) // Since input state starts at a 1
-      sCache.insert(itemL.map{case (k, v) => (k, batchID) -> (List(wrapper), time, v)}).map(formatResult(_))
+      state.fanOut(itemL.size - 1) // Since input state starts at a 1
+      sCache.insert(itemL.map{case (k, v) => (k, batchID) -> (List(state), time, v)}).map(formatResult(_))
     }
     else { // Here we handle mapping to nothing, option map et. al
         Future.value(
