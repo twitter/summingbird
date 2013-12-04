@@ -26,7 +26,7 @@ import backtype.storm.tuple.{Tuple, TupleImpl, Fields}
 import java.util.{ Map => JMap }
 
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.storm.option.{AnchorTuples, MaxWaitingFutures}
+import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples, MaxWaitingFutures}
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{InflightTuples, InputState}
 
@@ -46,6 +46,7 @@ import org.slf4j.{LoggerFactory, Logger}
 case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   hasDependants: Boolean,
+  ackOnEntry: AckOnEntry,
   executor: OperationContainer[I, O, Tuple, JList[AnyRef]]
   ) extends IRichBolt {
 
@@ -55,6 +56,8 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
 
   private var collector: OutputCollector = null
 
+  // Should we ack immediately on reception instead of at the end
+  private lazy val earlyAck = ackOnEntry.get
 
   protected def logError(message: String, err: Throwable) {
     collector.reportError(err)
@@ -63,7 +66,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
 
  private def fail(inputs: List[InputState[Tuple]], error: Throwable): Unit = {
     executor.notifyFailure(inputs, error)
-    inputs.foreach(_.fail(collector.fail(_)))
+    if(!earlyAck) { inputs.foreach(_.fail(collector.fail(_))) }
     logError("Storm DAG of: %d tuples failed".format(inputs.size), error)
   }
 
@@ -76,6 +79,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
       val tsIn = executor.decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
       // Don't hold on to the input values
       clearValues(tuple)
+      if(earlyAck){ collector.ack(tuple) }
       executor.execute(InputState(tuple), tsIn)
     } else {
       collector.ack(tuple)
@@ -107,7 +111,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
       }
     }
     // Always ack a tuple on completion:
-    inputs.foreach(_.ack(collector.ack(_)))
+    if(!earlyAck) {inputs.foreach(_.ack(collector.ack(_)))}
 
     logger.debug("bolt finished processed {} linked tuples, emitted: {}", inputs.size, emitCount)
   }

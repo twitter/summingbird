@@ -59,3 +59,5 @@ class SpoutStormMetrics(val metrics: () => TraversableOnce[StormMetric[IMetric]]
 }
 
 case class PreferLocalDependency(get: Boolean)
+
+case class AckOnEntry(get: Boolean)
