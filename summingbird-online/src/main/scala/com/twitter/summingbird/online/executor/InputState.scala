@@ -35,9 +35,7 @@ class AtomicStateTransformer[T](initState: T) {
     }
   }
 
-  final def update(oper: T => T): T =
-    updateWithState({x: T => (Unit, oper(x))})._2
-
+  final def update(oper: T => T): T = updateWithState({x: T => (Unit, oper(x))})._2
 }
 
 object InflightTuples {
@@ -88,14 +86,13 @@ case class InputState[T](state: T) {
   }
 
   // Returns true if it should be acked
-  def ack(fn: (T => Unit)): Boolean = {
+  def ack[U](fn: (T => U)): Option[U] = {
     val newState = stateTracking.update(_.decr)
     if(newState.doAck) {
       InflightTuples.decr
-      fn(state)
-      true
+      Some(fn(state))
     } else {
-      false
+      None
     }
   }
 
