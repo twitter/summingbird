@@ -245,6 +245,8 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdExample = module("example").settings(
     libraryDependencies ++= Seq(
+      "log4j" % "log4j" % "1.2.16",
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
       "com.twitter" %% "bijection-netty" % bijectionVersion,
       "com.twitter" %% "tormenta-twitter" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "storehaus-memcache" % storehausVersion
