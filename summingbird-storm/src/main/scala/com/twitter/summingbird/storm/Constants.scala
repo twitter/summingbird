@@ -54,5 +54,5 @@ object Constants {
   val DEFAULT_ASYNC_POOL_SIZE = AsyncPoolSize(Runtime.getRuntime().availableProcessors())
   val DEFAULT_SOFT_MEMORY_FLUSH_PERCENT = SoftMemoryFlushPercent(80.0F)
   val DEFAULT_VALUE_COMBINER_CACHE_SIZE = ValueCombinerCacheSize(100)
-  val DEFAULT_ACKONENTRY = AckOnEntry(false)
+  val DEFAULT_ACK_ON_ENTRY = AckOnEntry(false)
 }

@@ -205,7 +205,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
     logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
 
-    val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACKONENTRY)
+    val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
     logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
 
     val bolt = summerOpt match {
@@ -306,7 +306,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
-    val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACKONENTRY)
+    val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
     logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
 
     val sinkBolt = BaseBolt(
