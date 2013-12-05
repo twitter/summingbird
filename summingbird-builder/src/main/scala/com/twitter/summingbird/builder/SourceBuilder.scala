@@ -188,9 +188,8 @@ case class SourceBuilder[T: Manifest] private (
           .map { givenStore.withInitialBatch(_) }
           .getOrElse(givenStore)
 
-        val newNode = OptionalUnzip2[Scalding, Storm]()(node)._1.map {
-          Producer.evToKeyed(_)
-            .name(id)
+        val newNode = OptionalUnzip2[Scalding, Storm]()(node)._1.map { p =>
+          Producer.evToKeyed(p.name(id))
             .sumByKey(batchSetStore)
         }.getOrElse(sys.error("Scalding mode specified alongside some online-only Source, Service or Sink."))
         CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, nextName[(K,V)], opts)
@@ -199,9 +198,8 @@ case class SourceBuilder[T: Manifest] private (
         val supplier = store.onlineSupplier.getOrElse(sys.error("No online store given in Storm mode"))
         val givenStore = MergeableStoreSupplier.from(supplier())
 
-        val newNode = OptionalUnzip2[Scalding, Storm]()(node)._2.map {
-          Producer.evToKeyed(_)
-            .name(id)
+        val newNode = OptionalUnzip2[Scalding, Storm]()(node)._2.map { p =>
+          Producer.evToKeyed(p.name(id))
             .sumByKey(givenStore)
         }.getOrElse(sys.error("Storm mode specified alongside some offline-only Source, Service or Sink."))
         CompletedBuilder(newNode, registrar, batcher, keyCodec, valCodec, nextName[(K,V)], opts)
