@@ -33,7 +33,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
-import com.twitter.summingbird.storm.option.AnchorTuples
+import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache}
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime}
@@ -208,6 +208,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val asyncPoolSize = getOrElse(stormDag, node, DEFAULT_ASYNCPOOLSIZE)
     logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
 
+    val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACKONENTRY)
+    logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
+
     val bolt = summerOpt match {
       case Some(s) =>
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
@@ -222,6 +225,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           anchorTuples,
           true,
           new Fields(AGG_KEY, AGG_VALUE),
+          ackOnEntry,
           new executor.FinalFlatMap(
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
             cacheBuilder,
@@ -237,6 +241,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           anchorTuples,
           stormDag.dependantsOf(node).size > 0,
           new Fields(VALUE_FIELD),
+          ackOnEntry,
           new executor.IntermediateFlatMap(
             operation,
             maxWaiting,
@@ -295,11 +300,15 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
+    val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACKONENTRY)
+    logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
+
     val sinkBolt = BaseBolt(
           metrics.metrics,
           anchorTuples,
           shouldEmit,
           new Fields(VALUE_FIELD),
+          ackOnEntry,
           new executor.Summer(
               supplier,
               getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
