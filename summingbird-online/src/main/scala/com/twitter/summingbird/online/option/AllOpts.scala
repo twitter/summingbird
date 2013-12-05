@@ -58,9 +58,11 @@ case class UseAsyncCache(get: Boolean)
 case class AsyncPoolSize(get: Int)
 
 /*
- SoftMemoryFlush is the percentage of memory used in the JVM at which a flush will be triggered of the cache.
+ SoftMemoryFlushPercent is the percentage of memory used in the JVM at which a flush will be triggered of the cache.
 */
-case class SoftMemoryFlush(get: Float)
+case class SoftMemoryFlushPercent(get: Float) {
+  require(0 < get && get <= 100.0, "must be a percentage.")
+}
 
 /*
   ValueCombinerCacheSize is used in cache's that support it as a trigger to crush down a high locality of values without emitting

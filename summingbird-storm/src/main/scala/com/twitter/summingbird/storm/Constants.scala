@@ -51,7 +51,7 @@ object Constants {
   val DEFAULT_FM_PREFER_LOCAL_DEPENDENCY =  PreferLocalDependency(false)
   val DEFAULT_FLUSH_FREQUENCY =  FlushFrequency(Duration.fromSeconds(10))
   val DEFAULT_USE_ASYNC_CACHE = UseAsyncCache(false)
-  val DEFAULT_ASYNCPOOLSIZE = AsyncPoolSize(10)
-  val DEFAULT_SOFTMEMORYFLUSH = SoftMemoryFlush(80.0F)
-  val DEFAULT_VALUECOMBINERCRUSHSIZE = ValueCombinerCacheSize(100)
+  val DEFAULT_ASYNC_POOL_SIZE = AsyncPoolSize(Runtime.getRuntime().availableProcessors())
+  val DEFAULT_SOFT_MEMORY_FLUSH_PERCENT = SoftMemoryFlushPercent(80.0F)
+  val DEFAULT_VALUE_COMBINER_CACHE_SIZE = ValueCombinerCacheSize(100)
 }
