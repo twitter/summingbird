@@ -22,11 +22,13 @@ import com.twitter.util.Future
 
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
-import com.twitter.summingbird.online.{FlatMapOperation}
+
+import com.twitter.summingbird.online.{FlatMapOperation, AsyncCache}
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.option.{
   MaxWaitingFutures,
-  MaxFutureWaitTime
+  MaxFutureWaitTime,
+  FlushFrequency
 }
 
 
@@ -39,7 +41,7 @@ import com.twitter.summingbird.online.option.{
 
 class FinalFlatMap[Event, Key, Value, S, D](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
-  cacheSize: CacheSize,
+  cacheBuilder: (Semigroup[(List[InputState[S]], Timestamp, Value)]) => AsyncCache[(Key, BatchID), (List[InputState[S]], Timestamp, Value)],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   pDecoder: Injection[(Timestamp, Event), D],
@@ -52,8 +54,9 @@ class FinalFlatMap[Event, Key, Value, S, D](
   val decoder = pDecoder
 
   val lockedOp = Externalizer(flatMapOp)
-  val sCache: SummingQueue[Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)]] =
-                  SummingQueue(cacheSize.size.getOrElse(0))
+
+  lazy val sCache: AsyncCache[(Key, BatchID), (List[InputState[S]], Timestamp, Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Timestamp, Value)]])
+
 
   private def formatResult(outData: Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)])
                         : Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
@@ -63,7 +66,7 @@ class FinalFlatMap[Event, Key, Value, S, D](
   }
 
   override def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
-    Future.value(Nil)
+    sCache.tick.map(formatResult(_))
   }
 
   def cache(state: InputState[S],
@@ -74,9 +77,8 @@ class FinalFlatMap[Event, Key, Value, S, D](
     val itemL = items.toList
     if(itemL.size > 0) {
       state.fanOut(itemL.size - 1) // Since input state starts at a 1
-      Future.value(formatResult(MapAlgebra.sumByKey(
-          itemL.map{case (k, v) => Map((k, batchID) -> (List(state), time, v))}.flatMap(sCache.put(_).toList).flatten
-      )))
+
+      sCache.insert(itemL.map{case (k, v) => (k, batchID) -> (List(state), time, v)}).map(formatResult(_))
     }
     else { // Here we handle mapping to nothing, option map et. al
         Future.value(
@@ -93,5 +95,6 @@ class FinalFlatMap[Event, Key, Value, S, D](
 
   override def cleanup {
     lockedOp.get.close
+    sCache.cleanup
   }
 }

@@ -34,6 +34,7 @@ import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.AnchorTuples
+import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache}
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime}
 import com.twitter.summingbird.util.CacheSize
@@ -193,14 +194,28 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val usePreferLocalDependency = getOrElse(stormDag, node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
     logger.info("[{}] usePreferLocalDependency: {}", nodeName, usePreferLocalDependency.get)
 
+    val flushFrequency = getOrElse(stormDag, node, DEFAULT_FLUSH_FREQUENCY)
+    logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
+
     val cacheSize = getOrElse(stormDag, node, DEFAULT_FM_CACHE)
     logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
+    val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
+    logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
+
+    val asyncPoolSize = getOrElse(stormDag, node, DEFAULT_ASYNCPOOLSIZE)
+    logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
+
     val bolt = summerOpt match {
       case Some(s) =>
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
+        val cacheBuilder = if(useAsyncCache.get) {
+          MultiTriggerCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency, asyncPoolSize)
+        } else {
+          SummingQueueCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency)
+        }
 
         BaseBolt(
           metrics.metrics,
@@ -209,7 +224,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           new Fields(AGG_KEY, AGG_VALUE),
           new executor.FinalFlatMap(
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-            cacheSize,
+            cacheBuilder,
             maxWaiting,
             maxWaitTime,
             new SingleItemInjection[Any],
