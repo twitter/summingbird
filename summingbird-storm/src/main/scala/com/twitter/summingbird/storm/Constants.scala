@@ -52,5 +52,7 @@ object Constants {
   val DEFAULT_FLUSH_FREQUENCY =  FlushFrequency(Duration.fromSeconds(10))
   val DEFAULT_USE_ASYNC_CACHE = UseAsyncCache(false)
   val DEFAULT_ASYNCPOOLSIZE = AsyncPoolSize(10)
+  val DEFAULT_SOFTMEMORYFLUSH = SoftMemoryFlush(80.0F)
+  val DEFAULT_VALUECOMBINERCRUSHSIZE = ValueCombinerCacheSize(100)
   val DEFAULT_ACKONENTRY = AckOnEntry(false)
 }

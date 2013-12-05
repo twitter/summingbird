@@ -43,23 +43,22 @@ object MultiTriggerCacheProperties extends Properties("MultiTriggerCache") {
               CacheSize(x) }
   }
 
+   implicit def arbValueCombinerCacheSize = Arbitrary {
+         Gen.choose(1, 10)
+            .map { x =>
+              ValueCombinerCacheSize(x) }
+  }
+
   implicit def arbAsyncPoolSize = Arbitrary {
          Gen.choose(0, 5)
             .map { x =>
               AsyncPoolSize(x) }
   }
 
-  implicit def arbCache[K, V: Semigroup] = Arbitrary {
-     for {
-      cacheSize <- Arbitrary.arbitrary[CacheSize]
-      flushFreq <- Arbitrary.arbitrary[FlushFrequency]
-      asyncPoolSize <- Arbitrary.arbitrary[AsyncPoolSize]
-     } yield new MultiTriggerCache[K, V](cacheSize, flushFreq, asyncPoolSize)
-  }
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
   property("Summing with and without the cache should match") = forAll { inputs: List[List[(Int, Int)]] =>
-    val cache = new MultiTriggerCache[Int, Int](sample[CacheSize], sample[FlushFrequency], sample[AsyncPoolSize])
+    val cache = new MultiTriggerCache[Int, Int](sample[CacheSize], sample[ValueCombinerCacheSize], sample[FlushFrequency], SoftMemoryFlush(80.0F), sample[AsyncPoolSize])
     val reference = MapAlgebra.sumByKey(inputs.flatten)
     val resA = Await.result(Future.collect(inputs.map(cache.insert(_)))).map(_.toList).flatten
     val resB = Await.result(cache.forceTick)
@@ -68,12 +67,12 @@ object MultiTriggerCacheProperties extends Properties("MultiTriggerCache") {
       reference,
       other
     )
-    cache.cleanup
+    Await.ready(cache.cleanup)
     res
   }
 
   property("Input Set must not get duplicates") = forAll { (ids: Set[Int], inputs: List[List[(Int, Int)]]) =>
-    val cache = new MultiTriggerCache[Int, (List[Int], Int)](sample[CacheSize], sample[FlushFrequency], sample[AsyncPoolSize])
+    val cache = new MultiTriggerCache[Int, (List[Int], Int)](sample[CacheSize], sample[ValueCombinerCacheSize], sample[FlushFrequency], SoftMemoryFlush(80.0F), sample[AsyncPoolSize])
     val idList = (ids ++ Set(1)).toList
     var refCount = MMap[Int, Int]()
     val realInputs = inputs.map{ iList =>
@@ -88,7 +87,7 @@ object MultiTriggerCacheProperties extends Properties("MultiTriggerCache") {
     val resA = realInputs.map(cache.insert(_)).map(Await.result(_)).map(_.toList).flatten
     val resB = Await.result(cache.forceTick)
     val other = MapAlgebra.sumByKey(resA.toList ++ resB.toList).mapValues(tupV => (tupV._1.sorted, tupV._2))
-    cache.cleanup
+    Await.ready(cache.cleanup)
 
     val equiv = Equiv[Map[Int, (List[Int], Int)]].equiv(
       reference,

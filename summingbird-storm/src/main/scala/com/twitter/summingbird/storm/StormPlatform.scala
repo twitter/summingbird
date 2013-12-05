@@ -205,9 +205,6 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
     logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
 
-    val asyncPoolSize = getOrElse(stormDag, node, DEFAULT_ASYNCPOOLSIZE)
-    logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
-
     val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACKONENTRY)
     logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
 
@@ -215,7 +212,16 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       case Some(s) =>
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
         val cacheBuilder = if(useAsyncCache.get) {
-          MultiTriggerCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency, asyncPoolSize)
+          val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFTMEMORYFLUSH)
+          logger.info("[{}] softMemoryFlush : {}", nodeName, softMemoryFlush.get)
+
+          val asyncPoolSize = getOrElse(stormDag, node, DEFAULT_ASYNCPOOLSIZE)
+          logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
+
+          val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUECOMBINERCRUSHSIZE)
+          logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
+
+          MultiTriggerCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
         } else {
           SummingQueueCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency)
         }
