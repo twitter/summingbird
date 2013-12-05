@@ -20,7 +20,7 @@ import com.twitter.algebird.{ Semigroup, MapAlgebra }
 import com.twitter.util.{Return, Throw}
 import com.twitter.summingbird.option.CacheSize
 import scala.collection.mutable.SynchronizedQueue
-import com.twitter.summingbird.online.option.{AsyncPoolSize, FlushFrequency}
+import com.twitter.summingbird.online.option.{ValueCombinerCacheSize, AsyncPoolSize, FlushFrequency, SoftMemoryFlush}
 import java.util.concurrent.{Executors, ConcurrentHashMap, TimeUnit}
 import scala.collection.JavaConversions._
 import com.twitter.util.Future
@@ -34,15 +34,15 @@ import org.slf4j.{LoggerFactory, Logger}
  */
 
 object MultiTriggerCache {
-  def builder[Key, Value](cacheSize: CacheSize, flushFrequency: FlushFrequency, poolSize: AsyncPoolSize) =
+  def builder[Key, Value](cacheSize: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlush, poolSize: AsyncPoolSize) =
       {(sg: Semigroup[Value]) =>
-            new MultiTriggerCache[Key, Value](cacheSize, flushFrequency, poolSize)(sg) }
+            new MultiTriggerCache[Key, Value](cacheSize, valueCombinerCacheSize, flushFrequency, softMemoryFlush, poolSize)(sg) }
 }
 
-case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency, poolSize: AsyncPoolSize)
+case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlush, poolSize: AsyncPoolSize)
   (implicit monoid: Semigroup[Value]) extends AsyncCache[Key, Value] {
 
-  private val (executor, pool) = if(poolSize.get > 0) {
+  private lazy val (executor, pool) = if(poolSize.get > 0) {
       val executor = Executors.newFixedThreadPool(poolSize.get)
       (Some(executor), FuturePool(executor))
     } else {
@@ -58,9 +58,9 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
   @volatile private var lastDump:Long = System.currentTimeMillis
 
   private lazy val runtime  = Runtime.getRuntime
-  private def memoryWaterMark = {
-    val used = (runtime.totalMemory - runtime.freeMemory).toDouble / runtime.maxMemory
-    used > 0.8
+    private def memoryWaterMark = {
+    val used = ((runtime.totalMemory - runtime.freeMemory).toDouble * 100) / runtime.maxMemory
+    used > softMemoryFlush.get
   }
 
   private def timedOut = (System.currentTimeMillis - lastDump) >= flushFrequency.get.inMilliseconds
@@ -120,7 +120,7 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
   private def merge(key: Key, extraVals: TraversableOnce[Value]) {
     val oldQueue = Option(keyMap.get(key)).getOrElse(Queue.linkedNonBlocking[Value])
     oldQueue.putAll(extraVals)
-    if(oldQueue.size > cacheSize) { // We have a high locality  for a single tuple, crush it down
+    if(oldQueue.size > valueCombinerCacheSize.get) { // We have a high locality  for a single tuple, crush it down
       val dataCP = oldQueue.toSeq
       if(dataCP.size > 0) {
         merge(key, List(monoid.sumOption(dataCP).get))
