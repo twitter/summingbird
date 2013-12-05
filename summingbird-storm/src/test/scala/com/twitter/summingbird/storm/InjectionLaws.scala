@@ -28,11 +28,11 @@ object InjectionLaws extends Properties("InjectionTests") {
     Arbitrary(Arbitrary.arbitrary[Long].map(Timestamp(_)))
 
   property("Single injection works") = forAll { in: (Timestamp, String) =>
-    val inj = new SingleItemInjection[String]("item")
+    val inj = new SingleItemInjection[String]
     inj.invert(inj(in)).get == in
   }
   property("KV injection works") = forAll { in: (Timestamp, (String, List[Int])) =>
-    val inj = new KeyValueInjection[String, List[Int]]("k", "v")
+    val inj = new KeyValueInjection[String, List[Int]]
     inj.invert(inj(in)).get == in
   }
 }

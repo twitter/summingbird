@@ -17,8 +17,12 @@ limitations under the License.
 package com.twitter.summingbird.storm
 
 import com.twitter.summingbird.option.MonoidIsCommutative
-import com.twitter.summingbird.storm.option.{CacheSize => DEPCacheSize, _ }
+import com.twitter.summingbird.storm.option.{OnlineSuccessHandler => SOnlineSuccessHandler,
+                                            OnlineExceptionHandler => SOnlineExceptionHandler,
+                                            MaxWaitingFutures => SMaxWaitingFutures,
+                                            CacheSize => DEPCacheSize, _ }
 import com.twitter.summingbird.option._
+import com.twitter.summingbird.online.option._
 
 import com.twitter.util.Duration
 

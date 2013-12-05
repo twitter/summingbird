@@ -17,6 +17,8 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.summingbird
+import com.twitter.summingbird.online
+
 
 package object option {
   @deprecated("Use com.twitter.summingbird.option.CacheSize", "0.2.5")
@@ -32,4 +34,22 @@ package object option {
   @deprecated("Use com.twitter.summingbird.option.SummerStormMetrics", "0.3.0")
   type SinkStormMetrics = SummerStormMetrics
   val SinkStormMetrics = SummerStormMetrics
+
+  @deprecated("Use com.twitter.summingbird.online.option.OnlineSuccessHandler", "0.2.6")
+  type OnlineSuccessHandler = online.option.OnlineSuccessHandler
+  val OnlineSuccessHandler = online.option.OnlineSuccessHandler
+
+
+  @deprecated("Use com.twitter.summingbird.online.option.IncludeSuccessHandler", "0.2.6")
+  type IncludeSuccessHandler = online.option.IncludeSuccessHandler
+  val IncludeSuccessHandler = online.option.IncludeSuccessHandler
+
+  @deprecated("Use com.twitter.summingbird.online.option.OnlineExceptionHandler", "0.2.6")
+  type OnlineExceptionHandler = online.option.OnlineExceptionHandler
+  val OnlineExceptionHandler = online.option.OnlineExceptionHandler
+
+  @deprecated("Use com.twitter.summingbird.online.option.MaxWaitingFutures", "0.2.6")
+  type MaxWaitingFutures = online.option.MaxWaitingFutures
+  val MaxWaitingFutures = online.option.MaxWaitingFutures
+
 }

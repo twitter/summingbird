@@ -16,19 +16,13 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.tuple.Fields
+
 import com.twitter.bijection.{Injection, Inversion, AbstractInjection}
 import com.twitter.summingbird.batch.Timestamp
 import java.util.{List => JList, ArrayList => JAList}
 import scala.util.Try
 
-trait StormTupleInjection[T] extends Injection[(Timestamp, T), JList[AnyRef]] {
-  def fields: Fields
-}
-
-class SingleItemInjection[T](fieldName: String) extends StormTupleInjection[T] {
-
-  val fields = new Fields(fieldName)
+class SingleItemInjection[T] extends Injection[(Timestamp, T), JList[AnyRef]] {
 
   override def apply(t: (Timestamp, T)) = {
     val list = new JAList[AnyRef](1)
@@ -41,10 +35,8 @@ class SingleItemInjection[T](fieldName: String) extends StormTupleInjection[T] {
   }
 }
 
-class KeyValueInjection[K, V](keyField: String, timeValField: String)
-  extends StormTupleInjection[(K, V)] {
-
-  val fields = new Fields(keyField, timeValField)
+class KeyValueInjection[K, V]
+  extends Injection[(Timestamp, (K, V)), JList[AnyRef]] {
 
   override def apply(item: (Timestamp, (K, V))) = {
     val (ts, (key, v)) = item
