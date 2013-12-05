@@ -37,7 +37,7 @@ object SummingQueueCache {
 }
 
 case class SummingQueueCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency)
-  (implicit monoid: Semigroup[Value]) extends AsyncCache[Key, Value] {
+  (implicit semigroup: Semigroup[Value]) extends AsyncCache[Key, Value] {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
   private val cacheSize = cacheSizeOpt.size.getOrElse(0)

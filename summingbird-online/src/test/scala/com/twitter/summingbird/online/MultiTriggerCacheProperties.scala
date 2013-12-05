@@ -58,7 +58,7 @@ object MultiTriggerCacheProperties extends Properties("MultiTriggerCache") {
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
   property("Summing with and without the cache should match") = forAll { inputs: List[List[(Int, Int)]] =>
-    val cache = new MultiTriggerCache[Int, Int](sample[CacheSize], sample[ValueCombinerCacheSize], sample[FlushFrequency], SoftMemoryFlush(80.0F), sample[AsyncPoolSize])
+    val cache = new MultiTriggerCache[Int, Int](sample[CacheSize], sample[ValueCombinerCacheSize], sample[FlushFrequency], SoftMemoryFlushPercent(80.0F), sample[AsyncPoolSize])
     val reference = MapAlgebra.sumByKey(inputs.flatten)
     val resA = Await.result(Future.collect(inputs.map(cache.insert(_)))).map(_.toList).flatten
     val resB = Await.result(cache.forceTick)
@@ -72,7 +72,7 @@ object MultiTriggerCacheProperties extends Properties("MultiTriggerCache") {
   }
 
   property("Input Set must not get duplicates") = forAll { (ids: Set[Int], inputs: List[List[(Int, Int)]]) =>
-    val cache = new MultiTriggerCache[Int, (List[Int], Int)](sample[CacheSize], sample[ValueCombinerCacheSize], sample[FlushFrequency], SoftMemoryFlush(80.0F), sample[AsyncPoolSize])
+    val cache = new MultiTriggerCache[Int, (List[Int], Int)](sample[CacheSize], sample[ValueCombinerCacheSize], sample[FlushFrequency], SoftMemoryFlushPercent(80.0F), sample[AsyncPoolSize])
     val idList = (ids ++ Set(1)).toList
     var refCount = MMap[Int, Int]()
     val realInputs = inputs.map{ iList =>

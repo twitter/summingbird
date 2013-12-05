@@ -20,7 +20,7 @@ import com.twitter.algebird.{ Semigroup, MapAlgebra }
 import com.twitter.util.{Return, Throw}
 import com.twitter.summingbird.option.CacheSize
 import scala.collection.mutable.SynchronizedQueue
-import com.twitter.summingbird.online.option.{ValueCombinerCacheSize, AsyncPoolSize, FlushFrequency, SoftMemoryFlush}
+import com.twitter.summingbird.online.option.{ValueCombinerCacheSize, AsyncPoolSize, FlushFrequency, SoftMemoryFlushPercent}
 import java.util.concurrent.{Executors, ConcurrentHashMap, TimeUnit}
 import scala.collection.JavaConversions._
 import com.twitter.util.Future
@@ -34,12 +34,12 @@ import org.slf4j.{LoggerFactory, Logger}
  */
 
 object MultiTriggerCache {
-  def builder[Key, Value](cacheSize: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlush, poolSize: AsyncPoolSize) =
+  def builder[Key, Value](cacheSize: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlushPercent, poolSize: AsyncPoolSize) =
       {(sg: Semigroup[Value]) =>
             new MultiTriggerCache[Key, Value](cacheSize, valueCombinerCacheSize, flushFrequency, softMemoryFlush, poolSize)(sg) }
 }
 
-case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlush, poolSize: AsyncPoolSize)
+case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlushPercent, poolSize: AsyncPoolSize)
   (implicit monoid: Semigroup[Value]) extends AsyncCache[Key, Value] {
 
   private lazy val (executor, pool) = if(poolSize.get > 0) {
@@ -72,7 +72,7 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerC
         e.shutdown
         e.awaitTermination(10, TimeUnit.SECONDS)
       }
-    }.map(f => super.cleanup).flatten
+    }.flatMap(f => super.cleanup)
   }
 
   def forceTick: Future[Map[Key, Value]] = {
