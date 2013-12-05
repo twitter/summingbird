@@ -46,7 +46,7 @@ class FinalFlatMap[Event, Key, Value, S, D](
   pEncoder: Injection[(Timestamp, ((Key, BatchID), Value)), D]
   )
   (implicit monoid: Semigroup[Value], batcher: Batcher)
-    extends AsyncBase[Event, ((Key, BatchID), Value), S, D](maxWaitingFutures,
+    extends AsyncBase[Event, ((Key, BatchID), Value), InputState[S], D](maxWaitingFutures,
                                                           maxWaitingTime) {
   val encoder = pEncoder
   val decoder = pDecoder

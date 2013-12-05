@@ -73,7 +73,7 @@ class Summer[Key, Value: Semigroup, S, D](
 
   // See MaxWaitingFutures for a todo around removing this.
   lazy val cacheCount = cacheSize.size
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)]](cacheCount.getOrElse(0))
+  lazy val buffer = SummingQueue[Map[(Key, BatchID), (List[S], Timestamp, Value)]](cacheCount.getOrElse(0))
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
@@ -85,14 +85,14 @@ class Summer[Key, Value: Semigroup, S, D](
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  override def notifyFailure(inputs: List[InputState[S]], error: Throwable): Unit = {
+  override def notifyFailure(inputs: List[S], error: Throwable): Unit = {
     super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
   }
 
-  override def apply(state: InputState[S],
+  override def apply(state: S,
     tsIn: (Timestamp, ((Key, BatchID), Value))):
-      Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
+      Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
 
     val (ts, (kb, v)) = tsIn
     val wrappedData = Map(kb -> ((List(state), ts, v)))

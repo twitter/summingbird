@@ -33,27 +33,27 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
    * cases that need to complete operations after or before doing a FlatMapOperation or
    * doing a store merge
    */
-  def apply(state: InputState[S], in: (Timestamp, I)): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]
-  def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
+  def apply(state: S, in: (Timestamp, I)): Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, O)]])]]
+  def tick: Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
 
   private lazy val outstandingFutures = Queue.linkedNonBlocking[Future[Unit]]
-  private lazy val responses = Queue.linkedNonBlocking[(List[InputState[S]], Try[TraversableOnce[(Timestamp, O)]])]
+  private lazy val responses = Queue.linkedNonBlocking[(List[S], Try[TraversableOnce[(Timestamp, O)]])]
 
   override def executeTick =
     finishExecute(tick.onFailure{ thr => responses.put(((List(), Failure(thr)))) })
 
-  override def execute(state: InputState[S], data: (Timestamp, I)) =
+  override def execute(state: S, data: (Timestamp, I)) =
     finishExecute(apply(state, data).onFailure { thr => responses.put(((List(state), Failure(thr)))) })
 
-  private def finishExecute(fIn: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]) = {
+  private def finishExecute(fIn: Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, O)]])]]) = {
     addOutstandingFuture(handleSuccess(fIn).unit)
 
     // always empty the responses
     emptyQueue
   }
 
-  private def handleSuccess(fut: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])]]) =
-    fut.onSuccess { iter: Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, O)]])] =>
+  private def handleSuccess(fut: Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, O)]])]]) =
+    fut.onSuccess { iter: Iterable[(List[S], Future[TraversableOnce[(Timestamp, O)]])] =>
 
         // Collect the result onto our responses
         val iterSize = iter.foldLeft(0) { case (iterSize, (tups, res)) =>

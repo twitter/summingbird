@@ -47,7 +47,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   hasDependants: Boolean,
   outputFields: Fields,
-  executor: OperationContainer[I, O, Tuple, JList[AnyRef]]
+  executor: OperationContainer[I, O, InputState[Tuple], JList[AnyRef]]
   ) extends IRichBolt {
 
 

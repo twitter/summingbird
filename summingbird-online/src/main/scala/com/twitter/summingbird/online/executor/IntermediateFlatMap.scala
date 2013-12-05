@@ -42,8 +42,8 @@ class IntermediateFlatMap[T,U,S,D](
   val lockedOp = Externalizer(flatMapOp)
 
 
-  override def apply(state: InputState[S],
-                     timeT: (Timestamp, T)): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, U)]])]] =
+  override def apply(state: S,
+                     timeT: (Timestamp, T)): Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, U)]])]] =
     lockedOp.get.apply(timeT._2).map { res =>
       List((List(state), Future.value(res.map((timeT._1, _)))))
     }
