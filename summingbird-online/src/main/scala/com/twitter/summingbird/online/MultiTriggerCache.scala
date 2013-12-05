@@ -121,14 +121,14 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
     val oldQueue = Option(keyMap.get(key)).getOrElse(Queue.linkedNonBlocking[Value])
     oldQueue.putAll(extraVals)
     if(oldQueue.size > cacheSize) { // We have a high locality  for a single tuple, crush it down
-      val dataCP = oldQueue.trimTo(0)
+      val dataCP = oldQueue.toSeq
       if(dataCP.size > 0) {
         merge(key, List(monoid.sumOption(dataCP).get))
       }
     } else {
       if(keyMap.putIfAbsent(key, oldQueue) != null) { // Not there
         if(oldQueue.size > 0 && !keyMap.replace(key, oldQueue, oldQueue)) { // We were there before
-            merge(key, oldQueue.trimTo(0))
+            merge(key, oldQueue.toSeq)
         }
       }
     }
@@ -138,7 +138,7 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
     val startKeyset: Set[Key] = keyMap.keySet.toSet
     lastDump = System.currentTimeMillis
     startKeyset.flatMap{case k =>
-      Option(keyMap.remove(k)).map(_.trimTo(0)).flatMap(monoid.sumOption(_)).map((k, _))
+      Option(keyMap.remove(k)).map(_.toSeq).flatMap(monoid.sumOption(_)).map((k, _))
     }.toMap
   }
 }
