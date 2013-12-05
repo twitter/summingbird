@@ -72,7 +72,7 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerC
         e.shutdown
         e.awaitTermination(10, TimeUnit.SECONDS)
       }
-    }.map(f => super.cleanup).flatten
+    }.flatMap(f => super.cleanup)
   }
 
   def forceTick: Future[Map[Key, Value]] = {
