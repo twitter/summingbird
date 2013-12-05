@@ -68,7 +68,7 @@ object MultiTriggerCacheProperties extends Properties("MultiTriggerCache") {
       reference,
       other
     )
-    cache.cleanup
+    Await.ready(cache.cleanup)
     res
   }
 
@@ -88,7 +88,7 @@ object MultiTriggerCacheProperties extends Properties("MultiTriggerCache") {
     val resA = realInputs.map(cache.insert(_)).map(Await.result(_)).map(_.toList).flatten
     val resB = Await.result(cache.forceTick)
     val other = MapAlgebra.sumByKey(resA.toList ++ resB.toList).mapValues(tupV => (tupV._1.sorted, tupV._2))
-    cache.cleanup
+    Await.ready(cache.cleanup)
 
     val equiv = Equiv[Map[Int, (List[Int], Int)]].equiv(
       reference,

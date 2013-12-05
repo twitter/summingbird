@@ -66,12 +66,13 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
   private def timedOut = (System.currentTimeMillis - lastDump) >= flushFrequency.get.inMilliseconds
   private def keySpaceTooBig = keyMap.size > cacheSize
 
-  override def cleanup {
-    executor.map{e =>
-      e.shutdown
-      e.awaitTermination(60, TimeUnit.SECONDS)
-    }
-    super.cleanup
+  override def cleanup = {
+    Future {
+      executor.map{e =>
+        e.shutdown
+        e.awaitTermination(10, TimeUnit.SECONDS)
+      }
+    }.map(f => super.cleanup).flatten
   }
 
   def forceTick: Future[Map[Key, Value]] = {
