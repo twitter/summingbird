@@ -22,10 +22,11 @@ import com.twitter.summingbird.option.CacheSize
 import scala.collection.mutable.SynchronizedQueue
 import com.twitter.summingbird.online.option.{ValueCombinerCacheSize, AsyncPoolSize, FlushFrequency, SoftMemoryFlushPercent}
 import java.util.concurrent.{Executors, ConcurrentHashMap, TimeUnit}
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import com.twitter.util.Future
 import scala.collection.mutable.{Set => MSet, Map => MMap}
 import com.twitter.util.FuturePool
+import scala.collection.breakOut
 
 import org.slf4j.{LoggerFactory, Logger}
 
@@ -40,7 +41,7 @@ object MultiTriggerCache {
 }
 
 case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlushPercent, poolSize: AsyncPoolSize)
-  (implicit monoid: Semigroup[Value]) extends AsyncCache[Key, Value] {
+  (implicit semigroup: Semigroup[Value]) extends AsyncCache[Key, Value] {
 
   private lazy val (executor, pool) = if(poolSize.get > 0) {
       val executor = Executors.newFixedThreadPool(poolSize.get)
@@ -120,25 +121,37 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerC
   private def merge(key: Key, extraVals: TraversableOnce[Value]) {
     val oldQueue = Option(keyMap.get(key)).getOrElse(Queue.linkedNonBlocking[Value])
     oldQueue.putAll(extraVals)
-    if(oldQueue.size > valueCombinerCacheSize.get) { // We have a high locality  for a single tuple, crush it down
+
+    // We have a high locality  for a single tuple, crush it down
+    // If this is triggered we will go back around with an in memory list of size 1
+    if(oldQueue.size > valueCombinerCacheSize.get) {
       val dataCP = oldQueue.toSeq
       if(dataCP.size > 0) {
-        merge(key, List(monoid.sumOption(dataCP).get))
+        merge(key, List(semigroup.sumOption(dataCP).get))
       }
-    } else {
-      if(keyMap.putIfAbsent(key, oldQueue) != null) { // Not there
-        if(oldQueue.size > 0 && !keyMap.replace(key, oldQueue, oldQueue)) { // We were there before
-            merge(key, oldQueue.toSeq)
+    }
+    // Otherwise, we attempt to update the concurrent hash map
+    else {
+      // This will return null if the key was present before
+      // We terminate with the merge complete if its == null.
+      if(keyMap.putIfAbsent(key, oldQueue) != null) {
+        // If its not null then we test to make sure we are the queue present
+        if(!(keyMap.get(key) == oldQueue)) {
+          // Guard against needlessly inserting if we have been drained in parallel by another actor
+          val orphanValues = oldQueue.toSeq
+          if(orphanValues.size > 0) {
+            merge(key, orphanValues)
+          }
         }
       }
     }
   }
 
   private def doFlushCache: Map[Key, Value] = {
-    val startKeyset: Set[Key] = keyMap.keySet.toSet
+    val startKeyset: Set[Key] = keyMap.keySet.asScala.toSet
     lastDump = System.currentTimeMillis
-    startKeyset.flatMap{case k =>
-      Option(keyMap.remove(k)).map(_.toSeq).flatMap(monoid.sumOption(_)).map((k, _))
-    }.toMap
+    startKeyset.flatMap{ k =>
+      Option(keyMap.remove(k)).map(_.toSeq).flatMap(semigroup.sumOption(_)).map((k, _))
+    }(breakOut)
   }
 }
