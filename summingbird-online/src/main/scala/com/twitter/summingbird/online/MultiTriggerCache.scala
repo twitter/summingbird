@@ -22,7 +22,7 @@ import com.twitter.summingbird.option.CacheSize
 import scala.collection.mutable.SynchronizedQueue
 import com.twitter.summingbird.online.option.{ValueCombinerCacheSize, AsyncPoolSize, FlushFrequency, SoftMemoryFlushPercent}
 import java.util.concurrent.{Executors, ConcurrentHashMap, TimeUnit}
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import com.twitter.util.Future
 import scala.collection.mutable.{Set => MSet, Map => MMap}
 import com.twitter.util.FuturePool
@@ -40,7 +40,7 @@ object MultiTriggerCache {
 }
 
 case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlushPercent, poolSize: AsyncPoolSize)
-  (implicit monoid: Semigroup[Value]) extends AsyncCache[Key, Value] {
+  (implicit semigroup: Semigroup[Value]) extends AsyncCache[Key, Value] {
 
   private lazy val (executor, pool) = if(poolSize.get > 0) {
       val executor = Executors.newFixedThreadPool(poolSize.get)
@@ -126,7 +126,7 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerC
     if(oldQueue.size > valueCombinerCacheSize.get) {
       val dataCP = oldQueue.toSeq
       if(dataCP.size > 0) {
-        merge(key, List(monoid.sumOption(dataCP).get))
+        merge(key, List(semigroup.sumOption(dataCP).get))
       }
     }
     // Otherwise, we attempt to update the concurrent hash map
@@ -147,10 +147,10 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerC
   }
 
   private def doFlushCache: Map[Key, Value] = {
-    val startKeyset: Set[Key] = keyMap.keySet.toSet
+    val startKeyset: Set[Key] = keyMap.keySet.asScala.toSet
     lastDump = System.currentTimeMillis
-    startKeyset.flatMap{case k =>
-      Option(keyMap.remove(k)).map(_.toSeq).flatMap(monoid.sumOption(_)).map((k, _))
+    startKeyset.flatMap{ k =>
+      Option(keyMap.remove(k)).map(_.toSeq).flatMap(semigroup.sumOption(_)).map((k, _))
     }.toMap
   }
 }
