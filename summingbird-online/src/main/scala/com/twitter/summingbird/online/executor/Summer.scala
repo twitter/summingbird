@@ -100,13 +100,11 @@ class Summer[Key, Value: Semigroup, S, D](
       // See MaxWaitingFutures for a todo around simplifying this.
       buffer(wrappedData)
         .map { kvs =>
-          kvs.iterator.map { case ((k, batchID), (tups, stamp, delta)) =>
-            (tups,
-              store.merge(((k, batchID), delta)).map { before =>
-                List((stamp, (k, (before, delta))))
-              }
-              .onSuccess { _ => successHandlerOpt.get.handlerFn.apply() }
-            )
+          store.multiMerge(kvs.mapValues(_._3)).map{case (innerKb, beforeF) =>
+            val (tups, stamp, delta) = kvs(innerKb)
+            val (k, _) = innerKb
+            (tups, beforeF.map(before => List((stamp, (k, (before, delta)))))
+              .onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
           }
           .toList // force, but order does not matter, so we could optimize this
         }
