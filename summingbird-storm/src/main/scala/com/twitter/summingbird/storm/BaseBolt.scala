@@ -58,7 +58,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   private var collector: OutputCollector = null
 
   // Should we ack immediately on reception instead of at the end
-  private lazy val earlyAck = ackOnEntry.get
+  private val earlyAck = ackOnEntry.get
 
   protected def logError(message: String, err: Throwable) {
     collector.reportError(err)
