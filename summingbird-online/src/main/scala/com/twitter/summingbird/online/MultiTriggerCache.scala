@@ -120,13 +120,23 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerC
   private def merge(key: Key, extraVals: TraversableOnce[Value]) {
     val oldQueue = Option(keyMap.get(key)).getOrElse(Queue.linkedNonBlocking[Value])
     oldQueue.putAll(extraVals)
-    if(oldQueue.size > valueCombinerCacheSize.get) { // We have a high locality  for a single tuple, crush it down
+
+    // We have a high locality  for a single tuple, crush it down
+    // If this is triggered we will go back around with an in memory list of size 1
+    if(oldQueue.size > valueCombinerCacheSize.get) {
       val dataCP = oldQueue.toSeq
       if(dataCP.size > 0) {
         merge(key, List(monoid.sumOption(dataCP).get))
       }
-    } else {
-      if(keyMap.putIfAbsent(key, oldQueue) != null) { // Not there
+    }
+    // Otherwise, we attempt to update the concurrent hash map
+    else {
+      // This will return null if the key was present before
+      // We terminate with the merge complete if its == null.
+      if(keyMap.putIfAbsent(key, oldQueue) != null) {
+        // If its not null then we test to make sure we are the queue present
+        // The replace will only work if we are the queue in place
+        // If we were not the queue in place, take our queue to a normal list and retry operation
         if(oldQueue.size > 0 && !keyMap.replace(key, oldQueue, oldQueue)) { // We were there before
             merge(key, oldQueue.toSeq)
         }
