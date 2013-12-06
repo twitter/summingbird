@@ -135,10 +135,12 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerC
       // We terminate with the merge complete if its == null.
       if(keyMap.putIfAbsent(key, oldQueue) != null) {
         // If its not null then we test to make sure we are the queue present
-        // The replace will only work if we are the queue in place
-        // If we were not the queue in place, take our queue to a normal list and retry operation
-        if(oldQueue.size > 0 && !keyMap.replace(key, oldQueue, oldQueue)) { // We were there before
-            merge(key, oldQueue.toSeq)
+        if(!(keyMap.get(key) == oldQueue)) {
+          // Guard against needlessly inserting if we have been drained in parallel by another actor
+          val orphanValues = oldQueue.toSeq
+          if(orphanValues.size > 0) {
+            merge(key, orphanValues)
+          }
         }
       }
     }
