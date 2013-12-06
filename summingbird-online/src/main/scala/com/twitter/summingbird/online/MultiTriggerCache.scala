@@ -26,6 +26,7 @@ import scala.collection.JavaConverters._
 import com.twitter.util.Future
 import scala.collection.mutable.{Set => MSet, Map => MMap}
 import com.twitter.util.FuturePool
+import scala.collection.breakOut
 
 import org.slf4j.{LoggerFactory, Logger}
 
@@ -151,6 +152,6 @@ case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerC
     lastDump = System.currentTimeMillis
     startKeyset.flatMap{ k =>
       Option(keyMap.remove(k)).map(_.toSeq).flatMap(semigroup.sumOption(_)).map((k, _))
-    }.toMap
+    }(breakOut)
   }
 }
