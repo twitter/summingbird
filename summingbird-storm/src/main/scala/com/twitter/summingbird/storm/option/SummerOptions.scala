@@ -18,6 +18,8 @@ package com.twitter.summingbird.storm.option
 
 import com.twitter.summingbird.storm.StormMetric
 
+import com.twitter.util.Duration
+
 /**
   * Options used by the sink phase of the Storm Platform's topology.
   *
@@ -26,6 +28,8 @@ import com.twitter.summingbird.storm.StormMetric
   * @author Ashu Singhal
   */
 
+
+
 /**
   * SinkParallelism controls the number of executors storm allocates to
   * the groupAndSum bolts. Each of these bolt executors is responsible
@@ -33,7 +37,7 @@ import com.twitter.summingbird.storm.StormMetric
   * Sink's store, so higher parallelism will result in higher load on
   * the store. The default sink parallelism is 5.
   */
-case class SinkParallelism(parHint: Int)
+case class SummerParallelism(parHint: Int)
 
 case class OnlineSuccessHandler(handlerFn: Unit => Unit)
 
@@ -51,26 +55,11 @@ object IncludeSuccessHandler {
 
 case class OnlineExceptionHandler(handlerFn: PartialFunction[Throwable, Unit])
 
-
 /**
   * See FlatMapOptions.scala for an explanation.
   */
-object SinkStormMetrics {
-  def apply(metrics: => TraversableOnce[StormMetric[_]]) = new SinkStormMetrics(() => metrics)
-  def unapply(metrics: SinkStormMetrics) = Some(metrics.metrics)
+object SummerStormMetrics {
+  def apply(metrics: => TraversableOnce[StormMetric[_]]) = new SummerStormMetrics(() => metrics)
+  def unapply(metrics: SummerStormMetrics) = Some(metrics.metrics)
 }
-class SinkStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
-
-/**
-  * MaxWaitingFutures is the maximum number of key-value pairs that the
-  * SinkBolt in Storm will process before starting to force the
-  * futures. For example, setting MaxWaitingFutures(100) means that if
-  * a key-value pair is added to the OnlineStore and the (n - 100)th
-  * write has not completed, Storm will block before moving on to the
-  * next key-value pair.
-
-  * TODO (https://github.com/twitter/summingbird/issues/83): look into
-  * removing this due to the possibility of deadlock with the sink's
-  * cache.
-  */
-case class MaxWaitingFutures(get: Int)
+class SummerStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])

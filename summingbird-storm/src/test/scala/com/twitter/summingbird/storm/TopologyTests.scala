@@ -216,4 +216,24 @@ object TopologyTests extends Specification {
 
 	spout.get_common.get_parallelism_hint must_== 30
   }
+
+ "Options don't propagate forwards" in {
+    val nodeName = "super dooper node"
+    val otherNodeName = "super dooper node"
+    val p = Storm.source(TraversableSpout(sample[List[Int]]))
+      .flatMap(testFn).name(otherNodeName).name(nodeName)
+      .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
+
+    val opts = Map(otherNodeName -> Options().set(SpoutParallelism(30)).set(SummerParallelism(50)),
+                nodeName -> Options().set(FlatMapParallelism(50)))
+    val storm = Storm.local(opts)
+    val stormTopo = storm.plan(p).topology
+    // Source producer
+    val bolts = stormTopo.get_bolts
+
+    // Tail will have 1 -, distance from there should be onwards
+    val TDistMap = bolts.map{case (k, v) => (k.split("-").size - 1, v)}
+
+    TDistMap(0).get_common.get_parallelism_hint must_== 5
+  }
 }

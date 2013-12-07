@@ -88,7 +88,11 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     Summer(prod.write(sink), store, monoid)
   }
 
-  def run {
+  case class Built(platform: Scalding,
+    toRun: TailProducer[Scalding, (Any, (Option[Any], Any))],
+    stateFn: (Configuration) => VersionedState)
+
+  lazy val build: Built = {
     // Calling abstractJob's constructor and binding it to a variable
     // forces any side effects caused by that constructor (building up
     // of the environment and defining the builder).
@@ -109,32 +113,51 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
         .getOrElse(scaldingBuilder.node)
         .name(scaldingBuilder.id)
 
+    val scald = Scalding(name, opts)
+        .withRegistrars(ajob.registrars ++ builder.registrar.getRegistrars.asScala)
+        .withConfigUpdater {
+          // Set these before the user settings, so that the user
+          // can change them if needed
+
+          // Make sure we use block compression from mappers to reducers
+          _.put("mapred.output.compression.type", "BLOCK")
+            .put("io.compression.codec.lzo.compression.level", "3")
+            .put("mapred.output.compress", "true")
+            .put("mapred.compress.map.output", "true")
+        }
+        .withConfigUpdater{ c =>
+          c.updated(ajob.transformConfig(c.toMap))
+        }
+
     def getStatePath(ss: ScaldingStore[_, _]): Option[String] =
       ss match {
         case store: VersionedBatchStore[_, _, _, _] => Some(store.rootPath)
         case initstore: InitialBatchedStore[_, _] => getStatePath(initstore.proxy)
         case _ => None
       }
-    // Fail as soon as possible if this is not a valid store:
-    val statePath = getStatePath(scaldingBuilder.node.store).getOrElse {
-      sys.error("You must use a VersionedBatchStore with the old Summingbird API!")
-    }
+    // VersionedState needs this
+    implicit val batcher = scaldingBuilder.batcher
+    val stateFn = { (conf: Configuration) =>
+      val statePath = getStatePath(scaldingBuilder.node.store).getOrElse {
+        sys.error("You must use a VersionedBatchStore with the old Summingbird API!")
+      }
+      VersionedState(HDFSMetadata(conf, statePath), startDate, batches)
+    };
+
+    Built(scald, toRun, stateFn)
+  }
+
+  def run = run(build)
+
+  def run(b: Built) {
+    val Built(scald, toRun, stateFn) = b
 
     val conf = new Configuration
     // Add the generic options
     new GenericOptionsParser(conf, inargs)
 
-    // VersionedState needs this
-    implicit val batcher = scaldingBuilder.batcher
-    val state = VersionedState(HDFSMetadata(conf, statePath), startDate, batches)
-
     try {
-      Scalding(name, opts)
-        .withRegistrars(ajob.registrars ++ builder.registrar.getRegistrars.asScala)
-        .withConfigUpdater{ c =>
-          c.updated(ajob.transformConfig(c.toMap))
-        }
-        .run(state, Hdfs(true, conf), toRun)
+      scald.run(stateFn(conf), Hdfs(true, conf), toRun)
     }
     catch {
       case f@FlowPlanException(errs) =>

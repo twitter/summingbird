@@ -17,15 +17,27 @@
 package com.twitter.summingbird.example
 
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.storm.{ MergeableStoreSupplier, Storm }
+import com.twitter.summingbird.Options
+import com.twitter.summingbird.option.CacheSize
+import com.twitter.summingbird.storm.{ StormStore, Storm, Executor, StormExecutionConfig}
+import com.twitter.summingbird.storm.option.{FlatMapParallelism, SinkParallelism, SpoutParallelism}
+import backtype.storm.{Config => BTConfig}
+import com.twitter.scalding.Args
 import com.twitter.tormenta.spout.TwitterSpout
 import com.twitter.util.Await
 import twitter4j.TwitterStreamFactory
 import twitter4j.conf.ConfigurationBuilder
 
+
+object ExeStorm {
+  def main(args: Array[String]) {
+    Executor(args, StormRunner(_))
+  }
+}
+
 /**
   * The following object contains code to execute the Summingbird
-  * WordCount job defined in ExampleJob.scala on a local storm
+  * WordCount job defined in ExampleJob.scala on a storm
   * cluster.
   */
 object StormRunner {
@@ -81,13 +93,14 @@ object StormRunner {
     Memcache.mergeable[(String, BatchID), Long]("urlCount")
 
   /**
-    * And then the supplier:
+    * the param to store is by name, so this is still not created created
+    * yet
     */
-  val storeSupplier: MergeableStoreSupplier[String, Long] =
-    Storm.store(stringLongStore)
+  val storeSupplier: StormStore[String, Long] = Storm.store(stringLongStore)
 
   /**
-    * When this main method is executed, Storm will begin running on a
+    * This function will be called by the storm runner to request the info
+    * of what to run. In local mode it will start up as a
     * separate thread on the local machine, pulling tweets off of the
     * TwitterSpout, generating and aggregating key-value pairs and
     * merging the incremental counts in the memcache store.
@@ -97,11 +110,24 @@ object StormRunner {
     * you all set up if you don't already have memcache installed
     * locally.)
     */
-  def main(args: Array[String]) {
-    Storm.local().run(
-      wordCount[Storm](spout, storeSupplier),
-      "wordCountJob"
-    )
+
+  def apply(args: Args): StormExecutionConfig = {
+    new StormExecutionConfig {
+      override val name = "SummingbirdExample"
+
+      // No Ackers
+      override def transformConfig(config: Map[String, AnyRef]): Map[String, AnyRef] = {
+        config ++ List((BTConfig.TOPOLOGY_ACKER_EXECUTORS -> (new java.lang.Integer(0))))
+      }
+
+      override def getNamedOptions: Map[String, Options] = Map(
+        "DEFAULT" -> Options().set(SinkParallelism(2))
+                      .set(FlatMapParallelism(80))
+                      .set(SpoutParallelism(16))
+                      .set(CacheSize(100))
+      )
+      override def graph = wordCount[Storm](spout, storeSupplier)
+    }
   }
 
   /**

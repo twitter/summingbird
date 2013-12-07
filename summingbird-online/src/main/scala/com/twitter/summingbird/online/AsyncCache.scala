@@ -14,24 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.storm
-
-import java.io.Serializable
-
-import backtype.storm.task.TopologyContext
-
-import com.twitter.util.Duration
-import backtype.storm.metric.api.IMetric
+package com.twitter.summingbird.online
+import com.twitter.util.Future
+import com.twitter.algebird.Semigroup
 
 /**
- * Necessary info for registering a metric in storm
- * "interval" is period over which the metric will be aggregated
- *
- * @author Ashutosh Singhal
+ * @author Ian O Connell
  */
-
-case class StormMetric[+T <: IMetric](metric: T, name: String, interval: Duration) {
-  def register(context: TopologyContext) {
-    context.registerMetric(name, metric, interval.inSeconds)
-  }
+trait AsyncCache[Key, Value] {
+  def forceTick: Future[Map[Key, Value]]
+  def tick: Future[Map[Key, Value]]
+  def insert(vals: TraversableOnce[(Key, Value)]): Future[Map[Key, Value]]
+  def cleanup: Future[Unit] = Future.Unit
 }
