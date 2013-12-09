@@ -1,5 +1,41 @@
 # summingbird #
 
+## 0.3.0
+* Add serializers for BatchID, Timestamp: https://github.com/twitter/summingbird/pull/350
+* ADd a means to set defaults outside the planner: https://github.com/twitter/summingbird/pull/351
+* fix bugs hdfs: https://github.com/twitter/summingbird/pull/353
+* add default option setting: https://github.com/twitter/summingbird/pull/356
+* Add options tests: https://github.com/twitter/summingbird/pull/335
+* Add some hadoop defaults to the builder API: https://github.com/twitter/summingbird/pull/359
+* Cleanup the Storm API a bit: https://github.com/twitter/summingbird/pull/360
+* Put all Collector actions in one execute: https://github.com/twitter/summingbird/pull/365
+* Producer API executors for storm and scalding: https://github.com/twitter/summingbird/pull/367
+* standardize get or else scalding: https://github.com/twitter/summingbird/pull/363
+* Fixes ticks: https://github.com/twitter/summingbird/pull/368
+* spout metrics: https://github.com/twitter/summingbird/pull/344
+* Add the summingbird prefix to the graphs: https://github.com/twitter/summingbird/pull/370
+* add localOrShuffle: https://github.com/twitter/summingbird/pull/371
+* Make the StormMetric Covariant: https://github.com/twitter/summingbird/pull/373
+* Fix depreciation to be from sink: https://github.com/twitter/summingbird/pull/375
+* add options to cfg: https://github.com/twitter/summingbird/pull/376
+* Null out Tuple.values for GC: https://github.com/twitter/summingbird/pull/374
+* Add timestamps to hadoop configs: https://github.com/twitter/summingbird/pull/377/files
+* add Options.toString: https://github.com/twitter/summingbird/pull/378
+* Fix out of sync versions to keep: https://github.com/twitter/summingbird/pull/379
+* Feature fix ffm: https://github.com/twitter/summingbird/pull/381
+* Add an await timeout: https://github.com/twitter/summingbird/pull/380
+* Add local or shuffle option: https://github.com/twitter/summingbird/pull/384
+* Add dequeueAll to Queue: https://github.com/twitter/summingbird/pull/386
+* Add in log4j and slf4j to the example: https://github.com/twitter/summingbird/pull/392
+* Fixes naming in bolts for options to work right after plan: https://github.com/twitter/summingbird/pull/391
+* Add error checking to the cache size: https://github.com/twitter/summingbird/pull/393
+* Add more storm tests, add some new test graphs: https://github.com/twitter/summingbird/pull/394
+* Proxy the select correctly on initialbatch: https://github.com/twitter/summingbird/pull/389
+* Refactors the bolts from storm to be independent workers in online: https://github.com/twitter/summingbird/pull/395
+* Pluggable caches in FinalFlatMap: https://github.com/twitter/summingbird/pull/396
+* Uses multimerge: https://github.com/twitter/summingbird/pull/399
+* ack on entry option: https://github.com/twitter/summingbird/pull/398
+
 ## 0.2.5
 * Fix issue with externalizer: https://github.com/twitter/summingbird/pull/316
 * Initial implementation of checkpoint state: https://github.com/twitter/summingbird/pull/315
