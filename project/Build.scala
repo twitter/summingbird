@@ -38,7 +38,8 @@ object SummingbirdBuild extends Build {
       Opts.resolver.sonatypeReleases,
       "Clojars Repository" at "http://clojars.org/repo",
       "Conjars Repository" at "http://conjars.org/repo",
-      "Twitter Maven" at "http://maven.twttr.com"
+      "Twitter Maven" at "http://maven.twttr.com",
+      "Apache" at "http://repo.maven.apache.org/maven2"
     ),
 
     parallelExecution in Test := true,
@@ -127,7 +128,7 @@ object SummingbirdBuild extends Build {
   val utilVersion = "6.3.8"
   val chillVersion = "0.3.3"
   val tormentaVersion = "0.5.3"
-
+  val hbaseVersion = "0.94.6"
   lazy val slf4jVersion = "1.6.6"
 
   /**
@@ -227,7 +228,9 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "chill-bijection" % chillVersion,
       "commons-lang" % "commons-lang" % "2.6",
       "com.twitter" %% "scalding-core" % scaldingVersion,
-      "com.twitter" %% "scalding-commons" % scaldingVersion
+      "com.twitter" %% "scalding-commons" % scaldingVersion,
+      "com.twitter" %% "storehaus-hbase" % storehausVersion,
+      "org.apache.hbase" % "hbase" % hbaseVersion
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -247,5 +250,5 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "tormenta-twitter" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
-  ).dependsOn(summingbirdCore, summingbirdStorm)
+  ).dependsOn(summingbirdCore, summingbirdStorm, summingbirdScalding)
 }
