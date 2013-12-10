@@ -171,4 +171,3 @@ class HBaseVersionedSource[K, V](table: String,
     (new HBaseTap(table, scheme)).asInstanceOf[Tap[JobConf, RecordReader[_,_], OutputCollector[_,_]]]
   }
 }
-
