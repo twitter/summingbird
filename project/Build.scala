@@ -250,5 +250,5 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "tormenta-twitter" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
-  ).dependsOn(summingbirdCore, summingbirdStorm)
+  ).dependsOn(summingbirdCore, summingbirdStorm, summingbirdScalding)
 }
