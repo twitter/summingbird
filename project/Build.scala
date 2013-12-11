@@ -125,7 +125,7 @@ object SummingbirdBuild extends Build {
   val scaldingVersion = "0.9.0rc4"
   val storehausVersion = "0.8.0"
   val utilVersion = "6.3.8"
-  val chillVersion = "0.3.3"
+  val chillVersion = "0.3.5"
   val tormentaVersion = "0.6.0"
 
   lazy val slf4jVersion = "1.6.6"
