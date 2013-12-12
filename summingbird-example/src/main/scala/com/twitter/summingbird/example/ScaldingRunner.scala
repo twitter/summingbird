@@ -89,15 +89,11 @@ object ScaldingRunner {
     job.run(waitingState, mode, job.plan(wordCount[Scalding](src, store)))
   }
 
-  def getReadableStore(batchOffset: Int = 0)(implicit batcher: Batcher) = {
-    versionedStore.asInstanceOf[ReadableStore[String, (BatchID,Long)]]
-  }
-
   /**
    * lookup a Key value in the HBase store
    */
   def lookup(key: String) : Option[(BatchID, Long)] = {
-    val reader = getReadableStore()
+    val reader = versionedStore.toReadableStore
     
     Await.result {
       reader.get(key)

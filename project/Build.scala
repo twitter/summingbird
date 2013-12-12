@@ -232,7 +232,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "scalding-core" % scaldingVersion,
       "com.twitter" %% "scalding-commons" % scaldingVersion,
       "com.twitter" %% "storehaus-hbase" % storehausVersion,
-      "org.apache.hbase" % "hbase" % hbaseVersion
+      "org.apache.hbase" % "hbase" % hbaseVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
