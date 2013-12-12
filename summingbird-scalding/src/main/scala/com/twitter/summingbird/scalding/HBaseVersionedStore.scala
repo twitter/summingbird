@@ -4,7 +4,8 @@ import cascading.flow.FlowDef
 import cascading.tap.Tap
 import cascading.tuple.Fields
 import com.twitter.algebird.monad.Reader
-import com.twitter.bijection.{Injection, AbstractInjection, Bufferable, Codec}
+import com.twitter.bijection.hbase.HBaseBijections.ImmutableBytesWritableBijection
+import com.twitter.bijection.Injection
 import com.twitter.bijection.Inversion.attempt
 import com.twitter.maple.hbase.{HBaseScheme, HBaseTap}
 import com.twitter.scalding.{AccessMode, Dsl, Mappable, Mode, Source, TupleConverter, TupleSetter, TypedPipe}
@@ -17,6 +18,8 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.mapred.{ JobConf, OutputCollector, RecordReader }
 import scala.util.{Failure, Success}
+
+import Injection._
 
 /**
  * Scalding implementation of the batch read and write components of a
@@ -50,30 +53,24 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
   implicit     
     injection: Injection[(K2, V2), (Array[Byte], Array[Byte])],
     keyInj: Injection[K, Array[Byte]],
-    valueInj: Injection[V2, Array[Byte]], override val ordering: Ordering[K]) 
-  extends BatchedScaldingStore[K, V] with ReadableStore[K,V2]
-{ self =>
-  
+    valueInj: Injection[V2, Array[Byte]], override val ordering: Ordering[K]) extends BatchedScaldingStore[K, V]
+{
   val KeyColumnName = "key"
   val ValColumnName = "value"
   val ColumnFamily = "versionedstore"
     
   val scheme = new HBaseScheme(new Fields(KeyColumnName), ColumnFamily, new Fields(ValColumnName))
-    
-  implicit val b2immutable: Injection[Array[Byte], ImmutableBytesWritable] = 
-    new AbstractInjection[Array[Byte], ImmutableBytesWritable] {
-      def apply(a: Array[Byte]) = new ImmutableBytesWritable(a)
-      override def invert(i: ImmutableBytesWritable) = attempt(i)(_.get())
-  }
-    
+   
+  implicit lazy val byteArray2BytesWritableInj : Injection[Array[Byte], ImmutableBytesWritable] = fromBijection[Array[Byte], ImmutableBytesWritable](ImmutableBytesWritableBijection[Array[Byte]])
+  
   implicit def kvpInjection: Injection[(K2, V2), (ImmutableBytesWritable,ImmutableBytesWritable)] = {
     Injection.connect[(K2,V2), (Array[Byte],Array[Byte]), (ImmutableBytesWritable,ImmutableBytesWritable)]
   }
+
   
   // this is only used for client queries and does not need to be serialized out
   // during the scalding job
-  @transient val hbaseStore = HBaseByteArrayStore (quorum, table, ColumnFamily, ValColumnName, true)
-  hbaseStore.createTableIfRequired
+  @transient val hbaseStore = new HBaseStore (quorum, table, ColumnFamily, ValColumnName, true)(keyInj, valueInj)
   
   /** 
    *  Exposes a stream with the (K,V) pairs from the highest batchID less than
@@ -81,14 +78,7 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
    *  This method is called by BatchedScaldingStore.merge 
    */
    override def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
-    hbaseStore.createTableIfRequired
-    val flow = readVersions(exclusiveUB)
-      
-    if( flow != Nil ) {
-      Right((exclusiveUB, flow))
-    } else {
-      Left(List("No last batch available < %s for HBaseVersionedStore()".format(exclusiveUB)))
-    }
+    Right((exclusiveUB, readVersions(exclusiveUB)))
   }
  
 
@@ -100,13 +90,7 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
                 .filter{ _._1 < exclusiveUB } // (BatchID, (K,V)
                 .map{unpacked: (BatchID,(K,V)) => (unpacked._2._1,(unpacked._1,unpacked._2._2))} // (K, (BatchID,V)
     
-    object BatchOrdering extends Ordering[(BatchID,V)] {
-      def compare (a: (BatchID,V), b: (BatchID,V)) = {
-        a._1 compare b._1
-      }
-    }
-    
-    implicit def batchOrder = BatchOrdering;
+    implicit def batchOrderer = Ordering.by[(BatchID,V),BatchID](_._1)
     
     filtered
       .group
@@ -130,7 +114,26 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
       .write(new HBaseVersionedSource[K2, V2](table, scheme))
   }  
   
-  /* overridden methods for ReadableStore[K, V2] */
+  
+  def toReadableStore: ReadableStore[K,V2] = {
+    hbaseStore.asInstanceOf[ReadableStore[K,V2]]
+  }
+  
+
+}
+
+
+class HBaseStore [K, V2] (quorum: Seq[String], 
+                          table: String, 
+                          columnFamily: String, 
+                          valColumnName: String,
+                          createTable: Boolean)(
+  implicit     
+    keyInj: Injection[K, Array[Byte]],
+    valueInj: Injection[V2, Array[Byte]]) extends ReadableStore[K, V2]
+{ self =>
+  val hbaseStore = HBaseByteArrayStore(quorum, table, columnFamily, valColumnName, createTable)
+    /* overridden methods for ReadableStore[K, V2] */
   override def get(k: K): Future[Option[V2]] = {
     
     val keyBytes = Injection[K, Array[Byte]](k)
