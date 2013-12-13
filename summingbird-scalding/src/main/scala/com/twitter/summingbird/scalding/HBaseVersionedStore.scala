@@ -70,7 +70,8 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
   
   // this is only used for client queries and does not need to be serialized out
   // during the scalding job
-  @transient val hbaseStore = new HBaseStore (quorum, table, ColumnFamily, ValColumnName, true)(keyInj, valueInj)
+  @transient val hbaseStore =  HBaseByteArrayStore (quorum, table, ColumnFamily, ValColumnName, true)
+    .convert[K,V2](keyInj)(valueInj)
   
   /** 
    *  Exposes a stream with the (K,V) pairs from the highest batchID less than
@@ -117,47 +118,8 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
   
   def toReadableStore: ReadableStore[K,V2] = {
     hbaseStore.asInstanceOf[ReadableStore[K,V2]]
-  }
-  
+  }  
 
-}
-
-
-class HBaseStore [K, V2] (quorum: Seq[String], 
-                          table: String, 
-                          columnFamily: String, 
-                          valColumnName: String,
-                          createTable: Boolean)(
-  implicit     
-    keyInj: Injection[K, Array[Byte]],
-    valueInj: Injection[V2, Array[Byte]]) extends ReadableStore[K, V2]
-{ self =>
-  val hbaseStore = HBaseByteArrayStore(quorum, table, columnFamily, valColumnName, createTable)
-    /* overridden methods for ReadableStore[K, V2] */
-  override def get(k: K): Future[Option[V2]] = {
-    
-    val keyBytes = Injection[K, Array[Byte]](k)
-    val valBytes = Await.result(hbaseStore.get(keyBytes))
-    
-    val v2Val: Option[V2] = valBytes match {
-      case Some(bytes) => {
-        Injection.invert[V2, Array[Byte]](bytes) match {
-          case Success(deserialized) => Option(deserialized)
-        }
-      }
-      // V2 is (BatchID, V)
-      case _ => Option((new BatchID(0L), None).asInstanceOf[V2])
-    }
-    
-    Future.value(v2Val)
-  }
-  
-  
-  override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, Future[Option[V2]]] = {
-    ks.map{ k => (k, self.get(k)) }
-    .toMap
-  }
-  
 }
 
 
