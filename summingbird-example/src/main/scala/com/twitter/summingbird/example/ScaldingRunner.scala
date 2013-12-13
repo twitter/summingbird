@@ -84,7 +84,7 @@ object ScaldingRunner {
    * main
    * Create the Scalding job and run it
    */
-  def main(args: Array[String]) {
+  def runJob(args: Array[String]) {
     val job =  Scalding("wordcountJob")
     job.run(waitingState, mode, job.plan(wordCount[Scalding](src, store)))
   }
