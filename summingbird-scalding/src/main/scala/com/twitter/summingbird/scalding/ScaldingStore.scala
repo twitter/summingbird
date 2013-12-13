@@ -22,12 +22,13 @@ import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.bijection.{ Bijection, ImplicitBijection }
-import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, MapsideReduce, TupleSetter, TupleConverter}
-import com.twitter.scalding.typed.Grouped
+import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, SequenceFile, MapsideReduce, TupleSetter, TupleConverter}
+import com.twitter.scalding.typed.{Grouped, TypedSink}
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
 import cascading.flow.FlowDef
+import cascading.tuple.Fields
 
 import org.slf4j.LoggerFactory
 
@@ -297,5 +298,35 @@ class InitialBatchedStore[K,V](val firstNonZero: BatchID, val proxy: BatchedScal
     if (exclusiveUB > firstNonZero) proxy.readLast(exclusiveUB, mode)
     else if (exclusiveUB == firstNonZero) Right((firstNonZero.prev, Scalding.emptyFlowProducer[(K,V)]))
     else Left(List("Earliest batch set at :" + firstNonZero + " but tried to read: " + exclusiveUB))
+  }
+}
+
+// Normal Scalding Store, which only contains (K, V) data pairs.
+// For offline usage only.
+class NormalScaldingStore[K,V](val rootPath: String)
+(implicit inBatcher: Batcher, ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
+  extends BatchedScaldingStore[K, V] {
+
+  var writtenBatches = Set[BatchID]()
+  val batcher = inBatcher
+  val ordering = ord
+
+  override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) = {
+    val outSource = SequenceFile(rootPath + "/" + batchID.toString)
+    lastVals.write(TypedSink[(K, V)](outSource))
+    writtenBatches = writtenBatches + batchID
+  }
+  
+  override def readLast(exclusiveUB: BatchID, mode: Mode) = {
+    val candidates = writtenBatches.filter { _ < exclusiveUB }
+    if(candidates.isEmpty) {
+      Left(List("No data existing"))
+    }
+    else {
+      val lastID = candidates.max
+      val src = SequenceFile(rootPath + lastID.toString)
+      val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(src.read(fd._1, fd._2), Fields.ALL)}
+      Right((lastID, rdr))
+    }
   }
 }
