@@ -33,7 +33,8 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
-import com.twitter.summingbird.storm.option.AnchorTuples
+import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
+import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache}
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime}
 import com.twitter.summingbird.util.CacheSize
@@ -193,23 +194,47 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val usePreferLocalDependency = getOrElse(stormDag, node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
     logger.info("[{}] usePreferLocalDependency: {}", nodeName, usePreferLocalDependency.get)
 
+    val flushFrequency = getOrElse(stormDag, node, DEFAULT_FLUSH_FREQUENCY)
+    logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
+
     val cacheSize = getOrElse(stormDag, node, DEFAULT_FM_CACHE)
     logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
 
     val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
 
+    val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
+    logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
+
+    val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
+    logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
+
     val bolt = summerOpt match {
       case Some(s) =>
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
+        val cacheBuilder = if(useAsyncCache.get) {
+          val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
+          logger.info("[{}] softMemoryFlush : {}", nodeName, softMemoryFlush.get)
+
+          val asyncPoolSize = getOrElse(stormDag, node, DEFAULT_ASYNC_POOL_SIZE)
+          logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
+
+          val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
+          logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
+
+          MultiTriggerCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
+        } else {
+          SummingQueueCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency)
+        }
 
         BaseBolt(
           metrics.metrics,
           anchorTuples,
           true,
           new Fields(AGG_KEY, AGG_VALUE),
+          ackOnEntry,
           new executor.FinalFlatMap(
             operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-            cacheSize,
+            cacheBuilder,
             maxWaiting,
             maxWaitTime,
             new SingleItemInjection[Any],
@@ -222,6 +247,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           anchorTuples,
           stormDag.dependantsOf(node).size > 0,
           new Fields(VALUE_FIELD),
+          ackOnEntry,
           new executor.IntermediateFlatMap(
             operation,
             maxWaiting,
@@ -280,11 +306,15 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
+    val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
+    logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
+
     val sinkBolt = BaseBolt(
           metrics.metrics,
           anchorTuples,
           shouldEmit,
           new Fields(VALUE_FIELD),
+          ackOnEntry,
           new executor.Summer(
               supplier,
               getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),

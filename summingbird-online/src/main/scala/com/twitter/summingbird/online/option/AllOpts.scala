@@ -18,7 +18,6 @@ object IncludeSuccessHandler {
 
 case class OnlineExceptionHandler(handlerFn: PartialFunction[Throwable, Unit])
 
-
 /**
   * MaxWaitingFutures is the maximum number of key-value pairs that the
   * SinkBolt in Storm will process before starting to force the
@@ -41,3 +40,31 @@ case class MaxWaitingFutures(get: Int)
  * return or fail fairly quickly (on the order of a second or so).
  */
 case class MaxFutureWaitTime(get: Duration)
+
+/*
+  FlushFrequency is how often regardless of traffic a given Cache should be flushed to the network.
+*/
+case class FlushFrequency(get: Duration)
+
+/*
+ UseAsyncCache is used to enable a background asynchronous cache. These do all cache related operations in background threads.
+ */
+case class UseAsyncCache(get: Boolean)
+
+/*
+  AsyncPoolSize controls the size of the fixed thread pool used to back an asynchronous cache.
+  Only will have an effect if UseAsyncCache is true
+*/
+case class AsyncPoolSize(get: Int)
+
+/*
+ SoftMemoryFlushPercent is the percentage of memory used in the JVM at which a flush will be triggered of the cache.
+*/
+case class SoftMemoryFlushPercent(get: Float) {
+  require(0 < get && get <= 100.0, "must be a percentage.")
+}
+
+/*
+  ValueCombinerCacheSize is used in cache's that support it as a trigger to crush down a high locality of values without emitting
+*/
+case class ValueCombinerCacheSize(get: Int)
