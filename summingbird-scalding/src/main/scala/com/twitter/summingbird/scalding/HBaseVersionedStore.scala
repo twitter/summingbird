@@ -117,7 +117,7 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
   
   
   def toReadableStore: ReadableStore[K,V2] = {
-    hbaseStore.asInstanceOf[ReadableStore[K,V2]]
+    hbaseStore
   }  
 
 }
