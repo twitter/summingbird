@@ -43,10 +43,8 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
   extends BatchedScaldingStore[K, V] {
   import Dsl._  
 
-  var writtenBatches = Set[BatchID]()
   val batcher = inBatcher
   val ordering = ord
-  def hdfsPaths = writtenBatches.toIterable.map{rootPath + "/" + _.toString}
 
   protected def getFileStatus(p: String, conf: Configuration) = {
     val path = new Path(p)
@@ -71,13 +69,25 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
   protected def getLastBatchID(mode: Mode) = {
     mode match {
       case Hdfs(_, conf) => {
-        val lastBatchName = 
+        def hdfsPaths: List[String] = {
+          val path = new Path(rootPath)
+          Option(path.getFileSystem(conf).globStatus(path))
+            .map{ statuses: Array[FileStatus] =>
+              statuses.map {_.getPath.getName}
+            }
+            .getOrElse(Array[String]())
+            .toList
+        }
+
+        val lastBatchStatus = 
           hdfsPaths.map(getFileStatus(_, conf))
             .filter(_._1)
-            .reduce{(a, b) => if (a._2 > b._2) a else b}
-            ._3
-        BatchID(lastBatchName)  
-        
+            .reduceOption{(a, b) => if (a._2 > b._2) a else b}
+            .getOrElse((false, 0, "0"))
+            
+        if (lastBatchStatus._1) BatchID(lastBatchStatus._3) 
+        else throw new Exception(
+           "No good data is available at :" + rootPath)
       }
       case _ => {
          throw new Exception(
@@ -89,16 +99,14 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
   override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) = {
     val outSource = WritableSequenceFile(rootPath + "/" + batchID.toString, 'key -> 'val)
     lastVals.write(TypedSink[(K, V)](outSource))
-    writtenBatches = writtenBatches + batchID
   }
   
-  override def readLast(exclusiveUB: BatchID, mode: Mode) = {
-    val candidates = writtenBatches.filter { _ < exclusiveUB }
-    if(candidates.isEmpty) {
-      Left(List("No data existing"))
+    override def readLast(exclusiveUB: BatchID, mode: Mode) = {
+    val lastID = getLastBatchID(mode)
+    if(lastID >= exclusiveUB) {
+      Left(List("Last batch set at :" + lastID + " but tried to read: " + exclusiveUB))
     }
     else {
-      val lastID = getLastBatchID(mode)
       val src = WritableSequenceFile(rootPath + "/" + lastID.toString, 'key -> 'val)
       val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(src.read(fd._1, fd._2), Fields.ALL)}
       Right((lastID, rdr))
