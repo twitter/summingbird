@@ -28,7 +28,6 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
 import cascading.flow.FlowDef
-import cascading.tuple.Fields
 
 import org.slf4j.LoggerFactory
 
