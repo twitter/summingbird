@@ -300,33 +300,3 @@ class InitialBatchedStore[K,V](val firstNonZero: BatchID, val proxy: BatchedScal
     else Left(List("Earliest batch set at :" + firstNonZero + " but tried to read: " + exclusiveUB))
   }
 }
-
-// Normal Scalding Store, which only contains (K, V) data pairs.
-// For offline usage only.
-class NormalScaldingStore[K,V](val rootPath: String)
-(implicit inBatcher: Batcher, ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
-  extends BatchedScaldingStore[K, V] {
-
-  var writtenBatches = Set[BatchID]()
-  val batcher = inBatcher
-  val ordering = ord
-
-  override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) = {
-    val outSource = SequenceFile(rootPath + "/" + batchID.toString)
-    lastVals.write(TypedSink[(K, V)](outSource))
-    writtenBatches = writtenBatches + batchID
-  }
-  
-  override def readLast(exclusiveUB: BatchID, mode: Mode) = {
-    val candidates = writtenBatches.filter { _ < exclusiveUB }
-    if(candidates.isEmpty) {
-      Left(List("No data existing"))
-    }
-    else {
-      val lastID = candidates.max
-      val src = SequenceFile(rootPath + lastID.toString)
-      val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(src.read(fd._1, fd._2), Fields.ALL)}
-      Right((lastID, rdr))
-    }
-  }
-}
