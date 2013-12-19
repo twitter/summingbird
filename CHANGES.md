@@ -1,5 +1,11 @@
 # summingbird #
 
+## 0.3.1
+* Bump the chill version - makes storm provided: https://github.com/twitter/summingbird/pull/406
+* sort by batch if monoid is commutative: https://github.com/twitter/summingbird/pull/411
+* Fix README to properly run Storm locally: https://github.com/twitter/summingbird/pull/412
+* Feature/async summer store: https://github.com/twitter/summingbird/pull/400
+
 ## 0.3.0
 * Add serializers for BatchID, Timestamp: https://github.com/twitter/summingbird/pull/350
 * ADd a means to set defaults outside the planner: https://github.com/twitter/summingbird/pull/351
