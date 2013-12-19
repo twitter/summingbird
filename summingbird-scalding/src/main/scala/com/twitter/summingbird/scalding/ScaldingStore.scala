@@ -184,9 +184,17 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
       implicit val timeValueSemigroup: Semigroup[(Timestamp, V)] =
         IteratorSums.optimizedPairSemigroup[Timestamp, V](1000)
 
-      all.group
-        .withReducers(reducers)
-        .sortBy { case (_, (t, _)) => t } //we are sorted on time, therefore BatchID
+      val grouped = all.group.withReducers(reducers)
+
+      // We need the tuples to be sorted by batch ID to compute partials, and by time if the
+      // monoid is not commutative. Although sorting by time is adequate for both, sorting
+      // by batch is more efficient because the reducers' input is almost sorted.
+      val sorted = commutativity match {
+        case NonCommutative => grouped.sortBy { case (_, (t, _)) => t }
+        case Commutative => grouped.sortBy { case (b, (_, _)) => b }
+      }
+
+      sorted
         .mapValueStream { it =>
           // each BatchID appears at most once, so it fits in RAM
           val batched: Map[BatchID, (Timestamp, V)] = groupedSum(it).toMap
