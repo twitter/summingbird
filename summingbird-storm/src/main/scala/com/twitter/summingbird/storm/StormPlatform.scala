@@ -306,8 +306,32 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
+    val flushFrequency = getOrElse(stormDag, node, DEFAULT_FLUSH_FREQUENCY)
+    logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
+
+    val cacheSize = getOrElse(stormDag, node, DEFAULT_FM_CACHE)
+    logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
+
     val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
     logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
+
+    val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
+    logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
+
+    val cacheBuilder = if(useAsyncCache.get) {
+          val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
+          logger.info("[{}] softMemoryFlush : {}", nodeName, softMemoryFlush.get)
+
+          val asyncPoolSize = getOrElse(stormDag, node, DEFAULT_ASYNC_POOL_SIZE)
+          logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
+
+          val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
+          logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
+
+          MultiTriggerCache.builder[(K, BatchID), (List[InputState[Tuple]], Timestamp, V)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
+        } else {
+          SummingQueueCache.builder[(K, BatchID), (List[InputState[Tuple]], Timestamp, V)](cacheSize, flushFrequency)
+        }
 
     val sinkBolt = BaseBolt(
           metrics.metrics,
@@ -319,7 +343,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               supplier,
               getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
               getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-              getOrElse(stormDag, node, DEFAULT_SUMMER_CACHE),
+              cacheBuilder,
               getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
