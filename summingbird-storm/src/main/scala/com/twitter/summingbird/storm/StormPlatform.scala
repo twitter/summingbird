@@ -76,19 +76,6 @@ case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K,
 sealed trait StormSource[+T]
 case class SpoutSource[+T](spout: Spout[(Timestamp, T)], parallelism: Option[option.SpoutParallelism]) extends StormSource[T]
 
-trait StormSink[-T] {
-  def toFn: T => Future[Unit]
-}
-
-class SinkFn[T](fn: => T => Future[Unit]) extends StormSink[T] {
-  lazy val toFn = fn
-}
-
-class WritableStoreSink[K,V](writable: => WritableStore[K, V]) extends StormSink[(K, V)] {
-  private lazy val store = writable // only construct it once
-  def toFn = store.put(_)
-}
-
 object Storm {
   def local(options: Map[String, Options] = Map.empty): LocalStorm =
     new LocalStorm(options, identity, List())
@@ -102,7 +89,7 @@ object Storm {
 
   def sink[T](fn: => T => Future[Unit]): Storm#Sink[T] = new SinkFn(fn)
 
-  def sinkToStore[K,V](store: => WritableStore[K, V]): Storm#Sink[(K,V)] =
+  def sinkIntoWritable[K,V](store: => WritableStore[K, V]): Storm#Sink[(K,V)] =
     new WritableStoreSink[K, V](store)
 
   // This can be used in jobs that do not have a batch component
