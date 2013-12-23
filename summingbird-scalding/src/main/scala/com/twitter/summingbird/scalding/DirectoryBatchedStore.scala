@@ -66,7 +66,7 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
   /*
    * Get last BatchID for this store
    */
-  protected def getLastBatchID(mode: Mode) = {
+  protected def getLastBatchID(exclusiveUB: BatchID, mode: Mode) = {
     mode match {
       case Hdfs(_, conf) => {
         def hdfsPaths: List[String] = {
@@ -81,18 +81,18 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
 
         val lastBatchStatus = 
           hdfsPaths.map(getFileStatus(_, conf))
-            .filter(_._1)
+            .filter{input => input._1 && BatchID(input._2) <= exclusiveUB}
             .reduceOption{(a, b) => if (a._2 > b._2) a else b}
             .getOrElse((false, 0, "0"))
             
         if (lastBatchStatus._1) BatchID(lastBatchStatus._3) 
         else throw new Exception(
-           "No good data is available at :" + rootPath)
+           "No good data <= " + exclusiveUB + " is available at : " + rootPath)
       }
       case _ => {
          throw new Exception(
            "DirectoryBatchedStore must work in Hdfs. Mode: " + mode.toString + " found.")
-      }
+      } 
     }
   }
 
@@ -101,15 +101,12 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
     lastVals.write(TypedSink[(K, V)](outSource))
   }
   
-    override def readLast(exclusiveUB: BatchID, mode: Mode) = {
-    val lastID = getLastBatchID(mode)
-    if(lastID >= exclusiveUB) {
-      Left(List("Last batch set at :" + lastID + " but tried to read: " + exclusiveUB))
-    }
-    else {
-      val src = WritableSequenceFile(rootPath + "/" + lastID.toString, 'key -> 'val)
-      val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(src.read(fd._1, fd._2), Fields.ALL)}
-      Right((lastID, rdr))
-    }
+  override def readLast(exclusiveUB: BatchID, mode: Mode) = {
+    val lastID = getLastBatchID(exclusiveUB, mode)
+    
+    val src = WritableSequenceFile(rootPath + "/" + lastID.toString, 'key -> 'val)
+    val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(src.read(fd._1, fd._2), Fields.ALL)}
+    Right((lastID, rdr))
+    
   }
 }
