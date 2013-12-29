@@ -70,7 +70,10 @@ object MergeableStoreSupplier {
 
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
-sealed trait StormService[-K, +V]
+trait StormService[-K, +V] {
+  def store: StoreFactory[K, V]
+}
+
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 sealed trait StormSource[+T]
@@ -167,7 +170,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         case (acc, p) =>
           p match {
             case LeftJoinedProducer(_, wrapper) =>
-              val newService = wrapper.asInstanceOf[StoreWrapper[Any, Any]].store
+              val newService = wrapper.store
               FlatMapOperation.combine(
                 acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
                 newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
