@@ -26,7 +26,7 @@ import backtype.storm.tuple.Tuple
 import com.twitter.bijection.{Base64String, Injection}
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.chill.IKryoRegistrar
-import com.twitter.storehaus.ReadableStore
+import com.twitter.storehaus.{ReadableStore, WritableStore}
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
@@ -70,7 +70,10 @@ object MergeableStoreSupplier {
 
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
-sealed trait StormService[-K, +V]
+trait StormService[-K, +V] {
+  def store: StoreFactory[K, V]
+}
+
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 sealed trait StormSource[+T]
@@ -87,7 +90,10 @@ object Storm {
    * Below are factory methods for the input output types:
    */
 
-  def sink[T](fn: => (T => Future[Unit])): Storm#Sink[T] = { () => fn }
+  def sink[T](fn: => T => Future[Unit]): Storm#Sink[T] = new SinkFn(fn)
+
+  def sinkIntoWritable[K,V](store: => WritableStore[K, V]): Storm#Sink[(K,V)] =
+    new WritableStoreSink[K, V](store)
 
   // This can be used in jobs that do not have a batch component
   def onlineOnlyStore[K, V](store: => MergeableStore[K, V]): StormStore[K, V] =
@@ -120,7 +126,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   type Source[+T] = StormSource[T]
   type Store[-K, V] = StormStore[K, V]
-  type Sink[-T] = () => (T => Future[Unit])
+  type Sink[-T] = StormSink[T]
   type Service[-K, +V] = StormService[K, V]
   type Plan[T] = PlannedTopology
 
@@ -164,13 +170,14 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         case (acc, p) =>
           p match {
             case LeftJoinedProducer(_, wrapper) =>
-              val newService = wrapper.asInstanceOf[StoreWrapper[Any, Any]].store
+              val newService = wrapper.store
               FlatMapOperation.combine(
                 acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
                 newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
             case OptionMappedProducer(_, op) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
             case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
-            case WrittenProducer(_, sinkSupplier) => acc.andThen(FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])]))
+            case WrittenProducer(_, sinkSupplier) =>
+              acc.andThen(FlatMapOperation.write(() => sinkSupplier.toFn))
             case IdentityKeyedProducer(_) => acc
             case MergedProducer(_, _) => acc
             case NamedProducer(_, _) => acc

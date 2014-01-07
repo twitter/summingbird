@@ -28,7 +28,9 @@ import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.{CompoundSink, BatchedSinkFromOffline}
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
-import com.twitter.summingbird.storm.{ MergeableStoreSupplier, StoreWrapper, Storm, StormEnv, StormSource }
+import com.twitter.summingbird.storm.{
+  MergeableStoreSupplier, StoreWrapper, Storm, StormEnv, StormSource, StormSink
+}
 import com.twitter.summingbird.util.CacheSize
 import java.io.Serializable
 import java.util.Date
@@ -104,7 +106,7 @@ case class SourceBuilder[T: Manifest] private (
     val newNode =
       node.flatMap(conversion).write(
         sink.offline.map(new BatchedSinkFromOffline[U](batcher, _)),
-        sink.online
+        sink.online.map { supplier => new StormSink[U] { lazy val toFn = supplier() } }
       )
     copy(
       node = node.either(newNode).flatMap[T] {
@@ -118,7 +120,7 @@ case class SourceBuilder[T: Manifest] private (
     copy(
       node = node.write(
         sink.offline.map(new BatchedSinkFromOffline[T](batcher, _)),
-        sink.online
+        sink.online.map { supplier => new StormSink[T] { lazy val toFn = supplier() } }
       )
     )
 
