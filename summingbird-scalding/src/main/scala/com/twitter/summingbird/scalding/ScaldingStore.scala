@@ -107,6 +107,10 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   /** Record a computed batch of code */
   def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit
 
+////////////////////
+// All the following methods are should not be changed in subclasses
+////////////////////
+
   @transient private val logger = LoggerFactory.getLogger(classOf[BatchedScaldingStore[_,_]])
 
   /** The writeLast method as a FlowProducer */
@@ -244,6 +248,10 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     val thisTimeInterval = capturedBatcher.toTimestamp(batchIntr)
     val capturedKeyCheck = boundedKeySpace
 
+    /** The frozen keys do not change over the batch window
+     * we are considering, so we just copy the (K, V) pair
+     * into each of the final output BatchIDs
+     */
     def getFrozenKeys(p: TypedPipe[(K,V)]): TypedPipe[(BatchID, (K, V))] =
       p.filter { case (k, _) => capturedKeyCheck.isFrozen(k, thisTimeInterval) }
         .flatMap { kv => filteredBatches.map { (_, kv) } }
@@ -251,6 +259,9 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     def getLiquidKeys(p: TypedPipe[(K,V)]): TypedPipe[(K, V)] =
       p.filter { case (k, _) => !capturedKeyCheck.isFrozen(k, thisTimeInterval) }
 
+    /** It is an error to claim that a key is frozen, yet emit it in the deltas.
+     * If this occurs, you need to fix your sources or fix your TimeBoundedKeySpace
+     */
     def assertDeltasAreLiquid(p: TypedPipe[(Long, (K, V))]): TypedPipe[(Long, (K, V))] =
       p.map { tkv =>
         assert(!capturedKeyCheck.isFrozen(tkv._2._1, thisTimeInterval), "Frozen key in deltas: " + tkv)
@@ -318,24 +329,35 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     })
 }
 
+/** Use this class to easily change, for instance, the pruning or the boundedKeySpace
+ * for an existing store.
+ */
+abstract class ProxyBatchedStore[K, V] extends BatchedScaldingStore[K, V] {
+  def proxy: BatchedScaldingStore[K, V]
+
+  override def batcher = proxy.batcher
+  override def ordering = proxy.ordering
+  override def select(b: List[BatchID]) = proxy.select(b)
+  override def pruning = proxy.pruning
+  override def boundedKeySpace = proxy.boundedKeySpace
+  override def readLast(exclusiveUB: BatchID, mode: Mode) = proxy.readLast(exclusiveUB, mode)
+  override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit =
+    proxy.writeLast(batchID, lastVals)(flowDef, mode)
+}
 
 /**
  * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
  * On write, we throw if batchID is less than firstNonZero
  */
-class InitialBatchedStore[K,V](val firstNonZero: BatchID, val proxy: BatchedScaldingStore[K, V])
-  extends BatchedScaldingStore[K, V] {
+class InitialBatchedStore[K,V](val firstNonZero: BatchID, override val proxy: BatchedScaldingStore[K, V])
+  extends ProxyBatchedStore[K, V] {
 
-  def batcher = proxy.batcher
-  def ordering = proxy.ordering
-  // This one is dangerous and marked override because it has a default
-  override def select(b: List[BatchID]) = proxy.select(b)
-  def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) =
+  override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) =
     if (batchID >= firstNonZero) proxy.writeLast(batchID, lastVals)
     else sys.error("Earliest batch set at :" + firstNonZero + " but tried to write: " + batchID)
 
   // Here is where we switch:
-  def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
+  override def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
     if (exclusiveUB > firstNonZero) proxy.readLast(exclusiveUB, mode)
     else if (exclusiveUB == firstNonZero) Right((firstNonZero.prev, Scalding.emptyFlowProducer[(K,V)]))
     else Left(List("Earliest batch set at :" + firstNonZero + " but tried to read: " + exclusiveUB))
