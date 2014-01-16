@@ -121,9 +121,10 @@ Current published artifacts are
 
 The suffix denotes the scala version.
 
-## Authors
+## Authors (alphabetically)
 
 * Oscar Boykin <https://twitter.com/posco>
+* Ian O'Connell <https://twitter.com/0x138>
 * Sam Ritchie <https://twitter.com/sritchie>
 * Ashutosh Singhal <https://twitter.com/daashu>
 
