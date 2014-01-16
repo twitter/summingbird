@@ -26,7 +26,7 @@ import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, MapsideReduce
 import com.twitter.scalding.typed.Grouped
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
+import com.twitter.summingbird.batch._
 import cascading.flow.FlowDef
 
 import org.slf4j.LoggerFactory
@@ -79,6 +79,18 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   def select(b: List[BatchID]): List[BatchID] = b
 
   /**
+   * Override this to set up value pruning, by default, no values
+   * are pruned
+   */
+  def pruning: PrunedSpace[(K, V)] = PrunedSpace.never
+
+  /**
+   * Override this to control when keys are frozen. This allows
+   * us to avoid sorting and shuffling keys that are not updated.
+   */
+  def boundedKeySpace: TimeBoundedKeySpace[K] = TimeBoundedKeySpace.neverFrozen
+
+  /**
    * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
    * On write, we throw if batchID is less than firstNonZero
    */
@@ -104,7 +116,9 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
       // make sure we checkpoint to disk to avoid double computation:
       val checked = if(batches.size > 1) lastVals.forceToDisk else lastVals
       batches.foreach { batchID =>
-        val thisBatch = checked.filter { case (b, _) => b == batchID }
+        val thisBatch = checked.filter { case (b, kv) =>
+            (b == batchID) && !pruning.prune(kv, batcher.latestTimeOf(b))
+          }
         writeLast(batchID, thisBatch.values)(flow, mode)
       }
     }
@@ -226,13 +240,33 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           }
         }
 
+    // Avoid closures where easy
+    val thisTimeInterval = capturedBatcher.toTimestamp(batchIntr)
+    val capturedKeyCheck = boundedKeySpace
+
+    def getFrozenKeys(p: TypedPipe[(K,V)]): TypedPipe[(BatchID, (K, V))] =
+      p.filter { case (k, _) => capturedKeyCheck.isFrozen(k, thisTimeInterval) }
+        .flatMap { kv => filteredBatches.map { (_, kv) } }
+
+    def getLiquidKeys(p: TypedPipe[(K,V)]): TypedPipe[(K, V)] =
+      p.filter { case (k, _) => !capturedKeyCheck.isFrozen(k, thisTimeInterval) }
+
+    def assertDeltasAreLiquid(p: TypedPipe[(Long, (K, V))]): TypedPipe[(Long, (K, V))] =
+      p.map { tkv =>
+        assert(!capturedKeyCheck.isFrozen(tkv._2._1, thisTimeInterval), "Frozen key in deltas: " + tkv)
+        tkv
+      }
+
     // Now in the flow-producer monad; do it:
     for {
       pipeInput <- input
-      pipeDeltas <- deltas
+      frozen = getFrozenKeys(pipeInput)
+      liquid = getLiquidKeys(pipeInput)
+      ds <- deltas
+      liquidDeltas = assertDeltasAreLiquid(ds)
       // fork below so scalding can make sure not to do the operation twice
-      merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas)).fork
-      lastOut = toLastFormat(merged)
+      merged = mergeAll(prepareOld(liquid) ++ prepareDeltas(liquidDeltas)).fork
+      lastOut = toLastFormat(merged) ++ frozen
       _ <- writeFlow(filteredBatches, lastOut)
     } yield toOutputFormat(merged)
   }
