@@ -374,8 +374,22 @@ object Scalding {
             }, m)
           case FlatMappedProducer(producer, op) =>
             // Map in two monads here, first state then reader
+            val shards = getOrElse(options, names, producer, FlatMapShards.default).count
             val (fmp, m) = recurse(producer)
-            (fmp.map { flowP =>
+            val fmpSharded = if (shards <= 1)
+              fmp
+            else
+              fmp.map { flowP =>
+                flowP.map { pipe =>
+                  pipe.groupBy { event => new java.util.Random().nextInt(shards) }
+                    .mapValues(identity(_)) // hack to get scalding to actually do the groupBy
+                    .withReducers(shards)
+                    .values
+                }
+              }
+
+
+            (fmpSharded.map { flowP =>
               flowP.map { typedPipe =>
                 typedPipe.flatMap { case (time, item) =>
                   op(item).map((time, _))
