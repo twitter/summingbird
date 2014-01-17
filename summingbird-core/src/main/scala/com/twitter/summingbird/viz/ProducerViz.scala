@@ -21,6 +21,9 @@ import scala.collection.mutable.{Map => MMap}
 
 case class ProducerViz[P <: Platform[P]](tail: Producer[P, _]) {
   private val dependantState = Dependants(tail)
+  // These are caches that are only kept/used for a short period
+  // its single threaded and mutation is tightly controlled.
+  // Used here instead of an immutable for simplification of code.
   private val nodeLookupTable = MMap[Producer[P, _], String]()
   private val nameLookupTable = MMap[String, Int]()
 
@@ -51,20 +54,13 @@ case class ProducerViz[P <: Platform[P]](tail: Producer[P, _]) {
 
   override def toString() : String = {
     val base = "digraph summingbirdGraph {\n"
-    println(dependantState.nodes.size)
-    val graphStr = dependantState.nodes.foldLeft("") { case (runningStr, nextNode) =>
-      val evalNode = nextNode
-      val children = dependantState.dependantsOf(evalNode).getOrElse(List[Producer[P, _]]())
+    val graphStr = dependantState.nodes.flatMap { evalNode =>
+      val children = dependantState.dependantsOf(evalNode).getOrElse(sys.error("Invalid node: %s, unable to find dependants".format(evalNode)))
       val nodeName = getName(evalNode)
-      val new_str = children.foldLeft(""){ case (innerRunningStr, c)  =>
-        val innerNewStr = "\"" + nodeName + "\" -> \""
-        val pChildName = getName(c)
-
-        val innerNewStr2 = pChildName + "\"\n"
-        innerRunningStr + innerNewStr + innerNewStr2
+      children.map{ c  =>
+        "\"%s\" -> \"%s\"\n".format(nodeName, getName(c))
       }
-      runningStr + new_str
-    }
+    }.mkString("")
     base + graphStr + "\n}"
   }
 }
