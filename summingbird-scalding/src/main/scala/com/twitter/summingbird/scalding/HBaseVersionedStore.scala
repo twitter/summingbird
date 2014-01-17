@@ -5,7 +5,7 @@ import cascading.tap.Tap
 import cascading.tuple.Fields
 import com.twitter.algebird.monad.Reader
 import com.twitter.bijection.hbase.HBaseBijections.ImmutableBytesWritableBijection
-import com.twitter.bijection.Injection
+import com.twitter.bijection.{Bufferable, Injection}
 import com.twitter.bijection.Inversion.attempt
 import com.twitter.maple.hbase.{HBaseScheme, HBaseTap}
 import com.twitter.scalding.{AccessMode, Dsl, Mappable, Mode, Source, TupleConverter, TupleSetter, TypedPipe}
@@ -20,7 +20,7 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable
 import org.apache.hadoop.mapred.{ JobConf, OutputCollector, RecordReader }
 import org.apache.zookeeper.{CreateMode, WatchedEvent, Watcher, ZooKeeper, ZooDefs}
 import org.apache.zookeeper.data.Stat
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 import Injection._
 
@@ -33,6 +33,7 @@ import Injection._
 
 
 object HBaseVersionedStore {   
+    
     /**
     * Returns a HBaseVersionedStore abstracts the store/retrieval
     * of (K,V) pairs. These (K,V) pairs are associated with a 
@@ -49,11 +50,15 @@ object HBaseVersionedStore {
     implicit
       batcher: Batcher,
       keyInj: Injection[K, Array[Byte]],
-      valueInj: Injection[(BatchID,V), Array[Byte]],
+      valueInj: Injection[V, Array[Byte]],
       ordering: Ordering[K]): HBaseVersionedStore[K, V, K, (BatchID,V)] = {
+    
+    implicit val buf = Bufferable.viaInjection[(BatchID, V), (Array[Byte], Array[Byte])]
+    def value2Inj : Injection[(BatchID, V), Array[Byte]] = Bufferable.injectionOf[(BatchID,V)]
+    
     new HBaseVersionedStore[K, V, K, (BatchID,V)](quorum, table, batcher)(
         { case (batchID, (k, v)) => (k, (batchID.next, v)) })(
-        { case (k, (batchID, v)) => (batchID, (k, v)) })(keyInj, keyInj, valueInj, ordering)
+        { case (k, (batchID, v)) => (batchID, (k, v)) })(keyInj, keyInj, value2Inj, value2Inj, ordering)
   }
 }
 
@@ -65,7 +70,8 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
   implicit     
     keyInj: Injection[K, Array[Byte]],
     key2Inj: Injection[K2, Array[Byte]],
-    valueInj: Injection[V2, Array[Byte]], override val ordering: Ordering[K]) extends BatchedScaldingStore[K, V]
+    valueInj: Injection[(BatchID,V), Array[Byte]],
+    value2Inj: Injection[V2, Array[Byte]], override val ordering: Ordering[K]) extends BatchedScaldingStore[K, V]
 {
   val KeyColumnName = "key"
   val ValColumnName = "value"
@@ -73,33 +79,32 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
     
   val scheme = new HBaseScheme(new Fields(KeyColumnName), ColumnFamily, new Fields(ValColumnName))
    
-  implicit lazy val byteArray2BytesWritableInj : Injection[Array[Byte], ImmutableBytesWritable] = fromBijection[Array[Byte], ImmutableBytesWritable](ImmutableBytesWritableBijection[Array[Byte]])
+  implicit def byteArray2BytesWritableInj : Injection[Array[Byte], ImmutableBytesWritable] = fromBijection[Array[Byte], ImmutableBytesWritable](ImmutableBytesWritableBijection[Array[Byte]])
   
-  implicit def injection : Injection[(K2, V2), (Array[Byte], Array[Byte])] = tuple2[K2, V2, Array[Byte], Array[Byte]](key2Inj, valueInj)
+  implicit def injection : Injection[(K2, V2), (Array[Byte], Array[Byte])] = tuple2[K2, V2, Array[Byte], Array[Byte]](key2Inj, value2Inj)
   
   implicit def kvpInjection: Injection[(K2, V2), (ImmutableBytesWritable,ImmutableBytesWritable)] = {
     Injection.connect[(K2,V2), (Array[Byte],Array[Byte]), (ImmutableBytesWritable,ImmutableBytesWritable)]
   }
   
-  // this is only used for client queries and does not need to be serialized out
-  // during the scalding job
-  @transient def hbaseStore = HBaseByteArrayStore (quorum, table, ColumnFamily, ValColumnName, true)
-    .convert[K,V2](keyInj)(valueInj)
+  // storehaus store
+  def hbaseStore = HBaseByteArrayStore (quorum, table, ColumnFamily, ValColumnName, true)
+    .convert[K, (BatchID,V)](keyInj)(valueInj)
     
   // state store for last processed batchID (readLast)
-  @transient def zk = new HBaseStoreZKState(quorum, table)
+  def zk = new HBaseStoreZKState(quorum, table)
   
   /** 
    *  Exposes a stream with the (K,V) pairs from the highest batchID less than
    *  the input "exclusiveUB" batchID. See readVersions() for the creation of this stream
    *  This method is called by BatchedScaldingStore.merge 
    */
-   override def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
+  override def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
     readLastBatchID match {
-      case batchID: BatchID if batchID < exclusiveUB => Right((exclusiveUB, readVersions(exclusiveUB)))    
-      case _ => Left(List("No last batch available < %s for HBaseVersionedStore".format(exclusiveUB)))
+      case Some(batchID) if batchID < exclusiveUB => Right((exclusiveUB, readVersions(exclusiveUB)))    
+      case Some(batchID) => Left(List("No last batch available < %s for HBaseVersionedStore".format(exclusiveUB)))
+      case None => Left(List("No last batch available for HBaseVersionedStore"))
     }
-    
   }
  
 
@@ -128,8 +133,8 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
     * 
     * In addition to writing the (K, (BatchID, V)) tuples, we also store away
     * the last BatchID processed into ZooKeeper to be later used by readLastBatchID
-    * for flow planning. We do this as close to the time of writing the HBase as possible
-    * to try to keep the ZooKeeper and HBase state in sync.
+    * for flow planning. We do this as close to the time of writing to HBase as possible
+    * to try to keep ZooKeeper and HBase in sync.
     * TODO: In the event that https://github.com/twitter/summingbird/issues/214 
     * is resolved, it might be nice to see if we can include this task in a registered 
     * Watcher on the WaitingState
@@ -152,7 +157,7 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
   }  
   
   
-  def toReadableStore: ReadableStore[K,V2] = {
+  def toReadableStore: ReadableStore[K,(BatchID,V)] = {
     hbaseStore
   }  
   
@@ -183,8 +188,10 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
         }
     }
     
-    def setLastBatchID(batchID: BatchID) {
-      zk.setData(LastBatchIDZKPath, batchID2Bytes(batchID), -1)
+    def setLastBatchID(batchID: BatchID) : scala.util.Try[Stat] = {
+      scala.util.Try {
+        zk.setData(LastBatchIDZKPath, batchID2Bytes(batchID), -1)
+      }
     }
     
     def getLastBatchID() : Option[BatchID] = {
@@ -192,7 +199,7 @@ class HBaseVersionedStore [K, V, K2, V2](quorum: Seq[String],
       
       batchID2Bytes.invert(batchBytes) match {
         case Success(batchID) => Some(batchID)
-        case _ => None
+        case Failure(ex) => None
       }
     }
     
