@@ -61,22 +61,26 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
   var dumpNumber = 1
-  def dumpGraph(dag: MemoryDag) = {
+  def dumpGraph(dag: MemoryDag): String = {
     import java.io._
     import com.twitter.summingbird.viz.VizGraph
-    val writer2 = new PrintWriter(new File("/tmp/failingGraph" + dumpNumber + ".dot"))
+    val targetPath = "/tmp/failingGraph" + dumpNumber + ".dot"
+    val writer2 = new PrintWriter(new File(targetPath))
     VizGraph(dag, writer2)
     writer2.close()
     dumpNumber = dumpNumber + 1
+    targetPath
   }
 
-  def dumpGraph(tail: Producer[Memory, Any]) = {
+  def dumpGraph(tail: Producer[Memory, Any]): String = {
     import java.io._
     import com.twitter.summingbird.viz.VizGraph
-    val writer2 = new PrintWriter(new File("/tmp/failingProducerGraph" + dumpNumber + ".dot"))
+    val targetPath = "/tmp/failingProducerGraph" + dumpNumber + ".dot"
+    val writer2 = new PrintWriter(new File(targetPath))
     VizGraph(tail, writer2)
     writer2.close()
     dumpNumber = dumpNumber + 1
+    targetPath
   }
 
   property("Dag Nodes must be unique") = forAll { (dag: MemoryDag) =>
