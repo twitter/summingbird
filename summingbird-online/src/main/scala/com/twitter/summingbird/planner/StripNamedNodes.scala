@@ -148,7 +148,7 @@ object StripNamedNode {
 
   def apply[P <: Platform[P], T](tail: TailProducer[P, T]): (Map[Producer[P, Any], List[String]], TailProducer[P, T]) = {
     val dependants = Dependants(tail)
-    val (map, newTail) = stripNamedNodes(tail)
-    (map.mapValues(n => getName(dependants, n)), newTail.asInstanceOf[TailProducer[P, T]])
+    val (oldProducerToNewMap, newTail) = stripNamedNodes(tail)
+    (oldProducerToNewMap.mapValues(n => getName(dependants, n)), newTail.asInstanceOf[TailProducer[P, T]])
   }
 }
