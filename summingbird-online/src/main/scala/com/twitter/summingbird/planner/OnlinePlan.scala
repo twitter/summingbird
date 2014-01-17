@@ -121,9 +121,9 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
        * on which these nodes depends (the producers passing data into these MergedProducer).
        */
 
-      def mergeCollapse[A](p: Prod[A]): (List[Prod[A]], List[Prod[A]]) = {
+      def mergeCollapse[A](p: Prod[A], rootMerge: Boolean = false): (List[Prod[A]], List[Prod[A]]) = {
         p match {
-          case MergedProducer(subL, subR) if !forkedNodes.contains(p) =>
+          case MergedProducer(subL, subR) if (!forkedNodes.contains(p) || rootMerge) =>
            // TODO support de-duping self merges  https://github.com/twitter/summingbird/issues/237
             if(subL == subR) throw new Exception("Online Planner doesn't support both the left and right sides of a join being the same node.")
             val (lMergeNodes, lSiblings) = mergeCollapse(subL)
@@ -149,7 +149,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
         case MergedProducer(l, r) =>
           // TODO support de-duping self merges  https://github.com/twitter/summingbird/issues/237
           if(l == r) throw new Exception("Online Planner doesn't support both the left and right sides of a join being the same node.")
-          val (otherMergeNodes, dependencies) = mergeCollapse(dependantProducer)
+          val (otherMergeNodes, dependencies) = mergeCollapse(dependantProducer, rootMerge=true)
           val newCurrentBolt = otherMergeNodes.foldLeft(currentBolt)(_.add(_))
           val visitedWithOther = otherMergeNodes.foldLeft(visitedWithN){ (visited, n) => visited + n }
 
@@ -162,6 +162,8 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
   }
 
   val (nodeSet, _) = addWithDependencies(tail, FlatMapNode(), List[CNode](), Set())
+  require(nodeSet.collect{case n@SourceNode(_) => n}.size > 0, "Valid nodeSet should have at least one source node")
+
 }
 
 object OnlinePlan {
