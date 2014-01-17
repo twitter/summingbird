@@ -17,61 +17,53 @@
 package com.twitter.summingbird.viz
 
 import com.twitter.summingbird._
+import scala.collection.mutable.{Map => MMap}
 
 case class ProducerViz[P <: Platform[P]](tail: Producer[P, _]) {
   private val dependantState = Dependants(tail)
-  private type NameLookupTable = (Map[Producer[P, _], String], Map[String, Int])
-  private val emptyNameLookupTable = (Map[Producer[P, _], String](), Map[String, Int]())
+  private val nodeLookupTable = MMap[Producer[P, _], String]()
+  private val nameLookupTable = MMap[String, Int]()
 
-  @annotation.tailrec
-  private def recurseGetNode(n :Producer[P, _], nameOpt: Option[String] = None): (String, Producer[P, _], List[Producer[P, _]])  = {
-    val children: List[Producer[P, _]] = dependantState.dependantsOf(n).getOrElse(List[Producer[P, _]]())
-    val name = nameOpt.getOrElse(n.getClass.getName.replaceFirst("com.twitter.summingbird.", ""))
-    children.headOption match {
-      case Some(child: NamedProducer[_, _]) =>
-        recurseGetNode(child, Some(child.id))
-      case _ =>
-        (name, n, children)
+  def getName(node: Producer[P, _]): String = {
+    val preferredName = node match {
+      case NamedProducer(parent, name) => "NamedProducer(%s)".format(name)
+      case _ => node.getClass.getName.replaceFirst("com.twitter.summingbird.", "")
     }
-  }
-
-  def getName(curLookupTable: NameLookupTable, node: Producer[P, _], preferredName: String): (NameLookupTable, String) = {
-    val (nodeLookupTable, nameLookupTable) = curLookupTable
 
     nodeLookupTable.get(node) match {
-      case Some(name) => (curLookupTable, name)
-      case None => 
+      case Some(name) => name
+      case None =>
         nameLookupTable.get(preferredName) match {
           case Some(count) => {
             val newNum = count + 1
             val newName = preferredName + "[" + newNum + "]"
-            (((nodeLookupTable + (node -> newName)), (nameLookupTable + (preferredName -> newNum))), newName)
+            nodeLookupTable += (node -> newName)
+            nameLookupTable += (preferredName -> newNum)
+            newName
           }
-          case None => (((nodeLookupTable + (node -> preferredName)), (nameLookupTable + (preferredName -> 1))), preferredName)
+          case None =>
+            nodeLookupTable +=  (node -> preferredName)
+            nameLookupTable += (preferredName -> 1)
+            preferredName
         }
     }
   }
+
   override def toString() : String = {
     val base = "digraph summingbirdGraph {\n"
-    val (graphStr, _) = dependantState.nodes.foldLeft(("", emptyNameLookupTable)) { case ((runningStr, nameLookupTable), nextNode) =>
-      nextNode match {
-        case NamedProducer(parent, name) => (runningStr, nameLookupTable)
-        case _ => 
-          // Compute the lines and new names for the nextNode
-          val (rawNodeName, evalNode, children) = recurseGetNode(nextNode)
-          val (updatedLookupTable, nodeName) = getName(nameLookupTable, evalNode, rawNodeName)
+    println(dependantState.nodes.size)
+    val graphStr = dependantState.nodes.foldLeft("") { case (runningStr, nextNode) =>
+      val evalNode = nextNode
+      val children = dependantState.dependantsOf(evalNode).getOrElse(List[Producer[P, _]]())
+      val nodeName = getName(evalNode)
+      val new_str = children.foldLeft(""){ case (innerRunningStr, c)  =>
+        val innerNewStr = "\"" + nodeName + "\" -> \""
+        val pChildName = getName(c)
 
-          val (new_str, innerNameLookupTable) = children.foldLeft(("", updatedLookupTable)){ case ((innerRunningStr, innerNameLookupTable), c)  =>
-            val (childName, childNode, _) = recurseGetNode(c)
-
-            val innerNewStr = "\"" + nodeName + "\" -> \"" 
-            val (updatedLookupTable2, pChildName) = getName(innerNameLookupTable, childNode, childName)
-
-            val innerNewStr2 = pChildName + "\"\n"
-            (innerRunningStr + innerNewStr + innerNewStr2, updatedLookupTable2)
-          }
-          (runningStr + new_str, innerNameLookupTable)
+        val innerNewStr2 = pChildName + "\"\n"
+        innerRunningStr + innerNewStr + innerNewStr2
       }
+      runningStr + new_str
     }
     base + graphStr + "\n}"
   }
