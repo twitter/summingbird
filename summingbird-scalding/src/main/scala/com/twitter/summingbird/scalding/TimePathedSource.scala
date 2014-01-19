@@ -18,10 +18,14 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.scalding.{TimePathedSource => STPS, _}
 import org.apache.hadoop.fs.Path
+import org.slf4j.LoggerFactory
 
 // TODO move this to scalding:
 // https://github.com/twitter/scalding/issues/529
 object TimePathedSource extends java.io.Serializable {
+
+  @transient private val logger = LoggerFactory.getLogger(TimePathedSource.getClass)
+
   // Assumes linear expanders
   private def unexpander(init: DateRange, expander: DateRange => DateRange): (DateRange) => Option[DateRange] = {
     val expanded = expander(init)
@@ -82,9 +86,11 @@ object TimePathedSource extends java.io.Serializable {
 
     def pathIsGood(p : String): Boolean = {
       val path = new Path(p)
-      Option(path.getFileSystem(mode.conf).globStatus(path))
+      val valid = Option(path.getFileSystem(mode.conf).globStatus(path))
         .map(_.length > 0)
         .getOrElse(false)
+      logger.debug("Tested input %s, Valid: %s. Conditions: Any files present, DateRange: %s".format(p, valid, desired))
+      valid
     }
 
     val vertractor = { (dr: DateRange) =>
