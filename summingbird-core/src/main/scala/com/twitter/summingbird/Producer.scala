@@ -178,7 +178,7 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
    * that the Platform will plan both into a single Plan.
    */
 
-  def also[Q, R](that: Q)(implicit ev: Q <:< TailProducer[P, R]): TailProducer[P, R] =
+  def also[R](that: TailProducer[P, R])(implicit ev: R <:< Any): TailProducer[P, R] =
           new AlsoTailProducer(this, that)
 
   def also[R](that: Producer[P, R]): Producer[P, R] = AlsoProducer(this, that)

@@ -182,8 +182,8 @@ object TestGraphs {
     (fnR: T1 => TraversableOnce[T2], fnA: T2 => TraversableOnce[(K1, V1)],
       fnB: T2 => TraversableOnce[(K2, V2)]): TailProducer[P, (K2, (Option[V2], V2))] = {
       val combined = source.flatMap(fnR)
-      val calculated = combined.flatMap(fnA).sumByKey(store1)
-      combined.flatMap(fnB).sumByKey(store2).also(calculated)
+      val calculated = combined.flatMap(fnB).sumByKey(store2)
+      combined.flatMap(fnA).sumByKey(store1).also(calculated)
     }
 
   def mapOnlyJob[P <: Platform[P], T, U](
