@@ -186,7 +186,7 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
   override def name(id: String): TailProducer[P, T] = new TPNamedProducer[P, T](this, id)
 }
 
-class AlsoTailProducer[P <: Platform[P], T, R](ensure: TailProducer[P, T], result: Producer[P, R]) extends AlsoProducer[P, T, R](ensure, result) with TailProducer[P, R]
+class AlsoTailProducer[P <: Platform[P], T, R](ensure: TailProducer[P, T], result: TailProducer[P, R]) extends AlsoProducer[P, T, R](ensure, result) with TailProducer[P, R]
 
 /**
  * This is a special node that ensures that the first argument is planned, but produces values
