@@ -177,11 +177,16 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
    * This can be used to combine two independent Producers in a way that ensures
    * that the Platform will plan both into a single Plan.
    */
+
+  def also[Q, R](that: Q)(implicit ev: Q <:< TailProducer[P, R]): TailProducer[P, R] =
+          new AlsoTailProducer(this, that)
+
   def also[R](that: Producer[P, R]): Producer[P, R] = AlsoProducer(this, that)
 
   override def name(id: String): TailProducer[P, T] = new TPNamedProducer[P, T](this, id)
 }
 
+class AlsoTailProducer[P <: Platform[P], T, R](ensure: TailProducer[P, T], result: Producer[P, R]) extends AlsoProducer[P, T, R](ensure, result) with TailProducer[P, R]
 
 /**
  * This is a special node that ensures that the first argument is planned, but produces values
