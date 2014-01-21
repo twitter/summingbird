@@ -17,7 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.scalding
 
 import com.twitter.scalding.{Args, Hdfs, RichDate, DateParser}
-import com.twitter.summingbird.scalding.store.HDFSMetadata
+import com.twitter.summingbird.batch.store.HDFSMetadata
 import com.twitter.summingbird.{ Env, Summer, TailProducer, AbstractJob }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.builder.{ SourceBuilder, Reducers, CompletedBuilder }
