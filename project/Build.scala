@@ -110,6 +110,7 @@ object SummingbirdBuild extends Build {
   ).aggregate(
     summingbirdCore,
     summingbirdBatch,
+    summingbirdBatchHadoop,
     summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
@@ -234,6 +235,19 @@ object SummingbirdBuild extends Build {
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
     summingbirdChill,
+    summingbirdBatchHadoop,
+    summingbirdBatch
+  )
+
+  lazy val summingbirdBatchHadoop = module("batch-hadoop").settings(
+    libraryDependencies ++= Seq(
+      "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "bijection-json" % bijectionVersion,
+      "com.twitter" %% "scalding-date" % scaldingVersion
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
     summingbirdBatch
   )
 

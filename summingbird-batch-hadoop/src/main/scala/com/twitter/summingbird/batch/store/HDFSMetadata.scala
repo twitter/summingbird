@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.scalding.store
+package com.twitter.summingbird.batch.store
 
 import com.backtype.hadoop.datastores.{ VersionedStore => BacktypeVersionedStore }
 import com.twitter.bijection.json.{ JsonInjection, JsonNodeInjection }
@@ -54,7 +54,7 @@ import scala.util.control.Exception.allCatch
 // pull req to scalding-commons that adds this generic capability to
 // VersionedKeyValSource.
 
-object HDFSMetadata {
+private[summingbird] object HDFSMetadata {
   val METADATA_FILE = "_summingbird.json"
 
   def apply(conf: Configuration, rootPath: String): HDFSMetadata =
@@ -132,7 +132,7 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
 
 /** Refers to a specific version on disk. Allows reading and writing metadata to specific locations
  */
-class HDFSVersionMetadata private[store] (val version: Long, conf: Configuration, val path: Path) {
+private[summingbird] class HDFSVersionMetadata private[store] (val version: Long, conf: Configuration, val path: Path) {
   private def getString: Try[String] =
     Try {
       val fs = FileSystem.get(conf)

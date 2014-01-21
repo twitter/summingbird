@@ -23,6 +23,7 @@ import cascading.flow.FlowDef
 
 import com.twitter.algebird.monad.{Reader, StateWithError}
 import com.twitter.algebird.Interval
+import com.twitter.summingbird.batch
 
 package object scalding {
   /** We represent time as Long Millis */
@@ -66,4 +67,15 @@ package object scalding {
     printWriter.flush
     Left(List(writer.toString))
   }
+
+  val ScaldingConfig = batch.BatchConfig
+
+  @deprecated("Use com.twitter.summingbird.batch.WaitingState", "0.3.2")
+  type WaitingState[T] = batch.WaitingState[T]
+  @deprecated("Use com.twitter.summingbird.batch.PrepareState", "0.3.2")
+  type PrepareState[T] = batch.PrepareState[T]
+  @deprecated("Use com.twitter.summingbird.batch.RunningState", "0.3.2")
+  type RunningState[T] = batch.RunningState[T]
+
 }
+

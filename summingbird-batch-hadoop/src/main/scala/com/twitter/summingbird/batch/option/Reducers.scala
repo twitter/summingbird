@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.scalding.option
+package com.twitter.summingbird.batch.option
 
-object FlatMapShards {
-  val default = FlatMapShards(0)
+object Reducers {
+  val default = Reducers(-1)
 }
 
-case class FlatMapShards(count: Int)
+case class Reducers(count: Int)

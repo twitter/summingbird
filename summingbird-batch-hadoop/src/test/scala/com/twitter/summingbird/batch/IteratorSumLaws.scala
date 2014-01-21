@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.batch
 
 import org.scalacheck._
 import Gen._

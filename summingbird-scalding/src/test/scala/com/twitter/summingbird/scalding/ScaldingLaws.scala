@@ -20,7 +20,7 @@ import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
 import com.twitter.algebird.monad._
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch._
-import com.twitter.summingbird.scalding.state.HDFSState
+import com.twitter.summingbird.batch.state.HDFSState
 
 import java.util.TimeZone
 import java.io.File

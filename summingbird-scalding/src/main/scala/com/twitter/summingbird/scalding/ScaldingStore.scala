@@ -16,7 +16,6 @@
 
 package com.twitter.summingbird.scalding
 
-
 import com.twitter.algebird.bijection.BijectedSemigroup
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
@@ -26,8 +25,9 @@ import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, MapsideReduce
 import com.twitter.scalding.typed.Grouped
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, IteratorSums}
 import cascading.flow.FlowDef
+
 
 import org.slf4j.LoggerFactory
 

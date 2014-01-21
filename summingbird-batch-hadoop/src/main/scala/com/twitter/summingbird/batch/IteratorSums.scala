@@ -14,12 +14,12 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.batch
 import com.twitter.algebird.{Semigroup, StatefulSummer}
 
 import scala.collection.mutable.ArrayBuffer
 
-object IteratorSums extends java.io.Serializable {
+private[summingbird] object IteratorSums extends java.io.Serializable {
 
   def sumWith[T](it: Iterator[T], summer: StatefulSummer[T]): Iterator[T] =
     // this is for MAXIMUM speed. Any ideas to speed it up, say so + benchmark
