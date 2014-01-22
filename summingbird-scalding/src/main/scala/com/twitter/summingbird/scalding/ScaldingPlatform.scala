@@ -611,7 +611,7 @@ class Scalding(
               if (flow.getFlowStats.isSuccessful)
                 runningState.succeed
               else
-                runningState.fail(new Exception("Flow did not complete."))
+                throw new Exception("Flow did not complete.")
             } catch {
               case (e: Throwable) => {
                 runningState.fail(e)
