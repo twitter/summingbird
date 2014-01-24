@@ -1,5 +1,13 @@
 # summingbird #
 
+## 0.3.2
+* We don't want to hit runningState.fail twice: https://github.com/twitter/summingbird/pull/425
+* also tail producer support: https://github.com/twitter/summingbird/pull/423
+* fix merge planner bug: https://github.com/twitter/summingbird/pull/417
+* shard fm: https://github.com/twitter/summingbird/pull/416
+* Add sinking to stores: https://github.com/twitter/summingbird/pull/408
+* Add NormalScaldingStore which contains only (K, V) pairs: https://github.com/twitter/summingbird/pull/407
+
 ## 0.3.1
 * Bump the chill version - makes storm provided: https://github.com/twitter/summingbird/pull/406
 * sort by batch if monoid is commutative: https://github.com/twitter/summingbird/pull/411
