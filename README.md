@@ -59,7 +59,7 @@ lazy val config = new ConfigurationBuilder()
 You're all ready to go! Now it's time to unleash Storm on your Twitter stream. Make sure the `memcached` terminal is still open, then start Storm from the `summingbird` directory:
 
 ```bash
-./sbt summingbird-example/run
+./sbt "summingbird-example/run --local"
 ```
 
 Storm should puke out a bunch of output, then stabilize and hang. This means that Storm is updating your local memcache instance with counts of every word that it sees in each tweet.
@@ -102,7 +102,7 @@ Follow [@summingbird](https://twitter.com/summingbird) on Twitter for updates.
 
 ## Maven
 
-Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.3.1`.
+Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.3.2`.
 
 Current published artifacts are
 
@@ -121,9 +121,10 @@ Current published artifacts are
 
 The suffix denotes the scala version.
 
-## Authors
+## Authors (alphabetically)
 
 * Oscar Boykin <https://twitter.com/posco>
+* Ian O'Connell <https://twitter.com/0x138>
 * Sam Ritchie <https://twitter.com/sritchie>
 * Ashutosh Singhal <https://twitter.com/daashu>
 

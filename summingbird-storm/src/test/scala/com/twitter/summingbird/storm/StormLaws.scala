@@ -220,13 +220,9 @@ object StormLaws extends Specification {
       : List[Int] = {
     val cluster = new LocalCluster()
 
-    val sink: () => ((Int) => Future[Unit]) = () => {x: Int =>
-      append(x)
-      Future.Unit
-    }
     val job = mkJob(
       Storm.source(TraversableSpout(original)),
-      sink
+      Storm.sink[Int]({ (x: Int) => append(x); Future.Unit })
     )
 
     val topo = storm.plan(job)

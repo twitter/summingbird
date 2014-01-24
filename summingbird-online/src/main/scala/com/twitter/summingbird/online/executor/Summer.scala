@@ -21,7 +21,7 @@ import com.twitter.algebird.{Semigroup, SummingQueue}
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.bijection.Injection
 
-import com.twitter.summingbird.online.Externalizer
+import com.twitter.summingbird.online.{Externalizer, AsyncCache}
 import com.twitter.summingbird.batch.{BatchID, Timestamp}
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
@@ -50,12 +50,11 @@ import com.twitter.summingbird.option.CacheSize
   * @author Ashu Singhal
   */
 
-
 class Summer[Key, Value: Semigroup, S, D](
   @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
-  cacheSize: CacheSize,
+  cacheBuilder: (Semigroup[(List[S], Timestamp, Value)]) => AsyncCache[(Key, BatchID), (List[S], Timestamp, Value)],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   includeSuccessHandler: IncludeSuccessHandler,
@@ -72,8 +71,7 @@ class Summer[Key, Value: Semigroup, S, D](
   lazy val store = storeBox.get.apply
 
   // See MaxWaitingFutures for a todo around removing this.
-  lazy val cacheCount = cacheSize.size
-  lazy val buffer = SummingQueue[Map[(Key, BatchID), (List[S], Timestamp, Value)]](cacheCount.getOrElse(0))
+  lazy val sCache: AsyncCache[(Key, BatchID), (List[S], Timestamp, Value)] = cacheBuilder(implicitly[Semigroup[(List[S], Timestamp, Value)]])
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
@@ -90,26 +88,23 @@ class Summer[Key, Value: Semigroup, S, D](
     exceptionHandlerBox.get.apply(error)
   }
 
-  override def apply(state: S,
-    tsIn: (Timestamp, ((Key, BatchID), Value))):
-      Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])]] = {
-
-    val (ts, (kb, v)) = tsIn
-    val wrappedData = Map(kb -> ((List(state), ts, v)))
-    Future.value {
-      // See MaxWaitingFutures for a todo around simplifying this.
-      buffer(wrappedData)
-        .map { kvs =>
-          store.multiMerge(kvs.mapValues(_._3)).map{case (innerKb, beforeF) =>
-            val (tups, stamp, delta) = kvs(innerKb)
-            val (k, _) = innerKb
-            (tups, beforeF.map(before => List((stamp, (k, (before, delta)))))
-              .onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
-          }
-          .toList // force, but order does not matter, so we could optimize this
-        }
-        .getOrElse(Nil)
+  private def handleResult(kvs: Map[(Key, BatchID), (List[S], Timestamp, Value)])
+                        : Iterable[(List[S], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])] = {
+    store.multiMerge(kvs.mapValues(_._3)).map{ case (innerKb, beforeF) =>
+      val (tups, stamp, delta) = kvs(innerKb)
+      val (k, _) = innerKb
+      (tups, beforeF.map(before => List((stamp, (k, (before, delta)))))
+        .onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
     }
+    .toList // force, but order does not matter, so we could optimize this
+  }
+
+  override def tick = sCache.tick.map(handleResult(_))
+
+  override def apply(state: S,
+                     tsIn: (Timestamp, ((Key, BatchID), Value))) = {
+    val (ts, (kb, v)) = tsIn
+    sCache.insert(List(kb -> (List(state), ts, v))).map(handleResult(_))
   }
 
   override def cleanup { Await.result(store.close) }

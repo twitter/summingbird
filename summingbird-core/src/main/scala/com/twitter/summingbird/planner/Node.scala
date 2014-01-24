@@ -108,7 +108,7 @@ case class Dag[P <: Platform[P]](originalTail: TailProducer[P, _], producerToPri
   }
 
   def locateOpt(p: Producer[P, _]): Option[Node[P]] = producerToNode.get(p)
-  def locate(p: Producer[P, _]): Node[P] = locateOpt(p).get
+  def locate(p: Producer[P, _]): Node[P] = locateOpt(p).getOrElse{ sys.error("Unexpected node missing when looking for %s".format(p))}
   def connect(src: Producer[P, _], dest: Producer[P, _]): Dag[P] = connect(locate(src), locate(dest))
 
   def getNodeName(n: Node[P]): String = nodeToName(n)
@@ -143,6 +143,8 @@ object Dag {
   def apply[P <: Platform[P], T](originalTail: TailProducer[P, Any], producerToPriorityNames: Map[Producer[P, Any], List[String]], tail: TailProducer[P, Any],
     registry: List[Node[P]],
     sanitizeName: String => String): Dag[P] = {
+
+    require(registry.collect{case n@SourceNode(_) => n}.size > 0, "Valid registries should have at least one source node")
 
     def buildProducerToNodeLookUp(stormNodeSet: List[Node[P]]): Map[Producer[P, _], Node[P]] = {
       stormNodeSet.foldLeft(Map[Producer[P, _], Node[P]]()) { (curRegistry, stormNode) =>

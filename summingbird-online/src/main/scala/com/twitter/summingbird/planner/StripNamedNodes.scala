@@ -51,6 +51,14 @@ object StripNamedNode {
 
   def functionize[P <: Platform[P]](node: Producer[P, Any]): ProducerF[P] = {
     node match {
+      // This case is special/different since AlsoTailProducer needs the full class maintained(unlike TailNamedProducer),
+      // but it is not a case class. It inherits from TailProducer so cannot be one.
+      case p: AlsoTailProducer[_, _ , _] =>
+          ProducerF(
+                List(p.result.asInstanceOf[Producer[P, Any]], p.ensure.asInstanceOf[Producer[P, Any]]),
+                p,
+                {(newEntries): List[Producer[P, Any]] => new AlsoTailProducer[P, Any, Any](castTail(newEntries(1)), castTail(newEntries(0)))}
+                )
       case p@AlsoProducer(_, _) => ProducerF(
                 List(p.result, p.ensure),
                 p,
@@ -148,7 +156,7 @@ object StripNamedNode {
 
   def apply[P <: Platform[P], T](tail: TailProducer[P, T]): (Map[Producer[P, Any], List[String]], TailProducer[P, T]) = {
     val dependants = Dependants(tail)
-    val (map, newTail) = stripNamedNodes(tail)
-    (map.mapValues(n => getName(dependants, n)), newTail.asInstanceOf[TailProducer[P, T]])
+    val (oldProducerToNewMap, newTail) = stripNamedNodes(tail)
+    (oldProducerToNewMap.mapValues(n => getName(dependants, n)), newTail.asInstanceOf[TailProducer[P, T]])
   }
 }

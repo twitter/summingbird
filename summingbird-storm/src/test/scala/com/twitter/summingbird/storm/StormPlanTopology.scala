@@ -40,8 +40,8 @@ object StormPlanTopology extends Properties("StormDag") {
   private type StormDag = Dag[Storm]
 
   import TestGraphGenerators._
-  implicit def sink1: Storm#Sink[Int] = (() => ((_) => Future.Unit))
-  implicit def sink2: Storm#Sink[(Int, Int)] = (() => ((_) => Future.Unit))
+  implicit def sink1: Storm#Sink[Int] = Storm.sink((_) => Future.Unit)
+  implicit def sink2: Storm#Sink[(Int, Int)] = Storm.sink((_) => Future.Unit)
 
   implicit def testStore: Storm#Store[Int, Int] = MergeableStoreSupplier.from {MergeableStore.fromStore[(Int, BatchID), Int](new JMapStore[(Int, BatchID), Int]())}
 

@@ -20,7 +20,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.3.1",
+    version := "0.3.2",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -125,8 +125,8 @@ object SummingbirdBuild extends Build {
   val scaldingVersion = "0.9.0rc4"
   val storehausVersion = "0.8.0"
   val utilVersion = "6.3.8"
-  val chillVersion = "0.3.3"
-  val tormentaVersion = "0.6.0"
+  val chillVersion = "0.3.5"
+  val tormentaVersion = "0.6.1"
 
   lazy val slf4jVersion = "1.6.6"
 
@@ -200,14 +200,14 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "chill" % chillVersion,
-      "com.twitter" % "chill-storm" % chillVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
+      "com.twitter" % "chill-storm" % chillVersion,
       "com.twitter" %% "chill-bijection" % chillVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "scalding-args" % scaldingVersion,
-      "com.twitter" %% "tormenta-core" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
+      "com.twitter" %% "tormenta-core" % tormentaVersion,
       withCross("com.twitter" %% "util-core" % utilVersion),
-      "storm" % "storm" % "0.9.0-wip15" % "provided" exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic")
+      "storm" % "storm" % "0.9.0-wip15" % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -237,7 +237,11 @@ object SummingbirdBuild extends Build {
     summingbirdBatch
   )
 
-  lazy val summingbirdBuilder = module("builder").dependsOn(
+  lazy val summingbirdBuilder = module("builder").settings(
+    libraryDependencies ++= Seq(
+      "storm" % "storm" % "0.9.0-wip15" % "provided"
+    )
+  ).dependsOn(
     summingbirdCore,
     summingbirdStorm,
     summingbirdScalding
@@ -247,8 +251,9 @@ object SummingbirdBuild extends Build {
     libraryDependencies ++= Seq(
       "log4j" % "log4j" % "1.2.16",
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
+      "storm" % "storm" % "0.9.0-wip15" exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "bijection-netty" % bijectionVersion,
-      "com.twitter" %% "tormenta-twitter" % tormentaVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
+      "com.twitter" %% "tormenta-twitter" % tormentaVersion,
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
   ).dependsOn(summingbirdCore, summingbirdStorm)

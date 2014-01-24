@@ -26,7 +26,7 @@ import backtype.storm.tuple.Tuple
 import com.twitter.bijection.{Base64String, Injection}
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.chill.IKryoRegistrar
-import com.twitter.storehaus.ReadableStore
+import com.twitter.storehaus.{ReadableStore, WritableStore}
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
@@ -70,7 +70,10 @@ object MergeableStoreSupplier {
 
 case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
-sealed trait StormService[-K, +V]
+trait StormService[-K, +V] {
+  def store: StoreFactory[K, V]
+}
+
 case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
 
 sealed trait StormSource[+T]
@@ -87,7 +90,10 @@ object Storm {
    * Below are factory methods for the input output types:
    */
 
-  def sink[T](fn: => (T => Future[Unit])): Storm#Sink[T] = { () => fn }
+  def sink[T](fn: => T => Future[Unit]): Storm#Sink[T] = new SinkFn(fn)
+
+  def sinkIntoWritable[K,V](store: => WritableStore[K, V]): Storm#Sink[(K,V)] =
+    new WritableStoreSink[K, V](store)
 
   // This can be used in jobs that do not have a batch component
   def onlineOnlyStore[K, V](store: => MergeableStore[K, V]): StormStore[K, V] =
@@ -120,7 +126,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   type Source[+T] = StormSource[T]
   type Store[-K, V] = StormStore[K, V]
-  type Sink[-T] = () => (T => Future[Unit])
+  type Sink[-T] = StormSink[T]
   type Service[-K, +V] = StormService[K, V]
   type Plan[T] = PlannedTopology
 
@@ -164,13 +170,14 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         case (acc, p) =>
           p match {
             case LeftJoinedProducer(_, wrapper) =>
-              val newService = wrapper.asInstanceOf[StoreWrapper[Any, Any]].store
+              val newService = wrapper.store
               FlatMapOperation.combine(
                 acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
                 newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
             case OptionMappedProducer(_, op) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
             case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
-            case WrittenProducer(_, sinkSupplier) => acc.andThen(FlatMapOperation.write(sinkSupplier.asInstanceOf[() => (Any => Future[Unit])]))
+            case WrittenProducer(_, sinkSupplier) =>
+              acc.andThen(FlatMapOperation.write(() => sinkSupplier.toFn))
             case IdentityKeyedProducer(_) => acc
             case MergedProducer(_, _) => acc
             case NamedProducer(_, _) => acc
@@ -306,8 +313,32 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
+    val flushFrequency = getOrElse(stormDag, node, DEFAULT_FLUSH_FREQUENCY)
+    logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
+
+    val cacheSize = getOrElse(stormDag, node, DEFAULT_FM_CACHE)
+    logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
+
     val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
     logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
+
+    val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
+    logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
+
+    val cacheBuilder = if(useAsyncCache.get) {
+          val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
+          logger.info("[{}] softMemoryFlush : {}", nodeName, softMemoryFlush.get)
+
+          val asyncPoolSize = getOrElse(stormDag, node, DEFAULT_ASYNC_POOL_SIZE)
+          logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
+
+          val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
+          logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
+
+          MultiTriggerCache.builder[(K, BatchID), (List[InputState[Tuple]], Timestamp, V)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
+        } else {
+          SummingQueueCache.builder[(K, BatchID), (List[InputState[Tuple]], Timestamp, V)](cacheSize, flushFrequency)
+        }
 
     val sinkBolt = BaseBolt(
           metrics.metrics,
@@ -319,7 +350,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               supplier,
               getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
               getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-              getOrElse(stormDag, node, DEFAULT_SUMMER_CACHE),
+              cacheBuilder,
               getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
