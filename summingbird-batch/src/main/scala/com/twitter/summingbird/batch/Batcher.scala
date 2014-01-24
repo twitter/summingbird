@@ -17,7 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.batch
 
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection,
-  InclusiveLower, ExclusiveUpper, InclusiveUpper, ExclusiveLower }
+  InclusiveLower, ExclusiveUpper, InclusiveUpper, ExclusiveLower, Lower, Upper }
 
 import scala.collection.immutable.SortedSet
 import java.util.{ Comparator, Date }
@@ -69,6 +69,8 @@ object Batcher {
     override val currentBatch = BatchID(0L)
     def batchOf(t: Timestamp) = currentBatch
     def earliestTimeOf(batch: BatchID) = Timestamp.Min
+    override def latestTimeOf(batch: BatchID) = Timestamp.Max
+
     override def toInterval(b: BatchID): Interval[Timestamp] =
       if(b == BatchID(0))
         Intersection(
@@ -157,8 +159,25 @@ trait Batcher extends Serializable {
   def toInterval(b: BatchID): Interval[Timestamp] =
     Intersection(InclusiveLower(earliestTimeOf(b)), ExclusiveUpper(earliestTimeOf(b.next)))
 
+  def toTimestamp(b: Interval[BatchID]): Interval[Timestamp] =
+    b match {
+      case Empty() => Empty[Timestamp]()
+      case Universe() => Universe[Timestamp]()
+      case ExclusiveUpper(upper) => ExclusiveUpper(latestTimeOf(upper))
+      case InclusiveUpper(upper) => InclusiveUpper(latestTimeOf(upper))
+      case InclusiveLower(lower) => InclusiveLower(earliestTimeOf(lower))
+      case ExclusiveLower(lower) => ExclusiveLower(earliestTimeOf(lower))
+      case Intersection(low, high) =>
+        Intersection(toTimestamp(low).asInstanceOf[Lower[Timestamp]],
+          toTimestamp(high).asInstanceOf[Upper[Timestamp]])
+    }
+
   /** Returns the (inclusive) earliest time of the supplied batch. */
   def earliestTimeOf(batch: BatchID): Timestamp
+
+  /** Returns the latest time in the given batch */
+  def latestTimeOf(batch: BatchID): Timestamp =
+    earliestTimeOf(batch.next).prev
 
   /** Returns the current BatchID. */
   def currentBatch: BatchID = batchOf(Timestamp.now)
@@ -176,7 +195,7 @@ trait Batcher extends Serializable {
     */
   def enclosedBy(batchID: BatchID, other: Batcher): Iterable[BatchID] = {
     val earliestInclusive = earliestTimeOf(batchID)
-    val latestInclusive = earliestTimeOf(batchID.next).prev
+    val latestInclusive = latestTimeOf(batchID)
     BatchID.range(
       other.batchOf(earliestInclusive),
       other.batchOf(latestInclusive)

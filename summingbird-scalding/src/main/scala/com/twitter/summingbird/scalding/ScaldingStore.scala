@@ -26,7 +26,7 @@ import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, MapsideReduce
 import com.twitter.scalding.typed.Grouped
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
+import com.twitter.summingbird.batch._
 import cascading.flow.FlowDef
 
 import org.slf4j.LoggerFactory
@@ -79,6 +79,18 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   def select(b: List[BatchID]): List[BatchID] = b
 
   /**
+   * Override this to set up value pruning, by default, no values
+   * are pruned
+   */
+  def pruning: PrunedSpace[(K, V)] = PrunedSpace.never
+
+  /**
+   * Override this to control when keys are frozen. This allows
+   * us to avoid sorting and shuffling keys that are not updated.
+   */
+  def boundedKeySpace: TimeBoundedKeySpace[K] = TimeBoundedKeySpace.neverFrozen
+
+  /**
    * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
    * On write, we throw if batchID is less than firstNonZero
    */
@@ -95,6 +107,10 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   /** Record a computed batch of code */
   def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit
 
+////////////////////
+// All the following methods are should not be changed in subclasses
+////////////////////
+
   @transient private val logger = LoggerFactory.getLogger(classOf[BatchedScaldingStore[_,_]])
 
   /** The writeLast method as a FlowProducer */
@@ -104,7 +120,9 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
       // make sure we checkpoint to disk to avoid double computation:
       val checked = if(batches.size > 1) lastVals.forceToDisk else lastVals
       batches.foreach { batchID =>
-        val thisBatch = checked.filter { case (b, _) => b == batchID }
+        val thisBatch = checked.filter { case (b, kv) =>
+            (b == batchID) && !pruning.prune(kv, batcher.latestTimeOf(b))
+          }
         writeLast(batchID, thisBatch.values)(flow, mode)
       }
     }
@@ -226,13 +244,40 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           }
         }
 
+    // Avoid closures where easy
+    val thisTimeInterval = capturedBatcher.toTimestamp(batchIntr)
+    val capturedKeyCheck = boundedKeySpace
+
+    /** The frozen keys do not change over the batch window
+     * we are considering, so we just copy the (K, V) pair
+     * into each of the final output BatchIDs
+     */
+    def getFrozenKeys(p: TypedPipe[(K,V)]): TypedPipe[(BatchID, (K, V))] =
+      p.filter { case (k, _) => capturedKeyCheck.isFrozen(k, thisTimeInterval) }
+        .flatMap { kv => filteredBatches.map { (_, kv) } }
+
+    def getLiquidKeys(p: TypedPipe[(K,V)]): TypedPipe[(K, V)] =
+      p.filter { case (k, _) => !capturedKeyCheck.isFrozen(k, thisTimeInterval) }
+
+    /** It is an error to claim that a key is frozen, yet emit it in the deltas.
+     * If this occurs, you need to fix your sources or fix your TimeBoundedKeySpace
+     */
+    def assertDeltasAreLiquid(p: TypedPipe[(Long, (K, V))]): TypedPipe[(Long, (K, V))] =
+      p.map { tkv =>
+        assert(!capturedKeyCheck.isFrozen(tkv._2._1, thisTimeInterval), "Frozen key in deltas: " + tkv)
+        tkv
+      }
+
     // Now in the flow-producer monad; do it:
     for {
       pipeInput <- input
-      pipeDeltas <- deltas
+      frozen = getFrozenKeys(pipeInput)
+      liquid = getLiquidKeys(pipeInput)
+      ds <- deltas
+      liquidDeltas = assertDeltasAreLiquid(ds)
       // fork below so scalding can make sure not to do the operation twice
-      merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas)).fork
-      lastOut = toLastFormat(merged)
+      merged = mergeAll(prepareOld(liquid) ++ prepareDeltas(liquidDeltas)).fork
+      lastOut = toLastFormat(merged) ++ frozen
       _ <- writeFlow(filteredBatches, lastOut)
     } yield toOutputFormat(merged)
   }
@@ -284,24 +329,35 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     })
 }
 
+/** Use this class to easily change, for instance, the pruning or the boundedKeySpace
+ * for an existing store.
+ */
+abstract class ProxyBatchedStore[K, V] extends BatchedScaldingStore[K, V] {
+  def proxy: BatchedScaldingStore[K, V]
+
+  override def batcher = proxy.batcher
+  override def ordering = proxy.ordering
+  override def select(b: List[BatchID]) = proxy.select(b)
+  override def pruning = proxy.pruning
+  override def boundedKeySpace = proxy.boundedKeySpace
+  override def readLast(exclusiveUB: BatchID, mode: Mode) = proxy.readLast(exclusiveUB, mode)
+  override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit =
+    proxy.writeLast(batchID, lastVals)(flowDef, mode)
+}
 
 /**
  * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
  * On write, we throw if batchID is less than firstNonZero
  */
-class InitialBatchedStore[K,V](val firstNonZero: BatchID, val proxy: BatchedScaldingStore[K, V])
-  extends BatchedScaldingStore[K, V] {
+class InitialBatchedStore[K,V](val firstNonZero: BatchID, override val proxy: BatchedScaldingStore[K, V])
+  extends ProxyBatchedStore[K, V] {
 
-  def batcher = proxy.batcher
-  def ordering = proxy.ordering
-  // This one is dangerous and marked override because it has a default
-  override def select(b: List[BatchID]) = proxy.select(b)
-  def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) =
+  override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) =
     if (batchID >= firstNonZero) proxy.writeLast(batchID, lastVals)
     else sys.error("Earliest batch set at :" + firstNonZero + " but tried to write: " + batchID)
 
   // Here is where we switch:
-  def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
+  override def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
     if (exclusiveUB > firstNonZero) proxy.readLast(exclusiveUB, mode)
     else if (exclusiveUB == firstNonZero) Right((firstNonZero.prev, Scalding.emptyFlowProducer[(K,V)]))
     else Left(List("Earliest batch set at :" + firstNonZero + " but tried to read: " + exclusiveUB))
