@@ -20,7 +20,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = Project.defaultSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.3.1",
+    version := "0.3.2",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -126,7 +126,7 @@ object SummingbirdBuild extends Build {
   val storehausVersion = "0.8.0"
   val utilVersion = "6.3.8"
   val chillVersion = "0.3.5"
-  val tormentaVersion = "0.6.0"
+  val tormentaVersion = "0.6.1"
 
   lazy val slf4jVersion = "1.6.6"
 
