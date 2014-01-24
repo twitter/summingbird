@@ -1,5 +1,8 @@
 # summingbird #
 
+## 0.3.3
+* Depend on proper Tormenta version (fix semver hiccup)
+
 ## 0.3.2
 * We don't want to hit runningState.fail twice: https://github.com/twitter/summingbird/pull/425
 * also tail producer support: https://github.com/twitter/summingbird/pull/423
