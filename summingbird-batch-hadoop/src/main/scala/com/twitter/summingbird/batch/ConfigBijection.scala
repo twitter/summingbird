@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.batch
 
 import com.twitter.bijection.Bijection
 import java.util.{ Map => JMap }
@@ -27,7 +27,7 @@ import scala.collection.JavaConverters._
  * @author Ashu Singhal
  */
 
-object ConfigBijection {
+private[summingbird] object ConfigBijection {
   implicit val fromMap: Bijection[Map[String, AnyRef], Configuration] =
     new Bijection[Map[String, AnyRef], Configuration] {
       override def apply(config: Map[String, AnyRef]) = {

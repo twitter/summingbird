@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.summingbird.scalding.store.HDFSMetadata
+import com.twitter.summingbird.batch.store.HDFSMetadata
 import cascading.flow.FlowDef
 import com.twitter.bijection.Injection
 import cascading.flow.FlowDef

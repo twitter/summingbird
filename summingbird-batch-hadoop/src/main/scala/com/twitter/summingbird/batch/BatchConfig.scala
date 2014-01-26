@@ -14,13 +14,13 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.batch
 
 import scala.collection.JavaConverters._
 import org.apache.hadoop.conf.Configuration
 import com.twitter.summingbird.{WrappingConfig, ReadableMap}
 
-object ScaldingConfig {
+object BatchConfig {
   def apply(backingConfig: Configuration) = WrappingConfig(new WrappedHadoopConfig(backingConfig))
 }
 

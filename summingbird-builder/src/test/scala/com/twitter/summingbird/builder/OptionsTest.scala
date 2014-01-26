@@ -16,7 +16,8 @@ limitations under the License.
 
 package com.twitter.summingbird.builder
 
-import com.twitter.summingbird.scalding.{Scalding, ConfigBijection, ScaldingEnv, InitialBatchedStore}
+import com.twitter.summingbird.batch.ConfigBijection
+import com.twitter.summingbird.scalding.{Scalding, ScaldingEnv, InitialBatchedStore}
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{Batcher, BatchID}
 import com.twitter.summingbird.option._

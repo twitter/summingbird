@@ -13,7 +13,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-package com.twitter.summingbird.scalding.state
+package com.twitter.summingbird.batch.state
 
 import com.twitter.algebird.ExclusiveLower
 import com.twitter.algebird.InclusiveLower
@@ -23,19 +23,19 @@ import com.twitter.algebird.Upper
 import com.twitter.algebird.{ ExclusiveUpper, Intersection, Interval }
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
-import com.twitter.summingbird.scalding.{ PrepareState, RunningState, WaitingState, Scalding }
+import com.twitter.summingbird.batch.{ PrepareState, RunningState, WaitingState }
 import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 
-import Scalding.dateRangeInjection
+// import Scalding.dateRangeInjection
 
 import org.slf4j.LoggerFactory
 /**
  * State implementation that uses an HDFS folder as a crude key-value
  * store that tracks the batches currently processed.
  */
-object HDFSState {
+private[summingbird] object HDFSState {
   @transient private val logger = LoggerFactory.getLogger(classOf[HDFSState])
 
   case class Config(
@@ -87,7 +87,7 @@ object HDFSState {
     }
 }
 
-class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
+private[summingbird] class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
     extends WaitingState[Interval[Timestamp]] {
   import HDFSState._
 

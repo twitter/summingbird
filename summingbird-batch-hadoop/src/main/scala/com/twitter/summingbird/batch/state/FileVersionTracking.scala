@@ -14,7 +14,7 @@
   limitations under the License.
 */
 
-package com.twitter.summingbird.scalding.state
+package com.twitter.summingbird.batch.state
 
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
@@ -24,14 +24,14 @@ import scala.util.{Try, Success, Failure}
 
 import org.slf4j.LoggerFactory
 
-object FileVersionTracking {
+private[summingbird] object FileVersionTracking {
   @transient private val logger = LoggerFactory.getLogger(classOf[FileVersionTracking])
   val FINISHED_VERSION_SUFFIX = ".version"
   implicit def path(strPath: String): Path = new Path(strPath)
   def path(basePath: String, fileName: String): Path = new Path(basePath, fileName)
 }
 
-case class FileVersionTracking(root: String, fs: FileSystem) {
+private[summingbird] case class FileVersionTracking(root: String, fs: FileSystem) {
   import FileVersionTracking._
 
   fs.mkdirs(root)

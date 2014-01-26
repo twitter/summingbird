@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.batch
 
 /**
  * Job state models the memory of when the next job should
