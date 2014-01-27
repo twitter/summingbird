@@ -91,6 +91,18 @@ object TestGraphs {
       .flatMapKeys(fnB)
       .sumByKey(store)
 
+  def singleStepMapKeysStatJob[P <: Platform[P], T, K, V: Monoid]
+    (source: Producer[P, T], store: P#Store[K, V])
+    (fnA: T => TraversableOnce[(K, V)]): (List[Stats], TailProducer[P, (K, (Option[V], V))]) = {
+      val myStat = Stats("myCustomStat")
+      val tail = source.map {v =>
+        myStat.incr
+        v
+      }.flatMap(fnA)
+      .sumByKey(store)
+      (List(myStat), tail)
+    }
+
   def leftJoinInScala[T, U, JoinedU, K, V: Monoid]
     (source: TraversableOnce[T])
     (service: K => Option[JoinedU])

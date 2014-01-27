@@ -18,6 +18,7 @@ package com.twitter.summingbird.memory
 
 import com.twitter.algebird.{ MapAlgebra, Monoid }
 import com.twitter.summingbird._
+import com.twitter.summingbird.option._
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
 import collection.mutable.{ Map => MutableMap, ListBuffer }
@@ -95,6 +96,21 @@ object MemoryLaws extends Specification {
     }
   }
 
+  def mapKeysCheckStats[T: Manifest: Arbitrary, K: Arbitrary,
+               V: Monoid: Arbitrary: Equiv](): Boolean = {
+    val currentStore: Memory#Store[K, V] = MutableMap.empty[K, V]
+    val sourceMaker = Memory.toSource[T](_)
+    val original = sample[List[T]]
+    val fnA = sample[T => List[(K, V)]]
+
+    // Use the supplied platform to execute the source into the
+    // supplied store.
+    val (stats, tail) = TestGraphs.singleStepMapKeysStatJob[Memory, T, K, V](sourceMaker(original), currentStore)(fnA)
+    val platform = new Memory(Map("DEFAULT" -> Options().set(StatList(stats))))
+    platform.run(platform.plan(tail))
+    MemoryStats.get(stats.head) == original.size
+  }
+
   def lookupCollectChecker[T:Arbitrary:Equiv:Manifest, U:Arbitrary:Equiv]: Boolean = {
     val mem = new Memory
     val input = sample[List[T]]
@@ -120,6 +136,7 @@ object MemoryLaws extends Specification {
     "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must beTrue }
 
     "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must beTrue }
+    "Memory Stats w/ Int, Int, Set[Int]" in { mapKeysCheckStats[Int, Int, Set[Int]] must beTrue }
 
     "lookupCollect w/ Int, Int" in { lookupCollectChecker[Int, Int] must beTrue }
   }

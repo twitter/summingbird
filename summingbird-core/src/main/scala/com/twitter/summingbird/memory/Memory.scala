@@ -18,6 +18,8 @@ package com.twitter.summingbird.memory
 
 import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
+import com.twitter.summingbird.option.StatList
+
 import collection.mutable.{ Map => MutableMap }
 
 object Memory {
@@ -25,7 +27,7 @@ object Memory {
     Producer.source[Memory, T](traversable)
 }
 
-class Memory extends Platform[Memory] {
+class Memory(options: Map[String, Options] = Map[String, Options]()) extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]
   type Sink[-T] = (T => Unit)
@@ -99,8 +101,20 @@ class Memory extends Platform[Memory] {
         (s.asInstanceOf[Stream[T]], m + (outerProducer -> s))
     }
 
-  def plan[T](prod: TailProducer[Memory, T]): Stream[T] =
+  private def setUpStats {
+    val statClasses = options.values.flatMap{ opts =>
+      opts.get[StatList].map(_.get).getOrElse(List[Stats]())
+    }
+
+    statClasses.map(_.uniqueId).toSet.foreach { id: String =>
+      Stats.addIncrementor(id, MemoryStats.getIncrementor(id))
+    }
+  }
+
+  def plan[T](prod: TailProducer[Memory, T]): Stream[T] = {
+    setUpStats
     toStream(prod, Map.empty)._1
+  }
 
   def run(iter: Stream[_]) {
     // Force the entire stream, taking care not to hold on to the
