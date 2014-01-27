@@ -37,7 +37,7 @@ trait Incrementor {
 }
 
 case class Stats(name: String){
-  val uniqueId = UUID.randomUUID.toString
+  val uniqueId = "%s |::::| %s".format(name, UUID.randomUUID.toString)
   lazy val incrementor: Incrementor = Stats.doLookup(uniqueId).getOrElse(Stats.nullIncrementor)
 
   def incr = incrBy(1L)
