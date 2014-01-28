@@ -68,15 +68,15 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
 }
 
 object TestStore {
-  def apply[K, V](store: String, inBatcher: Batcher, initStore: Iterable[(K, V)], lastTime: Long)
+  def apply[K, V](store: String, inBatcher: Batcher, initStore: Iterable[(K, V)], lastTime: Long, keyFixTime: K => Option[Timestamp] = { k: K => None })
     (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)]) = {
     val startBatch = inBatcher.batchOf(Timestamp(0)).prev
     val endBatch = inBatcher.batchOf(Timestamp(lastTime)).next
-    new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch)
+    new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch, keyFixTime)
   }
 }
 
-class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID)
+class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID, override val keyFixTime: K => Option[Timestamp] = { k: K => None })
 (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
   extends BatchedScaldingStore[K, V] {
 
@@ -503,6 +503,37 @@ object ScaldingLaws extends Specification {
 
       compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") must beTrue
       compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
+    }
+
+    "Correctly propagates keys outside merge interval" in {
+      val initialData = sample[Map[Int, Int]]
+      val data = sample[List[(Int, Int)]]
+
+      val summedDataInMemory = MapAlgebra.sumByKey(data)
+      val mergedDataInMemory = Monoid.plus(initialData, summedDataInMemory)
+
+      val dataWithTime = data.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      val batcher = new MillisecondBatcher(1L)
+      def keyFixTime(x: Int): Option[Timestamp] = {
+        val matchingEntries = dataWithTime filter { _._2._1 == x }
+        matchingEntries.lastOption map { entry => Timestamp(entry._1) }
+      }
+
+      // Sanity check
+      data.exists { case (k, v) => keyFixTime(k) == None } must beFalse
+
+      val store = TestStore[Int, Int]("test", batcher, initialData, data.size, keyFixTime)
+
+      val (buffer, source) = testSource(dataWithTime)
+      val summer = source.map(_._2).sumByKey(store)
+
+      val scald = Scalding("scalding-keyFixTime-Job")
+      val mode: Mode = TestMode((store.sourceToBuffer ++ buffer).get(_))
+
+      scald.run(new LoopState(batchedCover(batcher, 0L, data.size.toLong)), mode, summer)
+
+      compareMaps(data, mergedDataInMemory, store, "store") must beTrue
     }
   }
 }

@@ -115,7 +115,7 @@ trait Batcher extends Serializable {
     if(earliestTimeOf(batch) != ts) batch.next else batch
   }
 
-  /** Return the largest interval of batches completely covered by
+  /** Return the smallest interval of batches completely covered by
    * the interval of time.
    */
   private def dateToBatch(interval: Interval[Timestamp])(onIncLow: (Timestamp) => BatchID)(onExcUp: (Timestamp) => BatchID): Interval[BatchID] = {
@@ -127,20 +127,7 @@ trait Batcher extends Serializable {
       case InclusiveLower(lower) => InclusiveLower(onIncLow(lower))
       case InclusiveUpper(upper) => ExclusiveUpper(onExcUp(upper.next))
       case ExclusiveLower(lower) => InclusiveLower(onIncLow(lower.next))
-      case Intersection(low, high) =>
-        // Convert to inclusive:
-        val lowdate = low match {
-          case InclusiveLower(lb) => lb
-          case ExclusiveLower(lb) => lb.next
-        }
-        //convert it exclusive:
-        val highdate = high match {
-          case InclusiveUpper(hb) => hb.next
-          case ExclusiveUpper(hb) => hb
-        }
-        val upperBatch = onExcUp(highdate)
-        val lowerBatch = onIncLow(lowdate)
-        Interval.leftClosedRightOpen(lowerBatch, upperBatch)
+      case Intersection(low, high) => dateToBatch(low)(onIncLow)(onExcUp) && dateToBatch(high)(onIncLow)(onExcUp)
     }
   }
 
@@ -168,6 +155,19 @@ trait Batcher extends Serializable {
    */
   def cover(interval: Interval[Timestamp]): Interval[BatchID] =
     dateToBatch(interval)(truncateDown)(truncateUp)
+
+  /** Map a BatchID interval to its corresponding interval of Timestamps */
+  def timestampInterval(interval: Interval[BatchID]): Interval[Timestamp] = {
+    interval match {
+      case Empty() => Empty()
+      case Universe() => Universe()
+      case ExclusiveUpper(upper) => ExclusiveUpper(earliestTimeOf(upper))
+      case InclusiveLower(lower) => InclusiveLower(earliestTimeOf(lower))
+      case InclusiveUpper(upper) => ExclusiveUpper(earliestTimeOf(upper.next))
+      case ExclusiveLower(lower) => InclusiveLower(earliestTimeOf(lower.next))
+      case Intersection(low, high) => timestampInterval(low) && timestampInterval(high)
+    }
+  }
 
   /**
     * Returns the sequence of BatchIDs that the supplied `other`

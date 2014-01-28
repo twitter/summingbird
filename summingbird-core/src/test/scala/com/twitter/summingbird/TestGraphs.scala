@@ -212,22 +212,9 @@ object TestGraphs {
         .flatMapKeys(fn)
         .sumByKey(store2)
 
-  def scanSum[V: Semigroup](it: Iterator[V]): Iterator[(Option[V], V)] = {
-    var prev: Option[V] = None
-    it.map { v =>
-      val res = (prev, v)
-      prev = prev.map(Semigroup.plus(_, v)).orElse(Some(v))
-      res
-    }
-  }
-
   def twoSumByKeyInScala[K1, V: Semigroup, K2](in: List[(K1, V)], fn: K1 => List[K2]): (Map[K1, V], Map[K2, V]) = {
     val sum1 = MapAlgebra.sumByKey(in)
-    val sumStream = in.groupBy(_._1)
-      .mapValues { l => scanSum(l.iterator.map(_._2)).toList }
-      .toIterable
-      .flatMap { case (k, lv) => lv.map((k, _)) }
-    val v2 = sumStream.map { case (k, (_, v)) => fn(k).map { (_, v) } }.flatten
+    val v2 = in.map { case (k, v) => fn(k).map { (_, v) } }.flatten
     val sum2 = MapAlgebra.sumByKey(v2)
     (sum1, sum2)
   }

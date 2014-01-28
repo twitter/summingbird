@@ -36,14 +36,14 @@ import scala.util.{ Try => ScalaTry }
  */
 
 object VersionedBatchStore {
-  def apply[K, V, K2, V2](rootPath: String, versionsToKeep: Int)
+  def apply[K, V, K2, V2](rootPath: String, versionsToKeep: Int, keyFixTime: K => Option[Timestamp] = { k: K => None })
     (pack: (BatchID, (K, V)) => (K2, V2))
     (unpack: ((K2, V2)) => (K, V))(
     implicit
       batcher: Batcher,
       injection: Injection[(K2, V2), (Array[Byte], Array[Byte])],
       ordering: Ordering[K]): VersionedBatchStore[K, V, K2, V2] =
-    new VersionedBatchStore(rootPath, versionsToKeep, batcher)(pack)(unpack)
+    new VersionedBatchStore(rootPath, versionsToKeep, batcher, keyFixTime)(pack)(unpack)
 }
 
 /**
@@ -143,7 +143,12 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
  * Mappable.  The source parameter is pass-by-name to avoid needing
  * the hadoop Configuration object when running the storm job.
  */
-class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)
+class VersionedBatchStore[K, V, K2, V2](
+  rootPath: String,
+  versionsToKeep: Int,
+  override val batcher: Batcher,
+  override val keyFixTime: K => Option[Timestamp] = { k: K => None }
+  )
   (pack: (BatchID, (K, V)) => (K2, V2))
   (unpack: ((K2, V2)) => (K, V))(
   implicit @transient injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])
