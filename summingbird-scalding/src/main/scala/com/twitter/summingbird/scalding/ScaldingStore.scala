@@ -68,6 +68,8 @@ trait ScaldingStore[K, V] extends java.io.Serializable {
 trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   /** The batcher for this store */
   def batcher: Batcher
+  /** optional function for constraining a key to before a specified time, for optimizing batch merges */
+  val keyFixTime: K => Option[Timestamp] = _ => None
 
   implicit def ordering: Ordering[K]
 
@@ -157,6 +159,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     commutativity: Commutativity,
     reducers: Int)(implicit sg: Semigroup[V]): FlowToPipe[(K,(Option[V], V))] = {
 
+    val timestampInterval = batcher.timestampInterval(batchIntr)
     val batches = BatchID.toIterable(batchIntr).toList
     val finalBatch = batches.last // batches won't be empty.
     val filteredBatches = select(batches).sorted
@@ -174,6 +177,20 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
     def prepareDeltas(ins: TypedPipe[(Long, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
       sumByBatches(ins, capturedBatcher, commutativity)
         .map { case ((k, batch), (ts, v)) => (k, (batch, (ts, v))) }
+
+    def prepareOldForAppend(old: TypedPipe[(K, V)]):
+      TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))] = {
+
+      // Simulate mergeAll, optimizing on the assumption that no merging needs to occur.
+      // For inBatch, we'll have an initial state of None, and an increment of Some(v)
+      // For all other batches, we'll have an initial state of Some(Some(v)) and an increment of None
+      prepareOld(old) flatMap { case (k, (batch, v)) =>
+        filteredBatches map {
+          case b if b == batch => (k, (b, (None, Some(v))))
+          case b => (k, (b, (Some(Some(v)), None)))
+        }
+      }
+    }
 
     /** Produce a merged stream such that each BatchID, Key pair appears only one time.
      */
@@ -226,15 +243,26 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           }
         }
 
+    def splitOldByInterval(old: TypedPipe[(K, V)]): (TypedPipe[(K, V)], TypedPipe[(K, V)]) = {
+      val insideInterval = old.filter { case (k, v) => !keyFixed(k, timestampInterval) }
+      val outsideInterval = old.filter { case (k, v) => keyFixed(k, timestampInterval) }
+      (insideInterval, outsideInterval)
+    }
+
     // Now in the flow-producer monad; do it:
     for {
       pipeInput <- input
       pipeDeltas <- deltas
       // fork below so scalding can make sure not to do the operation twice
-      merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas)).fork
+      (oldToMerge, oldToAppend) = splitOldByInterval(pipeInput)
+      merged = (mergeAll(prepareOld(oldToMerge) ++ prepareDeltas(pipeDeltas)) ++ prepareOldForAppend(oldToAppend)).fork
       lastOut = toLastFormat(merged)
       _ <- writeFlow(filteredBatches, lastOut)
     } yield toOutputFormat(merged)
+  }
+
+  def keyFixed(key: K, interval: Interval[Timestamp]): Boolean = {
+    keyFixTime(key).exists { t => ExclusiveUpper(t).intersect(interval) == Empty[Timestamp]() }
   }
 
   /** instances of this trait MAY NOT change the logic here. This always follows the rule
