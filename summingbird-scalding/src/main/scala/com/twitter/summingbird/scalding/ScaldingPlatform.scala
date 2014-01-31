@@ -291,7 +291,7 @@ object Scalding {
             val srcPf = if (shards <= 1)
               src
             else
-              src.map(_.map(_.shard(shards)))
+              src.mapPipe(_.shard(shards))
 
             (srcPf, built)
           }
@@ -373,7 +373,7 @@ object Scalding {
             val fmpSharded = if (shards < 1)
               fmp
             else
-              fmp.map(_.map(_.shard(shards)))
+              fmp.mapPipe(_.shard(shards))
 
             (fmpSharded.map { flowP =>
               flowP.map { typedPipe =>
