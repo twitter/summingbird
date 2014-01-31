@@ -59,6 +59,7 @@ package object scalding {
   // Helps interop with scalding:
   implicit def modeFromTuple(implicit fm: (FlowDef, Mode)): Mode = fm._2
   implicit def flowDefFromTuple(implicit fm: (FlowDef, Mode)): FlowDef = fm._1
+  implicit def toPipeFactoryOps[T](pipeF: PipeFactory[T]) = new PipeFactoryOps(pipeF)
 
   def toTry(e: Throwable): Try[Nothing] = {
     val writer = new java.io.StringWriter
