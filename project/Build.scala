@@ -18,7 +18,9 @@ object SummingbirdBuild extends Build {
       case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test"
   }
 
-  val sharedSettings = Project.defaultSettings ++ Seq(
+  val extraSettings = Project.defaultSettings ++ mimaDefaultSettings
+
+  val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
     version := "0.3.3",
     scalaVersion := "2.9.3",
@@ -140,7 +142,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.2.4" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.3.0" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
