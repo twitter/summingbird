@@ -93,6 +93,12 @@ object Scalding {
     commutativity
   }
 
+  def joinFactory[T, U](lFactory: PipeFactory[T], rFactory : PipeFactory[U]): PlannerOutput[(FlowToPipe[T], FlowToPipe[U])] =
+    lFactory.join(rFactory,
+      { (lerr: List[FailureReason], rerr: List[FailureReason]) => lerr ++ rerr },
+      { case ((tsl, leftFM), (tsr, _)) => (tsl && tsr, leftFM) }
+      )
+
   def intersect(dr1: DateRange, dr2: DateRange): Option[DateRange] =
     (dr1.as[Interval[Time]] && (dr2.as[Interval[Time]])).as[Option[DateRange]]
 
@@ -315,8 +321,23 @@ object Scalding {
              * join with, so we pass in the left PipeFactory so that the service
              * can compute how wuch it can actually handle and only load that much
              */
-            val (pf, m) = recurse(left)
-            (service.lookup(pf), m)
+            val (pf, ml) = recurse(left)
+
+            service match {
+              case externalService: ScaldingExternalService[Any, Any] =>
+                  (externalService.lookup(pf), ml)
+              case storeService: ScaldingStoreService[Any, Any] =>
+                val filterForStore = {n: Seq[Producer[Scalding, Any]] => n.collect{ case s@Summer(_, _, _) => s}.filter(_.store == storeService).headOption}
+                val dependantSummerOpt = filterForStore(dependants.transitiveDependantsOf(producer))
+                val summerOpt = filterForStore(dependants.nodes)
+                val summer = summerOpt.getOrElse(sys.error("Summer for this service not found in graph."))
+                dependantSummerOpt match {
+                  case Some(_) => sys.error("Summer used for a service join cannot be a dependant of the join")
+                  case None => ()
+                }
+                val (in, m) = recurse(summer, built = ml)
+                (storeService.lookup(pf, in), m)
+            }
           case WrittenProducer(producer, sink) =>
             val (pf, m) = recurse(producer)
             (sink.write(pf), m)
@@ -387,9 +408,7 @@ object Scalding {
             val (pfr, mr) = recurse(r, built = ml)
             val merged = for {
               // concatenate errors (++) and find the intersection (&&) of times
-              leftAndRight <- pfl.join(pfr,
-                { (lerr: List[FailureReason], rerr: List[FailureReason]) => lerr ++ rerr },
-                { case ((tsl, leftFM), (tsr, _)) => (tsl && tsr, leftFM) })
+              leftAndRight <- joinFactory(pfl, pfr)
               merged = Scalding.merge(leftAndRight._1, leftAndRight._2)
               maxAvailable <- StateWithError.getState // read the latest state, which is the time
             } yield Scalding.limitTimes(maxAvailable._1, merged)

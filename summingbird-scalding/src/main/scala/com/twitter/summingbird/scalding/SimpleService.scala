@@ -29,7 +29,7 @@ import cascading.flow.FlowDef
  * content IDs, cryptographic hashes, etc...
  */
 
-trait SimpleService[K, V] extends ScaldingService[K, V] {
+trait SimpleService[K, V] extends ScaldingExternalService[K, V] {
 
   import Scalding.dateRangeInjection
 

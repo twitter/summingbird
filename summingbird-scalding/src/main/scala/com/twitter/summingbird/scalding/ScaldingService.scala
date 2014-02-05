@@ -22,17 +22,39 @@ import com.twitter.scalding.{Mode, TypedPipe}
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import cascading.flow.FlowDef
 
-trait ScaldingService[K, +V] extends java.io.Serializable {
+sealed trait ScaldingService[K, +V]  extends java.io.Serializable
+
+trait ScaldingExternalService[K, +V] extends ScaldingService[K, V] {
   // A static, or write-once service can  potentially optimize this without writing the (K, V) stream out
   def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))]
 }
 
-class EmptyService[K, V] extends ScaldingService[K, V] {
+trait ScaldingStoreService[K, V] extends ScaldingService[K, V] {
+
+  def ordering: Ordering[K]
+  def reducers: Option[Int]
+
+  // This is an internal stream join, the output from a Summer in a graph is being used
+  // as the input to a join
+  def lookup[W](getKeys: PipeFactory[(K, W)], storeStream: PipeFactory[(K, V)]): PipeFactory[(K, (W, Option[V]))] = {
+    implicit val ord = ordering
+    val joinedFactory = Scalding.joinFactory(getKeys, storeStream)
+    joinedFactory.map { case (keysFlowToPipe, storeFlowToPipe) =>
+      for {
+        keysPipe <- keysFlowToPipe
+        storePipe <- storeFlowToPipe
+      } yield LookupJoin(keysPipe, storePipe, reducers)
+    }
+  }
+}
+
+
+class EmptyService[K, V] extends ScaldingExternalService[K, V] {
   def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
     getKeys.map { _.map { _.map { case (t, (k, v)) => (t, (k, (v, None: Option[V]))) } } }
 }
 
-trait BatchedService[K, V] extends ScaldingService[K, V] {
+trait BatchedService[K, V] extends ScaldingExternalService[K, V] {
   // The batcher that describes this service
   def batcher: Batcher
   def ordering: Ordering[K]

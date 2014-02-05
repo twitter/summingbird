@@ -78,7 +78,7 @@ object TestStore {
 
 class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID)
 (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
-  extends BatchedScaldingStore[K, V] {
+  extends BatchedScaldingStore[K, V] with ScaldingStoreService[K, V] {
 
   var writtenBatches = Set[BatchID](initBatch)
   val batches: Map[BatchID, Mappable[(K, V)]] =
@@ -97,6 +97,7 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
 
   val batcher = inBatcher
   val ordering = ord
+  val reducers = Some(1)
 
   def mockFor(b: BatchID): Mappable[(K, V)] =
     new MockMappable(store + b.toString)
@@ -504,6 +505,45 @@ object ScaldingLaws extends Specification {
       compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") must beTrue
       compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
     }
+
+    "write to a store and leftJoin against it in one job" in {
+      val original1 = sample[List[Int]]
+      val original2 = sample[List[Int]] // original1//
+      // Add a time:
+      val inWithTime1 = original1.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val inWithTime2 = inWithTime1
+
+      val preStore1Fn = sample[((Long, Int)) => List[(Int, Int)]]
+      val preJoinFn = sample[((Long, Int)) => List[(Int, Int)]]
+      val postJoinFn = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
+
+      val (inMemory1, inMemory2) = TestGraphs.sumToAndJoinFromStoreInScala(inWithTime1)(inWithTime2)(preStore1Fn)(preJoinFn)(postJoinFn)
+
+      val batcher = randomBatcher(inWithTime1)
+      val initStore1 = sample[Map[Int, Int]]
+      val initStore2 = sample[Map[Int, Int]]
+
+      val testStore1 = TestStore[Int,Int]("test1", batcher, initStore1, inWithTime1.size)
+      val testStore2 = TestStore[Int,Int]("test2", batcher, initStore2, inWithTime2.size)
+
+      val (buffer1, source1) = testSource(inWithTime1)
+      val (buffer2, source2) = testSource(inWithTime2)
+
+      val summer =
+        TestGraphs.sumToAndJoinFromStoreJob[Scalding,(Long, Int), (Long, Int),Int,Int,Int, Int, Int](source1, source2, testStore1, testStore2)(preStore1Fn)(preJoinFn)(postJoinFn)
+
+      val intr = batchedCover(batcher, 0L, original1.size.toLong)
+      val scald = Scalding("scalaCheckleftJoinJob")
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode(s => (testStore1.sourceToBuffer ++ buffer1 ++ buffer2 ++ testStore2.sourceToBuffer).get(s))
+
+      scald.run(ws, mode, summer)
+      // Now check that the inMemory ==
+
+      compareMaps(original1, Monoid.plus(initStore1, inMemory1), testStore1) must beTrue
+      compareMaps(original1, Monoid.plus(initStore2, inMemory2), testStore2) must beTrue
+    }
+
   }
 }
 
