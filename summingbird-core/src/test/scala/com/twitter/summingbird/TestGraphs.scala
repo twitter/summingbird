@@ -117,6 +117,36 @@ object TestGraphs {
       .flatMap(postJoinFn)
       .sumByKey(store)
 
+
+  def sumToAndJoinFromStoreInScala[T1, T2, K1, K2, U, V1: Monoid, V2: Monoid]
+    (source1: TraversableOnce[T1])
+    (source2: TraversableOnce[T2])
+    (preStore1Fn: T1 => TraversableOnce[(K1, V1)])
+    (preJoinFn: T2 => TraversableOnce[(K1, U)])
+    (postJoinFn: ((K1, (U, Option[V1]))) => TraversableOnce[(K2, V2)]): (Map[K1, V1], Map[K2, V2]) = {
+    val store1 = MapAlgebra.sumByKey(source1.flatMap(preStore1Fn))
+    val store2 = MapAlgebra.sumByKey(source2.flatMap(preJoinFn)
+          .map { case (k, v) => (k, (v, store1.get(k))) }
+          .flatMap(postJoinFn))
+    (store1, store2)
+    }
+
+  def sumToAndJoinFromStoreJob[P <: Platform[P], T1, T2, K1, K2, U, V1: Monoid, V2: Monoid](
+    source1: Producer[P, T1],
+    source2: Producer[P, T2],
+    store1: P#Store[K1, V1] with P#Service[K1, V1],
+    store2: P#Store[K2, V2])
+    (preStore1Fn: T1 => TraversableOnce[(K1, V1)])
+    (preJoinFn: T2 => TraversableOnce[(K1, U)])
+    (postJoinFn: ((K1, (U, Option[V1]))) => TraversableOnce[(K2, V2)]): TailProducer[P, (K2, (Option[V2], V2))] = {
+    val tail1 = source1.name("My named source1").flatMap(preStore1Fn).sumByKey(store1)
+    tail1.also(source2).name("My named source2")
+      .flatMap(preJoinFn)
+      .leftJoin(store1)
+      .flatMap(postJoinFn)
+      .sumByKey(store2)
+    }
+
   def realJoinTestJob[P <: Platform[P], T1, T2, T3, T4, K1, K2, U, JoinedU, V: Monoid] (
     source1: Producer[P, T1],
     source2: Producer[P, T2],
