@@ -336,7 +336,13 @@ object Scalding {
                   case None => ()
                 }
                 val (in, m) = recurse(summer, built = ml)
-                (storeService.lookup(pf, in), m)
+                val computedIn = in.mapElements{case (k, (optiV, v)) =>
+                  optiV match {
+                    case Some(oldV) => (k, summer.monoid.plus(oldV, v))
+                    case None => (k, v)
+                  }
+                }
+                (storeService.lookup(pf, computedIn), m)
             }
           case WrittenProducer(producer, sink) =>
             val (pf, m) = recurse(producer)
