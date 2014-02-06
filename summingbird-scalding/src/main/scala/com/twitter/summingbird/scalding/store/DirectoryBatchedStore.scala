@@ -28,6 +28,7 @@ import com.twitter.bijection.{ Bijection, ImplicitBijection }
 import com.twitter.scalding.{Dsl, Mode, Hdfs, TypedPipe, IterableSource, WritableSequenceFile, MapsideReduce, TupleSetter, TupleConverter}
 import com.twitter.scalding.typed. TypedSink
 
+import com.twitter.summingbird.Timestamp
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher}
 import com.twitter.summingbird.scalding._
@@ -49,7 +50,7 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
 
   protected def getFileStatus(p: String, conf: Configuration) = {
     val path = new Path(p)
-    val (isGood, lastModifyTime): (Boolean, Long) =
+    val (isGood, lastModifyTime): (Boolean, Timestamp) =
       Option(path.getFileSystem(conf).globStatus(path))
         .map { statuses: Array[FileStatus] =>
           // Must have a file that is called "_SUCCESS"
@@ -82,7 +83,7 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
 
         val lastBatchStatus =
           hdfsPaths.map(getFileStatus(_, conf))
-            .filter{input => input._1 && BatchID(input._2) < exclusiveUB}
+            .filter{input => input._1 && (BatchID(input._2) < exclusiveUB)}
             .reduceOption{(a, b) => if (a._2 > b._2) a else b}
             .getOrElse((false, 0, "0"))
 

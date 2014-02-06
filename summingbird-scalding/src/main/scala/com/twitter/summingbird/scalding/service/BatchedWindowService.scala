@@ -16,7 +16,8 @@
 
 package com.twitter.summingbird.scalding.service
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import com.twitter.summingbird.Timestamp
+import com.twitter.summingbird.batch.{ BatchID, Batcher}
 import com.twitter.summingbird.scalding._
 import com.twitter.scalding.{Mode, TypedPipe, AbsoluteDuration}
 import com.twitter.algebird.monad.Reader
@@ -38,17 +39,17 @@ trait BatchedWindowService[K, V] extends batch.BatchedService[K, V] {
    * A request must come in LESS than this window since the last
    * key written to the service
    */
-  def windowSize: Time
+  def windowSize: Timestamp
 
   /**
    * The batched window never reads an aggregated last. Instead we just output
    * an empty pipe that is outside the window.
    */
   def readLast(exclusiveUB: BatchID, mode: Mode):  Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
-    val earliestInput = batcher.earliestTimeOf(exclusiveUB).milliSinceEpoch
+    val earliestInput = batcher.earliestTimeOf(exclusiveUB)
     val earliestNeededKey = earliestInput - windowSize
     // We may need values from this batch:
-    val earliestNeededBatch = batcher.batchOf(Timestamp(earliestNeededKey))
+    val earliestNeededBatch = batcher.batchOf(earliestNeededKey)
     // But all of these values are definitly too old:
     val firstZeroBatch = earliestNeededBatch.prev
     Right((firstZeroBatch, Scalding.emptyFlowProducer))
@@ -58,14 +59,14 @@ trait BatchedWindowService[K, V] extends batch.BatchedService[K, V] {
    * You are guaranteed that all the service data needed
    * to do the join is present
    */
-  override def lookup[W](incoming: TypedPipe[(Time, (K, W))],
-    servStream: TypedPipe[(Time, (K, Option[V]))]): TypedPipe[(Time, (K, (W, Option[V])))] = {
+  override def lookup[W](incoming: TypedPipe[(Timestamp, (K, W))],
+    servStream: TypedPipe[(Timestamp, (K, Option[V]))]): TypedPipe[(Timestamp, (K, (W, Option[V])))] = {
 
     def flatOpt[T](o: Option[Option[T]]): Option[T] = o.flatMap(identity)
 
     implicit val ord = ordering
     val win = windowSize // call this once so scala makes a smarter closure
-    LookupJoin.withWindow(incoming, servStream, reducers) { (l: Time, r: Time) => (l-r) < win }
+    LookupJoin.withWindow(incoming, servStream, reducers) { (l: Timestamp, r: Timestamp) => (l-r) < win }
       .map { case (t, (k, (w, optoptv))) => (t, (k, (w, flatOpt(optoptv)))) }
   }
 

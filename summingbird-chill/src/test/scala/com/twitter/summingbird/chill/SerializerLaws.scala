@@ -21,6 +21,7 @@ import org.scalacheck.Prop._
 import org.specs2.mutable._
 import com.twitter.chill._
 
+import com.twitter.summingbird.Timestamp
 import com.twitter.summingbird.batch._
 
 object SerializationLaws extends Properties("SerializationLaws") {

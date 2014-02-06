@@ -19,6 +19,7 @@ package com.twitter.summingbird.batch
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection,
   InclusiveLower, ExclusiveUpper, InclusiveUpper, ExclusiveLower }
 
+import com.twitter.summingbird.Timestamp
 import scala.collection.immutable.SortedSet
 import java.util.{ Comparator, Date }
 import java.util.concurrent.TimeUnit

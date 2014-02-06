@@ -157,6 +157,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion
     )
+  ).dependsOn(
+      summingbirdCore
   )
 
   lazy val summingbirdChill = module("chill").settings(
@@ -180,7 +182,12 @@ object SummingbirdBuild extends Build {
   ).dependsOn(summingbirdBatch)
 
   lazy val summingbirdCore = module("core").settings(
-    libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "scalding-date" % scaldingVersion
+    )
+
   )
 
   lazy val summingbirdOnline = module("online").settings(

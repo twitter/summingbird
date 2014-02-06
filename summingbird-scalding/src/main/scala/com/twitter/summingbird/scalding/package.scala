@@ -27,15 +27,13 @@ import com.twitter.summingbird
 import org.apache.hadoop.io.Writable
 
 package object scalding {
-  /** We represent time as Long Millis */
-  type Time = Long
   /** How we represent the streams in scalding */
-  type TimedPipe[+T] = TypedPipe[(Time, T)]
+  type TimedPipe[+T] = TypedPipe[(Timestamp, T)]
   type KeyValuePipe[+K, +V] = TimedPipe[(K, V)]
   /** The Platform recursively passes this input around to describe a
    * step forward: requested input time span, and scalding Mode
    */
-  type FactoryInput = (Interval[Time], Mode)
+  type FactoryInput = (Interval[Timestamp], Mode)
   /** When it is time to run build the final flow,
    * this is what scalding needs. It is modified in the Reader[FlowInput, T]
    */

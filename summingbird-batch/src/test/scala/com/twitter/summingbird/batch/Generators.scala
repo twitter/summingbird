@@ -19,6 +19,7 @@ package com.twitter.summingbird.batch
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 
+import com.twitter.summingbird.Timestamp
 import com.twitter.algebird.Interval
 
 /**

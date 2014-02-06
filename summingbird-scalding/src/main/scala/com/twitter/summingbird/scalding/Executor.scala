@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding
 import com.twitter.summingbird._
 import com.twitter.scalding.{RichDate, DateParser, Hdfs, Args}
 
-import com.twitter.summingbird.batch.Timestamp
+import com.twitter.summingbird.Timestamp
 import com.twitter.summingbird.chill.ChillExecutionConfig
 import com.twitter.algebird.Interval
 

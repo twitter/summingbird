@@ -16,7 +16,8 @@
 
 package com.twitter.summingbird.scalding.service
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import com.twitter.summingbird.Timestamp
+import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.scalding._
 import com.twitter.scalding.{Mode, TypedPipe, AbsoluteDuration}
 import com.twitter.algebird.monad.Reader
@@ -27,7 +28,7 @@ import cascading.flow.FlowDef
  */
 trait SimpleWindowedService[K, V] extends BatchedWindowService[K, V] {
   def streamIsAvailable(b: BatchID, m: Mode): Boolean
-  def read(b: BatchID)(implicit f: FlowDef, m: Mode): TypedPipe[(Time, (K, Option[V]))]
+  def read(b: BatchID)(implicit f: FlowDef, m: Mode): TypedPipe[(Timestamp, (K, Option[V]))]
 
   final def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, Option[V])]] = {
     if(!streamIsAvailable(batchID, mode)) {

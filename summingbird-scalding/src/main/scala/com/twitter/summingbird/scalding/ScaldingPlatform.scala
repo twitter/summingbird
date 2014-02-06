@@ -51,22 +51,22 @@ object Scalding {
     new Scalding(jobName, options, identity, List())
   }
 
-  implicit val dateRangeInjection: Injection[DateRange, Interval[Time]] = Injection.build {
+  implicit val dateRangeInjection: Injection[DateRange, Interval[Timestamp]] = Injection.build {
     (dr: DateRange) => {
       val DateRange(l, u) = dr
-      Interval.leftClosedRightOpen(l.timestamp, u.timestamp + 1L)
+      Interval.leftClosedRightOpen(Timestamp(l.timestamp), Timestamp(u.timestamp + 1L))
     }
   } {
     case Intersection(lb, ub) =>
       val low = lb match {
         case InclusiveLower(l) => l
-        case ExclusiveLower(l) => l+1L
+        case ExclusiveLower(l) => l.next
       }
       val high = ub match {
         case InclusiveUpper(u) => u
-        case ExclusiveUpper(u) => u-1L
+        case ExclusiveUpper(u) => u.prev
       }
-      Success(DateRange(RichDate(low), RichDate(high)))
+      Success(DateRange(low.toRichDate, high.toRichDate))
     case _ => Failure(new RuntimeException("Unbounded interval!"))
   }
 
@@ -95,7 +95,7 @@ object Scalding {
   }
 
   def intersect(dr1: DateRange, dr2: DateRange): Option[DateRange] =
-    (dr1.as[Interval[Time]] && (dr2.as[Interval[Time]])).as[Option[DateRange]]
+    (dr1.as[Interval[Timestamp]] && (dr2.as[Interval[Timestamp]])).as[Option[DateRange]]
 
   /** Given a constructor function, computes the maximum available range
    * of time or gives an error.
@@ -151,19 +151,19 @@ object Scalding {
    */
   def pipeFactory[T](factory: (DateRange) => Mappable[T])
     (implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
-    StateWithError[(Interval[Time], Mode), List[FailureReason], FlowToPipe[T]]{
-      (timeMode: (Interval[Time], Mode)) => {
+    StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[T]]{
+      (timeMode: (Interval[Timestamp], Mode)) => {
         val (timeSpan, mode) = timeMode
 
         toDateRange(timeSpan).right.flatMap { dr =>
           minify(mode, dr)(factory)
             .right.map { newDr =>
-              val newIntr = newDr.as[Interval[Time]]
+              val newIntr = newDr.as[Interval[Timestamp]]
               val mappable = factory(newDr)
               ((newIntr, mode), Reader { (fdM: (FlowDef, Mode)) =>
                 TypedPipe.from(mappable)(fdM._1, fdM._2)
                   .flatMap { t =>
-                    val time = timeOf(t)
+                    val time = Timestamp(timeOf(t))
                     if(newIntr(time)) Some((time, t)) else None
                   }
               })
@@ -174,8 +174,8 @@ object Scalding {
 
   def pipeFactoryExact[T](factory: (DateRange) => Mappable[T])
     (implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
-    StateWithError[(Interval[Time], Mode), List[FailureReason], FlowToPipe[T]]{
-      (timeMode: (Interval[Time], Mode)) => {
+    StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[T]]{
+      (timeMode: (Interval[Timestamp], Mode)) => {
         val (timeSpan, mode) = timeMode
 
         toDateRange(timeSpan).right.map { dr =>
@@ -184,7 +184,7 @@ object Scalding {
             mappable.validateTaps(fdM._2) //This can throw, but that is what this caller wants
             TypedPipe.from(mappable)(fdM._1, fdM._2)
               .flatMap { t =>
-                val time = timeOf(t)
+                val time = Timestamp(timeOf(t))
                 if(timeSpan(time)) Some((time, t)) else None
               }
           })
@@ -196,12 +196,12 @@ object Scalding {
     factory: (DateRange) => Mappable[T]): Producer[Scalding, T] =
     Producer.source[Scalding, T](pipeFactory(factory))
 
-  def toDateRange(timeSpan: Interval[Time]): Try[DateRange] =
+  def toDateRange(timeSpan: Interval[Timestamp]): Try[DateRange] =
       timeSpan.as[Option[DateRange]]
         .map { Right(_) }
         .getOrElse(Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString)))
 
-  def limitTimes[T](range: Interval[Time], in: FlowToPipe[T]): FlowToPipe[T] =
+  def limitTimes[T](range: Interval[Timestamp], in: FlowToPipe[T]): FlowToPipe[T] =
     in.map { pipe => pipe.filter { case (time, _) => range(time) } }
 
   def merge[T](left: FlowToPipe[T], right: FlowToPipe[T]): FlowToPipe[T] =
@@ -438,8 +438,8 @@ object Scalding {
    */
   def toPipe[T](dr: DateRange,
     prod: Producer[Scalding, T],
-    opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[(DateRange, TypedPipe[(Long, T)])] = {
-      val ts = dr.as[Interval[Time]]
+    opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[(DateRange, TypedPipe[(Timestamp, T)])] = {
+      val ts = dr.as[Interval[Timestamp]]
       val pf = planProducer(opts, prod)
       toPipe(ts, fd, mode, pf).right.map { case (ts, pipe) =>
         (ts.as[Option[DateRange]].get, pipe)
@@ -451,23 +451,23 @@ object Scalding {
    */
   def toPipeExact[T](dr: DateRange,
     prod: Producer[Scalding, T],
-    opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[TypedPipe[(Long, T)]] = {
-      val ts = dr.as[Interval[Time]]
+    opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[TypedPipe[(Timestamp, T)]] = {
+      val ts = dr.as[Interval[Timestamp]]
       val pf = planProducer(opts, prod)
       toPipeExact(ts, fd, mode, pf)
     }
 
-  def toPipe[T](timeSpan: Interval[Time],
+  def toPipe[T](timeSpan: Interval[Timestamp],
     flowDef: FlowDef,
     mode: Mode,
-    pf: PipeFactory[T]): Try[(Interval[Time], TimedPipe[T])] = {
+    pf: PipeFactory[T]): Try[(Interval[Timestamp], TimedPipe[T])] = {
     logger.info("Planning on interval: {}", timeSpan.as[Option[DateRange]])
     pf((timeSpan, mode))
       .right
       .map { case (((ts, m), flowDefMutator)) => (ts, flowDefMutator((flowDef, m))) }
     }
 
-  def toPipeExact[T](timeSpan: Interval[Time],
+  def toPipeExact[T](timeSpan: Interval[Timestamp],
     flowDef: FlowDef,
     mode: Mode,
     pf: PipeFactory[T]): Try[TimedPipe[T]] = {
@@ -562,7 +562,7 @@ class Scalding(
       c.set("io.serializations", ioSerializations.map { _.getName }.mkString(","))
 
   // This is a side-effect-free computation that is called by run
-  def toFlow(timeSpan: Interval[Time], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Time], Flow[_])] = {
+  def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Flow[_])] = {
     val flowDef = new FlowDef
     flowDef.setName(jobName)
     Scalding.toPipe(timeSpan, flowDef, mode, pf)
@@ -593,15 +593,12 @@ class Scalding(
       case _ =>
     }
 
-
-
     val prepareState = state.begin
-    val timeSpan = prepareState.requested.mapNonDecreasing(_.milliSinceEpoch)
-    toFlow(timeSpan, mode, pf) match {
+    toFlow(prepareState.requested, mode, pf) match {
       case Left(errs) =>
         prepareState.fail(FlowPlanException(errs))
       case Right((ts,flow)) =>
-        prepareState.willAccept(ts.mapNonDecreasing(Timestamp(_))) match {
+        prepareState.willAccept(ts) match {
           case Right(runningState) =>
             try {
               options.get(jobName).foreach { jopt =>
