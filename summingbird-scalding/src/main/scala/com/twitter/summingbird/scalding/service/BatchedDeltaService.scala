@@ -14,21 +14,22 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.scalding.service
 
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.algebird.Semigroup
 import com.twitter.scalding.{Mode, TypedPipe}
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import cascading.flow.FlowDef
+import com.twitter.summingbird.scalding._
 
 /**
  * Use this when you have written JUST BEFORE the store.
  * This is what you get from an IntermediateWrite in Builder API.
  */
-class BatchedDeltaService[K, V:Semigroup](val store: BatchedScaldingStore[K, V],
-  val deltas: BatchedScaldingSink[(K, V)],
-  override val reducers: Option[Int] = None) extends BatchedService[K, V] {
+class BatchedDeltaService[K, V:Semigroup](val store: batch.BatchedStore[K, V],
+  val deltas: batch.BatchedSink[(K, V)],
+  override val reducers: Option[Int] = None) extends batch.BatchedService[K, V] {
 
   assert(store.batcher == deltas.batcher, "Batchers do not match")
 

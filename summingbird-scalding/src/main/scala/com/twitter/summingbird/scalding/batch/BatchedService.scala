@@ -14,25 +14,17 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.scalding.batch
 
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.algebird.{Interval, Semigroup}
 import com.twitter.scalding.{Mode, TypedPipe}
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import com.twitter.summingbird.scalding._
+import com.twitter.summingbird.scalding
 import cascading.flow.FlowDef
 
-trait ScaldingService[K, +V] extends java.io.Serializable {
-  // A static, or write-once service can  potentially optimize this without writing the (K, V) stream out
-  def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))]
-}
-
-class EmptyService[K, V] extends ScaldingService[K, V] {
-  def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
-    getKeys.map { _.map { _.map { case (t, (k, v)) => (t, (k, (v, None: Option[V]))) } } }
-}
-
-trait BatchedService[K, V] extends ScaldingService[K, V] {
+trait BatchedService[K, V] extends Service[K, V] {
   // The batcher that describes this service
   def batcher: Batcher
   def ordering: Ordering[K]
@@ -128,8 +120,8 @@ object BatchedService extends java.io.Serializable {
    * a BatchedService
    * Assumes the batcher is the same for both
    */
-  def fromStoreAndSink[K,V](store: BatchedScaldingStore[K, V],
-    sink: BatchedScaldingSink[(K, Option[V])],
+  def fromStoreAndSink[K,V](store: BatchedStore[K, V],
+    sink: BatchedSink[(K, Option[V])],
     reducerOption: Option[Int] = None): BatchedService[K, V] = new BatchedService[K, V] {
     override def ordering = store.ordering
     override def batcher = {
@@ -147,8 +139,8 @@ object BatchedService extends java.io.Serializable {
    * a BatchedService
    * Assumes the batcher is the same for both
    */
-  def fromStoreAndDeltaSink[K,V:Semigroup](store: BatchedScaldingStore[K, V],
-    sink: BatchedScaldingSink[(K, V)],
-    reducerOption: Option[Int] = None): BatchedDeltaService[K, V] =
-      new BatchedDeltaService[K, V](store, sink, reducerOption)
+  def fromStoreAndDeltaSink[K,V:Semigroup](store: BatchedStore[K, V],
+    sink: BatchedSink[(K, V)],
+    reducerOption: Option[Int] = None): scalding.service.BatchedDeltaService[K, V] =
+      new scalding.service.BatchedDeltaService[K, V](store, sink, reducerOption)
 }

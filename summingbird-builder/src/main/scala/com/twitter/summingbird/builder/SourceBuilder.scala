@@ -23,7 +23,8 @@ import com.twitter.chill.java.IterableRegistrar
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
-import com.twitter.summingbird.scalding.{Scalding, ScaldingService, ScaldingEnv, BatchedScaldingStore, ScaldingSink}
+import com.twitter.summingbird.scalding.{Scalding, Service, ScaldingEnv, Sink}
+import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.{CompoundSink, BatchedSinkFromOffline}
 import com.twitter.summingbird.source.EventSource
@@ -141,7 +142,7 @@ case class SourceBuilder[T: Manifest] private (
     * Complete this builder instance with a BatchStore. At this point,
     * the Summingbird job can be executed on Hadoop.
     */
-  def groupAndSumTo[K, V](store: BatchedScaldingStore[K, V])(
+  def groupAndSumTo[K, V](store: BatchedStore[K, V])(
     implicit ev: T <:< (K, V),
     env: Env,
     keyMf: Manifest[K],

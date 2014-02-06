@@ -14,12 +14,12 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.scalding.service
 import com.twitter.algebird.monad.{Reader, StateWithError}
 import com.twitter.algebird.Interval
 
 import com.twitter.bijection.Conversion.asMethod
-
+import com.twitter.summingbird.scalding._
 import com.twitter.scalding.{Source => SSource, _}
 import cascading.flow.FlowDef
 
@@ -29,7 +29,7 @@ import cascading.flow.FlowDef
  * content IDs, cryptographic hashes, etc...
  */
 
-trait SimpleService[K, V] extends ScaldingService[K, V] {
+trait SimpleService[K, V] extends Service[K, V] {
 
   import Scalding.dateRangeInjection
 

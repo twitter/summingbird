@@ -23,7 +23,8 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
 import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _}
 import com.twitter.summingbird._
-import com.twitter.summingbird.scalding.option.{ FlatMapShards, Reducers }
+import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
+import com.twitter.summingbird.scalding.source.TimePathedSource
 import com.twitter.summingbird.batch._
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.summingbird.chill._
@@ -508,9 +509,9 @@ class Scalding(
     extends Platform[Scalding] {
 
   type Source[T] = PipeFactory[T]
-  type Store[K, V] = ScaldingStore[K, V]
-  type Sink[T] = ScaldingSink[T]
-  type Service[K, V] = ScaldingService[K, V]
+  type Store[K, V] = scalding.Store[K, V]
+  type Sink[T] = scalding.Sink[T]
+  type Service[K, V] = scalding.Service[K, V]
   type Plan[T] = PipeFactory[T]
 
   def plan[T](prod: TailProducer[Scalding, T]): PipeFactory[T] =

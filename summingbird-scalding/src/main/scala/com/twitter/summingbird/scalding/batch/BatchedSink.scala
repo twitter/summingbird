@@ -14,20 +14,16 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.scalding.batch
 
 import com.twitter.algebird.monad.{StateWithError, Reader}
-import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
+import com.twitter.algebird.{ Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
-import com.twitter.scalding.{Mode, TypedPipe}
-import com.twitter.scalding.typed.Grouped
+import com.twitter.summingbird.scalding._
+import com.twitter.scalding.Mode
 import cascading.flow.FlowDef
 
-trait ScaldingSink[T] {
-  def write(incoming: PipeFactory[T]): PipeFactory[T]
-}
-
-trait BatchedScaldingSink[T] extends ScaldingSink[T] {
+trait BatchedSink[T] extends Sink[T] {
   def batcher: Batcher
 
   /** If this full stream for this batch is already materialized, return it
