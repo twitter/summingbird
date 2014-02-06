@@ -28,7 +28,7 @@ import Conversion.asMethod
 /** Services and Stores are very similar, but not exact.
  * This shares the logic for them.
  */
-private[scalding] class BatchedOperations(batcher: Batcher) {
+private class BatchedOperations(batcher: Batcher) {
 
   implicit val timeToBatchInterval = Bijection.build { bint: Interval[Time] =>
     bint.mapNonDecreasing { Timestamp(_) } } { bint: Interval[Timestamp] =>
