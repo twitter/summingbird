@@ -69,6 +69,9 @@ object Batcher {
     override val currentBatch = BatchID(0L)
     def batchOf(t: Timestamp) = currentBatch
     def earliestTimeOf(batch: BatchID) = Timestamp.Min
+
+    override def latestTimeOf(batch: BatchID) = Timestamp.Max
+
     override def toInterval(b: BatchID): Interval[Timestamp] =
       if(b == BatchID(0))
         Intersection(
@@ -160,6 +163,9 @@ trait Batcher extends Serializable {
   /** Returns the (inclusive) earliest time of the supplied batch. */
   def earliestTimeOf(batch: BatchID): Timestamp
 
+  /** Returns the latest time in the given batch */
+  def latestTimeOf(batch: BatchID): Timestamp = earliestTimeOf(batch.next).prev
+
   /** Returns the current BatchID. */
   def currentBatch: BatchID = batchOf(Timestamp.now)
 
@@ -176,7 +182,7 @@ trait Batcher extends Serializable {
     */
   def enclosedBy(batchID: BatchID, other: Batcher): Iterable[BatchID] = {
     val earliestInclusive = earliestTimeOf(batchID)
-    val latestInclusive = earliestTimeOf(batchID.next).prev
+    val latestInclusive = latestTimeOf(batchID)
     BatchID.range(
       other.batchOf(earliestInclusive),
       other.batchOf(latestInclusive)

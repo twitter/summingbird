@@ -28,19 +28,15 @@ import com.twitter.summingbird.scalding._
  * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
  * On write, we throw if batchID is less than firstNonZero
  */
-class InitialBatchedStore[K,V](val firstNonZero: BatchID, val proxy: BatchedStore[K, V])
-  extends BatchedStore[K, V] {
+class InitialBatchedStore[K,V](val firstNonZero: BatchID, override val proxy: BatchedStore[K, V])
+  extends ProxyBatchedStore[K, V] {
 
-  def batcher = proxy.batcher
-  def ordering = proxy.ordering
-  // This one is dangerous and marked override because it has a default
-  override def select(b: List[BatchID]) = proxy.select(b)
-  def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) =
+  override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) =
     if (batchID >= firstNonZero) proxy.writeLast(batchID, lastVals)
     else sys.error("Earliest batch set at :" + firstNonZero + " but tried to write: " + batchID)
 
   // Here is where we switch:
-  def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
+  override def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
     if (exclusiveUB > firstNonZero) proxy.readLast(exclusiveUB, mode)
     else if (exclusiveUB == firstNonZero) Right((firstNonZero.prev, Scalding.emptyFlowProducer[(K,V)]))
     else Left(List("Earliest batch set at :" + firstNonZero + " but tried to read: " + exclusiveUB))

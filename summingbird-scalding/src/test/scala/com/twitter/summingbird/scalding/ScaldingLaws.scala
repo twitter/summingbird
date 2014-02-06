@@ -68,15 +68,15 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
 }
 
 object TestStore {
-  def apply[K, V](store: String, inBatcher: Batcher, initStore: Iterable[(K, V)], lastTime: Long)
+  def apply[K, V](store: String, inBatcher: Batcher, initStore: Iterable[(K, V)], lastTime: Long, pruning: PrunedSpace[(K, V)] = PrunedSpace.neverPruned)
     (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)]) = {
     val startBatch = inBatcher.batchOf(Timestamp(0)).prev
     val endBatch = inBatcher.batchOf(Timestamp(lastTime)).next
-    new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch)
+    new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch, pruning)
   }
 }
 
-class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID)
+class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID, override val pruning: PrunedSpace[(K, V)])
 (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
   extends batch.BatchedStore[K, V] {
 
@@ -331,6 +331,43 @@ object ScaldingLaws extends Specification {
       // Now check that the inMemory ==
 
       compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must be_==(true)
+    }
+
+
+    "match scala single step pruned jobs" in {
+      val original = sample[List[Int]]
+      val fn = sample[(Int) => List[(Int, Int)]]
+      val initStore = sample[Map[Int, Int]]
+      val prunedList = sample[Set[Int]]
+      val inMemory = {
+        val computedMap = TestGraphs.singleStepInScala(original)(fn)
+        val totalMap = Monoid.plus(initStore, computedMap)
+        totalMap.filter(kv => !prunedList.contains(kv._1)).toMap
+      }
+
+      val pruner = new PrunedSpace[(Int, Int)] {
+          def prune(item: (Int, Int), writeTime: Timestamp) = {
+            prunedList.contains(item._1)
+          }
+      }
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = randomBatcher(inWithTime)
+      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size, pruner)
+      val (buffer, source) = testSource(inWithTime)
+
+      val summer = TestGraphs.singleStepJob[Scalding,(Long,Int),Int,Int](source, testStore)(t =>
+          fn(t._2))
+
+      val scald = Scalding("scalaCheckJob")
+      val intr = batchedCover(batcher, 0L, original.size.toLong)
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
+
+      scald.run(ws, mode, scald.plan(summer))
+      // Now check that the inMemory ==
+
+      compareMaps(original, inMemory, testStore) must be_==(true)
     }
 
     "match scala for flatMapKeys jobs" in {

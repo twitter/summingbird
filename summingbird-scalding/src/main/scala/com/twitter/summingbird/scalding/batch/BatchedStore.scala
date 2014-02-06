@@ -27,7 +27,7 @@ import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, IteratorSums}
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, IteratorSums, PrunedSpace}
 import cascading.flow.FlowDef
 
 import org.slf4j.LoggerFactory
@@ -44,6 +44,14 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     * batch in the supplied list; otherwise data would be lost.
     */
   def select(b: List[BatchID]): List[BatchID] = b
+
+
+  /**
+   * Override this to set up store pruning, by default, no (key,value) pairs
+   * are pruned. This is a house keeping function to permanently remove entries
+   * matching a criteria.
+   */
+  def pruning: PrunedSpace[(K, V)] = PrunedSpace.neverPruned
 
   /**
    * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
@@ -71,7 +79,9 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // make sure we checkpoint to disk to avoid double computation:
       val checked = if(batches.size > 1) lastVals.forceToDisk else lastVals
       batches.foreach { batchID =>
-        val thisBatch = checked.filter { case (b, _) => b == batchID }
+        val thisBatch = checked.filter { case (b, kv) =>
+             (b == batchID) && !pruning.prune(kv, batcher.latestTimeOf(b))
+        }
         writeLast(batchID, thisBatch.values)(flow, mode)
       }
     }
