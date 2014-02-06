@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.scalding.store
 
 import com.twitter.summingbird.batch.store.HDFSMetadata
 import cascading.flow.FlowDef
@@ -22,7 +22,10 @@ import com.twitter.bijection.Injection
 import cascading.flow.FlowDef
 import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, TupleSetter}
 import com.twitter.scalding.commons.source.VersionedKeyValSource
+import com.twitter.summingbird.scalding.batch.BatchedStore
+import com.twitter.summingbird.scalding.{Try, FlowProducer, Scalding}
 import com.twitter.algebird.monad.Reader
+import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp }
 import scala.util.{ Try => ScalaTry }
 
@@ -50,7 +53,7 @@ object VersionedBatchStore {
  * Allows subclasses to share the means of reading version numbers but
  * plug in methods to actually read or write the data.
  */
-abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends BatchedScaldingStore[K, V] {
+abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends BatchedStore[K, V] {
   /**
     * Returns a snapshot of the store's (K, V) pairs aggregated up to
     * (but not including!) the time covered by the supplied batchID.

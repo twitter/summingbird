@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.scalding.source
 
 import com.twitter.scalding.{TimePathedSource => STPS, _}
 import org.apache.hadoop.fs.Path

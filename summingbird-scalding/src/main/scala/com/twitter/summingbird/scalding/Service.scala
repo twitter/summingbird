@@ -16,18 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.summingbird
-
-package object option {
-  @deprecated("Use com.twitter.summingbird.batch.option.FlatMapShards", "0.3.2")
-  type FlatMapShards = summingbird.batch.option.FlatMapShards
-
-  @deprecated("Use com.twitter.summingbird.batch.option.FlatMapShards", "0.3.2")
-  val FlatMapShards = summingbird.batch.option.FlatMapShards
-
-  @deprecated("Use com.twitter.summingbird.batch.option.Reducers", "0.3.2")
-  type Reducers = summingbird.batch.option.Reducers
-
-  @deprecated("Use com.twitter.summingbird.batch.option.Reducers", "0.3.2")
-  val Reducers = summingbird.batch.option.Reducers
+trait Service[K, +V] extends java.io.Serializable {
+  // A static, or write-once service can  potentially optimize this without writing the (K, V) stream out
+  def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))]
 }

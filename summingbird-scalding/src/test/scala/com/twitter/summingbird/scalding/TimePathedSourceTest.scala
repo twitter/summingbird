@@ -17,6 +17,7 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.summingbird.scalding._
+import source.TimePathedSource
 import com.twitter.summingbird._
 import org.scalacheck._
 import Gen._
@@ -28,7 +29,7 @@ import com.twitter.scalding.{DateRange, RichDate}
 case class TestData(requestedRange: DateRange, availableRange: DateRange, embiggen: Long)
 
 
-object TimePathSourceLaws extends Properties("Time path source") { 
+object TimePathSourceLaws extends Properties("Time path source") {
 
   implicit def arbRateRange: Arbitrary[DateRange] = Arbitrary(for {
   		startTs <- Gen.choose(-137878042589500L, 137878042589500L)
@@ -36,20 +37,20 @@ object TimePathSourceLaws extends Properties("Time path source") {
   		endTsDelta <- Gen.choose(10L, 137878042589500L)
   		endDate <- RichDate(startTs + endTsDelta)
   		} yield DateRange(startDate, endDate))
-  
+
   implicit def arbData = Arbitrary(for {
   		reqRange <- arbitrary[DateRange]
   		availableRange <- arbitrary[DateRange]
       embiggenVal <- Gen.choose(1L, 100000L)
   		embiggen <- Gen.oneOf(embiggenVal, 0L)
   		} yield TestData(reqRange, availableRange, embiggen))
- 
+
   def genEmbiggen(embiggen: Long): (DateRange => DateRange) = {
   	((dr: DateRange) => DateRange(RichDate(dr.start.timestamp - embiggen), RichDate(dr.end.timestamp + embiggen)))
   }
 
   def genVertractor(availableRange: DateRange): (DateRange => Option[DateRange]) = {
-  	{(dr: DateRange) => 
+  	{(dr: DateRange) =>
   		val botTs = max(dr.start.timestamp, availableRange.start.timestamp)
   		val topTs = min(dr.end.timestamp, availableRange.end.timestamp)
   		if (botTs > topTs) None else Some(DateRange(RichDate(botTs), RichDate(topTs)))
@@ -61,7 +62,7 @@ object TimePathSourceLaws extends Properties("Time path source") {
   }
 
   def rangeLength(dr: DateRange): Long = dr.end.timestamp - dr.start.timestamp + 1
-  
+
 
   property("if the reqRange + embiggen is inside the avail range, return should == requested") = forAll { (data: TestData) =>
     val retData = TimePathedSource.minify(genEmbiggen(data.embiggen), genVertractor(data.availableRange))(data.requestedRange)
@@ -87,7 +88,7 @@ object TimePathSourceLaws extends Properties("Time path source") {
   property("If the return is none, then the ranges should be disjoint or one is None") = forAll { (data: TestData) =>
     val retData = TimePathedSource.minify(genEmbiggen(data.embiggen), genVertractor(data.availableRange))(data.requestedRange)
     retData match {
-      case None => 
+      case None =>
         (
           rangeLength(data.requestedRange) == 0
           || rangeLength(data.availableRange) == 0
@@ -95,7 +96,7 @@ object TimePathSourceLaws extends Properties("Time path source") {
           || data.requestedRange.isAfter(data.availableRange.end) // Disjoint
         )
       case Some(_) => true // Not in this test
-    } 
+    }
   }
 
 }

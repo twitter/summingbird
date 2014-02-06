@@ -23,7 +23,7 @@ import cascading.flow.FlowDef
 
 import com.twitter.algebird.monad.{Reader, StateWithError}
 import com.twitter.algebird.Interval
-import com.twitter.summingbird.batch
+import com.twitter.summingbird
 
 package object scalding {
   /** We represent time as Long Millis */
@@ -69,14 +69,22 @@ package object scalding {
     Left(List(writer.toString))
   }
 
-  val ScaldingConfig = batch.BatchConfig
+  val ScaldingConfig = summingbird.batch.BatchConfig
 
   @deprecated("Use com.twitter.summingbird.batch.WaitingState", "0.3.2")
-  type WaitingState[T] = batch.WaitingState[T]
+  type WaitingState[T] = summingbird.batch.WaitingState[T]
   @deprecated("Use com.twitter.summingbird.batch.PrepareState", "0.3.2")
-  type PrepareState[T] = batch.PrepareState[T]
+  type PrepareState[T] = summingbird.batch.PrepareState[T]
   @deprecated("Use com.twitter.summingbird.batch.RunningState", "0.3.2")
-  type RunningState[T] = batch.RunningState[T]
+  type RunningState[T] = summingbird.batch.RunningState[T]
 
+  @deprecated("Use com.twitter.summingbird.scalding.services.SimpleService", "0.3.2")
+  type SimpleService[K, V] = com.twitter.summingbird.scalding.service.SimpleService[K, V]
+
+  @deprecated("Use com.twitter.summingbird.scalding.batch.BatchedService", "0.3.2")
+  type BatchedService[K, V] = com.twitter.summingbird.scalding.batch.BatchedService[K, V]
+
+  @deprecated("Use com.twitter.summingbird.scalding.batch.BatchedService", "0.3.2")
+  val BatchedService = com.twitter.summingbird.scalding.batch.BatchedService
 }
 

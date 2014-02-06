@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
 import com.twitter.algebird.monad._
-import com.twitter.summingbird._
+import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs}
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
 
@@ -78,7 +78,7 @@ object TestStore {
 
 class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID)
 (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
-  extends BatchedScaldingStore[K, V] {
+  extends batch.BatchedStore[K, V] {
 
   var writtenBatches = Set[BatchID](initBatch)
   val batches: Map[BatchID, Mappable[(K, V)]] =
@@ -195,7 +195,7 @@ class TestService[K, V](service: String,
 /** This is a test sink that assumes single threaded testing with
  * cascading local mode
  */
-class TestSink[T] extends ScaldingSink[T] {
+class TestSink[T] extends Sink[T] {
   private var data: Vector[(Long, T)] = Vector.empty
 
   def write(incoming: PipeFactory[T]): PipeFactory[T] =
@@ -509,14 +509,14 @@ object ScaldingLaws extends Specification {
 
 object VersionBatchLaws extends Properties("VersionBatchLaws") {
   property("version -> BatchID -> version") = forAll { (l: Long) =>
-    val vbs = new VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
+    val vbs = new store.VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
       0, Batcher.ofHours(1))(null)(null)
     val b = vbs.versionToBatchID(l)
     vbs.batchIDToVersion(b) <= l
   }
   property("BatchID -> version -> BatchID") = forAll { (bint: Int) =>
     val b = BatchID(bint)
-    val vbs = new VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
+    val vbs = new store.VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
       0, Batcher.ofHours(1))(null)(null)
     val v = vbs.batchIDToVersion(b)
     vbs.versionToBatchID(v) == b
@@ -524,7 +524,7 @@ object VersionBatchLaws extends Properties("VersionBatchLaws") {
   property("version is an upperbound on time") = forAll { (lBig: Long) =>
     val l = lBig/1000L
     val batcher = Batcher.ofHours(1)
-    val vbs = new VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
+    val vbs = new store.VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
       0, batcher)(null)(null)
     val b = vbs.versionToBatchID(l)
     (batcher.earliestTimeOf(b.next).milliSinceEpoch <= l) &&

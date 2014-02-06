@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.scalding.store
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, Path}
@@ -27,9 +27,10 @@ import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.bijection.{ Bijection, ImplicitBijection }
 import com.twitter.scalding.{Dsl, Mode, Hdfs, TypedPipe, IterableSource, WritableSequenceFile, MapsideReduce, TupleSetter, TupleConverter}
 import com.twitter.scalding.typed. TypedSink
-import com.twitter.summingbird._
+
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher}
+import com.twitter.summingbird.scalding._
 
 /**
  * DirectoryBatched Scalding Store, which only contains (K, V) data pairs in the data.
@@ -40,15 +41,15 @@ import com.twitter.summingbird.batch.{ BatchID, Batcher}
 
 class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
 (implicit inBatcher: Batcher, ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
-  extends BatchedScaldingStore[K, V] {
-  import Dsl._  
+  extends batch.BatchedStore[K, V] {
+  import Dsl._
 
   val batcher = inBatcher
   val ordering = ord
 
   protected def getFileStatus(p: String, conf: Configuration) = {
     val path = new Path(p)
-    val (isGood, lastModifyTime): (Boolean, Long) = 
+    val (isGood, lastModifyTime): (Boolean, Long) =
       Option(path.getFileSystem(conf).globStatus(path))
         .map { statuses: Array[FileStatus] =>
           // Must have a file that is called "_SUCCESS"
@@ -56,11 +57,11 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
             fs.getPath.getName == "_SUCCESS"
           }
           val lastModifyTime = statuses.map{_.getModificationTime}.max
-          (isGood, lastModifyTime)  
+          (isGood, lastModifyTime)
       }
       .getOrElse((false, 0))
-      
-      (isGood, lastModifyTime, path.getName) 
+
+      (isGood, lastModifyTime, path.getName)
   }
 
   /*
@@ -79,20 +80,20 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
             .toList
         }
 
-        val lastBatchStatus = 
+        val lastBatchStatus =
           hdfsPaths.map(getFileStatus(_, conf))
             .filter{input => input._1 && BatchID(input._2) < exclusiveUB}
             .reduceOption{(a, b) => if (a._2 > b._2) a else b}
             .getOrElse((false, 0, "0"))
-            
-        if (lastBatchStatus._1) BatchID(lastBatchStatus._3) 
+
+        if (lastBatchStatus._1) BatchID(lastBatchStatus._3)
         else throw new Exception(
            "No good data <= " + exclusiveUB + " is available at : " + rootPath)
       }
       case _ => {
          throw new Exception(
            "DirectoryBatchedStore must work in Hdfs. Mode: " + mode.toString + " found.")
-      } 
+      }
     }
   }
 
@@ -100,13 +101,13 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
     val outSource = WritableSequenceFile(rootPath + "/" + batchID.toString, 'key -> 'val)
     lastVals.write(TypedSink[(K, V)](outSource))
   }
-  
+
   override def readLast(exclusiveUB: BatchID, mode: Mode) = {
     val lastID = getLastBatchID(exclusiveUB, mode)
-    
+
     val src = WritableSequenceFile(rootPath + "/" + lastID.toString, 'key -> 'val)
     val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(src.read(fd._1, fd._2), Fields.ALL)}
     Right((lastID, rdr))
-    
+
   }
 }

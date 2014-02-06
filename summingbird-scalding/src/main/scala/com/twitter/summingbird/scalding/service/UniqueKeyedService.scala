@@ -14,12 +14,12 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.scalding.service
 import com.twitter.algebird.monad.{Reader, StateWithError}
 import com.twitter.algebird.Interval
 
 import com.twitter.bijection.Conversion.asMethod
-
+import com.twitter.summingbird.scalding._
 import com.twitter.scalding.{Source => SSource, _ }
 import com.twitter.scalding.typed.{ TypedPipe => _, _ }
 import cascading.flow.FlowDef

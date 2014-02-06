@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.scalding
+package com.twitter.summingbird.scalding.batch
 
 import com.twitter.algebird.bijection.BijectedSemigroup
 import com.twitter.algebird.{Monoid, Semigroup}
@@ -23,49 +23,16 @@ import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.bijection.{ Bijection, ImplicitBijection }
 import com.twitter.scalding.{Dsl, Mode, TypedPipe, IterableSource, MapsideReduce, TupleSetter, TupleConverter}
 import com.twitter.scalding.typed.Grouped
+import com.twitter.summingbird.scalding._
+import com.twitter.summingbird.scalding
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, IteratorSums}
 import cascading.flow.FlowDef
 
-
 import org.slf4j.LoggerFactory
 
-object ScaldingStore extends java.io.Serializable {
-  // This could be moved to scalding, but the API needs more design work
-  // This DOES NOT trigger a grouping
-  def mapsideReduce[K,V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] = {
-    import Dsl._
-    val fields = ('key, 'value)
-    val gpipe = pipe.toPipe(fields)(TupleSetter.tup2Setter[(K,V)])
-    val msr = new MapsideReduce(sg, fields._1, fields._2, None)(
-      TupleConverter.singleConverter[V], TupleSetter.singleSetter[V])
-    TypedPipe.from(gpipe.eachTo(fields -> fields) { _ => msr }, fields)(TupleConverter.of[(K, V)])
-  }
-}
-
-trait ScaldingStore[K, V] extends java.io.Serializable {
-  /**
-    * Accepts deltas along with their timestamps, returns triples of
-    * (time, K, V(aggregated up to the time)).
-    *
-    * Same return as lookup on a ScaldingService.
-    */
-  def merge(delta: PipeFactory[(K, V)],
-    sg: Semigroup[V],
-    commutativity: Commutativity,
-    reducers: Int): PipeFactory[(K, (Option[V], V))]
-
-  /** This is an optional method, by default it a pass-through.
-   * it may be called by ScaldingPlatform before a key transformation
-   * that leads only to this store.
-   */
-  def partialMerge[K1](delta: PipeFactory[(K1, V)],
-    sg: Semigroup[V],
-    commutativity: Commutativity): PipeFactory[(K1, V)] = delta
-}
-
-trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
+trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
   /** The batcher for this store */
   def batcher: Batcher
 
@@ -82,8 +49,8 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
    * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
    * On write, we throw if batchID is less than firstNonZero
    */
-  def withInitialBatch(firstNonZero: BatchID): BatchedScaldingStore[K, V] =
-    new InitialBatchedStore(firstNonZero, self)
+  def withInitialBatch(firstNonZero: BatchID): BatchedStore[K, V] =
+    new scalding.store.InitialBatchedStore(firstNonZero, self)
 
   /** Get the most recent last batch and the ID (strictly less than the input ID)
    * The "Last" is the stream with only the newest value for each key, within the batch
@@ -95,7 +62,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
   /** Record a computed batch of code */
   def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit
 
-  @transient private val logger = LoggerFactory.getLogger(classOf[BatchedScaldingStore[_,_]])
+  @transient private val logger = LoggerFactory.getLogger(classOf[BatchedStore[_,_]])
 
   /** The writeLast method as a FlowProducer */
   private def writeFlow(batches: List[BatchID], lastVals: TypedPipe[(BatchID, (K, V))]): FlowProducer[Unit] = {
@@ -122,7 +89,7 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
         ((k, batch), (ts, v))
       }
       (commutativity match {
-        case Commutative => ScaldingStore.mapsideReduce(inits)
+        case Commutative => Store.mapsideReduce(inits)
         case NonCommutative => inits
         })
     }
@@ -282,28 +249,4 @@ trait BatchedScaldingStore[K, V] extends ScaldingStore[K, V] { self =>
           }
         }
     })
-}
-
-
-/**
- * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
- * On write, we throw if batchID is less than firstNonZero
- */
-class InitialBatchedStore[K,V](val firstNonZero: BatchID, val proxy: BatchedScaldingStore[K, V])
-  extends BatchedScaldingStore[K, V] {
-
-  def batcher = proxy.batcher
-  def ordering = proxy.ordering
-  // This one is dangerous and marked override because it has a default
-  override def select(b: List[BatchID]) = proxy.select(b)
-  def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) =
-    if (batchID >= firstNonZero) proxy.writeLast(batchID, lastVals)
-    else sys.error("Earliest batch set at :" + firstNonZero + " but tried to write: " + batchID)
-
-  // Here is where we switch:
-  def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
-    if (exclusiveUB > firstNonZero) proxy.readLast(exclusiveUB, mode)
-    else if (exclusiveUB == firstNonZero) Right((firstNonZero.prev, Scalding.emptyFlowProducer[(K,V)]))
-    else Left(List("Earliest batch set at :" + firstNonZero + " but tried to read: " + exclusiveUB))
-  }
 }
