@@ -20,7 +20,7 @@ import com.twitter.summingbird.online.Externalizer
 import com.twitter.storehaus.ReadableStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.scalding.BatchedStore
+import com.twitter.summingbird.scalding.batch.BatchedStore
 
 /**
  * Compound BatchStore and MergeableStore, used for building a summingbird job.

@@ -23,7 +23,8 @@ import com.twitter.chill.java.IterableRegistrar
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{BatchID, Batcher}
-import com.twitter.summingbird.scalding.{Scalding, ScaldingService, ScaldingEnv, BatchedStore, ScaldingSink}
+import com.twitter.summingbird.scalding.{Scalding, Service, ScaldingEnv, Sink}
+import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.{CompoundSink, BatchedSinkFromOffline}
 import com.twitter.summingbird.source.EventSource
