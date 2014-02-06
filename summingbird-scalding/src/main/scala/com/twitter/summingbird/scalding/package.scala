@@ -78,7 +78,7 @@ package object scalding {
   @deprecated("Use com.twitter.summingbird.batch.RunningState", "0.3.2")
   type RunningState[T] = summingbird.batch.RunningState[T]
 
-  @deprecated("Use com.twitter.summingbird.scalding.services.SimpleService", "0.3.2")
+  @deprecated("Use com.twitter.summingbird.scalding.service.SimpleService", "0.3.2")
   type SimpleService[K, V] = com.twitter.summingbird.scalding.service.SimpleService[K, V]
 
   @deprecated("Use com.twitter.summingbird.scalding.batch.BatchedService", "0.3.2")
