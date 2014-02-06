@@ -72,6 +72,8 @@ package object scalding {
 
   val ScaldingConfig = summingbird.batch.BatchConfig
 
+
+  // ALL DEPRECATION ALIASES BELOW HERE, NOTHING ELSE.
   @deprecated("Use com.twitter.summingbird.batch.WaitingState", "0.3.2")
   type WaitingState[T] = summingbird.batch.WaitingState[T]
   @deprecated("Use com.twitter.summingbird.batch.PrepareState", "0.3.2")
