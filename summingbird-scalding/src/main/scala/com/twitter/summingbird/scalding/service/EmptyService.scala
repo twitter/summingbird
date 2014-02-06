@@ -18,8 +18,8 @@ package com.twitter.summingbird.scalding.service
 
 import com.twitter.summingbird.scalding._
 
-class EmptyService[K, V] extends Service[K, V] {
-  def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
-    getKeys.map { _.map { _.map { case (t, (k, v)) => (t, (k, (v, None: Option[V]))) } } }
+object EmptyService extends Service[Any, Any] {
+  def lookup[W](getKeys: PipeFactory[(Any, W)]): PipeFactory[(Any, (W, Option[Any]))] =
+    getKeys.map { _.map { _.map { case (t, (k, v)) => (t, (k, (v, None: Option[Any]))) } } }
 }
 
