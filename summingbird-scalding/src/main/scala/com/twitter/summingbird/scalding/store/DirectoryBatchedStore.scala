@@ -60,7 +60,7 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
           val lastModifyTime = statuses.map{_.getModificationTime}.max
           (isGood, lastModifyTime)
       }
-      .getOrElse((false, 0))
+      .getOrElse((false, Timestamp(0)))
 
       (isGood, lastModifyTime, path.getName)
   }
