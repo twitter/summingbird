@@ -27,7 +27,7 @@ import cascading.flow.FlowDef
  */
 trait SimpleWindowedService[K, V] extends BatchedWindowService[K, V] {
   def streamIsAvailable(b: BatchID, m: Mode): Boolean
-  def read(b: BatchID)(implicit f: FlowDef, m: Mode): TypedPipe[(Time, (K, Option[V]))]
+  def read(b: BatchID)(implicit f: FlowDef, m: Mode): TypedPipe[(Timestamp, (K, Option[V]))]
 
   final def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, Option[V])]] = {
     if(!streamIsAvailable(batchID, mode)) {

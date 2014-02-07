@@ -124,12 +124,12 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
 class TestService[K, V](service: String,
   inBatcher: Batcher,
   minBatch: BatchID,
-  streams: Map[BatchID, Iterable[(Time, (K, Option[V]))]])
+  streams: Map[BatchID, Iterable[(Timestamp, (K, Option[V]))]])
 (implicit ord: Ordering[K],
-  tset: TupleSetter[(Time, (K, Option[V]))],
-  tset2: TupleSetter[(Time, (K, V))],
-  tconv: TupleConverter[(Time, (K, Option[V]))],
-  tconv2: TupleConverter[(Time, (K, V))])
+  tset: TupleSetter[(Timestamp, (K, Option[V]))],
+  tset2: TupleSetter[(Timestamp, (K, V))],
+  tconv: TupleConverter[(Timestamp, (K, Option[V]))],
+  tconv2: TupleConverter[(Timestamp, (K, V))])
   extends BatchedService[K, V] {
 
   val batcher = inBatcher
@@ -141,13 +141,13 @@ class TestService[K, V](service: String,
       streams.map { case (b, it) => streamMappable(b) -> toBuffer(it) }).toMap
 
   /** The lasts are computed from the streams */
-  lazy val lasts: Map[BatchID, Iterable[(Time, (K, V))]] = {
+  lazy val lasts: Map[BatchID, Iterable[(Timestamp, (K, V))]] = {
     (streams
       .toList
       .sortBy(_._1)
-      .foldLeft(Map.empty[BatchID, Map[K, (Time, V)]]) {
-        case (map, (batch: BatchID, writes: Iterable[(Time, (K, Option[V]))])) =>
-          val thisBatch = writes.foldLeft(map.get(batch).getOrElse(Map.empty[K, (Time, V)])) {
+      .foldLeft(Map.empty[BatchID, Map[K, (Timestamp, V)]]) {
+        case (map, (batch: BatchID, writes: Iterable[(Timestamp, (K, Option[V]))])) =>
+          val thisBatch = writes.foldLeft(map.get(batch).getOrElse(Map.empty[K, (Timestamp, V)])) {
             case (innerMap, (time, (k, v))) =>
               v match {
                 case None => innerMap - k
@@ -161,11 +161,11 @@ class TestService[K, V](service: String,
       }) + (minBatch -> Iterable.empty)
   }
 
-  def lastMappable(b: BatchID): Mappable[(Time, (K, V))] =
-    new MockMappable[(Time, (K, V))](service + "/last/" + b.toString)
+  def lastMappable(b: BatchID): Mappable[(Timestamp, (K, V))] =
+    new MockMappable[(Timestamp, (K, V))](service + "/last/" + b.toString)
 
-  def streamMappable(b: BatchID): Mappable[(Time, (K, Option[V]))] =
-    new MockMappable[(Time, (K, Option[V]))](service + "/stream/" + b.toString)
+  def streamMappable(b: BatchID): Mappable[(Timestamp, (K, Option[V]))] =
+    new MockMappable[(Timestamp, (K, Option[V]))](service + "/stream/" + b.toString)
 
   def toBuffer[T](it: Iterable[T])(implicit ts: TupleSetter[T]): Buffer[Tuple] =
     it.map { ts(_) }.toBuffer
@@ -196,7 +196,7 @@ class TestService[K, V](service: String,
  * cascading local mode
  */
 class TestSink[T] extends Sink[T] {
-  private var data: Vector[(Long, T)] = Vector.empty
+  private var data: Vector[(Timestamp, T)] = Vector.empty
 
   def write(incoming: PipeFactory[T]): PipeFactory[T] =
     // three functors deep:
@@ -209,7 +209,7 @@ class TestSink[T] extends Sink[T] {
       }
     }
 
-  def reset: Vector[(Long, T)] = {
+  def reset: Vector[(Timestamp, T)] = {
     val oldData = data
     data = Vector.empty
     oldData
@@ -459,7 +459,7 @@ object ScaldingLaws extends Specification {
       /**
        * Create the batched service
        */
-      val batchedService = stream.groupBy { case (time, _) => batcher.batchOf(Timestamp(time)) }
+      val batchedService = stream.map{case (time, v) => (Timestamp(time), v)}.groupBy { case (ts, _) => batcher.batchOf(ts) }
       val testService = new TestService[Int, Int]("srv", batcher, batcher.batchOf(Timestamp(0)).prev, batchedService)
 
       val (buffer, source) = testSource(inWithTime)
@@ -588,7 +588,7 @@ class ScaldingSerializationSpecs extends Specification {
       }
 
       val mode = HadoopTest(new Configuration, {case x: ScaldingSource => buffer.get(x)})
-      val intr = Interval.leftClosedRightOpen(0L, inWithTime.size.toLong)
+      val intr = Interval.leftClosedRightOpen(Timestamp(0L), Timestamp(inWithTime.size.toLong))
       val scald = Scalding("scalaCheckJob")
 
       (try { scald.toFlow(intr, mode, scald.plan(summer)); true }

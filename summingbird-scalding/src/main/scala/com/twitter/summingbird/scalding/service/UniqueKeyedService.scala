@@ -20,6 +20,7 @@ import com.twitter.algebird.Interval
 
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.summingbird.scalding._
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.scalding.{Source => SSource, _ }
 import com.twitter.scalding.typed.{ TypedPipe => _, _ }
 import cascading.flow.FlowDef
@@ -37,8 +38,8 @@ trait UniqueKeyedService[K, V] extends SimpleService[K, V] {
   def reducers: Option[Int]
 
   /** You can override this to use hashJoin for instance */
-  def doJoin[W](in: TypedPipe[(Time, (K, W))],
-    serv: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): TypedPipe[(Time, (K, (W, Option[V])))] = {
+  def doJoin[W](in: TypedPipe[(Timestamp, (K, W))],
+    serv: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): TypedPipe[(Timestamp, (K, (W, Option[V])))] = {
       implicit val ord: Ordering[K] = ordering
       def withReducers[U, T](grouped: Grouped[U, T]) =
         reducers.map { grouped.withReducers(_) }.getOrElse(grouped)
@@ -50,7 +51,7 @@ trait UniqueKeyedService[K, V] extends SimpleService[K, V] {
     }
 
   final override def serve[W](covering: DateRange,
-    input: TypedPipe[(Long, (K, W))])(implicit flowDef: FlowDef, mode: Mode) =
+    input: TypedPipe[(Timestamp, (K, W))])(implicit flowDef: FlowDef, mode: Mode) =
     doJoin(input, readDateRange(covering))
 }
 

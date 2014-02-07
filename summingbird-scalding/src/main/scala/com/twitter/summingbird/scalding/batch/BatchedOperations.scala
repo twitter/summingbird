@@ -30,27 +30,22 @@ import Conversion.asMethod
  */
 private class BatchedOperations(batcher: Batcher) {
 
-  implicit val timeToBatchInterval = Bijection.build { bint: Interval[Time] =>
-    bint.mapNonDecreasing { Timestamp(_) } } { bint: Interval[Timestamp] =>
-    bint.mapNonDecreasing { _.milliSinceEpoch }
-  }
-
-  def coverIt[T](timeSpan: Interval[Time]): Iterable[BatchID] = {
+  def coverIt[T](timeSpan: Interval[Timestamp]): Iterable[BatchID] = {
     val batchInterval = batcher.cover(timeSpan.as[Interval[Timestamp]])
     BatchID.toIterable(batchInterval)
   }
 
-  def batchToTime(bint: Interval[BatchID]): Interval[Time] =
-     bint.mapNonDecreasing { batcher.earliestTimeOf(_).milliSinceEpoch }
+  def batchToTimestamp(bint: Interval[BatchID]): Interval[Timestamp] =
+     bint.mapNonDecreasing { batcher.earliestTimeOf(_) }
 
-  def intersect(batches: Interval[BatchID], ts: Interval[Time]): Interval[Time] =
-    batchToTime(batches) && ts
+  def intersect(batches: Interval[BatchID], ts: Interval[Timestamp]): Interval[Timestamp] =
+    batchToTimestamp(batches) && ts
 
-  def intersect(batches: Iterable[BatchID], ts: Interval[Time]): Option[Interval[Time]] =
+  def intersect(batches: Iterable[BatchID], ts: Interval[Timestamp]): Option[Interval[Timestamp]] =
     BatchID.toInterval(batches).map { intersect(_, ts) }
 
   def readBatched[T](inBatches: Interval[BatchID], mode: Mode, in: PipeFactory[T]): Try[(Interval[BatchID], FlowToPipe[T])] = {
-    val inTimes = batchToTime(inBatches)
+    val inTimes = batchToTimestamp(inBatches)
     // Read the delta stream for the needed times
     in((inTimes, mode))
       .right

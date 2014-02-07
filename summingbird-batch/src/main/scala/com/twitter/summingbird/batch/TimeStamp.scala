@@ -19,13 +19,16 @@ package com.twitter.summingbird.batch
 import com.twitter.algebird.Monoid
 import com.twitter.bijection.Bijection
 import java.util.Date
-
+import com.twitter.scalding.RichDate
 
 case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
   def compare(that: Timestamp) = milliSinceEpoch.compare(that.milliSinceEpoch)
   def prev = copy(milliSinceEpoch = milliSinceEpoch - 1)
   def next = copy(milliSinceEpoch = milliSinceEpoch + 1)
   def toDate = new Date(milliSinceEpoch)
+  def toRichDate = new RichDate(milliSinceEpoch)
+  def -(other: Timestamp) = Timestamp(milliSinceEpoch - other.milliSinceEpoch)
+  def +(other: Timestamp) = Timestamp(milliSinceEpoch + other.milliSinceEpoch)
   def incrementMillis(millis: Long) = Timestamp(milliSinceEpoch + millis)
   def incrementSeconds(seconds: Long) = Timestamp(milliSinceEpoch + (seconds*1000L))
   def incrementMinutes(minutes: Long) = Timestamp(milliSinceEpoch + (minutes*1000*60))

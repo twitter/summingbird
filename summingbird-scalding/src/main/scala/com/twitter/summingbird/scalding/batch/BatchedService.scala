@@ -46,8 +46,8 @@ trait BatchedService[K, V] extends Service[K, V] {
    * You are guaranteed that all the service data needed
    * to do the join is present.
    */
-  def lookup[W](incoming: TypedPipe[(Time, (K, W))],
-    servStream: TypedPipe[(Time, (K, Option[V]))]): TypedPipe[(Time, (K, (W, Option[V])))] = {
+  def lookup[W](incoming: TypedPipe[(Timestamp, (K, W))],
+    servStream: TypedPipe[(Timestamp, (K, Option[V]))]): TypedPipe[(Timestamp, (K, (W, Option[V])))] = {
 
     def flatOpt[T](o: Option[Option[T]]): Option[T] = o.flatMap(identity)
 
@@ -56,13 +56,13 @@ trait BatchedService[K, V] extends Service[K, V] {
       .map { case (t, (k, (w, optoptv))) => (t, (k, (w, flatOpt(optoptv)))) }
   }
 
-  protected def batchedLookup[W](covers: Interval[Time],
+  protected def batchedLookup[W](covers: Interval[Timestamp],
     getKeys: FlowToPipe[(K, W)],
     last: (BatchID, FlowProducer[TypedPipe[(K, V)]]),
     streams: Iterable[(BatchID, FlowToPipe[(K, Option[V])])]): FlowToPipe[(K, (W, Option[V]))] =
       Reader[FlowInput, KeyValuePipe[K, (W, Option[V])]] { (flowMode: (FlowDef, Mode)) =>
         val left = getKeys(flowMode)
-        val earliestInLast = batcher.earliestTimeOf(last._1).milliSinceEpoch
+        val earliestInLast = batcher.earliestTimeOf(last._1)
         val liftedLast: KeyValuePipe[K, Option[V]] = last._2(flowMode)
           .map { case (k, w) => (earliestInLast, (k, Some(w))) }
         // TODO (https://github.com/twitter/summingbird/issues/91): we

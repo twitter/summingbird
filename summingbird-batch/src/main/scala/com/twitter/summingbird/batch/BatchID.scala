@@ -41,6 +41,8 @@ object BatchID {
   implicit val equiv: Equiv[BatchID] = Equiv.by(_.id)
 
   def apply(long: Long) = new BatchID(long)
+  def apply(ts: Timestamp) = new BatchID(ts.milliSinceEpoch)
+
   // Enables BatchID(someBatchID.toString) roundtripping
   def apply(str: String) = new BatchID(str.split("\\.")(1).toLong)
 

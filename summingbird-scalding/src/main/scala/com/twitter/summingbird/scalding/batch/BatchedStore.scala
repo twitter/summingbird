@@ -87,16 +87,15 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     }
   }
 
-  protected def sumByBatches[K1,V:Semigroup](ins: TypedPipe[(Long, (K1, V))],
+  protected def sumByBatches[K1,V:Semigroup](ins: TypedPipe[(Timestamp, (K1, V))],
     capturedBatcher: Batcher,
     commutativity: Commutativity): TypedPipe[((K1, BatchID), (Timestamp, V))] = {
       implicit val timeValueSemigroup: Semigroup[(Timestamp, V)] =
         IteratorSums.optimizedPairSemigroup[Timestamp, V](1000)
 
       val inits = ins.map { case (t, (k, v)) =>
-        val ts = Timestamp(t)
-        val batch = capturedBatcher.batchOf(ts)
-        ((k, batch), (ts, v))
+        val batch = capturedBatcher.batchOf(t)
+        ((k, batch), (t, v))
       }
       (commutativity match {
         case Commutative => Store.mapsideReduce(inits)
@@ -117,7 +116,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       case Commutative => delta.map { flow =>
         flow.map { typedP =>
           sumByBatches(typedP, capturedBatcher, Commutative)
-            .map { case ((k, _), (ts, v)) => (ts.milliSinceEpoch, (k, v)) }
+            .map { case ((k, _), (ts, v)) => (ts, (k, v)) }
         }
       }
       case NonCommutative => delta
@@ -148,7 +147,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
     val capturedBatcher = batcher //avoid a closure on the whole store
 
-    def prepareDeltas(ins: TypedPipe[(Long, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
+    def prepareDeltas(ins: TypedPipe[(Timestamp, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
       sumByBatches(ins, capturedBatcher, commutativity)
         .map { case ((k, batch), (ts, v)) => (k, (batch, (ts, v))) }
 
@@ -195,11 +194,11 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
     // This builds the format we send to consumer nodes
     def toOutputFormat(res: TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))]):
-      TypedPipe[(Long, (K, (Option[V], V)))] =
+      TypedPipe[(Timestamp, (K, (Option[V], V)))] =
         res.flatMap { case (k, (batchid, (optopt, opt))) =>
           opt.map { case (ts, v) =>
             val prev = flatOpt(optopt).map(_._2)
-            (ts.milliSinceEpoch, (k, (prev, v)))
+            (ts, (k, (prev, v)))
           }
         }
 
@@ -213,6 +212,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       _ <- writeFlow(filteredBatches, lastOut)
     } yield toOutputFormat(merged)
   }
+
 
   /** instances of this trait MAY NOT change the logic here. This always follows the rule
    * that we look for existing data (avoiding reading deltas in that case), then we fall

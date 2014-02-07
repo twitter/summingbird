@@ -48,7 +48,7 @@ trait BatchedSink[T] extends Sink[T] {
 
       // We need to write each of these.
       iter.foreach { batch =>
-        val range = batcher.toInterval(batch).mapNonDecreasing { _.milliSinceEpoch }
+        val range = batcher.toInterval(batch)
         writeStream(batch, inPipe.filter { case (time, _) =>
           range(time)
         })(flowMode._1, flowMode._2)
@@ -85,7 +85,7 @@ trait BatchedSink[T] extends Sink[T] {
         .takeWhile { _._2.isDefined }
         .collect { case (batch, Some(flow)) => (batch, flow) }
 
-      def mergeExistingAndBuilt(optBuilt: Option[(Interval[BatchID], FlowToPipe[T])]): Try[((Interval[Time], Mode), FlowToPipe[T])] = {
+      def mergeExistingAndBuilt(optBuilt: Option[(Interval[BatchID], FlowToPipe[T])]): Try[((Interval[Timestamp], Mode), FlowToPipe[T])] = {
         val (aBatches, aFlows) = existing.unzip
         val flows = aFlows ++ (optBuilt.map { _._2 })
         val batches = aBatches ++ (optBuilt.map { pair => BatchID.toIterable(pair._1) }.getOrElse(Iterable.empty))

@@ -20,6 +20,7 @@ import com.twitter.algebird.Interval
 
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.summingbird.scalding._
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.scalding.{Source => SSource, _}
 import cascading.flow.FlowDef
 
@@ -37,7 +38,7 @@ trait SimpleService[K, V] extends Service[K, V] {
   def satisfiable(requested: DateRange, mode: Mode): Try[DateRange]
 
   def serve[W](covering: DateRange,
-    input: TypedPipe[(Long, (K, W))])(implicit flowDef: FlowDef, mode: Mode): TypedPipe[(Long, (K, (W, Option[V])))]
+    input: TypedPipe[(Timestamp, (K, W))])(implicit flowDef: FlowDef, mode: Mode): TypedPipe[(Timestamp, (K, (W, Option[V])))]
 
   final def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))] =
     StateWithError({ intMode: FactoryInput =>
@@ -45,7 +46,7 @@ trait SimpleService[K, V] extends Service[K, V] {
       Scalding.toDateRange(timeSpan).right
         .flatMap(satisfiable(_, mode)).right
         .flatMap { dr =>
-          val ts = dr.as[Interval[Time]]
+          val ts = dr.as[Interval[Timestamp]]
           getKeys((ts, mode)).right
             .map { case ((avail, m), getFlow) =>
               val rdr = Reader({ implicit fdM: (FlowDef, Mode) =>
