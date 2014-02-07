@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 package com.twitter.summingbird.batch
+import com.twitter.summingbird.Timestamp
 
 trait PrunedSpace[-T] extends java.io.Serializable {
   // expire (REMOVE) before writing, T is often (K, V) pair

@@ -16,7 +16,9 @@ limitations under the License.
 
 package com.twitter.summingbird.chill
 import com.twitter.chill._
-import com.twitter.summingbird.batch.{BatchID, Timestamp}
+import com.twitter.summingbird.batch.BatchID
+import com.twitter.summingbird.Timestamp
+
 
 class BatchIDSerializer extends KSerializer[BatchID] {
   val optimizeForPositive = true

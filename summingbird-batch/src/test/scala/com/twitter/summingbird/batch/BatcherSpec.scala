@@ -17,6 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.batch
 
 import org.specs2.mutable._
+import com.twitter.summingbird.Timestamp
 
 class BatcherSpec extends Specification {
   val hourlyBatcher = Batcher.ofHours(1)

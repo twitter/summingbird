@@ -17,6 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.batch
 
 import java.util.{Calendar, Date, TimeZone}
+import com.twitter.summingbird.Timestamp
 
 object CalendarBatcher {
   /** Type wrapper for the Int's defined in java.util.Calendar */

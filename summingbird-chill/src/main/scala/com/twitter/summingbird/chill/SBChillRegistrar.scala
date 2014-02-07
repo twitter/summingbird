@@ -15,13 +15,14 @@ limitations under the License.
 */
 
 package com.twitter.summingbird.chill
-import com.twitter.summingbird.{MutableStringConfig, SummingbirdConfig}
+import com.twitter.summingbird.{MutableStringConfig, SummingbirdConfig, Timestamp}
 import com.twitter.chill.{ScalaKryoInstantiator, IKryoRegistrar, Kryo, toRich, ReflectingRegistrar, InjectionDefaultRegistrar, InjectionRegistrar}
 import com.twitter.chill.java.IterableRegistrar
 import com.twitter.bijection.Codec
 import com.twitter.chill._
 import com.twitter.chill.config.{ ConfiguredInstantiator => ConfInst }
-import com.twitter.summingbird.batch.{BatchID, Timestamp}
+import com.twitter.summingbird.batch.BatchID
+
 
 /**
  * @author Oscar Boykin

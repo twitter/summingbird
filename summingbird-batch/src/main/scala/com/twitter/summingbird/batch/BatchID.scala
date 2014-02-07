@@ -16,6 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
+import com.twitter.summingbird.Timestamp
 import com.twitter.algebird.Monoid
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection,
   InclusiveLower, ExclusiveUpper, InclusiveUpper, ExclusiveLower }
@@ -41,6 +42,8 @@ object BatchID {
   implicit val equiv: Equiv[BatchID] = Equiv.by(_.id)
 
   def apply(long: Long) = new BatchID(long)
+  def apply(ts: Timestamp) = new BatchID(ts.milliSinceEpoch)
+
   // Enables BatchID(someBatchID.toString) roundtripping
   def apply(str: String) = new BatchID(str.split("\\.")(1).toLong)
 

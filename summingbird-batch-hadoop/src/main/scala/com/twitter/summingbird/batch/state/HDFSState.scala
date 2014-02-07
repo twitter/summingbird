@@ -22,7 +22,8 @@ import com.twitter.algebird.Lower
 import com.twitter.algebird.Upper
 import com.twitter.algebird.{ ExclusiveUpper, Intersection, Interval }
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import com.twitter.summingbird.Timestamp
+import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.batch.{ PrepareState, RunningState, WaitingState }
 import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.hadoop.conf.Configuration

@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.storm
 
-import com.twitter.summingbird.batch.Timestamp
+import com.twitter.summingbird.Timestamp
 
 import org.scalacheck._
 import Gen._
