@@ -19,7 +19,7 @@ package com.twitter.summingbird.online.executor
 import com.twitter.util.Future
 
 import com.twitter.bijection.Injection
-import com.twitter.summingbird.Timestamp
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.online.option.{

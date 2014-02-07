@@ -16,8 +16,8 @@
 
 package com.twitter.summingbird.scalding
 
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.scalding.TypedPipe
-import com.twitter.summingbird.Timestamp
 
 class PipeFactoryOps[+T](pipeFactory: PipeFactory[T]) {
 

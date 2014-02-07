@@ -3,7 +3,6 @@ package com.twitter.summingbird.store
 import org.specs2.mutable._
 
 import com.twitter.storehaus.ReadableStore
-import com.twitter.summingbird.Timestamp
 import com.twitter.summingbird.batch._
 import com.twitter.util.{ Await, Future }
 

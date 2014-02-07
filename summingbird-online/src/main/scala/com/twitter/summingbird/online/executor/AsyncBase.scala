@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
-import com.twitter.summingbird.Timestamp
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.Queue
 import com.twitter.summingbird.online.option.{MaxWaitingFutures, MaxFutureWaitTime}
 import com.twitter.util.{Await, Duration, Future}

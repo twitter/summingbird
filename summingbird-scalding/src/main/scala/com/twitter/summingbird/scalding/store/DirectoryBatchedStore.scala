@@ -28,9 +28,8 @@ import com.twitter.bijection.{ Bijection, ImplicitBijection }
 import com.twitter.scalding.{Dsl, Mode, Hdfs, TypedPipe, IterableSource, WritableSequenceFile, MapsideReduce, TupleSetter, TupleConverter}
 import com.twitter.scalding.typed. TypedSink
 
-import com.twitter.summingbird.Timestamp
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher}
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.scalding._
 
 /**
@@ -57,7 +56,7 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
           val isGood = statuses.exists { fs: FileStatus =>
             fs.getPath.getName == "_SUCCESS"
           }
-          val lastModifyTime = statuses.map{_.getModificationTime}.max
+          val lastModifyTime = Timestamp(statuses.map{_.getModificationTime}.max)
           (isGood, lastModifyTime)
       }
       .getOrElse((false, Timestamp(0)))

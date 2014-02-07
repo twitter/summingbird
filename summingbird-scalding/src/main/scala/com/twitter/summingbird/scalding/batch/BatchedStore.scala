@@ -27,7 +27,7 @@ import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, IteratorSums, PrunedSpace}
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, IteratorSums, PrunedSpace}
 import cascading.flow.FlowDef
 
 import org.slf4j.LoggerFactory

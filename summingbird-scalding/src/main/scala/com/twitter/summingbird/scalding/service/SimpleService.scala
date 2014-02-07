@@ -19,8 +19,8 @@ import com.twitter.algebird.monad.{Reader, StateWithError}
 import com.twitter.algebird.Interval
 
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.summingbird.Timestamp
 import com.twitter.summingbird.scalding._
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.scalding.{Source => SSource, _}
 import cascading.flow.FlowDef
 

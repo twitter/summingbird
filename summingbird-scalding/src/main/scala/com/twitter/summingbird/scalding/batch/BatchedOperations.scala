@@ -19,7 +19,7 @@ package com.twitter.summingbird.scalding.batch
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.bijection.{Injection, Bijection, Conversion}
-import com.twitter.summingbird.Timestamp
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.scalding._
 import com.twitter.scalding.Mode
 

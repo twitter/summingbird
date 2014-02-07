@@ -20,7 +20,6 @@ import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
 import org.specs2.mutable._
 
-import com.twitter.summingbird.Timestamp
 import com.twitter.summingbird.batch._
 import com.twitter.algebird.{Interval, ExclusiveUpper, Empty}
 import java.util.concurrent.TimeUnit

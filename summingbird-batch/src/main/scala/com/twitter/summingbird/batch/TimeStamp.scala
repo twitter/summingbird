@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird
+package com.twitter.summingbird.batch
 
 import com.twitter.algebird.Monoid
 import com.twitter.bijection.Bijection
@@ -28,6 +28,7 @@ case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
   def toDate = new Date(milliSinceEpoch)
   def toRichDate = new RichDate(milliSinceEpoch)
   def -(other: Timestamp) = Timestamp(milliSinceEpoch - other.milliSinceEpoch)
+  def +(other: Timestamp) = Timestamp(milliSinceEpoch + other.milliSinceEpoch)
   def incrementMillis(millis: Long) = Timestamp(milliSinceEpoch + millis)
   def incrementSeconds(seconds: Long) = Timestamp(milliSinceEpoch + (seconds*1000L))
   def incrementMinutes(minutes: Long) = Timestamp(milliSinceEpoch + (minutes*1000*60))

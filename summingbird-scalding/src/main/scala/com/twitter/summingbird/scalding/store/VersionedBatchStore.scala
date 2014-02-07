@@ -22,12 +22,11 @@ import com.twitter.bijection.Injection
 import cascading.flow.FlowDef
 import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, TupleSetter}
 import com.twitter.scalding.commons.source.VersionedKeyValSource
-import com.twitter.summingbird.Timestamp
 import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.scalding.{Try, FlowProducer, Scalding}
 import com.twitter.algebird.monad.Reader
 import com.twitter.summingbird.scalding._
-import com.twitter.summingbird.batch.{BatchID, Batcher }
+import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp }
 import scala.util.{ Try => ScalaTry }
 
 /**

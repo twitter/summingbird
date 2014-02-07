@@ -18,9 +18,8 @@ package com.twitter.summingbird.sink
 
 import cascading.flow.FlowDef
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
 import com.twitter.scalding.{ Mode, TypedPipe }
-import com.twitter.summingbird.Timestamp
 import com.twitter.summingbird.scalding.ScaldingEnv
 import com.twitter.summingbird.scalding.batch.BatchedSink
 

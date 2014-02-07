@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 package com.twitter.summingbird.batch
-import com.twitter.summingbird.Timestamp
+
 
 /**
  * Batcher implementation based on a fixed-width batch of

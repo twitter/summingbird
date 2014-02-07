@@ -22,8 +22,7 @@ import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.bijection.Injection
 
 import com.twitter.summingbird.online.{Externalizer, AsyncCache}
-import com.twitter.summingbird.Timestamp
-import com.twitter.summingbird.batch.BatchID
+import com.twitter.summingbird.batch.{BatchID, Timestamp}
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 

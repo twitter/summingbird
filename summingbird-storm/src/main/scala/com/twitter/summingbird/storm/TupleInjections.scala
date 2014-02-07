@@ -18,7 +18,7 @@ package com.twitter.summingbird.storm
 
 
 import com.twitter.bijection.{Injection, Inversion, AbstractInjection}
-import com.twitter.summingbird.Timestamp
+import com.twitter.summingbird.batch.Timestamp
 import java.util.{List => JList, ArrayList => JAList}
 import scala.util.Try
 

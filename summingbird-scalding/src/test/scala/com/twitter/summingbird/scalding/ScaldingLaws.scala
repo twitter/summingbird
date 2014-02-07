@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
 import com.twitter.algebird.monad._
-import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs, Timestamp}
+import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs}
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
 

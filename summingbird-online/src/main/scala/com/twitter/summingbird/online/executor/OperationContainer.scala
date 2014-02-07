@@ -18,7 +18,7 @@ package com.twitter.summingbird.online.executor
 
 import scala.util.Try
 import com.twitter.bijection.Injection
-import com.twitter.summingbird.Timestamp
+import com.twitter.summingbird.batch.Timestamp
 
 trait OperationContainer[Input, Output, State, WireFmt] {
   def decoder: Injection[(Timestamp, Input), WireFmt]

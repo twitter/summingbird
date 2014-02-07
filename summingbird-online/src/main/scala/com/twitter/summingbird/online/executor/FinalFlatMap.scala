@@ -20,10 +20,8 @@ import com.twitter.algebird.{SummingQueue, Semigroup, MapAlgebra}
 import com.twitter.bijection.Injection
 import com.twitter.util.Future
 
-import com.twitter.summingbird.Timestamp
 import com.twitter.summingbird.online.Externalizer
-import com.twitter.summingbird.batch.{ Batcher, BatchID }
-
+import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
 
 import com.twitter.summingbird.online.{FlatMapOperation, AsyncCache}
 import com.twitter.summingbird.option.CacheSize

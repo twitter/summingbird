@@ -32,8 +32,7 @@ import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
-import com.twitter.summingbird.Timestamp
-import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache}
 import com.twitter.summingbird.online.executor.InputState

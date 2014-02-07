@@ -17,8 +17,7 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.{ Interval, Intersection, ExclusiveUpper, InclusiveUpper }
-import com.twitter.summingbird.Timestamp
-import com.twitter.summingbird.batch.{ Batcher, BatchID }
+import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp }
 import com.twitter.summingbird.batch.store.HDFSMetadata
 
 import org.slf4j.LoggerFactory

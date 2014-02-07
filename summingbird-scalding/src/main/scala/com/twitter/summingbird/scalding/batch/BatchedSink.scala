@@ -18,8 +18,7 @@ package com.twitter.summingbird.scalding.batch
 
 import com.twitter.algebird.monad.{StateWithError, Reader}
 import com.twitter.algebird.{ Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
-import com.twitter.summingbird.Timestamp
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.scalding._
 import com.twitter.scalding.Mode
 import cascading.flow.FlowDef

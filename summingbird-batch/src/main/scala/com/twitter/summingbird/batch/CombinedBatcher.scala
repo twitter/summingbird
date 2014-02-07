@@ -17,7 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.batch
 
 import com.twitter.algebird.ExclusiveUpper
-import com.twitter.summingbird.Timestamp
 
 /** strictly before the beforeBound, we use the before Batcher.
  * At the beforeBound, the batch increments abe switches to using
