@@ -181,7 +181,6 @@ object Scalding {
         toDateRange(timeSpan).right.map { dr =>
           val mappable = factory(dr)
           ((timeSpan, mode), Reader { (fdM: (FlowDef, Mode)) =>
-            mappable.validateTaps(fdM._2) //This can throw, but that is what this caller wants
             TypedPipe.from(mappable)(fdM._1, fdM._2)
               .flatMap { t =>
                 val time = timeOf(t)
