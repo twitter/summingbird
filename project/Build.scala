@@ -220,6 +220,22 @@ object SummingbirdBuild extends Build {
     summingbirdBatch
   )
 
+  lazy val summingbirdStormTest = module("storm-tests").settings(
+    parallelExecution in Test := false,
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "storehaus-core" % storehausVersion,
+      "com.twitter" %% "storehaus-algebra" % storehausVersion,
+      "com.twitter" %% "tormenta-core" % tormentaVersion,
+      withCross("com.twitter" %% "util-core" % utilVersion),
+      "storm" % "storm" % "0.9.0-wip15" % "provided"
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdStorm
+  )
+
   lazy val summingbirdScalding = module("scalding").settings(
     libraryDependencies ++= Seq(
       "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,

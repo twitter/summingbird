@@ -56,44 +56,6 @@ object TopologyTests extends Specification {
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
   implicit val batcher = Batcher.unit
 
-  def createGlobalState[T, K, V] =
-    new MutableHashMap[String, TestState[T, K, V]]
-        with SynchronizedMap[String, TestState[T, K, V]]
-
-  /**
-    * Global state shared by all tests.
-    */
-  val globalState = createGlobalState[Int, Int, Int]
-
-  /**
-    * Returns a MergeableStore that routes get, put and merge calls
-    * through to the backing store in the proper globalState entry.
-    */
-  def testingStore(id: String) =
-    new MergeableStore[(Int, BatchID), Int] with java.io.Serializable {
-      val semigroup = implicitly[Semigroup[Int]]
-      def wrappedStore = globalState(id).store
-      private def getOpt(k: (Int, BatchID)) = Option(wrappedStore.get(k)).flatMap(i => i)
-      override def get(k: (Int, BatchID)) = Future.value(getOpt(k))
-      override def put(pair: ((Int, BatchID), Option[Int])) = {
-        val (k, optV) = pair
-        if (optV.isDefined)
-          wrappedStore.put(k, optV)
-        else
-          wrappedStore.remove(k)
-        globalState(id).placed.incrementAndGet
-        Future.Unit
-      }
-      override def merge(pair: ((Int, BatchID), Int)) = {
-        val (k, v) = pair
-        val oldV = getOpt(k)
-        val newV = Semigroup.plus(Some(v), oldV)
-        wrappedStore.put(k, newV)
-        globalState(id).placed.incrementAndGet
-        Future.value(oldV)
-      }
-    }
-
   /**
     * The function tested below. We can't generate a function with
     * ScalaCheck, as we need to know the number of tuples that the
@@ -101,7 +63,7 @@ object TopologyTests extends Specification {
     */
   val testFn = { i: Int => List((i -> i)) }
 
-  val storm = Storm.local()
+  implicit val storm = Storm.local()
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
@@ -112,12 +74,10 @@ object TopologyTests extends Specification {
   def funcToPlan(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, Any])
       : StormTopology = {
     val original = sample[List[Int]]
-    val id = UUID.randomUUID.toString
-    globalState += (id -> TestState())
 
     val job = mkJob(
       Storm.source(TraversableSpout(original)),
-      MergeableStoreSupplier(() => testingStore(id), Batcher.unit)
+      TestStore.createStore[Int, Int]()._2
     )
 
     storm.plan(job).topology
@@ -145,7 +105,7 @@ object TopologyTests extends Specification {
   	val nodeName = "super dooper node"
   	val p = Storm.source(TraversableSpout(sample[List[Int]]))
   		.flatMap(testFn).name(nodeName)
-      .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
+      .sumByKey(TestStore.createStore[Int, Int]()._2)
 
   	val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)))
   	val storm = Storm.local(opts)
@@ -156,7 +116,7 @@ object TopologyTests extends Specification {
     // Tail will have 1 -, distance from there should be onwards
     val TDistMap = bolts.map{case (k, v) => (k.split("-").size - 1, v)}
 
-	TDistMap(1).get_common.get_parallelism_hint must_== 50
+	   TDistMap(1).get_common.get_parallelism_hint must_== 50
   }
 
   "With 2 names in a row we take the closest name" in {
@@ -164,7 +124,7 @@ object TopologyTests extends Specification {
     val otherNodeName = "super dooper node"
   	val p = Storm.source(TraversableSpout(sample[List[Int]]))
   		.flatMap(testFn).name(nodeName).name(otherNodeName)
-      .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
+      .sumByKey(TestStore.createStore[Int, Int]()._2)
 
   	 val opts = Map(otherNodeName -> Options().set(FlatMapParallelism(40)),
                 nodeName -> Options().set(FlatMapParallelism(50)))
@@ -177,7 +137,7 @@ object TopologyTests extends Specification {
     // Tail will have 1 -, distance from there should be onwards
     val TDistMap = bolts.map{case (k, v) => (k.split("-").size - 1, v)}
 
-	TDistMap(1).get_common.get_parallelism_hint must_== 50
+	  TDistMap(1).get_common.get_parallelism_hint must_== 50
   }
 
   "If the closes doesnt contain the option we keep going" in {
@@ -185,7 +145,7 @@ object TopologyTests extends Specification {
     val otherNodeName = "super dooper node"
     val p = Storm.source(TraversableSpout(sample[List[Int]]))
       .flatMap(testFn).name(otherNodeName).name(nodeName)
-      .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
+      .sumByKey(TestStore.createStore[Int, Int]()._2)
 
     val opts = Map(otherNodeName -> Options().set(SpoutParallelism(30)),
                 nodeName -> Options().set(FlatMapParallelism(50)))
@@ -197,14 +157,14 @@ object TopologyTests extends Specification {
     // Tail will have 1 -, distance from there should be onwards
     val TDistMap = bolts.map{case (k, v) => (k.split("-").size - 1, v)}
 
-  TDistMap(1).get_common.get_parallelism_hint must_== 50
+    TDistMap(1).get_common.get_parallelism_hint must_== 50
   }
 
   "Options propagate backwards" in {
   	val nodeName = "super dooper node"
   	val p = Storm.source(TraversableSpout(sample[List[Int]]))
   		.flatMap(testFn).name(nodeName).name("Throw away name")
-      .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
+      .sumByKey(TestStore.createStore[Int, Int]()._2)
 
   	val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)).set(SpoutParallelism(30)))
   	val storm = Storm.local(opts)
@@ -214,7 +174,7 @@ object TopologyTests extends Specification {
     val spouts = stormTopo.get_spouts
     val spout = spouts.head._2
 
-	spout.get_common.get_parallelism_hint must_== 30
+	  spout.get_common.get_parallelism_hint must_== 30
   }
 
  "Options don't propagate forwards" in {
@@ -222,7 +182,7 @@ object TopologyTests extends Specification {
     val otherNodeName = "super dooper node"
     val p = Storm.source(TraversableSpout(sample[List[Int]]))
       .flatMap(testFn).name(otherNodeName).name(nodeName)
-      .sumByKey(MergeableStoreSupplier(() => testingStore(UUID.randomUUID.toString), Batcher.unit))
+      .sumByKey(TestStore.createStore[Int, Int]()._2)
 
     val opts = Map(otherNodeName -> Options().set(SpoutParallelism(30)).set(SummerParallelism(50)),
                 nodeName -> Options().set(FlatMapParallelism(50)))
