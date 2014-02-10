@@ -164,10 +164,10 @@ trait Batcher extends Serializable {
     b match {
       case Empty() => Empty[Timestamp]()
       case Universe() => Universe[Timestamp]()
-      case ExclusiveUpper(upper) => ExclusiveUpper(latestTimeOf(upper) + 1)
+      case ExclusiveUpper(upper) => ExclusiveUpper(latestTimeOf(upper) + Timestamp(1))
       case InclusiveUpper(upper) => InclusiveUpper(latestTimeOf(upper))
       case InclusiveLower(lower) => InclusiveLower(earliestTimeOf(lower))
-      case ExclusiveLower(lower) =>  ExclusiveLower(earliestTimeOf(lower) -1)
+      case ExclusiveLower(lower) =>  ExclusiveLower(earliestTimeOf(lower) - Timestamp(1))
       case Intersection(low, high) => Intersection(
                             toTimestamp(low).asInstanceOf[Lower[Timestamp]],
                             toTimestamp(high).asInstanceOf[Upper[Timestamp]]
