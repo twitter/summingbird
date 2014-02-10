@@ -66,15 +66,12 @@ object BatcherLaws extends Properties("Batcher") {
 
       val tsInterval = batcher.toTimestamp(int)
 
-      val generatedTS = tsLower + Timestamp(deltaBounded)
+      val generatedTS = tsLower + deltaBounded
       val generatedBatch = batcher.batchOf(generatedTS)
 
       // Granularity of the batcher interval is bigger
       // So we can't correctly do both intersections together
-      if(int.contains(generatedBatch))
-          tsInterval.contains(generatedTS)
-      else
-        true // no Test available
+      int.contains(generatedBatch) == tsInterval.contains(generatedTS)
     }
 
   def batcherLaws(batcher: Batcher) =
@@ -82,7 +79,7 @@ object BatcherLaws extends Properties("Batcher") {
       batchesAreWeakOrderings(batcher) &&
       batchesIncreaseByAtMostOne(batcher) &&
       batchesCoveredByIdent(batcher) &&
-      batchIntervalTransformToTs(batcher, Interval.leftOpenRightClosed(_, _)) //&&
+      batchIntervalTransformToTs(batcher, Interval.leftOpenRightClosed(_, _)) &&
       batchIntervalTransformToTs(batcher, Interval.leftClosedRightOpen(_, _))
 
 

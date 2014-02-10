@@ -38,7 +38,7 @@ trait BatchedWindowService[K, V] extends batch.BatchedService[K, V] {
    * A request must come in LESS than this window since the last
    * key written to the service
    */
-  def windowSize: Timestamp
+  def windowSize: Long
 
   /**
    * The batched window never reads an aggregated last. Instead we just output

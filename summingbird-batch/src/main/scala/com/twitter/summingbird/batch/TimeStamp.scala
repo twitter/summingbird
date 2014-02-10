@@ -27,8 +27,10 @@ case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
   def next = copy(milliSinceEpoch = milliSinceEpoch + 1)
   def toDate = new Date(milliSinceEpoch)
   def toRichDate = new RichDate(milliSinceEpoch)
-  def -(other: Timestamp) = Timestamp(milliSinceEpoch - other.milliSinceEpoch)
-  def +(other: Timestamp) = Timestamp(milliSinceEpoch + other.milliSinceEpoch)
+  def -(other: Long) = Timestamp(milliSinceEpoch - other)
+  def +(other: Long) = Timestamp(milliSinceEpoch + other)
+  // Delta between two timestamps
+  def -(other: Timestamp) = milliSinceEpoch - other.milliSinceEpoch
   def incrementMillis(millis: Long) = Timestamp(milliSinceEpoch + millis)
   def incrementSeconds(seconds: Long) = Timestamp(milliSinceEpoch + (seconds*1000L))
   def incrementMinutes(minutes: Long) = Timestamp(milliSinceEpoch + (minutes*1000*60))
