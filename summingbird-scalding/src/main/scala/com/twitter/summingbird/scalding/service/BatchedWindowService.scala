@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.scalding.service
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp, Milliseconds}
 import com.twitter.summingbird.scalding._
 import com.twitter.scalding.{Mode, TypedPipe, AbsoluteDuration}
 import com.twitter.algebird.monad.Reader
@@ -38,7 +38,7 @@ trait BatchedWindowService[K, V] extends batch.BatchedService[K, V] {
    * A request must come in LESS than this window since the last
    * key written to the service
    */
-  def windowSize: Long
+  def windowSize: Milliseconds
 
   /**
    * The batched window never reads an aggregated last. Instead we just output
