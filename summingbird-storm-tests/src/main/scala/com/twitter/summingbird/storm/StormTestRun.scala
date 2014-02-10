@@ -16,8 +16,10 @@
 
 package com.twitter.summingbird.storm
 
+import com.twitter.algebird.Semigroup
 import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, Testing }
 import backtype.storm.testing.{ CompleteTopologyParam, MockedSources }
+import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird._
 import com.twitter.summingbird.planner._
 import com.twitter.tormenta.spout.Spout
@@ -70,6 +72,23 @@ object StormTestRun {
   def apply(graph: TailProducer[Storm, Any])(implicit storm: Storm) {
     val topo = storm.plan(graph)
     apply(topo)
+  }
+
+  def simpleRun[T, K, V: Semigroup](original: List[T], mkJob: (Producer[Storm, T], Storm#Store[K, V]) => TailProducer[Storm, Any])
+      : TestStore[K, V] = {
+
+    implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
+
+    val (id, store) = TestStore.createStore[K, V]()
+
+    val job = mkJob(
+      Storm.source(TraversableSpout(original)),
+      store
+    )
+
+    implicit val s = Storm.local(Map())
+    apply(job)
+    TestStore[K, V](id).getOrElse(sys.error("Error running test, unable to find store at the end"))
   }
 
   def apply(plannedTopology: PlannedTopology) {

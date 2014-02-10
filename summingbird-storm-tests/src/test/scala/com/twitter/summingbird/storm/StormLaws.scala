@@ -73,23 +73,6 @@ object StormLaws extends Specification {
       Future.Unit
     }
 
-  /**
-    * Perform a single run of TestGraphs.singleStepJob using the
-    * supplied list of integers and the testFn defined above.
-    */
-  def runOnce(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Store[Int, Int]) => TailProducer[Storm, Any])
-      : TestStore[Int, Int] = {
-
-	  val (id, store) = genStore
-
-    val job = mkJob(
-      Storm.source(TraversableSpout(original)),
-      store
-    )
-    StormTestRun(job)
-    TestStore[Int, Int](id).getOrElse(sys.error("Error running test, unable to find store at the end"))
-  }
-
   def memoryPlanWithoutSummer(original: List[Int])(mkJob: (Producer[Memory, Int], Memory#Sink[Int]) => TailProducer[Memory, Int])
   : List[Int] = {
     val memory = new Memory
@@ -137,7 +120,7 @@ object StormLaws extends Specification {
   "StormPlatform matches Scala for single step jobs" in {
     val original = sample[List[Int]]
     val returnedState =
-      runOnce(original)(
+      StormTestRun.simpleRun[Int, Int, Int](original,
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(testFn)
       )
 
@@ -151,7 +134,7 @@ object StormLaws extends Specification {
     val original = sample[List[Int]]
     val fn = {(x: Int) => List[(Int, Int)]()}
     val returnedState =
-      runOnce(original)(
+      StormTestRun.simpleRun[Int, Int, Int](original,
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(fn)
       )
 
@@ -167,7 +150,7 @@ object StormLaws extends Specification {
     val fnB = sample[Int => List[(Int,Int)]]
 
     val returnedState =
-      runOnce(original)(
+      StormTestRun.simpleRun[Int, Int, Int](original,
         TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
       )
 
@@ -184,7 +167,7 @@ object StormLaws extends Specification {
     val fnB = sample[Int => List[(Int,Int)]]
 
     val returnedState =
-      runOnce(original)(
+      StormTestRun.simpleRun[Int, Int, Int](original,
         TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
       )
     Equiv[Map[Int, Int]].equiv(
@@ -200,7 +183,7 @@ object StormLaws extends Specification {
                           expander(x).flatMap{case (k, v) => List((k, v), (k, v), (k, v), (k, v), (k, v))}
                         }
     val returnedState =
-      runOnce(original)(
+      StormTestRun.simpleRun[Int, Int, Int](original,
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(expansionFunc)
       )
 
@@ -215,7 +198,7 @@ object StormLaws extends Specification {
     val fnA = sample[Int => List[(Int, Int)]]
     val fnB = sample[Int => List[Int]]
     val returnedState =
-      runOnce(original)(
+      StormTestRun.simpleRun[Int, Int, Int](original,
         TestGraphs.singleStepMapKeysJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
       )
 
@@ -229,7 +212,7 @@ object StormLaws extends Specification {
     val original = sample[List[Int]]
     val staticFunc = { i: Int => List((i -> i)) }
     val returnedState =
-      runOnce(original)(
+      StormTestRun.simpleRun[Int, Int, Int](original,
         TestGraphs.leftJoinJob[Storm, Int, Int, Int, Int, Int](_, service, _)(staticFunc)(nextFn)
       )
 
