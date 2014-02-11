@@ -220,7 +220,7 @@ object SummingbirdBuild extends Build {
     summingbirdBatch
   )
 
-  lazy val summingbirdStormTest = module("storm-tests").settings(
+  lazy val summingbirdStormTest = module("storm-test").settings(
     parallelExecution in Test := false,
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
