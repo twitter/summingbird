@@ -117,6 +117,7 @@ object SummingbirdBuild extends Build {
     summingbirdClient,
     summingbirdStorm,
     summingbirdScalding,
+    summingbirdScaldingTest,
     summingbirdBuilder,
     summingbirdChill,
     summingbirdExample
@@ -220,6 +221,22 @@ object SummingbirdBuild extends Build {
     summingbirdBatch
   )
 
+  lazy val summingbirdStormTest = module("storm-test").settings(
+    parallelExecution in Test := false,
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "storehaus-core" % storehausVersion,
+      "com.twitter" %% "storehaus-algebra" % storehausVersion,
+      "com.twitter" %% "tormenta-core" % tormentaVersion,
+      withCross("com.twitter" %% "util-core" % utilVersion),
+      "storm" % "storm" % "0.9.0-wip15" % "provided"
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdStorm
+  )
+
   lazy val summingbirdScalding = module("scalding").settings(
     libraryDependencies ++= Seq(
       "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
@@ -240,6 +257,17 @@ object SummingbirdBuild extends Build {
     summingbirdChill,
     summingbirdBatchHadoop,
     summingbirdBatch
+  )
+
+  lazy val summingbirdScaldingTest = module("scalding-test").settings(
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck" % "1.10.0"
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdChill,
+    summingbirdBatchHadoop,
+    summingbirdScalding
   )
 
   lazy val summingbirdBatchHadoop = module("batch-hadoop").settings(
