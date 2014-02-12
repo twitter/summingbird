@@ -41,4 +41,7 @@ class InitialBatchedStore[K,V](val firstNonZero: BatchID, override val proxy: Ba
     else if (exclusiveUB == firstNonZero) Right((firstNonZero.prev, Scalding.emptyFlowProducer[(K,V)]))
     else Left(List("Earliest batch set at :" + firstNonZero + " but tried to read: " + exclusiveUB))
   }
+
+  override def toString =
+    "InitialBatchedStore(firstNonZero=%s, proxyingFor=%s)".format(firstNonZero.toString, proxy.toString)
 }
