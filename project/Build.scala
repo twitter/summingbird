@@ -117,6 +117,7 @@ object SummingbirdBuild extends Build {
     summingbirdClient,
     summingbirdStorm,
     summingbirdScalding,
+    summingbirdScaldingTest,
     summingbirdBuilder,
     summingbirdChill,
     summingbirdExample
@@ -240,6 +241,17 @@ object SummingbirdBuild extends Build {
     summingbirdChill,
     summingbirdBatchHadoop,
     summingbirdBatch
+  )
+
+  lazy val summingbirdScaldingTest = module("scalding-test").settings(
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck" % "1.10.0"
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdChill,
+    summingbirdBatchHadoop,
+    summingbirdScalding
   )
 
   lazy val summingbirdBatchHadoop = module("batch-hadoop").settings(
