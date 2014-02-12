@@ -33,4 +33,6 @@ import com.twitter.scalding.{Mode, TypedPipe}
    override def readLast(exclusiveUB: BatchID, mode: Mode) = proxy.readLast(exclusiveUB, mode)
    override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit =
      proxy.writeLast(batchID, lastVals)(flowDef, mode)
+
+  override def toString = "ProxyBatchedStore(proxyingFor=%s)".format(proxy.toString)
  }
