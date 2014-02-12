@@ -19,29 +19,21 @@ package com.twitter.summingbird.scalding
 import com.twitter.algebird.monad._
 import com.twitter.summingbird.batch._
 
-import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
-import com.twitter.scalding.typed.TypedSink
 
-/** This is a test sink that assumes single threaded testing with
- * cascading local mode
- */
-class TestSink[T] extends Sink[T] {
-  private var data: Vector[(Timestamp, T)] = Vector.empty
-
-  def write(incoming: PipeFactory[T]): PipeFactory[T] =
-    // three functors deep:
-    incoming.map { state =>
-      state.map { reader =>
-        reader.map { timeItem =>
-          data = data :+ timeItem
-          timeItem
-        }
-      }
+// This is not really usable, just a mock that does the same state over and over
+class LoopState[T](init: T) extends WaitingState[T] { self =>
+  def begin = new PrepareState[T] {
+    def requested = self.init
+    def fail(err: Throwable) = {
+      println(err)
+      self
     }
-
-  def reset: Vector[(Timestamp, T)] = {
-    val oldData = data
-    data = Vector.empty
-    oldData
+    def willAccept(intr: T) = Right(new RunningState[T] {
+      def succeed = self
+      def fail(err: Throwable) = {
+        println(err)
+        self
+      }
+    })
   }
 }
