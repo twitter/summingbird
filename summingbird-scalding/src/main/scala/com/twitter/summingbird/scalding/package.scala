@@ -125,6 +125,7 @@ package object scalding {
 
   @deprecated("com.twitter.summingbird.scalding.service.UniqueKeyedService", "0.3.2")
   type UniqueKeyedService[K, V] = com.twitter.summingbird.scalding.service.UniqueKeyedService[K, V]
+  val UniqueKeyedService = com.twitter.summingbird.scalding.service.UniqueKeyedService
 
   @deprecated("com.twitter.summingbird.scalding.source.TimePathedSource", "0.3.2")
   val TimePathedSource = com.twitter.summingbird.scalding.source.TimePathedSource
