@@ -17,7 +17,7 @@ limitations under the License.
 package com.twitter.summingbird.batch
 
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection,
-  InclusiveLower, ExclusiveUpper, InclusiveUpper, ExclusiveLower }
+  InclusiveLower, ExclusiveUpper, InclusiveUpper, ExclusiveLower, Lower, Upper }
 
 import scala.collection.immutable.SortedSet
 import java.util.{ Comparator, Date }
@@ -159,6 +159,17 @@ trait Batcher extends Serializable {
 
   def toInterval(b: BatchID): Interval[Timestamp] =
     Intersection(InclusiveLower(earliestTimeOf(b)), ExclusiveUpper(earliestTimeOf(b.next)))
+
+  def toTimestamp(b: Interval[BatchID]): Interval[Timestamp] =
+    b match {
+      case Empty() => Empty[Timestamp]()
+      case Universe() => Universe[Timestamp]()
+      case ExclusiveUpper(upper) => ExclusiveUpper(earliestTimeOf(upper))
+      case InclusiveUpper(upper) => InclusiveUpper(latestTimeOf(upper))
+      case InclusiveLower(lower) => InclusiveLower(earliestTimeOf(lower))
+      case ExclusiveLower(lower) =>  ExclusiveLower(latestTimeOf(lower))
+      case Intersection(low, high) =>  toTimestamp(low) && toTimestamp(high)
+    }
 
   /** Returns the (inclusive) earliest time of the supplied batch. */
   def earliestTimeOf(batch: BatchID): Timestamp
