@@ -28,6 +28,7 @@ import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.option.{
   MaxWaitingFutures,
   MaxFutureWaitTime,
+  MaxEmitPerExecute,
   FlushFrequency
 }
 
@@ -44,12 +45,14 @@ class FinalFlatMap[Event, Key, Value, S, D](
   cacheBuilder: (Semigroup[(List[InputState[S]], Timestamp, Value)]) => AsyncCache[(Key, BatchID), (List[InputState[S]], Timestamp, Value)],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
+  maxEmitPerExec: MaxEmitPerExecute,
   pDecoder: Injection[(Timestamp, Event), D],
   pEncoder: Injection[(Timestamp, ((Key, BatchID), Value)), D]
   )
   (implicit monoid: Semigroup[Value], batcher: Batcher)
     extends AsyncBase[Event, ((Key, BatchID), Value), InputState[S], D](maxWaitingFutures,
-                                                          maxWaitingTime) {
+                                                          maxWaitingTime,
+                                                          maxEmitPerExec) {
   val encoder = pEncoder
   val decoder = pDecoder
 

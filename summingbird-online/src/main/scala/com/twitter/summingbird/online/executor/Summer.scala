@@ -57,12 +57,14 @@ class Summer[Key, Value: Semigroup, S, D](
   cacheBuilder: (Semigroup[(List[S], Timestamp, Value)]) => AsyncCache[(Key, BatchID), (List[S], Timestamp, Value)],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
+  maxEmitPerExec: MaxEmitPerExecute,
   includeSuccessHandler: IncludeSuccessHandler,
   pDecoder: Injection[(Timestamp, ((Key, BatchID), Value)), D],
   pEncoder: Injection[(Timestamp, (Key, (Option[Value], Value))), D]) extends
     AsyncBase[((Key, BatchID), Value), (Key, (Option[Value], Value)), S, D](
       maxWaitingFutures,
-      maxWaitingTime) {
+      maxWaitingTime,
+      maxEmitPerExec) {
 
   val encoder = pEncoder
   val decoder = pDecoder

@@ -18,14 +18,14 @@ package com.twitter.summingbird.online.executor
 
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.Queue
-import com.twitter.summingbird.online.option.{MaxWaitingFutures, MaxFutureWaitTime}
+import com.twitter.summingbird.online.option.{MaxWaitingFutures, MaxFutureWaitTime, MaxEmitPerExecute}
 import com.twitter.util.{Await, Duration, Future}
 import scala.util.{Try, Success, Failure}
 import java.util.concurrent.TimeoutException
 import org.slf4j.{LoggerFactory, Logger}
 
 
-abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime) extends Serializable with OperationContainer[I,O,S,D] {
+abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I,O,S,D] {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -104,6 +104,6 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
     // don't let too many futures build up
     forceExtraFutures
     // Take all results that have been placed for writing to the network
-    responses.toSeq
+    responses.take(maxEmitPerExec.get)
   }
 }

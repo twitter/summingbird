@@ -130,8 +130,15 @@ abstract class Queue[T] {
       case Some(it) => foldLeft(fn(init, it))(fn)
     }
 
-  /** Take all the items currently in the queue */
+
   def toSeq: Seq[T] = trimTo(0)
+
+
+  /** Take items currently in the queue up to the max sequence size we want to return
+      Due to threading/muliple readers/writers this will not be an exact size
+   */
+
+  def take(maxSeqSize: Int): Seq[T] = trimTo(Math.max(size - maxSeqSize, 0))
 
   /**
    * Take enough elements to get .size == maxLength
