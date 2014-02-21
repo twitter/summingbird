@@ -215,6 +215,10 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
     logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
 
+    val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
+    logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
+
+
     val bolt = summerOpt match {
       case Some(s) =>
         val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
@@ -244,6 +248,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
             cacheBuilder,
             maxWaiting,
             maxWaitTime,
+            maxEmitPerExecute,
             new SingleItemInjection[Any],
             new KeyValueInjection[(Any, BatchID), Any]
             )(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
@@ -259,6 +264,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
             operation,
             maxWaiting,
             maxWaitTime,
+            maxEmitPerExecute,
             new SingleItemInjection[Any],
             new SingleItemInjection[Any]
             )
@@ -325,6 +331,10 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
     logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
 
+
+    val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
+    logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
+
     val cacheBuilder = if(useAsyncCache.get) {
           val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
           logger.info("[{}] softMemoryFlush : {}", nodeName, softMemoryFlush.get)
@@ -353,6 +363,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               cacheBuilder,
               getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
+              maxEmitPerExecute,
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
               new KeyValueInjection[(K,BatchID), V],
               new SingleItemInjection[(K, (Option[V], V))])

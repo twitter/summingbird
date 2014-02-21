@@ -58,6 +58,12 @@ case class UseAsyncCache(get: Boolean)
 case class AsyncPoolSize(get: Int)
 
 /*
+  MaxEmitPerExecute controls the number of elements that can at once be emitted to the underlying platform.
+  Must be careful this is >> than your fan out or more tuples could be generated than are emitted.
+*/
+case class MaxEmitPerExecute(get: Int)
+
+/*
  SoftMemoryFlushPercent is the percentage of memory used in the JVM at which a flush will be triggered of the cache.
 */
 case class SoftMemoryFlushPercent(get: Float) {
