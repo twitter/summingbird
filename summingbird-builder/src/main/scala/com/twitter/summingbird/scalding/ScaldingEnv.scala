@@ -115,16 +115,6 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
 
     val scald = Scalding(name, opts)
         .withRegistrars(ajob.registrars ++ builder.registrar.getRegistrars.asScala)
-        .withConfigUpdater {
-          // Set these before the user settings, so that the user
-          // can change them if needed
-
-          // Make sure we use block compression from mappers to reducers
-          _.put("mapred.output.compression.type", "BLOCK")
-            .put("io.compression.codec.lzo.compression.level", "3")
-            .put("mapred.output.compress", "true")
-            .put("mapred.compress.map.output", "true")
-        }
         .withConfigUpdater{ c =>
           c.updated(ajob.transformConfig(c.toMap))
         }
