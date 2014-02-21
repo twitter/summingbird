@@ -131,6 +131,7 @@ abstract class Queue[T] {
     }
 
 
+  /** Take all the items currently in the queue */
   def toSeq: Seq[T] = trimTo(0)
 
 
