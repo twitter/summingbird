@@ -559,7 +559,19 @@ class Scalding(
   }
 
   private def setIoSerializations(c: Configuration): Unit =
-      c.set("io.serializations", ioSerializations.map { _.getName }.mkString(","))
+    c.set("io.serializations", ioSerializations.map { _.getName }.mkString(","))
+
+  private val HADOOP_DEFAULTS = Map(
+    ("mapred.output.compression.type", "BLOCK"),
+    ("io.compression.codec.lzo.compression.level", "3"),
+    ("mapred.output.compress", "true"),
+    ("mapred.compress.map.output", "true")
+  )
+
+  private def setHadoopConfigDefaults(c: Configuration): Unit =
+    HADOOP_DEFAULTS.foreach { case (k, v) =>
+      c.set(k, v)
+    }
 
   // This is a side-effect-free computation that is called by run
   def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Flow[_])] = {
@@ -588,6 +600,9 @@ class Scalding(
 
     mode match {
       case Hdfs(_, conf) =>
+        // Set these before the user settings, so that the user
+        // can change them if needed
+        setHadoopConfigDefaults(conf)
         updateConfig(conf)
         setIoSerializations(conf)
       case _ =>
