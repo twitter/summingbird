@@ -27,7 +27,7 @@ import com.twitter.bijection.{Base64String, Injection}
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.storehaus.{ReadableStore, WritableStore}
-import com.twitter.storehaus.algebra.MergeableStore
+import com.twitter.storehaus.algebra.{MergeableStore, Mergeable}
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
@@ -58,7 +58,7 @@ sealed trait StormStore[-K, V] {
 }
 
 object MergeableStoreSupplier {
-  def from[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+  def from[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier(() => store, batcher)
 
    def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreSupplier[K, V] = {
@@ -68,7 +68,7 @@ object MergeableStoreSupplier {
 }
 
 
-case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
+case class MergeableStoreSupplier[K, V](store: () => Mergeable[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
 trait StormService[-K, +V] {
   def store: StoreFactory[K, V]
@@ -99,7 +99,7 @@ object Storm {
   def onlineOnlyStore[K, V](store: => MergeableStore[K, V]): StormStore[K, V] =
     MergeableStoreSupplier.fromOnlineOnly(store)
 
-  def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
+  def store[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
     MergeableStoreSupplier.from(store)
 
   def service[K, V](serv: => ReadableStore[K, V]): StormService[K, V] = StoreWrapper(() => serv)

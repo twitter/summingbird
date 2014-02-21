@@ -18,7 +18,7 @@ package com.twitter.summingbird.online.executor
 
 import com.twitter.util.{Await, Future}
 import com.twitter.algebird.{Semigroup, SummingQueue}
-import com.twitter.storehaus.algebra.MergeableStore
+import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.bijection.Injection
 
 import com.twitter.summingbird.online.{Externalizer, AsyncCache}
@@ -51,7 +51,7 @@ import com.twitter.summingbird.option.CacheSize
   */
 
 class Summer[Key, Value: Semigroup, S, D](
-  @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
+  @transient storeSupplier: () => Mergeable[(Key,BatchID), Value],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
   cacheBuilder: (Semigroup[(List[S], Timestamp, Value)]) => AsyncCache[(Key, BatchID), (List[S], Timestamp, Value)],
