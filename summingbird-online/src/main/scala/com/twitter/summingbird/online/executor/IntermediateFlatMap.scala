@@ -36,7 +36,7 @@ class IntermediateFlatMap[T,U,S,D](
   maxEmitPerExec: MaxEmitPerExecute,
   pDecoder: Injection[(Timestamp, T), D],
   pEncoder: Injection[(Timestamp, U), D]
-  ) extends AsyncBase[T,U,S,D](maxWaitingFutures, maxWaitingTime, maxEmitPerExec) {
+  ) extends AsyncBase[(Timestamp, T), (Timestamp, U), S, D](maxWaitingFutures, maxWaitingTime, maxEmitPerExec) {
 
   val encoder = pEncoder
   val decoder = pDecoder

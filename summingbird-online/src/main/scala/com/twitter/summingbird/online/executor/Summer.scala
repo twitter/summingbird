@@ -59,9 +59,9 @@ class Summer[Key, Value: Semigroup, S, D](
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
   includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: Injection[(Timestamp, ((Key, BatchID), Value)), D],
+  pDecoder: Injection[((Key, BatchID), (Timestamp, Value)), D],
   pEncoder: Injection[(Timestamp, (Key, (Option[Value], Value))), D]) extends
-    AsyncBase[((Key, BatchID), Value), (Key, (Option[Value], Value)), S, D](
+    AsyncBase[((Key, BatchID), (Timestamp, Value)), (Timestamp, (Key, (Option[Value], Value))), S, D](
       maxWaitingFutures,
       maxWaitingTime,
       maxEmitPerExec) {
@@ -104,8 +104,8 @@ class Summer[Key, Value: Semigroup, S, D](
   override def tick = sCache.tick.map(handleResult(_))
 
   override def apply(state: S,
-                     tsIn: (Timestamp, ((Key, BatchID), Value))) = {
-    val (ts, (kb, v)) = tsIn
+                     tsIn: ((Key, BatchID), (Timestamp, Value))) = {
+    val (kb, (ts, v)) = tsIn
     sCache.insert(List(kb -> (List(state), ts, v))).map(handleResult(_))
   }
 

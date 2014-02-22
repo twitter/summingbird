@@ -249,8 +249,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
             maxWaiting,
             maxWaitTime,
             maxEmitPerExecute,
-            new SingleItemInjection[Any],
-            new KeyValueInjection[(Any, BatchID), Any]
+            new SingleItemInjection[(Timestamp, Any)],
+            new KeyValueInjection[(Any, BatchID), (Timestamp, Any)]
             )(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
             )
       case None =>
@@ -265,8 +265,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
             maxWaiting,
             maxWaitTime,
             maxEmitPerExecute,
-            new SingleItemInjection[Any],
-            new SingleItemInjection[Any]
+            new SingleItemInjection[(Timestamp, Any)],
+            new SingleItemInjection[(Timestamp, Any)]
             )
           )
     }
@@ -365,8 +365,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
               maxEmitPerExecute,
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
-              new KeyValueInjection[(K,BatchID), V],
-              new SingleItemInjection[(K, (Option[V], V))])
+              new KeyValueInjection[(K, BatchID), (Timestamp, V)],
+              new SingleItemInjection[(Timestamp, (K, (Option[V], V)))])
         )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint

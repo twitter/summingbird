@@ -21,12 +21,12 @@ import com.twitter.bijection.Injection
 import com.twitter.summingbird.batch.Timestamp
 
 trait OperationContainer[Input, Output, State, WireFmt] {
-  def decoder: Injection[(Timestamp, Input), WireFmt]
-  def encoder: Injection[(Timestamp, Output), WireFmt]
-  def executeTick: TraversableOnce[(List[State], Try[TraversableOnce[(Timestamp, Output)]])]
+  def decoder: Injection[Input, WireFmt]
+  def encoder: Injection[Output, WireFmt]
+  def executeTick: TraversableOnce[(List[State], Try[TraversableOnce[Output]])]
   def execute(state: State,
-              data: (Timestamp, Input)):
-               TraversableOnce[(List[State], Try[TraversableOnce[(Timestamp, Output)]])]
+              data: Input):
+               TraversableOnce[(List[State], Try[TraversableOnce[Output]])]
   def init {}
   def cleanup {}
   def notifyFailure(inputs: List[State], e: Throwable) {}

@@ -47,10 +47,10 @@ class FinalFlatMap[Event, Key, Value, S, D](
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
   pDecoder: Injection[(Timestamp, Event), D],
-  pEncoder: Injection[(Timestamp, ((Key, BatchID), Value)), D]
+  pEncoder: Injection[((Key, BatchID), (Timestamp, Value)), D]
   )
   (implicit monoid: Semigroup[Value], batcher: Batcher)
-    extends AsyncBase[Event, ((Key, BatchID), Value), InputState[S], D](maxWaitingFutures,
+    extends AsyncBase[(Timestamp, Event), ((Key, BatchID), (Timestamp, Value)), InputState[S], D](maxWaitingFutures,
                                                           maxWaitingTime,
                                                           maxEmitPerExec) {
   val encoder = pEncoder
@@ -62,19 +62,19 @@ class FinalFlatMap[Event, Key, Value, S, D](
 
 
   private def formatResult(outData: Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)])
-                        : Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
+                        : Iterable[(List[InputState[S]], Future[TraversableOnce[((Key, BatchID), (Timestamp, Value))]])] = {
     outData.toList.map{ case ((key, batchID), (tupList, ts, value)) =>
-      (tupList, Future.value(List((ts, ((key, batchID), value)))))
+      (tupList, Future.value(List(((key, batchID), (ts, value)))))
     }
   }
 
-  override def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
+  override def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[((Key, BatchID), (Timestamp, Value))]])]] = {
     sCache.tick.map(formatResult(_))
   }
 
   def cache(state: InputState[S],
             time: Timestamp,
-            items: TraversableOnce[(Key, Value)]): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
+            items: TraversableOnce[(Key, Value)]): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[((Key, BatchID), (Timestamp, Value))]])]] = {
 
     val batchID = batcher.batchOf(time)
     val itemL = items.toList
