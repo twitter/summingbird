@@ -30,7 +30,7 @@ object StripNamedNode {
   def castToKeyed[P <: Platform[P]](node: Producer[P, Any]): KeyedProducer[P, Any, Any] = node.asInstanceOf[KeyedProducer[P, Any, Any]]
 
   def processLevel[P <: Platform[P]](optLast: Option[Producer[P, Any]],
-                  l: List[ProducerF[P]],
+                  l: TraversableOnce[ProducerF[P]],
                   m: Map[Producer[P, Any], Producer[P, Any]],
                   op: PartialFunction[Producer[P, Any], Option[Producer[P, Any]]]): (Option[Producer[P, Any]], Map[Producer[P, Any], Producer[P, Any]]) = {
     l.foldLeft((optLast, m)){ case ((nOptLast, nm), pp) =>
@@ -126,16 +126,19 @@ object StripNamedNode {
     }
   }
 
-  def toFunctional[P <: Platform[P]](tail: Producer[P, Any]) = {
-    val depthInfo = graph.dagDepth(Producer.entireGraphOf(tail))(Producer.parentsOf(_))
+  def toFunctional[P <: Platform[P]](tail: Producer[P, Any]) =
+    graph
+    .dagDepth(Producer.entireGraphOf(tail))(Producer.parentsOf(_))
+    .toSeq
+    .groupBy(_._2)
+    .mapValues(_.map(_._1))
+    .mapValues(_.map(functionize(_)))
+    .toSeq
 
-    val reversedGraph = depthInfo.toList.groupBy(_._2).mapValues(_.map(_._1))
-    reversedGraph.mapValues(_.map(functionize(_)))
-  }
 
   def mutateGraph[P <: Platform[P]](tail: Producer[P, Any], op: PartialFunction[Producer[P, Any], Option[Producer[P, Any]]]) = {
     val newT: Option[Producer[P, Any]] = None
-    val x = toFunctional(tail).toList.sortBy(_._1)
+    val x = toFunctional(tail).sortBy(_._1)
     x.map(_._2).foldLeft((newT, Map[Producer[P, Any], Producer[P, Any]]())) { case ((optLast, curMap), v) =>
       processLevel(optLast, v, curMap, op)
     }
