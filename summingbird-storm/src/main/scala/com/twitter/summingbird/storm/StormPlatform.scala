@@ -351,23 +351,28 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     implicit val batcher = summer.store.batcher
     val nodeName = stormDag.getNodeName(node)
 
+    type ExecutorKeyType = (K, BatchID)
+    type ExecutorValueType = (Timestamp, V)
+    type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
+
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
     type ExecutorKeyType = (K, BatchID)
     type ExecutorValueType = (Timestamp, V)
 
-    def wrapMergable(supplier: () => Mergeable[ExecutorKeyType, V]): () => Mergeable[ExecutorKeyType, ExecutorValueType] =
+    def wrapMergable(supplier: () => Mergeable[ExecutorKeyType, V]) =
         () => {
           new Mergeable[ExecutorKeyType, ExecutorValueType] {
-            val store = supplier()
-            implicit val innerSG = store.semigroup
+            val innerMergable: Mergeable[ExecutorKeyType, V] = supplier()
+            implicit val innerSG = innerMergable.semigroup
             val semigroup = implicitly[Semigroup[ExecutorValueType]]
-            override def close(time: Time) = store.close(time)
+
+            override def close(time: Time) = innerMergable.close(time)
 
             override def multiMerge[K1 <: ExecutorKeyType](kvs: Map[K1, ExecutorValueType]): Map[K1, Future[Option[ExecutorValueType]]] =
-                store.multiMerge(kvs.mapValues(_._2)).map { case (k, futOpt) =>
-                  (k, futOpt.map{ opt =>
+                innerMergable.multiMerge(kvs.mapValues(_._2)).map { case (k, futOpt) =>
+                  (k, futOpt.map { opt =>
                     opt.map { v =>
                       (kvs(k)._1, v)
                     }
@@ -398,13 +403,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
     logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
 
-    val storeBaseFMOp = { op: ((K, BatchID), (Option[(Timestamp, V)], (Timestamp, V))) =>
+    val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
         val ((k, batchID), (optiVWithTS, (ts, v))) = op
         val optiV = optiVWithTS.map(_._2)
         List((ts, (k, (optiV, v))))
     }
 
-    val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), (Timestamp, Any)] = FlatMapOperation.apply(storeBaseFMOp)
+    val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] = FlatMapOperation.apply(storeBaseFMOp)
 
     val cacheBuilder = if(useAsyncCache.get) {
           val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
@@ -438,7 +443,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               maxEmitPerExecute,
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
               new KeyValueInjection[Int, List[(ExecutorKeyType, ExecutorValueType)]],
-              new SingleItemInjection[Any])
+              new SingleItemInjection[ExecutorOutputType])
         )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint
