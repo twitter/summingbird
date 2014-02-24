@@ -43,7 +43,7 @@ import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
-import com.twitter.util.Future
+import com.twitter.util.{Future, Time}
 import scala.annotation.tailrec
 import backtype.storm.tuple.Values
 import org.slf4j.LoggerFactory
