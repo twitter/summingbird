@@ -74,3 +74,9 @@ case class SoftMemoryFlushPercent(get: Float) {
   ValueCombinerCacheSize is used in cache's that support it as a trigger to crush down a high locality of values without emitting
 */
 case class ValueCombinerCacheSize(get: Int)
+
+/*
+  When going between flatmap's and summers we can batch into bigger groups to not overwhelm underlying platforms
+  this controls what multiplication of the number of summers we want to partition this space into
+*/
+case class SummerShardMultiplier(get: Int)

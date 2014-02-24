@@ -25,8 +25,6 @@ import com.twitter.summingbird.online.{FlatMapOperation, Externalizer, AsyncCach
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
-
-
 /**
   * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
   * CacheSize sets the number of key-value pairs that the SinkBolt will accept
@@ -54,14 +52,14 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
-  cacheBuilder: (Semigroup[(List[S], Value)]) => AsyncCache[Key, (List[S], Value)],
+  cacheBuilder: (Semigroup[(List[InputState[S]], Value)]) => AsyncCache[Key, (List[InputState[S]], Value)],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
   includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: Injection[(Key, Value), D],
+  pDecoder: Injection[(Int, List[(Key, Value)]), D],
   pEncoder: Injection[Event, D]) extends
-    AsyncBase[(Key, Value), Event, S, D](
+    AsyncBase[(Int, List[(Key, Value)]), Event, InputState[S], D](
       maxWaitingFutures,
       maxWaitingTime,
       maxEmitPerExec) {
@@ -74,7 +72,7 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   lazy val store = storeBox.get.apply
 
   // See MaxWaitingFutures for a todo around removing this.
-  lazy val sCache: AsyncCache[Key, (List[S], Value)] = cacheBuilder(implicitly[Semigroup[(List[S], Value)]])
+  lazy val sCache: AsyncCache[Key, (List[InputState[S]], Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Value)]])
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
@@ -86,29 +84,32 @@ class Summer[Key, Value: Semigroup, Event, S, D](
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  override def notifyFailure(inputs: List[S], error: Throwable): Unit = {
+  override def notifyFailure(inputs: List[InputState[S]], error: Throwable): Unit = {
     super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
   }
 
-  private def handleResult(kvs: Map[Key, (List[S], Value)])
-                        : Iterable[(List[S], Future[TraversableOnce[Event]])] = {
-    store.multiMerge(kvs.mapValues(_._2)).map{ case (innerKb, beforeF) =>
-      val (tups, delta) = kvs(innerKb)
-      val (k, _) = innerKb
+  private def handleResult(kvs: Map[Key, (List[InputState[S]], Value)])
+                        : Iterable[(List[InputState[S]], Future[TraversableOnce[Event]])] = {
+    store.multiMerge(kvs.mapValues(_._2)).toList.map{ case (key, beforeF) =>
+      val (tups, delta) = kvs(key)
       (tups, beforeF.flatMap { before =>
-        lockedOp.get.apply((k.asInstanceOf[Key], (before, delta)))
-      }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
-    }
+        lockedOp.get.apply((key.asInstanceOf[Key], (before, delta)))
+      }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )    }
     .toList // force, but order does not matter, so we could optimize this
   }
 
   override def tick = sCache.tick.map(handleResult(_))
 
-  override def apply(state: S,
-                     tup: (Key, Value)) = {
-    val (k, v) = tup
-    sCache.insert(List(k -> (List(state), v))).map(handleResult(_))
+  override def apply(state: InputState[S],
+                     tupList: (Int, List[(Key, Value)])) = {
+    val (_, innerTuples) = tupList
+    state.fanOut(innerTuples.size - 1) // Since input state starts at a 1
+    val cacheEntries = innerTuples.map { case (k, v) =>
+      (k, (List(state), v))
+    }
+
+    sCache.insert(cacheEntries).map(handleResult(_))
   }
 
   override def cleanup { Await.result(store.close) }

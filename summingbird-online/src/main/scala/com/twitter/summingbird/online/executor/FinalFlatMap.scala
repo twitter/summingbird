@@ -39,45 +39,71 @@ import com.twitter.summingbird.online.option.{
  * @author Ian O Connell
  */
 
-class FinalFlatMap[Event, Key, Value, S, D](
+case class KeyValueShards(get: Int)
+
+class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
-  cacheBuilder: (Semigroup[(List[InputState[S]], Value)]) => AsyncCache[Key, (List[InputState[S]], Value)],
+  cacheBuilder: (Semigroup[(List[InputState[S]], Map[Key, Value])]) => AsyncCache[Int, (List[InputState[S]], Map[Key, Value])],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
+  summerShards: KeyValueShards,
   pDecoder: Injection[Event, D],
-  pEncoder: Injection[(Key, Value), D]
+  pEncoder: Injection[(Int, List[(Key, Value)]), D]
   )
-  (implicit monoid: Semigroup[Value])
-    extends AsyncBase[Event, (Key, Value), InputState[S], D](maxWaitingFutures,
+    extends AsyncBase[Event, (Int, List[(Key, Value)]), InputState[S], D](maxWaitingFutures,
                                                           maxWaitingTime,
                                                           maxEmitPerExec) {
+
+  type InS = InputState[S]
+  type OutputElement = (Int, List[(Key, Value)])
+
   val encoder = pEncoder
   val decoder = pDecoder
 
   val lockedOp = Externalizer(flatMapOp)
+  val sg = new Semigroup[(List[InS], Map[Key, Value])] {
+    type InLists = (List[InS], Map[Key, Value])
+    def plus(a: InLists, b: InLists): InLists = {
+      val tups = a._1 ++ b._1
+      (tups, Semigroup.plus(a._2, b._2))
+    }
 
-  lazy val sCache: AsyncCache[Key, (List[InputState[S]], Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Value)]])
-
-
-  private def formatResult(outData: Map[Key, (List[InputState[S]], Value)])
-                        : Iterable[(List[InputState[S]], Future[TraversableOnce[(Key, Value)]])] = {
-    outData.toList.map{ case (key, (tupList, value)) =>
-      (tupList, Future.value(List((key, value))))
+    override def sumOption(iter: TraversableOnce[InLists]): Option[InLists] = {
+      val seqV = iter.toSeq
+      for {
+        a <- Semigroup.sumOption(seqV.map(_._1))
+        b <- Semigroup.sumOption(seqV.map(_._2))
+      } yield (a, b)
     }
   }
 
-  override def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Key, Value)]])]] = {
+  lazy val sCache = cacheBuilder(sg)
+
+  private def formatResult(outData: Map[Int, (List[InputState[S]], Map[Key, Value])])
+                        : TraversableOnce[(List[InputState[S]], Future[TraversableOnce[OutputElement]])] = {
+    outData.iterator.map { case (outerKey, (tupList, valList)) =>
+      if(valList.isEmpty) {
+        (tupList, Future.value(Nil))
+      } else {
+        (tupList, Future.value(List((outerKey, valList.toList))))
+      }
+    }
+  }
+
+  override def tick: Future[TraversableOnce[(List[InputState[S]], Future[TraversableOnce[OutputElement]])]] = {
     sCache.tick.map(formatResult(_))
   }
 
   def cache(state: InputState[S],
-            items: TraversableOnce[(Key, Value)]): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Key, Value)]])]] = {
+            items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(List[InputState[S]], Future[TraversableOnce[OutputElement]])]] = {
 
     val itemL = items.toList
     if(itemL.size > 0) {
       state.fanOut(itemL.size - 1) // Since input state starts at a 1
-      sCache.insert(itemL.map{case (k, v) => k -> (List(state), v)}).map(formatResult(_))
+      sCache.insert(itemL.map{case (k, v) =>
+        (k.hashCode % summerShards.get) -> (List(state), Map(k -> v))
+      }).map(formatResult(_))
     }
     else { // Here we handle mapping to nothing, option map et. al
         Future.value(

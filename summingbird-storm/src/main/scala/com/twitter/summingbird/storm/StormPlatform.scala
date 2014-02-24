@@ -232,9 +232,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
           logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
 
-          MultiTriggerCache.builder[Any, (List[InputState[Tuple]], Any)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
+          MultiTriggerCache.builder[Int, (List[InputState[Tuple]], Map[Any, Any])](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
         } else {
-          SummingQueueCache.builder[Any, (List[InputState[Tuple]], Any)](cacheSize, flushFrequency)
+          SummingQueueCache.builder[Int, (List[InputState[Tuple]], Map[Any, Any])](cacheSize, flushFrequency)
         }
 
 
@@ -257,6 +257,12 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
         val semigroup = getSG(summerProducer.monoid.asInstanceOf[Monoid[Any]])
 
+        val summerShardMultiplier = getOrElse(stormDag, node, DEFAULT_SUMMER_SHARD_MULTIPLIER)
+        logger.info("[{}] summerShardMultiplier : {}", nodeName, summerShardMultiplier.get)
+
+        val summerParalellism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM)
+        val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerShardMultiplier.get)
+
         BaseBolt(
           metrics.metrics,
           anchorTuples,
@@ -269,8 +275,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
             maxWaiting,
             maxWaitTime,
             maxEmitPerExecute,
+            keyValueShards,
             new SingleItemInjection[Any],
-            new KeyValueInjection[Any, Any]
+            new KeyValueInjection[Int, List[(Any, Any)]]
             )(semigroup.asInstanceOf[Semigroup[Any]])
           )
       case None =>
@@ -339,19 +346,22 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   private def scheduleSummerBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val monoid = summer.monoid
+    implicit val batcher = summer.store.batcher
     val nodeName = stormDag.getNodeName(node)
 
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
+    type ExecutorKeyType = (K, BatchID)
+    type ExecutorValueType = (Timestamp, V)
 
-    def wrapMergable[K, V](supplier: () => Mergeable[(K, BatchID), V]) =
+    def wrapMergable(supplier: () => Mergeable[ExecutorKeyType, V]): () => Mergeable[ExecutorKeyType, ExecutorValueType] =
         () => {
-          new Mergeable[(K, BatchID), (Timestamp, V)] {
+          new Mergeable[ExecutorKeyType, ExecutorValueType] {
             val store = supplier()
             implicit val innerSG = store.semigroup
-            val semigroup = implicitly[Semigroup[(Timestamp, V)]]
-            override def multiMerge[K1 <: (K, BatchID)](kvs: Map[K1, (Timestamp, V)]): Map[K1, Future[Option[(Timestamp, V)]]] =
+            val semigroup = implicitly[Semigroup[ExecutorValueType]]
+            override def multiMerge[K1 <: ExecutorKeyType](kvs: Map[K1, ExecutorValueType]): Map[K1, Future[Option[ExecutorValueType]]] =
                 store.multiMerge(kvs.mapValues(_._2)).map { case (k, futOpt) =>
                   (k, futOpt.map{ opt =>
                     opt.map { v =>
@@ -390,7 +400,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         List((ts, (k, (optiV, v))))
     }
 
-    val flatmapOp: FlatMapOperation[((K, BatchID), (Option[(Timestamp, V)], (Timestamp, V))), (Timestamp, Any)] = FlatMapOperation.apply(storeBaseFMOp)
+    val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), (Timestamp, Any)] = FlatMapOperation.apply(storeBaseFMOp)
 
     val cacheBuilder = if(useAsyncCache.get) {
           val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
@@ -402,9 +412,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
           logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
 
-          MultiTriggerCache.builder[(K, BatchID), (List[InputState[Tuple]], (Timestamp, V))](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
+          MultiTriggerCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
         } else {
-          SummingQueueCache.builder[(K, BatchID), (List[InputState[Tuple]], (Timestamp, V))](cacheSize, flushFrequency)
+          SummingQueueCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, flushFrequency)
         }
 
     val sinkBolt = BaseBolt(
@@ -413,7 +423,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           shouldEmit,
           new Fields(VALUE_FIELD),
           ackOnEntry,
-          new executor.Summer(
+          new executor.Summer (
               wrappedStore,
               flatmapOp,
               getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
@@ -423,8 +433,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
               maxEmitPerExecute,
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
-              new KeyValueInjection[(K, BatchID), (Timestamp, V)],
-              new SingleItemInjection[(Timestamp, Any)])
+              new KeyValueInjection[Int, List[(ExecutorKeyType, ExecutorValueType)]],
+              new SingleItemInjection[Any])
         )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint
