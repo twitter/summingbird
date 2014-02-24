@@ -21,7 +21,6 @@ import com.twitter.bijection.Injection
 import com.twitter.util.Future
 
 import com.twitter.summingbird.online.Externalizer
-import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
 
 import com.twitter.summingbird.online.{FlatMapOperation, AsyncCache}
 import com.twitter.summingbird.option.CacheSize
@@ -42,15 +41,15 @@ import com.twitter.summingbird.online.option.{
 
 class FinalFlatMap[Event, Key, Value, S, D](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
-  cacheBuilder: (Semigroup[(List[InputState[S]], Timestamp, Value)]) => AsyncCache[(Key, BatchID), (List[InputState[S]], Timestamp, Value)],
+  cacheBuilder: (Semigroup[(List[InputState[S]], Value)]) => AsyncCache[Key, (List[InputState[S]], Value)],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
-  pDecoder: Injection[(Timestamp, Event), D],
-  pEncoder: Injection[((Key, BatchID), (Timestamp, Value)), D]
+  pDecoder: Injection[Event, D],
+  pEncoder: Injection[(Key, Value), D]
   )
-  (implicit monoid: Semigroup[Value], batcher: Batcher)
-    extends AsyncBase[(Timestamp, Event), ((Key, BatchID), (Timestamp, Value)), InputState[S], D](maxWaitingFutures,
+  (implicit monoid: Semigroup[Value])
+    extends AsyncBase[Event, (Key, Value), InputState[S], D](maxWaitingFutures,
                                                           maxWaitingTime,
                                                           maxEmitPerExec) {
   val encoder = pEncoder
@@ -58,30 +57,27 @@ class FinalFlatMap[Event, Key, Value, S, D](
 
   val lockedOp = Externalizer(flatMapOp)
 
-  lazy val sCache: AsyncCache[(Key, BatchID), (List[InputState[S]], Timestamp, Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Timestamp, Value)]])
+  lazy val sCache: AsyncCache[Key, (List[InputState[S]], Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Value)]])
 
 
-  private def formatResult(outData: Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)])
-                        : Iterable[(List[InputState[S]], Future[TraversableOnce[((Key, BatchID), (Timestamp, Value))]])] = {
-    outData.toList.map{ case ((key, batchID), (tupList, ts, value)) =>
-      (tupList, Future.value(List(((key, batchID), (ts, value)))))
+  private def formatResult(outData: Map[Key, (List[InputState[S]], Value)])
+                        : Iterable[(List[InputState[S]], Future[TraversableOnce[(Key, Value)]])] = {
+    outData.toList.map{ case (key, (tupList, value)) =>
+      (tupList, Future.value(List((key, value))))
     }
   }
 
-  override def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[((Key, BatchID), (Timestamp, Value))]])]] = {
+  override def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Key, Value)]])]] = {
     sCache.tick.map(formatResult(_))
   }
 
   def cache(state: InputState[S],
-            time: Timestamp,
-            items: TraversableOnce[(Key, Value)]): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[((Key, BatchID), (Timestamp, Value))]])]] = {
+            items: TraversableOnce[(Key, Value)]): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Key, Value)]])]] = {
 
-    val batchID = batcher.batchOf(time)
     val itemL = items.toList
     if(itemL.size > 0) {
       state.fanOut(itemL.size - 1) // Since input state starts at a 1
-
-      sCache.insert(itemL.map{case (k, v) => (k, batchID) -> (List(state), time, v)}).map(formatResult(_))
+      sCache.insert(itemL.map{case (k, v) => k -> (List(state), v)}).map(formatResult(_))
     }
     else { // Here we handle mapping to nothing, option map et. al
         Future.value(
@@ -93,8 +89,8 @@ class FinalFlatMap[Event, Key, Value, S, D](
   }
 
   override def apply(state: InputState[S],
-                     timeIn: (Timestamp, Event)) =
-    lockedOp.get.apply(timeIn._2).map { cache(state, timeIn._1, _) }.flatten
+                     tup: Event) =
+    lockedOp.get.apply(tup).map { cache(state, _) }.flatten
 
   override def cleanup {
     lockedOp.get.close
