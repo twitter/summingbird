@@ -341,22 +341,26 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     implicit val monoid = summer.monoid
     val nodeName = stormDag.getNodeName(node)
 
+    type ExecutorKeyType = (K, BatchID)
+    type ExecutorValueType = (Timestamp, V)
+    type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
+
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
 
-    def wrapMergable[K, V](supplier: () => Mergeable[(K, BatchID), V]) =
+    def wrapMergable(supplier: () => Mergeable[ExecutorKeyType, V]) =
         () => {
-          new Mergeable[(K, BatchID), (Timestamp, V)] {
-            val store = supplier()
-            implicit val innerSG = store.semigroup
-            val semigroup = implicitly[Semigroup[(Timestamp, V)]]
+          new Mergeable[ExecutorKeyType, ExecutorValueType] {
+            val innerMergable: Mergeable[ExecutorKeyType, V] = supplier()
+            implicit val innerSG = innerMergable.semigroup
+            val semigroup = implicitly[Semigroup[ExecutorValueType]]
 
-            override def close(time: Time) = store.close(time)
+            override def close(time: Time) = innerMergable.close(time)
 
-            override def multiMerge[K1 <: (K, BatchID)](kvs: Map[K1, (Timestamp, V)]): Map[K1, Future[Option[(Timestamp, V)]]] =
-                store.multiMerge(kvs.mapValues(_._2)).map { case (k, futOpt) =>
-                  (k, futOpt.map{ opt =>
+            override def multiMerge[K1 <: ExecutorKeyType](kvs: Map[K1, ExecutorValueType]): Map[K1, Future[Option[ExecutorValueType]]] =
+                innerMergable.multiMerge(kvs.mapValues(_._2)).map { case (k, futOpt) =>
+                  (k, futOpt.map { opt =>
                     opt.map { v =>
                       (kvs(k)._1, v)
                     }
@@ -387,13 +391,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
     logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
 
-    val storeBaseFMOp = { op: ((K, BatchID), (Option[(Timestamp, V)], (Timestamp, V))) =>
+    val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
         val ((k, batchID), (optiVWithTS, (ts, v))) = op
         val optiV = optiVWithTS.map(_._2)
         List((ts, (k, (optiV, v))))
     }
 
-    val flatmapOp: FlatMapOperation[((K, BatchID), (Option[(Timestamp, V)], (Timestamp, V))), (Timestamp, Any)] = FlatMapOperation.apply(storeBaseFMOp)
+    val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] = FlatMapOperation.apply(storeBaseFMOp)
 
     val cacheBuilder = if(useAsyncCache.get) {
           val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
@@ -405,9 +409,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
           logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
 
-          MultiTriggerCache.builder[(K, BatchID), (List[InputState[Tuple]], (Timestamp, V))](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
+          MultiTriggerCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
         } else {
-          SummingQueueCache.builder[(K, BatchID), (List[InputState[Tuple]], (Timestamp, V))](cacheSize, flushFrequency)
+          SummingQueueCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, flushFrequency)
         }
 
     val sinkBolt = BaseBolt(
@@ -426,8 +430,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
               maxEmitPerExecute,
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
-              new KeyValueInjection[(K, BatchID), (Timestamp, V)],
-              new SingleItemInjection[(Timestamp, Any)])
+              new KeyValueInjection[ExecutorKeyType, ExecutorValueType],
+              new SingleItemInjection[ExecutorOutputType])
         )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint
