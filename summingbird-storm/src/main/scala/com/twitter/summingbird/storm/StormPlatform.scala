@@ -358,8 +358,6 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
-    type ExecutorKeyType = (K, BatchID)
-    type ExecutorValueType = (Timestamp, V)
 
     def wrapMergable(supplier: () => Mergeable[ExecutorKeyType, V]) =
         () => {
