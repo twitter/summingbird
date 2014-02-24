@@ -259,7 +259,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         val monoid = new Semigroup[(Timestamp, Any)] {
             lazy val tsSG = implicitly[Semigroup[Timestamp]]
             def plus(a: (Timestamp, Any), b: (Timestamp, Any)) =
-                (tsSG.plus(a._1, b._1), userMonoid.plus(a._2, b._2))
+                (tsSG.plus(a._1, b._1), valueMonoid.plus(a._2, b._2))
         }
 
         BaseBolt(
