@@ -263,6 +263,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         val summerParalellism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM)
         val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerShardMultiplier.get)
 
+        logger.info("[{}] keyValueShards : {}", nodeName, keyValueShards.get)
+
         BaseBolt(
           metrics.metrics,
           anchorTuples,
