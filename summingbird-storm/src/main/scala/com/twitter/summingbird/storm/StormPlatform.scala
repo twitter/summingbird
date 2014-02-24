@@ -43,7 +43,7 @@ import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
-import com.twitter.util.Future
+import com.twitter.util.{Future, Time}
 import scala.annotation.tailrec
 import backtype.storm.tuple.Values
 import org.slf4j.LoggerFactory
@@ -361,6 +361,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
             val store = supplier()
             implicit val innerSG = store.semigroup
             val semigroup = implicitly[Semigroup[ExecutorValueType]]
+            override def close(time: Time) = store.close(time)
+
             override def multiMerge[K1 <: ExecutorKeyType](kvs: Map[K1, ExecutorValueType]): Map[K1, Future[Option[ExecutorValueType]]] =
                 store.multiMerge(kvs.mapValues(_._2)).map { case (k, futOpt) =>
                   (k, futOpt.map{ opt =>
