@@ -351,6 +351,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
             val store = supplier()
             implicit val innerSG = store.semigroup
             val semigroup = implicitly[Semigroup[(Timestamp, V)]]
+
+            override def close(time: Time) = store.close(time)
+
             override def multiMerge[K1 <: (K, BatchID)](kvs: Map[K1, (Timestamp, V)]): Map[K1, Future[Option[(Timestamp, V)]]] =
                 store.multiMerge(kvs.mapValues(_._2)).map { case (k, futOpt) =>
                   (k, futOpt.map{ opt =>
