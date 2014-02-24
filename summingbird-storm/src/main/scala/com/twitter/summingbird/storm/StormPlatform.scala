@@ -232,9 +232,34 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
           logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
 
-          MultiTriggerCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
+          MultiTriggerCache.builder[Any, (List[InputState[Tuple]], Any)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
         } else {
-          SummingQueueCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency)
+          SummingQueueCache.builder[Any, (List[InputState[Tuple]], Any)](cacheSize, flushFrequency)
+        }
+
+
+        // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
+        // The monoid we use in aggregation is timestamp max.
+        def wrapTimeKV(existingOp: FlatMapOperation[Any, (Any, Any)]): FlatMapOperation[(Timestamp, Any), (Any, (Timestamp, Any))] = {
+          val batcher = summerProducer.store.batcher
+          FlatMapOperation.generic({case (ts: Timestamp, data: Any) =>
+              existingOp.apply(data).map { vals =>
+                vals.map{ tup =>
+                  ((tup._1, batcher.batchOf(ts)), (ts, tup._2))
+                }
+              }
+          })
+        }
+
+        val wrappedOperation = wrapTimeKV(operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]])
+
+        val valueMonoid = summerProducer.monoid.asInstanceOf[Monoid[Any]]
+        // Since we have stripped the type off the value
+        // we explictly create the monoid for (the timestamp, value) tuple
+        val monoid = new Semigroup[(Timestamp, Any)] {
+            lazy val tsSG = implicitly[Semigroup[Timestamp]]
+            def plus(a: (Timestamp, Any), b: (Timestamp, Any)) =
+                (tsSG.plus(a._1, b._1), userMonoid.plus(a._2, b._2))
         }
 
         BaseBolt(
@@ -244,31 +269,40 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           new Fields(AGG_KEY, AGG_VALUE),
           ackOnEntry,
           new executor.FinalFlatMap(
-            operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
+            wrappedOperation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
             cacheBuilder,
             maxWaiting,
             maxWaitTime,
             maxEmitPerExecute,
-            new SingleItemInjection[(Timestamp, Any)],
-            new KeyValueInjection[(Any, BatchID), (Timestamp, Any)]
-            )(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
-            )
+            new SingleItemInjection[Any],
+            new KeyValueInjection[Any, Any]
+            )(monoid.asInstanceOf[Semigroup[Any]])
+          )
       case None =>
-      BaseBolt(
+        // We encode the timestamp with the key, this takes it off before applying user supplied operators
+        // and re attaches it after.
+        def wrapTime(existingOp: FlatMapOperation[Any, Any]): FlatMapOperation[(Timestamp, Any), (Timestamp, Any)] = {
+          FlatMapOperation.generic({x: (Timestamp, Any) =>
+              existingOp.apply(x._2).map { vals =>
+                vals.map((x._1, _))
+              }
+          })
+        }
+        BaseBolt(
           metrics.metrics,
           anchorTuples,
           stormDag.dependantsOf(node).size > 0,
           new Fields(VALUE_FIELD),
           ackOnEntry,
           new executor.IntermediateFlatMap(
-            operation,
+            wrapTime(operation).asInstanceOf[FlatMapOperation[Any, Any]],
             maxWaiting,
             maxWaitTime,
             maxEmitPerExecute,
-            new SingleItemInjection[(Timestamp, Any)],
-            new SingleItemInjection[(Timestamp, Any)]
+            new SingleItemInjection[Any],
+            new SingleItemInjection[Any]
             )
-          )
+        )
     }
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
@@ -315,6 +349,26 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
+
+    def wrapMergable[K, V](supplier: () => Mergeable[(K, BatchID), V]) =
+        () => {
+          new Mergeable[(K, BatchID), (Timestamp, V)] {
+            val store = supplier()
+            implicit val innerSG = store.semigroup
+            val semigroup = implicitly[Semigroup[(Timestamp, V)]]
+            override def multiMerge[K1 <: (K, BatchID)](kvs: Map[K1, (Timestamp, V)]): Map[K1, Future[Option[(Timestamp, V)]]] =
+                store.multiMerge(kvs.mapValues(_._2)).map { case (k, futOpt) =>
+                  (k, futOpt.map{ opt =>
+                    opt.map { v =>
+                      (kvs(k)._1, v)
+                    }
+                  })
+                }
+          }
+        }
+
+    val wrappedStore = wrapMergable(supplier)
+
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
@@ -335,6 +389,14 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
     logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
 
+    val storeBaseFMOp = { op: ((K, BatchID), (Option[(Timestamp, V)], (Timestamp, V))) =>
+        val ((k, batchID), (optiVWithTS, (ts, v))) = op
+        val optiV = optiVWithTS.map(_._2)
+        List((ts, (k, (optiV, v))))
+    }
+
+    val flatmapOp: FlatMapOperation[((K, BatchID), (Option[(Timestamp, V)], (Timestamp, V))), (Timestamp, Any)] = FlatMapOperation.apply(storeBaseFMOp)
+
     val cacheBuilder = if(useAsyncCache.get) {
           val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
           logger.info("[{}] softMemoryFlush : {}", nodeName, softMemoryFlush.get)
@@ -345,9 +407,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
           logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
 
-          MultiTriggerCache.builder[(K, BatchID), (List[InputState[Tuple]], Timestamp, V)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
+          MultiTriggerCache.builder[(K, BatchID), (List[InputState[Tuple]], (Timestamp, V))](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
         } else {
-          SummingQueueCache.builder[(K, BatchID), (List[InputState[Tuple]], Timestamp, V)](cacheSize, flushFrequency)
+          SummingQueueCache.builder[(K, BatchID), (List[InputState[Tuple]], (Timestamp, V))](cacheSize, flushFrequency)
         }
 
     val sinkBolt = BaseBolt(
@@ -357,7 +419,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           new Fields(VALUE_FIELD),
           ackOnEntry,
           new executor.Summer(
-              supplier,
+              wrappedStore,
+              flatmapOp,
               getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
               getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
               cacheBuilder,
@@ -366,7 +429,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               maxEmitPerExecute,
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
               new KeyValueInjection[(K, BatchID), (Timestamp, V)],
-              new SingleItemInjection[(Timestamp, (K, (Option[V], V)))])
+              new SingleItemInjection[(Timestamp, Any)])
         )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint
