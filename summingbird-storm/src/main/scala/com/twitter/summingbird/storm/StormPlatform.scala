@@ -253,14 +253,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
         val wrappedOperation = wrapTimeKV(operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]])
 
-        val valueMonoid = summerProducer.monoid.asInstanceOf[Monoid[Any]]
-        // Since we have stripped the type off the value
-        // we explictly create the monoid for (the timestamp, value) tuple
-        val monoid = new Semigroup[(Timestamp, Any)] {
-            lazy val tsSG = implicitly[Semigroup[Timestamp]]
-            def plus(a: (Timestamp, Any), b: (Timestamp, Any)) =
-                (tsSG.plus(a._1, b._1), valueMonoid.plus(a._2, b._2))
-        }
+        def getSG[T](implicit other: Semigroup[T]): Semigroup[(Timestamp, T)] = implicitly[Semigroup[(Timestamp, T)]]
+
+        val semigroup = getSG(summerProducer.monoid.asInstanceOf[Monoid[Any]])
 
         BaseBolt(
           metrics.metrics,
@@ -276,7 +271,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
             maxEmitPerExecute,
             new SingleItemInjection[Any],
             new KeyValueInjection[Any, Any]
-            )(monoid.asInstanceOf[Semigroup[Any]])
+            )(semigroup.asInstanceOf[Semigroup[Any]])
           )
       case None =>
         // We encode the timestamp with the key, this takes it off before applying user supplied operators
