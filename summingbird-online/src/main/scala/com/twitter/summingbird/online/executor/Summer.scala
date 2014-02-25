@@ -95,7 +95,7 @@ class Summer[Key, Value: Semigroup, Event, S, D](
       (tups, beforeF.flatMap { before =>
         lockedOp.get.apply((k, (before, delta)))
       }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
-    }
+    }.toList
 
   override def tick = sCache.tick.map(handleResult(_))
 
