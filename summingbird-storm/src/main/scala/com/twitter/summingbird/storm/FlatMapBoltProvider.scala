@@ -135,11 +135,11 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
     type ExecutorInput = (Timestamp, T)
     type ExecutorKey = (K, BatchID)
     type ExecutorValue = (Timestamp, V)
-    val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
+    val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
     val batcher = summerProducer.store.batcher
-    implicit val valueMonoid: Semigroup[V] = summerProducer.monoid.asInstanceOf[Monoid[V]]
+    implicit val valueMonoid: Semigroup[V] = summerProducer.monoid
 
     val operation = foldOperations[T, (K, V)](node.members.reverse)
     val wrappedOperation = wrapTimeBatchIDKV(operation)(batcher)

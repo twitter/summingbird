@@ -220,7 +220,23 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           new Mergeable[ExecutorKeyType, ExecutorValueType] {
             val innerMergable: Mergeable[ExecutorKeyType, V] = supplier()
             implicit val innerSG = innerMergable.semigroup
-            val semigroup = implicitly[Semigroup[ExecutorValueType]]
+
+            // Since we don't keep a timestamp in the store
+            // this makes it clear that the 'right' or newest timestamp from the stream
+            // will always be the timestamp outputted
+            val semigroup = {
+              implicit val tsSg = new Semigroup[Timestamp] {
+                def plus(a: Timestamp, b: Timestamp) = b
+                override def sumOption(ti: TraversableOnce[Timestamp]) =
+                  if(ti.isEmpty) None
+                  else {
+                    var last: Timestamp = null
+                    ti.foreach { last = _ }
+                    Some(last)
+                  }
+              }
+              implicitly[Semigroup[ExecutorValueType]]
+            }
 
             override def close(time: Time) = innerMergable.close(time)
 
