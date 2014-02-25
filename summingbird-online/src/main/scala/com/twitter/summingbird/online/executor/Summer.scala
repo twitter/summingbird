@@ -21,8 +21,7 @@ import com.twitter.algebird.{Semigroup, SummingQueue}
 import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.bijection.Injection
 
-import com.twitter.summingbird.online.{Externalizer, AsyncCache}
-import com.twitter.summingbird.batch.{BatchID, Timestamp}
+import com.twitter.summingbird.online.{FlatMapOperation, Externalizer, AsyncCache, CacheBuilder}
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
@@ -50,34 +49,34 @@ import com.twitter.summingbird.option.CacheSize
   * @author Ashu Singhal
   */
 
-class Summer[Key, Value: Semigroup, S, D](
-  @transient storeSupplier: () => Mergeable[(Key,BatchID), Value],
+class Summer[Key, Value: Semigroup, Event, S, D](
+  @transient storeSupplier: () => Mergeable[Key, Value],
+  @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
-  cacheBuilder: (Semigroup[(List[S], Timestamp, Value)]) => AsyncCache[(Key, BatchID), (List[S], Timestamp, Value)],
+  cacheBuilder: CacheBuilder[Key, (List[S], Value)],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
   includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: Injection[((Key, BatchID), (Timestamp, Value)), D],
-  pEncoder: Injection[(Timestamp, (Key, (Option[Value], Value))), D]) extends
-    AsyncBase[((Key, BatchID), (Timestamp, Value)), (Timestamp, (Key, (Option[Value], Value))), S, D](
+  pDecoder: Injection[(Key, Value), D],
+  pEncoder: Injection[Event, D]) extends
+    AsyncBase[(Key, Value), Event, S, D](
       maxWaitingFutures,
       maxWaitingTime,
       maxEmitPerExec) {
 
+  val lockedOp = Externalizer(flatMapOp)
   val encoder = pEncoder
   val decoder = pDecoder
 
   val storeBox = Externalizer(storeSupplier)
   lazy val store = storeBox.get.apply
 
-  // See MaxWaitingFutures for a todo around removing this.
-  lazy val sCache: AsyncCache[(Key, BatchID), (List[S], Timestamp, Value)] = cacheBuilder(implicitly[Semigroup[(List[S], Timestamp, Value)]])
+  lazy val sCache: AsyncCache[Key, (List[S], Value)] = cacheBuilder(implicitly[Semigroup[(List[S], Value)]])
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
-
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
   override def init {
@@ -90,24 +89,20 @@ class Summer[Key, Value: Semigroup, S, D](
     exceptionHandlerBox.get.apply(error)
   }
 
-  private def handleResult(kvs: Map[(Key, BatchID), (List[S], Timestamp, Value)])
-                        : Iterable[(List[S], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])] = {
-    store.multiMerge(kvs.mapValues(_._3)).map{ case (innerKb, beforeF) =>
-      val (tups, stamp, delta) = kvs(innerKb)
-      val (k, _) = innerKb
-      (tups, beforeF.map(before => List((stamp, (k, (before, delta)))))
-        .onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
-    }
-    .toList // force, but order does not matter, so we could optimize this
-  }
+  private def handleResult(kvs: Map[Key, (List[S], Value)]): TraversableOnce[(List[S], Future[TraversableOnce[Event]])] =
+    store.multiMerge(kvs.mapValues(_._2)).iterator.map { case (k, beforeF) =>
+      val (tups, delta) = kvs(k)
+      (tups, beforeF.flatMap { before =>
+        lockedOp.get.apply((k, (before, delta)))
+      }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
+    }.toList
 
   override def tick = sCache.tick.map(handleResult(_))
 
-  override def apply(state: S,
-                     tsIn: ((Key, BatchID), (Timestamp, Value))) = {
-    val (kb, (ts, v)) = tsIn
-    sCache.insert(List(kb -> (List(state), ts, v))).map(handleResult(_))
+  override def apply(state: S, tup: (Key, Value)) = {
+    val (k, v) = tup
+    sCache.insert(List(k -> (List(state), v))).map(handleResult(_))
   }
 
-  override def cleanup { Await.result(store.close) }
+  override def cleanup = Await.result(store.close)
 }

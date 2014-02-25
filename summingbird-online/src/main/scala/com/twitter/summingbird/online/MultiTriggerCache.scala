@@ -35,9 +35,13 @@ import org.slf4j.{LoggerFactory, Logger}
  */
 
 object MultiTriggerCache {
-  def builder[Key, Value](cacheSize: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlushPercent, poolSize: AsyncPoolSize) =
-      {(sg: Semigroup[Value]) =>
-            new MultiTriggerCache[Key, Value](cacheSize, valueCombinerCacheSize, flushFrequency, softMemoryFlush, poolSize)(sg) }
+  def builder[Key, Value](cacheSize: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize,
+                          flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlushPercent,
+                          poolSize: AsyncPoolSize): CacheBuilder[Key, Value] =
+    new CacheBuilder[Key, Value] {
+      def apply(sg: Semigroup[Value]) =
+            new MultiTriggerCache[Key, Value](cacheSize, valueCombinerCacheSize, flushFrequency, softMemoryFlush, poolSize)(sg)
+    }
 }
 
 case class MultiTriggerCache[Key, Value](cacheSizeOpt: CacheSize, valueCombinerCacheSize: ValueCombinerCacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlushPercent, poolSize: AsyncPoolSize)
