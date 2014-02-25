@@ -32,8 +32,10 @@ import org.slf4j.{LoggerFactory, Logger}
  */
 object SummingQueueCache {
   def builder[Key, Value](cacheSize: CacheSize, flushFrequency: FlushFrequency) =
-      {(sg: Semigroup[Value]) =>
-            new SummingQueueCache[Key, Value](cacheSize, flushFrequency)(sg) }
+    new CacheBuilder[Key, Value] {
+        def apply(sg: Semigroup[Value]) =
+              new SummingQueueCache[Key, Value](cacheSize, flushFrequency)(sg)
+    }
 }
 
 case class SummingQueueCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency: FlushFrequency)
