@@ -28,6 +28,6 @@ trait AsyncCache[Key, Value] {
   def cleanup: Future[Unit] = Future.Unit
 }
 
-trait CacheBuilder[Key, Value] {
+trait CacheBuilder[Key, Value] extends Serializable {
   def apply(sg: Semigroup[Value]): AsyncCache[Key, Value]
 }
