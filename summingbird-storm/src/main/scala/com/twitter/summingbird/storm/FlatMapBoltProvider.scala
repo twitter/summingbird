@@ -113,8 +113,6 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
   private val maxEmitPerExecute = getOrElse(DEFAULT_MAX_EMIT_PER_EXECUTE)
   logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
 
-
-//(List[InputState[Tuple]], V)
   private def getCacheBuilder[K, V]: CacheBuilder[K, V] =
     if(useAsyncCache.get) {
       val softMemoryFlush = getOrElse(DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
