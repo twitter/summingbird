@@ -21,7 +21,7 @@ import com.twitter.algebird.{Semigroup, SummingQueue}
 import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.bijection.Injection
 
-import com.twitter.summingbird.online.{FlatMapOperation, Externalizer, AsyncCache}
+import com.twitter.summingbird.online.{FlatMapOperation, Externalizer, AsyncCache, CacheBuilder}
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
@@ -52,7 +52,7 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
-  cacheBuilder: (Semigroup[(List[InputState[S]], Value)]) => AsyncCache[Key, (List[InputState[S]], Value)],
+  cacheBuilder: CacheBuilder[Key, (List[InputState[S]], Value)],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
@@ -71,12 +71,10 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   val storeBox = Externalizer(storeSupplier)
   lazy val store = storeBox.get.apply
 
-  // See MaxWaitingFutures for a todo around removing this.
   lazy val sCache: AsyncCache[Key, (List[InputState[S]], Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Value)]])
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
-
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
   override def init {
@@ -89,16 +87,14 @@ class Summer[Key, Value: Semigroup, Event, S, D](
     exceptionHandlerBox.get.apply(error)
   }
 
-  private def handleResult(kvs: Map[Key, (List[InputState[S]], Value)])
-                        : TraversableOnce[(List[InputState[S]], Future[TraversableOnce[Event]])] = {
-    store.multiMerge(kvs.mapValues(_._2)).toList.map{ case (key, beforeF) =>
-      val (tups, delta) = kvs(key)
+  private def handleResult(kvs: Map[Key, (List[InputState[S]], Value)]): TraversableOnce[(List[InputState[S]], Future[TraversableOnce[Event]])] =
+    store.multiMerge(kvs.mapValues(_._2)).iterator.map { case (k, beforeF) =>
+      val (tups, delta) = kvs(k)
       (tups, beforeF.flatMap { before =>
-        lockedOp.get.apply((key.asInstanceOf[Key], (before, delta)))
+        lockedOp.get.apply((k, (before, delta)))
       }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
-    }
-    .iterator // force, but order does not matter, so we could optimize this
-  }
+    }.toList
+
 
   override def tick = sCache.tick.map(handleResult(_))
 
@@ -113,5 +109,6 @@ class Summer[Key, Value: Semigroup, Event, S, D](
     sCache.insert(cacheEntries).map(handleResult(_))
   }
 
-  override def cleanup { Await.result(store.close) }
+
+  override def cleanup = Await.result(store.close)
 }

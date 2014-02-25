@@ -22,7 +22,7 @@ import com.twitter.util.Future
 
 import com.twitter.summingbird.online.Externalizer
 
-import com.twitter.summingbird.online.{FlatMapOperation, AsyncCache}
+import com.twitter.summingbird.online.{FlatMapOperation, AsyncCache, CacheBuilder}
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.option.{
   MaxWaitingFutures,
@@ -43,7 +43,7 @@ case class KeyValueShards(get: Int)
 
 class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
-  cacheBuilder: (Semigroup[(List[InputState[S]], Map[Key, Value])]) => AsyncCache[Int, (List[InputState[S]], Map[Key, Value])],
+  cacheBuilder: CacheBuilder[Int, (Key, (List[InputState[S]], Value))],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
