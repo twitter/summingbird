@@ -23,7 +23,6 @@ import scala.util.{Try, Success, Failure}
 import java.util.concurrent.TimeoutException
 import org.slf4j.{LoggerFactory, Logger}
 
-
 abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I,O,S,D] {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)

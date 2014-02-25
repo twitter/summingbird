@@ -263,7 +263,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         List((ts, (k, (optiV, v))))
     }
 
-    val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] = FlatMapOperation.apply(storeBaseFMOp)
+    val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
+      FlatMapOperation.apply(storeBaseFMOp)
 
     val cacheBuilder = if(useAsyncCache.get) {
           val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)

@@ -125,7 +125,8 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
 
       val valueCombinerCrushSize = getOrElse(DEFAULT_VALUE_COMBINER_CACHE_SIZE)
       logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
-      MultiTriggerCache.builder[K, V](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
+      MultiTriggerCache.builder[K, V](cacheSize, valueCombinerCrushSize, flushFrequency,
+                                      softMemoryFlush, asyncPoolSize)
     } else {
       SummingQueueCache.builder[K, V](cacheSize, flushFrequency)
     }
