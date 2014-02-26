@@ -61,7 +61,7 @@ object FlatMapBoltProvider {
 case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
   import FlatMapBoltProvider._
 
-  def getOrElse[T <: AnyRef : Manifest](default: T) = storm.getOrElse(stormDag, node, default)
+  def getOrElse[T <: AnyRef : Manifest](default: T, queryNode: StormNode = node) = storm.getOrElse(stormDag, queryNode, default)
   /**
      * Keep the crazy casts localized in here
      */
@@ -144,7 +144,9 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
     val summerShardMultiplier = getOrElse(DEFAULT_SUMMER_SHARD_MULTIPLIER)
     logger.info("[{}] summerShardMultiplier : {}", nodeName, summerShardMultiplier.get)
 
-    val summerParalellism = getOrElse(DEFAULT_SUMMER_PARALLELISM)
+    // Query to get the summer paralellism of the summer down stream of us we are emitting to
+    // to ensure no edge case between what we might see for its parallelism and what it would see/pass to storm.
+    val summerParalellism = getOrElse(DEFAULT_SUMMER_PARALLELISM, summer)
     val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerShardMultiplier.get)
     logger.info("[{}] keyValueShards : {}", nodeName, keyValueShards.get)
 
