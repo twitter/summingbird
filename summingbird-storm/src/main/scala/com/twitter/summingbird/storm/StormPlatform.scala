@@ -314,7 +314,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
               maxEmitPerExecute,
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
-              new KeyValueInjection[Int, List[(ExecutorKeyType, ExecutorValueType)]],
+              new KeyValueInjection[Int, Map[ExecutorKeyType, ExecutorValueType]],
               new SingleItemInjection[ExecutorOutputType])
         )
 

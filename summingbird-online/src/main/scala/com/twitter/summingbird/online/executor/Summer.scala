@@ -57,9 +57,9 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
   includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: Injection[(Int, List[(Key, Value)]), D],
+  pDecoder: Injection[(Int, Map[Key, Value]), D],
   pEncoder: Injection[Event, D]) extends
-    AsyncBase[(Int, List[(Key, Value)]), Event, InputState[S], D](
+    AsyncBase[(Int, Map[Key, Value]), Event, InputState[S], D](
       maxWaitingFutures,
       maxWaitingTime,
       maxEmitPerExec) {
@@ -99,7 +99,7 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   override def tick = sCache.tick.map(handleResult(_))
 
   override def apply(state: InputState[S],
-                     tupList: (Int, List[(Key, Value)])) = {
+                     tupList: (Int, Map[Key, Value])) = {
     val (_, innerTuples) = tupList
     state.fanOut(innerTuples.size - 1) // Since input state starts at a 1
     val cacheEntries = innerTuples.map { case (k, v) =>
