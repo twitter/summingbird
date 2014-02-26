@@ -116,6 +116,7 @@ object SummingbirdBuild extends Build {
     summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
+    summingbirdStormTest,
     summingbirdScalding,
     summingbirdScaldingTest,
     summingbirdBuilder,
