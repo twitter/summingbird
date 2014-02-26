@@ -43,42 +43,27 @@ case class KeyValueShards(get: Int)
 
 class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
-  cacheBuilder: CacheBuilder[Int, (Key, (List[InputState[S]], Value))],
+  cacheBuilder: CacheBuilder[Int, (List[InputState[S]], Map[Key, Value])],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
   summerShards: KeyValueShards,
   pDecoder: Injection[Event, D],
-  pEncoder: Injection[(Int, List[(Key, Value)]), D]
+  pEncoder: Injection[(Int, Map[Key, Value]), D]
   )
-    extends AsyncBase[Event, (Int, List[(Key, Value)]), InputState[S], D](maxWaitingFutures,
+  extends AsyncBase[Event, (Int, Map[Key, Value]), InputState[S], D](maxWaitingFutures,
                                                           maxWaitingTime,
                                                           maxEmitPerExec) {
 
   type InS = InputState[S]
-  type OutputElement = (Int, List[(Key, Value)])
+  type OutputElement = (Int, Map[Key, Value])
 
   val encoder = pEncoder
   val decoder = pDecoder
 
   val lockedOp = Externalizer(flatMapOp)
-  val sg = new Semigroup[(List[InS], Map[Key, Value])] {
-    type InLists = (List[InS], Map[Key, Value])
-    def plus(a: InLists, b: InLists): InLists = {
-      val tups = a._1 ++ b._1
-      (tups, Semigroup.plus(a._2, b._2))
-    }
 
-    override def sumOption(iter: TraversableOnce[InLists]): Option[InLists] = {
-      val seqV = iter.toSeq
-      for {
-        a <- Semigroup.sumOption(seqV.map(_._1))
-        b <- Semigroup.sumOption(seqV.map(_._2))
-      } yield (a, b)
-    }
-  }
-
-  lazy val sCache = cacheBuilder(sg)
+  lazy val sCache = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Map[Key, Value])]])
 
   private def formatResult(outData: Map[Int, (List[InputState[S]], Map[Key, Value])])
                         : TraversableOnce[(List[InputState[S]], Future[TraversableOnce[OutputElement]])] = {
@@ -86,7 +71,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
       if(valList.isEmpty) {
         (tupList, Future.value(Nil))
       } else {
-        (tupList, Future.value(List((outerKey, valList.toList))))
+        (tupList, Future.value(List((outerKey, valList))))
       }
     }
   }

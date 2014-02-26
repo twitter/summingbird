@@ -132,12 +132,21 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
   private def getFFMBolt[T, K, V](summer: SummerNode[Storm]) = {
     type ExecutorInput = (Timestamp, T)
     type ExecutorKey = Int
-    type ExecutorValue = List[((K, BatchID), (Timestamp, V))]
+    type InnerValue = (Timestamp, V)
+    type ExecutorValue = Map[(K, BatchID), InnerValue]
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
     val batcher = summerProducer.store.batcher
     implicit val valueMonoid: Semigroup[V] = summerProducer.monoid
+
+
+    val summerShardMultiplier = getOrElse(DEFAULT_SUMMER_SHARD_MULTIPLIER)
+    logger.info("[{}] summerShardMultiplier : {}", nodeName, summerShardMultiplier.get)
+
+    val summerParalellism = getOrElse(DEFAULT_SUMMER_PARALLELISM)
+    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerShardMultiplier.get)
+    logger.info("[{}] keyValueShards : {}", nodeName, keyValueShards.get)
 
     val operation = foldOperations[T, (K, V)](node.members.reverse)
     val wrappedOperation = wrapTimeBatchIDKV(operation)(batcher)
@@ -153,9 +162,10 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
         maxWaiting,
         maxWaitTime,
         maxEmitPerExecute,
+        keyValueShards,
         new SingleItemInjection[ExecutorInput],
         new KeyValueInjection[ExecutorKey, ExecutorValue]
-        )(implicitly[Semigroup[ExecutorValue]])
+        )(implicitly[Semigroup[InnerValue]])
       )
   }
 
