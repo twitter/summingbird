@@ -87,21 +87,25 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
 
   def cache(state: InputState[S],
             items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(List[InputState[S]], Future[TraversableOnce[OutputElement]])]] = {
-
-    val itemL = items.toList
-    if(itemL.size > 0) {
-      state.fanOut(itemL.size - 1) // Since input state starts at a 1
-      sCache.insert(itemL.map{case (k, v) =>
-        summerShards.summerIdFor(k) -> (List(state), Map(k -> v))
-      }).map(formatResult(_))
-    }
-    else { // Here we handle mapping to nothing, option map et. al
-        Future.value(
-          List(
-            (List(state), Future.value(Nil))
-          )
-        )
+    try {
+      val itemL = items.toList
+      if(itemL.size > 0) {
+        state.fanOut(itemL.size) // Since input state starts at a 1
+        sCache.insert(itemL.map{case (k, v) =>
+          summerShards.summerIdFor(k) -> (List(state), Map(k -> v))
+        }).map(formatResult(_))
       }
+      else { // Here we handle mapping to nothing, option map et. al
+          Future.value(
+            List(
+              (List(state), Future.value(Nil))
+            )
+          )
+        }
+    }
+    catch {
+      case t: Throwable => Future.exception(t)
+    }
   }
 
   override def apply(state: InputState[S],

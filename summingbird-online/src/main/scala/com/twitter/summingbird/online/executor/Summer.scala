@@ -100,13 +100,18 @@ class Summer[Key, Value: Semigroup, Event, S, D](
 
   override def apply(state: InputState[S],
                      tupList: (Int, Map[Key, Value])) = {
-    val (_, innerTuples) = tupList
-    state.fanOut(innerTuples.size - 1) // Since input state starts at a 1
-    val cacheEntries = innerTuples.map { case (k, v) =>
-      (k, (List(state), v))
-    }
+    try {
+      val (_, innerTuples) = tupList
+      state.fanOut(innerTuples.size)
+      val cacheEntries = innerTuples.map { case (k, v) =>
+        (k, (List(state), v))
+      }
 
-    sCache.insert(cacheEntries).map(handleResult(_))
+      sCache.insert(cacheEntries).map(handleResult(_))
+    }
+    catch {
+      case t: Throwable => Future.exception(t)
+    }
   }
 
 
