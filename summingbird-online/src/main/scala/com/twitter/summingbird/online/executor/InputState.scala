@@ -74,12 +74,17 @@ case class InputState[T](state: T) {
 
   val stateTracking = new AtomicStateTransformer(State(1, false))
 
+
+  // Fanout is how many tuples one tuple became
+  // so we increment by 1 less than the amount given
   def fanOut(by: Int) = {
     require(by >= 0, "Invalid fanout: %d, by should be >= 0".format(by))
-    val newS = stateTracking.update(_.incrBy(by))
+    require(stateTracking.get.counter == 1, "You can only call fanOut once, and must do it before acking the tuple.")
+    val incrementAmount = by - 1
+    val newS = stateTracking.update(_.incrBy(incrementAmount))
     // If we incremented on something that was 0 or negative
     // And not in a failed state, then this is an error
-    if((newS.counter - by <= 0) && !newS.failed) {
+    if((newS.counter - incrementAmount <= 0) && !newS.failed) {
       throw new Exception("Invalid call on an inputstate, we had already decremented to 0 and not failed.")
     }
     this

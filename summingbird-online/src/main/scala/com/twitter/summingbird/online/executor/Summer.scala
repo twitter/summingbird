@@ -25,8 +25,6 @@ import com.twitter.summingbird.online.{FlatMapOperation, Externalizer, AsyncCach
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
-
-
 /**
   * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
   * CacheSize sets the number of key-value pairs that the SinkBolt will accept
@@ -54,14 +52,14 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
-  cacheBuilder: CacheBuilder[Key, (List[S], Value)],
+  cacheBuilder: CacheBuilder[Key, (List[InputState[S]], Value)],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
   includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: Injection[(Key, Value), D],
+  pDecoder: Injection[(Int, Map[Key, Value]), D],
   pEncoder: Injection[Event, D]) extends
-    AsyncBase[(Key, Value), Event, S, D](
+    AsyncBase[(Int, Map[Key, Value]), Event, InputState[S], D](
       maxWaitingFutures,
       maxWaitingTime,
       maxEmitPerExec) {
@@ -73,7 +71,7 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   val storeBox = Externalizer(storeSupplier)
   lazy val store = storeBox.get.apply
 
-  lazy val sCache: AsyncCache[Key, (List[S], Value)] = cacheBuilder(implicitly[Semigroup[(List[S], Value)]])
+  lazy val sCache: AsyncCache[Key, (List[InputState[S]], Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Value)]])
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
@@ -84,12 +82,12 @@ class Summer[Key, Value: Semigroup, Event, S, D](
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  override def notifyFailure(inputs: List[S], error: Throwable): Unit = {
+  override def notifyFailure(inputs: List[InputState[S]], error: Throwable): Unit = {
     super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
   }
 
-  private def handleResult(kvs: Map[Key, (List[S], Value)]): TraversableOnce[(List[S], Future[TraversableOnce[Event]])] =
+  private def handleResult(kvs: Map[Key, (List[InputState[S]], Value)]): TraversableOnce[(List[InputState[S]], Future[TraversableOnce[Event]])] =
     store.multiMerge(kvs.mapValues(_._2)).iterator.map { case (k, beforeF) =>
       val (tups, delta) = kvs(k)
       (tups, beforeF.flatMap { before =>
@@ -97,12 +95,26 @@ class Summer[Key, Value: Semigroup, Event, S, D](
       }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
     }.toList
 
+
   override def tick = sCache.tick.map(handleResult(_))
 
-  override def apply(state: S, tup: (Key, Value)) = {
-    val (k, v) = tup
-    sCache.insert(List(k -> (List(state), v))).map(handleResult(_))
+  override def apply(state: InputState[S],
+                     tupList: (Int, Map[Key, Value])) = {
+    try {
+      val (_, innerTuples) = tupList
+      assert(innerTuples.size > 0, "Maps coming in must not be empty")
+      state.fanOut(innerTuples.size)
+      val cacheEntries = innerTuples.map { case (k, v) =>
+        (k, (List(state), v))
+      }
+
+      sCache.insert(cacheEntries).map(handleResult(_))
+    }
+    catch {
+      case t: Throwable => Future.exception(t)
+    }
   }
+
 
   override def cleanup = Await.result(store.close)
 }
