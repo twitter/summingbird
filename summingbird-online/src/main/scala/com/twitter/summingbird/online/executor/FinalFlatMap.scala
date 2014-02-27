@@ -39,7 +39,7 @@ import com.twitter.summingbird.online.option.{
  * @author Ian O Connell
  */
 
-case class KeyValueShards(get: Int)
+private[summingbird] case class KeyValueShards(get: Int)
 
 class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
