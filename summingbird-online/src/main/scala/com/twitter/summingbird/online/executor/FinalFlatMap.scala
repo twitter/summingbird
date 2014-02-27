@@ -46,9 +46,9 @@ private[summingbird] case class KeyValueShards(get: Int) {
   def summerIdFor[K](k: K): Int = k.hashCode % get
 }
 
-class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
+class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
-  cacheBuilder: CacheBuilder[Int, (List[InputState[S]], Map[Key, Value])],
+  cacheBuilder: CacheBuilder[Int, (List[S], Map[Key, Value])],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
@@ -56,11 +56,11 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
   pDecoder: Injection[Event, D],
   pEncoder: Injection[(Int, Map[Key, Value]), D]
   )
-  extends AsyncBase[Event, (Int, Map[Key, Value]), InputState[S], D](maxWaitingFutures,
+  extends AsyncBase[Event, (Int, Map[Key, Value]), S, D](maxWaitingFutures,
                                                           maxWaitingTime,
                                                           maxEmitPerExec) {
 
-  type InS = InputState[S]
+  type InS = S
   type OutputElement = (Int, Map[Key, Value])
 
   val encoder = pEncoder
@@ -68,10 +68,10 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
 
   val lockedOp = Externalizer(flatMapOp)
 
-  lazy val sCache = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Map[Key, Value])]])
+  lazy val sCache = cacheBuilder(implicitly[Semigroup[(List[S], Map[Key, Value])]])
 
-  private def formatResult(outData: Map[Int, (List[InputState[S]], Map[Key, Value])])
-                        : TraversableOnce[(List[InputState[S]], Future[TraversableOnce[OutputElement]])] = {
+  private def formatResult(outData: Map[Int, (List[S], Map[Key, Value])])
+                        : TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])] = {
     outData.iterator.map { case (outerKey, (tupList, valList)) =>
       if(valList.isEmpty) {
         (tupList, Future.value(Nil))
@@ -81,12 +81,12 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
     }
   }
 
-  override def tick: Future[TraversableOnce[(List[InputState[S]], Future[TraversableOnce[OutputElement]])]] = {
+  override def tick: Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
     sCache.tick.map(formatResult(_))
   }
 
-  def cache(state: InputState[S],
-            items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(List[InputState[S]], Future[TraversableOnce[OutputElement]])]] = {
+  def cache(state: S,
+            items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
     try {
       val itemL = items.toList
       if(itemL.size > 0) {
@@ -108,7 +108,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
     }
   }
 
-  override def apply(state: InputState[S],
+  override def apply(state: S,
                      tup: Event) =
     lockedOp.get.apply(tup).map { cache(state, _) }.flatten
 
