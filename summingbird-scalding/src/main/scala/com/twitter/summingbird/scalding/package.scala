@@ -93,6 +93,9 @@ package object scalding {
   type VersionedBatchStore[K, V, W, X] = com.twitter.summingbird.scalding.store.VersionedBatchStore[K, V, W, X]
   val VersionedBatchStore = com.twitter.summingbird.scalding.store.VersionedBatchStore
 
+  @deprecated("com.twitter.summingbird.scalding.store.VersionedBatchStoreBase", "0.3.2")
+  type VersionedBatchStoreBase[K, V] = com.twitter.summingbird.scalding.store.VersionedBatchStoreBase[K, V]
+
   @deprecated("com.twitter.summingbird.scalding.batch.BatchedStore", "0.3.2")
   type BatchedScaldingStore[K, V] = com.twitter.summingbird.scalding.batch.BatchedStore[K, V]
 
