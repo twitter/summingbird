@@ -77,6 +77,7 @@ case class ValueCombinerCacheSize(get: Int)
 
 /*
   When going between flatmap's and summers we can batch into bigger groups to not overwhelm underlying platforms
-  this controls what multiplication of the number of summers we want to partition this space into
+  this controls what multiplication of the number of summers we want to partition this space into.
+  E.g. if you have this value set to 10, and you run 5 summers. The key's will be hashed/partitioned into 50 buckets.
 */
 case class SummerShardMultiplier(get: Int)
