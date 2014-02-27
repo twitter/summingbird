@@ -102,6 +102,7 @@ class Summer[Key, Value: Semigroup, Event, S, D](
                      tupList: (Int, Map[Key, Value])) = {
     try {
       val (_, innerTuples) = tupList
+      assert(innerTuples.size > 0, "Maps coming in must not be empty")
       state.fanOut(innerTuples.size)
       val cacheEntries = innerTuples.map { case (k, v) =>
         (k, (List(state), v))
