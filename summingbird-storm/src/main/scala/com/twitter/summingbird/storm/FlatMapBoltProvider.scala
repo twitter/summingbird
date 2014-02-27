@@ -61,7 +61,7 @@ object FlatMapBoltProvider {
 case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
   import FlatMapBoltProvider._
 
-  def getOrElse[T <: AnyRef : Manifest](default: T) = storm.getOrElse(stormDag, node, default)
+  def getOrElse[T <: AnyRef : Manifest](default: T, queryNode: StormNode = node) = storm.getOrElse(stormDag, queryNode, default)
   /**
      * Keep the crazy casts localized in here
      */
@@ -131,13 +131,22 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
 
   private def getFFMBolt[T, K, V](summer: SummerNode[Storm]) = {
     type ExecutorInput = (Timestamp, T)
-    type ExecutorKey = (K, BatchID)
-    type ExecutorValue = (Timestamp, V)
+    type ExecutorKey = Int
+    type InnerValue = (Timestamp, V)
+    type ExecutorValue = Map[(K, BatchID), InnerValue]
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
     val batcher = summerProducer.store.batcher
     implicit val valueMonoid: Semigroup[V] = summerProducer.monoid
+
+    // Query to get the summer paralellism of the summer down stream of us we are emitting to
+    // to ensure no edge case between what we might see for its parallelism and what it would see/pass to storm.
+    val summerParalellism = getOrElse(DEFAULT_SUMMER_PARALLELISM, summer)
+
+    // This option we report its value here, but its not user settable.
+    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint)
+    logger.info("[{}] keyValueShards : {}", nodeName, keyValueShards.get)
 
     val operation = foldOperations[T, (K, V)](node.members.reverse)
     val wrappedOperation = wrapTimeBatchIDKV(operation)(batcher)
@@ -153,9 +162,10 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
         maxWaiting,
         maxWaitTime,
         maxEmitPerExecute,
+        keyValueShards,
         new SingleItemInjection[ExecutorInput],
         new KeyValueInjection[ExecutorKey, ExecutorValue]
-        )(implicitly[Semigroup[ExecutorValue]])
+        )(implicitly[Semigroup[InnerValue]])
       )
   }
 

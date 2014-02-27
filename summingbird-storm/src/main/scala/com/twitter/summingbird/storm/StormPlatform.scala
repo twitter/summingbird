@@ -205,6 +205,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   private def scheduleSummerBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val monoid = summer.monoid
+    implicit val batcher = summer.store.batcher
     val nodeName = stormDag.getNodeName(node)
 
     type ExecutorKeyType = (K, BatchID)
@@ -303,7 +304,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           shouldEmit,
           new Fields(VALUE_FIELD),
           ackOnEntry,
-          new executor.Summer(
+          new executor.Summer (
               wrappedStore,
               flatmapOp,
               getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
@@ -313,7 +314,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
               maxEmitPerExecute,
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
-              new KeyValueInjection[ExecutorKeyType, ExecutorValueType],
+              new KeyValueInjection[Int, Map[ExecutorKeyType, ExecutorValueType]],
               new SingleItemInjection[ExecutorOutputType])
         )
 
