@@ -140,16 +140,12 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
     val batcher = summerProducer.store.batcher
     implicit val valueMonoid: Semigroup[V] = summerProducer.monoid
 
-
-    val summerShardMultiplier = getOrElse(DEFAULT_SUMMER_SHARD_MULTIPLIER)
-    logger.info("[{}] summerShardMultiplier : {}", nodeName, summerShardMultiplier.get)
-
     // Query to get the summer paralellism of the summer down stream of us we are emitting to
     // to ensure no edge case between what we might see for its parallelism and what it would see/pass to storm.
     val summerParalellism = getOrElse(DEFAULT_SUMMER_PARALLELISM, summer)
+
     // This option we report its value here, but its not user settable.
-    // We combine the user settable SummerShardMultiplier with the number of Summers to get it.
-    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerShardMultiplier.get)
+    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint)
     logger.info("[{}] keyValueShards : {}", nodeName, keyValueShards.get)
 
     val operation = foldOperations[T, (K, V)](node.members.reverse)
