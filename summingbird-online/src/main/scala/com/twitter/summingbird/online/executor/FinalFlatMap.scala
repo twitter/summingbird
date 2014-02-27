@@ -39,7 +39,12 @@ import com.twitter.summingbird.online.option.{
  * @author Ian O Connell
  */
 
-private[summingbird] case class KeyValueShards(get: Int)
+// This is not a user settable variable.
+// Its supplied by the planning system usually to ensure its large enough to cover the space
+// used by the summers times some delta.
+private[summingbird] case class KeyValueShards(get: Int) {
+  def summerIdFor[K](k: K): Int = k.hashCode % get
+}
 
 class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
@@ -87,7 +92,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S, D](
     if(itemL.size > 0) {
       state.fanOut(itemL.size - 1) // Since input state starts at a 1
       sCache.insert(itemL.map{case (k, v) =>
-        (k.hashCode % summerShards.get) -> (List(state), Map(k -> v))
+        summerShards.summerIdFor(k) -> (List(state), Map(k -> v))
       }).map(formatResult(_))
     }
     else { // Here we handle mapping to nothing, option map et. al
