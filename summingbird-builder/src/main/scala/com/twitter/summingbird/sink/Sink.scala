@@ -18,9 +18,10 @@ package com.twitter.summingbird.sink
 
 import cascading.flow.FlowDef
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
 import com.twitter.scalding.{ Mode, TypedPipe }
-import com.twitter.summingbird.scalding.{ScaldingEnv, BatchedScaldingSink}
+import com.twitter.summingbird.scalding.ScaldingEnv
+import com.twitter.summingbird.scalding.batch.BatchedSink
 
 /**
  * Represents a location to which intermediate results of the
@@ -37,7 +38,7 @@ trait OfflineSink[Event] {
 }
 
 /** Wrapped for the new scalding sink API in terms of the above */
-class BatchedSinkFromOffline[T](override val batcher: Batcher, offline: OfflineSink[T]) extends BatchedScaldingSink[T] {
+class BatchedSinkFromOffline[T](override val batcher: Batcher, offline: OfflineSink[T]) extends BatchedSink[T] {
   /** OfflineSink doesn't support reading
    */
   def readStream(batchID: BatchID, mode: Mode) = None
@@ -45,7 +46,7 @@ class BatchedSinkFromOffline[T](override val batcher: Batcher, offline: OfflineS
   /** Instances may choose to write out materialized streams
    * by implementing this. This is what readStream returns.
    */
-  def writeStream(batchID: BatchID, stream: TypedPipe[(Long, T)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
+  def writeStream(batchID: BatchID, stream: TypedPipe[(Timestamp, T)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
     // strip the time
     offline.write(batchID, stream.values)(flowDef, mode)
   }

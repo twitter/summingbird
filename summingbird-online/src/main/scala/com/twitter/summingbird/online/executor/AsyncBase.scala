@@ -16,16 +16,14 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
-import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.Queue
-import com.twitter.summingbird.online.option.{MaxWaitingFutures, MaxFutureWaitTime}
+import com.twitter.summingbird.online.option.{MaxWaitingFutures, MaxFutureWaitTime, MaxEmitPerExecute}
 import com.twitter.util.{Await, Duration, Future}
 import scala.util.{Try, Success, Failure}
 import java.util.concurrent.TimeoutException
 import org.slf4j.{LoggerFactory, Logger}
 
-
-abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime) extends Serializable with OperationContainer[I,O,S,D] {
+abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I,O,S,D] {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -33,27 +31,27 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
    * cases that need to complete operations after or before doing a FlatMapOperation or
    * doing a store merge
    */
-  def apply(state: S, in: (Timestamp, I)): Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, O)]])]]
-  def tick: Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, O)]])]] = Future.value(Nil)
+  def apply(state: S, in: I): Future[TraversableOnce[(List[S], Future[TraversableOnce[O]])]]
+  def tick: Future[TraversableOnce[(List[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
 
   private lazy val outstandingFutures = Queue.linkedNonBlocking[Future[Unit]]
-  private lazy val responses = Queue.linkedNonBlocking[(List[S], Try[TraversableOnce[(Timestamp, O)]])]
+  private lazy val responses = Queue.linkedNonBlocking[(List[S], Try[TraversableOnce[O]])]
 
   override def executeTick =
     finishExecute(tick.onFailure{ thr => responses.put(((List(), Failure(thr)))) })
 
-  override def execute(state: S, data: (Timestamp, I)) =
+  override def execute(state: S, data: I) =
     finishExecute(apply(state, data).onFailure { thr => responses.put(((List(state), Failure(thr)))) })
 
-  private def finishExecute(fIn: Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, O)]])]]) = {
+  private def finishExecute(fIn: Future[TraversableOnce[(List[S], Future[TraversableOnce[O]])]]) = {
     addOutstandingFuture(handleSuccess(fIn).unit)
 
     // always empty the responses
     emptyQueue
   }
 
-  private def handleSuccess(fut: Future[Iterable[(List[S], Future[TraversableOnce[(Timestamp, O)]])]]) =
-    fut.onSuccess { iter: Iterable[(List[S], Future[TraversableOnce[(Timestamp, O)]])] =>
+  private def handleSuccess(fut: Future[TraversableOnce[(List[S], Future[TraversableOnce[O]])]]) =
+    fut.onSuccess { iter: TraversableOnce[(List[S], Future[TraversableOnce[O]])] =>
 
         // Collect the result onto our responses
         val iterSize = iter.foldLeft(0) { case (iterSize, (tups, res)) =>
@@ -104,6 +102,6 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
     // don't let too many futures build up
     forceExtraFutures
     // Take all results that have been placed for writing to the network
-    responses.toSeq
+    responses.take(maxEmitPerExec.get)
   }
 }

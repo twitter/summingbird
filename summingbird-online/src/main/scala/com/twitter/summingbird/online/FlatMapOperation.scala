@@ -69,6 +69,12 @@ class FunctionFlatMapOperation[T, U](@transient fm: T => TraversableOnce[U])
   def apply(t: T) = Future.value(boxed.get(t))
 }
 
+class GenericFlatMapOperation[T, U](@transient fm: T => Future[TraversableOnce[U]])
+    extends FlatMapOperation[T, U] {
+  val boxed = Externalizer(fm)
+  def apply(t: T) = boxed.get(t)
+}
+
 class FunctionKeyFlatMapOperation[K1, K2, V](@transient fm: K1 => TraversableOnce[K2])
     extends FlatMapOperation[(K1, V), (K2, V)] {
   val boxed = Externalizer(fm)
@@ -90,6 +96,9 @@ object FlatMapOperation {
 
   def apply[T, U](fm: T => TraversableOnce[U]): FlatMapOperation[T, U] =
     new FunctionFlatMapOperation(fm)
+
+  def generic[T, U](fm: T => Future[TraversableOnce[U]]): FlatMapOperation[T, U] =
+    new GenericFlatMapOperation(fm)
 
   def keyFlatMap[K1, K2, V](fm: K1 => TraversableOnce[K2]): FlatMapOperation[(K1, V), (K2, V)] =
     new FunctionKeyFlatMapOperation(fm)

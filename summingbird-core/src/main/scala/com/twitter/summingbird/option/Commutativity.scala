@@ -21,8 +21,8 @@ import java.io.Serializable
 // TODO: this functionality should be in algebird:
 // https://github.com/twitter/algebird/issues/128
 sealed trait Commutativity extends Serializable
-object NonCommutative extends Commutativity
-object Commutative extends Commutativity
+case object NonCommutative extends Commutativity
+case object Commutative extends Commutativity
 
 /** A readable way to specify commutivity in a way
  * that works with the Class-based Options system.

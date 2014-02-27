@@ -38,7 +38,7 @@ import java.util.TimeZone
 // the intermediate key-values for using a store as a service
 // in another job.
 // Prefer using .write in the -core API.
-case class StoreIntermediateData[K, V](sink: ScaldingSink[(K,V)]) extends java.io.Serializable
+case class StoreIntermediateData[K, V](sink: Sink[(K,V)]) extends java.io.Serializable
 
 // TODO (https://github.com/twitter/summingbird/issues/69): Add
 // documentation later describing command-line args. start-time,
@@ -83,7 +83,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // Used to insert a write just before the store so the store
   // can be used as a Service
   private def addDeltaWrite(snode: Summer[Scalding, Any, Any],
-    sink: ScaldingSink[(Any, Any)]): Summer[Scalding, Any, Any] = {
+    sink: Sink[(Any, Any)]): Summer[Scalding, Any, Any] = {
     val Summer(prod, store, monoid) = snode
     Summer(prod.write(sink), store, monoid)
   }
@@ -115,24 +115,14 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
 
     val scald = Scalding(name, opts)
         .withRegistrars(ajob.registrars ++ builder.registrar.getRegistrars.asScala)
-        .withConfigUpdater {
-          // Set these before the user settings, so that the user
-          // can change them if needed
-
-          // Make sure we use block compression from mappers to reducers
-          _.put("mapred.output.compression.type", "BLOCK")
-            .put("io.compression.codec.lzo.compression.level", "3")
-            .put("mapred.output.compress", "true")
-            .put("mapred.compress.map.output", "true")
-        }
         .withConfigUpdater{ c =>
           c.updated(ajob.transformConfig(c.toMap))
         }
 
-    def getStatePath(ss: ScaldingStore[_, _]): Option[String] =
+    def getStatePath(ss: Store[_, _]): Option[String] =
       ss match {
-        case store: VersionedBatchStore[_, _, _, _] => Some(store.rootPath)
-        case initstore: InitialBatchedStore[_, _] => getStatePath(initstore.proxy)
+        case store: store.VersionedBatchStore[_, _, _, _] => Some(store.rootPath)
+        case initstore: store.InitialBatchedStore[_, _] => getStatePath(initstore.proxy)
         case _ => None
       }
     // VersionedState needs this

@@ -16,18 +16,18 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.summingbird.batch
+import com.twitter.summingbird
 
 package object option {
   @deprecated("Use com.twitter.summingbird.batch.option.FlatMapShards", "0.3.2")
-  type FlatMapShards = batch.option.FlatMapShards
+  type FlatMapShards = summingbird.batch.option.FlatMapShards
 
   @deprecated("Use com.twitter.summingbird.batch.option.FlatMapShards", "0.3.2")
-  val FlatMapShards = batch.option.FlatMapShards
+  val FlatMapShards = summingbird.batch.option.FlatMapShards
 
   @deprecated("Use com.twitter.summingbird.batch.option.Reducers", "0.3.2")
-  type Reducers = batch.option.Reducers
+  type Reducers = summingbird.batch.option.Reducers
 
   @deprecated("Use com.twitter.summingbird.batch.option.Reducers", "0.3.2")
-  val Reducers = batch.option.Reducers
+  val Reducers = summingbird.batch.option.Reducers
 }
