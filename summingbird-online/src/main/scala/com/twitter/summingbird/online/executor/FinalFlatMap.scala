@@ -90,7 +90,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D](
     try {
       val itemL = items.toList
       if(itemL.size > 0) {
-        state.fanOut(itemL.size) // Since input state starts at a 1
+        state.fanOut(itemL.size)
         sCache.insert(itemL.map{case (k, v) =>
           summerShards.summerIdFor(k) -> (List(state), Map(k -> v))
         }).map(formatResult(_))
