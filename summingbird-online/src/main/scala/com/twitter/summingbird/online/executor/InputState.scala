@@ -78,7 +78,8 @@ case class InputState[T](state: T) {
   // Fanout is how many tuples one tuple became
   // so we increment by 1 less than the amount given
   def fanOut(by: Int) = {
-    require(by >= 1, "Invalid fanout: %d, by should be >= 1".format(by))
+    require(by >= 0, "Invalid fanout: %d, by should be >= 0".format(by))
+    require(stateTracking.get.counter == 1, "You can only call fanOut once, and must do it before acking the tuple.")
     val incrementAmount = by - 1
     val newS = stateTracking.update(_.incrBy(incrementAmount))
     // If we incremented on something that was 0 or negative
