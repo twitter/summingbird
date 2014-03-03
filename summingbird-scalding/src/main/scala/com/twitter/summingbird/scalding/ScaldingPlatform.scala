@@ -565,7 +565,9 @@ class Scalding(
     ("mapred.output.compression.type", "BLOCK"),
     ("io.compression.codec.lzo.compression.level", "3"),
     ("mapred.output.compress", "true"),
-    ("mapred.compress.map.output", "true")
+    ("mapred.compress.map.output", "true"),
+    ("mapreduce.output.fileoutputformat.compress", "true"),
+    ("mapreduce.output.fileoutputformat.compress.codec", "com.hadoop.compression.lzo.LzoCodec")
   )
 
   private def setHadoopConfigDefaults(c: Configuration): Unit =
