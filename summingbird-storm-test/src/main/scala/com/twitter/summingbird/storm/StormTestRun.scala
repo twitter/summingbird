@@ -18,13 +18,18 @@ package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
 import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, Testing }
+import com.twitter.summingbird.online.executor.InflightTuples
 import backtype.storm.testing.{ CompleteTopologyParam, MockedSources }
 import com.twitter.summingbird.storm.spout.TraversableSpout
+import com.twitter.summingbird.online.option._
+import com.twitter.summingbird.option._
 import com.twitter.summingbird._
 import com.twitter.summingbird.planner._
 import com.twitter.tormenta.spout.Spout
 import scala.collection.JavaConverters._
 import java.security.Permission
+import com.twitter.util.Duration
+
 
 
 /**
@@ -58,15 +63,18 @@ object StormTestRun {
     //Before running the external Command
     val oldSecManager = System.getSecurityManager()
     System.setSecurityManager(new MySecurityManager());
+    InflightTuples.reset
     try {
       val cluster = new LocalCluster()
-      Testing.completeTopology(cluster, plannedTopology.topology, completeTopologyParam(plannedTopology.config))
-      // Sleep to prevent this race: https://github.com/nathanmarz/storm/pull/667
+      cluster.submitTopology("test topology", plannedTopology.config, plannedTopology.topology)
+      Thread.sleep(4000)
+      cluster.killTopology("test topology")
       Thread.sleep(1000)
       cluster.shutdown
     } finally {
       System.setSecurityManager(oldSecManager)
     }
+    require(InflightTuples.get == 0, "Inflight tuples is: %d".format(InflightTuples.get))
   }
 
   def apply(graph: TailProducer[Storm, Any])(implicit storm: Storm) {
@@ -86,7 +94,11 @@ object StormTestRun {
       store
     )
 
-    implicit val s = Storm.local(Map())
+    implicit val s = Storm.local(Map(
+      "DEFAULT" -> Options().set(CacheSize(4))
+                      .set(FlushFrequency(Duration.fromMilliseconds(1)))
+      ))
+
     apply(job)
     TestStore[K, V](id).getOrElse(sys.error("Error running test, unable to find store at the end"))
   }

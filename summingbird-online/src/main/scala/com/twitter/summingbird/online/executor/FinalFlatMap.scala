@@ -21,13 +21,13 @@ import com.twitter.bijection.Injection
 import com.twitter.util.Future
 
 import com.twitter.summingbird.online.Externalizer
-import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp}
 
-import com.twitter.summingbird.online.{FlatMapOperation, AsyncCache}
+import com.twitter.summingbird.online.{FlatMapOperation, AsyncCache, CacheBuilder}
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.option.{
   MaxWaitingFutures,
   MaxFutureWaitTime,
+  MaxEmitPerExecute,
   FlushFrequency
 }
 
@@ -39,59 +39,78 @@ import com.twitter.summingbird.online.option.{
  * @author Ian O Connell
  */
 
-class FinalFlatMap[Event, Key, Value, S, D](
+// This is not a user settable variable.
+// Its supplied by the planning system usually to ensure its large enough to cover the space
+// used by the summers times some delta.
+private[summingbird] case class KeyValueShards(get: Int) {
+  def summerIdFor[K](k: K): Int = k.hashCode % get
+}
+
+class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
-  cacheBuilder: (Semigroup[(List[InputState[S]], Timestamp, Value)]) => AsyncCache[(Key, BatchID), (List[InputState[S]], Timestamp, Value)],
+  cacheBuilder: CacheBuilder[Int, (List[S], Map[Key, Value])],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
-  pDecoder: Injection[(Timestamp, Event), D],
-  pEncoder: Injection[(Timestamp, ((Key, BatchID), Value)), D]
+  maxEmitPerExec: MaxEmitPerExecute,
+  summerShards: KeyValueShards,
+  pDecoder: Injection[Event, D],
+  pEncoder: Injection[(Int, Map[Key, Value]), D]
   )
-  (implicit monoid: Semigroup[Value], batcher: Batcher)
-    extends AsyncBase[Event, ((Key, BatchID), Value), InputState[S], D](maxWaitingFutures,
-                                                          maxWaitingTime) {
+  extends AsyncBase[Event, (Int, Map[Key, Value]), S, D](maxWaitingFutures,
+                                                          maxWaitingTime,
+                                                          maxEmitPerExec) {
+
+  type InS = S
+  type OutputElement = (Int, Map[Key, Value])
+
   val encoder = pEncoder
   val decoder = pDecoder
 
   val lockedOp = Externalizer(flatMapOp)
 
-  lazy val sCache: AsyncCache[(Key, BatchID), (List[InputState[S]], Timestamp, Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Timestamp, Value)]])
+  lazy val sCache = cacheBuilder(implicitly[Semigroup[(List[S], Map[Key, Value])]])
 
-
-  private def formatResult(outData: Map[(Key, BatchID), (List[InputState[S]], Timestamp, Value)])
-                        : Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])] = {
-    outData.toList.map{ case ((key, batchID), (tupList, ts, value)) =>
-      (tupList, Future.value(List((ts, ((key, batchID), value)))))
+  private def formatResult(outData: Map[Int, (List[S], Map[Key, Value])])
+                        : TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])] = {
+    outData.iterator.map { case (outerKey, (tupList, valList)) =>
+      if(valList.isEmpty) {
+        (tupList, Future.value(Nil))
+      } else {
+        (tupList, Future.value(List((outerKey, valList))))
+      }
     }
   }
 
-  override def tick: Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
+  override def tick: Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
     sCache.tick.map(formatResult(_))
   }
 
-  def cache(state: InputState[S],
-            time: Timestamp,
-            items: TraversableOnce[(Key, Value)]): Future[Iterable[(List[InputState[S]], Future[TraversableOnce[(Timestamp, ((Key, BatchID), Value))]])]] = {
-
-    val batchID = batcher.batchOf(time)
-    val itemL = items.toList
-    if(itemL.size > 0) {
-      state.fanOut(itemL.size - 1) // Since input state starts at a 1
-
-      sCache.insert(itemL.map{case (k, v) => (k, batchID) -> (List(state), time, v)}).map(formatResult(_))
-    }
-    else { // Here we handle mapping to nothing, option map et. al
-        Future.value(
-          List(
-            (List(state), Future.value(Nil))
-          )
-        )
+  def cache(state: S,
+            items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
+    try {
+      val itemL = items.toList
+      if(itemL.size > 0) {
+        state.fanOut(itemL.size)
+        sCache.insert(itemL.map{case (k, v) =>
+          summerShards.summerIdFor(k) -> (List(state), Map(k -> v))
+        }).map(formatResult(_))
       }
+      else { // Here we handle mapping to nothing, option map et. al
+          Future.value(
+            List(
+              (List(state), Future.value(Nil))
+            )
+          )
+        }
+    }
+    catch {
+      case t: Throwable => Future.exception(t)
+    }
   }
 
-  override def apply(state: InputState[S],
-                     timeIn: (Timestamp, Event)) =
-    lockedOp.get.apply(timeIn._2).map { cache(state, timeIn._1, _) }.flatten
+  override def apply(state: S,
+                     tup: Event) =
+    lockedOp.get.apply(tup).map { cache(state, _) }.flatten
 
   override def cleanup {
     lockedOp.get.close

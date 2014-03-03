@@ -20,7 +20,6 @@ import com.twitter.algebird.{MapAlgebra, Semigroup}
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{BatchID, Batcher}
 import com.twitter.summingbird.memory._
 import com.twitter.summingbird.planner._
 import com.twitter.util.Future

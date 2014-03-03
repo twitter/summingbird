@@ -18,15 +18,12 @@ package com.twitter.summingbird.online.executor
 
 import com.twitter.util.{Await, Future}
 import com.twitter.algebird.{Semigroup, SummingQueue}
-import com.twitter.storehaus.algebra.MergeableStore
+import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.bijection.Injection
 
-import com.twitter.summingbird.online.{Externalizer, AsyncCache}
-import com.twitter.summingbird.batch.{BatchID, Timestamp}
+import com.twitter.summingbird.online.{FlatMapOperation, Externalizer, AsyncCache, CacheBuilder}
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
-
-
 
 /**
   * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
@@ -50,32 +47,34 @@ import com.twitter.summingbird.option.CacheSize
   * @author Ashu Singhal
   */
 
-class Summer[Key, Value: Semigroup, S, D](
-  @transient storeSupplier: () => MergeableStore[(Key,BatchID), Value],
+class Summer[Key, Value: Semigroup, Event, S, D](
+  @transient storeSupplier: () => Mergeable[Key, Value],
+  @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
-  cacheBuilder: (Semigroup[(List[S], Timestamp, Value)]) => AsyncCache[(Key, BatchID), (List[S], Timestamp, Value)],
+  cacheBuilder: CacheBuilder[Key, (List[InputState[S]], Value)],
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
+  maxEmitPerExec: MaxEmitPerExecute,
   includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: Injection[(Timestamp, ((Key, BatchID), Value)), D],
-  pEncoder: Injection[(Timestamp, (Key, (Option[Value], Value))), D]) extends
-    AsyncBase[((Key, BatchID), Value), (Key, (Option[Value], Value)), S, D](
+  pDecoder: Injection[(Int, Map[Key, Value]), D],
+  pEncoder: Injection[Event, D]) extends
+    AsyncBase[(Int, Map[Key, Value]), Event, InputState[S], D](
       maxWaitingFutures,
-      maxWaitingTime) {
+      maxWaitingTime,
+      maxEmitPerExec) {
 
+  val lockedOp = Externalizer(flatMapOp)
   val encoder = pEncoder
   val decoder = pDecoder
 
   val storeBox = Externalizer(storeSupplier)
   lazy val store = storeBox.get.apply
 
-  // See MaxWaitingFutures for a todo around removing this.
-  lazy val sCache: AsyncCache[(Key, BatchID), (List[S], Timestamp, Value)] = cacheBuilder(implicitly[Semigroup[(List[S], Timestamp, Value)]])
+  lazy val sCache: AsyncCache[Key, (List[InputState[S]], Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Value)]])
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
-
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
   override def init {
@@ -83,29 +82,39 @@ class Summer[Key, Value: Semigroup, S, D](
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  override def notifyFailure(inputs: List[S], error: Throwable): Unit = {
+  override def notifyFailure(inputs: List[InputState[S]], error: Throwable): Unit = {
     super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
   }
 
-  private def handleResult(kvs: Map[(Key, BatchID), (List[S], Timestamp, Value)])
-                        : Iterable[(List[S], Future[TraversableOnce[(Timestamp, (Key, (Option[Value], Value)))]])] = {
-    store.multiMerge(kvs.mapValues(_._3)).map{ case (innerKb, beforeF) =>
-      val (tups, stamp, delta) = kvs(innerKb)
-      val (k, _) = innerKb
-      (tups, beforeF.map(before => List((stamp, (k, (before, delta)))))
-        .onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
-    }
-    .toList // force, but order does not matter, so we could optimize this
-  }
+  private def handleResult(kvs: Map[Key, (List[InputState[S]], Value)]): TraversableOnce[(List[InputState[S]], Future[TraversableOnce[Event]])] =
+    store.multiMerge(kvs.mapValues(_._2)).iterator.map { case (k, beforeF) =>
+      val (tups, delta) = kvs(k)
+      (tups, beforeF.flatMap { before =>
+        lockedOp.get.apply((k, (before, delta)))
+      }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
+    }.toList
+
 
   override def tick = sCache.tick.map(handleResult(_))
 
-  override def apply(state: S,
-                     tsIn: (Timestamp, ((Key, BatchID), Value))) = {
-    val (ts, (kb, v)) = tsIn
-    sCache.insert(List(kb -> (List(state), ts, v))).map(handleResult(_))
+  override def apply(state: InputState[S],
+                     tupList: (Int, Map[Key, Value])) = {
+    try {
+      val (_, innerTuples) = tupList
+      assert(innerTuples.size > 0, "Maps coming in must not be empty")
+      state.fanOut(innerTuples.size)
+      val cacheEntries = innerTuples.map { case (k, v) =>
+        (k, (List(state), v))
+      }
+
+      sCache.insert(cacheEntries).map(handleResult(_))
+    }
+    catch {
+      case t: Throwable => Future.exception(t)
+    }
   }
 
-  override def cleanup { Await.result(store.close) }
+
+  override def cleanup = Await.result(store.close)
 }

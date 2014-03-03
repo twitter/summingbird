@@ -16,6 +16,8 @@
 
 package com.twitter.summingbird
 
+import scala.collection.mutable.{Map => MMap}
+
 /** Collection of graph algorithms */
 package object graph {
   type NeighborFn[T] = (T => Iterable[T])
@@ -62,22 +64,25 @@ package object graph {
    * Behavior is not defined if the graph is not a DAG (for now, it runs forever, may throw later)
    */
   def dagDepth[T](nodes: Iterable[T])(nf: NeighborFn[T]): Map[T, Int] = {
+    val acc = MMap[T, Int]()
     @annotation.tailrec
-    def computeDepth(todo: Set[T], acc: Map[T, Int]): Map[T, Int] =
-      if(todo.isEmpty) acc
-      else {
+    def computeDepth(todo: Set[T]): Unit =
+      if(!todo.isEmpty) {
         def withParents(n: T) = (n :: (nf(n).toList)).filterNot(acc.contains(_)).distinct
 
         val (doneThisStep, rest) = todo.map { withParents(_) }.partition { _.size == 1 }
-        val newAcc = acc ++ (doneThisStep.flatten.map { n =>
+
+        acc ++= (doneThisStep.flatten.map { n =>
           val depth = nf(n) //n is done now, so all it's neighbors must be too.
             .map { acc(_) + 1 }
             .reduceOption { _ max _ }
             .getOrElse(0)
           n -> depth
         })
-        computeDepth(rest.flatten, newAcc)
+        computeDepth(rest.flatten)
       }
-    computeDepth(nodes.toSet, Map.empty)
+
+    computeDepth(nodes.toSet)
+    acc.toMap
   }
 }

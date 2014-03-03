@@ -14,20 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.online
-import com.twitter.util.Future
-import com.twitter.algebird.Semigroup
+package com.twitter.summingbird.batch
 
-/**
- * @author Ian O Connell
- */
-trait AsyncCache[Key, Value] {
-  def forceTick: Future[Map[Key, Value]]
-  def tick: Future[Map[Key, Value]]
-  def insert(vals: TraversableOnce[(Key, Value)]): Future[Map[Key, Value]]
-  def cleanup: Future[Unit] = Future.Unit
+case class Milliseconds(toLong: Long) extends Ordered[Milliseconds] {
+  def compare(that: Milliseconds) = toLong.compare(that.toLong)
+  def prev = copy(toLong = toLong - 1)
+  def next = copy(toLong = toLong + 1)
 }
 
-trait CacheBuilder[Key, Value] extends Serializable {
-  def apply(sg: Semigroup[Value]): AsyncCache[Key, Value]
+object Milliseconds {
+  val Max = Milliseconds(Long.MaxValue)
+  val Min = Milliseconds(Long.MinValue)
+  implicit val orderingOnTimestamp: Ordering[Milliseconds] = Ordering.by(_.toLong)
 }

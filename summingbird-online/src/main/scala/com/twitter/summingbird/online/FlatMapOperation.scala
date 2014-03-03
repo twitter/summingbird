@@ -43,13 +43,13 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
                     // serialization. I think that Kryo mis-serializes that reference.
     new FlatMapOperation[T, V] {
       def apply(t: T) = self(t).flatMap { tr =>
-        val next: Seq[Future[TraversableOnce[V]]] = tr.map { fmo.apply(_) }.toSeq
+        val next: Seq[Future[TraversableOnce[V]]] = tr.map { fmo.apply(_) }.toIndexedSeq
         Future.collect(next).map(_.flatten) // flatten the inner
       }
 
       override def maybeFlush = {
         self.maybeFlush.flatMap{ x: TraversableOnce[U] =>
-          val z: Seq[Future[TraversableOnce[V]]] = x.map(fmo.apply(_)).toSeq
+          val z: IndexedSeq[Future[TraversableOnce[V]]] = x.map(fmo.apply(_)).toIndexedSeq
           val w: Future[Seq[V]] = Future.collect(z).map(_.flatten)
           for {
                 ws <- w
@@ -67,6 +67,12 @@ class FunctionFlatMapOperation[T, U](@transient fm: T => TraversableOnce[U])
     extends FlatMapOperation[T, U] {
   val boxed = Externalizer(fm)
   def apply(t: T) = Future.value(boxed.get(t))
+}
+
+class GenericFlatMapOperation[T, U](@transient fm: T => Future[TraversableOnce[U]])
+    extends FlatMapOperation[T, U] {
+  val boxed = Externalizer(fm)
+  def apply(t: T) = boxed.get(t)
 }
 
 class FunctionKeyFlatMapOperation[K1, K2, V](@transient fm: K1 => TraversableOnce[K2])
@@ -91,6 +97,9 @@ object FlatMapOperation {
   def apply[T, U](fm: T => TraversableOnce[U]): FlatMapOperation[T, U] =
     new FunctionFlatMapOperation(fm)
 
+  def generic[T, U](fm: T => Future[TraversableOnce[U]]): FlatMapOperation[T, U] =
+    new GenericFlatMapOperation(fm)
+
   def keyFlatMap[K1, K2, V](fm: K1 => TraversableOnce[K2]): FlatMapOperation[(K1, V), (K2, V)] =
     new FunctionKeyFlatMapOperation(fm)
 
@@ -108,11 +117,9 @@ object FlatMapOperation {
             Future.value(Map.empty)
           else {
             // Do the lookup
-            val mres: Map[K, Future[Option[JoinedV]]] =
-              store.multiGet(keySet)
-            Future.collect {
-              resultList.map { case (k, v) => mres(k).map { k -> (v, _) } }
-            }.map { _.toMap }
+            val mres: Map[K, Future[Option[JoinedV]]] = store.multiGet(keySet)
+            val resultFutures = resultList.map { case (k, v) => mres(k).map { k -> (v, _) } }.toIndexedSeq
+            Future.collect(resultFutures).map(_.toMap)
           }
         }
 
