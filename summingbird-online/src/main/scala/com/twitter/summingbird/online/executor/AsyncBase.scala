@@ -86,7 +86,7 @@ abstract class AsyncBase[I,O,S,D](maxWaitingFutures: MaxWaitingFutures, maxWaiti
 
   private def forceExtraFutures {
     outstandingFutures.dequeueAll(_.isDefined)
-    val toForce = outstandingFutures.trimTo(maxWaitingFutures.get)
+    val toForce = outstandingFutures.trimTo(maxWaitingFutures.get).toIndexedSeq
     if(!toForce.isEmpty) {
       try {
         Await.ready(Future.collect(toForce), maxWaitingTime.get)
