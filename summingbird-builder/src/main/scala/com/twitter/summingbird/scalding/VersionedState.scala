@@ -16,8 +16,20 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{ Interval, Intersection, ExclusiveUpper, InclusiveUpper }
-import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp }
+import com.twitter.algebird.{
+  InclusiveUpper,
+  Intersection,
+  Interval,
+  ExclusiveUpper
+}
+import com.twitter.summingbird.batch.{
+  Batcher,
+  BatchID,
+  PrepareState => BPrepareState,
+  RunningState => BRunningState,
+  Timestamp,
+  WaitingState => BWaitingState
+}
 import com.twitter.summingbird.batch.store.HDFSMetadata
 
 import org.slf4j.LoggerFactory
@@ -34,13 +46,13 @@ private[scalding] object VersionedState {
 }
 
 private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
-  (implicit batcher: Batcher) extends WaitingState[Interval[Timestamp]] { outer =>
+  (implicit batcher: Batcher) extends BWaitingState[Interval[Timestamp]] { outer =>
 
   private val logger = LoggerFactory.getLogger(classOf[VersionedState])
 
-  def begin: PrepareState[Interval[Timestamp]] = new VersionedPrepareState
+  def begin: BPrepareState[Interval[Timestamp]] = new VersionedPrepareState
 
-  private class VersionedPrepareState extends PrepareState[Interval[Timestamp]] {
+  private class VersionedPrepareState extends BPrepareState[Interval[Timestamp]] {
     def newestCompleted: Option[BatchID] =
       meta.versions.map { vers =>
         val thisMeta = meta(vers)
@@ -61,7 +73,7 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
       * batch stored in the most recent metadata file to the current
       * time.
       */
-    lazy val requested = {
+    lazy val requested: Interval[Timestamp] = {
       val beginning: BatchID =
         startDate.map(batcher.batchOf(_))
           .orElse(newestCompleted)
@@ -71,7 +83,7 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
       Interval.leftClosedRightOpen(
         batcher.earliestTimeOf(beginning),
         batcher.earliestTimeOf(end)
-      )
+      ).right.get
     }
 
     def willAccept(available: Interval[Timestamp]) =
@@ -94,8 +106,8 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
     }
   }
 
-  private class VersionedRunningState(succeedPart: Intersection[Timestamp])
-    extends RunningState[Interval[Timestamp]] {
+  private class VersionedRunningState(succeedPart: Interval.GenIntersection[Timestamp])
+    extends BRunningState[Interval[Timestamp]] {
 
     def nextTime: Timestamp = succeedPart match {
       case Intersection(_, ExclusiveUpper(up)) => up

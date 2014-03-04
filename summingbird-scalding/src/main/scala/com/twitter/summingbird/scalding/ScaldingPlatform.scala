@@ -17,14 +17,22 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.{ Monoid, Semigroup, Monad }
-import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveLower, ExclusiveUpper, InclusiveUpper }
+import com.twitter.algebird.{
+  Universe,
+  Empty,
+  Interval,
+  Intersection,
+  InclusiveLower,
+  ExclusiveLower,
+  ExclusiveUpper,
+  InclusiveUpper
+}
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.bijection.Injection
+import com.twitter.bijection.{AbstractInjection, Injection}
 import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _}
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
-import com.twitter.summingbird.scalding.source.TimePathedSource
 import com.twitter.summingbird.batch._
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.summingbird.chill._
@@ -51,25 +59,26 @@ object Scalding {
     new Scalding(jobName, options, identity, List())
   }
 
-  implicit val dateRangeInjection: Injection[DateRange, Interval[Timestamp]] = Injection.build {
-    (dr: DateRange) => {
-      val DateRange(l, u) = dr
-      Interval.leftClosedRightOpen(Timestamp(l.timestamp), Timestamp(u.timestamp + 1L))
+  implicit val dateRangeInjection: Injection[DateRange, Interval[Timestamp]] =
+    new AbstractInjection[DateRange, Interval[Timestamp]] {
+      override def apply(dr: DateRange) = {
+        val DateRange(l, u) = dr
+        Intersection(InclusiveLower(Timestamp(l.timestamp)), ExclusiveUpper(Timestamp(u.timestamp + 1L)))
+      }
+      override def invert(in: Interval[Timestamp]) = in match {
+        case Intersection(lb, ub) =>
+          val low = lb match {
+            case InclusiveLower(l) => l
+            case ExclusiveLower(l) => l.next
+          }
+          val high = ub match {
+            case InclusiveUpper(u) => u
+            case ExclusiveUpper(u) => u.prev
+          }
+          Success(DateRange(low.toRichDate, high.toRichDate))
+        case _ => Failure(new RuntimeException("Unbounded interval!"))
+      }
     }
-  } {
-    case Intersection(lb, ub) =>
-      val low = lb match {
-        case InclusiveLower(l) => l
-        case ExclusiveLower(l) => l.next
-      }
-      val high = ub match {
-        case InclusiveUpper(u) => u
-        case ExclusiveUpper(u) => u.prev
-      }
-      Success(DateRange(low.toRichDate, high.toRichDate))
-    case _ => Failure(new RuntimeException("Unbounded interval!"))
-  }
-
 
   def emptyFlowProducer[T]: FlowProducer[TypedPipe[T]] =
     Reader({ implicit fdm: (FlowDef, Mode) => TypedPipe.empty })

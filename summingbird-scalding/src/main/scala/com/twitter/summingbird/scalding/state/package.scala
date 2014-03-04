@@ -16,8 +16,6 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.summingbird.batch
-
 package object state {
   @deprecated("Use com.twitter.summingbird.batch.state.HDFSState", "0.3.2")
   type HDFSState = com.twitter.summingbird.batch.state.HDFSState
