@@ -39,7 +39,7 @@ import com.twitter.util.Duration
   */
 case class SummerParallelism(parHint: Int)
 
-case class OnlineSuccessHandler(handlerFn: Unit => Unit)
+// case class OnlineSuccessHandler(handlerFn: Unit => Unit)
 
 /**
   * Kryo serialization problems have been observed with using
@@ -47,13 +47,13 @@ case class OnlineSuccessHandler(handlerFn: Unit => Unit)
   * TODO (https://github.com/twitter/summingbird/issues/82): remove
   * once we know what the hell is going on with this
   */
-case class IncludeSuccessHandler(get: Boolean)
+// case class IncludeSuccessHandler(get: Boolean)
 
-object IncludeSuccessHandler {
-  val default = IncludeSuccessHandler(true)
-}
+// object IncludeSuccessHandler {
+//   val default = IncludeSuccessHandler(true)
+// }
 
-case class OnlineExceptionHandler(handlerFn: PartialFunction[Throwable, Unit])
+// case class OnlineExceptionHandler(handlerFn: PartialFunction[Throwable, Unit])
 
 /**
   * See FlatMapOptions.scala for an explanation.
