@@ -97,29 +97,13 @@ class NonEmptyYetAnotherCache[Key, Value](cacheSizeOpt: CacheSize,
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
   protected val cacheSize = cacheSizeOpt.size.get
 
-  private var queue: ArrayBlockingQueue[Map[Key, Value]] = new ArrayBlockingQueue[Map[Key, Value]](cacheSizeOpt.size.get, true)
-  private var nextQueuePromise: Promise[ArrayBlockingQueue[Map[Key, Value]]] = {
-    val p = Promise[ArrayBlockingQueue[Map[Key, Value]]]()
-    p.setValue(new ArrayBlockingQueue[Map[Key, Value]](cacheSizeOpt.size.get, true))
-    p
-  }
+  private val queue: ArrayBlockingQueue[Map[Key, Value]] = new ArrayBlockingQueue[Map[Key, Value]](cacheSizeOpt.size.get, true)
 
   override def forceTick: Future[Map[Key, Value]] = {
-    val fullQueue = this.synchronized {
-      val otherQueue = Await.result(nextQueuePromise)
-      nextQueuePromise = Promise[ArrayBlockingQueue[Map[Key, Value]]]()
-      val queueHolder = queue
-      queue = otherQueue
-      didFlush
-      queueHolder
-    }
+    val toSum = ListBuffer[Map[Key, Value]]()
+    queue.drainTo(toSum.asJava)
     futurePool {
-      this.synchronized {
-        val toSum = ListBuffer[Map[Key, Value]]()
-        fullQueue.drainTo(toSum.asJava)
-        nextQueuePromise.setValue(fullQueue)
-        Semigroup.sumOption(toSum).getOrElse(Map.empty)
-      }
+      Semigroup.sumOption(toSum).getOrElse(Map.empty)
     }
   }
 
