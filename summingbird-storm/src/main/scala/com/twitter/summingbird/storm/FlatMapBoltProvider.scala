@@ -26,7 +26,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
-import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache, CacheBuilder}
+import com.twitter.summingbird.online.{YetAnotherCache, SummingQueueCache, CacheBuilder}
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime}
 import com.twitter.summingbird.util.CacheSize
@@ -123,8 +123,7 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
 
       val valueCombinerCrushSize = getOrElse(DEFAULT_VALUE_COMBINER_CACHE_SIZE)
       logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
-      MultiTriggerCache.builder[K, V](cacheSize, valueCombinerCrushSize, flushFrequency,
-                                      softMemoryFlush, asyncPoolSize)
+      YetAnotherCache.builder[K, V](cacheSize, flushFrequency, softMemoryFlush)
     } else {
       SummingQueueCache.builder[K, V](cacheSize, flushFrequency)
     }
