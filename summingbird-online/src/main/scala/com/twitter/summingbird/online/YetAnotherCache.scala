@@ -68,7 +68,7 @@ private[summingbird] trait WithFlushConditions[Key, Value] extends AsyncCache[Ke
 }
 
 private[summingbird] trait ParallelCleanup[Key, Value] extends AsyncCache[Key, Value] {
-  protected def executor: ExecutorService = Executors.newFixedThreadPool(1)
+  protected def executor: ExecutorService
   protected lazy val futurePool = FuturePool(executor)
 
   override def cleanup = {
