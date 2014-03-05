@@ -17,7 +17,7 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.summingbird.scalding._
-import source.TimePathedSource
+import source.{TimePathedSource => BTimePathedSource}
 import com.twitter.summingbird._
 import org.scalacheck._
 import Gen._
@@ -65,7 +65,7 @@ object TimePathSourceLaws extends Properties("Time path source") {
 
 
   property("if the reqRange + embiggen is inside the avail range, return should == requested") = forAll { (data: TestData) =>
-    val retData = TimePathedSource.minify(genEmbiggen(data.embiggen), genVertractor(data.availableRange))(data.requestedRange)
+    val retData = BTimePathedSource.minify(genEmbiggen(data.embiggen), genVertractor(data.availableRange))(data.requestedRange)
     if(rangeWithEmbgginContained(data.requestedRange, data.embiggen, data.availableRange))
     {
       retData == Some(data.requestedRange)
@@ -73,7 +73,7 @@ object TimePathSourceLaws extends Properties("Time path source") {
   }
 
   property("If not a complete subset, but overlapping we can imply a few prerequisites") = forAll { (data: TestData) =>
-    val retData = TimePathedSource.minify(genEmbiggen(data.embiggen), genVertractor(data.availableRange))(data.requestedRange)
+    val retData = BTimePathedSource.minify(genEmbiggen(data.embiggen), genVertractor(data.availableRange))(data.requestedRange)
     retData match {
         case None => true
         case Some(range) =>
@@ -86,7 +86,7 @@ object TimePathSourceLaws extends Properties("Time path source") {
 
 
   property("If the return is none, then the ranges should be disjoint or one is None") = forAll { (data: TestData) =>
-    val retData = TimePathedSource.minify(genEmbiggen(data.embiggen), genVertractor(data.availableRange))(data.requestedRange)
+    val retData = BTimePathedSource.minify(genEmbiggen(data.embiggen), genVertractor(data.availableRange))(data.requestedRange)
     retData match {
       case None =>
         (

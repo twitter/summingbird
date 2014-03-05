@@ -17,18 +17,24 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.monad._
-import com.twitter.summingbird.batch._
+import com.twitter.summingbird.batch.{
+  PrepareState => BPrepareState,
+  RunningState => BRunningState,
+  WaitingState => BWaitingState,
+  _
+}
+
 
 
 // This is not really usable, just a mock that does the same state over and over
-class LoopState[T](init: T) extends WaitingState[T] { self =>
-  def begin = new PrepareState[T] {
+class LoopState[T](init: T) extends BWaitingState[T] { self =>
+  def begin = new BPrepareState[T] {
     def requested = self.init
     def fail(err: Throwable) = {
       println(err)
       self
     }
-    def willAccept(intr: T) = Right(new RunningState[T] {
+    def willAccept(intr: T) = Right(new BRunningState[T] {
       def succeed = self
       def fail(err: Throwable) = {
         println(err)

@@ -33,7 +33,8 @@ import com.twitter.bijection.{AbstractInjection, Injection}
 import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _}
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
-import com.twitter.summingbird.batch._
+import com.twitter.summingbird.batch.{WaitingState => BWaitingState, _}
+import com.twitter.summingbird.scalding.source.{TimePathedSource => BTimePathedSource}
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.option._
@@ -117,7 +118,7 @@ object Scalding {
       try {
         val available = (mode, factory(desired)) match {
           case (hdfs: Hdfs, ts: STPS) =>
-            TimePathedSource.satisfiableHdfs(hdfs, desired, factory.asInstanceOf[DateRange => STPS])
+            BTimePathedSource.satisfiableHdfs(hdfs, desired, factory.asInstanceOf[DateRange => STPS])
           case _ => bisectingMinify(mode, desired)(factory)
         }
         available.flatMap { intersect(desired, _) }
@@ -600,14 +601,14 @@ class Scalding(
     }
   }
 
-  def run(state: WaitingState[Interval[Timestamp]],
+  def run(state: BWaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: TailProducer[Scalding, Any]): WaitingState[Interval[Timestamp]] =
+    pf: TailProducer[Scalding, Any]): BWaitingState[Interval[Timestamp]] =
     run(state, mode, plan(pf))
 
-  def run(state: WaitingState[Interval[Timestamp]],
+  def run(state: BWaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = {
+    pf: PipeFactory[Any]): BWaitingState[Interval[Timestamp]] = {
 
     mode match {
       case Hdfs(_, conf) =>
