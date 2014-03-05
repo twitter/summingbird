@@ -40,7 +40,8 @@ object SummingbirdBuild extends Build {
       Opts.resolver.sonatypeReleases,
       "Clojars Repository" at "http://clojars.org/repo",
       "Conjars Repository" at "http://conjars.org/repo",
-      "Twitter Maven" at "http://maven.twttr.com"
+      "Twitter Maven" at "http://maven.twttr.com",
+      "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
     ),
 
     parallelExecution in Test := true,
@@ -251,6 +252,26 @@ object SummingbirdBuild extends Build {
       "commons-lang" % "commons-lang" % "2.6",
       "com.twitter" %% "scalding-core" % scaldingVersion,
       "com.twitter" %% "scalding-commons" % scaldingVersion
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdChill,
+    summingbirdBatchHadoop,
+    summingbirdBatch
+  )
+
+  lazy val summingbirdSpark = module("spark").settings(
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "algebird-util" % algebirdVersion,
+      "com.twitter" %% "algebird-bijection" % algebirdVersion,
+      "com.twitter" %% "bijection-json" % bijectionVersion,
+      "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" % "chill-hadoop" % chillVersion,
+      "com.twitter" %% "chill-bijection" % chillVersion,
+      "commons-lang" % "commons-lang" % "2.6",
+      "org.apache.spark" %% "spark-core" % "0.8.1-incubating",
+      "commons-httpclient" % "commons-httpclient" % "3.1"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
