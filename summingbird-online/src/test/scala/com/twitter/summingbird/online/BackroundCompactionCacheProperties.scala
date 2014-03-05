@@ -30,7 +30,7 @@ import org.scalacheck.Prop._
 import scala.util.Random
 import com.twitter.util.Duration
 
-object YetAnotherCacheProperties extends Properties("YetAnotherCache") {
+object BackroundCompactionCacheProperties extends Properties("BackroundCompactionCache") {
 
   implicit def arbFlushFreq = Arbitrary {
          Gen.choose(1, 4000)
@@ -46,7 +46,7 @@ object YetAnotherCacheProperties extends Properties("YetAnotherCache") {
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
   property("Summing with and without the cache should match") = forAll { inputs: List[List[(Int, Int)]] =>
-    val cache = YetAnotherCache[Int, Int](sample[CacheSize], sample[FlushFrequency], SoftMemoryFlushPercent(80.0F))
+    val cache = BackroundCompactionCache[Int, Int](sample[CacheSize], sample[FlushFrequency], SoftMemoryFlushPercent(80.0F))
     val reference = MapAlgebra.sumByKey(inputs.flatten)
     val resA = Await.result(Future.collect(inputs.map(cache.insert(_)))).map(_.toList).flatten
     val resB = Await.result(cache.forceTick)
@@ -60,7 +60,7 @@ object YetAnotherCacheProperties extends Properties("YetAnotherCache") {
   }
 
   property("Input Set must not get duplicates") = forAll { (ids: Set[Int], inputs: List[List[(Int, Int)]]) =>
-    val cache = YetAnotherCache[Int, (List[Int], Int)](sample[CacheSize], sample[FlushFrequency], SoftMemoryFlushPercent(80.0F))
+    val cache = BackroundCompactionCache[Int, (List[Int], Int)](sample[CacheSize], sample[FlushFrequency], SoftMemoryFlushPercent(80.0F))
     val idList = (ids ++ Set(1)).toList
     var refCount = MMap[Int, Int]()
     val realInputs = inputs.map{ iList =>
