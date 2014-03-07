@@ -84,13 +84,15 @@ object HDFSStateLaws extends Specification {
     val config = HDFSState.Config(path, new Configuration, startDate, numBatches)
 
     // Not aligned with batch size
-    val partialIncompleteInterval: Interval[Timestamp] = Interval.leftClosedRightOpen(
+    val partialIncompleteInterval: Interval[Timestamp] = Interval.leftClosedRightOpen[Timestamp](
       batcher.earliestTimeOf(batcher.batchOf(startDate.get)),
-      RichDate("2012-12-26T10:40").value)
+      RichDate("2012-12-26T10:40").value
+    ).right.get
 
-    val partialCompleteInterval: Interval[Timestamp] = Interval.leftClosedRightOpen(
+    val partialCompleteInterval: Interval[Timestamp] = Interval.leftClosedRightOpen[Timestamp](
       batcher.earliestTimeOf(batcher.batchOf(startDate.get)),
-      RichDate("2012-12-26T11:30").value)
+      RichDate("2012-12-26T11:30").value
+    ).right.get
 
     val runningState = HDFSState(config).begin.willAccept(partialIncompleteInterval)
     val waitingState = runningState match {

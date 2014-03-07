@@ -20,6 +20,7 @@ import com.twitter.algebird.monad._
 import com.twitter.summingbird.batch._
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
+import com.twitter.summingbird.scalding.batch.{BatchedService => BBatchedService}
 import scala.collection.mutable.Buffer
 import cascading.tuple.Tuple
 import cascading.flow.FlowDef
@@ -33,7 +34,7 @@ class TestService[K, V](service: String,
   tset2: TupleSetter[(Timestamp, (K, V))],
   tconv: TupleConverter[(Timestamp, (K, Option[V]))],
   tconv2: TupleConverter[(Timestamp, (K, V))])
-  extends BatchedService[K, V] {
+  extends BBatchedService[K, V] {
 
   val batcher = inBatcher
   val ordering = ord

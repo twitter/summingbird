@@ -21,8 +21,8 @@ import com.twitter.algebird.Interval
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.scalding.{Source => SSource, _ }
-import com.twitter.scalding.typed.{ TypedPipe => _, _ }
+import com.twitter.scalding.{Grouped => _, Source => SSource, _ }
+import com.twitter.scalding.typed.{TypedPipe => _, _ }
 import cascading.flow.FlowDef
 
 /** A UniqueKeyedService covers the case where Keys are globally

@@ -16,8 +16,21 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{ Interval, Intersection, ExclusiveUpper, InclusiveUpper }
-import com.twitter.summingbird.batch.{ Batcher, BatchID, Timestamp }
+import com.twitter.algebird.{
+  InclusiveUpper,
+  Intersection,
+  Interval,
+  ExclusiveUpper
+}
+import com.twitter.summingbird.scalding.{WaitingState => _}
+import com.twitter.summingbird.batch.{
+  Batcher,
+  BatchID,
+  PrepareState,
+  RunningState,
+  Timestamp,
+  WaitingState
+}
 import com.twitter.summingbird.batch.store.HDFSMetadata
 
 import org.slf4j.LoggerFactory
@@ -61,7 +74,7 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
       * batch stored in the most recent metadata file to the current
       * time.
       */
-    lazy val requested = {
+    lazy val requested: Interval[Timestamp] = {
       val beginning: BatchID =
         startDate.map(batcher.batchOf(_))
           .orElse(newestCompleted)
@@ -71,7 +84,7 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
       Interval.leftClosedRightOpen(
         batcher.earliestTimeOf(beginning),
         batcher.earliestTimeOf(end)
-      )
+      ).right.get
     }
 
     def willAccept(available: Interval[Timestamp]) =
@@ -94,7 +107,7 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
     }
   }
 
-  private class VersionedRunningState(succeedPart: Intersection[Timestamp])
+  private class VersionedRunningState(succeedPart: Interval.GenIntersection[Timestamp])
     extends RunningState[Interval[Timestamp]] {
 
     def nextTime: Timestamp = succeedPart match {

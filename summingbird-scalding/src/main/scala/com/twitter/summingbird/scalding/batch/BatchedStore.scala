@@ -140,7 +140,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
     import IteratorSums._ // get the groupedSum, partials function
 
-    logger.info("Previous written batch: {}, computing: {}", inBatch, batches)
+    logger.info("Previous written batch: {}, computing: {}", inBatch.asInstanceOf[Any], batches)
 
     def prepareOld(old: TypedPipe[(K, V)]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
       old.map { case (k, v) => (k, (inBatch, (Timestamp.Min, v))) }
