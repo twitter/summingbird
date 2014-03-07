@@ -93,15 +93,15 @@ package object builder {
   val MaxWaitingFutures = storm.option.MaxWaitingFutures
 
   /** Scalding options here */
-  @deprecated("Use com.twitter.summingbird.scalding.option.FlatMapShards", "0.1.0")
-  val FlatMapShards = scalding.option.FlatMapShards
+  @deprecated("Use com.twitter.summingbird.batch.option.FlatMapShards", "0.1.0")
+  val FlatMapShards = batch.option.FlatMapShards
 
-  @deprecated("Use com.twitter.summingbird.scalding.option.FlatMapShards", "0.1.0")
-  type FlatMapShards = scalding.option.FlatMapShards
+  @deprecated("Use com.twitter.summingbird.batch.option.FlatMapShards", "0.1.0")
+  type FlatMapShards = batch.option.FlatMapShards
 
-  @deprecated("Use com.twitter.summingbird.scalding.option.Reducers", "0.1.0")
-  val Reducers = scalding.option.Reducers
+  @deprecated("Use com.twitter.summingbird.batch.option.Reducers", "0.1.0")
+  val Reducers = batch.option.Reducers
 
-  @deprecated("Use com.twitter.summingbird.scalding.option.Reducers", "0.1.0")
-  type Reducers = scalding.option.Reducers
+  @deprecated("Use com.twitter.summingbird.batch.option.Reducers", "0.1.0")
+  type Reducers = batch.option.Reducers
 }

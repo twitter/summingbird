@@ -17,15 +17,24 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.{ Monoid, Semigroup, Monad }
-import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveLower, ExclusiveUpper, InclusiveUpper }
+import com.twitter.algebird.{
+  Universe,
+  Empty,
+  Interval,
+  Intersection,
+  InclusiveLower,
+  ExclusiveLower,
+  ExclusiveUpper,
+  InclusiveUpper
+}
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.bijection.Injection
+import com.twitter.bijection.{AbstractInjection, Injection}
 import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _}
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
-import com.twitter.summingbird.scalding.source.TimePathedSource
-import com.twitter.summingbird.batch._
+import com.twitter.summingbird.batch.{WaitingState => BWaitingState, _}
+import com.twitter.summingbird.scalding.source.{TimePathedSource => BTimePathedSource}
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.option._
@@ -51,25 +60,26 @@ object Scalding {
     new Scalding(jobName, options, identity, List())
   }
 
-  implicit val dateRangeInjection: Injection[DateRange, Interval[Timestamp]] = Injection.build {
-    (dr: DateRange) => {
-      val DateRange(l, u) = dr
-      Interval.leftClosedRightOpen(Timestamp(l.timestamp), Timestamp(u.timestamp + 1L))
+  implicit val dateRangeInjection: Injection[DateRange, Interval[Timestamp]] =
+    new AbstractInjection[DateRange, Interval[Timestamp]] {
+      override def apply(dr: DateRange) = {
+        val DateRange(l, u) = dr
+        Intersection(InclusiveLower(Timestamp(l.timestamp)), ExclusiveUpper(Timestamp(u.timestamp + 1L)))
+      }
+      override def invert(in: Interval[Timestamp]) = in match {
+        case Intersection(lb, ub) =>
+          val low = lb match {
+            case InclusiveLower(l) => l
+            case ExclusiveLower(l) => l.next
+          }
+          val high = ub match {
+            case InclusiveUpper(u) => u
+            case ExclusiveUpper(u) => u.prev
+          }
+          Success(DateRange(low.toRichDate, high.toRichDate))
+        case _ => Failure(new RuntimeException("Unbounded interval!"))
+      }
     }
-  } {
-    case Intersection(lb, ub) =>
-      val low = lb match {
-        case InclusiveLower(l) => l
-        case ExclusiveLower(l) => l.next
-      }
-      val high = ub match {
-        case InclusiveUpper(u) => u
-        case ExclusiveUpper(u) => u.prev
-      }
-      Success(DateRange(low.toRichDate, high.toRichDate))
-    case _ => Failure(new RuntimeException("Unbounded interval!"))
-  }
-
 
   def emptyFlowProducer[T]: FlowProducer[TypedPipe[T]] =
     Reader({ implicit fdm: (FlowDef, Mode) => TypedPipe.empty })
@@ -79,9 +89,9 @@ object Scalding {
     s: Summer[Scalding, _, _]): Commutativity = {
 
     val commutativity = getOrElse(options, names, s, {
-      logger.warn("Store: {} has no commutativity setting. Assuming {}",
-          names, MonoidIsCommutative.default)
-      MonoidIsCommutative.default
+      val default = MonoidIsCommutative.default
+      logger.warn("Store: %s has no commutativity setting. Assuming %s".format(names, default))
+      default
     }).commutativity
 
     commutativity match {
@@ -108,7 +118,7 @@ object Scalding {
       try {
         val available = (mode, factory(desired)) match {
           case (hdfs: Hdfs, ts: STPS) =>
-            TimePathedSource.satisfiableHdfs(hdfs, desired, factory.asInstanceOf[DateRange => STPS])
+            BTimePathedSource.satisfiableHdfs(hdfs, desired, factory.asInstanceOf[DateRange => STPS])
           case _ => bisectingMinify(mode, desired)(factory)
         }
         available.flatMap { intersect(desired, _) }
@@ -240,7 +250,7 @@ object Scalding {
 
     maybePair match {
       case None =>
-          logger.debug("Producer ({}): Using default setting {}", producer.getClass.getName, default)
+          logger.debug("Producer (%s): Using default setting %s".format(producer.getClass.getName, default))
           default
       case Some((id, opt)) =>
           logger.info("Producer ({}) Using {} found via NamedProducer \"{}\"", Array[AnyRef](producer.getClass.getName, opt, id))
@@ -591,14 +601,14 @@ class Scalding(
     }
   }
 
-  def run(state: WaitingState[Interval[Timestamp]],
+  def run(state: BWaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: TailProducer[Scalding, Any]): WaitingState[Interval[Timestamp]] =
+    pf: TailProducer[Scalding, Any]): BWaitingState[Interval[Timestamp]] =
     run(state, mode, plan(pf))
 
-  def run(state: WaitingState[Interval[Timestamp]],
+  def run(state: BWaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = {
+    pf: PipeFactory[Any]): BWaitingState[Interval[Timestamp]] = {
 
     mode match {
       case Hdfs(_, conf) =>
