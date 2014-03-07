@@ -22,13 +22,14 @@ import com.twitter.algebird.{
   Interval,
   ExclusiveUpper
 }
+import com.twitter.summingbird.scalding.{WaitingState => _}
 import com.twitter.summingbird.batch.{
   Batcher,
   BatchID,
-  PrepareState => BPrepareState,
-  RunningState => BRunningState,
+  PrepareState,
+  RunningState,
   Timestamp,
-  WaitingState => BWaitingState
+  WaitingState
 }
 import com.twitter.summingbird.batch.store.HDFSMetadata
 
@@ -46,13 +47,13 @@ private[scalding] object VersionedState {
 }
 
 private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
-  (implicit batcher: Batcher) extends BWaitingState[Interval[Timestamp]] { outer =>
+  (implicit batcher: Batcher) extends WaitingState[Interval[Timestamp]] { outer =>
 
   private val logger = LoggerFactory.getLogger(classOf[VersionedState])
 
-  def begin: BPrepareState[Interval[Timestamp]] = new VersionedPrepareState
+  def begin: PrepareState[Interval[Timestamp]] = new VersionedPrepareState
 
-  private class VersionedPrepareState extends BPrepareState[Interval[Timestamp]] {
+  private class VersionedPrepareState extends PrepareState[Interval[Timestamp]] {
     def newestCompleted: Option[BatchID] =
       meta.versions.map { vers =>
         val thisMeta = meta(vers)
@@ -107,7 +108,7 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
   }
 
   private class VersionedRunningState(succeedPart: Interval.GenIntersection[Timestamp])
-    extends BRunningState[Interval[Timestamp]] {
+    extends RunningState[Interval[Timestamp]] {
 
     def nextTime: Timestamp = succeedPart match {
       case Intersection(_, ExclusiveUpper(up)) => up

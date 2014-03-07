@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding
 import com.twitter.summingbird._
 import com.twitter.scalding.{RichDate, DateParser, Hdfs, Args}
 
-import com.twitter.summingbird.batch.{Timestamp, WaitingState => BWaitingState}
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.batch.option.{FlatMapShards, Reducers}
 import com.twitter.summingbird.chill.ChillExecutionConfig
 import com.twitter.algebird.Interval
@@ -39,7 +39,7 @@ trait ScaldingExecutionConfig extends ChillExecutionConfig[Scalding] {
     hadoopConfig: Configuration,
     startDate: Option[Timestamp],
     batches: Int
-  ): BWaitingState[Interval[Timestamp]]
+  ): WaitingState[Interval[Timestamp]]
 }
 
 object Executor {

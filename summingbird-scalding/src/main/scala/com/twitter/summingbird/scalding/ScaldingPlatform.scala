@@ -33,7 +33,7 @@ import com.twitter.bijection.{AbstractInjection, Injection}
 import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _}
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
-import com.twitter.summingbird.batch.{WaitingState => BWaitingState, _}
+import com.twitter.summingbird.batch._
 import com.twitter.summingbird.scalding.source.{TimePathedSource => BTimePathedSource}
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.summingbird.chill._
@@ -601,14 +601,14 @@ class Scalding(
     }
   }
 
-  def run(state: BWaitingState[Interval[Timestamp]],
+  def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: TailProducer[Scalding, Any]): BWaitingState[Interval[Timestamp]] =
+    pf: TailProducer[Scalding, Any]): WaitingState[Interval[Timestamp]] =
     run(state, mode, plan(pf))
 
-  def run(state: BWaitingState[Interval[Timestamp]],
+  def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: PipeFactory[Any]): BWaitingState[Interval[Timestamp]] = {
+    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = {
 
     mode match {
       case Hdfs(_, conf) =>
