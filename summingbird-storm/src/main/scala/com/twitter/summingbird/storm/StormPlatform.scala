@@ -37,7 +37,7 @@ import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache}
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime}
-import com.twitter.summingbird.util.CacheSize
+import com.twitter.summingbird.option.CacheSize
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
