@@ -22,7 +22,6 @@ import com.twitter.algebird.{
   Interval,
   ExclusiveUpper
 }
-import com.twitter.summingbird.scalding.{WaitingState => _}
 import com.twitter.summingbird.batch.{
   Batcher,
   BatchID,
