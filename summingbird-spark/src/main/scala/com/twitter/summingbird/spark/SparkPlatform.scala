@@ -1,25 +1,28 @@
 package com.twitter.summingbird.spark
 
 import com.twitter.summingbird._
-import org.apache.spark.rdd.RDD
+import org.apache.spark.rdd.{PairRDDFunctions, RDD}
 import com.twitter.summingbird.Source
 import com.twitter.algebird.Monoid
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
+import com.twitter.util.{Await, FuturePool, Future}
 
 trait SparkSink[T] {
-  def write(t: T): Unit
+  // go ahead and block in this function
+  // it is being submit in a future pool
+  def write(rdd: RDD[T]): Unit
 }
-// QUESTIONS:
-// 1) Batching?
-// 2) See Summer for more questions
-class SparkPlatform extends Platform[SparkPlatform] with PlatformPlanner[SparkPlatform] {
+
+// QUESTION: Where does batching come into this?
+class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
+    extends Platform[SparkPlatform] with PlatformPlanner[SparkPlatform] {
 
   override type Source[T] = RDD[T]
   override type Store[K, V] = RDD[(K, V)]
   override type Sink[T] = SparkSink[T]
-  override type Service[-K, +V] = (K => Option[V])
-  override type Plan[T] = RDD[T]
+  override type Service[K, V] = RDD[(K, V)]
+  override type Plan[T] = Future[RDD[T]]
 
   override def plan[T](completed: TailProducer[SparkPlatform, T]): SparkPlatform#Plan[T] = {
     visit(completed).plan
@@ -34,7 +37,7 @@ class SparkPlatform extends Platform[SparkPlatform] with PlatformPlanner[SparkPl
   }
 
   override def planSource[T](source: Source[T], visited: Visited): PlanState[T] = {
-    PlanState(source, visited)
+    PlanState(Future.value(source), visited)
   }
 
   override def planOptionMappedProducer[T, U: ClassManifest](
@@ -43,7 +46,7 @@ class SparkPlatform extends Platform[SparkPlatform] with PlatformPlanner[SparkPl
     fn: (T) => Option[U]): PlanState[U]  = {
 
     val planState = toPlan(prod, visited)
-    PlanState(planState.plan.flatMap(fn(_)), planState.visited)
+    PlanState(planState.plan.map {rdd => rdd.flatMap(fn(_)) }, planState.visited)
   }
 
   override def planFlatMappedProducer[T, U: ClassManifest](
@@ -52,13 +55,14 @@ class SparkPlatform extends Platform[SparkPlatform] with PlatformPlanner[SparkPl
     fn: (T) => TraversableOnce[U]): PlanState[U] = {
 
     val planState = toPlan(prod, visited)
-    PlanState(planState.plan.flatMap(fn(_)), planState.visited)
+    PlanState(planState.plan.map {rdd => rdd.flatMap(fn(_)) }, planState.visited)
   }
 
   override def planMergedProducer[T](l: Prod[T], r: Prod[T], visited: Visited): PlanState[T] = {
     val leftPlanState = toPlan(l, visited)
     val rightPlanState = toPlan(r, leftPlanState.visited)
-    PlanState(leftPlanState.plan ++ rightPlanState.plan, rightPlanState.visited)
+    val both = Future.join(leftPlanState.plan, rightPlanState.plan)
+    PlanState(both.map { case (l, r) => l ++ r }, rightPlanState.visited)
   }
 
   override def planKeyFlatMappedProducer[K, V, K2](
@@ -67,8 +71,9 @@ class SparkPlatform extends Platform[SparkPlatform] with PlatformPlanner[SparkPl
     fn: K => TraversableOnce[K2]): PlanState[(K2, V)] = {
 
     val planState = toPlan(prod, visited)
-    val mapped = planState.plan.flatMap {
+    val mapped = planState.plan.map { rdd => rdd.flatMap {
       case (key, value) => fn(key).map { (_, value) }
+    }
     }
 
     PlanState(mapped, planState.visited)
@@ -78,31 +83,38 @@ class SparkPlatform extends Platform[SparkPlatform] with PlatformPlanner[SparkPl
     val ensurePlanState = toPlan(ensure, visited)
     val resultPlanState = toPlan(result, ensurePlanState.visited)
 
-    // TODO: don't do this :)
-    // I'm thinking of eagerly calling spark actions, but in a thread pool and returning a Future
-    // in that case type Plan would be a Future[RDD]
-    val l: RDD[Either[E, R]] = ensurePlanState.plan.filter( _ => false ).map { Left(_) }
-    val r: RDD[Either[E, R]] = resultPlanState.plan.map { Right(_) }
-    val union = l ++ r
-    val rOnly: RDD[R] = union.collect { case Right(x) => x }
+    // better way to force execution?
+    // does order of execution matter?
+    val e = ensurePlanState.plan.flatMap {
+      rdd => pool.apply { rdd.foreach(x => Unit) }
+    }
 
-    PlanState(rOnly, resultPlanState.visited)
+    val ret = Future.join(e, resultPlanState.plan).map { case (_, x) => x }
+
+    PlanState(ret, resultPlanState.visited)
   }
 
   override def planWrittenProducer[T: ClassManifest](prod: Prod[T], visited: Visited, sink: Sink[T]): PlanState[T]  = {
     val planState = toPlan(prod, visited)
-    // TODO: Futures??
-    val mapped = planState.plan.map { x => sink.write(x); x }
-    PlanState(mapped, planState.visited)
+
+    val written = planState.plan.flatMap {
+      rdd => pool { sink.write(rdd) }
+    }
+
+    // does order of execution matter?
+    val ret = Future.join(written, planState.plan).map { case (_, x) => x}
+
+    PlanState(ret, planState.visited)
   }
 
-  override def planLeftJoinedProducer[K, V, JoinedV](prod: Prod[(K, V)], visited: Visited, service: Service[K, JoinedV]):
+  override def planLeftJoinedProducer[K: ClassManifest, V: ClassManifest, JoinedV](prod: Prod[(K, V)], visited: Visited, service: Service[K, JoinedV]):
     PlanState[(K, (V, Option[JoinedV]))] = {
 
     val planState = toPlan(prod, visited)
 
-    val joined = planState.plan.map {
-      case (key, value) => (key, (value, service(key)))
+    val joined = planState.plan.map { rdd =>
+      val pair: PairRDDFunctions[K, V] = rdd
+      pair.leftOuterJoin(service)
     }
 
     PlanState(joined, planState.visited)
@@ -119,13 +131,13 @@ class SparkPlatform extends Platform[SparkPlatform] with PlatformPlanner[SparkPl
     // QUESTION: can prod have duplicate keys here? I think so right?
     //           can store have duplicate keys here? I think not right?
     //           groupByKey can't be right -- that's going to put the whole group in memory!
-    val summed = planState.plan.groupByKey().leftOuterJoin(store).map {
+    val summed = planState.plan.map { rdd => rdd.groupByKey().leftOuterJoin(store).map {
       case (key, (deltas, stored)) => {
         val deltaSum = deltas.foldLeft(monoid.zero) { (x, y) => monoid.plus(x, y) }
         val sum = stored.map { s =>  monoid.plus(s, deltaSum) }.getOrElse(deltaSum)
         (key, (stored, sum))
       }
-    }
+    }}
     PlanState(summed, planState.visited)
   }
 
@@ -142,7 +154,8 @@ object Go extends App {
     println(job)
 
     val plat = new SparkPlatform
-    val plan = plat.plan(job)
+    val fplan = plat.plan(job)
+    val plan = Await.result(fplan)
     println(plan.toDebugString)
     val results = plan.toArray().toSeq
     println(results)
