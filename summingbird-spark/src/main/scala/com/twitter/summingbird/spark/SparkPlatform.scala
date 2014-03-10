@@ -55,7 +55,7 @@ class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
     fn: (T) => TraversableOnce[U]): PlanState[U] = {
 
     val planState = toPlan(prod, visited)
-    PlanState(planState.plan.map {rdd => rdd.flatMap(fn(_)) }, planState.visited)
+    PlanState(planState.plan.map { rdd => rdd.flatMap(fn(_)) }, planState.visited)
   }
 
   override def planMergedProducer[T](l: Prod[T], r: Prod[T], visited: Visited): PlanState[T] = {
@@ -102,7 +102,7 @@ class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
     }
 
     // does order of execution matter?
-    val ret = Future.join(written, planState.plan).map { case (_, x) => x}
+    val ret = Future.join(written, planState.plan).map { case (_, x) => x }
 
     PlanState(ret, planState.visited)
   }
@@ -131,13 +131,16 @@ class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
     // QUESTION: can prod have duplicate keys here? I think so right?
     //           can store have duplicate keys here? I think not right?
     //           groupByKey can't be right -- that's going to put the whole group in memory!
-    val summed = planState.plan.map { rdd => rdd.groupByKey().leftOuterJoin(store).map {
-      case (key, (deltas, stored)) => {
-        val deltaSum = deltas.foldLeft(monoid.zero) { (x, y) => monoid.plus(x, y) }
-        val sum = stored.map { s =>  monoid.plus(s, deltaSum) }.getOrElse(deltaSum)
-        (key, (stored, sum))
+    val summed = planState.plan.map { rdd =>
+      rdd.groupByKey().leftOuterJoin(store).map {
+        case (key, (deltas, stored)) => {
+          val deltaSum = deltas.foldLeft(monoid.zero) { (x, y) => monoid.plus(x, y) }
+          val sum = stored.map { s =>  monoid.plus(s, deltaSum) }.getOrElse(deltaSum)
+          (key, (stored, sum))
+        }
       }
-    }}
+    }
+
     PlanState(summed, planState.visited)
   }
 
