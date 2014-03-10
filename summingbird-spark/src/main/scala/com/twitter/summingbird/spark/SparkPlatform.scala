@@ -83,6 +83,7 @@ class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
     val ensurePlanState = toPlan(ensure, visited)
     val resultPlanState = toPlan(result, ensurePlanState.visited)
 
+    // QUESTION
     // better way to force execution?
     // does order of execution matter?
     val e = ensurePlanState.plan.flatMap {
@@ -101,6 +102,7 @@ class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
       rdd => pool { sink.write(rdd) }
     }
 
+    // QUESTION
     // does order of execution matter?
     val ret = Future.join(written, planState.plan).map { case (_, x) => x }
 
