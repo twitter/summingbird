@@ -52,7 +52,7 @@ object VersionedStore {
   def apply[K, V](
       rootPath: String,
       versionsToKeep: Int = VersionedKeyValSource.defaultVersionsToKeep,
-      pruneFn: ((K,V), Timestamp) => Boolean = PrunedSpace.neverPruned.prune _)(
+      prunedSpace: PrunedSpace[(K,V)] = PrunedSpace.neverPruned)(
       implicit injection: Injection[(K, (BatchID, V)), (Array[Byte], Array[Byte])],
       batcher: Batcher,
       ord: Ordering[K]): VersionedBatchStore[K, V, K, (BatchID, V)] =
@@ -60,6 +60,6 @@ object VersionedStore {
       rootPath, versionsToKeep, batcher
     )({ case (batchID, (k, v)) => (k, (batchID.next, v)) })({ case (k, (_, v)) => (k, v) }) {
       override def select(b: List[BatchID]) = List(b.last)
-      override def pruning = new PrunedSpace[(K,V)] { def prune(kv: (K,V), ts: Timestamp) = pruneFn(kv, ts) }
+      override def pruning = prunedSpace
     }
 }
