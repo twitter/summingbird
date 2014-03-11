@@ -97,9 +97,10 @@ class NonEmptyBackroundCompactionCache[Key, Value](cacheSizeOpt: CacheSize,
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
   protected val cacheSize = cacheSizeOpt.size.get
 
-  private val queue: ArrayBlockingQueue[Map[Key, Value]] = new ArrayBlockingQueue[Map[Key, Value]](cacheSizeOpt.size.get, true)
+  private val queue: ArrayBlockingQueue[Map[Key, Value]] = new ArrayBlockingQueue[Map[Key, Value]](cacheSize, true)
 
   override def forceTick: Future[Map[Key, Value]] = {
+    didFlush // bumps timeout on the flush conditions
     val toSum = ListBuffer[Map[Key, Value]]()
     queue.drainTo(toSum.asJava)
     futurePool {
