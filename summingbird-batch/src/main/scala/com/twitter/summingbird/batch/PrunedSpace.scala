@@ -28,5 +28,4 @@ object PrunedSpace extends java.io.Serializable {
   def apply[T](pruneFn: (T, Timestamp) => Boolean) = new PrunedSpace[T] {
     def prune(item: T, writeTime: Timestamp) = pruneFn(item, writeTime)
   }
-
 }
