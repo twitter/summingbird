@@ -139,7 +139,7 @@ abstract class Queue[T] {
       Due to threading/muliple readers/writers this will not be an exact size
    */
 
-  def take(maxSeqSize: Int): Seq[T] = trimTo(Math.max(size - maxSeqSize, 0))
+  def take(maxSeqSize: Int): Seq[T] = trimTo(math.max(size - maxSeqSize, 0))
 
   /**
    * Take enough elements to get .size == maxLength

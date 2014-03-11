@@ -20,6 +20,7 @@ import com.twitter.algebird.monad._
 import com.twitter.summingbird.batch._
 
 
+
 // This is not really usable, just a mock that does the same state over and over
 class LoopState[T](init: T) extends WaitingState[T] { self =>
   def begin = new PrepareState[T] {

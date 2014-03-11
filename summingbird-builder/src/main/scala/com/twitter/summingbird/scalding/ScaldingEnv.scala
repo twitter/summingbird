@@ -20,7 +20,8 @@ import com.twitter.scalding.{Args, Hdfs, RichDate, DateParser}
 import com.twitter.summingbird.batch.store.HDFSMetadata
 import com.twitter.summingbird.{ Env, Summer, TailProducer, AbstractJob }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
-import com.twitter.summingbird.builder.{ SourceBuilder, Reducers, CompletedBuilder }
+import com.twitter.summingbird.builder.{ SourceBuilder, CompletedBuilder }
+import com.twitter.summingbird.batch.option.Reducers
 import scala.collection.JavaConverters._
 
 import org.apache.hadoop.conf.Configuration

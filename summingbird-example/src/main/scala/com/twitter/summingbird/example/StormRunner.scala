@@ -20,7 +20,7 @@ import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.Options
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.storm.{ StormStore, Storm, Executor, StormExecutionConfig}
-import com.twitter.summingbird.storm.option.{FlatMapParallelism, SinkParallelism, SpoutParallelism}
+import com.twitter.summingbird.storm.option.{FlatMapParallelism, SummerParallelism, SpoutParallelism}
 import backtype.storm.{Config => BTConfig}
 import com.twitter.scalding.Args
 import com.twitter.tormenta.spout.TwitterSpout
@@ -121,7 +121,7 @@ object StormRunner {
       }
 
       override def getNamedOptions: Map[String, Options] = Map(
-        "DEFAULT" -> Options().set(SinkParallelism(2))
+        "DEFAULT" -> Options().set(SummerParallelism(2))
                       .set(FlatMapParallelism(80))
                       .set(SpoutParallelism(16))
                       .set(CacheSize(100))
