@@ -54,6 +54,12 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
   def pruning: PrunedSpace[(K, V)] = PrunedSpace.neverPruned
 
   /**
+   * Override this to control when keys are frozen. This allows
+   * us to avoid sorting and shuffling keys that are not updated.
+   */
+  def boundedKeySpace: TimeBoundedKeySpace[K] = TimeBoundedKeySpace.neverFrozen
+
+  /**
    * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
    * On write, we throw if batchID is less than firstNonZero
    */
@@ -202,13 +208,33 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
           }
         }
 
+    // Avoid closures where easy
+    val thisTimeInterval = capturedBatcher.toTimestamp(batchIntr)
+    val capturedKeyCheck = boundedKeySpace
+
+    def getFrozenKeys(p: TypedPipe[(K,V)]): TypedPipe[(BatchID, (K, V))] =
+      p.filter { case (k, _) => capturedKeyCheck.isFrozen(k, thisTimeInterval) }
+        .flatMap { kv => filteredBatches.map { (_, kv) } }
+
+    def getLiquidKeys(p: TypedPipe[(K,V)]): TypedPipe[(K, V)] =
+      p.filter { case (k, _) => !capturedKeyCheck.isFrozen(k, thisTimeInterval) }
+
+    def assertDeltasAreLiquid(p: TypedPipe[(Long, (K, V))]): TypedPipe[(Long, (K, V))] =
+      p.map { tkv =>
+        assert(!capturedKeyCheck.isFrozen(tkv._2._1, thisTimeInterval), "Frozen key in deltas: " + tkv)
+        tkv
+      }
+
     // Now in the flow-producer monad; do it:
     for {
       pipeInput <- input
-      pipeDeltas <- deltas
+      frozen = getFrozenKeys(pipeInput)
+      liquid = getLiquidKeys(pipeInput)
+      ds <- deltas
+      liquidDeltas = assertDeltasAreLiquid(ds)
       // fork below so scalding can make sure not to do the operation twice
-      merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas)).fork
-      lastOut = toLastFormat(merged)
+      merged = mergeAll(prepareOld(liquid) ++ prepareDeltas(liquidDeltas)).fork
+      lastOut = toLastFormat(merged) ++ frozen
       _ <- writeFlow(filteredBatches, lastOut)
     } yield toOutputFormat(merged)
   }
