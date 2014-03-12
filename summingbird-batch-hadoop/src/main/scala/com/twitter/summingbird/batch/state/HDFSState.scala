@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory
  * State implementation that uses an HDFS folder as a crude key-value
  * store that tracks the batches currently processed.
  */
-private[summingbird] object HDFSState {
+object HDFSState {
   @transient private val logger = LoggerFactory.getLogger(classOf[HDFSState])
 
   case class Config(
@@ -91,7 +91,7 @@ private[summingbird] object HDFSState {
     }
 }
 
-private[summingbird] class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
+class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
     extends WaitingState[Interval[Timestamp]] {
   import HDFSState._
 
