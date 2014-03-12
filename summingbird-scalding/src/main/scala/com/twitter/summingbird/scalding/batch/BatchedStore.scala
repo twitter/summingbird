@@ -27,7 +27,7 @@ import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, IteratorSums, PrunedSpace}
+import com.twitter.summingbird.batch._
 import cascading.flow.FlowDef
 
 import org.slf4j.LoggerFactory
@@ -219,7 +219,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     def getLiquidKeys(p: TypedPipe[(K,V)]): TypedPipe[(K, V)] =
       p.filter { case (k, _) => !capturedKeyCheck.isFrozen(k, thisTimeInterval) }
 
-    def assertDeltasAreLiquid(p: TypedPipe[(Long, (K, V))]): TypedPipe[(Long, (K, V))] =
+    def assertDeltasAreLiquid(p: TypedPipe[(Timestamp, (K, V))]): TypedPipe[(Timestamp, (K, V))] =
       p.map { tkv =>
         assert(!capturedKeyCheck.isFrozen(tkv._2._1, thisTimeInterval), "Frozen key in deltas: " + tkv)
         tkv
