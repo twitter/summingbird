@@ -24,4 +24,8 @@ trait PrunedSpace[-T] extends java.io.Serializable {
 object PrunedSpace extends java.io.Serializable {
   val neverPruned: PrunedSpace[Any] =
     new PrunedSpace[Any] { def prune(item: Any, writeTime: Timestamp) = false }
+
+  def apply[T](pruneFn: (T, Timestamp) => Boolean) = new PrunedSpace[T] {
+    def prune(item: T, writeTime: Timestamp) = pruneFn(item, writeTime)
+  }
 }
