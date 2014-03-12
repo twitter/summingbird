@@ -31,15 +31,26 @@ import cascading.flow.FlowDef
 
 
 object TestStore {
-  def apply[K, V](store: String, inBatcher: Batcher, initStore: Iterable[(K, V)], lastTime: Long, pruning: PrunedSpace[(K, V)] = PrunedSpace.neverPruned)
+  def apply[K, V](store: String,
+                  inBatcher: Batcher,
+                  initStore: Iterable[(K, V)],
+                  lastTime: Long,
+                  pruning: PrunedSpace[(K, V)] = PrunedSpace.neverPruned,
+                  boundedKeySpace: TimeBoundedKeySpace[K] = TimeBoundedKeySpace.neverFrozen)
     (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)]) = {
     val startBatch = inBatcher.batchOf(Timestamp(0)).prev
     val endBatch = inBatcher.batchOf(Timestamp(lastTime)).next
-    new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch, pruning)
+    new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch, pruning, boundedKeySpace)
   }
 }
 
-class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID, override val pruning: PrunedSpace[(K, V)])
+class TestStore[K, V](store: String,
+                      inBatcher: Batcher,
+                      initBatch: BatchID,
+                      initStore: Iterable[(K, V)],
+                      lastBatch: BatchID,
+                      override val pruning: PrunedSpace[(K, V)],
+                      override val boundedKeySpace: TimeBoundedKeySpace[K])
 (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
   extends batch.BatchedStore[K, V] {
 

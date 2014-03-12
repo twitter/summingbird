@@ -29,6 +29,10 @@ object TimeBoundedKeySpace extends java.io.Serializable {
   val neverFrozen: TimeBoundedKeySpace[Any] =
     new TimeBoundedKeySpace[Any] { def isFrozen(key: Any, period: Interval[Timestamp]) = false }
 
+  def apply[K](fn: (K, Interval[Timestamp]) => Boolean) = new TimeBoundedKeySpace[K] {
+    def isFrozen(key: K, period: Interval[Timestamp]) = fn(key, period)
+  }
+
   /**
    * This is a common case of being able to compute a time after which
    * no more writes occur.
