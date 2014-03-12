@@ -295,5 +295,80 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") must beTrue
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
     }
+
+    "Correctly propagates keys outside merge interval" in {
+      val frozenInitialData = sample[Set[(Int, Int)]]
+      val frozenKeys = frozenInitialData.map(_._1)
+      val liquidInitialData = sample[Set[(Int, Int)]] -- frozenInitialData
+
+      val initialData = (frozenInitialData ++ liquidInitialData).toMap
+
+      // Delta set should not intersect with the frozen keys
+
+      val deltaSet = sample[List[(Int, Int)]].filterNot(kv => frozenKeys.contains(kv._1))
+
+      val summedDataInMemory = MapAlgebra.sumByKey(deltaSet)
+      val mergedDataInMemory = Monoid.plus(initialData, summedDataInMemory)
+
+      val dataWithTime = deltaSet.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = new MillisecondBatcher(1L)
+
+
+      def testFrozen(key: Int, range: Interval[Timestamp]): Boolean = {
+        frozenKeys.contains(key)
+      }
+
+      val store = TestStore[Int, Int]("test", batcher, initialData, dataWithTime.size, boundedKeySpace = TimeBoundedKeySpace(testFrozen))
+
+      val (buffer, source) = TestSource(dataWithTime)
+      val summer = source.map(_._2).sumByKey(store)
+
+      val scald = Scalding("scalding-keyFixTime-Job")
+      val mode: Mode = TestMode((store.sourceToBuffer ++ buffer).get(_))
+
+      scald.run(new LoopState(TestUtil.batchedCover(batcher, 0L, dataWithTime.size.toLong)), mode, summer)
+
+      TestUtil.compareMaps(deltaSet, mergedDataInMemory, store, "store") must beTrue
+    }
+
+
+    "Should throw exception if frozen keys and delta's intersect" in {
+      val frozenInitialData = sample[Set[(Int, Int)]]
+      val frozenKeys = frozenInitialData.map(_._1)
+      val liquidInitialData = sample[Set[(Int, Int)]] -- frozenInitialData
+
+      val initialData = (frozenInitialData ++ liquidInitialData).toMap
+
+      // Delta set should not intersect with the frozen keys
+
+      val deltaSet = sample[List[(Int, Int)]] ++ frozenInitialData
+
+      val summedDataInMemory = MapAlgebra.sumByKey(deltaSet)
+      val mergedDataInMemory = Monoid.plus(initialData, summedDataInMemory)
+
+      val dataWithTime = deltaSet.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = new MillisecondBatcher(1L)
+
+
+      def testFrozen(key: Int, range: Interval[Timestamp]): Boolean = {
+        frozenKeys.contains(key)
+      }
+
+      val store = TestStore[Int, Int]("test", batcher, initialData, dataWithTime.size, boundedKeySpace = TimeBoundedKeySpace(testFrozen))
+
+      val (buffer, source) = TestSource(dataWithTime)
+      val summer = source.map(_._2).sumByKey(store)
+
+      val scald = Scalding("scalding-keyFixTime-Job")
+      val mode: Mode = TestMode((store.sourceToBuffer ++ buffer).get(_))
+
+      try {
+        scald.run(new ErrorThrowState(TestUtil.batchedCover(batcher, 0L, dataWithTime.size.toLong)), mode, summer)
+        false // Should never reach here
+      }
+      catch {
+        case _: Throwable => true
+      }
+    }
   }
 }
