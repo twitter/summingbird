@@ -47,7 +47,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   hasDependants: Boolean,
   outputFields: Fields,
   ackOnEntry: AckOnEntry,
-  executor: OperationContainer[I, O, InputState[Tuple], JList[AnyRef]]
+  executor: OperationContainer[I, O, InputState[Tuple], JList[AnyRef], TopologyContext]
   ) extends IRichBolt {
 
 
@@ -119,7 +119,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
   override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
     collector = oc
     metrics().foreach { _.register(context) }
-    executor.init
+    executor.init(context)
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
