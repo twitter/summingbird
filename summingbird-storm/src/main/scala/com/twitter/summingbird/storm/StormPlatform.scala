@@ -62,6 +62,9 @@ object MergeableStoreSupplier {
   def from[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier((TopologyContext) => store, batcher)
 
+  def from[K, V](store: TopologyContext => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+    MergeableStoreSupplier(store, batcher)
+
   def instrumentedStoreFrom[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] = {
     val supplier = {(context: TopologyContext) => new StoreStatReporter(context, store)}
     MergeableStoreSupplier(supplier, batcher)
@@ -111,6 +114,10 @@ object Storm {
 
   def instrumentedStore[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
     MergeableStoreSupplier.instrumentedStoreFrom(store)
+
+  def store[K, V](store: (TopologyContext) => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
+    MergeableStoreSupplier.from(store)
+
 
   def service[K, V](serv: => ReadableStore[K, V]): StormService[K, V] = StoreWrapper(() => serv)
 

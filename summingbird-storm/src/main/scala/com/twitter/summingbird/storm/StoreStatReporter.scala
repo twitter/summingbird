@@ -38,13 +38,13 @@ class StoreStatReporter[K, V](context: TopologyContext, val self: MergeableStore
   val multiPutMetric = buildMetric("multiPut")
   val multiPutTuplesMetric = buildMetric("multiPutTuples")
 
-  val getMetric = buildMetric("put")
-  val multiGetMetric = buildMetric("multiPut")
-  val multiGetTuplesMetric = buildMetric("multiPutTuples")
+  val getMetric = buildMetric("get")
+  val multiGetMetric = buildMetric("multiGet")
+  val multiGetTuplesMetric = buildMetric("multiGetTuples")
 
-  val mergeMetric = buildMetric("put")
-  val multiMergeMetric = buildMetric("multiPut")
-  val multiMergeTuplesMetric = buildMetric("multiPutTuples")
+  val mergeMetric = buildMetric("merge")
+  val multiMergeMetric = buildMetric("multiMerge")
+  val multiMergeTuplesMetric = buildMetric("multiMergeTuples")
 
 
   def traceMerge(kv: (K, V), request: Future[Option[V]]) = {
