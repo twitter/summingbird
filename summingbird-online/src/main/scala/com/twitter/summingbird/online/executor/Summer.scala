@@ -79,6 +79,7 @@ class Summer[Key, Value: Semigroup, Event, S, D](
 
   override def init {
     super.init
+    store.toString // Do the lazy evaluation now so we can connect before tuples arrive.
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
