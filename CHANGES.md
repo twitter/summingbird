@@ -1,5 +1,40 @@
 # summingbird #
 
+## 0.4.0
+* Add/use the multiplier option: https://github.com/twitter/summingbird/pull/481
+* add variations on pipeFactory to allow a map function before time extrac...: https://github.com/twitter/summingbird/pull/482
+* Make HDFSState public: https://github.com/twitter/summingbird/pull/478
+* Feature/ianoc frozen keys: https://github.com/twitter/summingbird/pull/477
+* Piping prune function through the VersionedStore factory method: https://github.com/twitter/summingbird/pull/476
+* Remove deprecation indirections: https://github.com/twitter/summingbird/pull/472
+* fix unidoc target: https://github.com/twitter/summingbird/pull/469
+* Add hadoop2 compression options: https://github.com/twitter/summingbird/pull/466
+* Few more profiler noticed changes, mostly Future.collect indexedSeq&#39;s. O...: https://github.com/twitter/summingbird/pull/465
+* Add deprecation: https://github.com/twitter/summingbird/pull/463
+* Vagrant folder added to .gitignore: https://github.com/twitter/summingbird/pull/464
+* Manually block up sections of output from caches into lists to avoid flo...: https://github.com/twitter/summingbird/pull/453
+* Fixes bug that meant storm tests weren't running: https://github.com/twitter/summingbird/pull/460
+* Factor batch from online: https://github.com/twitter/summingbird/pull/455
+* This moves from using the completeTopology approach to running it normal...: https://github.com/twitter/summingbird/pull/458
+* Code is called heavily, and in tests where we do it 100's of times it wa...: https://github.com/twitter/summingbird/pull/457
+* Clean up a little bit of this code. Uses seq/traversable once in some ap...: https://github.com/twitter/summingbird/pull/456
+* This refactors time out of several places inside the online code. Allows...: https://github.com/twitter/summingbird/pull/454
+* Move the hadoop defaults into scalding platform: https://github.com/twitter/summingbird/pull/452
+* Feature/add option to tune output sizes online: https://github.com/twitter/summingbird/pull/451
+* Move to using Mergable from storehaus instead of mergable store.: https://github.com/twitter/summingbird/pull/450
+* Feature/state deprecated ptrs: https://github.com/twitter/summingbird/pull/449
+* Adds BatchID interval to TS interval: https://github.com/twitter/summingbird/pull/443
+* Adds a scalding-test project: https://github.com/twitter/summingbird/pull/447
+* Make Commutativity settings a case object: https://github.com/twitter/summingbird/pull/448
+* Splits the storm test code out into its own package to help end users be...: https://github.com/twitter/summingbird/pull/442
+* Add toString to InitialBatchedStore: https://github.com/twitter/summingbird/pull/444
+* Feature/long to timestamp offline: https://github.com/twitter/summingbird/pull/439
+* Feature/add pruning support: https://github.com/twitter/summingbird/pull/435
+* Split the scalding platform out into packages: https://github.com/twitter/summingbird/pull/434
+* Add mima command support: https://github.com/twitter/summingbird/pull/427
+* Add PipeFactoryOps, with mapElements, flatMapElements and mapPipe: https://github.com/twitter/summingbird/pull/432
+* Feature/move code from scalding: https://github.com/twitter/summingbird/pull/424
+
 ## 0.3.3
 * Depend on proper Tormenta version (fix semver hiccup)
 
