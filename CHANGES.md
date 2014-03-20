@@ -1,5 +1,8 @@
 # summingbird #
 
+## 0.4.1
+* Release tool failure fix from 0.4.0 release.
+
 ## 0.4.0
 * Add/use the multiplier option: https://github.com/twitter/summingbird/pull/481
 * add variations on pipeFactory to allow a map function before time extrac...: https://github.com/twitter/summingbird/pull/482
