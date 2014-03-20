@@ -6,7 +6,7 @@ import com.twitter.summingbird.Source
 import com.twitter.algebird.Monoid
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
-import com.twitter.util.{Await, FuturePool, Future}
+import com.twitter.util.{Promise, Await, FuturePool, Future}
 
 trait SparkSink[T] {
   // go ahead and block in this function
@@ -15,7 +15,7 @@ trait SparkSink[T] {
 }
 
 // QUESTION: Where does batching come into this?
-class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
+class SparkPlatform
     extends Platform[SparkPlatform] with PlatformPlanner[SparkPlatform] {
 
   override type Source[T] = RDD[T]
@@ -23,6 +23,8 @@ class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
   override type Sink[T] = SparkSink[T]
   override type Service[K, V] = RDD[(K, V)]
   override type Plan[T] = Future[RDD[T]]
+
+  private val pool = new WaitingFuturePool(FuturePool.unboundedPool)
 
   override def plan[T](completed: TailProducer[SparkPlatform, T]): SparkPlatform#Plan[T] = {
     visit(completed).plan
@@ -87,7 +89,7 @@ class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
     // better way to force execution?
     // does order of execution matter?
     val e = ensurePlanState.plan.flatMap {
-      rdd => pool.apply { rdd.foreach(x => Unit) }
+      rdd => pool { rdd.foreach(x => Unit) }
     }
 
     val ret = Future.join(e, resultPlanState.plan).map { case (_, x) => x }
@@ -136,6 +138,7 @@ class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
     val summed = planState.plan.map { rdd =>
       rdd.groupByKey().leftOuterJoin(store).map {
         case (key, (deltas, stored)) => {
+          // monoid.sumOption
           val deltaSum = deltas.foldLeft(monoid.zero) { (x, y) => monoid.plus(x, y) }
           val sum = stored.map { s =>  monoid.plus(s, deltaSum) }.getOrElse(deltaSum)
           (key, (stored, sum))
@@ -144,6 +147,21 @@ class SparkPlatform(private val pool: FuturePool = FuturePool.unboundedPool)
     }
 
     PlanState(summed, planState.visited)
+  }
+
+  def run() = pool.start()
+
+}
+
+class WaitingFuturePool(delegate: FuturePool) extends FuturePool {
+  val waitPromise = new Promise[Unit]
+
+  def apply[T](f: => T): Future[T] = {
+    waitPromise.flatMap { _ => delegate(f) }
+  }
+
+  def start(): Unit = {
+    waitPromise.setValue(Unit)
   }
 
 }
