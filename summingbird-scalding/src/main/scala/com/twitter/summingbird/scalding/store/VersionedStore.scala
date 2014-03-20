@@ -20,9 +20,9 @@ import cascading.flow.FlowDef
 import com.twitter.bijection.Injection
 import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe}
 import com.twitter.scalding.commons.source.VersionedKeyValSource
-import com.twitter.summingbird.batch.{ Batcher, BatchID }
-import com.twitter.summingbird.scalding.VersionedBatchStore
+import com.twitter.summingbird.batch.{ Batcher, BatchID, PrunedSpace, Timestamp}
 import scala.util.control.Exception.allCatch
+import com.twitter.summingbird.scalding._
 
 /**
  * Scalding implementation of the batch read and write components
@@ -49,13 +49,17 @@ object VersionedStore {
     * See summingbird-client's ClientStore for more information on the
     * merge between offline and online data.
     */
-  def apply[K, V](rootPath: String, versionsToKeep: Int = VersionedKeyValSource.defaultVersionsToKeep)
-    (implicit injection: Injection[(K, (BatchID, V)), (Array[Byte], Array[Byte])],
+  def apply[K, V](
+      rootPath: String,
+      versionsToKeep: Int = VersionedKeyValSource.defaultVersionsToKeep,
+      prunedSpace: PrunedSpace[(K,V)] = PrunedSpace.neverPruned)(
+      implicit injection: Injection[(K, (BatchID, V)), (Array[Byte], Array[Byte])],
       batcher: Batcher,
       ord: Ordering[K]): VersionedBatchStore[K, V, K, (BatchID, V)] =
     new VersionedBatchStore[K, V, K, (BatchID, V)](
       rootPath, versionsToKeep, batcher
     )({ case (batchID, (k, v)) => (k, (batchID.next, v)) })({ case (k, (_, v)) => (k, v) }) {
       override def select(b: List[BatchID]) = List(b.last)
+      override def pruning = prunedSpace
     }
 }

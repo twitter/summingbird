@@ -18,9 +18,11 @@ object SummingbirdBuild extends Build {
       case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test"
   }
 
-  val sharedSettings = Project.defaultSettings ++ Seq(
+  val extraSettings = Project.defaultSettings ++ mimaDefaultSettings
+
+  val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.4.0",
+    version := "0.4.1",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -110,22 +112,25 @@ object SummingbirdBuild extends Build {
   ).aggregate(
     summingbirdCore,
     summingbirdBatch,
+    summingbirdBatchHadoop,
     summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
+    summingbirdStormTest,
     summingbirdScalding,
+    summingbirdScaldingTest,
     summingbirdBuilder,
     summingbirdChill,
     summingbirdExample
   )
 
   val dfsDatastoresVersion = "1.3.4"
-  val bijectionVersion = "0.6.0"
-  val algebirdVersion = "0.3.1"
-  val scaldingVersion = "0.9.0rc4"
-  val storehausVersion = "0.8.0"
+  val bijectionVersion = "0.6.2"
+  val algebirdVersion = "0.5.0"
+  val scaldingVersion = "0.9.0rc15"
+  val storehausVersion = "0.9.0"
   val utilVersion = "6.3.8"
-  val chillVersion = "0.3.5"
+  val chillVersion = "0.3.6"
   val tormentaVersion = "0.7.0"
 
   lazy val slf4jVersion = "1.6.6"
@@ -139,7 +144,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.2.4" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.4.1" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
@@ -152,7 +157,8 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdBatch = module("batch").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
-      "com.twitter" %% "bijection-core" % bijectionVersion
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "scalding-date" % scaldingVersion
     )
   )
 
@@ -190,8 +196,7 @@ object SummingbirdBuild extends Build {
       withCross("com.twitter" %% "util-core" % utilVersion)
     )
   ).dependsOn(
-    summingbirdCore % "test->test;compile->compile",
-    summingbirdBatch
+    summingbirdCore % "test->test;compile->compile"
   )
 
   lazy val summingbirdStorm = module("storm").settings(
@@ -216,6 +221,22 @@ object SummingbirdBuild extends Build {
     summingbirdBatch
   )
 
+  lazy val summingbirdStormTest = module("storm-test").settings(
+    parallelExecution in Test := false,
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "bijection-core" % bijectionVersion,
+      "com.twitter" %% "storehaus-core" % storehausVersion,
+      "com.twitter" %% "storehaus-algebra" % storehausVersion,
+      "com.twitter" %% "tormenta-core" % tormentaVersion,
+      withCross("com.twitter" %% "util-core" % utilVersion),
+      "storm" % "storm" % "0.9.0-wip15" % "provided"
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdStorm
+  )
+
   lazy val summingbirdScalding = module("scalding").settings(
     libraryDependencies ++= Seq(
       "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
@@ -234,6 +255,30 @@ object SummingbirdBuild extends Build {
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
     summingbirdChill,
+    summingbirdBatchHadoop,
+    summingbirdBatch
+  )
+
+  lazy val summingbirdScaldingTest = module("scalding-test").settings(
+    libraryDependencies ++= Seq(
+      "org.scalacheck" %% "scalacheck" % "1.10.0"
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdChill,
+    summingbirdBatchHadoop,
+    summingbirdScalding
+  )
+
+  lazy val summingbirdBatchHadoop = module("batch-hadoop").settings(
+    libraryDependencies ++= Seq(
+      "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "bijection-json" % bijectionVersion,
+      "com.twitter" %% "scalding-date" % scaldingVersion
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
     summingbirdBatch
   )
 

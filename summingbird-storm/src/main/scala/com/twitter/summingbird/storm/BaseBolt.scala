@@ -25,8 +25,7 @@ import backtype.storm.tuple.{Tuple, TupleImpl, Fields}
 
 import java.util.{ Map => JMap }
 
-import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples, MaxWaitingFutures}
+import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{InflightTuples, InputState}
 
@@ -95,7 +94,7 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
     }
   }
 
-  private def finish(inputs: List[InputState[Tuple]], results: TraversableOnce[(Timestamp, O)]) {
+  private def finish(inputs: List[InputState[Tuple]], results: TraversableOnce[O]) {
     var emitCount = 0
     if(hasDependants) {
       if(anchorTuples.anchor) {

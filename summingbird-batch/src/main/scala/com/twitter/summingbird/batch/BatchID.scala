@@ -17,8 +17,16 @@ limitations under the License.
 package com.twitter.summingbird.batch
 
 import com.twitter.algebird.Monoid
-import com.twitter.algebird.{ Universe, Empty, Interval, Intersection,
-  InclusiveLower, ExclusiveUpper, InclusiveUpper, ExclusiveLower }
+import com.twitter.algebird.{
+  Empty,
+  Interval,
+  Intersection,
+  InclusiveLower,
+  ExclusiveUpper,
+  InclusiveUpper,
+  ExclusiveLower,
+  Universe
+}
 import com.twitter.bijection.{ Bijection, Injection }
 import scala.collection.Iterator.iterate
 
@@ -41,6 +49,8 @@ object BatchID {
   implicit val equiv: Equiv[BatchID] = Equiv.by(_.id)
 
   def apply(long: Long) = new BatchID(long)
+  def apply(ts: Timestamp) = new BatchID(ts.milliSinceEpoch)
+
   // Enables BatchID(someBatchID.toString) roundtripping
   def apply(str: String) = new BatchID(str.split("\\.")(1).toLong)
 
@@ -66,14 +76,14 @@ object BatchID {
       }
       .flatMap { case (min, max, cnt) =>
         if ((min + cnt) == (max + 1L)) {
-          Some(Interval.leftClosedRightOpen(min, max.next))
+          Some(Interval.leftClosedRightOpen(min, max.next).right.get)
         }
         else {
           // These batches are not contiguous, not an interval
           None
         }
       }
-      .orElse(Some(Empty())) // there was nothing it iter
+      .orElse(Some(Empty[BatchID]())) // there was nothing it iter
 
   /** Returns all the BatchIDs that are contained in the interval
    */

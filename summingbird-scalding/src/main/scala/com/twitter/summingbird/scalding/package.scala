@@ -23,17 +23,18 @@ import cascading.flow.FlowDef
 
 import com.twitter.algebird.monad.{Reader, StateWithError}
 import com.twitter.algebird.Interval
+import com.twitter.summingbird
+import com.twitter.summingbird.batch.Timestamp
+import org.apache.hadoop.io.Writable
 
 package object scalding {
-  /** We represent time as Long Millis */
-  type Time = Long
   /** How we represent the streams in scalding */
-  type TimedPipe[+T] = TypedPipe[(Time, T)]
+  type TimedPipe[+T] = TypedPipe[(Timestamp, T)]
   type KeyValuePipe[+K, +V] = TimedPipe[(K, V)]
   /** The Platform recursively passes this input around to describe a
    * step forward: requested input time span, and scalding Mode
    */
-  type FactoryInput = (Interval[Time], Mode)
+  type FactoryInput = (Interval[Timestamp], Mode)
   /** When it is time to run build the final flow,
    * this is what scalding needs. It is modified in the Reader[FlowInput, T]
    */
@@ -58,6 +59,7 @@ package object scalding {
   // Helps interop with scalding:
   implicit def modeFromTuple(implicit fm: (FlowDef, Mode)): Mode = fm._2
   implicit def flowDefFromTuple(implicit fm: (FlowDef, Mode)): FlowDef = fm._1
+  implicit def toPipeFactoryOps[T](pipeF: PipeFactory[T]) = new PipeFactoryOps(pipeF)
 
   def toTry(e: Throwable): Try[Nothing] = {
     val writer = new java.io.StringWriter
@@ -66,4 +68,7 @@ package object scalding {
     printWriter.flush
     Left(List(writer.toString))
   }
+
+  val ScaldingConfig = summingbird.batch.BatchConfig
 }
+

@@ -29,7 +29,6 @@ import com.twitter.util.Duration
   */
 
 
-
 /**
   * SinkParallelism controls the number of executors storm allocates to
   * the groupAndSum bolts. Each of these bolt executors is responsible
@@ -39,22 +38,6 @@ import com.twitter.util.Duration
   */
 case class SummerParallelism(parHint: Int)
 
-case class OnlineSuccessHandler(handlerFn: Unit => Unit)
-
-/**
-  * Kryo serialization problems have been observed with using
-  * OnlineSuccessHandler. This enables easy disabling of the handler.
-  * TODO (https://github.com/twitter/summingbird/issues/82): remove
-  * once we know what the hell is going on with this
-  */
-case class IncludeSuccessHandler(get: Boolean)
-
-object IncludeSuccessHandler {
-  val default = IncludeSuccessHandler(true)
-}
-
-case class OnlineExceptionHandler(handlerFn: PartialFunction[Throwable, Unit])
-
 /**
   * See FlatMapOptions.scala for an explanation.
   */
@@ -63,3 +46,6 @@ object SummerStormMetrics {
   def unapply(metrics: SummerStormMetrics) = Some(metrics.metrics)
 }
 class SummerStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
+
+
+case class SummerBatchMultiplier(get: Int)

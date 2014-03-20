@@ -18,37 +18,36 @@ package com.twitter.summingbird.storm
 
 
 import com.twitter.bijection.{Injection, Inversion, AbstractInjection}
-import com.twitter.summingbird.batch.Timestamp
 import java.util.{List => JList, ArrayList => JAList}
 import scala.util.Try
 
-class SingleItemInjection[T] extends Injection[(Timestamp, T), JList[AnyRef]] {
+class SingleItemInjection[T] extends Injection[T, JList[AnyRef]] {
 
-  override def apply(t: (Timestamp, T)) = {
+  override def apply(t: T) = {
     val list = new JAList[AnyRef](1)
-    list.add(t)
+    list.add(t.asInstanceOf[AnyRef])
     list
   }
 
   override def invert(vin: JList[AnyRef]) = Inversion.attempt(vin) { v =>
-    v.get(0).asInstanceOf[(Timestamp, T)]
+    v.get(0).asInstanceOf[T]
   }
 }
 
 class KeyValueInjection[K, V]
-  extends Injection[(Timestamp, (K, V)), JList[AnyRef]] {
+  extends Injection[(K, V), JList[AnyRef]] {
 
-  override def apply(item: (Timestamp, (K, V))) = {
-    val (ts, (key, v)) = item
+  override def apply(item: (K, V)) = {
+    val (key, v) = item
     val list = new JAList[AnyRef](2)
     list.add(key.asInstanceOf[AnyRef])
-    list.add((ts, v))
+    list.add(v.asInstanceOf[AnyRef])
     list
   }
 
   override def invert(vin: JList[AnyRef]) = Inversion.attempt(vin) { v =>
     val key = v.get(0).asInstanceOf[K]
-    val (ts, value) = v.get(1).asInstanceOf[(Timestamp, V)]
-    (ts, (key, value))
+    val value = v.get(1).asInstanceOf[V]
+    (key, value)
   }
 }

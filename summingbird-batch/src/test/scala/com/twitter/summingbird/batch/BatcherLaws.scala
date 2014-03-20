@@ -57,11 +57,31 @@ object BatcherLaws extends Properties("Batcher") {
       list == List(b)
     }
 
+  def batchIntervalTransformToTs(batcher: Batcher, intervalGenerator: (BatchID, BatchID) => Interval[BatchID]) =
+    forAll { (tsA: Timestamp, tsB: Timestamp, deltaMs: Long) =>
+      val (tsLower, tsUpper) = if (tsA < tsB) (tsA, tsB) else (tsB, tsA)
+
+      val deltaBounded = Milliseconds(deltaMs % 1000 * 86000 * 365L)
+      val int = intervalGenerator(batcher.batchOf(tsLower), batcher.batchOf(tsUpper))
+
+      val tsInterval = batcher.toTimestamp(int)
+
+      val generatedTS = tsLower + deltaBounded
+      val generatedBatch = batcher.batchOf(generatedTS)
+
+      // Granularity of the batcher interval is bigger
+      // So we can't correctly do both intersections together
+      int.contains(generatedBatch) == tsInterval.contains(generatedTS)
+    }
+
   def batcherLaws(batcher: Batcher) =
     earliestIs_<=(batcher) &&
       batchesAreWeakOrderings(batcher) &&
       batchesIncreaseByAtMostOne(batcher) &&
-      batchesCoveredByIdent(batcher)
+      batchesCoveredByIdent(batcher) &&
+      batchIntervalTransformToTs(batcher, Interval.leftOpenRightClosed(_, _)) &&
+      batchIntervalTransformToTs(batcher, Interval.leftClosedRightOpen(_, _))
+
 
   property("UnitBatcher should always return the same batch") = {
     val batcher = Batcher.unit
@@ -140,4 +160,5 @@ object BatcherLaws extends Properties("Batcher") {
           int.contains(hourlyBatcher.earliestTimeOf(maxBatch.next).prev)
       }
     }
+
 }

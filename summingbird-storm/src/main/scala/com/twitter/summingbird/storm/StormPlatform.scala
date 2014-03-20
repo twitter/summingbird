@@ -27,7 +27,7 @@ import com.twitter.bijection.{Base64String, Injection}
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.storehaus.{ReadableStore, WritableStore}
-import com.twitter.storehaus.algebra.MergeableStore
+import com.twitter.storehaus.algebra.{MergeableStore, Mergeable}
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
@@ -37,13 +37,13 @@ import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache}
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime}
-import com.twitter.summingbird.util.CacheSize
+import com.twitter.summingbird.option.CacheSize
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
-import com.twitter.util.Future
+import com.twitter.util.{Future, Time}
 import scala.annotation.tailrec
 import backtype.storm.tuple.Values
 import org.slf4j.LoggerFactory
@@ -58,7 +58,7 @@ sealed trait StormStore[-K, V] {
 }
 
 object MergeableStoreSupplier {
-  def from[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+  def from[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier(() => store, batcher)
 
    def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreSupplier[K, V] = {
@@ -68,7 +68,7 @@ object MergeableStoreSupplier {
 }
 
 
-case class MergeableStoreSupplier[K, V](store: () => MergeableStore[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
+case class MergeableStoreSupplier[K, V](store: () => Mergeable[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
 trait StormService[-K, +V] {
   def store: StoreFactory[K, V]
@@ -99,7 +99,7 @@ object Storm {
   def onlineOnlyStore[K, V](store: => MergeableStore[K, V]): StormStore[K, V] =
     MergeableStoreSupplier.fromOnlineOnly(store)
 
-  def store[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
+  def store[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
     MergeableStoreSupplier.from(store)
 
   def service[K, V](serv: => ReadableStore[K, V]): StormService[K, V] = StoreWrapper(() => serv)
@@ -132,7 +132,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   private type Prod[T] = Producer[Storm, T]
 
-  private def getOrElse[T <: AnyRef : Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
+  private[storm] def getOrElse[T <: AnyRef : Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
     val producer = node.members.last
 
     val namedNodes = dag.producerToPriorityNames(producer)
@@ -162,112 +162,14 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   }
 
   private def scheduleFlatMapper(stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
-    /**
-     * Only exists because of the crazy casts we needed.
-     */
-    def foldOperations(producers: List[Producer[Storm, _]]): FlatMapOperation[Any, Any] = {
-      producers.foldLeft(FlatMapOperation.identity[Any]) {
-        case (acc, p) =>
-          p match {
-            case LeftJoinedProducer(_, wrapper) =>
-              val newService = wrapper.store
-              FlatMapOperation.combine(
-                acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-                newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
-            case OptionMappedProducer(_, op) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
-            case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
-            case WrittenProducer(_, sinkSupplier) =>
-              acc.andThen(FlatMapOperation.write(() => sinkSupplier.toFn))
-            case IdentityKeyedProducer(_) => acc
-            case MergedProducer(_, _) => acc
-            case NamedProducer(_, _) => acc
-            case AlsoProducer(_, _) => acc
-            case Source(_) => sys.error("Should not schedule a source inside a flat mapper")
-            case Summer(_, _, _) => sys.error("Should not schedule a Summer inside a flat mapper")
-            case KeyFlatMappedProducer(_, op) => acc.andThen(FlatMapOperation.keyFlatMap[Any, Any, Any](op).asInstanceOf[FlatMapOperation[Any, Any]])
-          }
-      }
-    }
     val nodeName = stormDag.getNodeName(node)
-    val operation = foldOperations(node.members.reverse)
-    val metrics = getOrElse(stormDag, node, DEFAULT_FM_STORM_METRICS)
-    val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
-    logger.info("[{}] Anchoring: {}", nodeName, anchorTuples.anchor)
-
-    val maxWaiting = getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES)
-    val maxWaitTime = getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME)
-    logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
-
     val usePreferLocalDependency = getOrElse(stormDag, node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
     logger.info("[{}] usePreferLocalDependency: {}", nodeName, usePreferLocalDependency.get)
 
-    val flushFrequency = getOrElse(stormDag, node, DEFAULT_FLUSH_FREQUENCY)
-    logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
-
-    val cacheSize = getOrElse(stormDag, node, DEFAULT_FM_CACHE)
-    logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
-
-    val summerOpt:Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect{case s: SummerNode[Storm] => s}.headOption
-
-    val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
-    logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
-
-    val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
-    logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
-
-    val bolt = summerOpt match {
-      case Some(s) =>
-        val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
-        val cacheBuilder = if(useAsyncCache.get) {
-          val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
-          logger.info("[{}] softMemoryFlush : {}", nodeName, softMemoryFlush.get)
-
-          val asyncPoolSize = getOrElse(stormDag, node, DEFAULT_ASYNC_POOL_SIZE)
-          logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
-
-          val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
-          logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
-
-          MultiTriggerCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
-        } else {
-          SummingQueueCache.builder[(Any, BatchID), (List[InputState[Tuple]], Timestamp, Any)](cacheSize, flushFrequency)
-        }
-
-        BaseBolt(
-          metrics.metrics,
-          anchorTuples,
-          true,
-          new Fields(AGG_KEY, AGG_VALUE),
-          ackOnEntry,
-          new executor.FinalFlatMap(
-            operation.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-            cacheBuilder,
-            maxWaiting,
-            maxWaitTime,
-            new SingleItemInjection[Any],
-            new KeyValueInjection[(Any, BatchID), Any]
-            )(summerProducer.monoid.asInstanceOf[Monoid[Any]], summerProducer.store.batcher)
-            )
-      case None =>
-      BaseBolt(
-          metrics.metrics,
-          anchorTuples,
-          stormDag.dependantsOf(node).size > 0,
-          new Fields(VALUE_FIELD),
-          ackOnEntry,
-          new executor.IntermediateFlatMap(
-            operation,
-            maxWaiting,
-            maxWaitTime,
-            new SingleItemInjection[Any],
-            new SingleItemInjection[Any]
-            )
-          )
-    }
+    val bolt: BaseBolt[Any, Any] = FlatMapBoltProvider(this, stormDag, node).apply
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism).addConfigurations(tickConfig)
-
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     if (usePreferLocalDependency.get) {
@@ -275,7 +177,6 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     } else {
       dependenciesNames.foreach { declarer.shuffleGrouping(_) }
     }
-
   }
 
   private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
@@ -304,11 +205,55 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   private def scheduleSummerBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val monoid = summer.monoid
+    implicit val batcher = summer.store.batcher
     val nodeName = stormDag.getNodeName(node)
+
+    type ExecutorKeyType = (K, BatchID)
+    type ExecutorValueType = (Timestamp, V)
+    type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
 
     val supplier = summer.store match {
       case MergeableStoreSupplier(contained, _) => contained
     }
+
+    def wrapMergable(supplier: () => Mergeable[ExecutorKeyType, V]) =
+        () => {
+          new Mergeable[ExecutorKeyType, ExecutorValueType] {
+            val innerMergable: Mergeable[ExecutorKeyType, V] = supplier()
+            implicit val innerSG = innerMergable.semigroup
+
+            // Since we don't keep a timestamp in the store
+            // this makes it clear that the 'right' or newest timestamp from the stream
+            // will always be the timestamp outputted
+            val semigroup = {
+              implicit val tsSg = new Semigroup[Timestamp] {
+                def plus(a: Timestamp, b: Timestamp) = b
+                override def sumOption(ti: TraversableOnce[Timestamp]) =
+                  if(ti.isEmpty) None
+                  else {
+                    var last: Timestamp = null
+                    ti.foreach { last = _ }
+                    Some(last)
+                  }
+              }
+              implicitly[Semigroup[ExecutorValueType]]
+            }
+
+            override def close(time: Time) = innerMergable.close(time)
+
+            override def multiMerge[K1 <: ExecutorKeyType](kvs: Map[K1, ExecutorValueType]): Map[K1, Future[Option[ExecutorValueType]]] =
+                innerMergable.multiMerge(kvs.mapValues(_._2)).map { case (k, futOpt) =>
+                  (k, futOpt.map { opt =>
+                    opt.map { v =>
+                      (kvs(k)._1, v)
+                    }
+                  })
+                }
+          }
+        }
+
+    val wrappedStore = wrapMergable(supplier)
+
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
@@ -325,6 +270,19 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
     logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
 
+
+    val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
+    logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
+
+    val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
+        val ((k, batchID), (optiVWithTS, (ts, v))) = op
+        val optiV = optiVWithTS.map(_._2)
+        List((ts, (k, (optiV, v))))
+    }
+
+    val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
+      FlatMapOperation.apply(storeBaseFMOp)
+
     val cacheBuilder = if(useAsyncCache.get) {
           val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
           logger.info("[{}] softMemoryFlush : {}", nodeName, softMemoryFlush.get)
@@ -335,9 +293,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
           logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
 
-          MultiTriggerCache.builder[(K, BatchID), (List[InputState[Tuple]], Timestamp, V)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
+          MultiTriggerCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
         } else {
-          SummingQueueCache.builder[(K, BatchID), (List[InputState[Tuple]], Timestamp, V)](cacheSize, flushFrequency)
+          SummingQueueCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, flushFrequency)
         }
 
     val sinkBolt = BaseBolt(
@@ -346,16 +304,18 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
           shouldEmit,
           new Fields(VALUE_FIELD),
           ackOnEntry,
-          new executor.Summer(
-              supplier,
+          new executor.Summer (
+              wrappedStore,
+              flatmapOp,
               getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
               getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
               cacheBuilder,
               getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
+              maxEmitPerExecute,
               getOrElse(stormDag, node, IncludeSuccessHandler.default),
-              new KeyValueInjection[(K,BatchID), V],
-              new SingleItemInjection[(K, (Option[V], V))])
+              new KeyValueInjection[Int, Map[ExecutorKeyType, ExecutorValueType]],
+              new SingleItemInjection[ExecutorOutputType])
         )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint

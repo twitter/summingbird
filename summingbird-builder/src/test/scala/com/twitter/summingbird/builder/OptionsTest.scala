@@ -16,10 +16,12 @@ limitations under the License.
 
 package com.twitter.summingbird.builder
 
-import com.twitter.summingbird.scalding.{Scalding, ConfigBijection, ScaldingEnv, InitialBatchedStore}
+import com.twitter.summingbird.batch.ConfigBijection
+import com.twitter.summingbird.scalding.{Scalding, ScaldingEnv}
+import com.twitter.summingbird.scalding.store.InitialBatchedStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{Batcher, BatchID}
-import com.twitter.summingbird.option._
+import com.twitter.summingbird.option.{MonoidIsCommutative => BMonoidIsCommutative, _}
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
 import org.specs2.mutable._
@@ -38,7 +40,7 @@ class TestJob1(env: Env) extends AbstractJob(env) {
     .withTime(new java.util.Date(_))
     .map { e => (e % 2, e) }
     .groupAndSumTo(CompoundStore.fromOffline[Long, Long](new InitialBatchedStore(BatchID(12L), null)))
-    .set(MonoidIsCommutative(true))
+    .set(BMonoidIsCommutative(true))
   }
   catch {
     case t: Throwable => t.printStackTrace
