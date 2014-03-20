@@ -102,7 +102,7 @@ Follow [@summingbird](https://twitter.com/summingbird) on Twitter for updates.
 
 ## Maven
 
-Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.4.0rc1`.
+Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.4.0`.
 
 Current published artifacts are
 
