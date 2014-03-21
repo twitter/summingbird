@@ -538,7 +538,7 @@ class Scalding(
   @transient transformConfig: SummingbirdConfig => SummingbirdConfig,
   @transient passedRegistrars: List[IKryoRegistrar]
   )
-    extends Platform[Scalding] {
+    extends Platform[Scalding] with java.io.Serializable {
 
   type Source[T] = PipeFactory[T]
   type Store[K, V] = scalding.Store[K, V]
