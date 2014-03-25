@@ -48,7 +48,19 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.storm.option.AnchorTuples" data-isabs="false">
+              <ol><li visbl="pub" name="com.twitter.summingbird.storm.option.AckOnEntry" data-isabs="false">
+      <a id="AckOnEntry:AckOnEntry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AckOnEntry.html"><span class="name">AckOnEntry</span></a><span class="params">(<span name="get">get: Boolean</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.AnchorTuples" data-isabs="false">
       <a id="AnchorTuples:AnchorTuples"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -85,79 +97,15 @@ ack in the final sink bolt.</p>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.IncludeSuccessHandler" data-isabs="false">
-      <a id="IncludeSuccessHandler:IncludeSuccessHandler"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.PreferLocalDependency" data-isabs="false">
+      <a id="PreferLocalDependency:PreferLocalDependency"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="IncludeSuccessHandler.html"><span class="name">IncludeSuccessHandler</span></a><span class="params">(<span name="get">get: Boolean</span>)</span><span class="result"> extends Product with Serializable</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Kryo serialization problems have been observed with using
-OnlineSuccessHandler.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.MaxWaitingFutures" data-isabs="false">
-      <a id="MaxWaitingFutures:MaxWaitingFutures"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="MaxWaitingFutures.html"><span class="name">MaxWaitingFutures</span></a><span class="params">(<span name="get">get: Int</span>)</span><span class="result"> extends Product with Serializable</span>
-      </span>
-      </h4>
-      <p class="comment cmt">MaxWaitingFutures is the maximum number of key-value pairs that the
-SinkBolt in Storm will process before starting to force the
-futures.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.OnlineExceptionHandler" data-isabs="false">
-      <a id="OnlineExceptionHandler:OnlineExceptionHandler"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="OnlineExceptionHandler.html"><span class="name">OnlineExceptionHandler</span></a><span class="params">(<span name="handlerFn">handlerFn: PartialFunction[Throwable, Unit]</span>)</span><span class="result"> extends Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.OnlineSuccessHandler" data-isabs="false">
-      <a id="OnlineSuccessHandler:OnlineSuccessHandler"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="OnlineSuccessHandler.html"><span class="name">OnlineSuccessHandler</span></a><span class="params">(<span name="handlerFn">handlerFn: (Unit) ⇒ Unit</span>)</span><span class="result"> extends Product with Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.SinkParallelism" data-isabs="false">
-      <a id="SinkParallelism:SinkParallelism"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="SinkParallelism.html"><span class="name">SinkParallelism</span></a><span class="params">(<span name="parHint">parHint: Int</span>)</span><span class="result"> extends Product with Serializable</span>
-      </span>
-      </h4>
-      <p class="comment cmt">SinkParallelism controls the number of executors storm allocates to
-the groupAndSum bolts.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.SinkStormMetrics" data-isabs="false">
-      <a id="SinkStormMetrics:SinkStormMetrics"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="SinkStormMetrics.html"><span class="name">SinkStormMetrics</span></a><span class="result"> extends AnyRef</span>
+        <a href="PreferLocalDependency.html"><span class="name">PreferLocalDependency</span></a><span class="params">(<span name="get">get: Boolean</span>)</span><span class="result"> extends Product with Serializable</span>
       </span>
       </h4>
       
@@ -173,6 +121,55 @@ the groupAndSum bolts.</p>
       </span>
       </h4>
       <p class="comment cmt">Options used by the flatMapping stage of a storm topology.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.SpoutStormMetrics" data-isabs="false">
+      <a id="SpoutStormMetrics:SpoutStormMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SpoutStormMetrics.html"><span class="name">SpoutStormMetrics</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.SummerBatchMultiplier" data-isabs="false">
+      <a id="SummerBatchMultiplier:SummerBatchMultiplier"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SummerBatchMultiplier.html"><span class="name">SummerBatchMultiplier</span></a><span class="params">(<span name="get">get: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.SummerParallelism" data-isabs="false">
+      <a id="SummerParallelism:SummerParallelism"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SummerParallelism.html"><span class="name">SummerParallelism</span></a><span class="params">(<span name="parHint">parHint: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">SinkParallelism controls the number of executors storm allocates to
+the groupAndSum bolts.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.SummerStormMetrics" data-isabs="false">
+      <a id="SummerStormMetrics:SummerStormMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SummerStormMetrics.html"><span class="name">SummerStormMetrics</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
     </li></ol>
             </div>
 
@@ -205,27 +202,27 @@ the groupAndSum bolts.</p>
       </h4>
       <p class="comment cmt">This stupidity is necessary because val parameters can't be
 call-by-name.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.IncludeSuccessHandler" data-isabs="false">
-      <a id="IncludeSuccessHandler:IncludeSuccessHandler"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.SpoutStormMetrics" data-isabs="false">
+      <a id="SpoutStormMetrics:SpoutStormMetrics"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="IncludeSuccessHandler$.html"><span class="name">IncludeSuccessHandler</span></a><span class="result"> extends Serializable</span>
+        <a href="SpoutStormMetrics$.html"><span class="name">SpoutStormMetrics</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.SinkStormMetrics" data-isabs="false">
-      <a id="SinkStormMetrics:SinkStormMetrics"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.option.SummerStormMetrics" data-isabs="false">
+      <a id="SummerStormMetrics:SummerStormMetrics"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SinkStormMetrics$.html"><span class="name">SinkStormMetrics</span></a><span class="result"> extends AnyRef</span>
+        <a href="SummerStormMetrics$.html"><span class="name">SummerStormMetrics</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       <p class="comment cmt">See FlatMapOptions.</p>

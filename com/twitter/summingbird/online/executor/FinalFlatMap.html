@@ -1,0 +1,564 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>com.twitter.summingbird.online.executor.FinalFlatMap</title>
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link type="text/css" media="screen" rel="stylesheet" href="../../../../../lib/template.css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+    
+        </head>
+        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="type">
+      <div id="definition">
+        <img src="../../../../../lib/class_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../../package.html">summingbird</a>.<a name="com.twitter.summingbird.online" class="extype" href="../package.html">online</a>.<a name="com.twitter.summingbird.online.executor" class="extype" href="package.html">executor</a></p>
+        <h1>FinalFlatMap</h1>
+      </div>
+
+      <h4 class="signature" id="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FinalFlatMap</span><span class="tparams">[<span name="Event">Event</span>, <span name="Key">Key</span>, <span name="Value">Value</span>, <span name="S">S &lt;: com.twitter.summingbird.online.executor.InputState[_]</span>, <span name="D">D</span>]</span><span class="result"> extends <a name="com.twitter.summingbird.online.executor.AsyncBase" class="extype" href="AsyncBase.html">AsyncBase</a>[Event, (<span name="scala.Int" class="extype">Int</span>, Map[Key, Value]), S, D]</span>
+      </span>
+      </h4>
+      
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-online/src/main/scala/com/twitter/summingbird/online/executor/FinalFlatMap.scala">FinalFlatMap.scala</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.online.executor.AsyncBase" class="extype" href="AsyncBase.html">AsyncBase</a>[Event, (<span name="scala.Int" class="extype">Int</span>, Map[Key, Value]), S, D], <a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="OperationContainer.html">OperationContainer</a>[Event, (<span name="scala.Int" class="extype">Int</span>, Map[Key, Value]), S, D], <span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+        </div></div>
+    
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input accesskey="/" type="text" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By inheritance</span></li></ol>
+            </div>
+        <div id="ancestors">
+              <span class="filtertype">Inherited</span>
+              <ol><li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.online.executor.FinalFlatMap" class="in"><span>FinalFlatMap</span></li><li name="com.twitter.summingbird.online.executor.AsyncBase" class="in"><span>AsyncBase</span></li><li name="com.twitter.summingbird.online.executor.OperationContainer" class="in"><span>OperationContainer</span></li><li name="scala.Serializable" class="in"><span>Serializable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+            </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div class="members" id="constructors">
+              <h3>Instance Constructors</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#this" data-isabs="false">
+      <a id="this:FinalFlatMap[Event, Key, Value, S, D]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FinalFlatMap</span><span class="params">(<span name="flatMapOp">flatMapOp: <a name="com.twitter.summingbird.online.FlatMapOperation" class="extype" href="../FlatMapOperation.html">FlatMapOperation</a>[Event, (Key, Value)]</span>, <span name="cacheBuilder">cacheBuilder: <a name="com.twitter.summingbird.online.CacheBuilder" class="extype" href="../CacheBuilder.html">CacheBuilder</a>[<span name="scala.Int" class="extype">Int</span>, (List[S], Map[Key, Value])]</span>, <span name="maxWaitingFutures">maxWaitingFutures: <a name="com.twitter.summingbird.online.option.MaxWaitingFutures" class="extype" href="../option/MaxWaitingFutures.html">MaxWaitingFutures</a></span>, <span name="maxWaitingTime">maxWaitingTime: <a name="com.twitter.summingbird.online.option.MaxFutureWaitTime" class="extype" href="../option/MaxFutureWaitTime.html">MaxFutureWaitTime</a></span>, <span name="maxEmitPerExec">maxEmitPerExec: <a name="com.twitter.summingbird.online.option.MaxEmitPerExecute" class="extype" href="../option/MaxEmitPerExecute.html">MaxEmitPerExecute</a></span>, <span name="summerShards">summerShards: <span name="com.twitter.summingbird.online.executor.KeyValueShards" class="extype">KeyValueShards</span></span>, <span name="pDecoder">pDecoder: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[Event, D]</span>, <span name="pEncoder">pEncoder: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[(<span name="scala.Int" class="extype">Int</span>, Map[Key, Value]), D]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[Value]</span>)</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        <div class="types members" id="types">
+              <h3>Type Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#InS" data-isabs="false">
+      <a id="InS:InS"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">InS</span><span class="result"> = S</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#OutputElement" data-isabs="false">
+      <a id="OutputElement:(Int, Map[Key, Value])"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">OutputElement</span><span class="result"> = (<span name="scala.Int" class="extype">Int</span>, Map[Key, Value])</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div class="values members" id="values">
+              <h3>Value Members</h3>
+              <ol><li visbl="pub" name="scala.AnyRef#!=" data-isabs="false">
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $bang$eq">!=</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#!=" data-isabs="false">
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $bang$eq">!=</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef###" data-isabs="false">
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $hash$hash">##</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#==" data-isabs="false">
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $eq$eq">==</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#==" data-isabs="false">
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $eq$eq">==</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#apply" data-isabs="false">
+      <a id="apply(S,Event):Future[TraversableOnce[(List[S], Future[TraversableOnce[(Int, Map[Key, Value])]])]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="state">state: S</span>, <span name="tup">tup: Event</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[TraversableOnce[(List[S], <span name="com.twitter.util.Future" class="extype">Future</span>[TraversableOnce[(<span name="scala.Int" class="extype">Int</span>, Map[Key, Value])]])]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">If you can use Future.</p><div class="fullcomment"><div class="comment cmt"><p>If you can use Future.value below, do so. The double Future is here to deal with
+cases that need to complete operations after or before doing a FlatMapOperation or
+doing a store merge
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.executor.FinalFlatMap" class="extype" href="">FinalFlatMap</a> → <a name="com.twitter.summingbird.online.executor.AsyncBase" class="extype" href="AsyncBase.html">AsyncBase</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: T0</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#cache" data-isabs="false">
+      <a id="cache(S,TraversableOnce[(Key, Value)]):Future[TraversableOnce[(List[S], Future[TraversableOnce[(Int, Map[Key, Value])]])]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cache</span><span class="params">(<span name="state">state: S</span>, <span name="items">items: TraversableOnce[(Key, Value)]</span>)</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[TraversableOnce[(List[S], <span name="com.twitter.util.Future" class="extype">Future</span>[TraversableOnce[(<span name="scala.Int" class="extype">Int</span>, Map[Key, Value])]])]]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#cleanup" data-isabs="false">
+      <a id="cleanup:Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cleanup</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.executor.FinalFlatMap" class="extype" href="">FinalFlatMap</a> → <a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="OperationContainer.html">OperationContainer</a></dd></dl></div>
+    </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: AnyRef</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a name="java.lang" class="extype" href="../../../../../java/lang/package.html">lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#decoder" data-isabs="false">
+      <a id="decoder:Injection[Event, D]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">decoder</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[Event, D]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.executor.FinalFlatMap" class="extype" href="">FinalFlatMap</a> → <a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="OperationContainer.html">OperationContainer</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#encoder" data-isabs="false">
+      <a id="encoder:Injection[(Int, Map[Key, Value]), D]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">encoder</span><span class="result">: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[(<span name="scala.Int" class="extype">Int</span>, Map[Key, Value]), D]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.executor.FinalFlatMap" class="extype" href="">FinalFlatMap</a> → <a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="OperationContainer.html">OperationContainer</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#equals" data-isabs="false">
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.AsyncBase#execute" data-isabs="false">
+      <a id="execute(S,Event):Seq[(List[S], Try[TraversableOnce[(Int, Map[Key, Value])]])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">execute</span><span class="params">(<span name="state">state: S</span>, <span name="data">data: Event</span>)</span><span class="result">: Seq[(List[S], <span name="scala.util.Try" class="extype">Try</span>[TraversableOnce[(<span name="scala.Int" class="extype">Int</span>, Map[Key, Value])]])]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.executor.AsyncBase" class="extype" href="AsyncBase.html">AsyncBase</a> → <a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="OperationContainer.html">OperationContainer</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.AsyncBase#executeTick" data-isabs="false">
+      <a id="executeTick:Seq[(List[S], Try[TraversableOnce[(Int, Map[Key, Value])]])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executeTick</span><span class="result">: Seq[(List[S], <span name="scala.util.Try" class="extype">Try</span>[TraversableOnce[(<span name="scala.Int" class="extype">Int</span>, Map[Key, Value])]])]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.executor.AsyncBase" class="extype" href="AsyncBase.html">AsyncBase</a> → <a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="OperationContainer.html">OperationContainer</a></dd></dl></div>
+    </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a name="java.lang" class="extype" href="../../../../../java/lang/package.html">lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
+      <a id="getClass():java.lang.Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: java.lang.Class[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.OperationContainer#init" data-isabs="false">
+      <a id="init:Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">init</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="OperationContainer.html">OperationContainer</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#lockedOp" data-isabs="false">
+      <a id="lockedOp:Externalizer[FlatMapOperation[Event, (Key, Value)]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lockedOp</span><span class="result">: <a name="com.twitter.summingbird.online.Externalizer" class="extype" href="../Externalizer.html">Externalizer</a>[<a name="com.twitter.summingbird.online.FlatMapOperation" class="extype" href="../FlatMapOperation.html">FlatMapOperation</a>[Event, (Key, Value)]]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="prt" name="com.twitter.summingbird.online.executor.AsyncBase#logger" data-isabs="false">
+      <a id="logger:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logger</span><span class="result">: <span name="org.slf4j.Logger" class="extype">Logger</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.executor.AsyncBase" class="extype" href="AsyncBase.html">AsyncBase</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#notify" data-isabs="false">
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#notifyAll" data-isabs="false">
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.OperationContainer#notifyFailure" data-isabs="false">
+      <a id="notifyFailure(List[S],Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyFailure</span><span class="params">(<span name="inputs">inputs: List[S]</span>, <span name="e">e: Throwable</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="OperationContainer.html">OperationContainer</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#sCache" data-isabs="false">
+      <a id="sCache:AsyncCache[Int, (List[S], Map[Key, Value])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sCache</span><span class="result">: <a name="com.twitter.summingbird.online.AsyncCache" class="extype" href="../AsyncCache.html">AsyncCache</a>[<span name="scala.Int" class="extype">Int</span>, (List[S], Map[Key, Value])]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
+      <a id="synchronized[T0](⇒ T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ T0</span>)</span><span class="result">: T0</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor.FinalFlatMap#tick" data-isabs="false">
+      <a id="tick:Future[TraversableOnce[(List[S], Future[TraversableOnce[(Int, Map[Key, Value])]])]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tick</span><span class="result">: <span name="com.twitter.util.Future" class="extype">Future</span>[TraversableOnce[(List[S], <span name="com.twitter.util.Future" class="extype">Future</span>[TraversableOnce[(<span name="scala.Int" class="extype">Int</span>, Map[Key, Value])]])]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.executor.FinalFlatMap" class="extype" href="">FinalFlatMap</a> → <a name="com.twitter.summingbird.online.executor.AsyncBase" class="extype" href="AsyncBase.html">AsyncBase</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span name="scala.Long" class="extype">Long</span></span>, <span name="arg1">arg1: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div name="com.twitter.summingbird.online.executor.AsyncBase" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.online.executor.AsyncBase" class="extype" href="AsyncBase.html">AsyncBase</a>[Event, (<span name="scala.Int" class="extype">Int</span>, Map[Key, Value]), S, D]</h3>
+            </div><div name="com.twitter.summingbird.online.executor.OperationContainer" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="OperationContainer.html">OperationContainer</a>[Event, (<span name="scala.Int" class="extype">Int</span>, Map[Key, Value]), S, D]</h3>
+            </div><div name="scala.Serializable" class="parent">
+              <h3>Inherited from <span name="scala.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="java.io.Serializable" class="parent">
+              <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="scala.AnyRef" class="parent">
+              <h3>Inherited from AnyRef</h3>
+            </div><div name="scala.Any" class="parent">
+              <h3>Inherited from <span name="scala.Any" class="extype">Any</span></h3>
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

@@ -25,11 +25,11 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">Dag</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="tail">tail: com.twitter.summingbird.TailProducer[P, _]</span>, <span name="producerToNode">producerToNode: Map[com.twitter.summingbird.Producer[P, _], <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>, <span name="nodes">nodes: List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>, <span name="nodeToName">nodeToName: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], String]</span>, <span name="nameToNode">nameToNode: Map[String, <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>, <span name="dependenciesOfM">dependenciesOfM: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]]</span>, <span name="dependantsOfM">dependantsOfM: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]]</span>)</span><span class="result"> extends <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
+        <span class="name">Dag</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="originalTail">originalTail: com.twitter.summingbird.TailProducer[P, _]</span>, <span name="producerToPriorityNames">producerToPriorityNames: Map[<a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>], List[String]]</span>, <span name="tail">tail: com.twitter.summingbird.TailProducer[P, _]</span>, <span name="producerToNode">producerToNode: Map[com.twitter.summingbird.Producer[P, _], <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>, <span name="nodes">nodes: List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>, <span name="nodeToName">nodeToName: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], String]</span>, <span name="nameToNode">nameToNode: Map[String, <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>, <span name="dependenciesOfM">dependenciesOfM: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]]</span>, <span name="dependantsOfM">dependantsOfM: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]]</span>)</span><span class="result"> extends <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/planner/Node.scala">Node.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-core/src/main/scala/com/twitter/summingbird/planner/Node.scala">Node.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -65,7 +65,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">Dag</span><span class="params">(<span name="tail">tail: com.twitter.summingbird.TailProducer[P, _]</span>, <span name="producerToNode">producerToNode: Map[com.twitter.summingbird.Producer[P, _], <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>, <span name="nodes">nodes: List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>, <span name="nodeToName">nodeToName: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], String] = <span name="scala.this.Predef.Map.apply[com.twitter.summingbird.planner.Node[P], String]()" class="defval">...</span></span>, <span name="nameToNode">nameToNode: Map[String, <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]] = <span name="scala.this.Predef.Map.apply[String, com.twitter.summingbird.planner.Node[P]]()" class="defval">...</span></span>, <span name="dependenciesOfM">dependenciesOfM: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]] = <span name="scala.this.Predef.Map.apply[com.twitter.summingbird.planner.Node[P], List[com.twitter.summingbird.planner.Node[P]]]()" class="defval">...</span></span>, <span name="dependantsOfM">dependantsOfM: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]] = <span name="scala.this.Predef.Map.apply[com.twitter.summingbird.planner.Node[P], List[com.twitter.summingbird.planner.Node[P]]]()" class="defval">...</span></span>)</span>
+        <span class="name">Dag</span><span class="params">(<span name="originalTail">originalTail: com.twitter.summingbird.TailProducer[P, _]</span>, <span name="producerToPriorityNames">producerToPriorityNames: Map[<a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>], List[String]]</span>, <span name="tail">tail: com.twitter.summingbird.TailProducer[P, _]</span>, <span name="producerToNode">producerToNode: Map[com.twitter.summingbird.Producer[P, _], <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>, <span name="nodes">nodes: List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>, <span name="nodeToName">nodeToName: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], String] = <span name="scala.this.Predef.Map.apply[com.twitter.summingbird.planner.Node[P], String]()" class="defval">...</span></span>, <span name="nameToNode">nameToNode: Map[String, <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]] = <span name="scala.this.Predef.Map.apply[String, com.twitter.summingbird.planner.Node[P]]()" class="defval">...</span></span>, <span name="dependenciesOfM">dependenciesOfM: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]] = <span name="scala.this.Predef.Map.apply[com.twitter.summingbird.planner.Node[P], List[com.twitter.summingbird.planner.Node[P]]]()" class="defval">...</span></span>, <span name="dependantsOfM">dependantsOfM: Map[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P], List[<a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]] = <span name="scala.this.Predef.Map.apply[com.twitter.summingbird.planner.Node[P], List[com.twitter.summingbird.planner.Node[P]]]()" class="defval">...</span></span>)</span>
       </span>
       </h4>
       
@@ -456,6 +456,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Dag#originalTail" data-isabs="false">
+      <a id="originalTail:com.twitter.summingbird.TailProducer[P, _]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">originalTail</span><span class="result">: com.twitter.summingbird.TailProducer[P, _]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.planner.Dag#producerDependants" data-isabs="false">
       <a id="producerDependants:Dependants[P]"></a>
       <h4 class="signature">
@@ -477,6 +489,18 @@
       </span>
       <span class="symbol">
         <span class="name">producerToNode</span><span class="result">: Map[com.twitter.summingbird.Producer[P, _], <a name="com.twitter.summingbird.planner.Node" class="extype" href="Node.html">Node</a>[P]]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.Dag#producerToPriorityNames" data-isabs="false">
+      <a id="producerToPriorityNames:Map[Producer[P, Any], List[String]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">producerToPriorityNames</span><span class="result">: Map[<a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>], List[String]]</span>
       </span>
       </h4>
       

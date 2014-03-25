@@ -56,7 +56,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="Dag.html"><span class="name">Dag</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>]</span><span class="params">(<span name="tail">tail: com.twitter.summingbird.TailProducer[P, _]</span>, <span name="producerToNode">producerToNode: Map[com.twitter.summingbird.Producer[P, _], Node[P]]</span>, <span name="nodes">nodes: List[Node[P]]</span>, <span name="nodeToName">nodeToName: Map[Node[P], String]</span>, <span name="nameToNode">nameToNode: Map[String, Node[P]]</span>, <span name="dependenciesOfM">dependenciesOfM: Map[Node[P], List[Node[P]]]</span>, <span name="dependantsOfM">dependantsOfM: Map[Node[P], List[Node[P]]]</span>)</span><span class="result"> extends Product with Serializable</span>
+        <a href="Dag.html"><span class="name">Dag</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>]</span><span class="params">(<span name="originalTail">originalTail: com.twitter.summingbird.TailProducer[P, _]</span>, <span name="producerToPriorityNames">producerToPriorityNames: Map[Producer[P, Any], List[String]]</span>, <span name="tail">tail: com.twitter.summingbird.TailProducer[P, _]</span>, <span name="producerToNode">producerToNode: Map[com.twitter.summingbird.Producer[P, _], Node[P]]</span>, <span name="nodes">nodes: List[Node[P]]</span>, <span name="nodeToName">nodeToName: Map[Node[P], String]</span>, <span name="nameToNode">nameToNode: Map[String, Node[P]]</span>, <span name="dependenciesOfM">dependenciesOfM: Map[Node[P], List[Node[P]]]</span>, <span name="dependantsOfM">dependantsOfM: Map[Node[P], List[Node[P]]]</span>)</span><span class="result"> extends Product with Serializable</span>
       </span>
       </h4>
       
@@ -93,6 +93,30 @@
       </span>
       <span class="symbol">
         <a href="NodeIdentifier.html"><span class="name">NodeIdentifier</span></a><span class="params">(<span name="identifier">identifier: String</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.OnlinePlan" data-isabs="false">
+      <a id="OnlinePlan:OnlinePlan[P, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="OnlinePlan.html"><span class="name">OnlinePlan</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="V">V</span>]</span><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.ProducerF" data-isabs="false">
+      <a id="ProducerF:ProducerF[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ProducerF.html"><span class="name">ProducerF</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>]</span><span class="params">(<span name="oldSources">oldSources: List[Producer[P, Any]]</span>, <span name="oldRef">oldRef: Producer[P, Any]</span>, <span name="f">f: (List[Producer[P, Any]]) ⇒ Producer[P, Any]</span>)</span><span class="result"> extends Product with Serializable</span>
       </span>
       </h4>
       
@@ -136,6 +160,30 @@
       </span>
       <span class="symbol">
         <a href="Dag$.html"><span class="name">Dag</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.OnlinePlan" data-isabs="false">
+      <a id="OnlinePlan:OnlinePlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="OnlinePlan$.html"><span class="name">OnlinePlan</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.planner.StripNamedNode" data-isabs="false">
+      <a id="StripNamedNode:StripNamedNode"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StripNamedNode$.html"><span class="name">StripNamedNode</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       

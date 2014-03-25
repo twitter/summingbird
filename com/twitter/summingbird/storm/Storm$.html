@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -273,6 +273,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#onlineOnlyStore" data-isabs="false">
+      <a id="onlineOnlyStore[K, V](⇒ MergeableStore[K, V]):StormStore[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">onlineOnlyStore</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[K, V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.StormStore" class="extype" href="StormStore.html">StormStore</a>[K, V]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#remote" data-isabs="false">
       <a id="remote(Map[String, Options]):RemoteStorm"></a>
       <h4 class="signature">
@@ -285,27 +297,88 @@
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#source" data-isabs="false">
-      <a id="source[T](Spout[T])(TimeExtractor[T]):Producer[Storm, T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">implicit </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">source</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="timeOf">timeOf: <a name="com.twitter.summingbird.TimeExtractor" class="extype" href="../TimeExtractor.html">TimeExtractor</a>[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[<a name="com.twitter.summingbird.storm.Storm" class="extype" href="Storm.html">Storm</a>, T]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#store" data-isabs="false">
-      <a id="store[K, V](⇒ MergeableStore[(K, BatchID), V])(Batcher):MergeableStoreSupplier[K, V]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#service" data-isabs="false">
+      <a id="service[K, V](⇒ ReadableStore[K, V]):StormService[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">store</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.MergeableStoreSupplier" class="extype" href="MergeableStoreSupplier.html">MergeableStoreSupplier</a>[K, V]</span>
+        <span class="name">service</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="serv">serv: ⇒ <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.StormService" class="extype" href="StormService.html">StormService</a>[K, V]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#sink" data-isabs="false">
+      <a id="sink[T](⇒ (T) ⇒ Future[Unit]):StormSink[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sink</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="fn">fn: ⇒ (T) ⇒ <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.StormSink" class="extype" href="StormSink.html">StormSink</a>[T]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Below are factory methods for the input output types:
+</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#sinkIntoWritable" data-isabs="false">
+      <a id="sinkIntoWritable[K, V](⇒ WritableStore[K, V]):StormSink[(K, V)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sinkIntoWritable</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span name="com.twitter.storehaus.WritableStore" class="extype">WritableStore</span>[K, V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.StormSink" class="extype" href="StormSink.html">StormSink</a>[(K, V)]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#source" data-isabs="false">
+      <a id="source[T](Spout[T],Option[Int])(TimeExtractor[T]):Producer[Storm, T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">source</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[T]</span>, <span name="defaultSourcePar">defaultSourcePar: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="timeOf">timeOf: <a name="com.twitter.summingbird.TimeExtractor" class="extype" href="../TimeExtractor.html">TimeExtractor</a>[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[<a name="com.twitter.summingbird.storm.Storm" class="extype" href="Storm.html">Storm</a>, T]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#spoutAsSource" data-isabs="false">
+      <a id="spoutAsSource[T](Spout[T])(TimeExtractor[T]):Producer[Storm, T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">spoutAsSource</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="timeOf">timeOf: <a name="com.twitter.summingbird.TimeExtractor" class="extype" href="../TimeExtractor.html">TimeExtractor</a>[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="../Producer.html">Producer</a>[<a name="com.twitter.summingbird.storm.Storm" class="extype" href="Storm.html">Storm</a>, T]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#spoutAsStormSource" data-isabs="false">
+      <a id="spoutAsStormSource[T](Spout[T])(TimeExtractor[T]):StormSource[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">spoutAsStormSource</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="timeOf">timeOf: <a name="com.twitter.summingbird.TimeExtractor" class="extype" href="../TimeExtractor.html">TimeExtractor</a>[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.StormSource" class="extype" href="StormSource.html">StormSource</a>[T]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#store" data-isabs="false">
+      <a id="store[K, V](⇒ Mergeable[(K, BatchID), V])(Batcher):StormStore[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">store</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span name="com.twitter.storehaus.algebra.Mergeable" class="extype">Mergeable</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.StormStore" class="extype" href="StormStore.html">StormStore</a>[K, V]</span>
       </span>
       </h4>
       
@@ -322,14 +395,14 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#toStormSource" data-isabs="false">
-      <a id="toStormSource[T](Spout[T])(TimeExtractor[T]):SpoutSource[T]"></a>
+      <a id="toStormSource[T](Spout[T],Option[Int])(TimeExtractor[T]):StormSource[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">implicit </span>
+        <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toStormSource</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[T]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="timeOf">timeOf: <a name="com.twitter.summingbird.TimeExtractor" class="extype" href="../TimeExtractor.html">TimeExtractor</a>[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.SpoutSource" class="extype" href="SpoutSource.html">SpoutSource</a>[T]</span>
+        <span class="name">toStormSource</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[T]</span>, <span name="defaultSourcePar">defaultSourcePar: <span name="scala.Option" class="extype">Option</span>[<span name="scala.Int" class="extype">Int</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="timeOf">timeOf: <a name="com.twitter.summingbird.TimeExtractor" class="extype" href="../TimeExtractor.html">TimeExtractor</a>[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.StormSource" class="extype" href="StormSource.html">StormSource</a>[T]</span>
       </span>
       </h4>
       

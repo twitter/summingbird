@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -190,14 +190,14 @@
               
         </dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.MergeableStoreSupplier#from" data-isabs="false">
-      <a id="from[K, V](⇒ MergeableStore[(K, BatchID), V])(Batcher):MergeableStoreSupplier[K, V]"></a>
+      <a id="from[K, V](⇒ Mergeable[(K, BatchID), V])(Batcher):MergeableStoreSupplier[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">from</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span name="com.twitter.storehaus.algebra.MergeableStore" class="extype">MergeableStore</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.MergeableStoreSupplier" class="extype" href="MergeableStoreSupplier.html">MergeableStoreSupplier</a>[K, V]</span>
+        <span class="name">from</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span name="com.twitter.storehaus.algebra.Mergeable" class="extype">Mergeable</span>[(K, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a>), V]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.MergeableStoreSupplier" class="extype" href="MergeableStoreSupplier.html">MergeableStoreSupplier</a>[K, V]</span>
       </span>
       </h4>
       

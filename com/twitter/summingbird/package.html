@@ -73,6 +73,18 @@
       </h4>
       <p class="comment cmt">This is a special node that ensures that the first argument is planned, but produces values
 equivalent to the result.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.AlsoTailProducer" data-isabs="false">
+      <a id="AlsoTailProducer:AlsoTailProducer[P, T, R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AlsoTailProducer.html"><span class="name">AlsoTailProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>, <span name="R">R</span>]</span><span class="result"> extends AlsoProducer[P, T, R] with TailProducer[P, R]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.Dependants" data-isabs="false">
       <a id="Dependants:Dependants[P]"></a>
       <h4 class="signature">
@@ -81,7 +93,7 @@ equivalent to the result.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="Dependants.html"><span class="name">Dependants</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>]</span><span class="params">(<span name="tail">tail: Producer[P, Any]</span>)</span><span class="result"> extends Product with Serializable</span>
+        <a href="Dependants.html"><span class="name">Dependants</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>]</span><span class="params">(<span name="tail">tail: Producer[P, Any]</span>)</span><span class="result"> extends DependantGraph[Producer[P, Any]] with Product with Serializable</span>
       </span>
       </h4>
       <p class="comment cmt">Producers are Directed Acyclic Graphs
@@ -98,6 +110,18 @@ by the fact that they are immutable.</p>
       </span>
       </h4>
       <p class="comment cmt">Any environment data an AbstractJob may need.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.ExecutionConfig" data-isabs="true">
+      <a id="ExecutionConfig:ExecutionConfig[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ExecutionConfig.html"><span class="name">ExecutionConfig</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>]</span><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt"></p>
     </li><li visbl="pub" name="com.twitter.summingbird.FlatMappedProducer" data-isabs="false">
       <a id="FlatMappedProducer:FlatMappedProducer[P, T, U]"></a>
       <h4 class="signature">
@@ -191,6 +215,18 @@ by the fact that they are immutable.</p>
       </span>
       <span class="symbol">
         <a href="MergedProducer.html"><span class="name">MergedProducer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="T">T</span>]</span><span class="params">(<span name="left">left: Producer[P, T]</span>, <span name="right">right: Producer[P, T]</span>)</span><span class="result"> extends Producer[P, T] with Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.MutableStringConfig" data-isabs="true">
+      <a id="MutableStringConfig:MutableStringConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MutableStringConfig.html"><span class="name">MutableStringConfig</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
@@ -295,6 +331,18 @@ platforms in parallel.</p>
       </h4>
       <p class="comment cmt">A Producer is a node in our tree, able to generate new items and
 have operations applied to it.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.ReadableMap" data-isabs="true">
+      <a id="ReadableMap:ReadableMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ReadableMap.html"><span class="name">ReadableMap</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.Source" data-isabs="false">
       <a id="Source:Source[P, T]"></a>
       <h4 class="signature">
@@ -316,6 +364,18 @@ have operations applied to it.</p>
       </span>
       <span class="symbol">
         <a href="Summer.html"><span class="name">Summer</span></a><span class="tparams">[<span name="P">P &lt;: Platform[P]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="producer">producer: KeyedProducer[P, K, V]</span>, <span name="store">store: Store[K, V]</span>, <span name="monoid">monoid: Monoid[V]</span>)</span><span class="result"> extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))] with Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.SummingbirdConfig" data-isabs="true">
+      <a id="SummingbirdConfig:SummingbirdConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SummingbirdConfig.html"><span class="name">SummingbirdConfig</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
@@ -351,10 +411,11 @@ have operations applied to it.</p>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="TimeExtractor.html"><span class="name">TimeExtractor</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends (T) ⇒ Long with Serializable</span>
+        <a href="TimeExtractor.html"><span class="name">TimeExtractor</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends Serializable</span>
       </span>
       </h4>
-      
+      <p class="comment cmt">This cannot be a subclass of function and use the pattern
+of implicit dependencies, since then you get an implicit function.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.Unzip2" data-isabs="false">
       <a id="Unzip2:Unzip2[P1, P2]"></a>
       <h4 class="signature">
@@ -368,6 +429,18 @@ have operations applied to it.</p>
       </h4>
       <p class="comment cmt">I tried to make Unzip2 an object with an apply method that took
 all three type parameters, but ran into issues:</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.WrappingConfig" data-isabs="false">
+      <a id="WrappingConfig:WrappingConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="WrappingConfig.html"><span class="name">WrappingConfig</span></a><span class="params">(<span name="backingConfig">backingConfig: ReadableMap</span>, <span name="updates">updates: Map[String, AnyRef]</span>, <span name="removes">removes: Set[String]</span>)</span><span class="result"> extends SummingbirdConfig with Product with Serializable</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.WrittenProducer" data-isabs="false">
       <a id="WrittenProducer:WrittenProducer[P, T, U]"></a>
       <h4 class="signature">
@@ -474,6 +547,18 @@ jobs.</p>
       </h4>
       <p class="comment cmt">TimeExtractor is really just a function, but we've used a
 specialized type for implicit resolution and serializability.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.WrappingConfig" data-isabs="false">
+      <a id="WrappingConfig:WrappingConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="WrappingConfig$.html"><span class="name">WrappingConfig</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.batch" data-isabs="false">
       <a id="batch:batch"></a>
       <h4 class="signature">
@@ -497,8 +582,19 @@ specialized type for implicit resolution and serializability.</p>
         <a href="builder/package.html"><span class="name">builder</span></a>
       </span>
       </h4>
-      <p class="comment cmt">We put typedefs and vals here to make working with the (deprecated) Builder
-API nicer.</p>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.chill" data-isabs="false">
+      <a id="chill:chill"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="chill/package.html"><span class="name">chill</span></a>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.example" data-isabs="false">
       <a id="example:example"></a>
       <h4 class="signature">
@@ -514,6 +610,18 @@ API nicer.</p>
 necessary to run a basic Summingbird job locally that consumes
 Tweets from the public streaming API and generates counts of the
 number of times each word appears per tweet.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.graph" data-isabs="false">
+      <a id="graph:graph"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="graph/package.html"><span class="name">graph</span></a>
+      </span>
+      </h4>
+      <p class="comment cmt">Collection of graph algorithms</p>
     </li><li visbl="pub" name="com.twitter.summingbird.memory" data-isabs="false">
       <a id="memory:memory"></a>
       <h4 class="signature">
@@ -537,7 +645,7 @@ number of times each word appears per tweet.</p>
         <a href="online/package.html"><span class="name">online</span></a>
       </span>
       </h4>
-      
+      <p class="comment cmt">Package containing the Summingbird Online platform.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.option" data-isabs="false">
       <a id="option:option"></a>
       <h4 class="signature">

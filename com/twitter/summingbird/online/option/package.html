@@ -48,24 +48,163 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.online.option.CacheSize" data-isabs="false">
-      <a id="CacheSize:CacheSize"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.online.option.AsyncPoolSize" data-isabs="false">
+      <a id="AsyncPoolSize:AsyncPoolSize"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="CacheSize.html"><span class="name">CacheSize</span></a><span class="params">(<span name="lowerBound">lowerBound: Int</span>, <span name="fuzz">fuzz: Double</span>)</span><span class="result"> extends Serializable with Product with Serializable</span>
+        <a href="AsyncPoolSize.html"><span class="name">AsyncPoolSize</span></a><span class="params">(<span name="get">get: Int</span>)</span><span class="result"> extends Product with Serializable</span>
       </span>
       </h4>
-      <p class="comment cmt">Accepts a lower bound and a percentage of fuzz.</p>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option.FlushFrequency" data-isabs="false">
+      <a id="FlushFrequency:FlushFrequency"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="FlushFrequency.html"><span class="name">FlushFrequency</span></a><span class="params">(<span name="get">get: Duration</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option.IncludeSuccessHandler" data-isabs="false">
+      <a id="IncludeSuccessHandler:IncludeSuccessHandler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="IncludeSuccessHandler.html"><span class="name">IncludeSuccessHandler</span></a><span class="params">(<span name="get">get: Boolean</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Kryo serialization problems have been observed with using
+OnlineSuccessHandler.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option.MaxEmitPerExecute" data-isabs="false">
+      <a id="MaxEmitPerExecute:MaxEmitPerExecute"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MaxEmitPerExecute.html"><span class="name">MaxEmitPerExecute</span></a><span class="params">(<span name="get">get: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option.MaxFutureWaitTime" data-isabs="false">
+      <a id="MaxFutureWaitTime:MaxFutureWaitTime"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MaxFutureWaitTime.html"><span class="name">MaxFutureWaitTime</span></a><span class="params">(<span name="get">get: Duration</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">All futures should return in a reasonable period of time, otherwise
+there will be memory issues keeping all of them open.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option.MaxWaitingFutures" data-isabs="false">
+      <a id="MaxWaitingFutures:MaxWaitingFutures"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MaxWaitingFutures.html"><span class="name">MaxWaitingFutures</span></a><span class="params">(<span name="get">get: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">MaxWaitingFutures is the maximum number of key-value pairs that the
+SinkBolt in Storm will process before starting to force the
+futures.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option.OnlineExceptionHandler" data-isabs="false">
+      <a id="OnlineExceptionHandler:OnlineExceptionHandler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="OnlineExceptionHandler.html"><span class="name">OnlineExceptionHandler</span></a><span class="params">(<span name="handlerFn">handlerFn: PartialFunction[Throwable, Unit]</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option.OnlineSuccessHandler" data-isabs="false">
+      <a id="OnlineSuccessHandler:OnlineSuccessHandler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="OnlineSuccessHandler.html"><span class="name">OnlineSuccessHandler</span></a><span class="params">(<span name="handlerFn">handlerFn: (Unit) ⇒ Unit</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option.SoftMemoryFlushPercent" data-isabs="false">
+      <a id="SoftMemoryFlushPercent:SoftMemoryFlushPercent"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SoftMemoryFlushPercent.html"><span class="name">SoftMemoryFlushPercent</span></a><span class="params">(<span name="get">get: Float</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option.UseAsyncCache" data-isabs="false">
+      <a id="UseAsyncCache:UseAsyncCache"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UseAsyncCache.html"><span class="name">UseAsyncCache</span></a><span class="params">(<span name="get">get: Boolean</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option.ValueCombinerCacheSize" data-isabs="false">
+      <a id="ValueCombinerCacheSize:ValueCombinerCacheSize"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ValueCombinerCacheSize.html"><span class="name">ValueCombinerCacheSize</span></a><span class="params">(<span name="get">get: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
     </li></ol>
             </div>
 
         
 
-        
+        <div class="values members" id="values">
+              <h3>Value Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.online.option.IncludeSuccessHandler" data-isabs="false">
+      <a id="IncludeSuccessHandler:IncludeSuccessHandler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="IncludeSuccessHandler$.html"><span class="name">IncludeSuccessHandler</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
 
         
         </div>

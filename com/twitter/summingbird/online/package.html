@@ -29,7 +29,8 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"></div>
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Package containing the Summingbird Online platform.
+</p></div></div>
     
 
       <div id="mbrsel">
@@ -48,8 +49,129 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.online.package#StoreFactory" data-isabs="false">
-      <a id="StoreFactory:StoreFactory"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.online.AsyncCache" data-isabs="true">
+      <a id="AsyncCache:AsyncCache[Key, Value]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="AsyncCache.html"><span class="name">AsyncCache</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.CacheBuilder" data-isabs="true">
+      <a id="CacheBuilder:CacheBuilder[Key, Value]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="CacheBuilder.html"><span class="name">CacheBuilder</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.Externalizer" data-isabs="false">
+      <a id="Externalizer:Externalizer[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Externalizer.html"><span class="name">Externalizer</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends Externalizer[T]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.FlatMapOperation" data-isabs="true">
+      <a id="FlatMapOperation:FlatMapOperation[T, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatMapOperation.html"><span class="name">FlatMapOperation</span></a><span class="tparams">[<span name="T">-T</span>, <span name="U">+U</span>]</span><span class="result"> extends Serializable with Closeable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.FunctionFlatMapOperation" data-isabs="false">
+      <a id="FunctionFlatMapOperation:FunctionFlatMapOperation[T, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FunctionFlatMapOperation.html"><span class="name">FunctionFlatMapOperation</span></a><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="result"> extends FlatMapOperation[T, U]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.FunctionKeyFlatMapOperation" data-isabs="false">
+      <a id="FunctionKeyFlatMapOperation:FunctionKeyFlatMapOperation[K1, K2, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FunctionKeyFlatMapOperation.html"><span class="name">FunctionKeyFlatMapOperation</span></a><span class="tparams">[<span name="K1">K1</span>, <span name="K2">K2</span>, <span name="V">V</span>]</span><span class="result"> extends FlatMapOperation[(K1, V), (K2, V)]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.GenericFlatMapOperation" data-isabs="false">
+      <a id="GenericFlatMapOperation:GenericFlatMapOperation[T, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GenericFlatMapOperation.html"><span class="name">GenericFlatMapOperation</span></a><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="result"> extends FlatMapOperation[T, U]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.IdentityFlatMapOperation" data-isabs="false">
+      <a id="IdentityFlatMapOperation:IdentityFlatMapOperation[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IdentityFlatMapOperation.html"><span class="name">IdentityFlatMapOperation</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends FlatMapOperation[T, T]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.MultiTriggerCache" data-isabs="false">
+      <a id="MultiTriggerCache:MultiTriggerCache[Key, Value]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MultiTriggerCache.html"><span class="name">MultiTriggerCache</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="params">(<span name="cacheSizeOpt">cacheSizeOpt: CacheSize</span>, <span name="valueCombinerCacheSize">valueCombinerCacheSize: ValueCombinerCacheSize</span>, <span name="flushFrequency">flushFrequency: FlushFrequency</span>, <span name="softMemoryFlush">softMemoryFlush: SoftMemoryFlushPercent</span>, <span name="poolSize">poolSize: AsyncPoolSize</span>, <span name="semigroup">semigroup: Semigroup[Value]</span>)</span><span class="result"> extends AsyncCache[Key, Value] with Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.Queue" data-isabs="true">
+      <a id="Queue:Queue[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Queue.html"><span class="name">Queue</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Use this class with a thread-safe queue to receive
+results from futures in one thread.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.package#StoreFactory" data-isabs="false">
+      <a id="StoreFactory:() ⇒ ReadableStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
@@ -59,7 +181,31 @@
         <span class="name">StoreFactory</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> = () ⇒ <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[K, V]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>package</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.online.package" class="extype" href="package$.html">package</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.SummingQueueCache" data-isabs="false">
+      <a id="SummingQueueCache:SummingQueueCache[Key, Value]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SummingQueueCache.html"><span class="name">SummingQueueCache</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="Value">Value</span>]</span><span class="params">(<span name="cacheSizeOpt">cacheSizeOpt: CacheSize</span>, <span name="flushFrequency">flushFrequency: FlushFrequency</span>, <span name="semigroup">semigroup: Semigroup[Value]</span>)</span><span class="result"> extends AsyncCache[Key, Value] with Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.WriteOperation" data-isabs="false">
+      <a id="WriteOperation:WriteOperation[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="WriteOperation.html"><span class="name">WriteOperation</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends FlatMapOperation[T, T]</span>
+      </span>
+      </h4>
+      
     </li></ol>
             </div>
 
@@ -67,7 +213,79 @@
 
         <div class="values members" id="values">
               <h3>Value Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.online.option" data-isabs="false">
+              <ol><li visbl="pub" name="com.twitter.summingbird.online.Externalizer" data-isabs="false">
+      <a id="Externalizer:Externalizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Externalizer$.html"><span class="name">Externalizer</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.FlatMapOperation" data-isabs="false">
+      <a id="FlatMapOperation:FlatMapOperation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatMapOperation$.html"><span class="name">FlatMapOperation</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.MultiTriggerCache" data-isabs="false">
+      <a id="MultiTriggerCache:MultiTriggerCache"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MultiTriggerCache$.html"><span class="name">MultiTriggerCache</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.Queue" data-isabs="false">
+      <a id="Queue:Queue"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Queue$.html"><span class="name">Queue</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.SummingQueueCache" data-isabs="false">
+      <a id="SummingQueueCache:SummingQueueCache"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SummingQueueCache$.html"><span class="name">SummingQueueCache</span></a><span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.online.executor" data-isabs="false">
+      <a id="executor:executor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="executor/package.html"><span class="name">executor</span></a>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.online.option" data-isabs="false">
       <a id="option:option"></a>
       <h4 class="signature">
       <span class="modifier_kind">

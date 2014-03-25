@@ -29,12 +29,12 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Only TailProducers can be planned. There is nothing after a tail</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/Producer.scala">Producer.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Only TailProducers can be planned. There is nothing after a tail</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-core/src/main/scala/com/twitter/summingbird/Producer.scala">Producer.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, T], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div><div class="toggleContainer block">
           <span class="toggle">Known Subclasses</span>
-          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.Summer" class="extype" href="Summer.html">Summer</a>, <a name="com.twitter.summingbird.TPNamedProducer" class="extype" href="TPNamedProducer.html">TPNamedProducer</a>, <a name="com.twitter.summingbird.WrittenProducer" class="extype" href="WrittenProducer.html">WrittenProducer</a></div>
+          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.AlsoTailProducer" class="extype" href="AlsoTailProducer.html">AlsoTailProducer</a>, <a name="com.twitter.summingbird.Summer" class="extype" href="Summer.html">Summer</a>, <a name="com.twitter.summingbird.TPNamedProducer" class="extype" href="TPNamedProducer.html">TPNamedProducer</a>, <a name="com.twitter.summingbird.WrittenProducer" class="extype" href="WrittenProducer.html">WrittenProducer</a></div>
         </div></div>
     
 
@@ -147,6 +147,18 @@
       </span>
       <span class="symbol">
         <span class="name">also</span><span class="tparams">[<span name="R">R</span>]</span><span class="params">(<span name="that">that: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, R]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, R]</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.TailProducer#also" data-isabs="false">
+      <a id="also[R](TailProducer[P, R])(DummyImplicit):TailProducer[P, R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">also</span><span class="tparams">[<span name="R">R</span>]</span><span class="params">(<span name="that">that: <a name="com.twitter.summingbird.TailProducer" class="extype" href="">TailProducer</a>[P, R]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ev">ev: <span name="scala.Predef.DummyImplicit" class="extype">DummyImplicit</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.TailProducer" class="extype" href="">TailProducer</a>[P, R]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Ensure this is scheduled, but return something equivalent to the argument

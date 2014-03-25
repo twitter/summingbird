@@ -25,13 +25,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">BatchedSinkFromOffline</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="extype" href="../scalding/BatchedScaldingSink.html">BatchedScaldingSink</a>[T]</span>
+        <span class="name">BatchedSinkFromOffline</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a name="com.twitter.summingbird.scalding.batch.BatchedSink" class="extype" href="../scalding/batch/BatchedSink.html">BatchedSink</a>[T]</span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Wrapped for the new scalding sink API in terms of the above</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-builder/src/main/scala/com/twitter/summingbird/sink/Sink.scala">Sink.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Wrapped for the new scalding sink API in terms of the above</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-builder/src/main/scala/com/twitter/summingbird/sink/Sink.scala">Sink.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="extype" href="../scalding/BatchedScaldingSink.html">BatchedScaldingSink</a>[T], <a name="com.twitter.summingbird.scalding.ScaldingSink" class="extype" href="../scalding/ScaldingSink.html">ScaldingSink</a>[T], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.batch.BatchedSink" class="extype" href="../scalding/batch/BatchedSink.html">BatchedSink</a>[T], <a name="com.twitter.summingbird.scalding.Sink" class="extype" href="../scalding/Sink.html">Sink</a>[T], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -45,7 +45,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.sink.BatchedSinkFromOffline" class="in"><span>BatchedSinkFromOffline</span></li><li name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="in"><span>BatchedScaldingSink</span></li><li name="com.twitter.summingbird.scalding.ScaldingSink" class="in"><span>ScaldingSink</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.sink.BatchedSinkFromOffline" class="in"><span>BatchedSinkFromOffline</span></li><li name="com.twitter.summingbird.scalding.batch.BatchedSink" class="in"><span>BatchedSink</span></li><li name="com.twitter.summingbird.scalding.Sink" class="in"><span>Sink</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -161,7 +161,7 @@
         <span class="name">batcher</span><span class="result">: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../batch/Batcher.html">Batcher</a></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.sink.BatchedSinkFromOffline" class="extype" href="">BatchedSinkFromOffline</a> → <a name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="extype" href="../scalding/BatchedScaldingSink.html">BatchedScaldingSink</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.sink.BatchedSinkFromOffline" class="extype" href="">BatchedSinkFromOffline</a> → <a name="com.twitter.summingbird.scalding.batch.BatchedSink" class="extype" href="../scalding/batch/BatchedSink.html">BatchedSink</a></dd></dl></div>
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -301,7 +301,7 @@
       </h4>
       <p class="shortcomment cmt">OfflineSink doesn't support reading
 </p><div class="fullcomment"><div class="comment cmt"><p>OfflineSink doesn't support reading
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.sink.BatchedSinkFromOffline" class="extype" href="">BatchedSinkFromOffline</a> → <a name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="extype" href="../scalding/BatchedScaldingSink.html">BatchedScaldingSink</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.sink.BatchedSinkFromOffline" class="extype" href="">BatchedSinkFromOffline</a> → <a name="com.twitter.summingbird.scalding.batch.BatchedSink" class="extype" href="../scalding/batch/BatchedSink.html">BatchedSink</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -371,7 +371,7 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedScaldingSink#write" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.batch.BatchedSink#write" data-isabs="false">
       <a id="write(PipeFactory[T]):PipeFactory[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -382,8 +382,8 @@
         <span class="name">write</span><span class="params">(<span name="incoming">incoming: PipeFactory[T]</span>)</span><span class="result">: PipeFactory[T]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="extype" href="../scalding/BatchedScaldingSink.html">BatchedScaldingSink</a> → <a name="com.twitter.summingbird.scalding.ScaldingSink" class="extype" href="../scalding/ScaldingSink.html">ScaldingSink</a></dd></dl></div>
-    </li><li visbl="prt" name="com.twitter.summingbird.scalding.BatchedScaldingSink#writeBatches" data-isabs="false">
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedSink" class="extype" href="../scalding/batch/BatchedSink.html">BatchedSink</a> → <a name="com.twitter.summingbird.scalding.Sink" class="extype" href="../scalding/Sink.html">Sink</a></dd></dl></div>
+    </li><li visbl="prt" name="com.twitter.summingbird.scalding.batch.BatchedSink#writeBatches" data-isabs="false">
       <a id="writeBatches(Interval[BatchID],FlowToPipe[T]):FlowToPipe[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -398,22 +398,22 @@
 Return a new FlowToPipe with the write as a side effect
 </p><div class="fullcomment"><div class="comment cmt"><p>in will completely cover these batches
 Return a new FlowToPipe with the write as a side effect
-</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="extype" href="../scalding/BatchedScaldingSink.html">BatchedScaldingSink</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedSink" class="extype" href="../scalding/batch/BatchedSink.html">BatchedSink</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.sink.BatchedSinkFromOffline#writeStream" data-isabs="false">
-      <a id="writeStream(BatchID,TypedPipe[(Long, T)])(FlowDef,Mode):Unit"></a>
+      <a id="writeStream(BatchID,TypedPipe[(Timestamp, T)])(FlowDef,Mode):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">writeStream</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="stream">stream: TypedPipe[(<span name="scala.Long" class="extype">Long</span>, T)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">writeStream</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../batch/BatchID.html">BatchID</a></span>, <span name="stream">stream: TypedPipe[(<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>, T)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
       <p class="shortcomment cmt">Instances may choose to write out materialized streams
 by implementing this.</p><div class="fullcomment"><div class="comment cmt"><p>Instances may choose to write out materialized streams
 by implementing this. This is what readStream returns.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.sink.BatchedSinkFromOffline" class="extype" href="">BatchedSinkFromOffline</a> → <a name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="extype" href="../scalding/BatchedScaldingSink.html">BatchedScaldingSink</a></dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.sink.BatchedSinkFromOffline" class="extype" href="">BatchedSinkFromOffline</a> → <a name="com.twitter.summingbird.scalding.batch.BatchedSink" class="extype" href="../scalding/batch/BatchedSink.html">BatchedSink</a></dd></dl></div>
     </li></ol>
             </div>
 
@@ -421,10 +421,10 @@ by implementing this. This is what readStream returns.
         </div>
 
         <div id="inheritedMembers">
-        <div name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="parent">
-              <h3>Inherited from <a name="com.twitter.summingbird.scalding.BatchedScaldingSink" class="extype" href="../scalding/BatchedScaldingSink.html">BatchedScaldingSink</a>[T]</h3>
-            </div><div name="com.twitter.summingbird.scalding.ScaldingSink" class="parent">
-              <h3>Inherited from <a name="com.twitter.summingbird.scalding.ScaldingSink" class="extype" href="../scalding/ScaldingSink.html">ScaldingSink</a>[T]</h3>
+        <div name="com.twitter.summingbird.scalding.batch.BatchedSink" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.scalding.batch.BatchedSink" class="extype" href="../scalding/batch/BatchedSink.html">BatchedSink</a>[T]</h3>
+            </div><div name="com.twitter.summingbird.scalding.Sink" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.scalding.Sink" class="extype" href="../scalding/Sink.html">Sink</a>[T]</h3>
             </div><div name="scala.AnyRef" class="parent">
               <h3>Inherited from AnyRef</h3>
             </div><div name="scala.Any" class="parent">

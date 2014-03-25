@@ -35,7 +35,7 @@ serialized. Beyond the storm IMetric not being serializable,
 passing a value also causes problems with the instance registered
 in the bolt being different from the one used in the summingbird
 job.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/option/FlatMapOptions.scala">FlatMapOptions.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/option/FlatMapOptions.scala">FlatMapOptions.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -130,14 +130,14 @@ job.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.option.FlatMapStormMetrics#apply" data-isabs="false">
-      <a id="apply(⇒ TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]]):FlatMapStormMetrics"></a>
+      <a id="apply(⇒ TraversableOnce[StormMetric[IMetric]]):FlatMapStormMetrics"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="metrics">metrics: ⇒ TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" class="extype" href="FlatMapStormMetrics.html">FlatMapStormMetrics</a></span>
+        <span class="name">apply</span><span class="params">(<span name="metrics">metrics: ⇒ TraversableOnce[<a name="com.twitter.summingbird.storm.StormMetric" class="extype" href="../StormMetric.html">StormMetric</a>[<span name="backtype.storm.metric.api.IMetric" class="extype">IMetric</span>]]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" class="extype" href="FlatMapStormMetrics.html">FlatMapStormMetrics</a></span>
       </span>
       </h4>
       
@@ -304,14 +304,14 @@ job.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.option.FlatMapStormMetrics#unapply" data-isabs="false">
-      <a id="unapply(FlatMapStormMetrics):Some[() ⇒ TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]]]"></a>
+      <a id="unapply(FlatMapStormMetrics):Some[() ⇒ TraversableOnce[StormMetric[IMetric]]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">unapply</span><span class="params">(<span name="metrics">metrics: <a name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" class="extype" href="FlatMapStormMetrics.html">FlatMapStormMetrics</a></span>)</span><span class="result">: <span name="scala.Some" class="extype">Some</span>[() ⇒ TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]]]</span>
+        <span class="name">unapply</span><span class="params">(<span name="metrics">metrics: <a name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" class="extype" href="FlatMapStormMetrics.html">FlatMapStormMetrics</a></span>)</span><span class="result">: <span name="scala.Some" class="extype">Some</span>[() ⇒ TraversableOnce[<a name="com.twitter.summingbird.storm.StormMetric" class="extype" href="../StormMetric.html">StormMetric</a>[<span name="backtype.storm.metric.api.IMetric" class="extype">IMetric</span>]]]</span>
       </span>
       </h4>
       

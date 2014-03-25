@@ -37,7 +37,7 @@ of all Values for each Key. If the Value is zero, it is omitted
 Value for a given Key).  Each Batch has a unique BatchID. Each
 event falls into a single BatchID (which is a concrete type
 isomorphic to Long).
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-batch/src/main/scala/com/twitter/summingbird/batch/BatchID.scala">BatchID.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-batch/src/main/scala/com/twitter/summingbird/batch/BatchID.scala">BatchID.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -168,6 +168,18 @@ isomorphic to Long).
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#apply" data-isabs="false">
+      <a id="apply(Timestamp):BatchID"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="ts">ts: <a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="Timestamp.html">Timestamp</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#apply" data-isabs="false">
       <a id="apply(Long):BatchID"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -266,6 +278,18 @@ isomorphic to Long).
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#equiv" data-isabs="false">
+      <a id="equiv:Equiv[BatchID]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equiv</span><span class="result">: Equiv[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -413,7 +437,8 @@ isomorphic to Long).
         <span class="name">toInterval</span><span class="params">(<span name="iter">iter: TraversableOnce[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]]</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Returns true if the supplied interval of BatchID can
+</p>
     </li><li visbl="pub" name="com.twitter.summingbird.batch.BatchID#toIterable" data-isabs="false">
       <a id="toIterable(Interval[BatchID]):Iterable[BatchID]"></a>
       <h4 class="signature">

@@ -48,99 +48,27 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedDeltaService" data-isabs="false">
-      <a id="BatchedDeltaService:BatchedDeltaService[K, V]"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.ErrorThrowState" data-isabs="false">
+      <a id="ErrorThrowState:ErrorThrowState[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="BatchedDeltaService.html"><span class="name">BatchedDeltaService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedService[K, V]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Use this when you have written JUST BEFORE the store.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedOperations" data-isabs="false">
-      <a id="BatchedOperations:BatchedOperations"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="BatchedOperations.html"><span class="name">BatchedOperations</span></a><span class="result"> extends AnyRef</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Services and Stores are very similar, but not exact.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedScaldingSink" data-isabs="true">
-      <a id="BatchedScaldingSink:BatchedScaldingSink[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="BatchedScaldingSink.html"><span class="name">BatchedScaldingSink</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends ScaldingSink[T]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedScaldingStore" data-isabs="true">
-      <a id="BatchedScaldingStore:BatchedScaldingStore[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="BatchedScaldingStore.html"><span class="name">BatchedScaldingStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends ScaldingStore[K, V]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedService" data-isabs="true">
-      <a id="BatchedService:BatchedService[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="BatchedService.html"><span class="name">BatchedService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends ScaldingService[K, V]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedWindowService" data-isabs="true">
-      <a id="BatchedWindowService:BatchedWindowService[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="BatchedWindowService.html"><span class="name">BatchedWindowService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedService[K, V]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">This is a service that has a finite memory.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.EmptyService" data-isabs="false">
-      <a id="EmptyService:EmptyService[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="EmptyService.html"><span class="name">EmptyService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends ScaldingService[K, V]</span>
+        <a href="ErrorThrowState.html"><span class="name">ErrorThrowState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends WaitingState[T]</span>
       </span>
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#FactoryInput" data-isabs="false">
-      <a id="FactoryInput:(Interval[Time], Mode)"></a>
+      <a id="FactoryInput:(Interval[Timestamp], Mode)"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">FactoryInput</span><span class="result"> = (<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[Time], <span name="com.twitter.scalding.Mode" class="extype">Mode</span>)</span>
+        <span class="name">FactoryInput</span><span class="result"> = (<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>], <span name="com.twitter.scalding.Mode" class="extype">Mode</span>)</span>
       </span>
       </h4>
       <p class="shortcomment cmt">The Platform recursively passes this input around to describe a
@@ -217,18 +145,6 @@ generally T will be some kind of TypedPipe
       <p class="shortcomment cmt">We so commonly talk about producing TimedPipe we define this
 </p><div class="fullcomment"><div class="comment cmt"><p>We so commonly talk about producing TimedPipe we define this
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.InitialBatchedStore" data-isabs="false">
-      <a id="InitialBatchedStore:InitialBatchedStore[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="InitialBatchedStore.html"><span class="name">InitialBatchedStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedScaldingStore[K, V]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">For (firstNonZero - 1) we read empty.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#KeyValuePipe" data-isabs="false">
       <a id="KeyValuePipe:KeyValuePipe[K, V]"></a>
       <h4 class="signature">
@@ -237,10 +153,22 @@ generally T will be some kind of TypedPipe
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">KeyValuePipe</span><span class="tparams">[<span name="K">+K</span>, <span name="V">+V</span>]</span><span class="result"> = <span name="com.twitter.scalding.typed.TypedPipe" class="extype">TypedPipe</span>[(Time, (K, V))]</span>
+        <span class="name">KeyValuePipe</span><span class="tparams">[<span name="K">+K</span>, <span name="V">+V</span>]</span><span class="result"> = <span name="com.twitter.scalding.typed.TypedPipe" class="extype">TypedPipe</span>[(<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>, (K, V))]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.LoopState" data-isabs="false">
+      <a id="LoopState:LoopState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LoopState.html"><span class="name">LoopState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends WaitingState[T]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.Memo" data-isabs="false">
       <a id="Memo:Memo[T]"></a>
       <h4 class="signature">
@@ -253,6 +181,18 @@ generally T will be some kind of TypedPipe
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.MockMappable" data-isabs="false">
+      <a id="MockMappable:MockMappable[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MockMappable.html"><span class="name">MockMappable</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends Source with Mappable[T]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#PipeFactory" data-isabs="false">
       <a id="PipeFactory:PipeFactory[T]"></a>
       <h4 class="signature">
@@ -261,10 +201,22 @@ generally T will be some kind of TypedPipe
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">PipeFactory</span><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> = <span name="com.twitter.algebird.monad.StateWithError" class="extype">StateWithError</span>[(<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[Time], <span name="com.twitter.scalding.Mode" class="extype">Mode</span>), List[FailureReason], FlowToPipe[T]]</span>
+        <span class="name">PipeFactory</span><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> = <span name="com.twitter.algebird.monad.StateWithError" class="extype">StateWithError</span>[(<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>], <span name="com.twitter.scalding.Mode" class="extype">Mode</span>), List[FailureReason], FlowToPipe[T]]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">We are usually producing Pipes in the Planner</p><div class="fullcomment"><div class="comment cmt"><p>We are usually producing Pipes in the Planner</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.PipeFactoryOps" data-isabs="false">
+      <a id="PipeFactoryOps:PipeFactoryOps[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PipeFactoryOps.html"><span class="name">PipeFactoryOps</span></a><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#PlannerOutput" data-isabs="false">
       <a id="PlannerOutput:PlannerOutput[T]"></a>
       <h4 class="signature">
@@ -273,34 +225,10 @@ generally T will be some kind of TypedPipe
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">PlannerOutput</span><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> = <span name="com.twitter.algebird.monad.StateWithError" class="extype">StateWithError</span>[(<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[Time], <span name="com.twitter.scalding.Mode" class="extype">Mode</span>), List[FailureReason], T]</span>
+        <span class="name">PlannerOutput</span><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> = <span name="com.twitter.algebird.monad.StateWithError" class="extype">StateWithError</span>[(<span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>], <span name="com.twitter.scalding.Mode" class="extype">Mode</span>), List[FailureReason], T]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">The recursive planner produces these objects which are Monads</p><div class="fullcomment"><div class="comment cmt"><p>The recursive planner produces these objects which are Monads</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.PrepareState" data-isabs="true">
-      <a id="PrepareState:PrepareState[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="PrepareState.html"><span class="name">PrepareState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends AnyRef</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.RunningState" data-isabs="true">
-      <a id="RunningState:RunningState[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="RunningState.html"><span class="name">RunningState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends AnyRef</span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.Scalding" data-isabs="false">
       <a id="Scalding:Scalding"></a>
       <h4 class="signature">
@@ -325,78 +253,51 @@ generally T will be some kind of TypedPipe
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.ScaldingService" data-isabs="true">
-      <a id="ScaldingService:ScaldingService[K, V]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.ScaldingExecutionConfig" data-isabs="true">
+      <a id="ScaldingExecutionConfig:ScaldingExecutionConfig"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="ScaldingService.html"><span class="name">ScaldingService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">+V</span>]</span><span class="result"> extends Serializable</span>
+        <a href="ScaldingExecutionConfig.html"><span class="name">ScaldingExecutionConfig</span></a><span class="result"> extends ChillExecutionConfig[Scalding]</span>
+      </span>
+      </h4>
+      <p class="comment cmt"></p>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.Service" data-isabs="true">
+      <a id="Service:Service[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Service.html"><span class="name">Service</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">+V</span>]</span><span class="result"> extends Serializable</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.ScaldingSink" data-isabs="true">
-      <a id="ScaldingSink:ScaldingSink[T]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.Sink" data-isabs="true">
+      <a id="Sink:Sink[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="ScaldingSink.html"><span class="name">ScaldingSink</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends AnyRef</span>
+        <a href="Sink.html"><span class="name">Sink</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.ScaldingStore" data-isabs="true">
-      <a id="ScaldingStore:ScaldingStore[K, V]"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.Store" data-isabs="true">
+      <a id="Store:Store[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="ScaldingStore.html"><span class="name">ScaldingStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.SimpleService" data-isabs="true">
-      <a id="SimpleService:SimpleService[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="SimpleService.html"><span class="name">SimpleService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends ScaldingService[K, V]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">A UniqueKeyedService covers the case where Keys are globally
-unique and either are not present or have one value.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.SimpleWindowedService" data-isabs="true">
-      <a id="SimpleWindowedService:SimpleWindowedService[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="SimpleWindowedService.html"><span class="name">SimpleWindowedService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedWindowService[K, V]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">More familiar interface to scalding users that creates
-the Reader from two other methods
-</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.SourceUniqueKeyedService" data-isabs="true">
-      <a id="SourceUniqueKeyedService:SourceUniqueKeyedService[S, K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="SourceUniqueKeyedService.html"><span class="name">SourceUniqueKeyedService</span></a><span class="tparams">[<span name="S">S &lt;: Source</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends UniqueKeyedService[K, V]</span>
+        <a href="Store.html"><span class="name">Store</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends Serializable</span>
       </span>
       </h4>
       
@@ -408,22 +309,48 @@ the Reader from two other methods
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="StoreIntermediateData.html"><span class="name">StoreIntermediateData</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="sink">sink: ScaldingSink[(K, V)]</span>)</span><span class="result"> extends Serializable with Product with Serializable</span>
+        <a href="StoreIntermediateData.html"><span class="name">StoreIntermediateData</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="sink">sink: Sink[(K, V)]</span>)</span><span class="result"> extends Serializable with Product with Serializable</span>
       </span>
       </h4>
       <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#Time" data-isabs="false">
-      <a id="Time:Time"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.TestService" data-isabs="false">
+      <a id="TestService:TestService[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">type</span>
+        <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">Time</span><span class="result"> = <span name="scala.Long" class="extype">Long</span></span>
+        <a href="TestService.html"><span class="name">TestService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedService[K, V]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">We represent time as Long Millis</p><div class="fullcomment"><div class="comment cmt"><p>We represent time as Long Millis</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.TestSink" data-isabs="false">
+      <a id="TestSink:TestSink[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TestSink.html"><span class="name">TestSink</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends Sink[T]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">This is a test sink that assumes single threaded testing with
+cascading local mode
+</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.TestStore" data-isabs="false">
+      <a id="TestStore:TestStore[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TestStore.html"><span class="name">TestStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedStore[K, V]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#TimedPipe" data-isabs="false">
       <a id="TimedPipe:TimedPipe[T]"></a>
       <h4 class="signature">
@@ -432,7 +359,7 @@ the Reader from two other methods
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">TimedPipe</span><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> = <span name="com.twitter.scalding.typed.TypedPipe" class="extype">TypedPipe</span>[(Time, T)]</span>
+        <span class="name">TimedPipe</span><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> = <span name="com.twitter.scalding.typed.TypedPipe" class="extype">TypedPipe</span>[(<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>, T)]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">How we represent the streams in scalding</p><div class="fullcomment"><div class="comment cmt"><p>How we represent the streams in scalding</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
@@ -448,58 +375,6 @@ the Reader from two other methods
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.UniqueKeyedService" data-isabs="true">
-      <a id="UniqueKeyedService:UniqueKeyedService[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="UniqueKeyedService.html"><span class="name">UniqueKeyedService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends SimpleService[K, V]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">A UniqueKeyedService covers the case where Keys are globally
-unique and either are not present or have one value.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.VersionedBatchStore" data-isabs="false">
-      <a id="VersionedBatchStore:VersionedBatchStore[K, V, K2, V2]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="VersionedBatchStore.html"><span class="name">VersionedBatchStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>, <span name="K2">K2</span>, <span name="V2">V2</span>]</span><span class="result"> extends VersionedBatchStoreBase[K, V]</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.VersionedBatchStoreBase" data-isabs="true">
-      <a id="VersionedBatchStoreBase:VersionedBatchStoreBase[K, V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="VersionedBatchStoreBase.html"><span class="name">VersionedBatchStoreBase</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedScaldingStore[K, V]</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Allows subclasses to share the means of reading version numbers but
-plug in methods to actually read or write the data.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.WaitingState" data-isabs="true">
-      <a id="WaitingState:WaitingState[T]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="WaitingState.html"><span class="name">WaitingState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends AnyRef</span>
-      </span>
-      </h4>
-      <p class="comment cmt">Job state models the memory of when the next job should
-try to cover
-</p>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.WriteDot" data-isabs="false">
       <a id="WriteDot:WriteDot"></a>
       <h4 class="signature">
@@ -535,39 +410,15 @@ Use the job name as the key
 
         <div class="values members" id="values">
               <h3>Value Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.BatchedService" data-isabs="false">
-      <a id="BatchedService:BatchedService"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.Executor" data-isabs="false">
+      <a id="Executor:Executor"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="BatchedService$.html"><span class="name">BatchedService</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.ConfigBijection" data-isabs="false">
-      <a id="ConfigBijection:ConfigBijection"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="ConfigBijection$.html"><span class="name">ConfigBijection</span></a><span class="result"> extends AnyRef</span>
-      </span>
-      </h4>
-      <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.IteratorSums" data-isabs="false">
-      <a id="IteratorSums:IteratorSums"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="IteratorSums$.html"><span class="name">IteratorSums</span></a><span class="result"> extends Serializable</span>
+        <a href="Executor$.html"><span class="name">Executor</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
@@ -597,43 +448,78 @@ by performing realtime lookups on a key-value Store.</p>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.TimePathedSource" data-isabs="false">
-      <a id="TimePathedSource:TimePathedSource"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#ScaldingConfig" data-isabs="false">
+      <a id="ScaldingConfig:com.twitter.summingbird.batch.BatchConfig.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ScaldingConfig</span><span class="result">: com.twitter.summingbird.batch.BatchConfig.type</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.Store" data-isabs="false">
+      <a id="Store:Store"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="TimePathedSource$.html"><span class="name">TimePathedSource</span></a><span class="result"> extends Serializable</span>
+        <a href="Store$.html"><span class="name">Store</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.UniqueKeyedService" data-isabs="false">
-      <a id="UniqueKeyedService:UniqueKeyedService"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.TestSource" data-isabs="false">
+      <a id="TestSource:TestSource"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="UniqueKeyedService$.html"><span class="name">UniqueKeyedService</span></a><span class="result"> extends Serializable</span>
+        <a href="TestSource$.html"><span class="name">TestSource</span></a><span class="result"> extends AnyRef</span>
       </span>
       </h4>
       
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.VersionedBatchStore" data-isabs="false">
-      <a id="VersionedBatchStore:VersionedBatchStore"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.TestStore" data-isabs="false">
+      <a id="TestStore:TestStore"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="VersionedBatchStore$.html"><span class="name">VersionedBatchStore</span></a><span class="result"> extends Serializable</span>
+        <a href="TestStore$.html"><span class="name">TestStore</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
-      <p class="comment cmt">Scalding implementation of the batch read and write components of a
-store that uses the VersionedKeyValSource from scalding-commons.</p>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.TestUtil" data-isabs="false">
+      <a id="TestUtil:TestUtil"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TestUtil$.html"><span class="name">TestUtil</span></a><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.batch" data-isabs="false">
+      <a id="batch:batch"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="batch/package.html"><span class="name">batch</span></a>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#flowDefFromTuple" data-isabs="false">
       <a id="flowDefFromTuple((FlowDef, Mode)):FlowDef"></a>
       <h4 class="signature">
@@ -658,15 +544,15 @@ store that uses the VersionedKeyValSource from scalding-commons.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.option" data-isabs="false">
-      <a id="option:option"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.service" data-isabs="false">
+      <a id="service:service"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">package</span>
       </span>
       <span class="symbol">
-        <a href="option/package.html"><span class="name">option</span></a>
+        <a href="service/package.html"><span class="name">service</span></a>
       </span>
       </h4>
       
@@ -694,6 +580,18 @@ store that uses the VersionedKeyValSource from scalding-commons.</p>
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#toPipeFactoryOps" data-isabs="false">
+      <a id="toPipeFactoryOps[T](PipeFactory[T]):PipeFactoryOps[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toPipeFactoryOps</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="pipeF">pipeF: PipeFactory[T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.PipeFactoryOps" class="extype" href="PipeFactoryOps.html">PipeFactoryOps</a>[T]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.package" class="extype" href="package$.html">package</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.package#toTry" data-isabs="false">
       <a id="toTry(Throwable):Try[Nothing]"></a>
       <h4 class="signature">

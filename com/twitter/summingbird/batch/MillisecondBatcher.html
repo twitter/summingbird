@@ -31,7 +31,7 @@
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Batcher implementation based on a fixed-width batch of
 milliseconds.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-batch/src/main/scala/com/twitter/summingbird/batch/MillisecondBatcher.scala">MillisecondBatcher.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-batch/src/main/scala/com/twitter/summingbird/batch/MillisecondBatcher.scala">MillisecondBatcher.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.batch.AbstractBatcher" class="extype" href="AbstractBatcher.html">AbstractBatcher</a>, <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -347,6 +347,33 @@ batcher would need to fetch to fully enclose the supplied
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#isLowerBatchEdge" data-isabs="false">
+      <a id="isLowerBatchEdge(Timestamp):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isLowerBatchEdge</span><span class="params">(<span name="ts">ts: <a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="Timestamp.html">Timestamp</a></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns true if the supplied timestamp sits at the floor of the
+supplied batch.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if the supplied timestamp sits at the floor of the
+supplied batch.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#latestTimeOf" data-isabs="false">
+      <a id="latestTimeOf(BatchID):Timestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">latestTimeOf</span><span class="params">(<span name="batch">batch: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="Timestamp.html">Timestamp</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns the latest time in the given batch</p><div class="fullcomment"><div class="comment cmt"><p>Returns the latest time in the given batch</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -419,6 +446,18 @@ batcher would need to fetch to fully enclose the supplied
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.batch.Batcher#toTimestamp" data-isabs="false">
+      <a id="toTimestamp(Interval[BatchID]):Interval[Timestamp]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toTimestamp</span><span class="params">(<span name="b">b: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="BatchID.html">BatchID</a>]</span>)</span><span class="result">: <span name="com.twitter.algebird.Interval" class="extype">Interval</span>[<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="Timestamp.html">Timestamp</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.batch.Batcher" class="extype" href="Batcher.html">Batcher</a></dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">

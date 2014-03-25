@@ -30,9 +30,9 @@
       </h4>
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>The following object contains code to execute the Summingbird
-WordCount job defined in ExampleJob.scala on a local storm
+WordCount job defined in ExampleJob.scala on a storm
 cluster.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-example/src/main/scala/com/twitter/summingbird/example/StormRunner.scala">StormRunner.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-example/src/main/scala/com/twitter/summingbird/example/StormRunner.scala">StormRunner.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -126,6 +126,27 @@ cluster.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.example.StormRunner#apply" data-isabs="false">
+      <a id="apply(Args):StormExecutionConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="args">args: <span name="com.twitter.scalding.Args" class="extype">Args</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.StormExecutionConfig" class="extype" href="../storm/StormExecutionConfig.html">StormExecutionConfig</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">This function will be called by the storm runner to request the info
+of what to run.</p><div class="fullcomment"><div class="comment cmt"><p>This function will be called by the storm runner to request the info
+of what to run. In local mode it will start up as a
+separate thread on the local machine, pulling tweets off of the
+TwitterSpout, generating and aggregating key-value pairs and
+merging the incremental counts in the memcache store.</p><p>Before running this code, make sure to start a local memcached
+instance with &quot;memcached&quot;. (&quot;brew install memcached&quot; will get
+you all set up if you don't already have memcache installed
+locally.)
+</p></div></div>
     </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
       <a id="asInstanceOf[T0]:T0"></a>
       <h4 class="signature">
@@ -263,28 +284,6 @@ will show that Storm is updating Memcache behind the scenes:</p><pre>
     scala&gt;     lookup(<span class="lit">"i"</span>)
     res8: <span class="std">Option</span>[<span class="std">Long</span>] = <span class="std">Some</span>(<span class="num">1779</span>)
 </pre></div></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.example.StormRunner#main" data-isabs="false">
-      <a id="main(Array[String]):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">main</span><span class="params">(<span name="args">args: <span name="scala.Array" class="extype">Array</span>[String]</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">When this main method is executed, Storm will begin running on a
-separate thread on the local machine, pulling tweets off of the
-TwitterSpout, generating and aggregating key-value pairs and
-merging the incremental counts in the memcache store.</p><div class="fullcomment"><div class="comment cmt"><p>When this main method is executed, Storm will begin running on a
-separate thread on the local machine, pulling tweets off of the
-TwitterSpout, generating and aggregating key-value pairs and
-merging the incremental counts in the memcache store.</p><p>Before running this code, make sure to start a local memcached
-instance with &quot;memcached&quot;. (&quot;brew install memcached&quot; will get
-you all set up if you don't already have memcache installed
-locally.)
-</p></div></div>
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -337,17 +336,18 @@ act as the initial producer of Status instances in the
 Summingbird word count job.
 </p></div></div>
     </li><li visbl="pub" name="com.twitter.summingbird.example.StormRunner#storeSupplier" data-isabs="false">
-      <a id="storeSupplier:MergeableStoreSupplier[String, Long]"></a>
+      <a id="storeSupplier:StormStore[String, Long]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">storeSupplier</span><span class="result">: <a name="com.twitter.summingbird.storm.MergeableStoreSupplier" class="extype" href="../storm/MergeableStoreSupplier.html">MergeableStoreSupplier</a>[String, <span name="scala.Long" class="extype">Long</span>]</span>
+        <span class="name">storeSupplier</span><span class="result">: <a name="com.twitter.summingbird.storm.StormStore" class="extype" href="../storm/StormStore.html">StormStore</a>[String, <span name="scala.Long" class="extype">Long</span>]</span>
       </span>
       </h4>
-      <p class="shortcomment cmt">And then the supplier:
+      <p class="shortcomment cmt">the param to store is by name, so this is still not created created
+yet
 </p>
     </li><li visbl="pub" name="com.twitter.summingbird.example.StormRunner#stringLongStore" data-isabs="false">
       <a id="stringLongStore:MergeableStore[(String, BatchID), Long]"></a>

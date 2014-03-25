@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-core/src/main/scala/com/twitter/summingbird/Producer.scala">Producer.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-core/src/main/scala/com/twitter/summingbird/Producer.scala">Producer.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -263,6 +263,31 @@ and it returns the input node.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#isNoOp" data-isabs="false">
+      <a id="isNoOp[P&lt;:Platform[P]](Producer[P, Any]):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNoOp</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="p">p: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns true if this node does not directly change the data (does not apply any transformation)
+</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#isOutput" data-isabs="false">
+      <a id="isOutput[P&lt;:Platform[P]](Producer[P, Any]):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isOutput</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="p">p: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
       <a id="ne(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -299,6 +324,18 @@ and it returns the input node.</p>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#parentsOf" data-isabs="false">
+      <a id="parentsOf[P&lt;:Platform[P]](Producer[P, Any]):List[Producer[P, Any]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parentsOf</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>]</span><span class="params">(<span name="in">in: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]</span>)</span><span class="result">: List[<a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Any" class="extype">Any</span>]]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.Producer#retrieveSummer" data-isabs="false">
       <a id="retrieveSummer[P&lt;:Platform[P]](List[com.twitter.summingbird.Producer[P, _]]):Option[com.twitter.summingbird.Summer[P, _, _]]"></a>
       <h4 class="signature">

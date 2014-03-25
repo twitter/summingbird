@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>com.twitter.summingbird.graph</title>
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link type="text/css" media="screen" rel="stylesheet" href="../../../../lib/template.css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+    
+        </head>
+        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../package.html">summingbird</a></p>
+        <h1>graph</h1>
+      </div>
+
+      <h4 class="signature" id="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">graph</span>
+      </span>
+      </h4>
+      
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Collection of graph algorithms</p></div></div>
+    
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input accesskey="/" type="text" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div class="types members" id="types">
+              <h3>Type Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.graph.DependantGraph" data-isabs="true">
+      <a id="DependantGraph:DependantGraph[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DependantGraph.html"><span class="name">DependantGraph</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Given Dag and a List of immutable nodes, and a function to get
+dependencies, compute the dependants (reverse the graph)
+</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.graph.package#NeighborFn" data-isabs="false">
+      <a id="NeighborFn:(T) ⇒ Iterable[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">NeighborFn</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> = (T) ⇒ Iterable[T]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.graph.package" class="extype" href="package$.html">package</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div class="values members" id="values">
+              <h3>Value Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.graph.package#dagDepth" data-isabs="false">
+      <a id="dagDepth[T](Iterable[T])((T) ⇒ Iterable[T]):Map[T, Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dagDepth</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="nodes">nodes: Iterable[T]</span>)</span><span class="params">(<span name="nf">nf: (T) ⇒ Iterable[T]</span>)</span><span class="result">: Map[T, <span name="scala.Int" class="extype">Int</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return the depth of each node in the dag.</p><div class="fullcomment"><div class="comment cmt"><p>Return the depth of each node in the dag.
+a node that has no dependencies has depth == 0
+else it is max of parent + 1</p><p>Behavior is not defined if the graph is not a DAG (for now, it runs forever, may throw later)
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.graph.package" class="extype" href="package$.html">package</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.graph.package#depthFirstOf" data-isabs="false">
+      <a id="depthFirstOf[T](T)((T) ⇒ Iterable[T]):List[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">depthFirstOf</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: T</span>)</span><span class="params">(<span name="nf">nf: (T) ⇒ Iterable[T]</span>)</span><span class="result">: List[T]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return the depth first enumeration of reachable nodes,
+NOT INCLUDING INPUT, unless it can be reached via neighbors</p><div class="fullcomment"><div class="comment cmt"><p>Return the depth first enumeration of reachable nodes,
+NOT INCLUDING INPUT, unless it can be reached via neighbors</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.graph.package" class="extype" href="package$.html">package</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.graph.package#reversed" data-isabs="false">
+      <a id="reversed[T](Iterable[T])((T) ⇒ Iterable[T]):(T) ⇒ Iterable[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">reversed</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="nodes">nodes: Iterable[T]</span>)</span><span class="params">(<span name="nf">nf: (T) ⇒ Iterable[T]</span>)</span><span class="result">: (T) ⇒ Iterable[T]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return a NeighborFn for the graph of reversed edges defined by
+this set of nodes and nf
+We avoid Sets which use hash-codes which may depend on addresses
+which are not stable from one run to the next.</p><div class="fullcomment"><div class="comment cmt"><p>Return a NeighborFn for the graph of reversed edges defined by
+this set of nodes and nf
+We avoid Sets which use hash-codes which may depend on addresses
+which are not stable from one run to the next.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.graph.package" class="extype" href="package$.html">package</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

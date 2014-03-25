@@ -31,7 +31,7 @@
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Scalding implementation of the batch read and write components
 of a store that uses the VersionedKeyValSource from scalding-commons.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-builder/src/main/scala/com/twitter/summingbird/scalding/store/VersionedStore.scala">VersionedStore.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/store/VersionedStore.scala">VersionedStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent">AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -126,14 +126,14 @@ of a store that uses the VersionedKeyValSource from scalding-commons.
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedStore#apply" data-isabs="false">
-      <a id="apply[K, V](String,Int)(Injection[(K, (BatchID, V)), (Array[Byte], Array[Byte])],Batcher,Ordering[K]):VersionedBatchStore[K, V, K, (BatchID, V)]"></a>
+      <a id="apply[K, V](String,Int,PrunedSpace[(K, V)])(Injection[(K, (BatchID, V)), (Array[Byte], Array[Byte])],Batcher,Ordering[K]):VersionedBatchStore[K, V, K, (BatchID, V)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="rootPath">rootPath: String</span>, <span name="versionsToKeep">versionsToKeep: <span name="scala.Int" class="extype">Int</span> = <span name='<span class="name"><a href="../../../../package.html">VersionedKeyValSource.defaultVersionsToKeep</a></span>' class="defval">...</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="injection">injection: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[(K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a>, V)), (<span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>], <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>])]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../../batch/Batcher.html">Batcher</a></span>, <span name="ord">ord: Ordering[K]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.VersionedBatchStore" class="extype" href="../VersionedBatchStore.html">VersionedBatchStore</a>[K, V, K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a>, V)]</span>
+        <span class="name">apply</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="rootPath">rootPath: String</span>, <span name="versionsToKeep">versionsToKeep: <span name="scala.Int" class="extype">Int</span></span>, <span name="prunedSpace">prunedSpace: <a name="com.twitter.summingbird.batch.PrunedSpace" class="extype" href="../../batch/PrunedSpace.html">PrunedSpace</a>[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="injection">injection: <span name="com.twitter.bijection.Injection" class="extype">Injection</span>[(K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a>, V)), (<span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>], <span name="scala.Array" class="extype">Array</span>[<span name="scala.Byte" class="extype">Byte</span>])]</span>, <span name="batcher">batcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../../batch/Batcher.html">Batcher</a></span>, <span name="ord">ord: Ordering[K]</span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.store.VersionedBatchStore" class="extype" href="VersionedBatchStore.html">VersionedBatchStore</a>[K, V, K, (<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a>, V)]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">Returns a VersionedBatchStore that tags the BatchID alongside

@@ -1,0 +1,607 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>com.twitter.summingbird.scalding.store.VersionedBatchStoreBase</title>
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link type="text/css" media="screen" rel="stylesheet" href="../../../../../lib/template.css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+    
+        </head>
+        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="type">
+      <div id="definition">
+        <img src="../../../../../lib/class_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../../../package.html">com</a>.<a name="com.twitter" class="extype" href="../../../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="../../package.html">summingbird</a>.<a name="com.twitter.summingbird.scalding" class="extype" href="../package.html">scalding</a>.<a name="com.twitter.summingbird.scalding.store" class="extype" href="package.html">store</a></p>
+        <h1>VersionedBatchStoreBase</h1>
+      </div>
+
+      <h4 class="signature" id="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">VersionedBatchStoreBase</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a>[K, V]</span>
+      </span>
+      </h4>
+      
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Allows subclasses to share the means of reading version numbers but
+plug in methods to actually read or write the data.
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/store/VersionedBatchStore.scala">VersionedBatchStore.scala</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a>[K, V], <a name="com.twitter.summingbird.scalding.Store" class="extype" href="../Store.html">Store</a>[K, V], <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+        </div><div class="toggleContainer block">
+          <span class="toggle">Known Subclasses</span>
+          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.scalding.store.VersionedBatchStore" class="extype" href="VersionedBatchStore.html">VersionedBatchStore</a></div>
+        </div></div>
+    
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input accesskey="/" type="text" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By inheritance</span></li></ol>
+            </div>
+        <div id="ancestors">
+              <span class="filtertype">Inherited</span>
+              <ol><li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase" class="in"><span>VersionedBatchStoreBase</span></li><li name="com.twitter.summingbird.scalding.batch.BatchedStore" class="in"><span>BatchedStore</span></li><li name="com.twitter.summingbird.scalding.Store" class="in"><span>Store</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+            </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div class="members" id="constructors">
+              <h3>Instance Constructors</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase#this" data-isabs="false">
+      <a id="this:VersionedBatchStoreBase[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">VersionedBatchStoreBase</span><span class="params">(<span name="rootPath">rootPath: String</span>)</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div class="values members" id="values">
+              <h3>Abstract Value Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.batch.BatchedStore#batcher" data-isabs="true">
+      <a id="batcher:Batcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batcher</span><span class="result">: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../../batch/Batcher.html">Batcher</a></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The batcher for this store</p><div class="fullcomment"><div class="comment cmt"><p>The batcher for this store</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.batch.BatchedStore#ordering" data-isabs="true">
+      <a id="ordering:Ordering[K]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ordering</span><span class="result">: Ordering[K]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a></dd></dl></div>
+    </li><li visbl="prt" name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase#readVersion" data-isabs="true">
+      <a id="readVersion(Long):FlowProducer[TypedPipe[(K, V)]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">readVersion</span><span class="params">(<span name="v">v: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: FlowProducer[TypedPipe[(K, V)]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.batch.BatchedStore#writeLast" data-isabs="true">
+      <a id="writeLast(BatchID,TypedPipe[(K, V)])(FlowDef,Mode):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">writeLast</span><span class="params">(<span name="batchID">batchID: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a></span>, <span name="lastVals">lastVals: TypedPipe[(K, V)]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="flowDef">flowDef: <span name="cascading.flow.FlowDef" class="extype">FlowDef</span></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Record a computed batch of code</p><div class="fullcomment"><div class="comment cmt"><p>Record a computed batch of code</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        <div class="values members" id="values">
+              <h3>Concrete Value Members</h3>
+              <ol><li visbl="pub" name="scala.AnyRef#!=" data-isabs="false">
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $bang$eq">!=</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#!=" data-isabs="false">
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $bang$eq">!=</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef###" data-isabs="false">
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $hash$hash">##</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#==" data-isabs="false">
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $eq$eq">==</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#==" data-isabs="false">
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $eq$eq">==</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: T0</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase#batchIDToVersion" data-isabs="false">
+      <a id="batchIDToVersion(BatchID):Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batchIDToVersion</span><span class="params">(<span name="b">b: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a></span>)</span><span class="result">: <span name="scala.Long" class="extype">Long</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">These functions convert back and forth between a specific
+BatchID and the earliest time of the BatchID just after it.</p><div class="fullcomment"><div class="comment cmt"><p>These functions convert back and forth between a specific
+BatchID and the earliest time of the BatchID just after it.</p><p>The version numbers are the exclusive upper-bound of time
+covered by this store, while the batchIDs are the inclusive
+upper bound. Put another way, all events that occured before the
+version are included in this store.
+</p></div></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.batch.BatchedStore#boundedKeySpace" data-isabs="false">
+      <a id="boundedKeySpace:TimeBoundedKeySpace[K]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">boundedKeySpace</span><span class="result">: <a name="com.twitter.summingbird.batch.TimeBoundedKeySpace" class="extype" href="../../batch/TimeBoundedKeySpace.html">TimeBoundedKeySpace</a>[K]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Override this to control when keys are frozen.</p><div class="fullcomment"><div class="comment cmt"><p>Override this to control when keys are frozen. This allows
+us to avoid sorting and shuffling keys that are not updated.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a></dd></dl></div>
+    </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: AnyRef</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a name="java.lang" class="extype" href="../../../../../java/lang/package.html">lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#equals" data-isabs="false">
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a name="java.lang" class="extype" href="../../../../../java/lang/package.html">lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
+      <a id="getClass():java.lang.Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: java.lang.Class[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="prt" name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase#lastBatch" data-isabs="false">
+      <a id="lastBatch(BatchID,Hdfs):Option[(BatchID, FlowProducer[TypedPipe[(K, V)]])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lastBatch</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Hdfs" class="extype">Hdfs</span></span>)</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a>, FlowProducer[TypedPipe[(K, V)]])]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.batch.BatchedStore#merge" data-isabs="false">
+      <a id="merge(PipeFactory[(K, V)],Semigroup[V],Commutativity,Int):PipeFactory[(K, (Option[V], V))]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">merge</span><span class="params">(<span name="delta">delta: PipeFactory[(K, V)]</span>, <span name="sg">sg: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>, <span name="commutativity">commutativity: <a name="com.twitter.summingbird.option.Commutativity" class="extype" href="../../option/Commutativity.html">Commutativity</a></span>, <span name="reducers">reducers: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: PipeFactory[(K, (<span name="scala.Option" class="extype">Option</span>[V], V))]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">instances of this trait MAY NOT change the logic here.</p><div class="fullcomment"><div class="comment cmt"><p>instances of this trait MAY NOT change the logic here. This always follows the rule
+that we look for existing data (avoiding reading deltas in that case), then we fall
+back to the last checkpointed output by calling readLast. In that case, we compute the
+results by rolling forward
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a> → <a name="com.twitter.summingbird.scalding.Store" class="extype" href="../Store.html">Store</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#notify" data-isabs="false">
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#notifyAll" data-isabs="false">
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.batch.BatchedStore#partialMerge" data-isabs="false">
+      <a id="partialMerge[K1](PipeFactory[(K1, V)],Semigroup[V],Commutativity):PipeFactory[(K1, V)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">partialMerge</span><span class="tparams">[<span name="K1">K1</span>]</span><span class="params">(<span name="delta">delta: PipeFactory[(K1, V)]</span>, <span name="sg">sg: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>, <span name="commutativity">commutativity: <a name="com.twitter.summingbird.option.Commutativity" class="extype" href="../../option/Commutativity.html">Commutativity</a></span>)</span><span class="result">: PipeFactory[(K1, V)]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">For each batch, collect up values with the same key on mapside
+before the keys are expanded.</p><div class="fullcomment"><div class="comment cmt"><p>For each batch, collect up values with the same key on mapside
+before the keys are expanded.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a> → <a name="com.twitter.summingbird.scalding.Store" class="extype" href="../Store.html">Store</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.batch.BatchedStore#pruning" data-isabs="false">
+      <a id="pruning:PrunedSpace[(K, V)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pruning</span><span class="result">: <a name="com.twitter.summingbird.batch.PrunedSpace" class="extype" href="../../batch/PrunedSpace.html">PrunedSpace</a>[(K, V)]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Override this to set up store pruning, by default, no (key,value) pairs
+are pruned.</p><div class="fullcomment"><div class="comment cmt"><p>Override this to set up store pruning, by default, no (key,value) pairs
+are pruned. This is a house keeping function to permanently remove entries
+matching a criteria.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase#readLast" data-isabs="false">
+      <a id="readLast(BatchID,Mode):Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">readLast</span><span class="params">(<span name="exclusiveUB">exclusiveUB: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a></span>, <span name="mode">mode: <span name="com.twitter.scalding.Mode" class="extype">Mode</span></span>)</span><span class="result">: Try[(<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a>, FlowProducer[TypedPipe[(K, V)]])]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns a snapshot of the store's (K, V) pairs aggregated up to
+(but not including!) the time covered by the supplied batchID.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a snapshot of the store's (K, V) pairs aggregated up to
+(but not including!) the time covered by the supplied batchID.</p><p>Aggregating the readLast for a particular batchID with the
+stream stored for the same batchID will return the aggregate up
+to (but not including) batchID.next. Streams deal with inclusive
+upper bound.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase" class="extype" href="">VersionedBatchStoreBase</a> → <a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase#rootPath" data-isabs="false">
+      <a id="rootPath:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rootPath</span><span class="result">: String</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.batch.BatchedStore#select" data-isabs="false">
+      <a id="select(List[BatchID]):List[BatchID]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">select</span><span class="params">(<span name="b">b: List[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a>]</span>)</span><span class="result">: List[<a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Override select if you don't want to materialize every
+batch.</p><div class="fullcomment"><div class="comment cmt"><p>Override select if you don't want to materialize every
+batch. Note that select MUST return a list containing the final
+batch in the supplied list; otherwise data would be lost.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a></dd></dl></div>
+    </li><li visbl="prt" name="com.twitter.summingbird.scalding.batch.BatchedStore#sumByBatches" data-isabs="false">
+      <a id="sumByBatches[K1, V](TypedPipe[(Timestamp, (K1, V))],Batcher,Commutativity)(Semigroup[V]):TypedPipe[((K1, BatchID), (Timestamp, V))]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sumByBatches</span><span class="tparams">[<span name="K1">K1</span>, <span name="V">V</span>]</span><span class="params">(<span name="ins">ins: TypedPipe[(<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../../batch/Timestamp.html">Timestamp</a>, (K1, V))]</span>, <span name="capturedBatcher">capturedBatcher: <a name="com.twitter.summingbird.batch.Batcher" class="extype" href="../../batch/Batcher.html">Batcher</a></span>, <span name="commutativity">commutativity: <a name="com.twitter.summingbird.option.Commutativity" class="extype" href="../../option/Commutativity.html">Commutativity</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span name="com.twitter.algebird.Semigroup" class="extype">Semigroup</span>[V]</span>)</span><span class="result">: TypedPipe[((K1, <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a>), (<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../../batch/Timestamp.html">Timestamp</a>, V))]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
+      <a id="synchronized[T0](⇒ T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ T0</span>)</span><span class="result">: T0</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase#versionToBatchID" data-isabs="false">
+      <a id="versionToBatchID(Long):BatchID"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">versionToBatchID</span><span class="params">(<span name="ver">ver: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a></span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span name="scala.Long" class="extype">Long</span></span>, <span name="arg1">arg1: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.batch.BatchedStore#withInitialBatch" data-isabs="false">
+      <a id="withInitialBatch(BatchID):BatchedStore[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">withInitialBatch</span><span class="params">(<span name="firstNonZero">firstNonZero: <a name="com.twitter.summingbird.batch.BatchID" class="extype" href="../../batch/BatchID.html">BatchID</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a>[K, V]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">For (firstNonZero - 1) we read empty.</p><div class="fullcomment"><div class="comment cmt"><p>For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
+On write, we throw if batchID is less than firstNonZero
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div name="com.twitter.summingbird.scalding.batch.BatchedStore" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.scalding.batch.BatchedStore" class="extype" href="../batch/BatchedStore.html">BatchedStore</a>[K, V]</h3>
+            </div><div name="com.twitter.summingbird.scalding.Store" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.scalding.Store" class="extype" href="../Store.html">Store</a>[K, V]</h3>
+            </div><div name="java.io.Serializable" class="parent">
+              <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="scala.AnyRef" class="parent">
+              <h3>Inherited from AnyRef</h3>
+            </div><div name="scala.Any" class="parent">
+              <h3>Inherited from <span name="scala.Any" class="extype">Any</span></h3>
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

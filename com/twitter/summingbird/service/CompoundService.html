@@ -25,13 +25,13 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">CompoundService</span><span class="tparams">[<span name="Key">Key</span>, <span name="Joined">Joined</span>]</span><span class="params">(<span name="offline">offline: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.scalding.ScaldingService" class="extype" href="../scalding/ScaldingService.html">ScaldingService</a>[Key, Joined]]</span>, <span name="online">online: <span name="scala.Option" class="extype">Option</span>[() ⇒ <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[Key, Joined]]</span>)</span><span class="result"> extends <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
+        <span class="name">CompoundService</span><span class="tparams">[<span name="Key">Key</span>, <span name="Joined">Joined</span>]</span><span class="params">(<span name="offline">offline: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.scalding.Service" class="extype" href="../scalding/Service.html">Service</a>[Key, Joined]]</span>, <span name="online">online: <span name="scala.Option" class="extype">Option</span>[() ⇒ <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[Key, Joined]]</span>)</span><span class="result"> extends <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
       <div class="fullcommenttop" id="comment"><div class="comment cmt"><p>Pairing of an online and offline service for use with an
 OptionalPlatform2[Scalding, Storm].
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-builder/src/main/scala/com/twitter/summingbird/service/Service.scala">Service.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-builder/src/main/scala/com/twitter/summingbird/service/Service.scala">Service.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -67,7 +67,7 @@ OptionalPlatform2[Scalding, Storm].
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CompoundService</span><span class="params">(<span name="offline">offline: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.scalding.ScaldingService" class="extype" href="../scalding/ScaldingService.html">ScaldingService</a>[Key, Joined]]</span>, <span name="online">online: <span name="scala.Option" class="extype">Option</span>[() ⇒ <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[Key, Joined]]</span>)</span>
+        <span class="name">CompoundService</span><span class="params">(<span name="offline">offline: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.scalding.Service" class="extype" href="../scalding/Service.html">Service</a>[Key, Joined]]</span>, <span name="online">online: <span name="scala.Option" class="extype">Option</span>[() ⇒ <span name="com.twitter.storehaus.ReadableStore" class="extype">ReadableStore</span>[Key, Joined]]</span>)</span>
       </span>
       </h4>
       
@@ -291,14 +291,14 @@ OptionalPlatform2[Scalding, Storm].
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.service.CompoundService#offline" data-isabs="false">
-      <a id="offline:Option[ScaldingService[Key, Joined]]"></a>
+      <a id="offline:Option[Service[Key, Joined]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">offline</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.scalding.ScaldingService" class="extype" href="../scalding/ScaldingService.html">ScaldingService</a>[Key, Joined]]</span>
+        <span class="name">offline</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.scalding.Service" class="extype" href="../scalding/Service.html">Service</a>[Key, Joined]]</span>
       </span>
       </h4>
       

@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a>[<a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a>], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div><div class="toggleContainer block">
@@ -68,7 +68,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">Storm</span><span class="params">(<span name="options">options: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>, <span name="updateConf">updateConf: (<span name="backtype.storm.Config" class="extype">Config</span>) ⇒ <span name="backtype.storm.Config" class="extype">Config</span></span>)</span>
+        <span class="name">Storm</span><span class="params">(<span name="options">options: Map[String, <a name="com.twitter.summingbird.Options" class="extype" href="../Options.html">Options</a>]</span>, <span name="transformConfig">transformConfig: (<a name="com.twitter.summingbird.SummingbirdConfig" class="extype" href="../SummingbirdConfig.html">SummingbirdConfig</a>) ⇒ <a name="com.twitter.summingbird.SummingbirdConfig" class="extype" href="../SummingbirdConfig.html">SummingbirdConfig</a></span>, <span name="passedRegistrars">passedRegistrars: List[<span name="com.twitter.chill.IKryoRegistrar" class="extype">IKryoRegistrar</span>]</span>)</span>
       </span>
       </h4>
       
@@ -85,7 +85,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = Service[k, v] with () ⇒ ((k, v)) ⇒ <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</span>
+        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = Service[k, v] with Sink[(k, v)]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a></dd></dl></div>
@@ -97,7 +97,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">Plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> = <span name="backtype.storm.generated.StormTopology" class="extype">StormTopology</span></span>
+        <span class="name">Plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> = <a name="com.twitter.summingbird.storm.PlannedTopology" class="extype" href="PlannedTopology.html">PlannedTopology</a></span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a> → <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a></dd></dl></div>
@@ -114,14 +114,14 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a> → <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a></dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#Sink" data-isabs="false">
-      <a id="Sink:() ⇒ (T) ⇒ Future[Unit]"></a>
+      <a id="Sink:Sink[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">Sink</span><span class="tparams">[<span name="T">-T</span>]</span><span class="result"> = () ⇒ (T) ⇒ <span name="com.twitter.util.Future" class="extype">Future</span>[<span name="scala.Unit" class="extype">Unit</span>]</span>
+        <span class="name">Sink</span><span class="tparams">[<span name="T">-T</span>]</span><span class="result"> = <a name="com.twitter.summingbird.storm.StormSink" class="extype" href="StormSink.html">StormSink</a>[T]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a> → <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a></dd></dl></div>
@@ -155,26 +155,38 @@
         <div class="values members" id="values">
               <h3>Abstract Value Members</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.storm.Storm#run" data-isabs="true">
-      <a id="run(StormTopology,String):Unit"></a>
+      <a id="run(PlannedTopology,String):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">run</span><span class="params">(<span name="topology">topology: <span name="backtype.storm.generated.StormTopology" class="extype">StormTopology</span></span>, <span name="jobName">jobName: String</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">run</span><span class="params">(<span name="plannedTopology">plannedTopology: <a name="com.twitter.summingbird.storm.PlannedTopology" class="extype" href="PlannedTopology.html">PlannedTopology</a></span>, <span name="jobName">jobName: String</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#withConfigUpdater" data-isabs="true">
-      <a id="withConfigUpdater((Config) ⇒ Config):Storm"></a>
+      <a id="withConfigUpdater((SummingbirdConfig) ⇒ SummingbirdConfig):Storm"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">withConfigUpdater</span><span class="params">(<span name="fn">fn: (<span name="backtype.storm.Config" class="extype">Config</span>) ⇒ <span name="backtype.storm.Config" class="extype">Config</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a></span>
+        <span class="name">withConfigUpdater</span><span class="params">(<span name="fn">fn: (<a name="com.twitter.summingbird.SummingbirdConfig" class="extype" href="../SummingbirdConfig.html">SummingbirdConfig</a>) ⇒ <a name="com.twitter.summingbird.SummingbirdConfig" class="extype" href="../SummingbirdConfig.html">SummingbirdConfig</a></span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a></span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#withRegistrars" data-isabs="true">
+      <a id="withRegistrars(List[IKryoRegistrar]):Storm"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">withRegistrars</span><span class="params">(<span name="registrars">registrars: List[<span name="com.twitter.chill.IKryoRegistrar" class="extype">IKryoRegistrar</span>]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a></span>
       </span>
       </h4>
       
@@ -255,18 +267,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#baseConfig" data-isabs="false">
-      <a id="baseConfig:Config"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">baseConfig</span><span class="result">: <span name="backtype.storm.Config" class="extype">Config</span></span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">Base storm config instances used by the Storm platform.</p>
     </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
       <a id="clone():AnyRef"></a>
       <h4 class="signature">
@@ -321,6 +321,18 @@
                 <span class="name">@throws</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#genConfig" data-isabs="false">
+      <a id="genConfig(Dag[Storm]):Config"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">genConfig</span><span class="params">(<span name="dag">dag: <a name="com.twitter.summingbird.planner.Dag" class="extype" href="../planner/Dag.html">Dag</a>[<a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a>]</span>)</span><span class="result">: <span name="backtype.storm.Config" class="extype">Config</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Base storm config instances used by the Storm platform.</p>
     </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
       <a id="getClass():java.lang.Class[_]"></a>
       <h4 class="signature">
@@ -394,14 +406,14 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#plan" data-isabs="false">
-      <a id="plan[T](TailProducer[Storm, T]):StormTopology"></a>
+      <a id="plan[T](TailProducer[Storm, T]):PlannedTopology"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="tail">tail: <a name="com.twitter.summingbird.TailProducer" class="extype" href="../TailProducer.html">TailProducer</a>[<a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a>, T]</span>)</span><span class="result">: <span name="backtype.storm.generated.StormTopology" class="extype">StormTopology</span></span>
+        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="tail">tail: <a name="com.twitter.summingbird.TailProducer" class="extype" href="../TailProducer.html">TailProducer</a>[<a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a>, T]</span>)</span><span class="result">: <a name="com.twitter.summingbird.storm.PlannedTopology" class="extype" href="PlannedTopology.html">PlannedTopology</a></span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.Storm" class="extype" href="">Storm</a> → <a name="com.twitter.summingbird.Platform" class="extype" href="../Platform.html">Platform</a></dd></dl></div>
@@ -413,7 +425,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">run</span><span class="params">(<span name="summer">summer: com.twitter.summingbird.TailProducer[com.twitter.summingbird.storm.Storm, _]</span>, <span name="jobName">jobName: String</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">run</span><span class="params">(<span name="tail">tail: com.twitter.summingbird.TailProducer[com.twitter.summingbird.storm.Storm, _]</span>, <span name="jobName">jobName: String</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
       
@@ -441,18 +453,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.Storm#transformConfig" data-isabs="false">
-      <a id="transformConfig(Config):Config"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">transformConfig</span><span class="params">(<span name="base">base: <span name="backtype.storm.Config" class="extype">Config</span></span>)</span><span class="result">: <span name="backtype.storm.Config" class="extype">Config</span></span>
-      </span>
-      </h4>
-      
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">

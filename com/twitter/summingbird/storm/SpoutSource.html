@@ -25,11 +25,11 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">SpoutSource</span><span class="tparams">[<span name="T">+T</span>]</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[(<span name="scala.Long" class="extype">Long</span>, T)]</span>)</span><span class="result"> extends <a name="com.twitter.summingbird.storm.StormSource" class="extype" href="StormSource.html">StormSource</a>[T] with <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
+        <span class="name">SpoutSource</span><span class="tparams">[<span name="T">+T</span>]</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[(<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>, T)]</span>, <span name="parallelism">parallelism: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.storm.option.SpoutParallelism" class="extype" href="option/SpoutParallelism.html">SpoutParallelism</a>]</span>)</span><span class="result"> extends <a name="com.twitter.summingbird.storm.StormSource" class="extype" href="StormSource.html">StormSource</a>[T] with <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, <a name="com.twitter.summingbird.storm.StormSource" class="extype" href="StormSource.html">StormSource</a>[T], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -65,7 +65,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SpoutSource</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[(<span name="scala.Long" class="extype">Long</span>, T)]</span>)</span>
+        <span class="name">SpoutSource</span><span class="params">(<span name="spout">spout: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[(<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>, T)]</span>, <span name="parallelism">parallelism: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.storm.option.SpoutParallelism" class="extype" href="option/SpoutParallelism.html">SpoutParallelism</a>]</span>)</span>
       </span>
       </h4>
       
@@ -288,6 +288,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#parallelism" data-isabs="false">
+      <a id="parallelism:Option[SpoutParallelism]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parallelism</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<a name="com.twitter.summingbird.storm.option.SpoutParallelism" class="extype" href="option/SpoutParallelism.html">SpoutParallelism</a>]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#productArity" data-isabs="false">
       <a id="productArity:Int"></a>
       <h4 class="signature">
@@ -337,14 +349,14 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.SpoutSource" class="extype" href="">SpoutSource</a> → Product</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.SpoutSource#spout" data-isabs="false">
-      <a id="spout:Spout[(Long, T)]"></a>
+      <a id="spout:Spout[(Timestamp, T)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">spout</span><span class="result">: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[(<span name="scala.Long" class="extype">Long</span>, T)]</span>
+        <span class="name">spout</span><span class="result">: <span name="com.twitter.tormenta.spout.Spout" class="extype">Spout</span>[(<a name="com.twitter.summingbird.batch.Timestamp" class="extype" href="../batch/Timestamp.html">Timestamp</a>, T)]</span>
       </span>
       </h4>
       

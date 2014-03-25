@@ -1,0 +1,644 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>com.twitter.summingbird.AlsoTailProducer</title>
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link type="text/css" media="screen" rel="stylesheet" href="../../../lib/template.css" />
+      <script type="text/javascript" src="../../../lib/jquery.js"></script>
+      <script type="text/javascript" src="../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/tools.tooltip.js"></script>
+    
+        </head>
+        <body onload="sh_highlightDocument('../lib/', '.min.js');" class="type">
+      <div id="definition">
+        <img src="../../../lib/class_big.png" />
+        <p id="owner"><a name="com" class="extype" href="../../package.html">com</a>.<a name="com.twitter" class="extype" href="../package.html">twitter</a>.<a name="com.twitter.summingbird" class="extype" href="package.html">summingbird</a></p>
+        <h1>AlsoTailProducer</h1>
+      </div>
+
+      <h4 class="signature" id="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">AlsoTailProducer</span><span class="tparams">[<span name="P">P &lt;: <a name="com.twitter.summingbird.Platform" class="extype" href="Platform.html">Platform</a>[P]</span>, <span name="T">T</span>, <span name="R">R</span>]</span><span class="result"> extends <a name="com.twitter.summingbird.AlsoProducer" class="extype" href="AlsoProducer.html">AlsoProducer</a>[P, T, R] with <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, R]</span>
+      </span>
+      </h4>
+      
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-core/src/main/scala/com/twitter/summingbird/Producer.scala">Producer.scala</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, R], <a name="com.twitter.summingbird.AlsoProducer" class="extype" href="AlsoProducer.html">AlsoProducer</a>[P, T, R], <span name="scala.Serializable" class="extype">Serializable</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, R], AnyRef, <span name="scala.Any" class="extype">Any</span></div>
+        </div></div>
+    
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input accesskey="/" type="text" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol><li class="alpha in"><span>Alphabetic</span></li><li class="inherit out"><span>By inheritance</span></li></ol>
+            </div>
+        <div id="ancestors">
+              <span class="filtertype">Inherited</span>
+              <ol><li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.AlsoTailProducer" class="in"><span>AlsoTailProducer</span></li><li name="com.twitter.summingbird.TailProducer" class="in"><span>TailProducer</span></li><li name="com.twitter.summingbird.AlsoProducer" class="in"><span>AlsoProducer</span></li><li name="scala.Serializable" class="in"><span>Serializable</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.Product" class="in"><span>Product</span></li><li name="scala.Equals" class="in"><span>Equals</span></li><li name="com.twitter.summingbird.Producer" class="in"><span>Producer</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+            </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div class="members" id="constructors">
+              <h3>Instance Constructors</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.AlsoTailProducer#this" data-isabs="false">
+      <a id="this:AlsoTailProducer[P, T, R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">AlsoTailProducer</span><span class="params">(<span name="ensure">ensure: <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, T]</span>, <span name="result">result: <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, R]</span>)</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div class="values members" id="values">
+              <h3>Value Members</h3>
+              <ol><li visbl="pub" name="scala.AnyRef#!=" data-isabs="false">
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $bang$eq">!=</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#!=" data-isabs="false">
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $bang$eq">!=</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef###" data-isabs="false">
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $hash$hash">##</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#++" data-isabs="false">
+      <a id="++[U&gt;:R](Producer[P, U]):Producer[P, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $plus$plus">++</span><span class="tparams">[<span name="U">U &gt;: R</span>]</span><span class="params">(<span name="r">r: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Exactly the same as merge.</p><div class="fullcomment"><div class="comment cmt"><p>Exactly the same as merge. Here by analogy with the scala.collections API</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#==" data-isabs="false">
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $eq$eq">==</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#==" data-isabs="false">
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name" title="gt4s: $eq$eq">==</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.TailProducer#also" data-isabs="false">
+      <a id="also[R](Producer[P, R]):Producer[P, R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">also</span><span class="tparams">[<span name="R">R</span>]</span><span class="params">(<span name="that">that: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, R]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, R]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.TailProducer#also" data-isabs="false">
+      <a id="also[R](TailProducer[P, R])(DummyImplicit):TailProducer[P, R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">also</span><span class="tparams">[<span name="R">R</span>]</span><span class="params">(<span name="that">that: <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, R]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ev">ev: <span name="scala.Predef.DummyImplicit" class="extype">DummyImplicit</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, R]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Ensure this is scheduled, but return something equivalent to the argument
+like the function <code>par</code> in Haskell.</p><div class="fullcomment"><div class="comment cmt"><p>Ensure this is scheduled, but return something equivalent to the argument
+like the function <code>par</code> in Haskell.
+This can be used to combine two independent Producers in a way that ensures
+that the Platform will plan both into a single Plan.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#asInstanceOf" data-isabs="false">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: T0</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.AlsoProducer#canEqual" data-isabs="false">
+      <a id="canEqual(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEqual</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.AlsoProducer" class="extype" href="AlsoProducer.html">AlsoProducer</a> → Equals</dd></dl></div>
+    </li><li visbl="prt" name="scala.AnyRef#clone" data-isabs="false">
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: AnyRef</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a name="java.lang" class="extype" href="../../../java/lang/package.html">lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#collect" data-isabs="false">
+      <a id="collect[U](PartialFunction[R, U]):Producer[P, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collect</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: <span name="scala.PartialFunction" class="extype">PartialFunction</span>[R, U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Prefer to flatMap for transforming a subset of items
+like optionMap but convenient with case syntax in scala
+prod.</p><div class="fullcomment"><div class="comment cmt"><p>Prefer to flatMap for transforming a subset of items
+like optionMap but convenient with case syntax in scala
+prod.collect { case x if fn(x) =&gt; g(x) }
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#either" data-isabs="false">
+      <a id="either[U](Producer[P, U]):Producer[P, Either[R, U]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">either</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="other">other: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, <span name="scala.Either" class="extype">Either</span>[R, U]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Merge a different type of Producer into a single stream</p><div class="fullcomment"><div class="comment cmt"><p>Merge a different type of Producer into a single stream</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#eq" data-isabs="false">
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.AlsoProducer#equals" data-isabs="false">
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.AlsoProducer" class="extype" href="AlsoProducer.html">AlsoProducer</a> → Equals → AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#filter" data-isabs="false">
+      <a id="filter((R) ⇒ Boolean):Producer[P, R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">filter</span><span class="params">(<span name="fn">fn: (R) ⇒ <span name="scala.Boolean" class="extype">Boolean</span></span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, R]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Keep only the items that satisfy the fn</p><div class="fullcomment"><div class="comment cmt"><p>Keep only the items that satisfy the fn</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a name="java.lang" class="extype" href="../../../java/lang/package.html">lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#flatMap" data-isabs="false">
+      <a id="flatMap[U]((R) ⇒ TraversableOnce[U]):Producer[P, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">flatMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (R) ⇒ TraversableOnce[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Only use this function if you may return more than 1 item sometimes.</p><div class="fullcomment"><div class="comment cmt"><p>Only use this function if you may return more than 1 item sometimes.
+otherwise use collect or optionMap, which can be pushed up the graph
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#getClass" data-isabs="false">
+      <a id="getClass():java.lang.Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: java.lang.Class[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.AlsoProducer#hashCode" data-isabs="false">
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.AlsoProducer" class="extype" href="AlsoProducer.html">AlsoProducer</a> → AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#lookup" data-isabs="false">
+      <a id="lookup[U&gt;:R, V](Service[U, V]):KeyedProducer[P, U, Option[V]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lookup</span><span class="tparams">[<span name="U">U &gt;: R</span>, <span name="V">V</span>]</span><span class="params">(<span name="service">service: Service[U, V]</span>)</span><span class="result">: <a name="com.twitter.summingbird.KeyedProducer" class="extype" href="KeyedProducer.html">KeyedProducer</a>[P, U, <span name="scala.Option" class="extype">Option</span>[V]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">This is identical to a certain leftJoin:
+map((_, ())).</p><div class="fullcomment"><div class="comment cmt"><p>This is identical to a certain leftJoin:
+map((_, ())).leftJoin(srv).mapValues{case (_, v) =&gt; v}
+Useful when you are looking up values from
+say a stream of inputs, such as IDs.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#map" data-isabs="false">
+      <a id="map[U]((R) ⇒ U):Producer[P, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">map</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (R) ⇒ U</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Map each item to a new value</p><div class="fullcomment"><div class="comment cmt"><p>Map each item to a new value</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#merge" data-isabs="false">
+      <a id="merge[U&gt;:R](Producer[P, U]):Producer[P, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">merge</span><span class="tparams">[<span name="U">U &gt;: R</span>]</span><span class="params">(<span name="r">r: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Combine the output into one Producer</p><div class="fullcomment"><div class="comment cmt"><p>Combine the output into one Producer</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.TailProducer#name" data-isabs="false">
+      <a id="name(String):TailProducer[P, R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">name</span><span class="params">(<span name="id">id: String</span>)</span><span class="result">: <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, R]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Naming a node is so that you may give Options for that node that may change
+the run-time performance of the job (parameter tuning, etc.</p><div class="fullcomment"><div class="comment cmt"><p>Naming a node is so that you may give Options for that node that may change
+the run-time performance of the job (parameter tuning, etc...)
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a> → <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#ne" data-isabs="false">
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: AnyRef</span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#notify" data-isabs="false">
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#notifyAll" data-isabs="false">
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#optionMap" data-isabs="false">
+      <a id="optionMap[U]((R) ⇒ Option[U]):Producer[P, U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">optionMap</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (R) ⇒ <span name="scala.Option" class="extype">Option</span>[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, U]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Prefer this or collect to flatMap if you are always emitting 0 or 1 items
+</p><div class="fullcomment"><div class="comment cmt"><p>Prefer this or collect to flatMap if you are always emitting 0 or 1 items
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.AlsoProducer#productArity" data-isabs="false">
+      <a id="productArity:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productArity</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.AlsoProducer" class="extype" href="AlsoProducer.html">AlsoProducer</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.AlsoProducer#productElement" data-isabs="false">
+      <a id="productElement(Int):Any"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productElement</span><span class="params">(<span name="arg0">arg0: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Any" class="extype">Any</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.AlsoProducer" class="extype" href="AlsoProducer.html">AlsoProducer</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="scala.Product#productIterator" data-isabs="false">
+      <a id="productIterator:Iterator[Any]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productIterator</span><span class="result">: Iterator[<span name="scala.Any" class="extype">Any</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.AlsoProducer#productPrefix" data-isabs="false">
+      <a id="productPrefix:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productPrefix</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.AlsoProducer" class="extype" href="AlsoProducer.html">AlsoProducer</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
+      <a id="synchronized[T0](⇒ T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ T0</span>)</span><span class="result">: T0</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.AlsoProducer#toString" data-isabs="false">
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: String</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.AlsoProducer" class="extype" href="AlsoProducer.html">AlsoProducer</a> → AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span name="scala.Long" class="extype">Long</span></span>, <span name="arg1">arg1: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span name="scala.Long" class="extype">Long</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.Producer#write" data-isabs="false">
+      <a id="write[U&gt;:R](Sink[U]):TailProducer[P, R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">write</span><span class="tparams">[<span name="U">U &gt;: R</span>]</span><span class="params">(<span name="sink">sink: Sink[U]</span>)</span><span class="result">: <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, R]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Cause some side effect on the sink, but pass through the values so
+they can be consumed downstream
+</p><div class="fullcomment"><div class="comment cmt"><p>Cause some side effect on the sink, but pass through the values so
+they can be consumed downstream
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        <div class="values members" id="values">
+              <h3>Deprecated Value Members</h3>
+              <ol><li visbl="pub" name="scala.Product#productElements" data-isabs="false">
+      <a id="productElements:Iterator[Any]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.8.0) use productIterator instead">productElements</span><span class="result">: Iterator[<span name="scala.Any" class="extype">Any</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.8.0)</i> use productIterator instead</p></dd></dl></div>
+    </li></ol>
+            </div>
+        </div>
+
+        <div id="inheritedMembers">
+        <div name="com.twitter.summingbird.TailProducer" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.TailProducer" class="extype" href="TailProducer.html">TailProducer</a>[P, R]</h3>
+            </div><div name="com.twitter.summingbird.AlsoProducer" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.AlsoProducer" class="extype" href="AlsoProducer.html">AlsoProducer</a>[P, T, R]</h3>
+            </div><div name="scala.Serializable" class="parent">
+              <h3>Inherited from <span name="scala.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="java.io.Serializable" class="parent">
+              <h3>Inherited from <span name="java.io.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="scala.Product" class="parent">
+              <h3>Inherited from <span name="scala.Product" class="extype">Product</span></h3>
+            </div><div name="scala.Equals" class="parent">
+              <h3>Inherited from <span name="scala.Equals" class="extype">Equals</span></h3>
+            </div><div name="com.twitter.summingbird.Producer" class="parent">
+              <h3>Inherited from <a name="com.twitter.summingbird.Producer" class="extype" href="Producer.html">Producer</a>[P, R]</h3>
+            </div><div name="scala.AnyRef" class="parent">
+              <h3>Inherited from AnyRef</h3>
+            </div><div name="scala.Any" class="parent">
+              <h3>Inherited from <span name="scala.Any" class="extype">Any</span></h3>
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

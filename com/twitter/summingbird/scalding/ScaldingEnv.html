@@ -29,7 +29,7 @@
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-builder/src/main/scala/com/twitter/summingbird/scalding/ScaldingEnv.scala">ScaldingEnv.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-builder/src/main/scala/com/twitter/summingbird/scalding/ScaldingEnv.scala">ScaldingEnv.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, <a name="com.twitter.summingbird.Env" class="extype" href="../Env.html">Env</a>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
@@ -72,7 +72,22 @@
     </li></ol>
             </div>
 
-        
+        <div class="types members" id="types">
+              <h3>Type Members</h3>
+              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.ScaldingEnv.Built" data-isabs="false">
+      <a id="Built:Built"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ScaldingEnv$Built.html"><span class="name">Built</span></a><span class="params">(<span name="platform">platform: Scalding</span>, <span name="toRun">toRun: TailProducer[Scalding, (Any, (Option[Any], Any))]</span>, <span name="stateFn">stateFn: (Configuration) ⇒ VersionedState</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
 
         
 
@@ -183,6 +198,18 @@
       </span>
       <span class="symbol">
         <span class="name">batches</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.ScaldingEnv#build" data-isabs="false">
+      <a id="build:Built"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">build</span><span class="result">: <a name="com.twitter.summingbird.scalding.ScaldingEnv.Built" class="extype" href="ScaldingEnv$Built.html">Built</a></span>
       </span>
       </h4>
       
@@ -433,14 +460,14 @@
       </h4>
       
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.ScaldingEnv#run" data-isabs="false">
-      <a id="run[K, V](String,CompletedBuilder[Scalding, K, V],(Configuration) ⇒ Configuration):Unit"></a>
+      <a id="run(Built):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">run</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="name">name: String</span>, <span name="scaldingBuilder">scaldingBuilder: <a name="com.twitter.summingbird.builder.CompletedBuilder" class="extype" href="../builder/CompletedBuilder.html">CompletedBuilder</a>[<a name="com.twitter.summingbird.scalding.Scalding" class="extype" href="Scalding.html">Scalding</a>, K, V]</span>, <span name="confud">confud: (<span name="org.apache.hadoop.conf.Configuration" class="extype">Configuration</span>) ⇒ <span name="org.apache.hadoop.conf.Configuration" class="extype">Configuration</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">run</span><span class="params">(<span name="b">b: <a name="com.twitter.summingbird.scalding.ScaldingEnv.Built" class="extype" href="ScaldingEnv$Built.html">Built</a></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
       </span>
       </h4>
       

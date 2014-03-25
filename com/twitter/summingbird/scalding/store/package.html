@@ -48,42 +48,68 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata" data-isabs="false">
-      <a id="HDFSMetadata:HDFSMetadata"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.store.DirectoryBatchedStore" data-isabs="false">
+      <a id="DirectoryBatchedStore:DirectoryBatchedStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="HDFSMetadata.html"><span class="name">HDFSMetadata</span></a><span class="result"> extends AnyRef</span>
+        <a href="DirectoryBatchedStore.html"><span class="name">DirectoryBatchedStore</span></a><span class="tparams">[<span name="K">K &lt;: Writable</span>, <span name="V">V &lt;: Writable</span>]</span><span class="result"> extends BatchedStore[K, V]</span>
       </span>
       </h4>
-      <p class="comment cmt">Class to access metadata for a single versioned output directory</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSVersionMetadata" data-isabs="false">
-      <a id="HDFSVersionMetadata:HDFSVersionMetadata"></a>
+      <p class="comment cmt">DirectoryBatched Scalding Store, which only contains (K, V) data pairs in the data.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.InitialBatchedStore" data-isabs="false">
+      <a id="InitialBatchedStore:InitialBatchedStore[K, V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="HDFSVersionMetadata.html"><span class="name">HDFSVersionMetadata</span></a><span class="result"> extends AnyRef</span>
+        <a href="InitialBatchedStore.html"><span class="name">InitialBatchedStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends ProxyBatchedStore[K, V]</span>
       </span>
       </h4>
-      <p class="comment cmt">Refers to a specific version on disk.</p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedState" data-isabs="false">
-      <a id="VersionedState:VersionedState"></a>
+      <p class="comment cmt">For (firstNonZero - 1) we read empty.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.ProxyBatchedStore" data-isabs="true">
+      <a id="ProxyBatchedStore:ProxyBatchedStore[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ProxyBatchedStore.html"><span class="name">ProxyBatchedStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedStore[K, V]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Use this class to easily change, for instance, the pruning
+for an existing store.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedBatchStore" data-isabs="false">
+      <a id="VersionedBatchStore:VersionedBatchStore[K, V, K2, V2]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="VersionedState.html"><span class="name">VersionedState</span></a><span class="result"> extends WaitingState[Interval[Timestamp]]</span>
+        <a href="VersionedBatchStore.html"><span class="name">VersionedBatchStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>, <span name="K2">K2</span>, <span name="V2">V2</span>]</span><span class="result"> extends VersionedBatchStoreBase[K, V]</span>
       </span>
       </h4>
       
+    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase" data-isabs="true">
+      <a id="VersionedBatchStoreBase:VersionedBatchStoreBase[K, V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="VersionedBatchStoreBase.html"><span class="name">VersionedBatchStoreBase</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends BatchedStore[K, V]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Allows subclasses to share the means of reading version numbers but
+plug in methods to actually read or write the data.</p>
     </li></ol>
             </div>
 
@@ -91,30 +117,19 @@
 
         <div class="values members" id="values">
               <h3>Value Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.store.HDFSMetadata" data-isabs="false">
-      <a id="HDFSMetadata:HDFSMetadata"></a>
+              <ol><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedBatchStore" data-isabs="false">
+      <a id="VersionedBatchStore:VersionedBatchStore"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="HDFSMetadata$.html"><span class="name">HDFSMetadata</span></a><span class="result"> extends AnyRef</span>
+        <a href="VersionedBatchStore$.html"><span class="name">VersionedBatchStore</span></a><span class="result"> extends Serializable</span>
       </span>
       </h4>
-      <p class="comment cmt"></p>
-    </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedState" data-isabs="false">
-      <a id="VersionedState:VersionedState"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="VersionedState$.html"><span class="name">VersionedState</span></a><span class="result"> extends AnyRef</span>
-      </span>
-      </h4>
-      <p class="comment cmt">State representation used by the builder API for compatibility.</p>
+      <p class="comment cmt">Scalding implementation of the batch read and write components of a
+store that uses the VersionedKeyValSource from scalding-commons.</p>
     </li><li visbl="pub" name="com.twitter.summingbird.scalding.store.VersionedStore" data-isabs="false">
       <a id="VersionedStore:VersionedStore"></a>
       <h4 class="signature">

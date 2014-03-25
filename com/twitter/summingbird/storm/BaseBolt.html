@@ -21,20 +21,17 @@
 
       <h4 class="signature" id="signature">
       <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">class</span>
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">BaseBolt</span><span class="result"> extends <span name="backtype.storm.topology.IRichBolt" class="extype">IRichBolt</span></span>
+        <span class="name">BaseBolt</span><span class="tparams">[<span name="I">I</span>, <span name="O">O</span>]</span><span class="params">(<span name="metrics">metrics: () ⇒ TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]]</span>, <span name="anchorTuples">anchorTuples: <a name="com.twitter.summingbird.storm.option.AnchorTuples" class="extype" href="option/AnchorTuples.html">AnchorTuples</a></span>, <span name="hasDependants">hasDependants: <span name="scala.Boolean" class="extype">Boolean</span></span>, <span name="outputFields">outputFields: <span name="backtype.storm.tuple.Fields" class="extype">Fields</span></span>, <span name="ackOnEntry">ackOnEntry: <a name="com.twitter.summingbird.storm.option.AckOnEntry" class="extype" href="option/AckOnEntry.html">AckOnEntry</a></span>, <span name="executor">executor: <a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="../online/executor/OperationContainer.html">OperationContainer</a>[I, O, <a name="com.twitter.summingbird.online.executor.InputState" class="extype" href="../online/executor/InputState.html">InputState</a>[<span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>], <span name="java.util.List" class="extype">List</span>[AnyRef]]</span>)</span><span class="result"> extends <span name="backtype.storm.topology.IRichBolt" class="extype">IRichBolt</span> with <span name="scala.Product" class="extype">Product</span> with <span name="scala.Serializable" class="extype">Serializable</span></span>
       </span>
       </h4>
       
-      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.2.3/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/BaseBolt.scala">BaseBolt.scala</a></dd></dl><div class="toggleContainer block">
+      <div class="fullcommenttop" id="comment"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a target="_blank" href="https://github.com/twitter/summingbird/tree/0.4.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/BaseBolt.scala">BaseBolt.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span name="backtype.storm.topology.IRichBolt" class="extype">IRichBolt</span>, <span name="backtype.storm.topology.IComponent" class="extype">IComponent</span>, <span name="backtype.storm.task.IBolt" class="extype">IBolt</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
-        </div><div class="toggleContainer block">
-          <span class="toggle">Known Subclasses</span>
-          <div class="subClasses hiddenContent"><a name="com.twitter.summingbird.storm.FinalFlatMapBolt" class="extype" href="FinalFlatMapBolt.html">FinalFlatMapBolt</a>, <a name="com.twitter.summingbird.storm.IntermediateFlatMapBolt" class="extype" href="IntermediateFlatMapBolt.html">IntermediateFlatMapBolt</a>, <a name="com.twitter.summingbird.storm.SummerBolt" class="extype" href="SummerBolt.html">SummerBolt</a></div>
+          <div class="superTypes hiddenContent"><span name="scala.Serializable" class="extype">Serializable</span>, <span name="scala.Product" class="extype">Product</span>, <span name="scala.Equals" class="extype">Equals</span>, <span name="backtype.storm.topology.IRichBolt" class="extype">IRichBolt</span>, <span name="backtype.storm.topology.IComponent" class="extype">IComponent</span>, <span name="backtype.storm.task.IBolt" class="extype">IBolt</span>, <span name="java.io.Serializable" class="extype">Serializable</span>, AnyRef, <span name="scala.Any" class="extype">Any</span></div>
         </div></div>
     
 
@@ -48,7 +45,7 @@
               <span class="filtertype">Inherited</span>
               <ol><li class="hideall out"><span>Hide All</span></li>
               <li class="showall in"><span>Show all</span></li></ol>
-              <ol id="linearization"><li name="com.twitter.summingbird.storm.BaseBolt" class="in"><span>BaseBolt</span></li><li name="backtype.storm.topology.IRichBolt" class="in"><span>IRichBolt</span></li><li name="backtype.storm.topology.IComponent" class="in"><span>IComponent</span></li><li name="backtype.storm.task.IBolt" class="in"><span>IBolt</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
+              <ol id="linearization"><li name="com.twitter.summingbird.storm.BaseBolt" class="in"><span>BaseBolt</span></li><li name="scala.Serializable" class="in"><span>Serializable</span></li><li name="scala.Product" class="in"><span>Product</span></li><li name="scala.Equals" class="in"><span>Equals</span></li><li name="backtype.storm.topology.IRichBolt" class="in"><span>IRichBolt</span></li><li name="backtype.storm.topology.IComponent" class="in"><span>IComponent</span></li><li name="backtype.storm.task.IBolt" class="in"><span>IBolt</span></li><li name="java.io.Serializable" class="in"><span>Serializable</span></li><li name="scala.AnyRef" class="in"><span>AnyRef</span></li><li name="scala.Any" class="in"><span>Any</span></li></ol>
             </div>
         <div id="visbl">
             <span class="filtertype">Visibility</span>
@@ -61,68 +58,26 @@
         <div class="members" id="constructors">
               <h3>Instance Constructors</h3>
               <ol><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#this" data-isabs="false">
-      <a id="this:BaseBolt"></a>
+      <a id="this:BaseBolt[I, O]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">BaseBolt</span><span class="params">(<span name="metrics">metrics: () ⇒ TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]]</span>)</span>
+        <span class="name">BaseBolt</span><span class="params">(<span name="metrics">metrics: () ⇒ TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]]</span>, <span name="anchorTuples">anchorTuples: <a name="com.twitter.summingbird.storm.option.AnchorTuples" class="extype" href="option/AnchorTuples.html">AnchorTuples</a></span>, <span name="hasDependants">hasDependants: <span name="scala.Boolean" class="extype">Boolean</span></span>, <span name="outputFields">outputFields: <span name="backtype.storm.tuple.Fields" class="extype">Fields</span></span>, <span name="ackOnEntry">ackOnEntry: <a name="com.twitter.summingbird.storm.option.AckOnEntry" class="extype" href="option/AckOnEntry.html">AckOnEntry</a></span>, <span name="executor">executor: <a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="../online/executor/OperationContainer.html">OperationContainer</a>[I, O, <a name="com.twitter.summingbird.online.executor.InputState" class="extype" href="../online/executor/InputState.html">InputState</a>[<span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>], <span name="java.util.List" class="extype">List</span>[AnyRef]]</span>)</span>
       </span>
       </h4>
       
     </li></ol>
             </div>
 
-        <div class="types members" id="types">
-              <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt.Mutex" data-isabs="false">
-      <a id="Mutex:Mutex"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">class</span>
-      </span>
-      <span class="symbol">
-        <a href="BaseBolt$Mutex.html"><span class="name">Mutex</span></a><span class="result"> extends Serializable</span>
-      </span>
-      </h4>
-      
-    </li></ol>
-            </div>
+        
+
+        
 
         <div class="values members" id="values">
-              <h3>Abstract Value Members</h3>
-              <ol><li visbl="pub" name="backtype.storm.task.IBolt#execute" data-isabs="true">
-      <a id="execute(Tuple):Unit"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">execute</span><span class="params">(<span name="arg0">arg0: <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>IBolt</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#fields" data-isabs="true">
-      <a id="fields:Option[Fields]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">fields</span><span class="result">: <span name="scala.Option" class="extype">Option</span>[<span name="backtype.storm.tuple.Fields" class="extype">Fields</span>]</span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">The fields this bolt plans on returning.</p>
-    </li></ol>
-            </div>
-
-        <div class="values members" id="values">
-              <h3>Concrete Value Members</h3>
+              <h3>Value Members</h3>
               <ol><li visbl="pub" name="scala.AnyRef#!=" data-isabs="false">
       <a id="!=(AnyRef):Boolean"></a>
       <h4 class="signature">
@@ -183,15 +138,27 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#ack" data-isabs="false">
-      <a id="ack(Tuple):Unit"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#ackOnEntry" data-isabs="false">
+      <a id="ackOnEntry:AckOnEntry"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">ack</span><span class="params">(<span name="tuple">tuple: <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+        <span class="name">ackOnEntry</span><span class="result">: <a name="com.twitter.summingbird.storm.option.AckOnEntry" class="extype" href="option/AckOnEntry.html">AckOnEntry</a></span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#anchorTuples" data-isabs="false">
+      <a id="anchorTuples:AnchorTuples"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">anchorTuples</span><span class="result">: <a name="com.twitter.summingbird.storm.option.AnchorTuples" class="extype" href="option/AnchorTuples.html">AnchorTuples</a></span>
       </span>
       </h4>
       
@@ -207,6 +174,18 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#canEqual" data-isabs="false">
+      <a id="canEqual(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">canEqual</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="">BaseBolt</a> → Equals</dd></dl></div>
     </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#cleanup" data-isabs="false">
       <a id="cleanup():Unit"></a>
       <h4 class="signature">
@@ -258,7 +237,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#equals" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#equals" data-isabs="false">
       <a id="equals(Any):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -269,7 +248,31 @@
         <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span name="scala.Any" class="extype">Any</span></span>)</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="">BaseBolt</a> → Equals → AnyRef → Any</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#execute" data-isabs="false">
+      <a id="execute(Tuple):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">execute</span><span class="params">(<span name="tuple">tuple: <span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span></span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="">BaseBolt</a> → IBolt</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#executor" data-isabs="false">
+      <a id="executor:OperationContainer[I, O, InputState[Tuple], List[AnyRef]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executor</span><span class="result">: <a name="com.twitter.summingbird.online.executor.OperationContainer" class="extype" href="../online/executor/OperationContainer.html">OperationContainer</a>[I, O, <a name="com.twitter.summingbird.online.executor.InputState" class="extype" href="../online/executor/InputState.html">InputState</a>[<span name="backtype.storm.tuple.Tuple" class="extype">Tuple</span>], <span name="java.util.List" class="extype">List</span>[AnyRef]]</span>
+      </span>
+      </h4>
+      
     </li><li visbl="prt" name="scala.AnyRef#finalize" data-isabs="false">
       <a id="finalize():Unit"></a>
       <h4 class="signature">
@@ -309,7 +312,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="">BaseBolt</a> → IComponent</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#hashCode" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#hasDependants" data-isabs="false">
+      <a id="hasDependants:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasDependants</span><span class="result">: <span name="scala.Boolean" class="extype">Boolean</span></span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#hashCode" data-isabs="false">
       <a id="hashCode():Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -320,7 +335,7 @@
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="">BaseBolt</a> → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.Any#isInstanceOf" data-isabs="false">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <h4 class="signature">
@@ -333,15 +348,39 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#mutex" data-isabs="false">
-      <a id="mutex:Mutex"></a>
+    </li><li visbl="prt" name="com.twitter.summingbird.storm.BaseBolt#logError" data-isabs="false">
+      <a id="logError(String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="message">message: String</span>, <span name="err">err: Throwable</span>)</span><span class="result">: <span name="scala.Unit" class="extype">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li visbl="prt" name="com.twitter.summingbird.storm.BaseBolt#logger" data-isabs="false">
+      <a id="logger:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logger</span><span class="result">: <span name="org.slf4j.Logger" class="extype">Logger</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#metrics" data-isabs="false">
+      <a id="metrics:() ⇒ TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">mutex</span><span class="result">: <a name="com.twitter.summingbird.storm.BaseBolt.Mutex" class="extype" href="BaseBolt$Mutex.html">Mutex</a></span>
+        <span class="name">metrics</span><span class="result">: () ⇒ TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]]</span>
       </span>
       </h4>
       
@@ -381,15 +420,15 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#onCollector" data-isabs="false">
-      <a id="onCollector[U]((OutputCollector) ⇒ U):U"></a>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#outputFields" data-isabs="false">
+      <a id="outputFields:Fields"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">def</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">onCollector</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="fn">fn: (<span name="backtype.storm.task.OutputCollector" class="extype">OutputCollector</span>) ⇒ U</span>)</span><span class="result">: U</span>
+        <span class="name">outputFields</span><span class="result">: <span name="backtype.storm.tuple.Fields" class="extype">Fields</span></span>
       </span>
       </h4>
       
@@ -405,6 +444,54 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="">BaseBolt</a> → IBolt</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#productArity" data-isabs="false">
+      <a id="productArity:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productArity</span><span class="result">: <span name="scala.Int" class="extype">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="">BaseBolt</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#productElement" data-isabs="false">
+      <a id="productElement(Int):Any"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productElement</span><span class="params">(<span name="arg0">arg0: <span name="scala.Int" class="extype">Int</span></span>)</span><span class="result">: <span name="scala.Any" class="extype">Any</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="">BaseBolt</a> → Product</dd></dl></div>
+    </li><li visbl="pub" name="scala.Product#productIterator" data-isabs="false">
+      <a id="productIterator:Iterator[Any]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productIterator</span><span class="result">: Iterator[<span name="scala.Any" class="extype">Any</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd></dl></div>
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#productPrefix" data-isabs="false">
+      <a id="productPrefix:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">productPrefix</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="">BaseBolt</a> → Product</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#synchronized" data-isabs="false">
       <a id="synchronized[T0](⇒ T0):T0"></a>
       <h4 class="signature">
@@ -417,7 +504,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li visbl="pub" name="scala.AnyRef#toString" data-isabs="false">
+    </li><li visbl="pub" name="com.twitter.summingbird.storm.BaseBolt#toString" data-isabs="false">
       <a id="toString():String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -425,10 +512,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span name="java.lang.String" class="extype">String</span></span>
+        <span class="name">toString</span><span class="params">()</span><span class="result">: String</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a name="com.twitter.summingbird.storm.BaseBolt" class="extype" href="">BaseBolt</a> → AnyRef → Any</dd></dl></div>
     </li><li visbl="pub" name="scala.AnyRef#wait" data-isabs="false">
       <a id="wait():Unit"></a>
       <h4 class="signature">
@@ -477,11 +564,35 @@
     </li></ol>
             </div>
 
-        
+        <div class="values members" id="values">
+              <h3>Deprecated Value Members</h3>
+              <ol><li visbl="pub" name="scala.Product#productElements" data-isabs="false">
+      <a id="productElements:Iterator[Any]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name deprecated" title="Deprecated: (Since version 2.8.0) use productIterator instead">productElements</span><span class="result">: Iterator[<span name="scala.Any" class="extype">Any</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Product</dd><dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.8.0)</i> use productIterator instead</p></dd></dl></div>
+    </li></ol>
+            </div>
         </div>
 
         <div id="inheritedMembers">
-        <div name="backtype.storm.topology.IRichBolt" class="parent">
+        <div name="scala.Serializable" class="parent">
+              <h3>Inherited from <span name="scala.Serializable" class="extype">Serializable</span></h3>
+            </div><div name="scala.Product" class="parent">
+              <h3>Inherited from <span name="scala.Product" class="extype">Product</span></h3>
+            </div><div name="scala.Equals" class="parent">
+              <h3>Inherited from <span name="scala.Equals" class="extype">Equals</span></h3>
+            </div><div name="backtype.storm.topology.IRichBolt" class="parent">
               <h3>Inherited from <span name="backtype.storm.topology.IRichBolt" class="extype">IRichBolt</span></h3>
             </div><div name="backtype.storm.topology.IComponent" class="parent">
               <h3>Inherited from <span name="backtype.storm.topology.IComponent" class="extype">IComponent</span></h3>

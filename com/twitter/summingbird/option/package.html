@@ -48,7 +48,19 @@
 
         <div class="types members" id="types">
               <h3>Type Members</h3>
-              <ol><li visbl="pub" name="com.twitter.summingbird.option.Commutativity" data-isabs="true">
+              <ol><li visbl="pub" name="com.twitter.summingbird.option.CacheSize" data-isabs="false">
+      <a id="CacheSize:CacheSize"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CacheSize.html"><span class="name">CacheSize</span></a><span class="params">(<span name="lowerBound">lowerBound: Int</span>, <span name="fuzz">fuzz: Double</span>)</span><span class="result"> extends Serializable with Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Accepts a lower bound and a percentage of fuzz.</p>
+    </li><li visbl="pub" name="com.twitter.summingbird.option.Commutativity" data-isabs="true">
       <a id="Commutativity:Commutativity"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -87,7 +99,7 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="Commutative$.html"><span class="name">Commutative</span></a><span class="result"> extends Commutativity</span>
+        <a href="Commutative$.html"><span class="name">Commutative</span></a><span class="result"> extends Commutativity with Product with Serializable</span>
       </span>
       </h4>
       
@@ -112,7 +124,7 @@ that works with the Class-based Options system.</p>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="NonCommutative$.html"><span class="name">NonCommutative</span></a><span class="result"> extends Commutativity</span>
+        <a href="NonCommutative$.html"><span class="name">NonCommutative</span></a><span class="result"> extends Commutativity with Product with Serializable</span>
       </span>
       </h4>
       
