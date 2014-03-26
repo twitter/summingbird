@@ -16,8 +16,7 @@
 
 package com.twitter.summingbird
 
-/** Monoid stands alone. */
-import com.twitter.algebird.{ Monoid, Semigroup }
+import com.twitter.algebird.Semigroup
 
 object Producer {
 
@@ -30,6 +29,7 @@ object Producer {
     p :: above
   }
 
+  // TODO(Julien): figure out what this is
   // The parents of the current node, possibly not its dependencies
   def parentsOf[P <: Platform[P]](in: Producer[P, Any]): List[Producer[P, Any]] = {
     in match {
@@ -42,15 +42,22 @@ object Producer {
     paths.collectFirst { case s: Summer[P, _, _] => s }
 
   /**
-    * Begin from some base representation. An iterator for in-memory,
-    * for example.
-    */
+   * A producer DAG starts from sources.
+   * The actual source type depend on the Platform.
+   * For example: An iterator for in-memory.
+   */
   def source[P <: Platform[P], T](s: P#Source[T]): Producer[P, T] = Source[P, T](s)
 
+  /** implicit conversion from Producer[P, T] to KeyedProducer[P, K, V] when the type T is a tuple of (K, V) as proven by evidence ev
+   *  enabling the operations on keys (sumByKey, ...)
+   */
   implicit def evToKeyed[P <: Platform[P], T, K, V](producer: Producer[P, T])
     (implicit ev: T <:< (K, V)): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer.asInstanceOf[Producer[P, (K, V)]])
 
+  /** implicit conversion from Producer[P, (K, V)] to KeyedProducer[P, K, V]
+   *  enabling the operations on keys (sumByKey, ...)
+   */
   implicit def toKeyed[P <: Platform[P], K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer)
 
@@ -214,7 +221,7 @@ case class WrittenProducer[P <: Platform[P], T, U >: T](producer: Producer[P, T]
 case class Summer[P <: Platform[P], K, V](
   producer: KeyedProducer[P, K, V],
   store: P#Store[K, V],
-  monoid: Monoid[V]) extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))]
+  semigroup: Semigroup[V]) extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))]
 
 /** This has the methods on Key-Value streams.
  * The rule is: if you can easily express your logic on the keys and values indendently,
@@ -291,8 +298,8 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
    * (v0, vdelta1), (v0 + vdelta1, vdelta2), (v0 + vdelta1 + vdelta2, vdelta3), ...
    *
    */
-  def sumByKey(store: P#Store[K, V])(implicit monoid: Monoid[V]): Summer[P, K, V] =
-    Summer(this, store, monoid)
+  def sumByKey(store: P#Store[K, V])(implicit semigroup: Semigroup[V]): Summer[P, K, V] =
+    Summer(this, store, semigroup)
 
   /** Exchange values for keys */
   def swap: KeyedProducer[P, V, K] = IdentityKeyedProducer(map(_.swap))
