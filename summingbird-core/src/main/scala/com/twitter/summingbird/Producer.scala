@@ -29,8 +29,10 @@ object Producer {
     p :: above
   }
 
-  // TODO(Julien): figure out what this is
-  // The parents of the current node, possibly not its dependencies
+
+  /** The parents of the current node, possibly not its dependencies
+   *  It defers from dependencies in that it will also return the predecessor of an AlsoProducer
+   */
   def parentsOf[P <: Platform[P]](in: Producer[P, Any]): List[Producer[P, Any]] = {
     in match {
       case AlsoProducer(l, r) => List(l, r)
@@ -38,6 +40,7 @@ object Producer {
     }
   }
 
+  /** Returns the first Summer of the provided list of Producers */
   def retrieveSummer[P <: Platform[P]](paths: List[Producer[P, _]]): Option[Summer[P, _, _]] =
     paths.collectFirst { case s: Summer[P, _, _] => s }
 
@@ -61,9 +64,11 @@ object Producer {
   implicit def toKeyed[P <: Platform[P], K, V](producer: Producer[P, (K, V)]): KeyedProducer[P, K, V] =
     IdentityKeyedProducer[P, K, V](producer)
 
+  /** a semigroup on producers where + means merge */
   implicit def semigroup[P <: Platform[P], T]: Semigroup[Producer[P, T]] =
     Semigroup.from(_ merge _)
 
+  /** the list of the Producers, this producer directly depends on */
   def dependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] =
     p match {
       case AlsoProducer(_, prod) => List(prod)
@@ -96,10 +101,12 @@ object Producer {
     case Summer(_, _, _) => false
   }
 
+  /** returns true if this Producer is an output of the DAG (Summer and WrittenProducer) */
   def isOutput[P <: Platform[P]](p: Producer[P, Any]): Boolean = p match {
     case Summer(_, _, _) | WrittenProducer(_, _) => true
     case _ => false
   }
+
   /**
    * Return all dependencies of a given node in depth first, left first order.
    */
@@ -174,6 +181,7 @@ sealed trait Producer[P <: Platform[P], +T] {
       .merge(other.map(Right(_): Either[T, U]))
 }
 
+/** Wraps the sources of the given Platform */
 case class Source[P <: Platform[P], T](source: P#Source[T])
     extends Producer[P, T]
 
@@ -184,7 +192,6 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
    * This can be used to combine two independent Producers in a way that ensures
    * that the Platform will plan both into a single Plan.
    */
-
   def also[R](that: TailProducer[P, R])(implicit ev: DummyImplicit): TailProducer[P, R] =
           new AlsoTailProducer(this, that)
 
@@ -224,20 +231,22 @@ case class Summer[P <: Platform[P], K, V](
   semigroup: Semigroup[V]) extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))]
 
 /** This has the methods on Key-Value streams.
- * The rule is: if you can easily express your logic on the keys and values indendently,
+ * The rule is: if you can easily express your logic on the keys and values independently,
  * do it! This is how you communicate structure to Summingbird and it uses these hints
  * to attempt the most efficient run of your code.
  */
 sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
 
+  /** Builds a new KeyedProvider by applying a partial function to keys of elements of this one on which the function is defined.*/
   def collectKeys[K2](pf: PartialFunction[K,K2]): KeyedProducer[P, K2, V] =
     IdentityKeyedProducer( collect { case (k, v) if pf.isDefinedAt(k) => (pf(k), v) })
 
+  /** Builds a new KeyedProvider by applying a partial function to values of elements of this one on which the function is defined.*/
   def collectValues[V2](pf: PartialFunction[V,V2]): KeyedProducer[P, K, V2] =
     IdentityKeyedProducer( collect { case (k, v) if pf.isDefinedAt(v) => (k, pf(v)) })
 
   /** Prefer this to filter or flatMap/flatMapKeys if you are filtering.
-   * This may be optimized in the future with an intrensic node in the Producer graph.
+   * This may be optimized in the future with an intrinsic node in the Producer graph.
    * We know this never increases the number of items, and we know it does not rekey
    * the partition.
    */
@@ -245,7 +254,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
     IdentityKeyedProducer(filter { case (k, _) => pred(k) })
 
   /** Prefer this to filter or flatMap/flatMapValues if you are filtering.
-   * This may be optimized in the future with an intrensic node in the Producer graph.
+   * This may be optimized in the future with an intrinsic node in the Producer graph.
    * We know this never increases the number of items, and we know it does not rekey
    * the partition.
    */
