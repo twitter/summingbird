@@ -31,7 +31,7 @@ object Producer {
 
 
   /** The parents of the current node, possibly not its dependencies
-   *  It defers from dependencies in that it will also return the predecessor of an AlsoProducer
+   *  It differs from dependencies in that it will also return the predecessor of an AlsoProducer
    */
   def parentsOf[P <: Platform[P]](in: Producer[P, Any]): List[Producer[P, Any]] = {
     in match {
