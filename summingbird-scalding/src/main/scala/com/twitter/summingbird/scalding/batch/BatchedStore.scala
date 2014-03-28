@@ -27,7 +27,7 @@ import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch._
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, IteratorSums, PrunedSpace}
 import cascading.flow.FlowDef
 
 import org.slf4j.LoggerFactory
@@ -52,12 +52,6 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
    * matching a criteria.
    */
   def pruning: PrunedSpace[(K, V)] = PrunedSpace.neverPruned
-
-  /**
-   * Override this to control when keys are frozen. This allows
-   * us to avoid sorting and shuffling keys that are not updated.
-   */
-  def boundedKeySpace: TimeBoundedKeySpace[K] = TimeBoundedKeySpace.neverFrozen
 
   /**
    * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy
@@ -208,33 +202,13 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
           }
         }
 
-    // Avoid closures where easy
-    val thisTimeInterval = capturedBatcher.toTimestamp(batchIntr)
-    val capturedKeyCheck = boundedKeySpace
-
-    def getFrozenKeys(p: TypedPipe[(K,V)]): TypedPipe[(BatchID, (K, V))] =
-      p.filter { case (k, _) => capturedKeyCheck.isFrozen(k, thisTimeInterval) }
-        .flatMap { kv => filteredBatches.map { (_, kv) } }
-
-    def getLiquidKeys(p: TypedPipe[(K,V)]): TypedPipe[(K, V)] =
-      p.filter { case (k, _) => !capturedKeyCheck.isFrozen(k, thisTimeInterval) }
-
-    def assertDeltasAreLiquid(p: TypedPipe[(Timestamp, (K, V))]): TypedPipe[(Timestamp, (K, V))] =
-      p.map { tkv =>
-        assert(!capturedKeyCheck.isFrozen(tkv._2._1, thisTimeInterval), "Frozen key in deltas: " + tkv)
-        tkv
-      }
-
     // Now in the flow-producer monad; do it:
     for {
       pipeInput <- input
-      frozen = getFrozenKeys(pipeInput)
-      liquid = getLiquidKeys(pipeInput)
-      ds <- deltas
-      liquidDeltas = assertDeltasAreLiquid(ds)
+      pipeDeltas <- deltas
       // fork below so scalding can make sure not to do the operation twice
-      merged = mergeAll(prepareOld(liquid) ++ prepareDeltas(liquidDeltas)).fork
-      lastOut = toLastFormat(merged) ++ frozen
+      merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas)).fork
+      lastOut = toLastFormat(merged)
       _ <- writeFlow(filteredBatches, lastOut)
     } yield toOutputFormat(merged)
   }

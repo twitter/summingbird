@@ -61,12 +61,12 @@ package object scalding {
   implicit def flowDefFromTuple(implicit fm: (FlowDef, Mode)): FlowDef = fm._1
   implicit def toPipeFactoryOps[T](pipeF: PipeFactory[T]) = new PipeFactoryOps(pipeF)
 
-  def toTry(e: Throwable): Try[Nothing] = {
+  def toTry(e: Throwable, msg: String = ""): Try[Nothing] = {
     val writer = new java.io.StringWriter
     val printWriter = new java.io.PrintWriter(writer)
     e.printStackTrace(printWriter)
     printWriter.flush
-    Left(List(writer.toString))
+    Left(List(msg + writer.toString))
   }
 
   val ScaldingConfig = summingbird.batch.BatchConfig
