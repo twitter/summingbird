@@ -80,12 +80,9 @@ object UniqueKeyedService extends java.io.Serializable {
     requireFullySatisfiable: Boolean = false): UniqueKeyedService[K, V] =
     new SourceUniqueKeyedService[Mappable[T], K, V] {
       def ordering = Ordering[K]
-
       def source(dr: DateRange) = fn(dr)
-
       def toPipe(mappable: Mappable[T])(implicit flow: FlowDef, mode: Mode) =
         andThen(TypedPipe.from(mappable)(flow, mode)) // converter is removed in 0.9.0
-
       def reducers: Option[Int] = inputReducers
 
       override def satisfiable(requested: DateRange, mode: Mode): Try[DateRange] = {
@@ -103,6 +100,5 @@ object UniqueKeyedService extends java.io.Serializable {
           super.satisfiable(requested, mode)
         }
       }
-
     }
 }
