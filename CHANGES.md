@@ -1,4 +1,8 @@
 # summingbird #
+## 0.4.2
+* Add fully satisfiable flag to UniqueKeyedService: https://github.com/twitter/summingbird/pull/489
+* Mark the scalding platform as serializable, but also don't grab the platform in the scalding env: https://github.com/twitter/summingbird/pull/485
+* smoketest displaying error running example: https://github.com/twitter/summingbird/pull/483
 
 ## 0.4.1
 * Release tool failure fix from 0.4.0 release.
