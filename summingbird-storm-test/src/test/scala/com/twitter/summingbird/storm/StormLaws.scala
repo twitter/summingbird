@@ -45,11 +45,10 @@ import scala.collection.mutable.{
   SynchronizedMap
 }
 import java.security.Permission
+
 /**
   * Tests for Summingbird's Storm planner.
   */
-
-
 object StormLaws extends Specification {
   sequential
   import MapAlgebra.sparseEquiv
