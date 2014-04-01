@@ -26,11 +26,11 @@ import scala.collection.mutable.ListBuffer
 import java.util.concurrent._
 import org.slf4j.{LoggerFactory, Logger}
 
-object BackroundCompactionCache {
+object BackgroundCompactionCache {
   def builder[Key, Value](cacheSize: CacheSize, flushFrequency: FlushFrequency, softMemoryFlush: SoftMemoryFlushPercent): CacheBuilder[Key, Value] =
     new CacheBuilder[Key, Value] {
       def apply(sg: Semigroup[Value]) = {
-        BackroundCompactionCache(cacheSize, flushFrequency, softMemoryFlush)(sg)
+        BackgroundCompactionCache(cacheSize, flushFrequency, softMemoryFlush)(sg)
       }
     }
   def apply[Key, Value](cacheSize: CacheSize,
@@ -38,8 +38,8 @@ object BackroundCompactionCache {
                         softMemoryFlush: SoftMemoryFlushPercent)
                         (implicit sg: Semigroup[Value]): AsyncCache[Key, Value] = {
     cacheSize.size.map { _ =>
-      new NonEmptyBackroundCompactionCache[Key, Value](cacheSize, flushFrequency, softMemoryFlush)(sg)
-    }.getOrElse(new EmptyBackroundCompactionCache[Key, Value]()(sg))
+      new NonEmptyBackgroundCompactionCache[Key, Value](cacheSize, flushFrequency, softMemoryFlush)(sg)
+    }.getOrElse(new EmptyBackgroundCompactionCache[Key, Value]()(sg))
   }
 }
 
@@ -79,7 +79,7 @@ private[summingbird] trait ParallelCleanup[Key, Value] extends AsyncCache[Key, V
   }
 }
 
-class EmptyBackroundCompactionCache[Key, Value](implicit semigroup: Semigroup[Value])
+class EmptyBackgroundCompactionCache[Key, Value](implicit semigroup: Semigroup[Value])
                                           extends AsyncCache[Key, Value] {
   def forceTick: Future[Map[Key, Value]] = Future.value(Map.empty)
   def tick: Future[Map[Key, Value]] = Future.value(Map.empty)
@@ -87,7 +87,7 @@ class EmptyBackroundCompactionCache[Key, Value](implicit semigroup: Semigroup[Va
 }
 
 
-class NonEmptyBackroundCompactionCache[Key, Value](cacheSizeOpt: CacheSize,
+class NonEmptyBackgroundCompactionCache[Key, Value](cacheSizeOpt: CacheSize,
                                           override val flushFrequency: FlushFrequency,
                                           override val softMemoryFlush: SoftMemoryFlushPercent)
                                          (implicit semigroup: Semigroup[Value])
