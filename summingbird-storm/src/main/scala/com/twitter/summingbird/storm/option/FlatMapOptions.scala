@@ -64,8 +64,8 @@ class SpoutStormMetrics(val metrics: () => TraversableOnce[StormMetric[IMetric]]
 
 /**
  * This signals that the storm bolts should use localOrShuffleGrouping, which means that if the downstream bolt
- * has a task on the same local worker, the output will preferentially go to those tasks. Otherwise, shuffling
- * happens normally.
+ * has a task on the same local worker, the output will only go to those tasks. Otherwise, shuffling
+ * happens normally. This is important to understand as this can create hot spots in the topology.
  */
 case class PreferLocalDependency(get: Boolean)
 
