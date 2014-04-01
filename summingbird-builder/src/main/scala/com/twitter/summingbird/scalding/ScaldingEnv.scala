@@ -20,7 +20,8 @@ import com.twitter.scalding.{Args, Hdfs, RichDate, DateParser}
 import com.twitter.summingbird.batch.store.HDFSMetadata
 import com.twitter.summingbird.{ Env, Summer, TailProducer, AbstractJob }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
-import com.twitter.summingbird.builder.{ SourceBuilder, Reducers, CompletedBuilder }
+import com.twitter.summingbird.builder.{ SourceBuilder, CompletedBuilder }
+import com.twitter.summingbird.batch.option.Reducers
 import scala.collection.JavaConverters._
 
 import org.apache.hadoop.conf.Configuration
@@ -92,7 +93,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     toRun: TailProducer[Scalding, (Any, (Option[Any], Any))],
     stateFn: (Configuration) => VersionedState)
 
-  lazy val build: Built = {
+  @transient lazy val build: Built = {
     // Calling abstractJob's constructor and binding it to a variable
     // forces any side effects caused by that constructor (building up
     // of the environment and defining the builder).

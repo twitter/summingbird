@@ -29,7 +29,7 @@ import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache, CacheBuilder}
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime}
-import com.twitter.summingbird.util.CacheSize
+import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
@@ -143,9 +143,10 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
     // Query to get the summer paralellism of the summer down stream of us we are emitting to
     // to ensure no edge case between what we might see for its parallelism and what it would see/pass to storm.
     val summerParalellism = getOrElse(DEFAULT_SUMMER_PARALLELISM, summer)
+    val summerBatchMultiplier = getOrElse(DEFAULT_SUMMER_BATCH_MULTIPLIER, summer)
 
     // This option we report its value here, but its not user settable.
-    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint)
+    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
     logger.info("[{}] keyValueShards : {}", nodeName, keyValueShards.get)
 
     val operation = foldOperations[T, (K, V)](node.members.reverse)

@@ -16,11 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import com.twitter.summingbird.option.MonoidIsCommutative
-import com.twitter.summingbird.storm.option.{OnlineSuccessHandler => SOnlineSuccessHandler,
-                                            OnlineExceptionHandler => SOnlineExceptionHandler,
-                                            MaxWaitingFutures => SMaxWaitingFutures,
-                                            CacheSize => DEPCacheSize, _ }
+import com.twitter.summingbird.storm.option._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.online.option._
 
@@ -56,4 +52,5 @@ object Constants {
   val DEFAULT_VALUE_COMBINER_CACHE_SIZE = ValueCombinerCacheSize(100)
   val DEFAULT_ACK_ON_ENTRY = AckOnEntry(false)
   val DEFAULT_MAX_EMIT_PER_EXECUTE = MaxEmitPerExecute(Int.MaxValue)
+  val DEFAULT_SUMMER_BATCH_MULTIPLIER = SummerBatchMultiplier(1)
 }

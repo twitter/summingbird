@@ -15,12 +15,16 @@
  */
 package com.twitter.summingbird.batch.state
 
-import com.twitter.algebird.ExclusiveLower
-import com.twitter.algebird.InclusiveLower
-import com.twitter.algebird.InclusiveUpper
-import com.twitter.algebird.Lower
-import com.twitter.algebird.Upper
-import com.twitter.algebird.{ ExclusiveUpper, Intersection, Interval }
+import com.twitter.algebird.{
+  ExclusiveLower,
+  ExclusiveUpper,
+  InclusiveLower,
+  InclusiveUpper,
+  Intersection,
+  Interval,
+  Lower,
+  Upper
+}
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.batch.{ PrepareState, RunningState, WaitingState }
@@ -35,7 +39,7 @@ import org.slf4j.LoggerFactory
  * State implementation that uses an HDFS folder as a crude key-value
  * store that tracks the batches currently processed.
  */
-private[summingbird] object HDFSState {
+object HDFSState {
   @transient private val logger = LoggerFactory.getLogger(classOf[HDFSState])
 
   case class Config(
@@ -87,7 +91,7 @@ private[summingbird] object HDFSState {
     }
 }
 
-private[summingbird] class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
+class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
     extends WaitingState[Interval[Timestamp]] {
   import HDFSState._
 
@@ -141,7 +145,7 @@ private[summingbird] class HDFSState(config: HDFSState.Config)(implicit batcher:
     override def fail(err: Throwable) = throw err
   }
 
-  private class Running(succeedPart: Intersection[Timestamp], bool: AtomicBoolean)
+  private class Running(succeedPart: Interval.GenIntersection[Timestamp], bool: AtomicBoolean)
     extends RunningState[Interval[Timestamp]] {
     def setStopped = assert(
       bool.compareAndSet(true, false),

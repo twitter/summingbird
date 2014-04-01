@@ -60,5 +60,5 @@ case class SummingQueueCache[Key, Value](cacheSizeOpt: CacheSize, flushFrequency
     }
 
   def insert(vals: TraversableOnce[(Key, Value)]): Future[Map[Key, Value]] =
-    Future.value(Monoid.sum(vals.map(Map(_)).map(squeue.put(_).getOrElse(Map.empty))))
+    Future.value(squeue.put(Monoid.sum(vals.map(Map(_)))).getOrElse(Map.empty))
 }

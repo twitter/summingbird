@@ -15,15 +15,13 @@
  */
 
 package com.twitter.summingbird.scalding.service
-import com.twitter.algebird.monad.{Reader, StateWithError}
-import com.twitter.algebird.Interval
 
-import com.twitter.bijection.Conversion.asMethod
 import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.scalding.{Source => SSource, _ }
-import com.twitter.scalding.typed.{ TypedPipe => _, _ }
+import com.twitter.scalding.{Grouped => _, Source => SSource, _}
+import com.twitter.scalding.typed.{TypedPipe => _, _ }
 import cascading.flow.FlowDef
+import scala.util.control.NonFatal
 
 /** A UniqueKeyedService covers the case where Keys are globally
  * unique and either are not present or have one value.
@@ -68,19 +66,39 @@ trait SourceUniqueKeyedService[S <: SSource, K, V] extends UniqueKeyedService[K,
 }
 
 object UniqueKeyedService extends java.io.Serializable {
-  def from[K:Ordering,V](fn: DateRange => Mappable[(K,V)], reducers: Option[Int] = None): UniqueKeyedService[K, V] =
-    fromAndThen[(K,V),K,V](fn, identity, reducers)
+
+  def from[K:Ordering, V](fn: DateRange => Mappable[(K,V)],
+                          reducers: Option[Int] = None,
+                          requireFullySatisfiable: Boolean = false): UniqueKeyedService[K, V] =
+    fromAndThen[(K,V),K,V](fn, identity, reducers, requireFullySatisfiable)
 
   /** The Mappable is the subclass of Source that knows about the file system. */
   def fromAndThen[T,K:Ordering,V](
     fn: DateRange => Mappable[T],
     andThen: TypedPipe[T] => TypedPipe[(K,V)],
-    inputReducers: Option[Int] = None): UniqueKeyedService[K, V] =
+    inputReducers: Option[Int] = None,
+    requireFullySatisfiable: Boolean = false): UniqueKeyedService[K, V] =
     new SourceUniqueKeyedService[Mappable[T], K, V] {
       def ordering = Ordering[K]
       def source(dr: DateRange) = fn(dr)
       def toPipe(mappable: Mappable[T])(implicit flow: FlowDef, mode: Mode) =
         andThen(TypedPipe.from(mappable)(flow, mode)) // converter is removed in 0.9.0
       def reducers: Option[Int] = inputReducers
+
+      override def satisfiable(requested: DateRange, mode: Mode): Try[DateRange] = {
+        if (requireFullySatisfiable) {
+          val s = fn(requested)
+          try {
+            s.validateTaps(mode)
+            Right(requested)
+          } catch {
+            case NonFatal(e) =>
+              val msg = "Requested range: %s for source %s was not fully satisfiable.\n".format(requested, s)
+              toTry(e, msg)
+          }
+        } else {
+          super.satisfiable(requested, mode)
+        }
+      }
     }
 }
