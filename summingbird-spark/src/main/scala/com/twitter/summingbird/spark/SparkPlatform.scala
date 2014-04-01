@@ -71,11 +71,10 @@ class SparkPlatform
     prod: Prod[(K, V)],
     visited: Visited,
     fn: K => TraversableOnce[K2]): PlanState[(K2, V)] = {
-
-    val planState = toPlan(prod, visited)
-    val mapped = planState.plan.map { rdd => rdd.flatMap {
-      case (key, value) => fn(key).map { (_, value) }
-    }
+      val planState = toPlan(prod, visited)
+      val mapped = planState.plan.map { rdd => rdd.flatMap {
+        case (key, value) => fn(key).map { (_, value) }
+      }
     }
 
     PlanState(mapped, planState.visited)
@@ -132,16 +131,22 @@ class SparkPlatform
 
     val planState = toPlan(prod, visited)
 
-    // QUESTION: can prod have duplicate keys here? I think so right?
-    //           can store have duplicate keys here? I think not right?
-    //           groupByKey can't be right -- that's going to put the whole group in memory!
+    // Assumptions:
+    // producer has many duplicate keys
+    // store has no duplicate keys
     val summed = planState.plan.map { rdd =>
-      rdd.groupByKey().leftOuterJoin(store).map {
-        case (key, (deltas, stored)) => {
-          // monoid.sumOption
-          val deltaSum = deltas.foldLeft(monoid.zero) { (x, y) => monoid.plus(x, y) }
-          val sum = stored.map { s =>  monoid.plus(s, deltaSum) }.getOrElse(deltaSum)
-          (key, (stored, sum))
+
+      // first sum all the deltas
+      // TODO: is there a way to use sumOption in map-side aggregation?
+      val summedDeltas = rdd.reduceByKey { (x, y) => monoid.plus(x, y) }
+
+      // join deltas with stored values
+      val summedDeltasWithStoredValues = summedDeltas.leftOuterJoin(store)
+
+      summedDeltasWithStoredValues.map {
+        case (key, (deltaSum, storedValue)) => {
+          val sum = storedValue.map { s =>  monoid.plus(s, deltaSum) }.getOrElse(deltaSum)
+          (key, (storedValue, sum))
         }
       }
     }
