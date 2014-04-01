@@ -34,7 +34,7 @@ import com.twitter.summingbird.viz.VizGraph
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
-import com.twitter.summingbird.online.{BackgroundCompactionCache, SummingQueueCache}
+import com.twitter.summingbird.online.{MultiTriggerCache, BackgroundCompactionCache, SummingQueueCache}
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime}
 import com.twitter.summingbird.option.CacheSize
@@ -292,8 +292,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
           val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
           logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
-
-          BackgroundCompactionCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, flushFrequency, softMemoryFlush)
+           MultiTriggerCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
         } else {
           SummingQueueCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, flushFrequency)
         }
