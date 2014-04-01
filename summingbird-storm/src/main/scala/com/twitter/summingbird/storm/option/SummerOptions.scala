@@ -46,3 +46,6 @@ object SummerStormMetrics {
   def unapply(metrics: SummerStormMetrics) = Some(metrics.metrics)
 }
 class SummerStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
+
+
+case class SummerBatchMultiplier(get: Int)

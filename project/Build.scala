@@ -22,7 +22,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.4.0rc1",
+    version := "0.4.2",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -127,8 +127,8 @@ object SummingbirdBuild extends Build {
   val dfsDatastoresVersion = "1.3.4"
   val bijectionVersion = "0.6.2"
   val algebirdVersion = "0.5.0"
-  val scaldingVersion = "0.9.0rc15"
-  val storehausVersion = "0.9.0rc2"
+  val scaldingVersion = "0.9.0rc17"
+  val storehausVersion = "0.9.0"
   val utilVersion = "6.3.8"
   val chillVersion = "0.3.6"
   val tormentaVersion = "0.7.0"
@@ -144,7 +144,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.3.0" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.4.2" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)

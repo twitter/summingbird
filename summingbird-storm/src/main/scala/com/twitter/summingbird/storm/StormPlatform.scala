@@ -204,7 +204,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   private def scheduleSummerBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
-    implicit val monoid = summer.monoid
+    implicit val semigroup = summer.semigroup
     implicit val batcher = summer.store.batcher
     val nodeName = stormDag.getNodeName(node)
 

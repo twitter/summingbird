@@ -93,7 +93,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     toRun: TailProducer[Scalding, (Any, (Option[Any], Any))],
     stateFn: (Configuration) => VersionedState)
 
-  lazy val build: Built = {
+  @transient lazy val build: Built = {
     // Calling abstractJob's constructor and binding it to a variable
     // forces any side effects caused by that constructor (building up
     // of the environment and defining the builder).
