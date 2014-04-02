@@ -2,6 +2,8 @@ package summingbird
 
 import sbt._
 import Keys._
+import sbtassembly.Plugin._
+import AssemblyKeys._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 
@@ -148,11 +150,11 @@ object SummingbirdBuild extends Build {
       .filterNot(unreleasedModules.contains(_))
       .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.4.2" }
 
-  def module(name: String) = {
+  def module(name: String, additionalSettings: Seq[Setting[_]]=Seq()) = {
     val id = "summingbird-%s".format(name)
     Project(id = id, base = file(id), settings = sharedSettings ++ Seq(
       Keys.name := id,
-      previousArtifact := youngestForwardCompatible(name))
+      previousArtifact := youngestForwardCompatible(name)) ++ additionalSettings
     )
   }
 
@@ -261,7 +263,23 @@ object SummingbirdBuild extends Build {
     summingbirdBatch
   )
 
-  lazy val summingbirdSpark = module("spark").settings(
+  lazy val summingbirdSparkSettings = assemblySettings ++ Seq(
+    mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
+      {
+        //case PathList("org", "w3c", xs @ _*) => MergeStrategy.first
+        //case "about.html"     => MergeStrategy.discard
+        case PathList("com", "esotericsoftware", "minlog", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "commons", "beanutils", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "commons", "collections", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "jasper", xs @ _*) => MergeStrategy.first
+        case "log4j.properties"     => MergeStrategy.concat
+        case x if x.endsWith(".xsd") || x.endsWith(".dtd") => MergeStrategy.first
+        case x => old(x)
+      }
+    }
+  )
+
+  lazy val summingbirdSpark = module("spark", summingbirdSparkSettings).settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "algebird-util" % algebirdVersion,
