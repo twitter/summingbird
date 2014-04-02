@@ -23,8 +23,8 @@ object SummingbirdBuild extends Build {
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
     version := "0.4.2",
-    scalaVersion := "2.9.3",
-    crossScalaVersions := Seq("2.9.3", "2.10.0"),
+    scalaVersion := "2.10.0",
+    crossScalaVersions := Seq("2.10.0"),
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
@@ -120,6 +120,7 @@ object SummingbirdBuild extends Build {
     summingbirdStormTest,
     summingbirdScalding,
     summingbirdScaldingTest,
+    summingbirdSpark,
     summingbirdBuilder,
     summingbirdChill,
     summingbirdExample
@@ -270,7 +271,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" % "chill-hadoop" % chillVersion,
       "com.twitter" %% "chill-bijection" % chillVersion,
       "commons-lang" % "commons-lang" % "2.6",
-      "org.apache.spark" %% "spark-core" % "0.9.0-incubating",
+      "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided",
       "commons-httpclient" % "commons-httpclient" % "3.1"
     )
   ).dependsOn(

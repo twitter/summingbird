@@ -2,11 +2,9 @@ package com.twitter.summingbird.spark
 
 import com.twitter.summingbird._
 import org.apache.spark.rdd.{PairRDDFunctions, RDD}
-import com.twitter.summingbird.Source
 import com.twitter.algebird.Monoid
-import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
-import com.twitter.util.{Promise, Await, FuturePool, Future}
+import com.twitter.util.{Promise, FuturePool, Future}
 
 trait SparkSink[T] {
   // go ahead and block in this function
@@ -169,30 +167,4 @@ class WaitingFuturePool(delegate: FuturePool) extends FuturePool {
     waitPromise.setValue(Unit)
   }
 
-}
-
-object Go extends App {
-  override def main(args: Array[String]): Unit = {
-    val sc = new SparkContext("local", "Simple App")
-    val sentencesRDD = sc.makeRDD(Seq("hello I am alex", "alex I am", "Who am I"))
-    val src = Source[SparkPlatform, String](sentencesRDD)
-    val store = sc.makeRDD(Seq("hello" -> 1000L, "who" -> 3000L))
-
-    val job = makeJob[SparkPlatform](src, store)
-    println(job)
-
-    val plat = new SparkPlatform
-    val fplan = plat.plan(job)
-    val plan = Await.result(fplan)
-    println(plan.toDebugString)
-    val results = plan.toArray().toSeq
-    println(results)
-  }
-
-  def makeJob[P <: Platform[P]](source: Producer[P, String], store: P#Store[String, Long]) = {
-    source
-      .flatMap { _.toLowerCase.split(" ") }
-      .map { _ -> 1L }
-      .sumByKey(store)
-  }
 }
