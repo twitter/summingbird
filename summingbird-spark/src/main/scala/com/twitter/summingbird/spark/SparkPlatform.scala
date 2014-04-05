@@ -4,7 +4,9 @@ import com.twitter.summingbird._
 import org.apache.spark.rdd.{PairRDDFunctions, RDD}
 import com.twitter.algebird.Monoid
 import org.apache.spark.SparkContext._
-import com.twitter.util.{Promise, FuturePool, Future}
+import com.twitter.util.{ExecutorServiceFuturePool, Promise, FuturePool, Future}
+import java.util.concurrent._
+import com.twitter.concurrent.NamedPoolThreadFactory
 
 trait SparkSink[T] {
   // go ahead and block in this function
@@ -22,7 +24,8 @@ class SparkPlatform
   override type Service[K, V] = RDD[(K, V)]
   override type Plan[T] = Future[RDD[T]]
 
-  private val pool = new WaitingFuturePool(FuturePool.unboundedPool)
+  private val pool = new WaitingFuturePool(
+    FuturePool(Executors.newCachedThreadPool(new NamedPoolThreadFactory("SparkPlatformPool", true))))
 
   override def plan[T](completed: TailProducer[SparkPlatform, T]): SparkPlatform#Plan[T] = {
     visit(completed).plan
@@ -156,15 +159,52 @@ class SparkPlatform
 
 }
 
-class WaitingFuturePool(delegate: FuturePool) extends FuturePool {
-  val waitPromise = new Promise[Unit]
+class WaitingFuturePool(delegate: ExecutorServiceFuturePool) extends FuturePool {
+  private val lock = new Object
+  private val waitPromise = new Promise[Unit]
+  private val completionPool: ExecutorServiceFuturePool =
+      FuturePool(Executors.newSingleThreadExecutor(
+        new NamedPoolThreadFactory("SparkPlatformCompletionPool", true)))
+
+  private var count = 0
+  private var latch: CountDownLatch = _
+  private var started = false
 
   def apply[T](f: => T): Future[T] = {
-    waitPromise.flatMap { _ => delegate(f) }
+    lock synchronized {
+      count = count + 1
+      waitPromise.flatMap {
+        _ => delegate(f)
+      } ensure {
+        latch.countDown()
+      }
+    }
   }
 
-  def start(): Unit = {
-    waitPromise.setValue(Unit)
+  def start(): Future[Unit] = {
+    lock synchronized {
+      if (started) {
+        throw new IllegalStateException("This WaitingFuturePool has already been started!")
+      }
+
+      started = true
+      latch = new CountDownLatch(count)
+
+      // start the future pool
+      waitPromise.setValue(Unit)
+
+      // create a Future for when the future pool has completed
+      val shutdown: Future[Unit] = completionPool {
+        latch.await()
+        delegate.executor.shutdownNow()
+        delegate.executor.awaitTermination(Long.MaxValue, TimeUnit.DAYS)
+      }
+
+      shutdown ensure {
+        completionPool.executor.shutdownNow()
+      }
+
+    }
   }
 
 }

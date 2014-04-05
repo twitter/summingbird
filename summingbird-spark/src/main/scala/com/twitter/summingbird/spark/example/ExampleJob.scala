@@ -1,10 +1,12 @@
 package com.twitter.summingbird.spark.example
 
 import org.apache.spark.SparkContext
-import com.twitter.summingbird.{Producer, Platform, Source}
+import com.twitter.summingbird.{Platform, Source}
 import com.twitter.util.Await
 import com.twitter.summingbird.spark.{SparkSink, SparkPlatform}
-import org.apache.spark.rdd.RDD
+import org.apache.spark.rdd.{EmptyRDD, RDD}
+import com.google.common.base.{CharMatcher, Splitter}
+import scala.collection.JavaConversions._
 
 object ExampleJob extends App {
 
@@ -12,8 +14,12 @@ object ExampleJob extends App {
     val sc = new SparkContext("yarn-standalone", "Summingbird Spark!")
 
     val src = sc.textFile(args(0))
-    //val store = sc.textFile(args(1))
-    val store = sc.makeRDD[(String, Long)](Seq())
+    val store = sc.textFile(args(1)).map { x =>
+      val parts = x.split("|")
+      (parts(0), parts(2))
+    }
+
+    //val store = new EmptyRDD[(String, Long)](sc)
 
     val sink = new TextKeyValSink(args(2))
 
@@ -22,25 +28,34 @@ object ExampleJob extends App {
 
     val plat = new SparkPlatform
     val fplan = plat.plan(job)
+    plat.run()
     val plan = Await.result(fplan)
     println(plan.toDebugString)
-    val results = plan.toArray().toSeq
-    println(results)
+    val count = plan.count()
+    //val results = plan.toArray().toSeq
+    println("Count: " + count)
   }
+
+  lazy val splitter = Splitter
+    .on(CharMatcher.BREAKING_WHITESPACE.or(CharMatcher.JAVA_LETTER.negate()))
+    .trimResults()
+    .omitEmptyStrings()
 
   def makeJob[P <: Platform[P]](source: P#Source[String],
                                 store:  P#Store[String, Long],
-                                sink:   P#Sink[(String, Any)]) = {
+                                sink:   P#Sink[String]) = {
+
     Source[P, String](source)
-      .flatMap { _.toLowerCase.split(" ") }
+      .flatMap { x => splitter.split(x.toLowerCase) }
       .map { _ -> 1L }
       .sumByKey(store)
+      .map { case(token, (prev, delta)) => token + "|" + prev.getOrElse(0) + "|" + delta }
       .write(sink)
   }
 }
 
-class TextKeyValSink(path: String) extends SparkSink[(String, Any)] {
-  override def write(rdd: RDD[(String, Any)]): Unit = {
-    rdd.map { case (k, v) => k + "|" + v }.saveAsTextFile(path)
+class TextKeyValSink(path: String) extends SparkSink[String] {
+  override def write(rdd: RDD[String]): Unit = {
+    rdd.saveAsTextFile(path)
   }
 }
