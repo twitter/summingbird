@@ -1,31 +1,49 @@
 package com.twitter.summingbird.spark
 
-import com.twitter.summingbird._
-import org.apache.spark.rdd.{PairRDDFunctions, RDD}
 import com.twitter.algebird.Monoid
-import org.apache.spark.SparkContext._
-import com.twitter.util.{ExecutorServiceFuturePool, Promise, FuturePool, Future}
-import java.util.concurrent._
 import com.twitter.concurrent.NamedPoolThreadFactory
+import com.twitter.summingbird._
+import com.twitter.util.{FuturePool, Future}
+import java.util.concurrent._
+import org.apache.spark.SparkContext._
+import org.apache.spark.rdd.{PairRDDFunctions, RDD}
 
-trait SparkSink[T] {
-  // go ahead and block in this function
-  // it is being submit in a future pool
-  def write(rdd: RDD[T]): Unit
-}
-
-// QUESTION: Where does batching come into this?
+/**
+ * This is a first pass at an offline [[Platform]] that executes on apache spark.
+ *
+ * TODO: Add in batching!
+ *
+ * @author Alex Levenson
+ */
 class SparkPlatform
     extends Platform[SparkPlatform] with PlatformPlanner[SparkPlatform] {
 
+  // TODO: Oscar mentioned making these SparkContext => RDD[T] instead of RDD[T]
+  //      but what's the benefit?
+
+  // source is just an RDD
   override type Source[T] = RDD[T]
+
+  // store is a map of key to value, represented as an RDD of pairs
+  // it is assumed that this RDD has no duplicate keys
+  // TODO: is that a valid assumption?
   override type Store[K, V] = RDD[(K, V)]
+
+  // sink is just a function from RDD => Unit
+  // its only used for causing side effects
   override type Sink[T] = SparkSink[T]
+
+  // service is just a keyed RDD
   override type Service[K, V] = RDD[(K, V)]
   override type Plan[T] = Future[RDD[T]]
 
+  // spark 'actions' block the current thread and start doing work immediately.
+  // as we build up a plan for spark, we want to be able to queue up 'actions' without
+  // really triggering work on the cluster until all the planning is done. So we submit
+  // this actions to a special FuturePool that doesn't start doing work until start() is called.
   private val pool = new WaitingFuturePool(
-    FuturePool(Executors.newCachedThreadPool(new NamedPoolThreadFactory("SparkPlatformPool", true))))
+    FuturePool(Executors.newCachedThreadPool( // unbounded thread pool
+      new NamedPoolThreadFactory("SparkPlatformPool", true)))) // use daemon threads
 
   override def plan[T](completed: TailProducer[SparkPlatform, T]): SparkPlatform#Plan[T] = {
     visit(completed).plan
@@ -48,8 +66,7 @@ class SparkPlatform
     visited: Visited,
     fn: (T) => Option[U]): PlanState[U]  = {
 
-    val planState = toPlan(prod, visited)
-    PlanState(planState.plan.map {rdd => rdd.flatMap(fn(_)) }, planState.visited)
+    planFlatMappedProducer(prod, visited, x => fn(x))
   }
 
   override def planFlatMappedProducer[T, U: ClassManifest](
@@ -61,9 +78,12 @@ class SparkPlatform
     PlanState(planState.plan.map { rdd => rdd.flatMap(fn(_)) }, planState.visited)
   }
 
-  override def planMergedProducer[T](l: Prod[T], r: Prod[T], visited: Visited): PlanState[T] = {
-    val leftPlanState = toPlan(l, visited)
-    val rightPlanState = toPlan(r, leftPlanState.visited)
+  override def planMergedProducer[T](left: Prod[T], right: Prod[T], visited: Visited): PlanState[T] = {
+    // plan down both sides of the tree
+    val leftPlanState = toPlan(left, visited)
+    val rightPlanState = toPlan(right, leftPlanState.visited)
+
+    // when those are both done, union the results
     val both = Future.join(leftPlanState.plan, rightPlanState.plan)
     PlanState(both.map { case (l, r) => l ++ r }, rightPlanState.visited)
   }
@@ -88,6 +108,7 @@ class SparkPlatform
     // QUESTION
     // better way to force execution?
     // does order of execution matter?
+    // TODO: these currently happen in parallel, should they happen in sequence?
     val e = ensurePlanState.plan.flatMap {
       rdd => pool { rdd.foreach(x => Unit) }
     }
@@ -106,6 +127,7 @@ class SparkPlatform
 
     // QUESTION
     // does order of execution matter?
+    // TODO: these currently happen in parallel, should they happen in sequence?
     val ret = Future.join(written, planState.plan).map { case (_, x) => x }
 
     PlanState(ret, planState.visited)
@@ -156,55 +178,5 @@ class SparkPlatform
   }
 
   def run() = pool.start()
-
-}
-
-class WaitingFuturePool(delegate: ExecutorServiceFuturePool) extends FuturePool {
-  private val lock = new Object
-  private val waitPromise = new Promise[Unit]
-  private val completionPool: ExecutorServiceFuturePool =
-      FuturePool(Executors.newSingleThreadExecutor(
-        new NamedPoolThreadFactory("SparkPlatformCompletionPool", true)))
-
-  private var count = 0
-  private var latch: CountDownLatch = _
-  private var started = false
-
-  def apply[T](f: => T): Future[T] = {
-    lock synchronized {
-      count = count + 1
-      waitPromise.flatMap {
-        _ => delegate(f)
-      } ensure {
-        latch.countDown()
-      }
-    }
-  }
-
-  def start(): Future[Unit] = {
-    lock synchronized {
-      if (started) {
-        throw new IllegalStateException("This WaitingFuturePool has already been started!")
-      }
-
-      started = true
-      latch = new CountDownLatch(count)
-
-      // start the future pool
-      waitPromise.setValue(Unit)
-
-      // create a Future for when the future pool has completed
-      val shutdown: Future[Unit] = completionPool {
-        latch.await()
-        delegate.executor.shutdownNow()
-        delegate.executor.awaitTermination(Long.MaxValue, TimeUnit.DAYS)
-      }
-
-      shutdown ensure {
-        completionPool.executor.shutdownNow()
-      }
-
-    }
-  }
 
 }

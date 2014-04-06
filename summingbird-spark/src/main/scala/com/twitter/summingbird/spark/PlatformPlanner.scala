@@ -6,11 +6,16 @@ import com.twitter.algebird.Monoid
 /**
  * The DAG handed to a platform by summingbird is a little hard to work with
  * given that all the generic types have been erased. This helper gives you
- * typesafe methods to implement, and casts / coerces things for you.
+ * type safe methods to implement, and casts / coerces things for you.
+ *
+ * TODO: Need to address use of ClassManifest
+ * TODO: Is this useful outside of teh spark platform?
+ *
+ * @author Alex Levenson
  */
-// QUESTIONS:
-// ClassManifest madness?
 trait PlatformPlanner[P <: Platform[P]] {
+
+  // some shorthand type aliases
   type Prod[T] =  Producer[P, T]
   type TailProd[T] =  TailProducer[P, T]
   type Visited = Map[Prod[_], P#Plan[_]]

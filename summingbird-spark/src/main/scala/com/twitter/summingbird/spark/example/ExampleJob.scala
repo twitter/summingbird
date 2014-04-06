@@ -1,11 +1,11 @@
 package com.twitter.summingbird.spark.example
 
-import org.apache.spark.SparkContext
+import com.google.common.base.{CharMatcher, Splitter}
+import com.twitter.summingbird.spark.{SparkSink, SparkPlatform}
 import com.twitter.summingbird.{Platform, Source}
 import com.twitter.util.Await
-import com.twitter.summingbird.spark.{SparkSink, SparkPlatform}
-import org.apache.spark.rdd.{EmptyRDD, RDD}
-import com.google.common.base.{CharMatcher, Splitter}
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
 import scala.collection.JavaConversions._
 
 object ExampleJob extends App {
@@ -16,7 +16,7 @@ object ExampleJob extends App {
     val src = sc.textFile(args(0))
     val store = sc.textFile(args(1)).map { x =>
       val parts = x.split("|")
-      (parts(0), parts(2))
+      (parts(0), parts(2).toLong)
     }
 
     //val store = new EmptyRDD[(String, Long)](sc)
@@ -31,9 +31,7 @@ object ExampleJob extends App {
     plat.run()
     val plan = Await.result(fplan)
     println(plan.toDebugString)
-    val count = plan.count()
-    //val results = plan.toArray().toSeq
-    println("Count: " + count)
+    println("Done!")
   }
 
   lazy val splitter = Splitter
