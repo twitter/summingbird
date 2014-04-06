@@ -2,6 +2,7 @@ package com.twitter.summingbird.spark
 
 import com.twitter.summingbird._
 import com.twitter.algebird.Monoid
+import scala.reflect.ClassTag
 
 /**
  * The DAG handed to a platform by summingbird is a little hard to work with
@@ -70,20 +71,20 @@ trait PlatformPlanner[P <: Platform[P]] {
 
   def planSource[T](source: P#Source[T], visited: Visited): PlanState[T]
 
-  def planOptionMappedProducer[T, U: ClassManifest](prod: Prod[T], visited: Visited, fn: (T) => Option[U]): PlanState[U]
+  def planOptionMappedProducer[T, U: ClassTag](prod: Prod[T], visited: Visited, fn: (T) => Option[U]): PlanState[U]
 
-  def planFlatMappedProducer[T, U: ClassManifest](prod: Prod[T], visited: Visited, fn: (T) => TraversableOnce[U]): PlanState[U]
+  def planFlatMappedProducer[T, U: ClassTag](prod: Prod[T], visited: Visited, fn: (T) => TraversableOnce[U]): PlanState[U]
 
   def planMergedProducer[T](l: Prod[T], r: Prod[T], visited: Visited): PlanState[T]
 
   def planKeyFlatMappedProducer[K, V, K2](prod: Prod[(K, V)], visited: Visited, fn: K => TraversableOnce[K2]): PlanState[(K2, V)]
 
-  def planAlsoProducer[E, R: ClassManifest](ensure: TailProd[E], result: Prod[R], visited: Visited): PlanState[R]
+  def planAlsoProducer[E, R: ClassTag](ensure: TailProd[E], result: Prod[R], visited: Visited): PlanState[R]
 
-  def planWrittenProducer[T: ClassManifest](prod: Prod[T], visited: Visited, sink: P#Sink[T]): PlanState[T]
+  def planWrittenProducer[T: ClassTag](prod: Prod[T], visited: Visited, sink: P#Sink[T]): PlanState[T]
 
-  def planLeftJoinedProducer[K: ClassManifest, V: ClassManifest, JoinedV](prod: Prod[(K, V)], visited: Visited, service: P#Service[K, JoinedV]): PlanState[(K, (V, Option[JoinedV]))]
+  def planLeftJoinedProducer[K: ClassTag, V: ClassTag, JoinedV](prod: Prod[(K, V)], visited: Visited, service: P#Service[K, JoinedV]): PlanState[(K, (V, Option[JoinedV]))]
 
-  def planSummer[K: ClassManifest, V: ClassManifest](prod: Prod[(K, V)], visited: Visited, store: P#Store[K, V], monoid: Monoid[V]): PlanState[(K, (Option[V], V))]
+  def planSummer[K: ClassTag, V: ClassTag](prod: Prod[(K, V)], visited: Visited, store: P#Store[K, V], monoid: Monoid[V]): PlanState[(K, (Option[V], V))]
 
 }

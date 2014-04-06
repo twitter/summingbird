@@ -7,6 +7,7 @@ import com.twitter.util.{FuturePool, Future}
 import java.util.concurrent._
 import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.{PairRDDFunctions, RDD}
+import scala.reflect.ClassTag
 
 /**
  * This is a first pass at an offline [[Platform]] that executes on apache spark.
@@ -61,7 +62,7 @@ class SparkPlatform
     PlanState(Future.value(source), visited)
   }
 
-  override def planOptionMappedProducer[T, U: ClassManifest](
+  override def planOptionMappedProducer[T, U: ClassTag](
     prod: Prod[T],
     visited: Visited,
     fn: (T) => Option[U]): PlanState[U]  = {
@@ -69,7 +70,7 @@ class SparkPlatform
     planFlatMappedProducer(prod, visited, x => fn(x))
   }
 
-  override def planFlatMappedProducer[T, U: ClassManifest](
+  override def planFlatMappedProducer[T, U: ClassTag](
     prod: Prod[T],
     visited: Visited,
     fn: (T) => TraversableOnce[U]): PlanState[U] = {
@@ -101,7 +102,7 @@ class SparkPlatform
     PlanState(mapped, planState.visited)
   }
 
-  override def planAlsoProducer[E, R: ClassManifest](ensure: TailProd[E], result: Prod[R], visited: Visited): PlanState[R] = {
+  override def planAlsoProducer[E, R: ClassTag](ensure: TailProd[E], result: Prod[R], visited: Visited): PlanState[R] = {
     val ensurePlanState = toPlan(ensure, visited)
     val resultPlanState = toPlan(result, ensurePlanState.visited)
 
@@ -118,7 +119,7 @@ class SparkPlatform
     PlanState(ret, resultPlanState.visited)
   }
 
-  override def planWrittenProducer[T: ClassManifest](prod: Prod[T], visited: Visited, sink: Sink[T]): PlanState[T]  = {
+  override def planWrittenProducer[T: ClassTag](prod: Prod[T], visited: Visited, sink: Sink[T]): PlanState[T]  = {
     val planState = toPlan(prod, visited)
 
     val written = planState.plan.flatMap {
@@ -133,7 +134,7 @@ class SparkPlatform
     PlanState(ret, planState.visited)
   }
 
-  override def planLeftJoinedProducer[K: ClassManifest, V: ClassManifest, JoinedV](prod: Prod[(K, V)], visited: Visited, service: Service[K, JoinedV]):
+  override def planLeftJoinedProducer[K: ClassTag, V: ClassTag, JoinedV](prod: Prod[(K, V)], visited: Visited, service: Service[K, JoinedV]):
     PlanState[(K, (V, Option[JoinedV]))] = {
 
     val planState = toPlan(prod, visited)
@@ -146,7 +147,7 @@ class SparkPlatform
     PlanState(joined, planState.visited)
   }
 
-  override def planSummer[K: ClassManifest, V: ClassManifest](
+  override def planSummer[K: ClassTag, V: ClassTag](
     prod: Prod[(K, V)],
     visited: Visited,
     store: Store[K, V],
