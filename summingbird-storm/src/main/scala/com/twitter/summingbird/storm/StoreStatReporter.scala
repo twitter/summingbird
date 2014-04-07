@@ -48,9 +48,12 @@ class MergeableStatReporter[K, V](context: TopologyContext, val self: Mergeable[
   override def traceMultiMerge[K1 <: K](kvs: Map[K1, V], request: Map[K1, Future[Option[V]]]) = {
     multiMergeMetric.incr()
     multiMergeTuplesMetric.incrBy(request.size)
-    request.mapValues(_.onFailure { _ =>
-      multiMergeTupleFailedMetric.incr()
-    }.unit)
+    request.map { case (k, v) =>
+      val failureWrapV = v.onFailure { _ =>
+        multiMergeTupleFailedMetric.incr()
+      }.unit
+      (k, failureWrapV)
+    }
   }
 }
 
