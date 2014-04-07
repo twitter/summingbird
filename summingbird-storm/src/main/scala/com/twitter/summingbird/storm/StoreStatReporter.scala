@@ -20,7 +20,8 @@ import backtype.storm.task.TopologyContext
 import backtype.storm.metric.api.CountMetric
 import org.slf4j.LoggerFactory
 import com.twitter.storehaus.algebra.reporting.{StoreReporter, MergeableReporter}
-import com.twitter.storehaus.algebra.{MergeableStore, MergeableStoreProxy}
+import com.twitter.storehaus.algebra.{Mergeable, MergeableProxy}
+import com.twitter.storehaus.{Store, StoreProxy}
 import com.twitter.util.{Promise, Future}
 
 /**
@@ -28,24 +29,8 @@ import com.twitter.util.{Promise, Future}
  * @author Ian O Connell
  */
 
-object StoreStatReporter {
-  private val logger = LoggerFactory.getLogger(classOf[StoreStatReporter[_, _]])
-}
-
-class StoreStatReporter[K, V](context: TopologyContext, val self: MergeableStore[K, V]) extends MergeableStoreProxy[K, V] with StoreReporter[MergeableStore[K, V], K, V] with MergeableReporter[MergeableStore[K, V], K, V] {
+class MergeableStatReporter[K, V](context: TopologyContext, val self: Mergeable[K, V]) extends MergeableProxy[K, V] with MergeableReporter[Mergeable[K, V], K, V] {
   private def buildMetric(s: String) = context.registerMetric("store/%s".format(s), new CountMetric, 10)
-  val putMetric = buildMetric("put")
-  val multiPutMetric = buildMetric("multiPut")
-  val multiPutTuplesMetric = buildMetric("multiPutTuples")
-  val putFailedMetric = buildMetric("putFailed")
-  val multiPutTupleFailedMetric = buildMetric("multiPutTupleFailed")
-
-  val getMetric = buildMetric("get")
-  val multiGetMetric = buildMetric("multiGet")
-  val multiGetTuplesMetric = buildMetric("multiGetTuples")
-  val getFailedMetric = buildMetric("getFailed")
-  val multiGetTupleFailedMetric = buildMetric("multiGetTupleFailed")
-
   val mergeMetric = buildMetric("merge")
   val multiMergeMetric = buildMetric("multiMerge")
   val multiMergeTupleFailedMetric = buildMetric("multiMergeTupleFailed")
@@ -67,6 +52,23 @@ class StoreStatReporter[K, V](context: TopologyContext, val self: MergeableStore
       multiMergeTupleFailedMetric.incr()
     }.unit)
   }
+}
+
+
+
+class StoreStatReporter[K, V](context: TopologyContext, val self: Store[K, V]) extends StoreProxy[K, V] with StoreReporter[Store[K, V], K, V] {
+  private def buildMetric(s: String) = context.registerMetric("store/%s".format(s), new CountMetric, 10)
+  val putMetric = buildMetric("put")
+  val multiPutMetric = buildMetric("multiPut")
+  val multiPutTuplesMetric = buildMetric("multiPutTuples")
+  val putFailedMetric = buildMetric("putFailed")
+  val multiPutTupleFailedMetric = buildMetric("multiPutTupleFailed")
+
+  val getMetric = buildMetric("get")
+  val multiGetMetric = buildMetric("multiGet")
+  val multiGetTuplesMetric = buildMetric("multiGetTuples")
+  val getFailedMetric = buildMetric("getFailed")
+  val multiGetTupleFailedMetric = buildMetric("multiGetTupleFailed")
 
   override def traceMultiGet[K1 <: K](ks: Set[K1], request: Map[K1, Future[Option[V]]]) = {
     multiGetMetric.incr()

@@ -27,8 +27,8 @@ import backtype.storm.tuple.Tuple
 import com.twitter.bijection.{Base64String, Injection}
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.chill.IKryoRegistrar
-import com.twitter.storehaus.{ReadableStore, WritableStore}
-import com.twitter.storehaus.algebra.{MergeableStore, Mergeable}
+import com.twitter.storehaus.{ReadableStore, WritableStore, Store}
+import com.twitter.storehaus.algebra.{MergeableStore, Mergeable, StoreAlgebra}
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
@@ -65,8 +65,17 @@ object MergeableStoreSupplier {
   def from[K, V](store: TopologyContext => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
     MergeableStoreSupplier(store, batcher)
 
-  def instrumentedStoreFrom[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] = {
-    val supplier = {(context: TopologyContext) => new StoreStatReporter(context, store)}
+  def instrumentedStoreFrom[K, V](store: => Store[(K, BatchID), V])(implicit batcher: Batcher, sg: Monoid[V]): MergeableStoreSupplier[K, V] = {
+    import StoreAlgebra.enrich
+    val supplier = {(context: TopologyContext) =>
+      val instrumentedStore = new StoreStatReporter(context, store)
+      new MergeableStatReporter(context, instrumentedStore.toMergeable)
+    }
+    MergeableStoreSupplier(supplier, batcher)
+  }
+
+  def instrumentedMergeableFrom[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] = {
+    val supplier = {(context: TopologyContext) => new MergeableStatReporter(context, store)}
     MergeableStoreSupplier(supplier, batcher)
   }
 
@@ -112,7 +121,7 @@ object Storm {
   def store[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
     MergeableStoreSupplier.from(store)
 
-  def instrumentedStore[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
+  def instrumentedStore[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher, sg: Monoid[V]): StormStore[K, V] =
     MergeableStoreSupplier.instrumentedStoreFrom(store)
 
   def store[K, V](store: (TopologyContext) => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
