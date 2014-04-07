@@ -76,9 +76,13 @@ class StoreStatReporter[K, V](context: TopologyContext, val self: Store[K, V]) e
   override def traceMultiGet[K1 <: K](ks: Set[K1], request: Map[K1, Future[Option[V]]]) = {
     multiGetMetric.incr()
     multiGetTuplesMetric.incrBy(request.size)
-    request.mapValues(_.onFailure { _ =>
-      multiGetTupleFailedMetric.incr()
-    }.unit)
+
+    request.map { case (k, v) =>
+      val failureWrapV = v.onFailure { _ =>
+        multiGetTupleFailedMetric.incr()
+      }.unit
+      (k, failureWrapV)
+    }
   }
 
   override def traceGet(k: K, request: Future[Option[V]]) = {
@@ -98,8 +102,12 @@ class StoreStatReporter[K, V](context: TopologyContext, val self: Store[K, V]) e
   override def traceMultiPut[K1 <: K](kvs: Map[K1, Option[V]], request: Map[K1, Future[Unit]]) = {
     multiPutMetric.incr()
     multiPutTuplesMetric.incrBy(request.size)
-    request.mapValues(_.onFailure { _ =>
-      multiPutTupleFailedMetric.incr()
-    }.unit)
+
+    request.map { case (k, v) =>
+      val failureWrapV = v.onFailure { _ =>
+        multiPutTupleFailedMetric.incr()
+      }.unit
+      (k, failureWrapV)
+    }
   }
 }
