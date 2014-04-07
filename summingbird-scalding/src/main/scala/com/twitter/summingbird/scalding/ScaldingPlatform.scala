@@ -161,7 +161,27 @@ object Scalding {
    */
   def pipeFactory[T](factory: (DateRange) => Mappable[T])
     (implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
-    StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[T]]{
+    optionMappedPipeFactory(factory)(t => Some(t))
+
+  /**
+    * Like pipeFactory, but allows the output of the factory to be mapped.
+    *
+    * Useful when using TextLine, for example, where the lines need to be
+    * parsed before you can extract the timestamps.
+    */
+  def mappedPipeFactory[T,U](factory: (DateRange) => Mappable[T])(fn: T => U)
+    (implicit timeOf: TimeExtractor[U]): PipeFactory[U] =
+    optionMappedPipeFactory(factory)(t => Some(fn(t)))
+
+  /**
+    * Like pipeFactory, but allows the output of the factory to be mapped to an optional value.
+    *
+    * Useful when using TextLine, for example, where the lines need to be
+    * parsed before you can extract the timestamps.
+    */
+  def optionMappedPipeFactory[T,U](factory: (DateRange) => Mappable[T])(fn: T => Option[U])
+    (implicit timeOf: TimeExtractor[U]): PipeFactory[U] =
+    StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[U]]{
       (timeMode: (Interval[Timestamp], Mode)) => {
         val (timeSpan, mode) = timeMode
 
@@ -173,8 +193,10 @@ object Scalding {
               ((newIntr, mode), Reader { (fdM: (FlowDef, Mode)) =>
                 TypedPipe.from(mappable)(fdM._1, fdM._2)
                   .flatMap { t =>
-                    val time = Timestamp(timeOf(t))
-                    if(newIntr(time)) Some((time, t)) else None
+                    fn(t).flatMap { mapped =>
+                      val time = Timestamp(timeOf(mapped))
+                      if(newIntr(time)) Some((time, mapped)) else None
+                    }
                   }
               })
             }
@@ -358,7 +380,7 @@ object Scalding {
                     getCommutativity(names, options, s) match {
                       case Commutative =>
                         logger.info("enabling flatMapKeys mapside caching")
-                        s.store.partialMerge(fmp, s.monoid, Commutative)
+                        s.store.partialMerge(fmp, s.semigroup, Commutative)
                       case NonCommutative =>
                         logger.info("not enabling flatMapKeys mapside caching, due to non-commutativity")
                         fmp
@@ -516,7 +538,7 @@ class Scalding(
   @transient transformConfig: SummingbirdConfig => SummingbirdConfig,
   @transient passedRegistrars: List[IKryoRegistrar]
   )
-    extends Platform[Scalding] {
+    extends Platform[Scalding] with java.io.Serializable {
 
   type Source[T] = PipeFactory[T]
   type Store[K, V] = scalding.Store[K, V]
