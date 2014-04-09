@@ -47,5 +47,9 @@ object SummerStormMetrics {
 }
 class SummerStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
 
-
+/**
+ * This value is mulitplied by the summer parallelism to set the true value used to hash and shard the
+ * key/value pairs. This allows for there to be more, smaller batches sent out to a number of threads
+ * which are set by SummerParallelism.
+ */
 case class SummerBatchMultiplier(get: Int)
