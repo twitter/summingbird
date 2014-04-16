@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.online.executor
 
-import com.twitter.util.{Await, Future}
+import com.twitter.util.{Await, Future, Promise}
 import com.twitter.algebird.{Semigroup, SummingQueue}
 import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.bijection.Injection
@@ -43,12 +43,13 @@ import com.twitter.summingbird.option.CacheSize
   * (MaxWaitingFutures * execute latency).
   *
   * @author Oscar Boykin
+  * @author Ian O Connell
   * @author Sam Ritchie
   * @author Ashu Singhal
   */
 
-class Summer[Key, Value: Semigroup, Event, S, D](
-  @transient storeSupplier: () => Mergeable[Key, Value],
+class Summer[Key, Value: Semigroup, Event, S, D, RC](
+  @transient storeSupplier: RC => Mergeable[Key, Value],
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
@@ -59,7 +60,7 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   includeSuccessHandler: IncludeSuccessHandler,
   pDecoder: Injection[(Int, Map[Key, Value]), D],
   pEncoder: Injection[Event, D]) extends
-    AsyncBase[(Int, Map[Key, Value]), Event, InputState[S], D](
+    AsyncBase[(Int, Map[Key, Value]), Event, InputState[S], D, RC](
       maxWaitingFutures,
       maxWaitingTime,
       maxEmitPerExec) {
@@ -69,7 +70,8 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   val decoder = pDecoder
 
   val storeBox = Externalizer(storeSupplier)
-  lazy val store = storeBox.get.apply
+  lazy val storePromise = Promise[Mergeable[Key, Value]]
+  lazy val store = Await.result(storePromise)
 
   lazy val sCache: AsyncCache[Key, (List[InputState[S]], Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Value)]])
 
@@ -77,9 +79,11 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   val successHandlerBox = Externalizer(successHandler)
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
-  override def init {
-    super.init
+  override def init(runtimeContext: RC) {
+    super.init(runtimeContext)
+    storePromise.setValue(storeBox.get(runtimeContext))
     store.toString // Do the lazy evaluation now so we can connect before tuples arrive.
+
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 

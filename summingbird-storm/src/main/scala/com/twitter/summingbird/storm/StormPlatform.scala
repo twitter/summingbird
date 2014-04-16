@@ -19,6 +19,7 @@ package com.twitter.summingbird.storm
 import Constants._
 import backtype.storm.{Config => BacktypeStormConfig, LocalCluster, StormSubmitter}
 import backtype.storm.generated.StormTopology
+import backtype.storm.task.TopologyContext
 import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
 import backtype.storm.tuple.Fields
 import backtype.storm.tuple.Tuple
@@ -26,8 +27,8 @@ import backtype.storm.tuple.Tuple
 import com.twitter.bijection.{Base64String, Injection}
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.chill.IKryoRegistrar
-import com.twitter.storehaus.{ReadableStore, WritableStore}
-import com.twitter.storehaus.algebra.{MergeableStore, Mergeable}
+import com.twitter.storehaus.{ReadableStore, WritableStore, Store}
+import com.twitter.storehaus.algebra.{MergeableStore, Mergeable, StoreAlgebra}
 import com.twitter.storehaus.algebra.MergeableStore.enrich
 import com.twitter.summingbird._
 import com.twitter.summingbird.viz.VizGraph
@@ -59,7 +60,25 @@ sealed trait StormStore[-K, V] {
 
 object MergeableStoreSupplier {
   def from[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
-    MergeableStoreSupplier(() => store, batcher)
+    MergeableStoreSupplier((TopologyContext) => store, batcher)
+
+  def from[K, V](store: TopologyContext => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+    MergeableStoreSupplier(store, batcher)
+
+  def instrumentedStoreFrom[K, V](store: => Store[(K, BatchID), V])(implicit batcher: Batcher, sg: Monoid[V]): MergeableStoreSupplier[K, V] = {
+    import StoreAlgebra.enrich
+    val supplier = {(context: TopologyContext) =>
+      val instrumentedStore = new StoreStatReporter(context, store)
+      new MergeableStatReporter(context, instrumentedStore.toMergeable)
+    }
+    MergeableStoreSupplier(supplier, batcher)
+  }
+
+  def instrumentedMergeableFrom[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] = {
+    val supplier = {(context: TopologyContext) => new MergeableStatReporter(context, store)}
+    MergeableStoreSupplier(supplier, batcher)
+  }
+
 
    def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreSupplier[K, V] = {
     implicit val batcher = Batcher.unit
@@ -68,7 +87,7 @@ object MergeableStoreSupplier {
 }
 
 
-case class MergeableStoreSupplier[K, V](store: () => Mergeable[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
+case class MergeableStoreSupplier[K, V] private[summingbird] (store: TopologyContext => Mergeable[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
 trait StormService[-K, +V] {
   def store: StoreFactory[K, V]
@@ -101,6 +120,13 @@ object Storm {
 
   def store[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
     MergeableStoreSupplier.from(store)
+
+  def instrumentedStore[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher, sg: Monoid[V]): StormStore[K, V] =
+    MergeableStoreSupplier.instrumentedStoreFrom(store)
+
+  def store[K, V](store: (TopologyContext) => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
+    MergeableStoreSupplier.from(store)
+
 
   def service[K, V](serv: => ReadableStore[K, V]): StormService[K, V] = StoreWrapper(() => serv)
 
@@ -216,10 +242,10 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       case MergeableStoreSupplier(contained, _) => contained
     }
 
-    def wrapMergable(supplier: () => Mergeable[ExecutorKeyType, V]) =
-        () => {
+    def wrapMergable(supplier: TopologyContext => Mergeable[ExecutorKeyType, V]) =
+        (context: TopologyContext) => {
           new Mergeable[ExecutorKeyType, ExecutorValueType] {
-            val innerMergable: Mergeable[ExecutorKeyType, V] = supplier()
+            val innerMergable: Mergeable[ExecutorKeyType, V] = supplier(context)
             implicit val innerSG = innerMergable.semigroup
 
             // Since we don't keep a timestamp in the store

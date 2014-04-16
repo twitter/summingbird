@@ -46,7 +46,7 @@ private[summingbird] case class KeyValueShards(get: Int) {
   def summerIdFor[K](k: K): Int = k.hashCode % get
 }
 
-class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D](
+class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
   cacheBuilder: CacheBuilder[Int, (List[S], Map[Key, Value])],
   maxWaitingFutures: MaxWaitingFutures,
@@ -56,7 +56,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D](
   pDecoder: Injection[Event, D],
   pEncoder: Injection[(Int, Map[Key, Value]), D]
   )
-  extends AsyncBase[Event, (Int, Map[Key, Value]), S, D](maxWaitingFutures,
+  extends AsyncBase[Event, (Int, Map[Key, Value]), S, D, RC](maxWaitingFutures,
                                                           maxWaitingTime,
                                                           maxEmitPerExec) {
 
