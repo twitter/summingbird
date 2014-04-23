@@ -1,6 +1,7 @@
 package com.twitter.summingbird.online.option
 
 import com.twitter.util.Duration
+import com.twitter.algebird.Semigroup
 
 case class OnlineSuccessHandler(handlerFn: Unit => Unit)
 
@@ -77,3 +78,9 @@ case class SoftMemoryFlushPercent(get: Float) {
  * values without emitting.
  */
 case class ValueCombinerCacheSize(get: Int)
+
+trait SummerBuilder extends Serializable {
+  def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]]
+}
+
+case class SummerConstructor(get: SummerBuilder)
