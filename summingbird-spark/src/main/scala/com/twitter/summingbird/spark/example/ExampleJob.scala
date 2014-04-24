@@ -7,7 +7,7 @@ import com.twitter.util.Await
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import scala.collection.JavaConversions._
-
+/*
 object ExampleJob extends App {
 
   override def main(args: Array[String]): Unit = {
@@ -57,3 +57,4 @@ class TextKeyValSink(path: String) extends SparkSink[String] {
     rdd.saveAsTextFile(path)
   }
 }
+*/
