@@ -34,8 +34,6 @@ object BuildSummer {
   @transient private val logger = LoggerFactory.getLogger(BuildSummer.getClass)
 
   def apply(storm: Storm, dag: Dag[Storm], node: StormNode) = {
-    val nodeName = dag.getNodeName(node)
-
     val opSummerConstructor = storm.get[SummerConstructor](dag, node).map(_._2)
 
     opSummerConstructor match {
@@ -44,7 +42,8 @@ object BuildSummer {
     }
   }
 
-  private[this] final legacyBuilder(storm: Storm, dag: Dag[Storm], node: StormNode) = {
+  private[this] final def legacyBuilder(storm: Storm, dag: Dag[Storm], node: StormNode) = {
+    val nodeName = dag.getNodeName(node)
     val cacheSize = storm.getOrElse(dag, node, DEFAULT_FM_CACHE)
     logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
 
