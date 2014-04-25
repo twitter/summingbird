@@ -126,7 +126,7 @@ object SummingbirdBuild extends Build {
 
   val dfsDatastoresVersion = "1.3.4"
   val bijectionVersion = "0.6.2"
-  val algebirdVersion = "0.5.0"
+  val algebirdVersion = "0.6.0"
   val scaldingVersion = "0.9.1"
   val storehausVersion = "0.9.0"
   val utilVersion = "6.3.8"
@@ -189,6 +189,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdOnline = module("online").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "algebird-util" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "chill" % chillVersion,

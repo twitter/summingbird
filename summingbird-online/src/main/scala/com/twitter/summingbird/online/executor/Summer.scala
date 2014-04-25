@@ -17,11 +17,12 @@
 package com.twitter.summingbird.online.executor
 
 import com.twitter.util.{Await, Future, Promise}
+import com.twitter.algebird.util.summer.AsyncSummer
 import com.twitter.algebird.{Semigroup, SummingQueue}
 import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.bijection.Injection
 
-import com.twitter.summingbird.online.{FlatMapOperation, Externalizer, AsyncCache, CacheBuilder}
+import com.twitter.summingbird.online.{FlatMapOperation, Externalizer}
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
@@ -53,7 +54,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
-  cacheBuilder: CacheBuilder[Key, (List[InputState[S]], Value)],
+  summerBuilder: SummerBuilder,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
@@ -73,7 +74,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
   lazy val storePromise = Promise[Mergeable[Key, Value]]
   lazy val store = Await.result(storePromise)
 
-  lazy val sCache: AsyncCache[Key, (List[InputState[S]], Value)] = cacheBuilder(implicitly[Semigroup[(List[InputState[S]], Value)]])
+  lazy val sSummer: AsyncSummer[(Key, (List[InputState[S]], Value)), Map[Key, (List[InputState[S]], Value)]] = summerBuilder.getSummer[Key, (List[InputState[S]], Value)](implicitly[Semigroup[(List[InputState[S]], Value)]])
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
@@ -101,7 +102,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
     }.toList
 
 
-  override def tick = sCache.tick.map(handleResult(_))
+  override def tick = sSummer.tick.map(handleResult(_))
 
   override def apply(state: InputState[S],
                      tupList: (Int, Map[Key, Value])) = {
@@ -113,7 +114,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
         (k, (List(state), v))
       }
 
-      sCache.insert(cacheEntries).map(handleResult(_))
+      sSummer.addAll(cacheEntries).map(handleResult(_))
     }
     catch {
       case t: Throwable => Future.exception(t)
