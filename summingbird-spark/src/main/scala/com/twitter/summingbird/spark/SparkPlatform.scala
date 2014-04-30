@@ -117,6 +117,7 @@ class SparkPlatform
     PlanState(joined, planState.visited)
   }
 
+  // TODO: whose job is it to write the result of a sum?
   override def planSummer[K: ClassTag, V: ClassTag](
     prod: Prod[(K, V)],
     visited: Visited,

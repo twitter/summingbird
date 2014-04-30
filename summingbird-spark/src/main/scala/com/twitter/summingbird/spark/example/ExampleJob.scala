@@ -7,9 +7,9 @@ import com.twitter.util.Await
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import scala.collection.JavaConversions._
-/*
-object ExampleJob extends App {
 
+object ExampleJob extends App {
+/*
   override def main(args: Array[String]): Unit = {
     val sc = new SparkContext("yarn-standalone", "Summingbird Spark!")
 
@@ -56,5 +56,5 @@ class TextKeyValSink(path: String) extends SparkSink[String] {
   override def write(rdd: RDD[String]): Unit = {
     rdd.saveAsTextFile(path)
   }
+  */
 }
-*/
