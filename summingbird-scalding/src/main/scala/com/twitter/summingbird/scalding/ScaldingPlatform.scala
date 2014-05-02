@@ -608,7 +608,7 @@ class Scalding(
     }
 
   // This is a side-effect-free computation that is called by run
-  def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Flow[_])] = {
+  def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_], mutate: FlowDef => Unit): Try[(Interval[Timestamp], Flow[_])] = {
     val flowDef = new FlowDef
     flowDef.setName(jobName)
     Scalding.toPipe(timeSpan, flowDef, mode, pf)
@@ -616,6 +616,7 @@ class Scalding(
       .flatMap { case (ts, pipe) =>
         // Now we have a populated flowDef, time to let Cascading do it's thing:
         try {
+          mutate(flowDef)
           Right((ts, mode.newFlowConnector(mode.config).connect(flowDef)))
         } catch {
           case (e: Throwable) => toTry(e)
@@ -630,7 +631,11 @@ class Scalding(
 
   def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = {
+    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = runWithMutate(state, mode, pf, (f: FlowDef) => Unit)
+
+  def runWithMutate(state: WaitingState[Interval[Timestamp]],
+    mode: Mode,
+    pf: PipeFactory[Any], mutate: FlowDef => Unit): WaitingState[Interval[Timestamp]] = {
 
     mode match {
       case Hdfs(_, conf) =>
@@ -643,7 +648,7 @@ class Scalding(
     }
 
     val prepareState = state.begin
-    toFlow(prepareState.requested, mode, pf) match {
+    toFlow(prepareState.requested, mode, pf, mutate(flow)) match {
       case Left(errs) =>
         prepareState.fail(FlowPlanException(errs))
       case Right((ts,flow)) =>
