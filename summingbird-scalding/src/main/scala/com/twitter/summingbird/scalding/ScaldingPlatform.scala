@@ -607,6 +607,9 @@ class Scalding(
       c.set(k, v)
     }
 
+  def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Flow[_])] =
+    toFlow(timeSpan, mode, pf, (_: FlowDef) => { })
+
   // This is a side-effect-free computation that is called by run
   def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_], mutate: FlowDef => Unit): Try[(Interval[Timestamp], Flow[_])] = {
     val flowDef = new FlowDef
@@ -631,9 +634,9 @@ class Scalding(
 
   def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = runWithMutate(state, mode, pf, (f: FlowDef) => Unit)
+    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = run(state, mode, pf, (f: FlowDef) => Unit)
 
-  def runWithMutate(state: WaitingState[Interval[Timestamp]],
+  def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
     pf: PipeFactory[Any], mutate: FlowDef => Unit): WaitingState[Interval[Timestamp]] = {
 
@@ -648,7 +651,7 @@ class Scalding(
     }
 
     val prepareState = state.begin
-    toFlow(prepareState.requested, mode, pf, mutate(flow)) match {
+    toFlow(prepareState.requested, mode, pf, mutate) match {
       case Left(errs) =>
         prepareState.fail(FlowPlanException(errs))
       case Right((ts,flow)) =>
