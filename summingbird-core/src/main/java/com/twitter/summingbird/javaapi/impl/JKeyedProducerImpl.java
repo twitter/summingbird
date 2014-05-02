@@ -1,4 +1,4 @@
-package com.twitter.summingbird.java.impl;
+package com.twitter.summingbird.javaapi.impl;
 
 import scala.Function1;
 import scala.Option;
@@ -7,12 +7,12 @@ import scala.Tuple2;
 import com.twitter.algebird.Semigroup;
 import com.twitter.summingbird.KeyedProducer;
 import com.twitter.summingbird.Platform;
-import com.twitter.summingbird.java.Buffer;
-import com.twitter.summingbird.java.JKeyedProducer;
-import com.twitter.summingbird.java.JProducer;
-import com.twitter.summingbird.java.JSummer;
-import com.twitter.summingbird.java.Service;
-import com.twitter.summingbird.java.Store;
+import com.twitter.summingbird.javaapi.Buffer;
+import com.twitter.summingbird.javaapi.JKeyedProducer;
+import com.twitter.summingbird.javaapi.JProducer;
+import com.twitter.summingbird.javaapi.JSummer;
+import com.twitter.summingbird.javaapi.Service;
+import com.twitter.summingbird.javaapi.Store;
 
 public class JKeyedProducerImpl<P extends Platform<P>, K, V> extends JProducerImpl<P, Tuple2<K, V>> implements JKeyedProducer<P, K, V> {
 

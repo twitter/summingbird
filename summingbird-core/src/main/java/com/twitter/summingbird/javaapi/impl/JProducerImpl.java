@@ -1,4 +1,4 @@
-package com.twitter.summingbird.java.impl;
+package com.twitter.summingbird.javaapi.impl;
 
 import com.twitter.summingbird.KeyedProducer;
 import com.twitter.summingbird.Platform;
@@ -7,15 +7,16 @@ import com.twitter.summingbird.Summer;
 import com.twitter.summingbird.TailProducer;
 
 import com.twitter.summingbird.Producer$;
-import com.twitter.summingbird.java.JKeyedProducer;
-import com.twitter.summingbird.java.JProducer;
-import com.twitter.summingbird.java.JSummer;
-import com.twitter.summingbird.java.JTailProducer;
-import com.twitter.summingbird.java.Service;
-import com.twitter.summingbird.java.Sink;
-import com.twitter.summingbird.java.Source;
+import com.twitter.summingbird.javaapi.JKeyedProducer;
+import com.twitter.summingbird.javaapi.JProducer;
+import com.twitter.summingbird.javaapi.JSummer;
+import com.twitter.summingbird.javaapi.JTailProducer;
+import com.twitter.summingbird.javaapi.Service;
+import com.twitter.summingbird.javaapi.Sink;
+import com.twitter.summingbird.javaapi.Source;
 
 import scala.Function1;
+import scala.Tuple2;
 import scala.Option;
 import scala.runtime.AbstractFunction1;
 import scala.util.Either;
@@ -52,19 +53,19 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     return delegate;
   }
 
-  <U> JProducer<P, U> wrap(Producer<P, U> delegate) {
+  static <P extends Platform<P>, U> JProducer<P, U> wrap(Producer<P, U> delegate) {
     return new JProducerImpl<P, U>(delegate);
   }
 
-  <K, V> JKeyedProducer<P, K, V> wrap(KeyedProducer<P, K, V> delegate) {
+  static <P extends Platform<P>, K, V> JKeyedProducer<P, K, V> wrap(KeyedProducer<P, K, V> delegate) {
     return new JKeyedProducerImpl<P, K, V>(delegate);
   }
 
-  <U> JTailProducer<P, U> wrap(TailProducer<P, U> delegate) {
+  static <P extends Platform<P>, U> JTailProducer<P, U> wrap(TailProducer<P, U> delegate) {
     return new JTailProducerImpl<P, U>(delegate);
   }
 
-  <K, V> JSummer<P, K, V> wrap(Summer<P, K, V> delegate) {
+  static <P extends Platform<P>, K, V> JSummer<P, K, V> wrap(Summer<P, K, V> delegate) {
     return new JSummerImpl<P, K, V>(delegate);
   }
 
@@ -114,4 +115,11 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     return wrap(delegate.either(other.unwrap()));
   }
 
+  @SuppressWarnings("unchecked")
+  @Override
+  public <K, V> JKeyedProducer<P, K, V> asKeyed() {
+    // this is an unchecked cast
+    // we will know it's not a Tuple2<K, V> only when we execute it
+    return wrap(Producer$.MODULE$.toKeyed((Producer<P, Tuple2<K, V>>)delegate));
+  }
 }

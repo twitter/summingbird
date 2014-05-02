@@ -1,16 +1,16 @@
-package com.twitter.summingbird.java.memory;
+package com.twitter.summingbird.javaapi.memory;
 
 import scala.Function1;
 import scala.Option;
 import scala.collection.TraversableOnce;
 import scala.collection.mutable.Map;
 
-import com.twitter.summingbird.java.JProducer;
-import com.twitter.summingbird.java.Service;
-import com.twitter.summingbird.java.Sink;
-import com.twitter.summingbird.java.Source;
-import com.twitter.summingbird.java.Store;
-import com.twitter.summingbird.java.impl.JProducerImpl;
+import com.twitter.summingbird.javaapi.JProducer;
+import com.twitter.summingbird.javaapi.Service;
+import com.twitter.summingbird.javaapi.Sink;
+import com.twitter.summingbird.javaapi.Source;
+import com.twitter.summingbird.javaapi.Store;
+import com.twitter.summingbird.javaapi.impl.JProducerImpl;
 import com.twitter.summingbird.memory.Memory;
 
 public class JMemory {

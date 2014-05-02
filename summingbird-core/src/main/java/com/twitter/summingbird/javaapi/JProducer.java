@@ -1,4 +1,4 @@
-package com.twitter.summingbird.java;
+package com.twitter.summingbird.javaapi;
 
 import scala.Function1;
 import scala.Option;
@@ -32,5 +32,7 @@ public interface JProducer<P extends Platform<P>, T> {
   <U> JTailProducer<P, T> write(Sink<P, ?, U> sink);
 
   <U> JProducer<P, Either<T, U>> either(JProducer<P, U> other);
+
+  <K, V> JKeyedProducer<P, K, V> asKeyed();
 
 }

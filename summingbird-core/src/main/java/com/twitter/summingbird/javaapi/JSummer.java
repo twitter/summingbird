@@ -1,4 +1,4 @@
-package com.twitter.summingbird.java;
+package com.twitter.summingbird.javaapi;
 
 import scala.Option;
 import scala.Tuple2;
