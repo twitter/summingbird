@@ -1,40 +1,32 @@
 package com.twitter.summingbird.spark
 
-import org.apache.spark.SparkContext._
-import com.twitter.algebird.Monoid
+import com.twitter.algebird.{Interval, Monoid}
 import com.twitter.summingbird._
+import com.twitter.summingbird.batch.Timestamp
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
+import com.twitter.summingbird.option.{NonCommutative, Commutative}
 
 /**
  * This is a first pass at an offline [[Platform]] that executes on apache spark.
  *
- * TODO: Add in batching!
- * TODO: This is probably something that the Store will do
+ * TODO: add the logic for seeing what time spans each source / store / service can cover
+ *       and finding the max they all cover together etc.
  *
  * @author Alex Levenson
  */
-class SparkPlatform
-    extends Platform[SparkPlatform] with PlatformPlanner[SparkPlatform] {
+class SparkPlatform(
+  sc: SparkContext,
+  timeSpan: Interval[Timestamp]
+) extends Platform[SparkPlatform] with PlatformPlanner[SparkPlatform] {
 
-  // TODO: make this SparkContext => RDD[T] instead of RDD[T]
-
-  // source is just an RDD // this needs a Time associated with it
-  override type Source[T] = RDD[T]
-
-  // store is a map of key to value, represented as an RDD of pairs
-  // it is assumed that this RDD has no duplicate keys
-  // TODO: is that a valid assumption?
-  override type Store[K, V] = RDD[(K, V)]
-
-  // sink is just a function from RDD => Unit
-  // its only used for causing side effects
+  override type Source[T] = SparkSource[T]
+  override type Store[K, V] = SparkStore[K, V]
   override type Sink[T] = SparkSink[T]
-
-  // service is just a keyed RDD
-  override type Service[K, V] = RDD[(K, V)]
-  override type Plan[T] = RDD[T]
+  override type Service[K, LV] = SparkService[K, LV]
+  override type Plan[T] = RDD[(Timestamp, T)]
 
   private[this] val writeClosures: ArrayBuffer[() => Unit] = ArrayBuffer()
 
@@ -51,7 +43,7 @@ class SparkPlatform
   }
 
   override def planSource[T](source: Source[T], visited: Visited): PlanState[T] = {
-    PlanState(source, visited)
+    PlanState(source.rdd(sc, timeSpan), visited)
   }
 
   override def planOptionMappedProducer[T, U: ClassTag](
@@ -68,7 +60,11 @@ class SparkPlatform
     fn: (T) => TraversableOnce[U]): PlanState[U] = {
 
     val planState = toPlan(prod, visited)
-    PlanState(planState.plan.flatMap(fn(_)), planState.visited)
+    val flatMapped = planState.plan.flatMap { case (ts, v) =>
+      fn(v).map { u => (ts, u) }
+    }
+
+    PlanState(flatMapped, planState.visited)
   }
 
   override def planMergedProducer[T](left: Prod[T], right: Prod[T], visited: Visited): PlanState[T] = {
@@ -87,7 +83,7 @@ class SparkPlatform
     fn: K => TraversableOnce[K2]): PlanState[(K2, V)] = {
       val planState = toPlan(prod, visited)
       val mapped = planState.plan.flatMap {
-        case (key, value) => fn(key).map { (_, value) }
+        case (ts, (key, value)) => fn(key).map { k2 => (ts, (k2, value)) }
       }
 
     PlanState(mapped, planState.visited)
@@ -102,7 +98,7 @@ class SparkPlatform
   override def planWrittenProducer[T: ClassTag](prod: Prod[T], visited: Visited, sink: Sink[T]): PlanState[T]  = {
     val planState = toPlan(prod, visited)
     writeClosures += { () =>
-      sink.write(planState.plan)
+      sink.write(sc, planState.plan, timeSpan)
     }
     planState
   }
@@ -112,42 +108,24 @@ class SparkPlatform
 
     val planState = toPlan(prod, visited)
 
-    val joined = planState.plan.leftOuterJoin(service)
+    val joined = service.lookup(sc, timeSpan, planState.plan)
 
     PlanState(joined, planState.visited)
   }
 
-  // TODO: whose job is it to write the result of a sum?
   override def planSummer[K: ClassTag, V: ClassTag](
     prod: Prod[(K, V)],
     visited: Visited,
     store: Store[K, V],
     monoid: Monoid[V]): PlanState[(K, (Option[V], V))] = {
 
-    // Assumptions:
-    // producer has many duplicate keys
-    // store has no duplicate keys
-
     val planState = toPlan(prod, visited)
-
-    // first sum all the deltas
-    // TODO: is there a way to use sumOption in map-side aggregation?
-    // TODO: this assumes commutivity
-    // TODO: need to check that first
-    // TODO: non commutative needs a sort on time etc.
-    val summedDeltas = planState.plan.reduceByKey { (x, y) => monoid.plus(x, y) }
-
-    // join deltas with stored values
-    val summedDeltasWithStoredValues = summedDeltas.leftOuterJoin(store)
-
-    val summed = summedDeltasWithStoredValues.map {
-      case (key, (deltaSum, storedValue)) => {
-        val sum = storedValue.map { s =>  monoid.plus(s, deltaSum) }.getOrElse(deltaSum)
-        (key, (storedValue, sum))
-      }
+    // TODO: detect commutativity
+    val updatedSnapshot = store.merge(sc, timeSpan, planState.plan, NonCommutative, monoid)
+    writeClosures += { () =>
+      store.write(sc, updatedSnapshot)
     }
-
-    PlanState(summed, planState.visited)
+    PlanState(updatedSnapshot, planState.visited)
   }
 
   def run() = {
