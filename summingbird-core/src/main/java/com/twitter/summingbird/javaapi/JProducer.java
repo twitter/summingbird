@@ -12,14 +12,14 @@ public interface JProducer<P extends Platform<P>, T> {
 
   JProducer<P, T> name(String id);
 
-  // TODO java does not allow U super T here. Possibly T instead of U?
-  <U> JProducer<P, U> merge(JProducer<P, U> r);
+  // invariant
+  JProducer<P, T> merge(JProducer<P, T> r);
 
   // collect does not really apply in java
 
   JProducer<P, T> filter(Function1<T, Boolean> f);
 
-  // TODO java does not allow U super T here. used T
+  // invariant
   <V> JKeyedProducer<P, T, Option<V>> lookup(Service<P, ?, T, V> service);
 
   <U> JProducer<P, U> map(Function1<T, U> f);
@@ -28,8 +28,8 @@ public interface JProducer<P extends Platform<P>, T> {
 
   <U> JProducer<P, U> flatMap(Function1<T, Iterable<U>> f);
 
-  // TODO java does not allow U super T here. Possibly T instead of U?
-  <U> JTailProducer<P, T> write(Sink<P, ?, U> sink);
+  // invariant
+  JTailProducer<P, T> write(Sink<P, ?, T> sink);
 
   <U> JProducer<P, Either<T, U>> either(JProducer<P, U> other);
 

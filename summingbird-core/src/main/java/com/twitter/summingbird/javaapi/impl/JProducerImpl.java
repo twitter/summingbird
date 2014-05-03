@@ -74,9 +74,8 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     return wrap(delegate.name(id));
   }
 
-
   @Override
-  public <U> JProducer<P, U> merge(JProducer<P, U> r) {
+  public JProducer<P, T> merge(JProducer<P, T> r) {
     return wrap(delegate.merge(r.unwrap()));
   }
 
@@ -106,7 +105,7 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
   }
 
   @Override
-  public <U> JTailProducer<P, T> write(Sink<P, ?, U> sink) {
+  public JTailProducer<P, T> write(Sink<P, ?, T> sink) {
     return wrap(delegate.write(sink.unwrap()));
   }
 

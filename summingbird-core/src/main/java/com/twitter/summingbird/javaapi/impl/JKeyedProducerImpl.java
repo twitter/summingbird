@@ -6,6 +6,7 @@ import scala.Tuple2;
 
 import com.twitter.algebird.Semigroup;
 import com.twitter.summingbird.KeyedProducer;
+import com.twitter.summingbird.Producer$;
 import com.twitter.summingbird.Platform;
 import com.twitter.summingbird.javaapi.Buffer;
 import com.twitter.summingbird.javaapi.JKeyedProducer;
@@ -17,6 +18,11 @@ import com.twitter.summingbird.javaapi.Store;
 public class JKeyedProducerImpl<P extends Platform<P>, K, V> extends JProducerImpl<P, Tuple2<K, V>> implements JKeyedProducer<P, K, V> {
 
   private KeyedProducer<P, K, V> delegate;
+
+  JKeyedProducerImpl(JProducer<P, Tuple2<K, V>> jproducer) {
+    super(jproducer.unwrap());
+    this.delegate = Producer$.MODULE$.toKeyed(jproducer.unwrap());
+  }
 
   JKeyedProducerImpl(KeyedProducer<P, K, V> delegate) {
     super(delegate);

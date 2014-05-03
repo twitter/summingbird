@@ -27,7 +27,7 @@ public class WordCount {
   private static Semigroup<Long> sg = (Semigroup<Long>)(Semigroup<?>)Semigroup$.MODULE$.longSemigroup();
 
   public static <P extends Platform<P>> void wordCount(Producer<P, Status> source, Object store /* store is typed Object */) {
-    Producer.<P, String, Long>toKeyed( // we have to call toKeyed around the Producer
+    Producer$.MODULE$.<P, String, Long>toKeyed( // we have to call toKeyed around the Producer
         source.filter(new AbstractFunction1<Status, Object>() { // filter takes a function that returns Object
           public Object apply(Status s) {
             return s.getText() != null;
