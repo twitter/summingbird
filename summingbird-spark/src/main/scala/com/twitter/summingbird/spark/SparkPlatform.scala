@@ -28,9 +28,13 @@ class SparkPlatform(
   override type Service[K, LV] = SparkService[K, LV]
   override type Plan[T] = RDD[(Timestamp, T)]
 
+  // TODO: remove statefulness from this platform
   private[this] val writeClosures: ArrayBuffer[() => Unit] = ArrayBuffer()
+  private[this] var planned = false
 
   override def plan[T](completed: TailProducer[SparkPlatform, T]): SparkPlatform#Plan[T] = {
+    assert(!planned, "This platform has already been planned")
+    planned = true
     visit(completed).plan
   }
 
@@ -121,16 +125,22 @@ class SparkPlatform(
 
     val planState = toPlan(prod, visited)
     // TODO: detect commutativity
-    val updatedSnapshot = store.merge(sc, timeSpan, planState.plan, NonCommutative, monoid)
-    writeClosures += { () =>
-      store.write(sc, updatedSnapshot)
-    }
-    PlanState(updatedSnapshot, planState.visited)
+    val mergeResult = store.merge(sc, timeSpan, planState.plan, NonCommutative, monoid)
+
+    writeClosures += mergeResult.writeClosure
+
+    PlanState(mergeResult.sumBeforeMerge, planState.visited)
   }
 
-  def run() = {
+  def run(): Unit = {
+    assert(planned, "This platform was not planned")
     // TODO: thread pool
     writeClosures.foreach { c => c.apply() }
+  }
+
+  def run[T](completed: TailProducer[SparkPlatform, T]): Unit = {
+    plan(completed)
+    run()
   }
 
 }
