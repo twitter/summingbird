@@ -1,6 +1,7 @@
 package com.twitter.summingbird.example.javaapi;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.twitter.summingbird.*;
@@ -17,10 +18,11 @@ import com.twitter.algebird.Semigroup$;
 
 public class WordCount {
 
-  public static String[] tokenize(String text) {
-    return text.toLowerCase()
-      .replaceAll("[^a-zA-Z0-9\\s]", "")
-      .split("\\s+");
+  public static List<String> tokenize(String text) {
+    return Arrays.asList(
+        text.toLowerCase()
+            .replaceAll("[^a-zA-Z0-9\\s]", "")
+            .split("\\s+"));
    }
 
   @SuppressWarnings("unchecked") // have to use MODULE$ and it's a Semigroup<Object>
@@ -44,18 +46,18 @@ public class WordCount {
   }
 
   public static <P extends Platform<P>> void wordCount2(JProducer<P, Status> source, Store<P, ?, String, Long> store) {
-    source.filter(new Filter<Status>() {
-      public boolean filter(Status s) {
+    source.filter(new Predicate<Status>() {
+      public boolean test(Status s) {
         return s.getText() != null;
       }
-    }).flatMap(new AbstractFunction1<Status, Iterable<Tuple2<String,Long>>>() {
-      public Iterable<Tuple2<String,Long>> apply(Status s) {
-        List<Tuple2<String,Long>> tokens = new ArrayList<Tuple2<String,Long>>();
-        for (String token : tokenize(s.getText())) {
-          tokens.add(new Tuple2<String, Long>(token, 1L));
-        }
-        return tokens;
-     }
-   }).<String, Long>asKeyed().sumByKey(store, sg);
+    }).flatMap(new Function<Status, Iterable<String>>() {
+    public Iterable<String> apply(Status s) {
+        return tokenize(s.getText());
+    }
+    }).mapToKeyed(new Function<String, Tuple2<String,Long>>() {
+      public Tuple2<String,Long> apply(String token) {
+        return new Tuple2<String, Long>(token, 1L);
+      }
+    }).sumByKey(store, sg);
   }
 }

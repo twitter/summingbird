@@ -1,6 +1,5 @@
 package com.twitter.summingbird.javaapi;
 
-import scala.Function1;
 import scala.Option;
 import scala.Tuple2;
 
@@ -14,13 +13,13 @@ public interface JKeyedProducer<P extends Platform<P>, K, V> extends JProducer<P
 
   // collectKeys and collectValues not useful in java ?
 
-  JKeyedProducer<P, K, V> filterKeys(Function1<K, Boolean> f);
+  JKeyedProducer<P, K, V> filterKeys(Predicate<K> f);
 
-  JKeyedProducer<P, K, V> filterValues(Function1<V, Boolean> f);
+  JKeyedProducer<P, K, V> filterValues(Predicate<V> f);
 
-  <K2> JKeyedProducer<P, K2, V> flatMapKeys(Function1<K, Iterable<K2>> f);
+  <K2> JKeyedProducer<P, K2, V> flatMapKeys(Function<K, Iterable<K2>> f);
 
-  <V2> JKeyedProducer<P, K, V2> flatMapValues(Function1<V, Iterable<V2>> f);
+  <V2> JKeyedProducer<P, K, V2> flatMapValues(Function<V, Iterable<V2>> f);
 
   JProducer<P, K> keys();
 
@@ -28,9 +27,9 @@ public interface JKeyedProducer<P extends Platform<P>, K, V> extends JProducer<P
 
   <RightV> JKeyedProducer<P, K, Tuple2<V, Option<RightV>>> leftJoin(JKeyedProducer<P, K, RightV> stream, Buffer<P, ?, K, RightV> buffer);
 
-  <K2> JKeyedProducer<P, K2, V> mapKeys(Function1<K, K2> f);
+  <K2> JKeyedProducer<P, K2, V> mapKeys(Function<K, K2> f);
 
-  <V2> JKeyedProducer<P, K, V2> mapValues(Function1<V, V2> f);
+  <V2> JKeyedProducer<P, K, V2> mapValues(Function<V, V2> f);
 
   JSummer<P, K, V> sumByKey(Store<P, ?, K, V> store, Semigroup<V> semigroup);
 

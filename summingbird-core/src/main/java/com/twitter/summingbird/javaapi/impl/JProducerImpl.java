@@ -1,27 +1,28 @@
 package com.twitter.summingbird.javaapi.impl;
 
+import scala.Function1;
+import scala.Option;
+import scala.Tuple2;
+import scala.collection.JavaConversions;
+import scala.collection.TraversableOnce;
+import scala.runtime.AbstractFunction1;
+import scala.util.Either;
+
 import com.twitter.summingbird.KeyedProducer;
 import com.twitter.summingbird.Platform;
 import com.twitter.summingbird.Producer;
+import com.twitter.summingbird.Producer$;
 import com.twitter.summingbird.Summer;
 import com.twitter.summingbird.TailProducer;
-
-import com.twitter.summingbird.Producer$;
+import com.twitter.summingbird.javaapi.Function;
 import com.twitter.summingbird.javaapi.JKeyedProducer;
 import com.twitter.summingbird.javaapi.JProducer;
 import com.twitter.summingbird.javaapi.JSummer;
 import com.twitter.summingbird.javaapi.JTailProducer;
+import com.twitter.summingbird.javaapi.Predicate;
 import com.twitter.summingbird.javaapi.Service;
 import com.twitter.summingbird.javaapi.Sink;
 import com.twitter.summingbird.javaapi.Source;
-
-import scala.Function1;
-import scala.Tuple2;
-import scala.Option;
-import scala.runtime.AbstractFunction1;
-import scala.util.Either;
-import scala.collection.TraversableOnce;
-import scala.collection.JavaConversions;
 
 public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> {
 
@@ -29,7 +30,7 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     return new JProducerImpl<P, T>(Producer$.MODULE$.<P, T>source(source.unwrap()));
   }
 
-  static <IN, OUT> Function1<IN, TraversableOnce<OUT>> toTraversableOnce(final Function1<IN, Iterable<OUT>> f) {
+  static <IN, OUT> Function1<IN, TraversableOnce<OUT>> toTraversableOnce(final Function<IN, Iterable<OUT>> f) {
     return new AbstractFunction1<IN, TraversableOnce<OUT>>() {
       public TraversableOnce<OUT> apply(IN v) {
         return JavaConversions.iterableAsScalaIterable(f.apply(v));
@@ -37,9 +38,22 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     };
   }
 
-  @SuppressWarnings("unchecked")
-  static <PARAM> Function1<PARAM, Object> eraseReturnType(Function1<PARAM, ?> f) {
-    return (Function1<PARAM, Object>)f;
+  static <IN, OUT> Function1<IN, OUT> toScala(final Function<IN, OUT> f) {
+    return new AbstractFunction1<IN, OUT>() {
+      @Override
+      public OUT apply(IN v) {
+        return f.apply(v);
+      }
+    };
+  }
+
+  static <IN> Function1<IN, Object> toScala(final Predicate<IN> p) {
+    return new AbstractFunction1<IN, Object>() {
+      @Override
+      public Object apply(IN v) {
+        return p.test(v);
+      }
+    };
   }
 
   com.twitter.summingbird.Producer<P, T> delegate;
@@ -80,8 +94,8 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
   }
 
   @Override
-  public JProducer<P, T> filter(Function1<T, Boolean> f) {
-    return wrap(delegate.filter(eraseReturnType(f)));
+  public JProducer<P, T> filter(Predicate<T> f) {
+    return wrap(delegate.filter(toScala(f)));
   }
 
   @Override
@@ -90,17 +104,17 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
   }
 
   @Override
-  public <U> JProducer<P, U> map(Function1<T, U> f) {
-    return wrap(delegate.map(f));
+  public <U> JProducer<P, U> map(Function<T, U> f) {
+    return wrap(delegate.map(toScala(f)));
   }
 
   @Override
-  public <U> JProducer<P, U> optionMap(Function1<T, Option<U>> f) {
-    return wrap(delegate.optionMap(f));
+  public <U> JProducer<P, U> optionMap(Function<T, Option<U>> f) {
+    return wrap(delegate.optionMap(toScala(f)));
   }
 
   @Override
-  public <U> JProducer<P, U> flatMap(Function1<T, Iterable<U>> f) {
+  public <U> JProducer<P, U> flatMap(Function<T, Iterable<U>> f) {
     return wrap(delegate.flatMap(toTraversableOnce(f)));
   }
 
@@ -114,11 +128,8 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     return wrap(delegate.either(other.unwrap()));
   }
 
-  @SuppressWarnings("unchecked")
   @Override
-  public <K, V> JKeyedProducer<P, K, V> asKeyed() {
-    // this is an unchecked cast
-    // we will know it's not a Tuple2<K, V> only when we execute it
-    return wrap(Producer$.MODULE$.toKeyed((Producer<P, Tuple2<K, V>>)delegate));
+  public <K, V> JKeyedProducer<P, K, V> mapToKeyed(Function<T, Tuple2<K, V>> f) {
+    return new JKeyedProducerImpl<P, K, V>(map(f));
   }
 }
