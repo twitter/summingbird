@@ -31,6 +31,14 @@ class SparkLaws extends Specification {
     }
   }
 
+  def captureSink[T] = new SparkSink[T] {
+    var result: Seq[(Timestamp, T)] = _
+
+    override def write(sc: SparkContext, rdd: RDD[(Timestamp, T)], timeSpan: Interval[Timestamp]): Unit = {
+      result = rdd.toArray().toSeq
+    }
+  }
+
   def assertSparseEqual[K, V : Group](found: Map[K, V], expected: Map[K, V], name: String = "found map"): Unit = {
     val diff = Group.minus(expected, found)
     val wrong = Monoid.isNonZero(diff)
@@ -40,7 +48,7 @@ class SparkLaws extends Specification {
       val extra = foundFiltered -- expectedFiltered.keySet
       val missing = expectedFiltered -- foundFiltered.keySet
       val wrongEntries = expectedFiltered
-        .filterNot { case (k, v) => found.get(k) == Some(v) }
+        .filter { case (k, v) => found.contains(k) && found(k) != v }
         .map { case (k, v) => "[found: %s, expected: %s]".format((k, found(k)), (k,v)) }
 
       val msg = Seq(
@@ -55,18 +63,19 @@ class SparkLaws extends Specification {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
+  // TODO: Ideally this wouldn't be shared, but spark goes into an infinite crash loop
+  // if you use more than one SparkContext from the same jvm for some reason :(
+  val sc = new SparkContext("local", "LocalTestCluster")
+
   "SparkPlatform" should {
 
     "match scala for single step jobs" in {
-
 
       val original = sample[List[Int]]
       val fn = sample[(Int) => List[(Int, Int)]]
       val initStore = sample[Map[Int, Int]]
 
       val inMemory = TestGraphs.singleStepInScala(original)(fn)
-
-      val sc = new SparkContext("local", "TestJob")
 
       val source = memSource(original)
       val store = memStore(initStore)
@@ -78,6 +87,28 @@ class SparkLaws extends Specification {
       val sparkResult = store.result
       val memResult = Monoid.plus(initStore, inMemory)
       assertSparseEqual(sparkResult, memResult)
+    }
+
+    "match scala for jobs with a diamond" in {
+      val original = sample[List[Int]]
+      val fnA = sample[(Int) => List[(Int, Int)]]
+      val fnB = sample[(Int) => List[(Int, Int)]]
+      val initStore = sample[Map[Int, Int]]
+
+      val inMemory = TestGraphs.diamondJobInScala(original)(fnA)(fnB)
+
+      val source = memSource(original)
+      val store = memStore(initStore)
+      val sink = captureSink[Int]
+
+      val job = TestGraphs.diamondJob[SparkPlatform, Int, Int, Int](Source[SparkPlatform, Int](source), sink, store)(fnA)(fnB)
+
+      val platform = new SparkPlatform(sc, Empty())
+      platform.run(job)
+      val sparkResult = store.result
+      val memResult = Monoid.plus(initStore, inMemory)
+      assertSparseEqual(sparkResult, memResult)
+      assert(original === sink.result.map(_._2))
     }
 
   }
