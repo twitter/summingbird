@@ -9,9 +9,7 @@ import com.twitter.summingbird.{Producer, Source, TestGraphs}
 import org.scalacheck.{Gen, Arbitrary}
 import scala.reflect.ClassTag
 
-// TODO: support time
-// TODO: reconcile duplication w/ ScaldingLaws
-class SparkLaws extends Specification {
+object SparkLaws {
 
   def memSource[T](s: Seq[T]) = new SparkSource[T] {
     override def rdd(sc: SparkContext, timeSpan: Interval[Timestamp]): RDD[(Timestamp, T)] = {
@@ -39,6 +37,12 @@ class SparkLaws extends Specification {
     }
   }
 
+  def memService[K, LV](m: Map[K, LV]) = new SparkService[K, LV] {
+    override def lookup[V](sc: SparkContext, timeSpan: Interval[Timestamp], rdd: RDD[(Timestamp, (K, V))]): RDD[(Timestamp, (K, (V, Option[LV])))] = {
+      rdd.map { case (ts, (k, v)) => (ts, (k, (v, m.get(k)))) }
+    }
+  }
+
   def assertSparseEqual[K, V : Group](found: Map[K, V], expected: Map[K, V], name: String = "found map"): Unit = {
     val diff = Group.minus(expected, found)
     val wrong = Monoid.isNonZero(diff)
@@ -60,6 +64,15 @@ class SparkLaws extends Specification {
       assert(false, msg)
     }
   }
+
+}
+
+// TODO: support time
+//
+// TODO: reconcile duplication w/ ScaldingLaws
+// TODO: Maybe make a generic PlatformLaws base class / trait
+class SparkLaws extends Specification {
+  import SparkLaws._
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
@@ -109,6 +122,75 @@ class SparkLaws extends Specification {
       val memResult = Monoid.plus(initStore, inMemory)
       assertSparseEqual(sparkResult, memResult)
       assert(original === sink.result.map(_._2))
+    }
+
+    // TODO: better description
+    "match scala for twinStepOptionMapFlatMap" in {
+      val original = sample[List[Int]]
+      val fnA = sample[(Int) => Option[Int]]
+      val fnB = sample[(Int) => List[(Int, Int)]]
+      val initStore = sample[Map[Int, Int]]
+
+      val inMemory = TestGraphs.twinStepOptionMapFlatMapScala(original)(fnA, fnB)
+
+      val source = memSource(original)
+      val store = memStore(initStore)
+
+      val job = TestGraphs.twinStepOptionMapFlatMapJob[SparkPlatform, Int, Int, Int, Int](Source[SparkPlatform, Int](source), store)(fnA, fnB)
+
+      val platform = new SparkPlatform(sc, Empty())
+      platform.run(job)
+      val sparkResult = store.result
+      val memResult = Monoid.plus(initStore, inMemory)
+      assertSparseEqual(sparkResult, memResult)
+    }
+
+    "match scala for jobs with single step map keys" in {
+      val original = sample[List[Int]]
+      val fnA = sample[(Int) => List[(Int, Int)]]
+      val fnB = sample[(Int) => List[(Int)]]
+      val initStore = sample[Map[Int, Int]]
+
+      val inMemory = TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB)
+
+      val source = memSource(original)
+      val store = memStore(initStore)
+
+      val job = TestGraphs.singleStepMapKeysJob[SparkPlatform, Int, Int, Int, Int](Source[SparkPlatform, Int](source), store)(fnA, fnB)
+
+      val platform = new SparkPlatform(sc, Empty())
+      platform.run(job)
+      val sparkResult = store.result
+      val memResult = Monoid.plus(initStore, inMemory)
+      assertSparseEqual(sparkResult, memResult)
+    }
+
+    "match scala for jobs with a left join" in {
+      val original = sample[List[Int]]
+      val preJoinFn = sample[(Int) => List[(Int, Int)]]
+      val serviceFn = sample[Int => Option[Int]]
+      val postJoinFn = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
+      val initStore = sample[Map[Int, Int]]
+
+      val serviceMap = original
+        .flatMap(preJoinFn)
+        .flatMap { case (k, v) =>
+          serviceFn(k).map { lv => (k, lv) }
+        }.toMap
+
+      val inMemory = TestGraphs.leftJoinInScala(original)(serviceFn)(preJoinFn)(postJoinFn)
+
+      val source = memSource(original)
+      val store = memStore(initStore)
+      val service = memService(serviceMap)
+
+      val job = TestGraphs.leftJoinJob[SparkPlatform, Int, Int, Int, Int, Int](Source[SparkPlatform, Int](source), service, store)(preJoinFn)(postJoinFn)
+
+      val platform = new SparkPlatform(sc, Empty())
+      platform.run(job)
+      val sparkResult = store.result
+      val memResult = Monoid.plus(initStore, inMemory)
+      assertSparseEqual(sparkResult, memResult)
     }
 
   }

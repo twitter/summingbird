@@ -11,11 +11,11 @@ import scala.reflect.ClassTag
 // TODO: add the logic for seeing what timespans each source / store / service can cover
 
 // A source promises to never return values outside of timeSpan
-trait SparkSource[T] {
+trait SparkSource[T] extends Serializable {
   def rdd(sc: SparkContext, timeSpan: Interval[Timestamp]): RDD[(Timestamp, T)]
 }
 
-trait SparkSink[T] {
+trait SparkSink[T] extends Serializable {
   def write(sc: SparkContext, rdd: RDD[(Timestamp, T)], timeSpan: Interval[Timestamp]): Unit
 }
 
@@ -24,7 +24,7 @@ case class MergeResult[K, V](
   writeClosure: () => Unit
 )
 
-trait SparkStore[K, V] {
+trait SparkStore[K, V] extends Serializable {
 
   def merge(sc: SparkContext,
             timeSpan: Interval[Timestamp],
@@ -115,7 +115,7 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
   }
 }
 
-trait SparkService[K, LV] {
+trait SparkService[K, LV] extends Serializable {
   def lookup[V](sc: SparkContext,
                 timeSpan: Interval[Timestamp],
                 rdd: RDD[(Timestamp, (K, V))]): RDD[(Timestamp, (K, (V, Option[LV])))]
