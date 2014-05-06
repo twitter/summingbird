@@ -193,6 +193,31 @@ class SparkLaws extends Specification {
       assertSparseEqual(sparkResult, memResult)
     }
 
+    "match scala for jobs with multiple summers" in {
+      val original = sample[List[Int]]
+      val fnR = sample[(Int) => List[Int]]
+      val fnA = sample[(Int) => List[(Int, Int)]]
+      val fnB = sample[(Int) => List[(Int, Int)]]
+      val initStoreA = sample[Map[Int, Int]]
+      val initStoreB = sample[Map[Int, Int]]
+
+      val inMemory = TestGraphs.multipleSummerJobInScala(original)(fnR, fnA, fnB)
+
+      val source = memSource(original)
+      val storeA = memStore(initStoreA)
+      val storeB = memStore(initStoreB)
+
+      val job = TestGraphs.multipleSummerJob[SparkPlatform, Int, Int, Int, Int, Int, Int](Source[SparkPlatform, Int](source), storeA, storeB)(fnR, fnA, fnB)
+
+      val platform = new SparkPlatform(sc, Empty())
+      platform.run(job)
+      val sparkResultA = storeA.result
+      val sparkResultB = storeB.result
+      val memResultA = Monoid.plus(initStoreA, inMemory._1)
+      val memResultB = Monoid.plus(initStoreB, inMemory._2)
+      assertSparseEqual(sparkResultA, memResultA)
+      assertSparseEqual(sparkResultB, memResultB)
+    }
   }
 
 }
