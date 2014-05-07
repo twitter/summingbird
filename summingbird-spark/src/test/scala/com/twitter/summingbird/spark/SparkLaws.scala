@@ -37,10 +37,19 @@ object SparkLaws {
     }
   }
 
-  def memService[K, LV](m: Map[K, LV]) = new SparkService[K, LV] {
+  def memService[K, LV](m: Map[K, LV]): SparkService[K, LV] = new SparkService[K, LV] {
     override def lookup[V](sc: SparkContext, timeSpan: Interval[Timestamp], rdd: RDD[(Timestamp, (K, V))]): RDD[(Timestamp, (K, (V, Option[LV])))] = {
       rdd.map { case (ts, (k, v)) => (ts, (k, (v, m.get(k)))) }
     }
+  }
+
+  def memService[K, LV](f: K => Option[LV], keys: Set[K]): SparkService[K, LV] = {
+    val m = keys.flatMap {
+      k => f(k).map {
+        v => (k, v) }
+    }.toMap
+
+    memService(m)
   }
 
   def assertSparseEqual[K, V : Group](found: Map[K, V], expected: Map[K, V], name: String = "found map"): Unit = {
@@ -172,17 +181,13 @@ class SparkLaws extends Specification {
       val postJoinFn = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
       val initStore = sample[Map[Int, Int]]
 
-      val serviceMap = original
-        .flatMap(preJoinFn)
-        .flatMap { case (k, v) =>
-          serviceFn(k).map { lv => (k, lv) }
-        }.toMap
-
       val inMemory = TestGraphs.leftJoinInScala(original)(serviceFn)(preJoinFn)(postJoinFn)
 
       val source = memSource(original)
       val store = memStore(initStore)
-      val service = memService(serviceMap)
+
+      val serviceKeys = original.flatMap(preJoinFn).map {_._1}.toSet
+      val service = memService(serviceFn, serviceKeys)
 
       val job = TestGraphs.leftJoinJob[SparkPlatform, Int, Int, Int, Int, Int](Source[SparkPlatform, Int](source), service, store)(preJoinFn)(postJoinFn)
 
@@ -218,6 +223,41 @@ class SparkLaws extends Specification {
       assertSparseEqual(sparkResultA, memResultA)
       assertSparseEqual(sparkResultB, memResultB)
     }
+
+    "match scala for map only jobs" in {
+      val original = sample[List[Int]]
+      val fn = sample[(Int) => List[Int]]
+
+      val inMemory = original.flatMap(fn)
+
+      val source = memSource(original)
+      val sink = captureSink[Int]
+
+      val job = TestGraphs.mapOnlyJob[SparkPlatform, Int, Int](Source[SparkPlatform, Int](source), sink)(fn)
+
+      val platform = new SparkPlatform(sc, Empty())
+      platform.run(job)
+      assert(sink.result.map(_._2) === inMemory)
+    }
+
+    "match scala for a job with a lookup" in {
+      val original = sample[List[Int]]
+      val serviceFn = sample[Int => Option[Int]]
+
+      val inMemory = TestGraphs.lookupJobInScala(original, serviceFn)
+
+      val source = memSource(original)
+      val service = memService(serviceFn, original.toSet)
+      val sink = captureSink[(Int, Int)]
+
+      val job = TestGraphs.lookupJob[SparkPlatform, Int, Int](Source[SparkPlatform, Int](source), service, sink)
+      val platform = new SparkPlatform(sc, Empty())
+      platform.run(job)
+
+      assert(sink.result.map(_._2) === inMemory)
+
+    }
+
   }
 
 }

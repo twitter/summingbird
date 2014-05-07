@@ -8,6 +8,7 @@ import org.apache.spark.rdd.RDD
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 import com.twitter.summingbird.option.{NonCommutative, Commutative}
+import com.twitter.chill.Externalizer
 
 /**
  * This is a first pass at an offline [[Platform]] that executes on apache spark.
@@ -61,11 +62,13 @@ class SparkPlatform(
   override def planFlatMappedProducer[T, U: ClassTag](
     prod: Prod[T],
     visited: Visited,
-    fn: (T) => TraversableOnce[U]): PlanState[U] = {
+    @transient fn: (T) => TraversableOnce[U]): PlanState[U] = {
+
+    val extFn = Externalizer(fn)
 
     val planState = toPlan(prod, visited)
     val flatMapped = planState.plan.flatMap { case (ts, v) =>
-      fn(v).map { u => (ts, u) }
+      extFn.get(v).map { u => (ts, u) }
     }
 
     PlanState(flatMapped, planState.visited)
@@ -84,11 +87,14 @@ class SparkPlatform(
   override def planKeyFlatMappedProducer[K, V, K2](
     prod: Prod[(K, V)],
     visited: Visited,
-    fn: K => TraversableOnce[K2]): PlanState[(K2, V)] = {
-      val planState = toPlan(prod, visited)
-      val mapped = planState.plan.flatMap {
-        case (ts, (key, value)) => fn(key).map { k2 => (ts, (k2, value)) }
-      }
+    @transient fn: K => TraversableOnce[K2]): PlanState[(K2, V)] = {
+
+    val extFn = Externalizer(fn)
+
+    val planState = toPlan(prod, visited)
+    val mapped = planState.plan.flatMap {
+      case (ts, (key, value)) => extFn.get(key).map { k2 => (ts, (k2, value)) }
+    }
 
     PlanState(mapped, planState.visited)
   }

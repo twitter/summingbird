@@ -25,7 +25,7 @@ object SummingbirdBuild extends Build {
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
     version := "0.4.2",
-    scalaVersion := "2.10.0",
+    scalaVersion := "2.10.4",
     crossScalaVersions := Seq("2.10.0"),
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api" % slf4jVersion,

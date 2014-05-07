@@ -7,6 +7,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.{PairRDDFunctions, RDD}
 import scala.reflect.ClassTag
+import com.twitter.chill.Externalizer
 
 // TODO: add the logic for seeing what timespans each source / store / service can cover
 
@@ -47,9 +48,10 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
                      timeSpan: Interval[Timestamp],
                      deltas: RDD[(Timestamp, (K, V))],
                      commutativity: Commutativity,
-                     monoid: Monoid[V]): MergeResult[K, V] = {
+                     @transient monoid: Monoid[V]): MergeResult[K, V] = {
 
     val snapshotRdd = snapshot(sc, timeSpan)
+    val extMonoid = Externalizer(monoid)
 
     val summedDeltas: RDD[(K, (Timestamp, V))] = commutativity match {
       case Commutative => {
@@ -59,7 +61,7 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
         keyedDeltas.reduceByKey {
           (acc, n) =>
             (acc, n) match {
-              case ((highestTs, sumSoFar), (ts, v)) => (Ordering[Timestamp].max(highestTs, ts), monoid.plus(sumSoFar, v))
+              case ((highestTs, sumSoFar), (ts, v)) => (Ordering[Timestamp].max(highestTs, ts), extMonoid.get.plus(sumSoFar, v))
             }
         }
       }
@@ -81,7 +83,7 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
               case (ts, v) => v
             }
             // projectedSortedVals should never be empty so .get is safe
-            (k, (maxTs, monoid.sumOption(projectedSortedVals).get))
+            (k, (maxTs, extMonoid.get.sumOption(projectedSortedVals).get))
           }
         }
       }
@@ -93,7 +95,7 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
       .map { case (k, (deltaSeq, storedValueSeq)) =>
         val delta = deltaSeq.headOption
         val storedValue = storedValueSeq.headOption
-        val sum = delta.map { d => storedValue.fold(d)(sv => (d._1, monoid.plus(sv, d._2))) }
+        val sum = delta.map { d => storedValue.fold(d)(sv => (d._1, extMonoid.get.plus(sv, d._2))) }
         (k, storedValue, sum)
       }
 
