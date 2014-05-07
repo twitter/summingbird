@@ -45,7 +45,7 @@ object SBRuntimeStats {
       incr <- prov.incrementor(jobID, name)
       } yield incr)
       .headOption
-      .getOrElse(sys.error("Could not find the platform metric provider"))
+      .getOrElse(sys.error("Could not find the platform metric provider, list of providers: " + platformMetricProviders mkString))
 }
 
 object JobMetrics{
