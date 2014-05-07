@@ -6,7 +6,6 @@ import scala.Tuple2;
 import scala.collection.JavaConversions;
 import scala.collection.TraversableOnce;
 import scala.runtime.AbstractFunction1;
-import scala.util.Either;
 
 import com.twitter.summingbird.KeyedProducer;
 import com.twitter.summingbird.Platform;
@@ -121,11 +120,6 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
   @Override
   public JTailProducer<P, T> write(Sink<P, ?, T> sink) {
     return wrap(delegate.write(sink.unwrap()));
-  }
-
-  @Override
-  public <U> JProducer<P, Either<T, U>> either(JProducer<P, U> other) {
-    return wrap(delegate.either(other.unwrap()));
   }
 
   @Override

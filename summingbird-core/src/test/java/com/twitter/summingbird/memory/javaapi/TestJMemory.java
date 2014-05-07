@@ -18,7 +18,6 @@ import scala.Function1;
 import scala.Option;
 import scala.Some;
 import scala.Tuple2;
-import scala.util.Either;
 
 import com.twitter.algebird.Semigroup;
 import com.twitter.algebird.Semigroup$;
@@ -135,22 +134,6 @@ public class TestJMemory {
         return v.length() < 4 ? some(v) : JProducers.<String>none();
       }
     }), LESS_THAN_4);
-  }
-
-  @Test
-  public void testEither() {
-    Integer[] result = { 3, 3, 5, 3, 3, 5 };
-    validateResult(
-        SOURCE.map(TO_LENGTH).either(SOURCE).map(new Function<Either<Integer,String>, Integer>() {
-          public Integer apply(Either<Integer,String> p) {
-            if (p.isLeft()) {
-              return p.left().get();
-            } else {
-              return p.right().get().length();
-            }
-          }
-        }),
-        result);
   }
 
   @Test

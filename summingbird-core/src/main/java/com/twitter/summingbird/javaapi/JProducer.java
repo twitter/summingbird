@@ -2,7 +2,6 @@ package com.twitter.summingbird.javaapi;
 
 import scala.Option;
 import scala.Tuple2;
-import scala.util.Either;
 
 import com.twitter.summingbird.Platform;
 
@@ -31,7 +30,8 @@ public interface JProducer<P extends Platform<P>, T> {
   // invariant
   JTailProducer<P, T> write(Sink<P, ?, T> sink);
 
-  <U> JProducer<P, Either<T, U>> either(JProducer<P, U> other);
+  // Either does not cross compile between scala 2.9 and 2.10 as it moved from scala to scala.util
+//  <U> JProducer<P, Either<T, U>> either(JProducer<P, U> other);
 
   <K, V> JKeyedProducer<P, K, V> mapToKeyed(Function<T, Tuple2<K, V>> f);
 
