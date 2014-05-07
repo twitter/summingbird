@@ -16,6 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
+import cascading.flow.Flow
 import com.twitter.algebird.{ Monoid, Semigroup, Monad }
 import com.twitter.algebird.{
   Universe,
@@ -607,11 +608,8 @@ class Scalding(
       c.set(k, v)
     }
 
-  def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Flow[_])] =
-    toFlow(timeSpan, mode, pf, (_: FlowDef) => { })
-
   // This is a side-effect-free computation that is called by run
-  def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_], mutate: FlowDef => Unit): Try[(Interval[Timestamp], Flow[_])] = {
+  def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Flow[_])] = {
     val flowDef = new FlowDef
     flowDef.setName(jobName)
     Scalding.toPipe(timeSpan, flowDef, mode, pf)
@@ -619,7 +617,6 @@ class Scalding(
       .flatMap { case (ts, pipe) =>
         // Now we have a populated flowDef, time to let Cascading do it's thing:
         try {
-          mutate(flowDef)
           Right((ts, mode.newFlowConnector(mode.config).connect(flowDef)))
         } catch {
           case (e: Throwable) => toTry(e)
@@ -634,11 +631,12 @@ class Scalding(
 
   def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = run(state, mode, pf, (f: FlowDef) => Unit)
+    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = run(state, mode, pf, (f: Flow[_]) => Unit)
 
   def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: PipeFactory[Any], mutate: FlowDef => Unit): WaitingState[Interval[Timestamp]] = {
+    pf: PipeFactory[Any],
+    mutate: Flow[_] => Unit): WaitingState[Interval[Timestamp]] = {
 
     mode match {
       case Hdfs(_, conf) =>
@@ -651,10 +649,11 @@ class Scalding(
     }
 
     val prepareState = state.begin
-    toFlow(prepareState.requested, mode, pf, mutate) match {
+    toFlow(prepareState.requested, mode, pf) match {
       case Left(errs) =>
         prepareState.fail(FlowPlanException(errs))
       case Right((ts,flow)) =>
+        mutate(flow)
         prepareState.willAccept(ts) match {
           case Right(runningState) =>
             try {
