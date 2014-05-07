@@ -29,6 +29,7 @@ object SummingbirdBuild extends Build {
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
     libraryDependencies ++= Seq(
+      "junit" % "junit" % "4.11" % "test",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
       // These satisify's scaldings log4j needs when in test mode
