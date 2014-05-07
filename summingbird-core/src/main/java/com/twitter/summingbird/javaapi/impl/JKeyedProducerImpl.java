@@ -50,12 +50,12 @@ public class JKeyedProducerImpl<P extends Platform<P>, K, V> extends JProducerIm
   }
 
   @Override
-  public <K2> JKeyedProducer<P, K2, V> flatMapKeys(Function<K, Iterable<K2>> f) {
+  public <K2> JKeyedProducer<P, K2, V> flatMapKeys(Function<K, ? extends Iterable<K2>> f) {
     return wrap(delegate.flatMapKeys(toTraversableOnce(f)));
   }
 
   @Override
-  public <V2> JKeyedProducer<P, K, V2> flatMapValues(Function<V, Iterable<V2>> f) {
+  public <V2> JKeyedProducer<P, K, V2> flatMapValues(Function<V, ? extends Iterable<V2>> f) {
     return wrap(delegate.flatMapValues(toTraversableOnce(f)));
   }
 

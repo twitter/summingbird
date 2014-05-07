@@ -25,10 +25,8 @@ public class WordCount {
             .split("\\s+"));
    }
 
-  @SuppressWarnings("unchecked") // have to use MODULE$ and it's a Semigroup<Object>
-  private static Semigroup<Long> sg = (Semigroup<Long>)(Semigroup<?>)Semigroup$.MODULE$.longSemigroup();
-
   public static <P extends Platform<P>> void wordCount(Producer<P, Status> source, Object store /* store is typed Object */) {
+    Semigroup<Long> sg = Semigroup$.MODULE$.jlongSemigroup();
     Producer$.MODULE$.<P, String, Long>toKeyed( // we have to call toKeyed around the Producer
         source.filter(new AbstractFunction1<Status, Object>() { // filter takes a function that returns Object
           public Object apply(Status s) {
@@ -46,6 +44,7 @@ public class WordCount {
   }
 
   public static <P extends Platform<P>> void wordCount2(JProducer<P, Status> source, Store<P, ?, String, Long> store) {
+    Semigroup<Long> semigroup = JProducers.semigroup(Long.class);
     source.filter(new Predicate<Status>() {
       public boolean test(Status s) {
         return s.getText() != null;
@@ -58,6 +57,6 @@ public class WordCount {
       public Tuple2<String,Long> apply(String token) {
         return new Tuple2<String, Long>(token, 1L);
       }
-    }).sumByKey(store, sg);
+    }).sumByKey(store, semigroup);
   }
 }

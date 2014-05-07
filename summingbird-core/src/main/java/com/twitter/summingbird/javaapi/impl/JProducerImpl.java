@@ -30,7 +30,7 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     return new JProducerImpl<P, T>(Producer$.MODULE$.<P, T>source(source.unwrap()));
   }
 
-  static <IN, OUT> Function1<IN, TraversableOnce<OUT>> toTraversableOnce(final Function<IN, Iterable<OUT>> f) {
+  public static <IN, OUT> Function1<IN, TraversableOnce<OUT>> toTraversableOnce(final Function<IN, ? extends Iterable<OUT>> f) {
     return new AbstractFunction1<IN, TraversableOnce<OUT>>() {
       public TraversableOnce<OUT> apply(IN v) {
         return JavaConversions.iterableAsScalaIterable(f.apply(v));
@@ -38,7 +38,7 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     };
   }
 
-  static <IN, OUT> Function1<IN, OUT> toScala(final Function<IN, OUT> f) {
+  public static <IN, OUT> Function1<IN, OUT> toScala(final Function<IN, OUT> f) {
     return new AbstractFunction1<IN, OUT>() {
       @Override
       public OUT apply(IN v) {
@@ -47,7 +47,7 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     };
   }
 
-  static <IN> Function1<IN, Object> toScala(final Predicate<IN> p) {
+  public static <IN> Function1<IN, Object> toScala(final Predicate<IN> p) {
     return new AbstractFunction1<IN, Object>() {
       @Override
       public Object apply(IN v) {
@@ -114,7 +114,7 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
   }
 
   @Override
-  public <U> JProducer<P, U> flatMap(Function<T, Iterable<U>> f) {
+  public <U> JProducer<P, U> flatMap(Function<T, ? extends Iterable<U>> f) {
     return wrap(delegate.flatMap(toTraversableOnce(f)));
   }
 

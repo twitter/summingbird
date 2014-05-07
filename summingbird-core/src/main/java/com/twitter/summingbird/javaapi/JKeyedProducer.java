@@ -17,9 +17,9 @@ public interface JKeyedProducer<P extends Platform<P>, K, V> extends JProducer<P
 
   JKeyedProducer<P, K, V> filterValues(Predicate<V> f);
 
-  <K2> JKeyedProducer<P, K2, V> flatMapKeys(Function<K, Iterable<K2>> f);
+  <K2> JKeyedProducer<P, K2, V> flatMapKeys(Function<K, ? extends Iterable<K2>> f);
 
-  <V2> JKeyedProducer<P, K, V2> flatMapValues(Function<V, Iterable<V2>> f);
+  <V2> JKeyedProducer<P, K, V2> flatMapValues(Function<V, ? extends Iterable<V2>> f);
 
   JProducer<P, K> keys();
 

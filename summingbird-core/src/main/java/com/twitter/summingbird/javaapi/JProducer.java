@@ -26,7 +26,7 @@ public interface JProducer<P extends Platform<P>, T> {
 
   <U> JProducer<P, U> optionMap(Function<T, Option<U>> f);
 
-  <U> JProducer<P, U> flatMap(Function<T, Iterable<U>> f);
+  <U> JProducer<P, U> flatMap(Function<T, ? extends Iterable<U>> f);
 
   // invariant
   JTailProducer<P, T> write(Sink<P, ?, T> sink);
