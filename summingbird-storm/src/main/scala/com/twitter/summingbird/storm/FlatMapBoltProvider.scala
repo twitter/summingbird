@@ -89,6 +89,7 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
 
   // Boilerplate extracting of the options from the DAG
   private val nodeName = stormDag.getNodeName(node)
+  private val jobID = getOrElse(DEFAULT_JOB_ID)
   private val metrics = getOrElse(DEFAULT_FM_STORM_METRICS)
   private val anchorTuples = getOrElse(AnchorTuples.default)
   logger.info("[{}] Anchoring: {}", nodeName, anchorTuples.anchor)
@@ -138,6 +139,7 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
     val builder = BuildSummer(storm, stormDag, node)
 
     BaseBolt(
+      jobID,
       metrics.metrics,
       anchorTuples,
       true,
@@ -164,6 +166,7 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
     val wrappedOperation = wrapTime(operation)
 
     BaseBolt(
+      jobID,
       metrics.metrics,
       anchorTuples,
       stormDag.dependantsOf(node).size > 0,

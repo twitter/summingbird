@@ -53,4 +53,5 @@ object Constants {
   val DEFAULT_ACK_ON_ENTRY = AckOnEntry(false)
   val DEFAULT_MAX_EMIT_PER_EXECUTE = MaxEmitPerExecute(Int.MaxValue)
   val DEFAULT_SUMMER_BATCH_MULTIPLIER = SummerBatchMultiplier(1)
+  val DEFAULT_JOB_ID = new String("")
 }

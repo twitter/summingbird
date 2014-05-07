@@ -19,6 +19,7 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.generated.StormTopology
 import backtype.storm.task.TopologyContext
+import backtype.storm.metric.api.CountMetric
 import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
 import backtype.storm.tuple.Fields
 import backtype.storm.{Config => BacktypeStormConfig, LocalCluster, StormSubmitter}
@@ -44,6 +45,28 @@ import com.twitter.util.{Future, Time}
 import org.slf4j.LoggerFactory
 
 import Constants._
+
+case class StormMetricProvider(context: TopologyContext, metrics: List[String]) extends PlatformMetricProvider {
+  @transient private val logger = LoggerFactory.getLogger(classOf[Storm])
+
+  val stormMetrics: Map[String, CountMetric] = metrics.map {mName =>
+    (mName, new CountMetric())
+    }.toMap
+  logger.info("Metrics for this BOLT: {}", stormMetrics.keySet mkString)
+
+  def incrementor(name: String) = {
+    val metric = stormMetrics.getOrElse(name, sys.error("It is only valid to create stats objects during submission"))
+    (by: Long) => metric.incrBy(by)
+  }
+
+  def registerMetrics {
+    stormMetrics.foreach { case (name, metric) =>  {
+      logger.info("IN BOLT: registered metric {}", name)
+      context.registerMetric(name, metric, 60)
+      }
+    }
+  }
+}
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
@@ -159,7 +182,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val namedNodes = dag.producerToPriorityNames(producer)
     (for {
-      id <- namedNodes :+ "DEFAULT"
+      id <- namedNodes :+ "DEFAULT" :+ "JOBID"
       stormOpts <- options.get(id)
       option <- stormOpts.get[T]
     } yield (id, option)).headOption
@@ -280,6 +303,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
+    val jobID = getOrElse(stormDag, node, DEFAULT_JOB_ID)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
     val builder = BuildSummer(this, stormDag, node)
@@ -299,7 +323,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
       FlatMapOperation.apply(storeBaseFMOp)
 
+
     val sinkBolt = BaseBolt(
+          jobID,
           metrics.metrics,
           anchorTuples,
           shouldEmit,

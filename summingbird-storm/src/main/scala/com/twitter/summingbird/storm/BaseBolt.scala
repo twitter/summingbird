@@ -28,6 +28,7 @@ import java.util.{ Map => JMap }
 import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{InflightTuples, InputState}
+import com.twitter.summingbird._
 
 import scala.collection.JavaConverters._
 
@@ -42,7 +43,8 @@ import org.slf4j.{LoggerFactory, Logger}
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
-case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
+case class BaseBolt[I,O](jobID: String,
+  metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   hasDependants: Boolean,
   outputFields: Fields,
@@ -53,6 +55,9 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
 
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
+
+  val statsForBolt: List[String] = RuntimeStats.registeredMetricsForJob(jobID).toList
+  logger.info("ON SUBMITTER, for BOLT list of registered stats: {}", statsForBolt mkString)
 
   private var collector: OutputCollector = null
 
@@ -120,6 +125,11 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
     collector = oc
     metrics().foreach { _.register(context) }
     executor.init(context)
+    val metricProvider = new StormMetricProvider(context, statsForBolt)
+    metricProvider.registerMetrics
+    RuntimeStats.addPlatformMetricProvider(jobID, metricProvider)
+    logger.info("IN BOLT prepare: added jobID metric provider for jobID {}", jobID)
+ 
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
