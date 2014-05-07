@@ -380,7 +380,7 @@ object Scalding {
                     getCommutativity(names, options, s) match {
                       case Commutative =>
                         logger.info("enabling flatMapKeys mapside caching")
-                        s.store.partialMerge(fmp, s.monoid, Commutative)
+                        s.store.partialMerge(fmp, s.semigroup, Commutative)
                       case NonCommutative =>
                         logger.info("not enabling flatMapKeys mapside caching, due to non-commutativity")
                         fmp

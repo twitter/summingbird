@@ -16,37 +16,34 @@
 
 package com.twitter.summingbird.storm
 
-import Constants._
-import backtype.storm.{Config => BacktypeStormConfig, LocalCluster, StormSubmitter}
+
 import backtype.storm.generated.StormTopology
+import backtype.storm.task.TopologyContext
 import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
 import backtype.storm.tuple.Fields
-import backtype.storm.tuple.Tuple
+import backtype.storm.{Config => BacktypeStormConfig, LocalCluster, StormSubmitter}
 
-import com.twitter.bijection.{Base64String, Injection}
 import com.twitter.algebird.{Monoid, Semigroup}
+import com.twitter.bijection.{Base64String, Injection}
 import com.twitter.chill.IKryoRegistrar
-import com.twitter.storehaus.{ReadableStore, WritableStore}
-import com.twitter.storehaus.algebra.{MergeableStore, Mergeable}
-import com.twitter.storehaus.algebra.MergeableStore.enrich
+import com.twitter.storehaus.algebra.{MergeableStore, Mergeable, StoreAlgebra}
+import com.twitter.storehaus.{ReadableStore, WritableStore, Store}
 import com.twitter.summingbird._
-import com.twitter.summingbird.viz.VizGraph
-import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
-import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
-import com.twitter.summingbird.online.{MultiTriggerCache, SummingQueueCache}
-import com.twitter.summingbird.online.executor.InputState
-import com.twitter.summingbird.online.option.{IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime}
-import com.twitter.summingbird.option.CacheSize
-import com.twitter.tormenta.spout.Spout
-import com.twitter.summingbird.planner._
-import com.twitter.summingbird.online.executor
+import com.twitter.summingbird.chill.SBChillRegistrar
 import com.twitter.summingbird.online.FlatMapOperation
-import com.twitter.summingbird.storm.planner._
+import com.twitter.summingbird.online.executor
+import com.twitter.summingbird.online.option.IncludeSuccessHandler
+import com.twitter.summingbird.planner.{Dag, OnlinePlan, SummerNode, FlatMapNode, SourceNode}
+import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
+import com.twitter.summingbird.storm.planner.StormNode
+import com.twitter.summingbird.viz.VizGraph
+import com.twitter.tormenta.spout.Spout
 import com.twitter.util.{Future, Time}
-import scala.annotation.tailrec
-import backtype.storm.tuple.Values
+
 import org.slf4j.LoggerFactory
+
+import Constants._
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
@@ -59,7 +56,25 @@ sealed trait StormStore[-K, V] {
 
 object MergeableStoreSupplier {
   def from[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
-    MergeableStoreSupplier(() => store, batcher)
+    MergeableStoreSupplier((TopologyContext) => store, batcher)
+
+  def from[K, V](store: TopologyContext => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
+    MergeableStoreSupplier(store, batcher)
+
+  def instrumentedStoreFrom[K, V](store: => Store[(K, BatchID), V])(implicit batcher: Batcher, sg: Monoid[V]): MergeableStoreSupplier[K, V] = {
+    import StoreAlgebra.enrich
+    val supplier = {(context: TopologyContext) =>
+      val instrumentedStore = new StoreStatReporter(context, store)
+      new MergeableStatReporter(context, instrumentedStore.toMergeable)
+    }
+    MergeableStoreSupplier(supplier, batcher)
+  }
+
+  def instrumentedMergeableFrom[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] = {
+    val supplier = {(context: TopologyContext) => new MergeableStatReporter(context, store)}
+    MergeableStoreSupplier(supplier, batcher)
+  }
+
 
    def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreSupplier[K, V] = {
     implicit val batcher = Batcher.unit
@@ -68,7 +83,7 @@ object MergeableStoreSupplier {
 }
 
 
-case class MergeableStoreSupplier[K, V](store: () => Mergeable[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
+case class MergeableStoreSupplier[K, V] private[summingbird] (store: TopologyContext => Mergeable[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
 
 trait StormService[-K, +V] {
   def store: StoreFactory[K, V]
@@ -102,6 +117,13 @@ object Storm {
   def store[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
     MergeableStoreSupplier.from(store)
 
+  def instrumentedStore[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher, sg: Monoid[V]): StormStore[K, V] =
+    MergeableStoreSupplier.instrumentedStoreFrom(store)
+
+  def store[K, V](store: (TopologyContext) => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
+    MergeableStoreSupplier.from(store)
+
+
   def service[K, V](serv: => ReadableStore[K, V]): StormService[K, V] = StoreWrapper(() => serv)
 
   def toStormSource[T](spout: Spout[T],
@@ -132,17 +154,19 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   private type Prod[T] = Producer[Storm, T]
 
-  private[storm] def getOrElse[T <: AnyRef : Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
+  private[storm] def get[T <: AnyRef : Manifest](dag: Dag[Storm], node: StormNode): Option[(String, T)] = {
     val producer = node.members.last
 
     val namedNodes = dag.producerToPriorityNames(producer)
-    val maybePair = (for {
+    (for {
       id <- namedNodes :+ "DEFAULT"
       stormOpts <- options.get(id)
       option <- stormOpts.get[T]
     } yield (id, option)).headOption
+  }
 
-    maybePair match {
+  private[storm] def getOrElse[T <: AnyRef : Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
+    get[T](dag, node) match {
       case None =>
           logger.debug("Node ({}): Using default setting {}", dag.getNodeName(node), default)
           default
@@ -204,7 +228,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   private def scheduleSummerBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
-    implicit val monoid = summer.monoid
+    implicit val semigroup = summer.semigroup
     implicit val batcher = summer.store.batcher
     val nodeName = stormDag.getNodeName(node)
 
@@ -216,10 +240,10 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       case MergeableStoreSupplier(contained, _) => contained
     }
 
-    def wrapMergable(supplier: () => Mergeable[ExecutorKeyType, V]) =
-        () => {
+    def wrapMergable(supplier: TopologyContext => Mergeable[ExecutorKeyType, V]) =
+        (context: TopologyContext) => {
           new Mergeable[ExecutorKeyType, ExecutorValueType] {
-            val innerMergable: Mergeable[ExecutorKeyType, V] = supplier()
+            val innerMergable: Mergeable[ExecutorKeyType, V] = supplier(context)
             implicit val innerSG = innerMergable.semigroup
 
             // Since we don't keep a timestamp in the store
@@ -258,18 +282,10 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
-    val flushFrequency = getOrElse(stormDag, node, DEFAULT_FLUSH_FREQUENCY)
-    logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
-
-    val cacheSize = getOrElse(stormDag, node, DEFAULT_FM_CACHE)
-    logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
+    val builder = BuildSummer(this, stormDag, node)
 
     val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
     logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
-
-    val useAsyncCache = getOrElse(stormDag, node, DEFAULT_USE_ASYNC_CACHE)
-    logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
-
 
     val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
     logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
@@ -283,21 +299,6 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
       FlatMapOperation.apply(storeBaseFMOp)
 
-    val cacheBuilder = if(useAsyncCache.get) {
-          val softMemoryFlush = getOrElse(stormDag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
-          logger.info("[{}] softMemoryFlush : {}", nodeName, softMemoryFlush.get)
-
-          val asyncPoolSize = getOrElse(stormDag, node, DEFAULT_ASYNC_POOL_SIZE)
-          logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
-
-          val valueCombinerCrushSize = getOrElse(stormDag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
-          logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
-
-          MultiTriggerCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, valueCombinerCrushSize, flushFrequency, softMemoryFlush, asyncPoolSize)
-        } else {
-          SummingQueueCache.builder[ExecutorKeyType, (List[InputState[Tuple]], ExecutorValueType)](cacheSize, flushFrequency)
-        }
-
     val sinkBolt = BaseBolt(
           metrics.metrics,
           anchorTuples,
@@ -309,7 +310,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
               flatmapOp,
               getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
               getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-              cacheBuilder,
+              builder,
               getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
               getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
               maxEmitPerExecute,

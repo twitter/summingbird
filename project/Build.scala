@@ -26,7 +26,10 @@ object SummingbirdBuild extends Build {
     organization := "com.twitter",
     version := "0.4.2",
     scalaVersion := "2.10.4",
-    crossScalaVersions := Seq("2.10.0"),
+    crossScalaVersions := Seq("2.10.4"),
+    // To support hadoop 1.x
+    javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
+
     libraryDependencies ++= Seq(
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
@@ -130,8 +133,8 @@ object SummingbirdBuild extends Build {
 
   val dfsDatastoresVersion = "1.3.4"
   val bijectionVersion = "0.6.2"
-  val algebirdVersion = "0.5.0"
-  val scaldingVersion = "0.9.0rc17"
+  val algebirdVersion = "0.6.0"
+  val scaldingVersion = "0.9.1"
   val storehausVersion = "0.9.0"
   val utilVersion = "6.3.8"
   val chillVersion = "0.3.6"
@@ -193,6 +196,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdOnline = module("online").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "algebird-util" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "chill" % chillVersion,

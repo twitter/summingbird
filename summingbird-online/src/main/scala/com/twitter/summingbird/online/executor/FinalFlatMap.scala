@@ -17,14 +17,17 @@ limitations under the License.
 package com.twitter.summingbird.online.executor
 
 import com.twitter.algebird.{SummingQueue, Semigroup, MapAlgebra}
+import com.twitter.algebird.util.summer.AsyncSummer
 import com.twitter.bijection.Injection
 import com.twitter.util.Future
 
 import com.twitter.summingbird.online.Externalizer
 
-import com.twitter.summingbird.online.{FlatMapOperation, AsyncCache, CacheBuilder}
+import com.twitter.summingbird.online.FlatMapOperation
+
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.option.{
+  SummerBuilder,
   MaxWaitingFutures,
   MaxFutureWaitTime,
   MaxEmitPerExecute,
@@ -46,9 +49,9 @@ private[summingbird] case class KeyValueShards(get: Int) {
   def summerIdFor[K](k: K): Int = k.hashCode % get
 }
 
-class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D](
+class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
-  cacheBuilder: CacheBuilder[Int, (List[S], Map[Key, Value])],
+  summerBuilder: SummerBuilder,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
@@ -56,7 +59,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D](
   pDecoder: Injection[Event, D],
   pEncoder: Injection[(Int, Map[Key, Value]), D]
   )
-  extends AsyncBase[Event, (Int, Map[Key, Value]), S, D](maxWaitingFutures,
+  extends AsyncBase[Event, (Int, Map[Key, Value]), S, D, RC](maxWaitingFutures,
                                                           maxWaitingTime,
                                                           maxEmitPerExec) {
 
@@ -68,7 +71,9 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D](
 
   val lockedOp = Externalizer(flatMapOp)
 
-  lazy val sCache = cacheBuilder(implicitly[Semigroup[(List[S], Map[Key, Value])]])
+  type SummerK = Int
+  type SummerV = (List[S], Map[Key, Value])
+  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(List[S], Map[Key, Value])]])
 
   private def formatResult(outData: Map[Int, (List[S], Map[Key, Value])])
                         : TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])] = {
@@ -91,7 +96,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D](
       val itemL = items.toList
       if(itemL.size > 0) {
         state.fanOut(itemL.size)
-        sCache.insert(itemL.map{case (k, v) =>
+        sCache.addAll(itemL.map{case (k, v) =>
           summerShards.summerIdFor(k) -> (List(state), Map(k -> v))
         }).map(formatResult(_))
       }

@@ -20,4 +20,7 @@ object Reducers {
   val default = Reducers(-1)
 }
 
+/**
+ * This specifies the number of reducers to be used in the context of the map-reduce framework.
+ */
 case class Reducers(count: Int)

@@ -20,4 +20,7 @@ object FlatMapShards {
   val default = FlatMapShards(0)
 }
 
+/**
+ * Setting this will force a random shuffle to the specified number of reducers.
+ */
 case class FlatMapShards(count: Int)

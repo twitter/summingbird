@@ -67,9 +67,9 @@ object StormTestRun {
     try {
       val cluster = new LocalCluster()
       cluster.submitTopology("test topology", plannedTopology.config, plannedTopology.topology)
-      Thread.sleep(4000)
+      Thread.sleep(4500)
       cluster.killTopology("test topology")
-      Thread.sleep(1000)
+      Thread.sleep(1500)
       cluster.shutdown
     } finally {
       System.setSecurityManager(oldSecManager)
