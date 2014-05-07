@@ -89,23 +89,17 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
       }
     }
 
-    val grouped = summedDeltas.cogroup(snapshotRdd)
-
-    val summed = grouped
-      .map { case (k, (deltaSeq, storedValueSeq)) =>
-        val delta = deltaSeq.headOption
-        val storedValue = storedValueSeq.headOption
-        val sum = delta.map { d => storedValue.fold(d)(sv => (d._1, extMonoid.get.plus(sv, d._2))) }
-        (k, storedValue, sum)
-      }
-
-    val sumBeforeMerge = summed
-      .flatMap { case (k, storedValueOpt, sumOpt) =>
-        sumOpt.map { case (ts, sum) => (ts, (k, (storedValueOpt, sum))) }
+    // TODO: these 'seqs that are actually options' are ugly
+    val grouped = summedDeltas.cogroup(snapshotRdd).map { case (k, (summedDeltaSeq, storedValueSeq)) =>
+      (k, storedValueSeq.headOption, summedDeltaSeq.headOption)
     }
 
-    val updatedSnapshot = summed.map { case (k, storedValue, sum) =>
-      val v = sum.map(_._2).getOrElse { storedValue.getOrElse(sys.error("this should never happen")) }
+    val sumBeforeMerge = grouped.flatMap { case (k, storedValue, summedDelta) =>
+      summedDelta.map { case (ts, d) => (ts, (k, (storedValue, d))) }
+    }
+
+    val updatedSnapshot = grouped.map { case (k, storedValue, summedDelta) =>
+      val v = summedDelta.map { case (ts, d) => storedValue.fold(d) { sv => extMonoid.get.plus(sv, d) } }.getOrElse(storedValue.getOrElse(sys.error("this should never happen")))
       (k, v)
     }
 

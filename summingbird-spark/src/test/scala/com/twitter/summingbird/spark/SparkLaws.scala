@@ -224,6 +224,32 @@ class SparkLaws extends Specification {
       assertSparseEqual(sparkResultB, memResultB)
     }
 
+    // TODO: is this different from above? Do we need both? Or just a better name?
+    "match scala for jobs with two sumByKeys " in {
+      val original = sample[List[(Int, Int)]]
+      val fn = sample[(Int) => List[Int]]
+
+      val initStoreA = sample[Map[Int, Int]]
+      val initStoreB = sample[Map[Int, Int]]
+
+      val inMemory = TestGraphs.twoSumByKeyInScala(original, fn)
+
+      val source = memSource(original)
+      val storeA = memStore(initStoreA)
+      val storeB = memStore(initStoreB)
+
+      val job = TestGraphs.twoSumByKey[SparkPlatform, Int, Int, Int](Source[SparkPlatform, (Int, Int)](source), storeA, fn, storeB)
+
+      val platform = new SparkPlatform(sc, Empty())
+      platform.run(job)
+      val sparkResultA = storeA.result
+      val sparkResultB = storeB.result
+      val memResultA = Monoid.plus(initStoreA, inMemory._1)
+      val memResultB = Monoid.plus(initStoreB, inMemory._2)
+      assertSparseEqual(sparkResultA, memResultA)
+      assertSparseEqual(sparkResultB, memResultB)
+    }
+
     "match scala for map only jobs" in {
       val original = sample[List[Int]]
       val fn = sample[(Int) => List[Int]]
