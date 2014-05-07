@@ -45,7 +45,7 @@ public class JProducers {
     classToMethod = new HashMap<Class<?>, Method>();
     Class<? extends Semigroup$> sgClass = Semigroup$.MODULE$.getClass();
     for (Method method : sgClass.getMethods()) {
-      if (method.getParameterCount() == 0 && method.getReturnType().isAssignableFrom(Semigroup.class)) {
+      if (method.getParameterTypes().length == 0 && method.getReturnType().isAssignableFrom(Semigroup.class)) {
         // method of signature {name}(): Semigroup[T]
         Type returnType = method.getGenericReturnType();
         if (returnType instanceof ParameterizedType) {
