@@ -56,10 +56,13 @@ case class StormMetricProvider(jobID: String,
     }.toMap
   logger.info("Metrics for this BOLT: {}", stormMetrics.keySet mkString)
 
-  def incrementor(name: String) = {
-    val metric = stormMetrics.getOrElse(name, sys.error("It is only valid to create stats objects during submission"))
-    (by: Long) => metric.incrBy(by)
-  }
+  def incrementor(passedJobId: String, name: String) =
+    if(passedJobId == jobID) {
+        val metric = stormMetrics.getOrElse(name, sys.error("It is only valid to create stats objects during submission"))
+        Some((by: Long) => metric.incrBy(by))
+    } else {
+      None
+    }
 
   def registerMetrics {
     stormMetrics.foreach { case (name, metric) =>  {

@@ -26,35 +26,29 @@ import java.util.concurrent.ConcurrentHashMap
  */
 
 trait PlatformMetricProvider {
-  val jobID: String
-  def incrementor(name: String): Long => Unit
+  def incrementor(jobId: String, name: String): Option[Long => Unit]
 }
 
 object SBRuntimeStats {
-
   // TODO: use synchronized set
   val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =
     new MSet[WeakReference[PlatformMetricProvider]]()
-
-  private def getPlaformMetricProviderForJobId(uniqueId: String): PlatformMetricProvider = { 
-    // look through the list of PlatformMetricProviders
-    // find the provider that matches the jobID
-    // if no match, return some exception/error/etc 
-
-    platformMetricProviders.find(p => Option(p).flatMap(_.get).get.jobID == uniqueId)
-                           .flatMap(_.get).getOrElse(sys.error("Could not find the platform metric provider"))
-  }
 
   def addPlatformMetricProvider(pp: PlatformMetricProvider) {
     platformMetricProviders += new WeakReference(pp)
   }
 
   def getPlatformMetric(jobID: String, name: String) =
-    getPlaformMetricProviderForJobId(jobID).incrementor(name)
+    (for {
+      provRef <- platformMetricProviders
+      prov <- provRef.get
+      incr <- prov.incrementor(jobID, name)
+      } yield incr)
+      .headOption
+      .getOrElse(sys.error("Could not find the platform metric provider"))
 }
 
 object JobMetrics{
-  // TODO: thread-safety?
   val registeredMetricsForJob = MMap[String, MSet[String]]()
 
   def registerMetric(jobID: String, name: String) {

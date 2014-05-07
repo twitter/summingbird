@@ -44,17 +44,31 @@ import org.apache.hadoop.io.serializer.{Serialization => HSerialization}
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
 import java.util.{ HashMap => JHashMap, Map => JMap, TimeZone }
-import cascading.flow.{FlowDef, Flow}
+import cascading.flow.{FlowDef, Flow, FlowProcess}
 import com.twitter.scalding.Mode
+import com.twitter.scalding.{ RuntimeStats => ScaldingRuntimeStats }
 
-import scala.util.{ Success, Failure }
+import scala.util.{Try => ScalaTry, Success, Failure}
 import scala.util.control.Exception.allCatch
 
 import org.slf4j.LoggerFactory
 
+case class ScaldingMetricProvider extends PlatformMetricProvider {
+  def pullInScaldingRuntimeForJobID(id: String) =
+    ScalaTry(ScaldingRuntimeStats.getFlowProcessForUniqueId(id).increment(_: String, _: String, _: Long)).toOption
+  def incrementor(jobId: String, name: String) = pullInScaldingRuntimeForJobID(jobId).map { inc =>
+    {
+      (by: Long) => inc("scalding_stats", name, by)
+    }
+  }
+}
+
+object ScaldingRuntimeStatsProvider {
+  SBRuntimeStats.addPlatformMetricProvider(new ScaldingMetricProvider())
+}
+
 object Scalding {
   @transient private val logger = LoggerFactory.getLogger(classOf[Scalding])
-
 
   def apply(jobName: String, options: Map[String, Options] = Map.empty) = {
     new Scalding(jobName, options, identity, List())
