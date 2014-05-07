@@ -2,6 +2,7 @@ package com.twitter.summingbird.memory.javaapi;
 
 import static com.twitter.summingbird.javaapi.JProducers.some;
 import static com.twitter.summingbird.javaapi.JProducers.toKeyed;
+import static com.twitter.summingbird.memory.javaapi.JMemory.service;
 import static com.twitter.summingbird.memory.javaapi.JMemory.source;
 import static com.twitter.summingbird.memory.javaapi.JMemory.store;
 import static java.util.Arrays.asList;
@@ -20,7 +21,6 @@ import scala.Some;
 import scala.Tuple2;
 
 import com.twitter.algebird.Semigroup;
-import com.twitter.algebird.Semigroup$;
 import com.twitter.summingbird.javaapi.Function;
 import com.twitter.summingbird.javaapi.JProducer;
 import com.twitter.summingbird.javaapi.JProducers;
@@ -40,7 +40,7 @@ public class TestJMemory {
 
   private static final JProducer<Memory, String> SOURCE = source(asList(INPUT));
 
-  private static final Service<Memory, Function1<String, Option<Integer>>, String, Integer> LENGTH_SERVICE = JMemory.service(new Function<String, Option<Integer>>() {
+  private static final Service<Memory, Function1<String, Option<Integer>>, String, Integer> LENGTH_SERVICE = service(new Function<String, Option<Integer>>() {
     public Option<Integer> apply(String p) {
       return new Some<Integer>(p.length());
     }
@@ -138,8 +138,6 @@ public class TestJMemory {
 
   @Test
   public void testSumByKey() {
-    @SuppressWarnings("unchecked")
-    Semigroup<Long> sg = (Semigroup<Long>)(Semigroup<?>)Semigroup$.MODULE$.longSemigroup();
     HashMap<String, Long> store = new HashMap<String, Long>();
     validateSize(SOURCE.merge(SOURCE).mapToKeyed(TO_KEY_1).sumByKey(store(store), sg), 6);
     assertEquals("store: " + store, 3, store.size());

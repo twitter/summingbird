@@ -179,7 +179,6 @@ sealed trait Producer[P <: Platform[P], +T] {
   def either[U](other: Producer[P, U]): Producer[P, Either[T, U]] =
     map(Left(_): Either[T, U])
       .merge(other.map(Right(_): Either[T, U]))
-
 }
 
 /** Wraps the sources of the given Platform */
