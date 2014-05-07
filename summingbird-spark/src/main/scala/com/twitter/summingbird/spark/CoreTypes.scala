@@ -1,11 +1,11 @@
 package com.twitter.summingbird.spark
 
-import com.twitter.algebird.{Interval, Monoid}
+import com.twitter.algebird.{Interval, Semigroup}
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.option.{NonCommutative, Commutative, Commutativity}
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
-import org.apache.spark.rdd.{PairRDDFunctions, RDD}
+import org.apache.spark.rdd.RDD
 import scala.reflect.ClassTag
 import com.twitter.chill.Externalizer
 
@@ -31,7 +31,7 @@ trait SparkStore[K, V] extends Serializable {
             timeSpan: Interval[Timestamp],
             deltas: RDD[(Timestamp, (K, V))],
             commutativity: Commutativity,
-            monoid: Monoid[V]): MergeResult[K, V]
+            semigroup: Semigroup[V]): MergeResult[K, V]
 }
 
 abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, V] {
@@ -48,10 +48,10 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
                      timeSpan: Interval[Timestamp],
                      deltas: RDD[(Timestamp, (K, V))],
                      commutativity: Commutativity,
-                     @transient monoid: Monoid[V]): MergeResult[K, V] = {
+                     @transient semigroup: Semigroup[V]): MergeResult[K, V] = {
 
     val snapshotRdd = snapshot(sc, timeSpan)
-    val extMonoid = Externalizer(monoid)
+    val extSemigroup = Externalizer(semigroup)
 
     val summedDeltas: RDD[(K, (Timestamp, V))] = commutativity match {
       case Commutative => {
@@ -61,7 +61,7 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
         keyedDeltas.reduceByKey {
           (acc, n) =>
             (acc, n) match {
-              case ((highestTs, sumSoFar), (ts, v)) => (Ordering[Timestamp].max(highestTs, ts), extMonoid.get.plus(sumSoFar, v))
+              case ((highestTs, sumSoFar), (ts, v)) => (Ordering[Timestamp].max(highestTs, ts), extSemigroup.get.plus(sumSoFar, v))
             }
         }
       }
@@ -83,7 +83,7 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
               case (ts, v) => v
             }
             // projectedSortedVals should never be empty so .get is safe
-            (k, (maxTs, extMonoid.get.sumOption(projectedSortedVals).get))
+            (k, (maxTs, extSemigroup.get.sumOption(projectedSortedVals).get))
           }
         }
       }
@@ -99,7 +99,7 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
     }
 
     val updatedSnapshot = grouped.map { case (k, storedValue, summedDelta) =>
-      val v = summedDelta.map { case (ts, d) => storedValue.fold(d) { sv => extMonoid.get.plus(sv, d) } }.getOrElse(storedValue.getOrElse(sys.error("this should never happen")))
+      val v = summedDelta.map { case (ts, d) => storedValue.fold(d) { sv => extSemigroup.get.plus(sv, d) } }.getOrElse(storedValue.getOrElse(sys.error("this should never happen")))
       (k, v)
     }
 

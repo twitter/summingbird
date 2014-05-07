@@ -1,7 +1,7 @@
 package com.twitter.summingbird.spark
 
 import com.twitter.summingbird._
-import com.twitter.algebird.Monoid
+import com.twitter.algebird.Semigroup
 import scala.reflect.ClassTag
 
 /**
@@ -59,7 +59,7 @@ trait PlatformPlanner[P <: Platform[P]] {
 
       case LeftJoinedProducer(prod, service) => planLeftJoinedProducer(prod, visited, service)
 
-      case Summer(prod, store, monoid) => planSummer(prod, visited, store, monoid)
+      case Summer(prod, store, semigroup) => planSummer(prod, visited, store, semigroup)
     }
 
     PlanState(updatedState.plan.asInstanceOf[P#Plan[T]], updatedState.visited + (outer -> updatedState.plan))
@@ -85,6 +85,6 @@ trait PlatformPlanner[P <: Platform[P]] {
 
   def planLeftJoinedProducer[K: ClassTag, V: ClassTag, JoinedV](prod: Prod[(K, V)], visited: Visited, service: P#Service[K, JoinedV]): PlanState[(K, (V, Option[JoinedV]))]
 
-  def planSummer[K: ClassTag, V: ClassTag](prod: Prod[(K, V)], visited: Visited, store: P#Store[K, V], monoid: Monoid[V]): PlanState[(K, (Option[V], V))]
+  def planSummer[K: ClassTag, V: ClassTag](prod: Prod[(K, V)], visited: Visited, store: P#Store[K, V], semigroup: Semigroup[V]): PlanState[(K, (Option[V], V))]
 
 }

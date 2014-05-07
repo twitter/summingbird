@@ -1,6 +1,6 @@
 package com.twitter.summingbird.spark
 
-import com.twitter.algebird.{Interval, Monoid}
+import com.twitter.algebird.{Semigroup, Interval}
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Timestamp
 import org.apache.spark.SparkContext
@@ -127,11 +127,11 @@ class SparkPlatform(
     prod: Prod[(K, V)],
     visited: Visited,
     store: Store[K, V],
-    monoid: Monoid[V]): PlanState[(K, (Option[V], V))] = {
+    semigroup: Semigroup[V]): PlanState[(K, (Option[V], V))] = {
 
     val planState = toPlan(prod, visited)
     // TODO: detect commutativity
-    val mergeResult = store.merge(sc, timeSpan, planState.plan, NonCommutative, monoid)
+    val mergeResult = store.merge(sc, timeSpan, planState.plan, NonCommutative, semigroup)
 
     writeClosures += mergeResult.writeClosure
 
