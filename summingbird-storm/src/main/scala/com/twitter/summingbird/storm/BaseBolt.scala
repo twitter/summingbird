@@ -56,7 +56,7 @@ case class BaseBolt[I,O](jobID: String,
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
 
-  val statsForBolt: List[String] = RuntimeStats.registeredMetricsForJob(jobID).toList
+  val statsForBolt: List[String] = JobMetrics.registeredMetricsForJob(jobID).toList
   logger.info("ON SUBMITTER, for BOLT list of registered stats: {}", statsForBolt mkString)
 
   private var collector: OutputCollector = null
@@ -125,9 +125,9 @@ case class BaseBolt[I,O](jobID: String,
     collector = oc
     metrics().foreach { _.register(context) }
     executor.init(context)
-    val metricProvider = new StormMetricProvider(context, statsForBolt)
+    val metricProvider = new StormMetricProvider(jobID, context, statsForBolt)
     metricProvider.registerMetrics
-    RuntimeStats.addPlatformMetricProvider(jobID, metricProvider)
+    SBRuntimeStats.addPlatformMetricProvider(metricProvider)
     logger.info("IN BOLT prepare: added jobID metric provider for jobID {}", jobID)
  
   }

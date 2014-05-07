@@ -46,7 +46,9 @@ import org.slf4j.LoggerFactory
 
 import Constants._
 
-case class StormMetricProvider(context: TopologyContext, metrics: List[String]) extends PlatformMetricProvider {
+case class StormMetricProvider(jobID: String,
+                               context: TopologyContext,
+                               metrics: List[String]) extends PlatformMetricProvider {
   @transient private val logger = LoggerFactory.getLogger(classOf[Storm])
 
   val stormMetrics: Map[String, CountMetric] = metrics.map {mName =>

@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird
 
-import scala.collection.mutable.{ HashMap => MMap, Set => MSet }
+import scala.collection.mutable.{ SynchronizedSet, HashSet => MSet, HashMap => MMap }
 import scala.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 
@@ -26,45 +26,49 @@ import java.util.concurrent.ConcurrentHashMap
  */
 
 trait PlatformMetricProvider {
+  val jobID: String
   def incrementor(name: String): Long => Unit
 }
 
-object RuntimeStats {
+object SBRuntimeStats {
 
-  private val platformMetricProviderForJob: ConcurrentHashMap[String, WeakReference[PlatformMetricProvider]] =
-    new ConcurrentHashMap[String, WeakReference[PlatformMetricProvider]]()
+  // TODO: use synchronized set
+  val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =
+    new MSet[WeakReference[PlatformMetricProvider]]()
 
-  // TODO: make sure this is thread-safe
-  val registeredMetricsForJob = MMap[String, MSet[String]]()
+  private def getPlaformMetricProviderForJobId(uniqueId: String): PlatformMetricProvider = { 
+    // look through the list of PlatformMetricProviders
+    // find the provider that matches the jobID
+    // if no match, return some exception/error/etc 
 
-  private def getPlaformMetricProviderForJobId(uniqueId: String): PlatformMetricProvider = 
-    Option(platformMetricProviderForJob.get(uniqueId))
-      .flatMap(_.get)
-      .getOrElse {
-        sys.error("Error in job deployment, the Platform Provider for unique id %s isn't available".format(uniqueId))
-      }
-  
-
-  def addPlatformMetricProvider(jobID: String, pp: PlatformMetricProvider) {
-    platformMetricProviderForJob.put(jobID, new WeakReference(pp))
+    platformMetricProviders.find(p => Option(p).flatMap(_.get).get.jobID == uniqueId)
+                           .flatMap(_.get).getOrElse(sys.error("Could not find the platform metric provider"))
   }
 
-  def registerMetric(jobID: String, name: String) {
-    if (platformMetricProviderForJob.size == 0) {
-      val buf = registeredMetricsForJob.getOrElseUpdate(jobID, MSet[String]())
-      buf += name
-      println("ON SUBMITTER: Registered metric " + name + " for jobID " + jobID)
-    }
+  def addPlatformMetricProvider(pp: PlatformMetricProvider) {
+    platformMetricProviders += new WeakReference(pp)
   }
 
   def getPlatformMetric(jobID: String, name: String) =
     getPlaformMetricProviderForJobId(jobID).incrementor(name)
 }
 
-case class Stat(name: String)(implicit jobID: String) {
-  RuntimeStats.registerMetric(jobID, name)
+object JobMetrics{
+  // TODO: thread-safety?
+  val registeredMetricsForJob = MMap[String, MSet[String]]()
 
-  lazy val metric: (Long => Unit) = RuntimeStats.getPlatformMetric(jobID, name)
+  def registerMetric(jobID: String, name: String) {
+    if (SBRuntimeStats.platformMetricProviders.size == 0) {
+      val buf = registeredMetricsForJob.getOrElseUpdate(jobID, MSet[String]())
+      buf += name
+    }
+  }
+}
+
+case class Stat(name: String)(implicit jobID: String) {
+  JobMetrics.registerMetric(jobID, name)
+
+  lazy val metric: (Long => Unit) = SBRuntimeStats.getPlatformMetric(jobID, name)
 
   def incrBy(amount: Long) = metric(amount)
 
