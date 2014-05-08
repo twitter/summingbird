@@ -30,6 +30,12 @@ trait PlatformMetricProvider {
 }
 
 object SBRuntimeStats {
+  private[this] final val platformObjects = List("com.twitter.summingbird.scalding.ScaldingRuntimeStatsProvider")
+  private[this] lazy val platformsInit = {
+    platformObjects.map {s => 
+      scala.util.Try(Class.forName(s + "$"))
+    }
+  }
   // TODO: use synchronized set
   val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =
     new MSet[WeakReference[PlatformMetricProvider]]()
@@ -38,7 +44,8 @@ object SBRuntimeStats {
     platformMetricProviders += new WeakReference(pp)
   }
 
-  def getPlatformMetric(jobID: String, name: String) =
+  def getPlatformMetric(jobID: String, name: String) = {
+    platformsInit
     (for {
       provRef <- platformMetricProviders
       prov <- provRef.get
@@ -46,6 +53,7 @@ object SBRuntimeStats {
       } yield incr)
       .headOption
       .getOrElse(sys.error("Could not find the platform metric provider, list of providers: " + platformMetricProviders mkString))
+    }
 }
 
 object JobMetrics{
