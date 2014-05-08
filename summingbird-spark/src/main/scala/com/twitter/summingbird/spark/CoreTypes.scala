@@ -111,6 +111,7 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
   }
 }
 
+// TODO: Need to implement the logic for time based lookups (finding what a value was for a given key at a given time)
 trait SparkService[K, LV] extends Serializable {
   def lookup[V](sc: SparkContext,
                 timeSpan: Interval[Timestamp],

@@ -9,8 +9,7 @@ import scala.reflect.ClassTag
  * given that all the generic types have been erased. This helper gives you
  * type safe methods to implement, and casts / coerces things for you.
  *
- * TODO: Need to address use of ClassManifest
- * TODO: Is this useful outside of teh spark platform?
+ * TODO: Is this useful outside of the spark platform? Is it useful at all?
  *
  * @author Alex Levenson
  */

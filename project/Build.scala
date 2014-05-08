@@ -25,6 +25,8 @@ object SummingbirdBuild extends Build {
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
     version := "0.4.2",
+    // TODO: This removes cross compile support! Don't merge this!
+    //       Need to find a way to deal with the fact that summingbird-spark will only work with scala 2.10
     scalaVersion := "2.10.4",
     crossScalaVersions := Seq("2.10.4"),
     // To support hadoop 1.x
