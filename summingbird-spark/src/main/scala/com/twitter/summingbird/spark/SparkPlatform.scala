@@ -7,8 +7,9 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
-import com.twitter.summingbird.option.{NonCommutative, Commutative}
+import com.twitter.summingbird.option.{MonoidIsCommutative, Commutativity, NonCommutative, Commutative}
 import com.twitter.chill.Externalizer
+import scala.collection.mutable
 
 /**
  * This is a first pass at an offline [[Platform]] that executes on apache spark.
@@ -20,7 +21,8 @@ import com.twitter.chill.Externalizer
  */
 class SparkPlatform(
   sc: SparkContext,
-  timeSpan: Interval[Timestamp]
+  timeSpan: Interval[Timestamp],
+  options: Map[String, Options] = Map.empty
 ) extends Platform[SparkPlatform] with PlatformPlanner[SparkPlatform] {
 
   override type Source[T] = SparkSource[T]
@@ -32,6 +34,7 @@ class SparkPlatform(
   // TODO: remove statefulness from this platform
   private[this] val writeClosures: ArrayBuffer[() => Unit] = ArrayBuffer()
   private[this] var planned = false
+  private[this] val namedProducers = mutable.Map[Prod[_], String]()
 
   override def plan[T](completed: TailProducer[SparkPlatform, T]): SparkPlatform#Plan[T] = {
     assert(!planned, "This platform has already been planned")
@@ -39,7 +42,8 @@ class SparkPlatform(
     visit(completed).plan
   }
 
-  override def planNamedProducer[T](prod: Prod[T], visited: Visited): PlanState[T] = {
+  override def planNamedProducer[T](prod: Prod[T], name: String, visited: Visited): PlanState[T] = {
+    namedProducers.put(prod, name)
     toPlan(prod, visited)
   }
 
@@ -124,18 +128,32 @@ class SparkPlatform(
   }
 
   override def planSummer[K: ClassTag, V: ClassTag](
+    summer: Summer[SparkPlatform, K, V],
     prod: Prod[(K, V)],
     visited: Visited,
     store: Store[K, V],
     semigroup: Semigroup[V]): PlanState[(K, (Option[V], V))] = {
 
     val planState = toPlan(prod, visited)
-    // TODO: detect commutativity
-    val mergeResult = store.merge(sc, timeSpan, planState.plan, NonCommutative, semigroup)
+
+    val commutativity = getCommutativity(summer)
+
+    val mergeResult = store.merge(sc, timeSpan, planState.plan, commutativity, semigroup)
 
     writeClosures += mergeResult.writeClosure
 
     PlanState(mergeResult.sumBeforeMerge, planState.visited)
+  }
+
+  def getCommutativity(summer: Summer[SparkPlatform, _, _]): Commutativity = {
+    val name = namedProducers.get(summer).getOrElse("DEFAULT")
+    val commutativity = for {
+      opt <- options.get(name)
+      comm <- opt.get[MonoidIsCommutative]
+    } yield {
+      comm.commutativity
+    }
+    commutativity.getOrElse(MonoidIsCommutative.default.commutativity)
   }
 
   def run(): Unit = {

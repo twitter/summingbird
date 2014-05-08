@@ -39,9 +39,9 @@ trait PlatformPlanner[P <: Platform[P]] {
   private def toPlan2[T](outer: Prod[T], visited: Visited): PlanState[T] = {
 
     val updatedState = outer match {
-      case NamedProducer(prod, _) => toPlan(prod, visited)
+      case NamedProducer(prod, name) => planNamedProducer(prod, name, visited)
 
-      case IdentityKeyedProducer(prod) => toPlan[Any](prod, visited)
+      case IdentityKeyedProducer(prod) => planIdentityKeyedProducer(prod, visited)
 
       case Source(source) => planSource(source, visited)
 
@@ -59,13 +59,13 @@ trait PlatformPlanner[P <: Platform[P]] {
 
       case LeftJoinedProducer(prod, service) => planLeftJoinedProducer(prod, visited, service)
 
-      case Summer(prod, store, semigroup) => planSummer(prod, visited, store, semigroup)
+      case summer@Summer(prod, store, semigroup) => planSummer(summer, prod, visited, store, semigroup)
     }
 
     PlanState(updatedState.plan.asInstanceOf[P#Plan[T]], updatedState.visited + (outer -> updatedState.plan))
   }
 
-  def planNamedProducer[T](prod: Prod[T], visited: Visited): PlanState[T]
+  def planNamedProducer[T](prod: Prod[T], name: String, visited: Visited): PlanState[T]
 
   def planIdentityKeyedProducer[K, V](prod: Prod[(K, V)], visited: Visited): PlanState[(K, V)]
 
@@ -85,6 +85,6 @@ trait PlatformPlanner[P <: Platform[P]] {
 
   def planLeftJoinedProducer[K: ClassTag, V: ClassTag, JoinedV](prod: Prod[(K, V)], visited: Visited, service: P#Service[K, JoinedV]): PlanState[(K, (V, Option[JoinedV]))]
 
-  def planSummer[K: ClassTag, V: ClassTag](prod: Prod[(K, V)], visited: Visited, store: P#Store[K, V], semigroup: Semigroup[V]): PlanState[(K, (Option[V], V))]
+  def planSummer[K: ClassTag, V: ClassTag](summer: Summer[P, K, V], prod: Prod[(K, V)], visited: Visited, store: P#Store[K, V], semigroup: Semigroup[V]): PlanState[(K, (Option[V], V))]
 
 }
