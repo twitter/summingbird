@@ -32,10 +32,15 @@ trait PlatformMetricProvider {
 object SBRuntimeStats {
   private[this] final val platformObjects = List("com.twitter.summingbird.scalding.ScaldingRuntimeStatsProvider")
   private[this] lazy val platformsInit = {
-    platformObjects.map {s => 
-      scala.util.Try(Class.forName(s + "$"))
+    platformObjects.foreach { s: String => 
+      try {
+        Class.forName(s + "$")
+      } catch {
+        case _: Throwable => ()
+      }
     }
   }
+  
   // TODO: use synchronized set
   val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =
     new MSet[WeakReference[PlatformMetricProvider]]()
