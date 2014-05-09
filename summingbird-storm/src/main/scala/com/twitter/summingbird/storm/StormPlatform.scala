@@ -187,7 +187,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val namedNodes = dag.producerToPriorityNames(producer)
     (for {
-      id <- namedNodes :+ "DEFAULT" :+ "JOBID"
+      id <- namedNodes :+ "DEFAULT"
       stormOpts <- options.get(id)
       option <- stormOpts.get[T]
     } yield (id, option)).headOption
@@ -213,12 +213,12 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     boltConfig
   }
 
-  private def scheduleFlatMapper(stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleFlatMapper(jobID: String, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val nodeName = stormDag.getNodeName(node)
     val usePreferLocalDependency = getOrElse(stormDag, node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
     logger.info("[{}] usePreferLocalDependency: {}", nodeName, usePreferLocalDependency.get)
 
-    val bolt: BaseBolt[Any, Any] = FlatMapBoltProvider(this, stormDag, node).apply
+    val bolt: BaseBolt[Any, Any] = FlatMapBoltProvider(this, jobID, stormDag, node).apply
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism).addConfigurations(tickConfig)
@@ -254,7 +254,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
-  private def scheduleSummerBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSummerBolt[K, V](jobID: String, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val semigroup = summer.semigroup
     implicit val batcher = summer.store.batcher
@@ -308,7 +308,6 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
-    val jobID = getOrElse(stormDag, node, DEFAULT_JOB_ID)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
     val builder = BuildSummer(this, stormDag, node)
@@ -418,12 +417,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val stormDag = OnlinePlan(tail)
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = genConfig(stormDag)
+    val jobID = config.get("storm.job.uniqueId").asInstanceOf[String]
 
 
     stormDag.nodes.foreach { node =>
       node match {
-        case _: SummerNode[_] => scheduleSummerBolt(stormDag, node)
-        case _: FlatMapNode[_] => scheduleFlatMapper(stormDag, node)
+        case _: SummerNode[_] => scheduleSummerBolt(jobID, stormDag, node)
+        case _: FlatMapNode[_] => scheduleFlatMapper(jobID, stormDag, node)
         case _: SourceNode[_] => scheduleSpout(stormDag, node)
       }
     }

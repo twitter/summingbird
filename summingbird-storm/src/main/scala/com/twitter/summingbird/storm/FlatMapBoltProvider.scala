@@ -57,7 +57,7 @@ object FlatMapBoltProvider {
     }
 }
 
-case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
+case class FlatMapBoltProvider(storm: Storm, jobID: String, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
   import FlatMapBoltProvider._
 
   def getOrElse[T <: AnyRef : Manifest](default: T, queryNode: StormNode = node) = storm.getOrElse(stormDag, queryNode, default)
@@ -89,7 +89,6 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
 
   // Boilerplate extracting of the options from the DAG
   private val nodeName = stormDag.getNodeName(node)
-  private val jobID = getOrElse(DEFAULT_JOB_ID)
   private val metrics = getOrElse(DEFAULT_FM_STORM_METRICS)
   private val anchorTuples = getOrElse(AnchorTuples.default)
   logger.info("[{}] Anchoring: {}", nodeName, anchorTuples.anchor)
