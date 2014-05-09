@@ -56,7 +56,7 @@ case class BaseBolt[I,O](jobID: String,
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
 
-  val statsForBolt: List[String] = JobMetrics.registeredMetricsForJob(jobID).toList
+  val statsForBolt: List[(String, String)] = JobMetrics.registeredMetricsForJob(jobID).toList
   logger.info("ON SUBMITTER, for BOLT list of registered stats: {}", statsForBolt mkString)
 
   private var collector: OutputCollector = null

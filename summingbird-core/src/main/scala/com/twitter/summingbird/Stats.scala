@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 
 trait PlatformMetricProvider {
-  def incrementor(jobId: String, name: String): Option[Long => Unit]
+  def incrementor(jobId: String, group: String, name: String): Option[Long => Unit]
 }
 
 object SBRuntimeStats {
@@ -40,7 +40,6 @@ object SBRuntimeStats {
       }
     }
   }
-  
   // TODO: use synchronized set
   val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =
     new MSet[WeakReference[PlatformMetricProvider]]()
@@ -49,33 +48,34 @@ object SBRuntimeStats {
     platformMetricProviders += new WeakReference(pp)
   }
 
-  def getPlatformMetric(jobID: String, name: String) = {
+  def getPlatformMetric(jobID: String, group: String, name: String) = {
     platformsInit
     (for {
       provRef <- platformMetricProviders
       prov <- provRef.get
-      incr <- prov.incrementor(jobID, name)
+      incr <- prov.incrementor(jobID, group, name)
       } yield incr)
       .headOption
-      .getOrElse(sys.error("Could not find the platform metric provider, list of providers: " + platformMetricProviders mkString))
+      //TODO: add a more descriptive error message
+      .getOrElse(sys.error("Could not find the platform metric provider"))
     }
 }
 
 object JobMetrics{
-  val registeredMetricsForJob = MMap[String, MSet[String]]()
+  val registeredMetricsForJob = MMap[String, MSet[(String, String)]]()
 
-  def registerMetric(jobID: String, name: String) {
+  def registerMetric(jobID: String, group: String, name: String) {
     if (SBRuntimeStats.platformMetricProviders.size == 0) {
-      val buf = registeredMetricsForJob.getOrElseUpdate(jobID, MSet[String]())
-      buf += name
+      val set = registeredMetricsForJob.getOrElseUpdate(jobID, MSet[(String, String)]())
+      set += ((group, name))
     }
   }
 }
 
-case class Stat(name: String)(implicit jobID: String) {
-  JobMetrics.registerMetric(jobID, name)
+case class Stat(group: String, name: String)(implicit jobID: String) {
+  JobMetrics.registerMetric(jobID, group, name)
 
-  lazy val metric: (Long => Unit) = SBRuntimeStats.getPlatformMetric(jobID, name)
+  lazy val metric: (Long => Unit) = SBRuntimeStats.getPlatformMetric(jobID, group, name)
 
   def incrBy(amount: Long) = metric(amount)
 

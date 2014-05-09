@@ -54,13 +54,12 @@ import scala.util.control.Exception.allCatch
 import org.slf4j.LoggerFactory
 
 case class ScaldingMetricProvider extends PlatformMetricProvider {
+
   def pullInScaldingRuntimeForJobID(id: String) =
     ScalaTry(ScaldingRuntimeStats.getFlowProcessForUniqueId(id).increment(_: String, _: String, _: Long)).toOption
-  def incrementor(jobId: String, name: String) = pullInScaldingRuntimeForJobID(jobId).map { inc =>
-    {
-      (by: Long) => inc("scalding_stats", name, by)
-    }
-  }
+
+  def incrementor(jobId: String, group: String, name: String) =
+    pullInScaldingRuntimeForJobID(jobId).map { inc => { (by: Long) => inc(group, name, by) } }
 }
 
 object ScaldingRuntimeStatsProvider {

@@ -48,17 +48,17 @@ import Constants._
 
 case class StormMetricProvider(jobID: String,
                                context: TopologyContext,
-                               metrics: List[String]) extends PlatformMetricProvider {
+                               metrics: List[(String, String)]) extends PlatformMetricProvider {
   @transient private val logger = LoggerFactory.getLogger(classOf[Storm])
 
-  val stormMetrics: Map[String, CountMetric] = metrics.map {mName =>
-    (mName, new CountMetric())
-    }.toMap
+  val stormMetrics: Map[String, CountMetric] = metrics.map {
+    case (groupName, metricName) => (groupName + "/" + metricName, new CountMetric())
+  }.toMap
   logger.info("Metrics for this BOLT: {}", stormMetrics.keySet mkString)
 
-  def incrementor(passedJobId: String, name: String) =
+  def incrementor(passedJobId: String, group: String, name: String) =
     if(passedJobId == jobID) {
-        val metric = stormMetrics.getOrElse(name, sys.error("It is only valid to create stats objects during submission"))
+        val metric = stormMetrics.getOrElse(group + "/" + name, sys.error("It is only valid to create stats objects during submission"))
         Some((by: Long) => metric.incrBy(by))
     } else {
       None
