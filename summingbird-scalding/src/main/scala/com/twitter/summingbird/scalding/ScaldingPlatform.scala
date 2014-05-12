@@ -16,6 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
+import cascading.flow.Flow
 import com.twitter.algebird.{ Monoid, Semigroup, Monad }
 import com.twitter.algebird.{
   Universe,
@@ -643,7 +644,12 @@ class Scalding(
 
   def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = {
+    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = run(state, mode, pf, (f: Flow[_]) => Unit)
+
+  def run(state: WaitingState[Interval[Timestamp]],
+    mode: Mode,
+    pf: PipeFactory[Any],
+    mutate: Flow[_] => Unit): WaitingState[Interval[Timestamp]] = {
 
     mode match {
       case Hdfs(_, conf) =>
@@ -660,6 +666,7 @@ class Scalding(
       case Left(errs) =>
         prepareState.fail(FlowPlanException(errs))
       case Right((ts,flow)) =>
+        mutate(flow)
         prepareState.willAccept(ts) match {
           case Right(runningState) =>
             try {
