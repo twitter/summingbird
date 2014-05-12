@@ -40,9 +40,8 @@ object SBRuntimeStats {
       }
     }
   }
-  // TODO: use synchronized set
   val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =
-    new MSet[WeakReference[PlatformMetricProvider]]()
+    new MSet[WeakReference[PlatformMetricProvider]] with SynchronizedSet[WeakReference[PlatformMetricProvider]]
 
   def addPlatformMetricProvider(pp: PlatformMetricProvider) {
     platformMetricProviders += new WeakReference(pp)
@@ -56,8 +55,7 @@ object SBRuntimeStats {
       incr <- prov.incrementor(jobID, group, name)
       } yield incr)
       .headOption
-      //TODO: add a more descriptive error message
-      .getOrElse(sys.error("Could not find the platform metric provider"))
+      .getOrElse(sys.error("Could not find the platform metric provider for jobID " + jobID))
     }
 }
 
