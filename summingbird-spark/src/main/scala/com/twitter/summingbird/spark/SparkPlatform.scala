@@ -5,7 +5,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Timestamp
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, Buffer => ScalaBuffer}
 import scala.reflect.ClassTag
 import com.twitter.summingbird.option.{MonoidIsCommutative, Commutativity, NonCommutative, Commutative}
 import com.twitter.chill.Externalizer
@@ -32,7 +32,7 @@ class SparkPlatform(
   override type Plan[T] = RDD[(Timestamp, T)]
 
   // TODO: remove statefulness from this platform
-  private[this] val writeClosures: ArrayBuffer[() => Unit] = ArrayBuffer()
+  private[this] val writeClosures: ScalaBuffer[() => Unit] = ArrayBuffer()
   private[this] var planned = false
   private[this] val namedProducers = mutable.Map[Prod[_], String]()
 
@@ -75,7 +75,7 @@ class SparkPlatform(
       extFn.get(v).map { u => (ts, u) }
     }
 
-    PlanState(flatMapped, planState.visited)
+    planState.copy(plan = flatMapped)
   }
 
   override def planMergedProducer[T](left: Prod[T], right: Prod[T], visited: Visited): PlanState[T] = {
@@ -85,7 +85,7 @@ class SparkPlatform(
 
     // when those are both done, union the results
     val both = leftPlanState.plan ++ rightPlanState.plan
-    PlanState(both, rightPlanState.visited)
+    rightPlanState.copy(plan = both)
   }
 
   override def planKeyFlatMappedProducer[K, V, K2](
@@ -100,7 +100,7 @@ class SparkPlatform(
       case (ts, (key, value)) => extFn.get(key).map { k2 => (ts, (k2, value)) }
     }
 
-    PlanState(mapped, planState.visited)
+    planState.copy(plan = mapped)
   }
 
   override def planAlsoProducer[E, R: ClassTag](ensure: TailProd[E], result: Prod[R], visited: Visited): PlanState[R] = {
@@ -111,9 +111,7 @@ class SparkPlatform(
 
   override def planWrittenProducer[T: ClassTag](prod: Prod[T], visited: Visited, sink: Sink[T]): PlanState[T]  = {
     val planState = toPlan(prod, visited)
-    writeClosures += { () =>
-      sink.write(sc, planState.plan, timeSpan)
-    }
+    writeClosures += { () => sink.write(sc, planState.plan, timeSpan) }
     planState
   }
 
@@ -124,7 +122,7 @@ class SparkPlatform(
 
     val joined = service.lookup(sc, timeSpan, planState.plan)
 
-    PlanState(joined, planState.visited)
+    planState.copy(plan = joined)
   }
 
   override def planSummer[K: ClassTag, V: ClassTag](
@@ -142,7 +140,7 @@ class SparkPlatform(
 
     writeClosures += mergeResult.writeClosure
 
-    PlanState(mergeResult.sumBeforeMerge, planState.visited)
+    planState.copy(plan = mergeResult.sumBeforeMerge)
   }
 
   def getCommutativity(summer: Summer[SparkPlatform, _, _]): Commutativity = {

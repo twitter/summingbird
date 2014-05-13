@@ -55,33 +55,25 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
 
     val summedDeltas: RDD[(K, (Timestamp, V))] = commutativity match {
       case Commutative => {
-        val keyedDeltas = deltas.map {
-          case (ts, (k, v)) => (k, (ts, v))
+        val keyedDeltas = deltas.map { case (ts, (k, v)) => (k, (ts, v)) }
+
+        keyedDeltas.reduceByKey { case ((highestTs, sumSoFar), (ts, v)) =>
+          (Ordering[Timestamp].max(highestTs, ts), extSemigroup.get.plus(sumSoFar, v))
         }
-        keyedDeltas.reduceByKey {
-          (acc, n) =>
-            (acc, n) match {
-              case ((highestTs, sumSoFar), (ts, v)) => (Ordering[Timestamp].max(highestTs, ts), extSemigroup.get.plus(sumSoFar, v))
-            }
-        }
+
       }
 
       case NonCommutative => {
-        val keyedDeltas = deltas.map {
-          case (ts, (k, v)) => (k, (ts, v))
-        }
+        val keyedDeltas = deltas.map { case (ts, (k, v)) => (k, (ts, v)) }
+
         // TODO: how to get a sorted group w/o bringing the entire group into memory?
         //       *does* this even bring it into memory?
         val grouped = keyedDeltas.groupByKey()
         grouped.map {
           case (k, vals) => {
-            val sortedVals = vals.sortBy {
-              case (ts, v) => ts
-            }
+            val sortedVals = vals.sortBy(_._1) // sort by time
             val maxTs = sortedVals.last._1
-            val projectedSortedVals = sortedVals.iterator.map {
-              case (ts, v) => v
-            }
+            val projectedSortedVals = sortedVals.iterator.map(_._2) // just the values
             // projectedSortedVals should never be empty so .get is safe
             (k, (maxTs, extSemigroup.get.sumOption(projectedSortedVals).get))
           }
@@ -99,13 +91,16 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
     }
 
     val updatedSnapshot = grouped.map { case (k, storedValue, summedDelta) =>
-      val v = summedDelta.map { case (ts, d) => storedValue.fold(d) { sv => extSemigroup.get.plus(sv, d) } }.getOrElse(storedValue.getOrElse(sys.error("this should never happen")))
+      val v = (summedDelta.map(_._2), storedValue) match {
+        case (Some(delta), Some(sv)) => extSemigroup.get.plus(sv, delta)
+        case (Some(delta), None) => delta
+        case (None, Some(sv)) => sv
+        case _ => sys.error("This should never happen, both summedDelta and storedValue were None")
+      }
       (k, v)
     }
 
-    val writeClosure = () => {
-      write(sc, updatedSnapshot)
-    }
+    val writeClosure = () => write(sc, updatedSnapshot)
 
     MergeResult(sumBeforeMerge, writeClosure)
   }
