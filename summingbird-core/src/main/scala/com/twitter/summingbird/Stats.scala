@@ -16,33 +16,37 @@
 
 package com.twitter.summingbird
 
-import scala.collection.mutable.{ SynchronizedSet, HashSet => MSet, HashMap => MMap }
+import scala.collection.mutable.{ Set => MSet, HashSet => MHashSet, HashMap => MMap }
+import scala.collection.JavaConverters._
 import scala.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
+import java.util.Collections
 
 trait PlatformMetricProvider {
   def incrementor(jobId: String, group: String, name: String): Option[Long => Unit]
 }
 
 object SBRuntimeStats {
+  // Need to explicitly invoke the object initializer on remote node
+  // since Scala object initializaiton is lazy, hence need the absolute object classpath
   private[this] final val platformObjects = List("com.twitter.summingbird.scalding.ScaldingRuntimeStatsProvider")
+
+  // invoke the ScaldingRuntimeStatsProvider object initializer on remote node
   private[this] lazy val platformsInit = {
     platformObjects.foreach { s: String => 
-      try {
-        Class.forName(s + "$")
-      } catch {
-        case _: Throwable => ()
-      }
+     try { Class.forName(s + "$") } 
     }
   }
   val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =
-    new MSet[WeakReference[PlatformMetricProvider]] with SynchronizedSet[WeakReference[PlatformMetricProvider]]
+    Collections.newSetFromMap[WeakReference[PlatformMetricProvider]](
+      new ConcurrentHashMap[WeakReference[PlatformMetricProvider], java.lang.Boolean]())
+      .asScala
 
   def addPlatformMetricProvider(pp: PlatformMetricProvider) {
     platformMetricProviders += new WeakReference(pp)
   }
 
-  def getPlatformMetric(jobID: String, group: String, name: String) = {
+  def getPlatformMetricIncrementor(jobID: String, group: String, name: String): Long => Unit = {
     platformsInit
     (for {
       provRef <- platformMetricProviders
@@ -55,11 +59,11 @@ object SBRuntimeStats {
 }
 
 object JobMetrics{
-  val registeredMetricsForJob = MMap[String, MSet[(String, String)]]()
+  val registeredMetricsForJob = MMap[String, MHashSet[(String, String)]]()
 
   def registerMetric(jobID: String, group: String, name: String) {
     if (SBRuntimeStats.platformMetricProviders.size == 0) {
-      val set = registeredMetricsForJob.getOrElseUpdate(jobID, MSet[(String, String)]())
+      val set = registeredMetricsForJob.getOrElseUpdate(jobID, MHashSet[(String, String)]())
       set += ((group, name))
     }
   }
@@ -68,9 +72,9 @@ object JobMetrics{
 case class Stat(group: String, name: String)(implicit jobID: String) {
   JobMetrics.registerMetric(jobID, group, name)
 
-  lazy val metric: (Long => Unit) = SBRuntimeStats.getPlatformMetric(jobID, group, name)
+  lazy val incrMetric: (Long => Unit) = SBRuntimeStats.getPlatformMetricIncrementor(jobID, group, name)
 
-  def incrBy(amount: Long) = metric(amount)
+  def incrBy(amount: Long) = incrMetric(amount)
 
   def incr = incrBy(1L)
 }
