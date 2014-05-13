@@ -34,7 +34,11 @@ object SBRuntimeStats {
   // invoke the ScaldingRuntimeStatsProvider object initializer on remote node
   private[this] lazy val platformsInit = {
     platformObjects.foreach { s: String => 
-     try { Class.forName(s + "$") } 
+    try {
+          Class.forName(s + "$")
+        } catch {
+          case _: Throwable => ()
+        }
     }
   }
   val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =
