@@ -122,6 +122,7 @@ object SummingbirdBuild extends Build {
     summingbirdClient,
     summingbirdStorm,
     summingbirdStormTest,
+    summingbirdStormJava,
     summingbirdScalding,
     summingbirdScaldingTest,
     summingbirdBuilder,
@@ -245,6 +246,11 @@ object SummingbirdBuild extends Build {
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
     summingbirdStorm
+  )
+
+  lazy val summingbirdStormJava = module("storm-java").dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdStorm % "test->test;compile->compile"
   )
 
   lazy val summingbirdScalding = module("scalding").settings(
