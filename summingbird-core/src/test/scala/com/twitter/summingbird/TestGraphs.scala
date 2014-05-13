@@ -18,6 +18,7 @@ package com.twitter.summingbird
 
 import com.twitter.algebird.MapAlgebra
 import com.twitter.algebird.{Monoid, Semigroup}
+import com.twitter.summingbird.Stat
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop._
 
@@ -165,8 +166,7 @@ object TestGraphs {
     MapAlgebra.sumByKey(
       data1 ::: data2 ::: data3 ::: data4
     )
- }
-
+  }
 
   def multipleSummerJobInScala[T1, T2, K1, V1: Monoid, K2, V2: Monoid]
     (source: List[T1])
@@ -230,6 +230,20 @@ object TestGraphs {
     val v2 = sumStream.map { case (k, (_, v)) => fn(k).map { (_, v) } }.flatten
     val sum2 = MapAlgebra.sumByKey(v2)
     (sum1, sum2)
+  }
+
+  def jobWithStats[P <: Platform[P], T, K, V: Monoid]
+    (id: String, source: Producer[P, T], store: P#Store[K, V])
+    (fn: T => TraversableOnce[(K, V)]): TailProducer[P, (K, (Option[V], V))] = {
+    implicit val jobID: String = id
+    val origStat = Stat("scalding.test", "orig_stat")
+    val fmStat = Stat("scalding.test", "fm_stat")
+    val fltrStat = Stat("scalding.test", "fltr_stat")
+    source
+      .flatMap{ x => origStat.incr; fn(x) }.name("FM")
+      .filter{ x => fmStat.incr; x._2.asInstanceOf[Int] > 10 }
+      .map{x => fltrStat.incr; x}
+      .sumByKey(store)
   }
 }
 

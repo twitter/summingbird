@@ -20,11 +20,6 @@ import scala.collection.mutable.{ SynchronizedSet, HashSet => MSet, HashMap => M
 import scala.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 
-
-/**
- * @author Katya Gonina 
- */
-
 trait PlatformMetricProvider {
   def incrementor(jobId: String, group: String, name: String): Option[Long => Unit]
 }

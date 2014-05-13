@@ -54,7 +54,7 @@ import scala.util.control.Exception.allCatch
 
 import org.slf4j.LoggerFactory
 
-case class ScaldingMetricProvider extends PlatformMetricProvider {
+case class ScaldingMetricProvider() extends PlatformMetricProvider {
 
   def pullInScaldingRuntimeForJobID(id: String) =
     ScalaTry(ScaldingRuntimeStats.getFlowProcessForUniqueId(id).increment(_: String, _: String, _: Long)).toOption
@@ -655,6 +655,10 @@ class Scalding(
       case Hdfs(_, conf) =>
         // Set these before the user settings, so that the user
         // can change them if needed
+        setHadoopConfigDefaults(conf)
+        updateConfig(conf)
+        setIoSerializations(conf)
+      case HadoopTest(conf,_) =>
         setHadoopConfigDefaults(conf)
         updateConfig(conf)
         setIoSerializations(conf)

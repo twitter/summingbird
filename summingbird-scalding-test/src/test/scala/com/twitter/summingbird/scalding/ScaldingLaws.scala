@@ -39,7 +39,8 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap => MutableHashMap,
 
 import cascading.scheme.local.{TextDelimited => CLTextDelimited}
 import cascading.tuple.{Tuple, Fields, TupleEntry}
-import cascading.flow.FlowDef
+import cascading.flow.Flow
+import cascading.stats.FlowStats
 import cascading.tap.Tap
 import cascading.scheme.NullScheme
 import org.apache.hadoop.mapred.JobConf
@@ -86,7 +87,6 @@ object ScaldingLaws extends Specification {
 
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must be_==(true)
     }
-
 
     "match scala single step pruned jobs" in {
       val original = sample[List[Int]]
@@ -294,6 +294,40 @@ object ScaldingLaws extends Specification {
 
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") must beTrue
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
+    }
+
+    "Compute correct statistics" in {
+      val original = sample[List[Int]]
+      val fn = sample[(Int) => List[(Int, Int)]]
+      val initStore = sample[Map[Int, Int]]
+      val inMemory = TestGraphs.singleStepInScala(original)(fn)
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = TestUtil.randomBatcher(inWithTime)
+      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
+      val (buffer, source) = TestSource(inWithTime)
+
+      val jobID: String = "scalding.job.testJobId"
+      val summer = TestGraphs.jobWithStats[Scalding,(Long,Int),Int,Int](jobID, source, testStore)(t =>
+          fn(t._2))
+      val scald = Scalding("scalaCheckJob").withConfigUpdater { sbconf =>
+        sbconf.put("scalding.job.uniqueId", jobID)
+      }
+      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val ws = new LoopState(intr)
+      val conf: Configuration = new Configuration()
+      val mode: Mode = HadoopTest(conf, t => (testStore.sourceToBuffer ++ buffer).get(t))
+
+      var flow: Flow[_] = null
+      scald.run(ws, mode, scald.plan(summer), {f: Flow[_] => flow = f})
+
+      val flowStats: FlowStats = flow.getFlowStats()
+      val origStat: Long = flowStats.getCounterValue("scalding.test", "orig_stat")
+      val fmStat: Long = flowStats.getCounterValue("scalding.test", "fm_stat")
+      val fltrStat: Long = flowStats.getCounterValue("scalding.test", "fltr_stat")
+      // Now check that the stats are computed correctly
+      origStat must be_==(original.size)
+      fmStat must be_==(original.flatMap(fn).size)
+      fltrStat must be_==(original.flatMap(fn).filter(x => x._2 > 10).size)
     }
   }
 }
