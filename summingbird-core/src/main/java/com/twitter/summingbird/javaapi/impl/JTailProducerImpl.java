@@ -12,7 +12,8 @@ public class JTailProducerImpl<P extends Platform<P>, T> extends JProducerImpl<P
   }
 
   static <P extends Platform<P>, T, R> JTailProducer<P, R> also(JTailProducer<P, T> tp1, JTailProducer<P, R> tp2) {
-    return wrap(tp1.unwrap().also(tp2.unwrap(), null)); // DummyImplicit ???
+    return wrap(tp1.unwrap().also(tp2.unwrap(), null));
+    // second parameter of also is a DummyImplicit used to differentiate with the other also above
   }
 
   static <P extends Platform<P>, T> JTailProducer<P, T> name(JTailProducer<P, T> tp, String id) {

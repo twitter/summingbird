@@ -21,6 +21,7 @@ import scala.Some;
 import scala.Tuple2;
 
 import com.twitter.algebird.Semigroup;
+import com.twitter.algebird.Semigroup$;
 import com.twitter.summingbird.javaapi.Function;
 import com.twitter.summingbird.javaapi.JProducer;
 import com.twitter.summingbird.javaapi.JProducers;
@@ -32,7 +33,7 @@ import com.twitter.summingbird.memory.Memory;
 
 public class TestJMemory {
 
-  private static final Semigroup<Long> sg = JProducers.semigroup(Long.class);
+  private static final Semigroup<Long> sg = Semigroup$.MODULE$.jlongSemigroup();
   private static final String[] INPUT = { "one", "two", "three" };
   private static final Integer[] LENGTH = { 3, 3, 5 };
   private static final String[] LESS_THAN_4 = { "one", "two" };

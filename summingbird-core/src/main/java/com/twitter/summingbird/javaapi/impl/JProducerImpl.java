@@ -55,7 +55,7 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     };
   }
 
-  com.twitter.summingbird.Producer<P, T> delegate;
+  Producer<P, T> delegate;
 
   JProducerImpl(Producer<P, T> delegate) {
     this.delegate = delegate;
