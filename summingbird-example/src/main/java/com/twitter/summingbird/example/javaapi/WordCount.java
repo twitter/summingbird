@@ -26,7 +26,7 @@ public class WordCount {
    }
 
   public static <P extends Platform<P>> void wordCount(Producer<P, Status> source, Object store /* store is typed Object */) {
-    Semigroup<Long> sg = Semigroup$.MODULE$.jlongSemigroup();
+    Semigroup<Long> sg = Semigroup$.MODULE$.jlongSemigroup(); // need to use MODULE$
     Producer$.MODULE$.<P, String, Long>toKeyed( // we have to call toKeyed around the Producer
         source.filter(new AbstractFunction1<Status, Object>() { // filter takes a function that returns Object
           public Object apply(Status s) {
@@ -44,7 +44,7 @@ public class WordCount {
   }
 
   public static <P extends Platform<P>> void wordCount2(JProducer<P, Status> source, Store<P, ?, String, Long> store) {
-    Semigroup<Long> semigroup = JProducers.semigroup(Long.class);
+    Semigroup<Long> semigroup = Semigroup$.MODULE$.jlongSemigroup();
     source.filter(new Predicate<Status>() {
       public boolean test(Status s) {
         return s.getText() != null;
