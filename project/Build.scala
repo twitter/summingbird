@@ -115,6 +115,7 @@ object SummingbirdBuild extends Build {
     publishLocal := { }
   ).aggregate(
     summingbirdCore,
+    summingbirdCoreJava,
     summingbirdBatch,
     summingbirdBatchHadoop,
     summingbirdOnline,
@@ -188,6 +189,10 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdCore = module("core").settings(
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
+  )
+
+  lazy val summingbirdCoreJava = module("core-java").dependsOn(
+    summingbirdCore % "test->test;compile->compile"
   )
 
   lazy val summingbirdOnline = module("online").settings(
