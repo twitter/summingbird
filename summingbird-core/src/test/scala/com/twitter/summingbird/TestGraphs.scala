@@ -233,9 +233,9 @@ object TestGraphs {
   }
 
   def jobWithStats[P <: Platform[P], T, K, V: Monoid]
-    (id: String, source: Producer[P, T], store: P#Store[K, V])
+    (id: SummingbirdJobID, source: Producer[P, T], store: P#Store[K, V])
     (fn: T => TraversableOnce[(K, V)]): TailProducer[P, (K, (Option[V], V))] = {
-    implicit val jobID: String = id
+    implicit val jobID: SummingbirdJobID = id
     val origStat = Stat("scalding.test", "orig_stat")
     val fmStat = Stat("scalding.test", "fm_stat")
     val fltrStat = Stat("scalding.test", "fltr_stat")

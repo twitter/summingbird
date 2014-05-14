@@ -21,6 +21,7 @@ import com.twitter.algebird.monad._
 import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs}
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
+import com.twitter.summingbird.SummingbirdJobID
 
 import java.util.TimeZone
 import java.io.File
@@ -306,11 +307,11 @@ object ScaldingLaws extends Specification {
       val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
-      val jobID: String = "scalding.job.testJobId"
+      val jobID: SummingbirdJobID = new SummingbirdJobID("scalding.job.testJobId")
       val summer = TestGraphs.jobWithStats[Scalding,(Long,Int),Int,Int](jobID, source, testStore)(t =>
           fn(t._2))
       val scald = Scalding("scalaCheckJob").withConfigUpdater { sbconf =>
-        sbconf.put("scalding.job.uniqueId", jobID)
+        sbconf.put("scalding.job.uniqueId", jobID.id)
       }
       val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
