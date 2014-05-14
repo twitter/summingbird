@@ -37,7 +37,7 @@ public class TestJMemory {
   private static final String[] INPUT = { "one", "two", "three" };
   private static final Integer[] LENGTH = { 3, 3, 5 };
   private static final String[] LESS_THAN_4 = { "one", "two" };
-  private static final String[] FLATTENED = { "o", "n", "e", "t", "w", "o", "t", "h", "r", "e", "e" };
+  private static final String[] FLATTENED = { "o", "e", "t", "o", "th", "ee" };
 
   private static final JProducer<Memory, String> SOURCE = source(asList(INPUT));
 
@@ -68,7 +68,7 @@ public class TestJMemory {
 
   private static final Function<String, List<String>> SPLIT = new Function<String, List<String>>() {
     public List<String> apply(String p) {
-      return Arrays.asList(p.split(""));
+      return Arrays.asList(p.split("[nwr]"));
     }
   };
 
