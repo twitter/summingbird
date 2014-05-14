@@ -56,15 +56,15 @@ import org.slf4j.LoggerFactory
 
 case class ScaldingMetricProvider() extends PlatformMetricProvider {
 
-  def pullInScaldingRuntimeForJobID(id: String) =
-    ScalaTry(ScaldingRuntimeStats.getFlowProcessForUniqueId(id).increment(_: String, _: String, _: Long)).toOption
+  def pullInScaldingRuntimeForJobID(jobID: SummingbirdJobID) =
+    ScalaTry(ScaldingRuntimeStats.getFlowProcessForUniqueId(jobID.id).increment(_: String, _: String, _: Long)).toOption
 
-  def incrementor(jobId: String, group: String, name: String) =
-    pullInScaldingRuntimeForJobID(jobId).map { inc => { (by: Long) => inc(group, name, by) } }
+  def incrementor(jobID: SummingbirdJobID, group: String, name: String) =
+    pullInScaldingRuntimeForJobID(jobID).map { inc => { (by: Long) => inc(group, name, by) } }
 }
 
 object ScaldingRuntimeStatsProvider {
-  SBRuntimeStats.addPlatformMetricProvider(new ScaldingMetricProvider())
+  SBRuntimeStats.addPlatformMetricProvider(new ScaldingMetricProvider)
 }
 
 object Scalding {

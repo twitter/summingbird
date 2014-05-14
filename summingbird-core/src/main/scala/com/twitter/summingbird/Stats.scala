@@ -23,8 +23,10 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
 
 trait PlatformMetricProvider {
-  def incrementor(jobId: String, group: String, name: String): Option[Long => Unit]
+  def incrementor(jobId: SummingbirdJobID, group: String, name: String): Option[Long => Unit]
 }
+
+case class SummingbirdJobID(id: String)
 
 object SBRuntimeStats {
   // Need to explicitly invoke the object initializer on remote node
@@ -34,11 +36,8 @@ object SBRuntimeStats {
   // invoke the ScaldingRuntimeStatsProvider object initializer on remote node
   private[this] lazy val platformsInit = {
     platformObjects.foreach { s: String => 
-    try {
-          Class.forName(s + "$")
-        } catch {
-          case _: Throwable => ()
-        }
+      try   { Class.forName(s + "$") }
+      catch { case _: Throwable => () }
     }
   }
   val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =
@@ -50,7 +49,7 @@ object SBRuntimeStats {
     platformMetricProviders += new WeakReference(pp)
   }
 
-  def getPlatformMetricIncrementor(jobID: String, group: String, name: String): Long => Unit = {
+  def getPlatformMetricIncrementor(jobID: SummingbirdJobID, group: String, name: String): Long => Unit = {
     platformsInit
     (for {
       provRef <- platformMetricProviders
@@ -63,17 +62,17 @@ object SBRuntimeStats {
 }
 
 object JobMetrics{
-  val registeredMetricsForJob = MMap[String, MHashSet[(String, String)]]()
+  val registeredMetricsForJob = MMap[SummingbirdJobID, MHashSet[(String, String)]]()
 
-  def registerMetric(jobID: String, group: String, name: String) {
-    if (SBRuntimeStats.platformMetricProviders.size == 0) {
+  def registerMetric(jobID: SummingbirdJobID, group: String, name: String) {
+    if (SBRuntimeStats.platformMetricProviders.isEmpty) {
       val set = registeredMetricsForJob.getOrElseUpdate(jobID, MHashSet[(String, String)]())
       set += ((group, name))
     }
   }
 }
 
-case class Stat(group: String, name: String)(implicit jobID: String) {
+case class Stat(group: String, name: String)(implicit jobID: SummingbirdJobID) {
   JobMetrics.registerMetric(jobID, group, name)
 
   lazy val incrMetric: (Long => Unit) = SBRuntimeStats.getPlatformMetricIncrementor(jobID, group, name)

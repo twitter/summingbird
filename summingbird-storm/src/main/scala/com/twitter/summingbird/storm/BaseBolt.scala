@@ -43,7 +43,7 @@ import org.slf4j.{LoggerFactory, Logger}
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
-case class BaseBolt[I,O](jobID: String,
+case class BaseBolt[I,O](jobID: SummingbirdJobID,
   metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   hasDependants: Boolean,
