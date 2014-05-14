@@ -415,7 +415,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val stormDag = OnlinePlan(tail)
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = genConfig(stormDag)
-    val jobID = SummingbirdJobID(config.get("storm.job.uniqueId").asInstanceOf[String])
+    val jobID = config.get("storm.job.uniqueId").asInstanceOf[SummingbirdJobID]
 
 
     stormDag.nodes.foreach { node =>
