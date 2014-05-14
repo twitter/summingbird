@@ -248,8 +248,13 @@ object SummingbirdBuild extends Build {
     summingbirdStorm
   )
 
-  lazy val summingbirdStormJava = module("storm-java").dependsOn(
+  lazy val summingbirdStormJava = module("storm-java").settings(
+    libraryDependencies ++= Seq(
+      "storm" % "storm" % "0.9.0-wip15" % "provided"
+    )
+  ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreJava % "test->test;compile->compile",
     summingbirdStorm % "test->test;compile->compile"
   )
 
@@ -317,5 +322,5 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "tormenta-twitter" % tormentaVersion,
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
-  ).dependsOn(summingbirdCore, summingbirdStorm)
+  ).dependsOn(summingbirdCore, summingbirdCoreJava, summingbirdStorm, summingbirdStormJava)
 }
