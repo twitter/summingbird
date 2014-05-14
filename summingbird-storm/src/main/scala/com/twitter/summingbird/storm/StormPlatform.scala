@@ -54,10 +54,10 @@ case class StormMetricProvider(jobID: SummingbirdJobID,
   val stormMetrics: Map[String, CountMetric] = metrics.map {
     case (groupName, metricName) => (groupName + "/" + metricName, new CountMetric)
   }.toMap
-  logger.info("Metrics for this BOLT: {}", stormMetrics.keySet mkString)
+  logger.debug("Metrics for this Bolt: {}", stormMetrics.keySet mkString)
 
   def incrementor(passedJobId: SummingbirdJobID, group: String, name: String) =
-    if(passedJobId.id == jobID.id) {
+    if(passedJobId.get == jobID.get) {
         val metric = stormMetrics.getOrElse(group + "/" + name, sys.error("It is only valid to create stats objects during submission"))
         Some((by: Long) => metric.incrBy(by))
     } else {
@@ -66,7 +66,7 @@ case class StormMetricProvider(jobID: SummingbirdJobID,
 
   def registerMetrics =
     stormMetrics.foreach { case (name, metric) =>
-      logger.info("IN BOLT: registered metric {}", name)
+      logger.debug("In Bolt: registered metric {} with TopologyContext", name)
       context.registerMetric(name, metric, 60)
     }
 }
@@ -415,7 +415,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val stormDag = OnlinePlan(tail)
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = genConfig(stormDag)
-    val jobID = config.get("storm.job.uniqueId").asInstanceOf[SummingbirdJobID]
+    val jobID = SummingbirdJobID(config.get("storm.job.uniqueId").asInstanceOf[String])
 
 
     stormDag.nodes.foreach { node =>

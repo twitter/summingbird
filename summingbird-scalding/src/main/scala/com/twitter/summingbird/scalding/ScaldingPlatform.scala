@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory
 case class ScaldingMetricProvider() extends PlatformMetricProvider {
 
   def pullInScaldingRuntimeForJobID(jobID: SummingbirdJobID) =
-    ScalaTry(ScaldingRuntimeStats.getFlowProcessForUniqueId(jobID.id).increment(_: String, _: String, _: Long)).toOption
+    ScalaTry(ScaldingRuntimeStats.getFlowProcessForUniqueId(jobID.get).increment(_: String, _: String, _: Long)).toOption
 
   // Incrementor from PlatformMetricProvicer
   // We use a partially applied function: if successful, ScaldingRuntimeStats.getFlowProcessForUniqueId

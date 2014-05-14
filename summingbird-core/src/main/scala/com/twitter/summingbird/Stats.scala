@@ -30,7 +30,7 @@ trait PlatformMetricProvider {
   def incrementor(jobId: SummingbirdJobID, group: String, name: String): Option[Long => Unit]
 }
 
-case class SummingbirdJobID(id: String)
+case class SummingbirdJobID(get: String)
 
 object SBRuntimeStats {
   // Need to explicitly invoke the object initializer on remote node
@@ -54,6 +54,7 @@ object SBRuntimeStats {
     platformsInit
     // Find the PlatformMetricProvider that matches the jobID
     // return the incrementor for the Stat specified by group/name
+    // We return 
     (for {
       provRef <- platformMetricProviders
       prov <- provRef.get
