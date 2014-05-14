@@ -17,12 +17,11 @@
 package com.twitter.summingbird.storm
 
 
+import backtype.storm.{Config => BacktypeStormConfig, LocalCluster, StormSubmitter}
 import backtype.storm.generated.StormTopology
 import backtype.storm.task.TopologyContext
-import backtype.storm.metric.api.CountMetric
 import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
 import backtype.storm.tuple.Fields
-import backtype.storm.{Config => BacktypeStormConfig, LocalCluster, StormSubmitter}
 
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.bijection.{Base64String, Injection}
@@ -45,31 +44,6 @@ import com.twitter.util.{Future, Time}
 import org.slf4j.LoggerFactory
 
 import Constants._
-
-case class StormMetricProvider(jobID: SummingbirdJobID,
-                               context: TopologyContext,
-                               metrics: List[(String, String)]) extends PlatformMetricProvider {
-  @transient private val logger = LoggerFactory.getLogger(classOf[StormMetricProvider])
-
-  val stormMetrics: Map[String, CountMetric] = metrics.map {
-    case (groupName, metricName) => (groupName + "/" + metricName, new CountMetric)
-  }.toMap
-  logger.debug("Metrics for this Bolt: {}", stormMetrics.keySet mkString)
-
-  def incrementor(passedJobId: SummingbirdJobID, group: String, name: String) =
-    if(passedJobId.get == jobID.get) {
-        val metric = stormMetrics.getOrElse(group + "/" + name, sys.error("It is only valid to create stats objects during submission"))
-        Some((by: Long) => metric.incrBy(by))
-    } else {
-      None
-    }
-
-  def registerMetrics =
-    stormMetrics.foreach { case (name, metric) =>
-      logger.debug("In Bolt: registered metric {} with TopologyContext", name)
-      context.registerMetric(name, metric, 60)
-    }
-}
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.

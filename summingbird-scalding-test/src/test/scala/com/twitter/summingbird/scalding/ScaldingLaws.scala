@@ -311,7 +311,7 @@ object ScaldingLaws extends Specification {
       val summer = TestGraphs.jobWithStats[Scalding,(Long,Int),Int,Int](jobID, source, testStore)(t =>
           fn(t._2))
       val scald = Scalding("scalaCheckJob").withConfigUpdater { sbconf =>
-        sbconf.put("scalding.job.uniqueId", jobID.id)
+        sbconf.put("scalding.job.uniqueId", jobID.get)
       }
       val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)

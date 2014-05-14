@@ -23,11 +23,15 @@ import scala.util.{ Try => ScalaTry }
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
 
+trait StatIncrementor {
+  def incrBy(by: Long): Unit
+}
+
 trait PlatformMetricProvider {
   // Incrementor for a Stat identified by group/name for the specific jobID
   // Returns an incrementor [Long=>Unit] function for the Stat wrapped in an Option
   // to ensure we catch when the incrementor cannot be obtained for the specified jobID
-  def incrementor(jobId: SummingbirdJobID, group: String, name: String): Option[Long => Unit]
+  def incrementor(jobId: SummingbirdJobID, group: String, name: String): Option[StatIncrementor]
 }
 
 case class SummingbirdJobID(get: String)
@@ -50,11 +54,11 @@ object SBRuntimeStats {
   def addPlatformMetricProvider(pp: PlatformMetricProvider) =
     platformMetricProviders += new WeakReference(pp)
 
-  def getPlatformMetricIncrementor(jobID: SummingbirdJobID, group: String, name: String): Long => Unit = {
+  def getPlatformMetricIncrementor(jobID: SummingbirdJobID, group: String, name: String): StatIncrementor = {
     platformsInit
-    // Find the PlatformMetricProvider that matches the jobID
+    // Find the PlatformMetricProvider (PMP) that matches the jobID
     // return the incrementor for the Stat specified by group/name
-    // We return 
+    // We return the first PMP that matches the jobID, in reality there should be only one
     (for {
       provRef <- platformMetricProviders
       prov <- provRef.get
@@ -80,9 +84,9 @@ case class Stat(group: String, name: String)(implicit jobID: SummingbirdJobID) {
   // Need to register the metric for this job, passed to Storm platform during initialization to register metrics
   JobMetrics.registerMetric(jobID, group, name)
 
-  private lazy val incrMetric: (Long => Unit) = SBRuntimeStats.getPlatformMetricIncrementor(jobID, group, name)
+  private lazy val incrMetric: StatIncrementor = SBRuntimeStats.getPlatformMetricIncrementor(jobID, group, name)
 
-  def incrBy(amount: Long) = incrMetric(amount)
+  def incrBy(amount: Long) = incrMetric.incrBy(amount)
 
   def incr = incrBy(1L)
 }
