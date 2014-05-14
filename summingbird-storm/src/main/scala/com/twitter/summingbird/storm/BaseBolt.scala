@@ -56,10 +56,8 @@ case class BaseBolt[I,O](jobID: SummingbirdJobID,
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
 
-  val statsForBolt: List[(String, String)] = Try { JobMetrics.registeredMetricsForJob(jobID).toList } match {
-    case Success(v) => v
-    case Failure(_) => List[(String, String)]()
-  }
+  val statsForBolt: List[(String, String)] =
+    Try { JobMetrics.registeredMetricsForJob(jobID).toList }.toOption.getOrElse(List[(String, String)]())
 
   private var collector: OutputCollector = null
 

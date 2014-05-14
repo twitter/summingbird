@@ -241,7 +241,7 @@ object TestGraphs {
     val fltrStat = Stat("scalding.test", "fltr_stat")
     source
       .flatMap{ x => origStat.incr; fn(x) }.name("FM")
-      .filter{ x => fmStat.incr; x._2.asInstanceOf[Int] > 10 }
+      .filter{ x => fmStat.incrBy(2); true }
       .map{x => fltrStat.incr; x}
       .sumByKey(store)
   }

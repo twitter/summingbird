@@ -19,10 +19,14 @@ package com.twitter.summingbird
 import scala.collection.mutable.{ Set => MSet, HashSet => MHashSet, HashMap => MMap }
 import scala.collection.JavaConverters._
 import scala.ref.WeakReference
+import scala.util.{ Try => ScalaTry }
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
 
 trait PlatformMetricProvider {
+  // Incrementor for a Stat identified by group/name for the specific jobID
+  // Returns an incrementor [Long=>Unit] function for the Stat wrapped in an Option
+  // to ensure we catch when the incrementor cannot be obtained for the specified jobID
   def incrementor(jobId: SummingbirdJobID, group: String, name: String): Option[Long => Unit]
 }
 
@@ -30,27 +34,26 @@ case class SummingbirdJobID(id: String)
 
 object SBRuntimeStats {
   // Need to explicitly invoke the object initializer on remote node
-  // since Scala object initializaiton is lazy, hence need the absolute object classpath
+  // since Scala object initialization is lazy, hence need the absolute object classpath
   private[this] final val platformObjects = List("com.twitter.summingbird.scalding.ScaldingRuntimeStatsProvider")
 
   // invoke the ScaldingRuntimeStatsProvider object initializer on remote node
-  private[this] lazy val platformsInit = {
-    platformObjects.foreach { s: String => 
-      try   { Class.forName(s + "$") }
-      catch { case _: Throwable => () }
-    }
-  }
+  private[this] lazy val platformsInit =
+    platformObjects.foreach { s: String => ScalaTry[Unit]{ Class.forName(s + "$") } }
+
+  // A global set of PlatformMetricProviders, use Java ConcurrentHashMap to create a thread-safe set
   val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =
     Collections.newSetFromMap[WeakReference[PlatformMetricProvider]](
       new ConcurrentHashMap[WeakReference[PlatformMetricProvider], java.lang.Boolean]())
       .asScala
 
-  def addPlatformMetricProvider(pp: PlatformMetricProvider) {
+  def addPlatformMetricProvider(pp: PlatformMetricProvider) =
     platformMetricProviders += new WeakReference(pp)
-  }
 
   def getPlatformMetricIncrementor(jobID: SummingbirdJobID, group: String, name: String): Long => Unit = {
     platformsInit
+    // Find the PlatformMetricProvider that matches the jobID
+    // return the incrementor for the Stat specified by group/name
     (for {
       provRef <- platformMetricProviders
       prov <- provRef.get
@@ -73,9 +76,10 @@ object JobMetrics{
 }
 
 case class Stat(group: String, name: String)(implicit jobID: SummingbirdJobID) {
+  // Need to register the metric for this job, passed to Storm platform during initialization to register metrics
   JobMetrics.registerMetric(jobID, group, name)
 
-  lazy val incrMetric: (Long => Unit) = SBRuntimeStats.getPlatformMetricIncrementor(jobID, group, name)
+  private lazy val incrMetric: (Long => Unit) = SBRuntimeStats.getPlatformMetricIncrementor(jobID, group, name)
 
   def incrBy(amount: Long) = incrMetric(amount)
 

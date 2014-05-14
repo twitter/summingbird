@@ -59,6 +59,10 @@ case class ScaldingMetricProvider() extends PlatformMetricProvider {
   def pullInScaldingRuntimeForJobID(jobID: SummingbirdJobID) =
     ScalaTry(ScaldingRuntimeStats.getFlowProcessForUniqueId(jobID.id).increment(_: String, _: String, _: Long)).toOption
 
+  // Incrementor from PlatformMetricProvicer
+  // We use a partially applied function: if successful, ScaldingRuntimeStats.getFlowProcessForUniqueId
+  // returns the FlowProcess for this job. The name and group parameters are filled in by this function and
+  // the result is a Long=>Unit function that increments the specific Scalding Stat by the amount
   def incrementor(jobID: SummingbirdJobID, group: String, name: String) =
     pullInScaldingRuntimeForJobID(jobID).map { inc => { (by: Long) => inc(group, name, by) } }
 }

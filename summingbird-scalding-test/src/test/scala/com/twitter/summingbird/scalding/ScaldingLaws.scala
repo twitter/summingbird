@@ -327,8 +327,8 @@ object ScaldingLaws extends Specification {
       val fltrStat: Long = flowStats.getCounterValue("scalding.test", "fltr_stat")
       // Now check that the stats are computed correctly
       origStat must be_==(original.size)
-      fmStat must be_==(original.flatMap(fn).size)
-      fltrStat must be_==(original.flatMap(fn).filter(x => x._2 > 10).size)
+      fmStat must be_==(original.flatMap(fn).size * 2)
+      fltrStat must be_==(original.flatMap(fn).size)
     }
   }
 }

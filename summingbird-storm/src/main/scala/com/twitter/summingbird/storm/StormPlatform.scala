@@ -52,7 +52,7 @@ case class StormMetricProvider(jobID: SummingbirdJobID,
   @transient private val logger = LoggerFactory.getLogger(classOf[StormMetricProvider])
 
   val stormMetrics: Map[String, CountMetric] = metrics.map {
-    case (groupName, metricName) => (groupName + "/" + metricName, new CountMetric())
+    case (groupName, metricName) => (groupName + "/" + metricName, new CountMetric)
   }.toMap
   logger.info("Metrics for this BOLT: {}", stormMetrics.keySet mkString)
 
