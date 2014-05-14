@@ -4,9 +4,8 @@ import scala.Option;
 import scala.Some;
 import scala.Tuple2;
 
-import com.twitter.algebird.Semigroup;
-import com.twitter.algebird.Semigroup$;
 import com.twitter.summingbird.Platform;
+import com.twitter.summingbird.Producer;
 import com.twitter.summingbird.javaapi.impl.JKeyedProducerImpl;
 import com.twitter.summingbird.javaapi.impl.JProducerImpl;
 
@@ -25,6 +24,15 @@ public class JProducers {
    * @return
    */
   public static <P extends Platform<P>, T> JProducer<P, T> source(Source<P, ?, T> source) {
+    return JProducerImpl.source(source);
+  }
+
+  /**
+   * Wraps a source to pass to get a JProducer
+   * @param source
+   * @return
+   */
+  public static <P extends Platform<P>, T> JProducer<P, T> source(Producer<P, T> source) {
     return JProducerImpl.source(source);
   }
 

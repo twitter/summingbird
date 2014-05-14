@@ -29,6 +29,10 @@ public class JProducerImpl<P extends Platform<P>, T> implements JProducer<P, T> 
     return new JProducerImpl<P, T>(Producer$.MODULE$.<P, T>source(source.unwrap()));
   }
 
+  public static <P extends Platform<P>, T> JProducer<P, T> source(Producer<P, T> source) {
+    return new JProducerImpl<P, T>(source);
+  }
+
   public static <IN, OUT> Function1<IN, TraversableOnce<OUT>> toTraversableOnce(final Function<IN, ? extends Iterable<OUT>> f) {
     return new AbstractFunction1<IN, TraversableOnce<OUT>>() {
       public TraversableOnce<OUT> apply(IN v) {
