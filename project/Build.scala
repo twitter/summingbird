@@ -39,6 +39,8 @@ object SummingbirdBuild extends Build {
 
     libraryDependencies <+= scalaVersion(specs2Import(_)),
 
+    libraryDependencies += "com.novocode" % "junit-interface" % "0.10" % "test",
+
     resolvers ++= Seq(
       Opts.resolver.sonatypeSnapshots,
       Opts.resolver.sonatypeReleases,
