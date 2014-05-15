@@ -295,14 +295,12 @@ object SummingbirdBuild extends Build {
       "com.twitter" % "chill-hadoop" % chillVersion,
       "com.twitter" %% "chill-bijection" % chillVersion,
       "commons-lang" % "commons-lang" % "2.6",
-      "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided",
-      "commons-httpclient" % "commons-httpclient" % "3.1"
+      "commons-httpclient" % "commons-httpclient" % "3.1",
+      "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
-    summingbirdChill,
-    summingbirdBatchHadoop,
-    summingbirdBatch
+    summingbirdChill
   )
 
   lazy val summingbirdScaldingTest = module("scalding-test").settings(
