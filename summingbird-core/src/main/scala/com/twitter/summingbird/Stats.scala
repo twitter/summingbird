@@ -37,13 +37,15 @@ trait PlatformMetricProvider {
 case class SummingbirdJobID(get: String)
 
 object SBRuntimeStats {
+  val SCALDING_STATS_MODULE = "com.twitter.summingbird.scalding.ScaldingRuntimeStatsProvider$"
+
   // Need to explicitly invoke the object initializer on remote node
   // since Scala object initialization is lazy, hence need the absolute object classpath
-  private[this] final val platformObjects = List("com.twitter.summingbird.scalding.ScaldingRuntimeStatsProvider")
+  private[this] final val platformObjects = List(SCALDING_STATS_MODULE)
 
   // invoke the ScaldingRuntimeStatsProvider object initializer on remote node
   private[this] lazy val platformsInit =
-    platformObjects.foreach { s: String => ScalaTry[Unit]{ Class.forName(s + "$") } }
+    platformObjects.foreach { s: String => ScalaTry[Unit]{ Class.forName(s) } }
 
   // A global set of PlatformMetricProviders, use Java ConcurrentHashMap to create a thread-safe set
   val platformMetricProviders: MSet[WeakReference[PlatformMetricProvider]] =

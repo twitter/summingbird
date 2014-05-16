@@ -22,6 +22,8 @@ import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs}
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
 import com.twitter.summingbird.SummingbirdJobID
+import com.twitter.summingbird.SBRuntimeStats
+
 
 import java.util.TimeZone
 import java.io.File
@@ -37,6 +39,7 @@ import org.apache.hadoop.conf.Configuration
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap => MutableHashMap, Map => MutableMap, SynchronizedBuffer, SynchronizedMap}
+import scala.util.{Try => ScalaTry}
 
 import cascading.scheme.local.{TextDelimited => CLTextDelimited}
 import cascading.tuple.{Tuple, Fields, TupleEntry}
@@ -51,6 +54,7 @@ import org.apache.hadoop.mapred.OutputCollector
 
 import org.specs2.mutable._
 
+
 /**
   * Tests for Summingbird's Scalding planner.
   */
@@ -62,7 +66,10 @@ object ScaldingLaws extends Specification {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
+  sequential
+
   "The ScaldingPlatform" should {
+
     //Set up the job:
     "match scala for single step jobs" in {
       val original = sample[List[Int]]
@@ -297,7 +304,7 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
     }
 
-    "Compute correct statistics" in {
+    "compute correct statistics" in {
       val original = sample[List[Int]]
       val fn = sample[(Int) => List[(Int, Int)]]
       val initStore = sample[Map[Int, Int]]
@@ -329,6 +336,11 @@ object ScaldingLaws extends Specification {
       origStat must be_==(original.size)
       fmStat must be_==(original.flatMap(fn).size * 2)
       fltrStat must be_==(original.flatMap(fn).size)
+    }
+
+    "contain and be able to init a ScaldingRuntimeStatsProvider object" in {
+     val s = SBRuntimeStats.SCALDING_STATS_MODULE
+     ScalaTry[Unit]{Class.forName(s)}.toOption must beSome
     }
   }
 }
