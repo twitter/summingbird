@@ -25,10 +25,8 @@ object SummingbirdBuild extends Build {
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
     version := "0.4.2",
-    // TODO: This removes cross compile support! Don't merge this!
-    //       Need to find a way to deal with the fact that summingbird-spark will only work with scala 2.10
-    scalaVersion := "2.10.4",
-    crossScalaVersions := Seq("2.10.4"),
+    scalaVersion := "2.9.3",
+    crossScalaVersions := Seq("2.9.3", "2.10.4"),
     // To support hadoop 1.x
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
@@ -127,7 +125,6 @@ object SummingbirdBuild extends Build {
     summingbirdStormTest,
     summingbirdScalding,
     summingbirdScaldingTest,
-    summingbirdSpark,
     summingbirdBuilder,
     summingbirdChill,
     summingbirdExample
@@ -269,40 +266,6 @@ object SummingbirdBuild extends Build {
     summingbirdBatch
   )
 
-  lazy val summingbirdSparkSettings = assemblySettings ++ Seq(
-    mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
-      {
-        //case PathList("org", "w3c", xs @ _*) => MergeStrategy.first
-        //case "about.html"     => MergeStrategy.discard
-        case PathList("com", "esotericsoftware", "minlog", xs @ _*) => MergeStrategy.first
-        case PathList("org", "apache", "commons", "beanutils", xs @ _*) => MergeStrategy.first
-        case PathList("org", "apache", "commons", "collections", xs @ _*) => MergeStrategy.first
-        case PathList("org", "apache", "jasper", xs @ _*) => MergeStrategy.first
-        case "log4j.properties"     => MergeStrategy.concat
-        case x if x.endsWith(".xsd") || x.endsWith(".dtd") => MergeStrategy.first
-        case x => old(x)
-      }
-    }
-  )
-
-  lazy val summingbirdSpark = module("spark", summingbirdSparkSettings).settings(
-    libraryDependencies ++= Seq(
-      "com.twitter" %% "algebird-core" % algebirdVersion,
-      "com.twitter" %% "algebird-util" % algebirdVersion,
-      "com.twitter" %% "algebird-bijection" % algebirdVersion,
-      "com.twitter" %% "bijection-json" % bijectionVersion,
-      "com.twitter" %% "chill" % chillVersion,
-      "com.twitter" % "chill-hadoop" % chillVersion,
-      "com.twitter" %% "chill-bijection" % chillVersion,
-      "commons-lang" % "commons-lang" % "2.6",
-      "commons-httpclient" % "commons-httpclient" % "3.1",
-      "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
-    )
-  ).dependsOn(
-    summingbirdCore % "test->test;compile->compile",
-    summingbirdChill
-  )
-
   lazy val summingbirdScaldingTest = module("scalding-test").settings(
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % "1.10.0"
@@ -346,4 +309,42 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
   ).dependsOn(summingbirdCore, summingbirdStorm)
+
+  // Summingbird Spark is not part of the aggregate project, because it only supports scla 2.10
+  lazy val summingbirdSparkSettings = assemblySettings ++ Seq(
+    mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
+      {
+        //case PathList("org", "w3c", xs @ _*) => MergeStrategy.first
+        //case "about.html"     => MergeStrategy.discard
+        case PathList("com", "esotericsoftware", "minlog", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "commons", "beanutils", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "commons", "collections", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "jasper", xs @ _*) => MergeStrategy.first
+        case "log4j.properties"     => MergeStrategy.concat
+        case x if x.endsWith(".xsd") || x.endsWith(".dtd") => MergeStrategy.first
+        case x => old(x)
+      }
+    }
+  ) ++ Seq( 
+    (crossScalaVersions ~= { seq => seq.filterNot(_.startsWith("2.9")) })
+    //(scalaVersion ~= { v => "2.10.4" } )
+  )
+
+  lazy val summingbirdSpark = module("spark", summingbirdSparkSettings).settings(
+    libraryDependencies ++= Seq(
+      "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "algebird-util" % algebirdVersion,
+      "com.twitter" %% "algebird-bijection" % algebirdVersion,
+      "com.twitter" %% "bijection-json" % bijectionVersion,
+      "com.twitter" %% "chill" % chillVersion,
+      "com.twitter" % "chill-hadoop" % chillVersion,
+      "com.twitter" %% "chill-bijection" % chillVersion,
+      "commons-lang" % "commons-lang" % "2.6",
+      "commons-httpclient" % "commons-httpclient" % "3.1",
+      "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdChill
+  )
 }
