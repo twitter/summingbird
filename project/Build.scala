@@ -19,6 +19,11 @@ object SummingbirdBuild extends Build {
       case version if version startsWith "2.9" => "org.specs2" %% "specs2" % "1.12.4.1" % "test"
       case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test"
   }
+  
+  def isScala210x(scalaVersion: String) = scalaVersion match {
+      case version if version startsWith "2.9" => false
+      case version if version startsWith "2.10" => true
+  }
 
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings
 
@@ -45,8 +50,7 @@ object SummingbirdBuild extends Build {
       Opts.resolver.sonatypeReleases,
       "Clojars Repository" at "http://clojars.org/repo",
       "Conjars Repository" at "http://conjars.org/repo",
-      "Twitter Maven" at "http://maven.twttr.com",
-      "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/"
+      "Twitter Maven" at "http://maven.twttr.com"
     ),
 
     parallelExecution in Test := true,
@@ -125,6 +129,7 @@ object SummingbirdBuild extends Build {
     summingbirdStormTest,
     summingbirdScalding,
     summingbirdScaldingTest,
+    summingbirdSpark,
     summingbirdBuilder,
     summingbirdChill,
     summingbirdExample
@@ -152,11 +157,11 @@ object SummingbirdBuild extends Build {
       .filterNot(unreleasedModules.contains(_))
       .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.4.2" }
 
-  def module(name: String, additionalSettings: Seq[Setting[_]]=Seq()) = {
+  def module(name: String) = {
     val id = "summingbird-%s".format(name)
     Project(id = id, base = file(id), settings = sharedSettings ++ Seq(
       Keys.name := id,
-      previousArtifact := youngestForwardCompatible(name)) ++ additionalSettings
+      previousArtifact := youngestForwardCompatible(name))
     )
   }
 
@@ -310,8 +315,7 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(summingbirdCore, summingbirdStorm)
 
-  // Summingbird Spark is not part of the aggregate project, because it only supports scla 2.10
-  lazy val summingbirdSparkSettings = assemblySettings ++ Seq(
+  lazy val sparkAssemblyMergeSettings = assemblySettings :+ {
     mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
       {
         //case PathList("org", "w3c", xs @ _*) => MergeStrategy.first
@@ -325,25 +329,32 @@ object SummingbirdBuild extends Build {
         case x => old(x)
       }
     }
-  ) ++ Seq( 
-    (crossScalaVersions ~= { seq => seq.filterNot(_.startsWith("2.9")) })
-    //(scalaVersion ~= { v => "2.10.4" } )
+  }
+  
+  val sparkDeps = Seq(
+    "com.twitter" %% "algebird-core" % algebirdVersion,
+    "com.twitter" %% "algebird-util" % algebirdVersion,
+    "com.twitter" %% "algebird-bijection" % algebirdVersion,
+    "com.twitter" %% "bijection-json" % bijectionVersion,
+    "com.twitter" %% "chill" % chillVersion,
+    "com.twitter" % "chill-hadoop" % chillVersion,
+    "com.twitter" %% "chill-bijection" % chillVersion,
+    "commons-lang" % "commons-lang" % "2.6",
+    "commons-httpclient" % "commons-httpclient" % "3.1",
+    "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
   )
 
-  lazy val summingbirdSpark = module("spark", summingbirdSparkSettings).settings(
-    libraryDependencies ++= Seq(
-      "com.twitter" %% "algebird-core" % algebirdVersion,
-      "com.twitter" %% "algebird-util" % algebirdVersion,
-      "com.twitter" %% "algebird-bijection" % algebirdVersion,
-      "com.twitter" %% "bijection-json" % bijectionVersion,
-      "com.twitter" %% "chill" % chillVersion,
-      "com.twitter" % "chill-hadoop" % chillVersion,
-      "com.twitter" %% "chill-bijection" % chillVersion,
-      "commons-lang" % "commons-lang" % "2.6",
-      "commons-httpclient" % "commons-httpclient" % "3.1",
-      "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
-    )
-  ).dependsOn(
+  def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()
+
+  lazy val summingbirdSpark = module("spark").settings(
+    resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
+    skip in compile := !isScala210x(scalaVersion.value),
+    skip in test := !isScala210x(scalaVersion.value),
+    publishArtifact := isScala210x(scalaVersion.value),
+    libraryDependencies ++= buildSparkDeps(scalaVersion.value)    
+  )
+  .settings(sparkAssemblyMergeSettings:_*)
+  .dependsOn(
     summingbirdCore % "test->test;compile->compile",
     summingbirdChill
   )
