@@ -21,8 +21,8 @@ import com.twitter.algebird.monad._
 import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs}
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
-import com.twitter.summingbird.SummingbirdJobID
-import com.twitter.summingbird.SBRuntimeStats
+import com.twitter.summingbird.SummingbirdJobId
+import com.twitter.summingbird.SummingbirdRuntimeStats
 
 
 import java.util.TimeZone
@@ -314,7 +314,7 @@ object ScaldingLaws extends Specification {
       val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
-      val jobID: SummingbirdJobID = new SummingbirdJobID("scalding.job.testJobId")
+      val jobID: SummingbirdJobId = new SummingbirdJobId("scalding.job.testJobId")
       val summer = TestGraphs.jobWithStats[Scalding,(Long,Int),Int,Int](jobID, source, testStore)(t =>
           fn(t._2))
       val scald = Scalding("scalaCheckJob").withConfigUpdater { sbconf =>
@@ -329,17 +329,17 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, scald.plan(summer), {f: Flow[_] => flow = f})
 
       val flowStats: FlowStats = flow.getFlowStats()
-      val origStat: Long = flowStats.getCounterValue("scalding.test", "orig_stat")
-      val fmStat: Long = flowStats.getCounterValue("scalding.test", "fm_stat")
-      val fltrStat: Long = flowStats.getCounterValue("scalding.test", "fltr_stat")
+      val origCounter: Long = flowStats.getCounterValue("scalding.test", "orig_counter")
+      val fmCounter: Long = flowStats.getCounterValue("scalding.test", "fm_counter")
+      val fltrCounter: Long = flowStats.getCounterValue("scalding.test", "fltr_counter")
       // Now check that the stats are computed correctly
-      origStat must be_==(original.size)
-      fmStat must be_==(original.flatMap(fn).size * 2)
-      fltrStat must be_==(original.flatMap(fn).size)
+      origCounter must be_==(original.size)
+      fmCounter must be_==(original.flatMap(fn).size * 2)
+      fltrCounter must be_==(original.flatMap(fn).size)
     }
 
     "contain and be able to init a ScaldingRuntimeStatsProvider object" in {
-     val s = SBRuntimeStats.SCALDING_STATS_MODULE
+     val s = SummingbirdRuntimeStats.SCALDING_STATS_MODULE
      ScalaTry[Unit]{Class.forName(s)}.toOption must beSome
     }
   }

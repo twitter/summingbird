@@ -57,7 +57,7 @@ object FlatMapBoltProvider {
     }
 }
 
-case class FlatMapBoltProvider(storm: Storm, jobID: SummingbirdJobID, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
+case class FlatMapBoltProvider(storm: Storm, jobID: SummingbirdJobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
   import FlatMapBoltProvider._
 
   def getOrElse[T <: AnyRef : Manifest](default: T, queryNode: StormNode = node) = storm.getOrElse(stormDag, queryNode, default)

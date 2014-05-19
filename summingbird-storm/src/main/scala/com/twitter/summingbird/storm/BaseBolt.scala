@@ -43,7 +43,7 @@ import org.slf4j.{LoggerFactory, Logger}
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
-case class BaseBolt[I,O](jobID: SummingbirdJobID,
+case class BaseBolt[I,O](jobID: SummingbirdJobId,
   metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   hasDependants: Boolean,
@@ -56,8 +56,8 @@ case class BaseBolt[I,O](jobID: SummingbirdJobID,
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
 
-  val statsForBolt: List[(String, String)] =
-    Try { JobMetrics.registeredMetricsForJob(jobID).toList }.toOption.getOrElse(List[(String, String)]())
+  val countersForBolt: List[(String, String)] =
+    Try { JobCounters.registeredCountersForJob(jobID).toList }.toOption.getOrElse(List[(String, String)]())
 
   private var collector: OutputCollector = null
 
@@ -125,10 +125,10 @@ case class BaseBolt[I,O](jobID: SummingbirdJobID,
     collector = oc
     metrics().foreach { _.register(context) }
     executor.init(context)
-    val metricProvider = new StormMetricProvider(jobID, context, statsForBolt)
+    val metricProvider = new StormStatProvider(jobID, context, countersForBolt)
     metricProvider.registerMetrics
-    SBRuntimeStats.addPlatformMetricProvider(metricProvider)
-    logger.debug("In Bolt prepare: added jobID metric provider for jobID {}", jobID)
+    SummingbirdRuntimeStats.addPlatformStatProvider(metricProvider)
+    logger.debug("In Bolt prepare: added jobID stat provider for jobID {}", jobID)
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {

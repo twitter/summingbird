@@ -185,7 +185,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     boltConfig
   }
 
-  private def scheduleFlatMapper(jobID: SummingbirdJobID, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleFlatMapper(jobID: SummingbirdJobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val nodeName = stormDag.getNodeName(node)
     val usePreferLocalDependency = getOrElse(stormDag, node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
     logger.info("[{}] usePreferLocalDependency: {}", nodeName, usePreferLocalDependency.get)
@@ -226,7 +226,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
-  private def scheduleSummerBolt[K, V](jobID: SummingbirdJobID, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSummerBolt[K, V](jobID: SummingbirdJobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val semigroup = summer.semigroup
     implicit val batcher = summer.store.batcher
@@ -389,7 +389,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val stormDag = OnlinePlan(tail)
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = genConfig(stormDag)
-    val jobID = SummingbirdJobID(config.get("storm.job.uniqueId").asInstanceOf[String])
+    val jobID = SummingbirdJobId(config.get("storm.job.uniqueId").asInstanceOf[String])
 
 
     stormDag.nodes.foreach { node =>
