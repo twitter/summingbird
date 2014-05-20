@@ -31,11 +31,12 @@ trait PlatformPlanner[P <: Platform[P]] {
     // short circuit if we've already visited this node
     visited.get(producer) match {
       case Some(s) => PlanState(s.asInstanceOf[P#Plan[T]], visited)
-      case None => toPlan2(producer, visited)
+      case None => toPlanNoCycleCheck(producer, visited)
     }
   }
 
-  private def toPlan2[T](outer: Prod[T], visited: Visited): PlanState[T] = {
+  // actually plans a producer, does not check for cycles (toPlan does that)
+  private def toPlanNoCycleCheck[T](outer: Prod[T], visited: Visited): PlanState[T] = {
 
     val updatedState = outer match {
       case NamedProducer(prod, name) => planNamedProducer(prod, name, visited)
