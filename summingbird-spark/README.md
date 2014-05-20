@@ -1,8 +1,6 @@
 First pass at a spark platform for summingbird.
-*** Not ready to be merged! ***
 
 Outstanding issues:
- - project/Build.scala: Removed cross compile support as a workaround for spark only supporting scala 2.10
  - Time based batching / BatchedStore equivalent not yet supported. Time is plubmed through everywhere and used for non commutative semigroups, but 
    batching doesn't really come into play yet.
  - Logic for finding the maximal covered timespan by various sources / stores is not yet implemented
