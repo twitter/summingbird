@@ -1,4 +1,5 @@
 First pass at a spark platform for summingbird.
+This is a work in progress, and is not really expected to work yet!
 
 Outstanding issues:
  - Time based batching / BatchedStore equivalent not yet supported. Time is plubmed through everywhere and used for non commutative semigroups, but 
@@ -15,3 +16,5 @@ Outstanding issues:
    There's a lot of overlap with the scalding platform in these tests. Having a PlatformLaws test suite would also better describe the contract and expected 
    behavior of all platforms.
  - There are currently no optimizations in the planning stage (except for commutativity not imposing a sort and using reduceByKey)
+ - SparkPlatform is currently stateful but should be refactored to not be
+ - The core spark types that need access to a SparkContext should be refactored in terms of a Reader monad
