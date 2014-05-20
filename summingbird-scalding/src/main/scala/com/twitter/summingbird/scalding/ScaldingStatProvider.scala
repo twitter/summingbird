@@ -12,7 +12,7 @@ case class ScaldingCounterIncrementor(group: String, name: String, fp: FlowProce
 	def incrBy(by: Long) = fp.increment(group, name, by)
 }
 
-case class ScaldingStatProvider() extends PlatformStatProvider {
+object ScaldingStatProvider extends PlatformStatProvider {
 
   def pullInScaldingRuntimeForJobID(jobID: SummingbirdJobId): Option[FlowProcess[_]] =
     ScalaTry[FlowProcess[_]]{ScaldingRuntimeStats.getFlowProcessForUniqueId(jobID.get)}.toOption
@@ -26,5 +26,5 @@ case class ScaldingStatProvider() extends PlatformStatProvider {
 }
 
 object ScaldingRuntimeStatsProvider {
-  SummingbirdRuntimeStats.addPlatformStatProvider(new ScaldingStatProvider)
+  SummingbirdRuntimeStats.addPlatformStatProvider(ScaldingStatProvider)
 }

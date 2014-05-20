@@ -303,7 +303,7 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") must beTrue
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
     }
-
+ 
     "compute correct statistics" in {
       val original = sample[List[Int]]
       val fn = sample[(Int) => List[(Int, Int)]]
