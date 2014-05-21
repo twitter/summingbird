@@ -21,7 +21,7 @@ import com.twitter.algebird.monad._
 import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs}
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
-import com.twitter.summingbird.SummingbirdJobId
+import com.twitter.summingbird.JobId
 import com.twitter.summingbird.SummingbirdRuntimeStats
 
 
@@ -314,7 +314,7 @@ object ScaldingLaws extends Specification {
       val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
-      val jobID: SummingbirdJobId = new SummingbirdJobId("scalding.job.testJobId")
+      val jobID: JobId = new JobId("scalding.job.testJobId")
       val summer = TestGraphs.jobWithStats[Scalding,(Long,Int),Int,Int](jobID, source, testStore)(t =>
           fn(t._2))
       val scald = Scalding("scalaCheckJob").withConfigUpdater { sbconf =>

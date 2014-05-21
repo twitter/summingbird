@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird
 
-import scala.collection.mutable.{ Set => MSet, HashSet => MHashSet, HashMap => MMap }
+import scala.collection.mutable.{ Set => MSet, ConcurrentMap => MMap }
 import scala.collection.JavaConverters._
 import scala.ref.WeakReference
 import scala.util.{ Try => ScalaTry }
@@ -31,13 +31,15 @@ trait PlatformStatProvider {
   // Incrementor for a Counter identified by group/name for the specific jobID
   // Returns an incrementor function for the Counter wrapped in an Option
   // to ensure we catch when the incrementor cannot be obtained for the specified jobID
-  def counterIncrementor(jobId: SummingbirdJobId, group: String, name: String): Option[CounterIncrementor]
+  def counterIncrementor(jobId: JobId, group: String, name: String): Option[CounterIncrementor]
 }
 
-case class SummingbirdJobId(get: String)
+case class JobId(get: String)
 
 object SummingbirdRuntimeStats {
   val SCALDING_STATS_MODULE = "com.twitter.summingbird.scalding.ScaldingRuntimeStatsProvider$"
+
+  def createSet[T](): MSet[T] = Collections.newSetFromMap(new ConcurrentHashMap[T, java.lang.Boolean]).asScala
 
   // Need to explicitly invoke the object initializer on remote node
   // since Scala object initialization is lazy, hence need the absolute object classpath
@@ -48,15 +50,12 @@ object SummingbirdRuntimeStats {
     platformObjects.foreach { s: String => ScalaTry[Unit]{ Class.forName(s) } }
 
   // A global set of PlatformStatProviders, use Java ConcurrentHashMap to create a thread-safe set
-  val platformStatProviders: MSet[WeakReference[PlatformStatProvider]] =
-    Collections.newSetFromMap[WeakReference[PlatformStatProvider]](
-      new ConcurrentHashMap[WeakReference[PlatformStatProvider], java.lang.Boolean]())
-      .asScala
+  val platformStatProviders: MSet[WeakReference[PlatformStatProvider]] = createSet()
 
-  def addPlatformStatProvider(pp: PlatformStatProvider) =
+  def addPlatformStatProvider(pp: PlatformStatProvider): Unit =
     platformStatProviders += new WeakReference(pp)
 
-  def getPlatformCounterIncrementor(jobID: SummingbirdJobId, group: String, name: String): CounterIncrementor = {
+  def getPlatformCounterIncrementor(jobID: JobId, group: String, name: String): CounterIncrementor = {
     platformsInit
     // Find the PlatformMetricProvider (PMP) that matches the jobID
     // return the incrementor for the Counter specified by group/name
@@ -72,17 +71,18 @@ object SummingbirdRuntimeStats {
 }
 
 object JobCounters{
-  val registeredCountersForJob = MMap[SummingbirdJobId, MHashSet[(String, String)]]()
+  val registeredCountersForJob: MMap[JobId, MSet[(String, String)]] =
+    new ConcurrentHashMap[JobId, MSet[(String, String)]]().asScala
 
-  def registerCounter(jobID: SummingbirdJobId, group: String, name: String) {
+  def registerCounter(jobID: JobId, group: String, name: String): Unit = {
     if (SummingbirdRuntimeStats.platformStatProviders.isEmpty) {
-      val set = registeredCountersForJob.getOrElseUpdate(jobID, MHashSet[(String, String)]())
+      val set = registeredCountersForJob.getOrElseUpdate(jobID, SummingbirdRuntimeStats.createSet())
       set += ((group, name))
     }
   }
 }
 
-case class Counter(group: String, name: String)(implicit jobID: SummingbirdJobId) {
+case class Counter(group: String, name: String)(implicit jobID: JobId) {
   // Need to register the counter for this job,
   // this is used to pass counter info to the Storm platform during initialization
   JobCounters.registerCounter(jobID, group, name)
@@ -90,7 +90,7 @@ case class Counter(group: String, name: String)(implicit jobID: SummingbirdJobId
   private lazy val incrCounter: CounterIncrementor =
     SummingbirdRuntimeStats.getPlatformCounterIncrementor(jobID, group, name)
 
-  def incrBy(amount: Long) = incrCounter.incrBy(amount)
+  def incrBy(amount: Long): Unit = incrCounter.incrBy(amount)
 
-  def incr = incrBy(1L)
+  def incr: Unit = incrBy(1L)
 }

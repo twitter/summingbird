@@ -28,7 +28,7 @@ import java.util.{ Map => JMap }
 import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{InflightTuples, InputState}
-import com.twitter.summingbird._
+import com.twitter.summingbird.{ JobId, JobCounters, SummingbirdRuntimeStats }
 
 import scala.collection.JavaConverters._
 
@@ -43,7 +43,7 @@ import org.slf4j.{LoggerFactory, Logger}
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
-case class BaseBolt[I,O](jobID: SummingbirdJobId,
+case class BaseBolt[I,O](jobID: JobId,
   metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   hasDependants: Boolean,
