@@ -2,6 +2,8 @@
 
 Summingbird is a library that lets you write MapReduce programs that look like native Scala or Java collection transformations and execute them on a number of well-known distributed MapReduce platforms, including [Storm](https://github.com/nathanmarz/storm) and [Scalding](https://github.com/twitter/scalding).
 
+![Summingbird Logo](https://raw.github.com/twitter/summingbird/develop/logo/summingbird_logo.png)
+
 While a word-counting aggregation in pure Scala might look like this:
 
 ```scala
@@ -99,6 +101,8 @@ Discussion occurs primarily on the [Summingbird mailing list](https://groups.goo
 IRC: freenode channel #summingbird
 
 Follow [@summingbird](https://twitter.com/summingbird) on Twitter for updates.
+
+Please feel free to use the beautiful [Summingbird logo](https://drive.google.com/folderview?id=0B3i3pDi3yVgNMHV0TXVkTGZteWM&usp=sharing) artwork anywhere.
 
 ## Maven
 

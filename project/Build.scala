@@ -2,6 +2,8 @@ package summingbird
 
 import sbt._
 import Keys._
+import sbtassembly.Plugin._
+import AssemblyKeys._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 
@@ -17,6 +19,11 @@ object SummingbirdBuild extends Build {
       case version if version startsWith "2.9" => "org.specs2" %% "specs2" % "1.12.4.1" % "test"
       case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test"
   }
+  
+  def isScala210x(scalaVersion: String) = scalaVersion match {
+      case version if version startsWith "2.9" => false
+      case version if version startsWith "2.10" => true
+  }
 
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings
 
@@ -24,7 +31,7 @@ object SummingbirdBuild extends Build {
     organization := "com.twitter",
     version := "0.4.2",
     scalaVersion := "2.9.3",
-    crossScalaVersions := Seq("2.9.3", "2.10.0"),
+    crossScalaVersions := Seq("2.9.3", "2.10.4"),
     // To support hadoop 1.x
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
@@ -127,6 +134,7 @@ object SummingbirdBuild extends Build {
     summingbirdStormJava,
     summingbirdScalding,
     summingbirdScaldingTest,
+    summingbirdSpark,
     summingbirdBuilder,
     summingbirdChill,
     summingbirdExample
@@ -325,4 +333,48 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
   ).dependsOn(summingbirdCore, summingbirdCoreJava, summingbirdStorm, summingbirdStormJava)
+
+  lazy val sparkAssemblyMergeSettings = assemblySettings :+ {
+    mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
+      {
+        //case PathList("org", "w3c", xs @ _*) => MergeStrategy.first
+        //case "about.html"     => MergeStrategy.discard
+        case PathList("com", "esotericsoftware", "minlog", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "commons", "beanutils", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "commons", "collections", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "jasper", xs @ _*) => MergeStrategy.first
+        case "log4j.properties"     => MergeStrategy.concat
+        case x if x.endsWith(".xsd") || x.endsWith(".dtd") => MergeStrategy.first
+        case x => old(x)
+      }
+    }
+  }
+  
+  val sparkDeps = Seq(
+    "com.twitter" %% "algebird-core" % algebirdVersion,
+    "com.twitter" %% "algebird-util" % algebirdVersion,
+    "com.twitter" %% "algebird-bijection" % algebirdVersion,
+    "com.twitter" %% "bijection-json" % bijectionVersion,
+    "com.twitter" %% "chill" % chillVersion,
+    "com.twitter" % "chill-hadoop" % chillVersion,
+    "com.twitter" %% "chill-bijection" % chillVersion,
+    "commons-lang" % "commons-lang" % "2.6",
+    "commons-httpclient" % "commons-httpclient" % "3.1",
+    "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
+  )
+
+  def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()
+
+  lazy val summingbirdSpark = module("spark").settings(
+    resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
+    skip in compile := !isScala210x(scalaVersion.value),
+    skip in test := !isScala210x(scalaVersion.value),
+    publishArtifact := isScala210x(scalaVersion.value),
+    libraryDependencies ++= buildSparkDeps(scalaVersion.value)    
+  )
+  .settings(sparkAssemblyMergeSettings:_*)
+  .dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdChill
+  )
 }
