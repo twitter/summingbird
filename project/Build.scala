@@ -36,6 +36,7 @@ object SummingbirdBuild extends Build {
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
     libraryDependencies ++= Seq(
+      "junit" % "junit" % "4.11" % "test",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
       // These satisify's scaldings log4j needs when in test mode
@@ -44,6 +45,8 @@ object SummingbirdBuild extends Build {
     ),
 
     libraryDependencies <+= scalaVersion(specs2Import(_)),
+
+    libraryDependencies += "com.novocode" % "junit-interface" % "0.10" % "test",
 
     resolvers ++= Seq(
       Opts.resolver.sonatypeSnapshots,
@@ -121,12 +124,14 @@ object SummingbirdBuild extends Build {
     publishLocal := { }
   ).aggregate(
     summingbirdCore,
+    summingbirdCoreJava,
     summingbirdBatch,
     summingbirdBatchHadoop,
     summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
     summingbirdStormTest,
+    summingbirdStormJava,
     summingbirdScalding,
     summingbirdScaldingTest,
     summingbirdSpark,
@@ -197,6 +202,10 @@ object SummingbirdBuild extends Build {
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   )
 
+  lazy val summingbirdCoreJava = module("core-java").dependsOn(
+    summingbirdCore % "test->test;compile->compile"
+  )
+
   lazy val summingbirdOnline = module("online").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
@@ -247,6 +256,16 @@ object SummingbirdBuild extends Build {
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
     summingbirdStorm
+  )
+
+  lazy val summingbirdStormJava = module("storm-java").settings(
+    libraryDependencies ++= Seq(
+      "storm" % "storm" % "0.9.0-wip15" % "provided"
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreJava % "test->test;compile->compile",
+    summingbirdStorm % "test->test;compile->compile"
   )
 
   lazy val summingbirdScalding = module("scalding").settings(
@@ -313,7 +332,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "tormenta-twitter" % tormentaVersion,
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
-  ).dependsOn(summingbirdCore, summingbirdStorm)
+  ).dependsOn(summingbirdCore, summingbirdCoreJava, summingbirdStorm, summingbirdStormJava)
 
   lazy val sparkAssemblyMergeSettings = assemblySettings :+ {
     mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
