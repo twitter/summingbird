@@ -2,7 +2,8 @@ package com.twitter.summingbird.scalding
 
 import cascading.flow.FlowProcess
 import com.twitter.scalding.{ RuntimeStats => ScaldingRuntimeStats }
-import com.twitter.summingbird.{ JobId, CounterIncrementor, SummingbirdRuntimeStats, PlatformStatProvider }
+import com.twitter.summingbird.option.JobId
+import com.twitter.summingbird.{ CounterIncrementor, SummingbirdRuntimeStats, PlatformStatProvider }
 import scala.util.{Try => ScalaTry, Failure}
 import org.slf4j.LoggerFactory
 

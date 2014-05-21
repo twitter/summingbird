@@ -2,7 +2,8 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.metric.api.CountMetric
 import backtype.storm.task.TopologyContext
-import com.twitter.summingbird.{ JobId, CounterIncrementor, PlatformStatProvider }
+import com.twitter.summingbird.{ CounterIncrementor, PlatformStatProvider }
+import com.twitter.summingbird.option.JobId
 import org.slf4j.LoggerFactory
 
 // Incrementor for Storm Counters 

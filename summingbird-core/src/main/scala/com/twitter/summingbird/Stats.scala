@@ -16,7 +16,8 @@
 
 package com.twitter.summingbird
 
-import scala.collection.mutable.{ Set => MSet, ConcurrentMap => MMap }
+import com.twitter.summingbird.option.JobId
+import scala.collection.mutable.{ Set => MSet, Map => MMap }
 import scala.collection.JavaConverters._
 import scala.ref.WeakReference
 import scala.util.{ Try => ScalaTry }
@@ -33,8 +34,6 @@ trait PlatformStatProvider {
   // to ensure we catch when the incrementor cannot be obtained for the specified jobID
   def counterIncrementor(jobId: JobId, group: String, name: String): Option[CounterIncrementor]
 }
-
-case class JobId(get: String)
 
 object SummingbirdRuntimeStats {
   val SCALDING_STATS_MODULE = "com.twitter.summingbird.scalding.ScaldingRuntimeStatsProvider$"

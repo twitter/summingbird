@@ -28,13 +28,13 @@ import java.util.{ Map => JMap }
 import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{InflightTuples, InputState}
-import com.twitter.summingbird.{ JobId, JobCounters, SummingbirdRuntimeStats }
+import com.twitter.summingbird.option.JobId
+import com.twitter.summingbird.{ JobCounters, SummingbirdRuntimeStats }
 
 import scala.collection.JavaConverters._
 
 import java.util.{List => JList}
 import org.slf4j.{LoggerFactory, Logger}
-
 
 
 /**

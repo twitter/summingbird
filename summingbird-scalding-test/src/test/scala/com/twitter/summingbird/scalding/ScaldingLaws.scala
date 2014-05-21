@@ -21,7 +21,7 @@ import com.twitter.algebird.monad._
 import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs}
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
-import com.twitter.summingbird.JobId
+import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.SummingbirdRuntimeStats
 
 

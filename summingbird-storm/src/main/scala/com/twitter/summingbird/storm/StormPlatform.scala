@@ -34,6 +34,7 @@ import com.twitter.summingbird.chill.SBChillRegistrar
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.option.IncludeSuccessHandler
+import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{Dag, OnlinePlan, SummerNode, FlatMapNode, SourceNode}
 import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.storm.planner.StormNode
