@@ -57,7 +57,7 @@ case class BaseBolt[I,O](jobID: SummingbirdJobId,
     LoggerFactory.getLogger(getClass)
 
   val countersForBolt: List[(String, String)] =
-    Try { JobCounters.registeredCountersForJob(jobID).toList }.toOption.getOrElse(List[(String, String)]())
+    Try { JobCounters.registeredCountersForJob(jobID).toList }.toOption.getOrElse(Nil)
 
   private var collector: OutputCollector = null
 

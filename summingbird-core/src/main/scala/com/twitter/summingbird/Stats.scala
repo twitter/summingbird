@@ -29,7 +29,7 @@ trait CounterIncrementor {
 
 trait PlatformStatProvider {
   // Incrementor for a Counter identified by group/name for the specific jobID
-  // Returns an incrementor [Long=>Unit] function for the Counter wrapped in an Option
+  // Returns an incrementor function for the Counter wrapped in an Option
   // to ensure we catch when the incrementor cannot be obtained for the specified jobID
   def counterIncrementor(jobId: SummingbirdJobId, group: String, name: String): Option[CounterIncrementor]
 }
