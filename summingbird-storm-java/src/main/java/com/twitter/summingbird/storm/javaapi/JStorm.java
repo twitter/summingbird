@@ -56,14 +56,14 @@ public class JStorm {
 
   public static <T> Sink<Storm, StormSink<T>, T> sink(final Callable<Function<T, com.twitter.util.Future<scala.runtime.BoxedUnit>>> sink) {
     return sink(new SinkFn<T>(new AbstractFunction0<Function1<T, com.twitter.util.Future<scala.runtime.BoxedUnit>>>() {
-		@Override
-		public Function1<T, Future<scala.runtime.BoxedUnit>> apply() {
-			try {
-				return toScala(sink.call());
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		}
+      @Override
+      public Function1<T, Future<scala.runtime.BoxedUnit>> apply() {
+        try {
+          return toScala(sink.call());
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
     }));
   }
 
