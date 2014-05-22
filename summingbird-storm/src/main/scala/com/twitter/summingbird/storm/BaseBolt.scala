@@ -59,6 +59,8 @@ case class BaseBolt[I,O](jobID: JobId,
   val countersForBolt: List[(String, String)] =
     Try { JobCounters.registeredCountersForJob.get(jobID).toList }.toOption.getOrElse(Nil)
 
+  var testValue = 0
+
   private var collector: OutputCollector = null
 
   // Should we ack immediately on reception instead of at the end
@@ -77,6 +79,8 @@ case class BaseBolt[I,O](jobID: JobId,
 
 
   override def execute(tuple: Tuple) = {
+    if (testValue == 5)
+      sys.error("Failing executor for testValue 5")
     /**
      * System ticks come with a fixed stream id
      */
@@ -122,13 +126,14 @@ case class BaseBolt[I,O](jobID: JobId,
   }
 
   override def prepare(conf: JMap[_,_], context: TopologyContext, oc: OutputCollector) {
+    testValue = 5
     collector = oc
     metrics().foreach { _.register(context) }
     executor.init(context)
     val metricProvider = new StormStatProvider(jobID, context, countersForBolt)
     metricProvider.registerMetrics
     SummingbirdRuntimeStats.addPlatformStatProvider(metricProvider)
-    logger.info("In Bolt prepare: added jobID stat provider for jobID {}", jobID)
+    logger.info("In Bolt prepare: added jobID stat provider for jobID {}, testValue {}", jobID, testValue)
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
