@@ -125,9 +125,8 @@ case class BaseBolt[I,O](jobID: JobId,
     collector = oc
     metrics().foreach { _.register(context) }
     executor.init(context)
-    val metricProvider = new StormStatProvider(jobID, context, countersForBolt)
-    metricProvider.registerMetrics
-    SummingbirdRuntimeStats.addPlatformStatProvider(metricProvider)
+    StormStatProvider.registerMetrics(jobID, context, countersForBolt)
+    SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
     logger.debug("In Bolt prepare: added jobID stat provider for jobID {}", jobID)
   }
 
