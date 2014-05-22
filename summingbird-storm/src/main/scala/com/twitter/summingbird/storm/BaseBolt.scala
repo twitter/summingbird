@@ -128,7 +128,7 @@ case class BaseBolt[I,O](jobID: JobId,
     val metricProvider = new StormStatProvider(jobID, context, countersForBolt)
     metricProvider.registerMetrics
     SummingbirdRuntimeStats.addPlatformStatProvider(metricProvider)
-    logger.debug("In Bolt prepare: added jobID stat provider for jobID {}", jobID)
+    logger.info("In Bolt prepare: added jobID stat provider for jobID {}", jobID)
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
