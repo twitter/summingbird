@@ -20,7 +20,7 @@ private[summingbird] case class StormStatProvider(jobID: JobId,
   val stormMetrics: Map[String, CountMetric] = metrics.map {
     case (groupName, metricName) => (groupName + "/" + metricName, new CountMetric)
   }.toMap
-  logger.debug("Stats for this Bolt: {}", stormMetrics.keySet mkString)
+  logger.info("Stats for this Bolt: {}", stormMetrics.keySet mkString)
 
   def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[StormCounterIncrementor] =
     if(passedJobId.get == jobID.get) {
@@ -32,7 +32,7 @@ private[summingbird] case class StormStatProvider(jobID: JobId,
 
   def registerMetrics: Unit =
     stormMetrics.foreach { case (name, metric) =>
-      logger.debug("Registered metric {} with TopologyContext", name)
+      logger.info("Registered metric {} with TopologyContext", name)
       context.registerMetric(name, metric, 60)
     }
 }
