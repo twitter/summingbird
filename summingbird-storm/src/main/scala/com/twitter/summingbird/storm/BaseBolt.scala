@@ -28,12 +28,13 @@ import java.util.{ Map => JMap }
 import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{InflightTuples, InputState}
+import com.twitter.summingbird.option.JobId
+import com.twitter.summingbird.{ JobCounters, SummingbirdRuntimeStats }
 
 import scala.collection.JavaConverters._
 
 import java.util.{List => JList}
 import org.slf4j.{LoggerFactory, Logger}
-
 
 
 /**
@@ -42,7 +43,8 @@ import org.slf4j.{LoggerFactory, Logger}
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
-case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
+case class BaseBolt[I,O](jobID: JobId,
+  metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
   hasDependants: Boolean,
   outputFields: Fields,
@@ -53,6 +55,9 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
 
   @transient protected lazy val logger: Logger =
     LoggerFactory.getLogger(getClass)
+
+  val countersForBolt: List[(String, String)] =
+    Try { JobCounters.registeredCountersForJob.get(jobID).toList }.toOption.getOrElse(Nil)
 
   private var collector: OutputCollector = null
 
@@ -120,6 +125,10 @@ case class BaseBolt[I,O](metrics: () => TraversableOnce[StormMetric[_]],
     collector = oc
     metrics().foreach { _.register(context) }
     executor.init(context)
+    val metricProvider = new StormStatProvider(jobID, context, countersForBolt)
+    metricProvider.registerMetrics
+    SummingbirdRuntimeStats.addPlatformStatProvider(metricProvider)
+    logger.debug("In Bolt prepare: added jobID stat provider for jobID {}", jobID)
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {

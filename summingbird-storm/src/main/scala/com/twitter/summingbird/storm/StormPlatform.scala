@@ -17,11 +17,11 @@
 package com.twitter.summingbird.storm
 
 
+import backtype.storm.{Config => BacktypeStormConfig, LocalCluster, StormSubmitter}
 import backtype.storm.generated.StormTopology
 import backtype.storm.task.TopologyContext
 import backtype.storm.topology.{BoltDeclarer, TopologyBuilder}
 import backtype.storm.tuple.Fields
-import backtype.storm.{Config => BacktypeStormConfig, LocalCluster, StormSubmitter}
 
 import com.twitter.algebird.{Monoid, Semigroup}
 import com.twitter.bijection.{Base64String, Injection}
@@ -34,6 +34,7 @@ import com.twitter.summingbird.chill.SBChillRegistrar
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.option.IncludeSuccessHandler
+import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{Dag, OnlinePlan, SummerNode, FlatMapNode, SourceNode}
 import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.storm.planner.StormNode
@@ -185,12 +186,12 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     boltConfig
   }
 
-  private def scheduleFlatMapper(stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleFlatMapper(jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val nodeName = stormDag.getNodeName(node)
     val usePreferLocalDependency = getOrElse(stormDag, node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
     logger.info("[{}] usePreferLocalDependency: {}", nodeName, usePreferLocalDependency.get)
 
-    val bolt: BaseBolt[Any, Any] = FlatMapBoltProvider(this, stormDag, node).apply
+    val bolt: BaseBolt[Any, Any] = FlatMapBoltProvider(this, jobID, stormDag, node).apply
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
     val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism).addConfigurations(tickConfig)
@@ -226,7 +227,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
-  private def scheduleSummerBolt[K, V](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSummerBolt[K, V](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val semigroup = summer.semigroup
     implicit val batcher = summer.store.batcher
@@ -299,7 +300,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
       FlatMapOperation.apply(storeBaseFMOp)
 
+
     val sinkBolt = BaseBolt(
+          jobID,
           metrics.metrics,
           anchorTuples,
           shouldEmit,
@@ -387,12 +390,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val stormDag = OnlinePlan(tail)
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = genConfig(stormDag)
+    val jobID = JobId(config.get("storm.job.uniqueId").asInstanceOf[String])
 
 
     stormDag.nodes.foreach { node =>
       node match {
-        case _: SummerNode[_] => scheduleSummerBolt(stormDag, node)
-        case _: FlatMapNode[_] => scheduleFlatMapper(stormDag, node)
+        case _: SummerNode[_] => scheduleSummerBolt(jobID, stormDag, node)
+        case _: FlatMapNode[_] => scheduleFlatMapper(jobID, stormDag, node)
         case _: SourceNode[_] => scheduleSpout(stormDag, node)
       }
     }

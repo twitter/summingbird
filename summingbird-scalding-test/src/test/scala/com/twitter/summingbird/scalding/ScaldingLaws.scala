@@ -21,6 +21,9 @@ import com.twitter.algebird.monad._
 import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs}
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
+import com.twitter.summingbird.option.JobId
+import com.twitter.summingbird.SummingbirdRuntimeStats
+
 
 import java.util.TimeZone
 import java.io.File
@@ -36,10 +39,12 @@ import org.apache.hadoop.conf.Configuration
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap => MutableHashMap, Map => MutableMap, SynchronizedBuffer, SynchronizedMap}
+import scala.util.{Try => ScalaTry}
 
 import cascading.scheme.local.{TextDelimited => CLTextDelimited}
 import cascading.tuple.{Tuple, Fields, TupleEntry}
-import cascading.flow.FlowDef
+import cascading.flow.Flow
+import cascading.stats.FlowStats
 import cascading.tap.Tap
 import cascading.scheme.NullScheme
 import org.apache.hadoop.mapred.JobConf
@@ -48,6 +53,7 @@ import org.apache.hadoop.mapred.OutputCollector
 
 
 import org.specs2.mutable._
+
 
 /**
   * Tests for Summingbird's Scalding planner.
@@ -61,6 +67,7 @@ object ScaldingLaws extends Specification {
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
   "The ScaldingPlatform" should {
+
     //Set up the job:
     "match scala for single step jobs" in {
       val original = sample[List[Int]]
@@ -86,7 +93,6 @@ object ScaldingLaws extends Specification {
 
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must be_==(true)
     }
-
 
     "match scala single step pruned jobs" in {
       val original = sample[List[Int]]
@@ -294,6 +300,45 @@ object ScaldingLaws extends Specification {
 
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") must beTrue
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
+    }
+ 
+    "compute correct statistics" in {
+      val original = sample[List[Int]]
+      val fn = sample[(Int) => List[(Int, Int)]]
+      val initStore = sample[Map[Int, Int]]
+      val inMemory = TestGraphs.singleStepInScala(original)(fn)
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = TestUtil.randomBatcher(inWithTime)
+      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
+      val (buffer, source) = TestSource(inWithTime)
+
+      val jobID: JobId = new JobId("scalding.job.testJobId")
+      val summer = TestGraphs.jobWithStats[Scalding,(Long,Int),Int,Int](jobID, source, testStore)(t =>
+          fn(t._2))
+      val scald = Scalding("scalaCheckJob").withConfigUpdater { sbconf =>
+        sbconf.put("scalding.job.uniqueId", jobID.get)
+      }
+      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val ws = new LoopState(intr)
+      val conf: Configuration = new Configuration()
+      val mode: Mode = HadoopTest(conf, t => (testStore.sourceToBuffer ++ buffer).get(t))
+
+      var flow: Flow[_] = null
+      scald.run(ws, mode, scald.plan(summer), {f: Flow[_] => flow = f})
+
+      val flowStats: FlowStats = flow.getFlowStats()
+      val origCounter: Long = flowStats.getCounterValue("scalding.test", "orig_counter")
+      val fmCounter: Long = flowStats.getCounterValue("scalding.test", "fm_counter")
+      val fltrCounter: Long = flowStats.getCounterValue("scalding.test", "fltr_counter")
+      // Now check that the stats are computed correctly
+      origCounter must be_==(original.size)
+      fmCounter must be_==(original.flatMap(fn).size * 2)
+      fltrCounter must be_==(original.flatMap(fn).size)
+    }
+
+    "contain and be able to init a ScaldingRuntimeStatsProvider object" in {
+     val s = SummingbirdRuntimeStats.SCALDING_STATS_MODULE
+     ScalaTry[Unit]{Class.forName(s)}.toOption must beSome
     }
   }
 }

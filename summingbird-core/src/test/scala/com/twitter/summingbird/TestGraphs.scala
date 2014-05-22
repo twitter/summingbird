@@ -18,6 +18,8 @@ package com.twitter.summingbird
 
 import com.twitter.algebird.MapAlgebra
 import com.twitter.algebird.{Monoid, Semigroup}
+import com.twitter.summingbird.Counter
+import com.twitter.summingbird.option.JobId
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop._
 
@@ -157,16 +159,13 @@ object TestGraphs {
     preJoin: T4 => (K1, U),
     postJoin: ((K1, (U, Option[JoinedU]))) => TraversableOnce[(K2, V)]
     ): Map[K2, V] = {
-    val data1 = source1.flatMap(simpleFM1)
-    val data2 = source2.flatMap(simpleFM2)
-    val data3 = source3.flatMap(simpleFM3)
-    val data4 = source4.map(preJoin).map { case (k, v) => (k, (v, service(k))) }
-                .flatMap(postJoin)
-    MapAlgebra.sumByKey(
-      data1 ::: data2 ::: data3 ::: data4
-    )
- }
-
+      val data1 = source1.flatMap(simpleFM1)
+      val data2 = source2.flatMap(simpleFM2)
+      val data3 = source3.flatMap(simpleFM3)
+      val data4 = source4.map(preJoin).map { case (k, v) => (k, (v, service(k))) }
+                  .flatMap(postJoin)
+      MapAlgebra.sumByKey(data1 ::: data2 ::: data3 ::: data4)
+    }
 
   def multipleSummerJobInScala[T1, T2, K1, V1: Monoid, K2, V2: Monoid]
     (source: List[T1])
@@ -230,6 +229,20 @@ object TestGraphs {
     val v2 = sumStream.map { case (k, (_, v)) => fn(k).map { (_, v) } }.flatten
     val sum2 = MapAlgebra.sumByKey(v2)
     (sum1, sum2)
+  }
+
+  def jobWithStats[P <: Platform[P], T, K, V: Monoid]
+    (id: JobId, source: Producer[P, T], store: P#Store[K, V])
+    (fn: T => TraversableOnce[(K, V)]): TailProducer[P, (K, (Option[V], V))] = {
+    implicit val jobID: JobId = id
+    val origCounter = Counter("scalding.test", "orig_counter")
+    val fmCounter = Counter("scalding.test", "fm_counter")
+    val fltrCounter = Counter("scalding.test", "fltr_counter")
+    source
+      .flatMap{ x => origCounter.incr; fn(x) }.name("FM")
+      .filter{ x => fmCounter.incrBy(2); true }
+      .map{x => fltrCounter.incr; x}
+      .sumByKey(store)
   }
 }
 

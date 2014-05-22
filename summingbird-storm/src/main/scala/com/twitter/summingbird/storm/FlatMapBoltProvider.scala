@@ -28,7 +28,7 @@ import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
 import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples}
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime, SummerBuilder}
-import com.twitter.summingbird.option.CacheSize
+import com.twitter.summingbird.option.{ CacheSize, JobId }
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
@@ -57,7 +57,7 @@ object FlatMapBoltProvider {
     }
 }
 
-case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
+case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
   import FlatMapBoltProvider._
 
   def getOrElse[T <: AnyRef : Manifest](default: T, queryNode: StormNode = node) = storm.getOrElse(stormDag, queryNode, default)
@@ -138,6 +138,7 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
     val builder = BuildSummer(storm, stormDag, node)
 
     BaseBolt(
+      jobID,
       metrics.metrics,
       anchorTuples,
       true,
@@ -164,6 +165,7 @@ case class FlatMapBoltProvider(storm: Storm, stormDag: Dag[Storm], node: StormNo
     val wrappedOperation = wrapTime(operation)
 
     BaseBolt(
+      jobID,
       metrics.metrics,
       anchorTuples,
       stormDag.dependantsOf(node).size > 0,
