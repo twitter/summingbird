@@ -17,28 +17,26 @@
 package com.twitter.summingbird
 
 import com.twitter.summingbird.option.JobId
-import scala.collection.mutable.{ Set => MSet, Map => MMap }
 import scala.collection.JavaConverters._
+import scala.collection.parallel.mutable.ParHashSet
 import scala.ref.WeakReference
 import scala.util.{ Try => ScalaTry }
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
 
-trait CounterIncrementor {
+private[summingbird] trait CounterIncrementor {
   def incrBy(by: Long): Unit
 }
 
-trait PlatformStatProvider {
+private[summingbird] trait PlatformStatProvider {
   // Incrementor for a Counter identified by group/name for the specific jobID
   // Returns an incrementor function for the Counter wrapped in an Option
   // to ensure we catch when the incrementor cannot be obtained for the specified jobID
   def counterIncrementor(jobId: JobId, group: String, name: String): Option[CounterIncrementor]
 }
 
-object SummingbirdRuntimeStats {
+private[summingbird] object SummingbirdRuntimeStats {
   val SCALDING_STATS_MODULE = "com.twitter.summingbird.scalding.ScaldingRuntimeStatsProvider$"
-
-  def createSet[T](): MSet[T] = Collections.newSetFromMap(new ConcurrentHashMap[T, java.lang.Boolean]).asScala
 
   // Need to explicitly invoke the object initializer on remote node
   // since Scala object initialization is lazy, hence need the absolute object classpath
@@ -49,7 +47,9 @@ object SummingbirdRuntimeStats {
     platformObjects.foreach { s: String => ScalaTry[Unit]{ Class.forName(s) } }
 
   // A global set of PlatformStatProviders, use Java ConcurrentHashMap to create a thread-safe set
-  val platformStatProviders: MSet[WeakReference[PlatformStatProvider]] = createSet()
+  private val platformStatProviders = ParHashSet[WeakReference[PlatformStatProvider]]() 
+
+  def hasStatProviders: Boolean = !platformStatProviders.isEmpty
 
   def addPlatformStatProvider(pp: PlatformStatProvider): Unit =
     platformStatProviders += new WeakReference(pp)
@@ -64,32 +64,31 @@ object SummingbirdRuntimeStats {
       prov <- provRef.get
       incr <- prov.counterIncrementor(jobID, group, name)
       } yield incr)
+      .toList
       .headOption
       .getOrElse(sys.error("Could not find the platform stat provider for jobID " + jobID))
     }
 }
 
-object JobCounters{
-  val registeredCountersForJob: MMap[JobId, MSet[(String, String)]] =
-    new ConcurrentHashMap[JobId, MSet[(String, String)]]().asScala
+private[summingbird] object JobCounters{
+  @annotation.tailrec
+  private[this] final def getOrElseUpdate[K, V](map: ConcurrentHashMap[K, V], k: K, default: => V): V = {
+    val v = map.get(k)
+    if(v == null) {
+      map.putIfAbsent(k, default)
+      getOrElseUpdate(map, k, default)
+    } else {
+      v
+    }
+  }
+
+  val registeredCountersForJob: ConcurrentHashMap[JobId, ParHashSet[(String, String)]] =
+    new ConcurrentHashMap[JobId, ParHashSet[(String, String)]]()
 
   def registerCounter(jobID: JobId, group: String, name: String): Unit = {
-    if (SummingbirdRuntimeStats.platformStatProviders.isEmpty) {
-      val set = registeredCountersForJob.getOrElseUpdate(jobID, SummingbirdRuntimeStats.createSet())
+    if (!SummingbirdRuntimeStats.hasStatProviders) {
+      val set = getOrElseUpdate(registeredCountersForJob, jobID, ParHashSet[(String, String)]())
       set += ((group, name))
     }
   }
-}
-
-case class Counter(group: String, name: String)(implicit jobID: JobId) {
-  // Need to register the counter for this job,
-  // this is used to pass counter info to the Storm platform during initialization
-  JobCounters.registerCounter(jobID, group, name)
-
-  private lazy val incrCounter: CounterIncrementor =
-    SummingbirdRuntimeStats.getPlatformCounterIncrementor(jobID, group, name)
-
-  def incrBy(amount: Long): Unit = incrCounter.incrBy(amount)
-
-  def incr: Unit = incrBy(1L)
 }

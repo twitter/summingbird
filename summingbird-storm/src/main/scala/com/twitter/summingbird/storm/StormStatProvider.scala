@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory
 
 // Incrementor for Storm Counters 
 // Returned to the Summingbird Counter object to call incrBy function in SB job code
-case class StormCounterIncrementor(metric: CountMetric) extends CounterIncrementor {
+private[summingbird] case class StormCounterIncrementor(metric: CountMetric) extends CounterIncrementor {
   def incrBy(by: Long): Unit = metric.incrBy(by)
 }
 
-private[this] case class StormStatProvider(jobID: JobId,
+private[summingbird] case class StormStatProvider(jobID: JobId,
                              context: TopologyContext,
                              metrics: List[(String, String)]) extends PlatformStatProvider {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormStatProvider])

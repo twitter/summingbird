@@ -10,11 +10,11 @@ import org.slf4j.LoggerFactory
 
 // Incrementor for Scalding Counter (Stat) 
 // Returned to the Summingbird Counter object to call incrBy function in Summingbird job code
-case class ScaldingCounterIncrementor(group: String, name: String, fp: FlowProcess[_]) extends CounterIncrementor {
+private[summingbird] case class ScaldingCounterIncrementor(group: String, name: String, fp: FlowProcess[_]) extends CounterIncrementor {
   def incrBy(by: Long): Unit = fp.increment(group, name, by)
 }
 
-private[this] object ScaldingStatProvider extends PlatformStatProvider {
+private[summingbird] object ScaldingStatProvider extends PlatformStatProvider {
   @transient private val logger = LoggerFactory.getLogger(ScaldingStatProvider.getClass)
 
   private def pullInScaldingRuntimeForJobID(jobID: JobId): Option[FlowProcess[_]] =
@@ -32,6 +32,6 @@ private[this] object ScaldingStatProvider extends PlatformStatProvider {
     pullInScaldingRuntimeForJobID(jobID).map { flowP: FlowProcess[_] => ScaldingCounterIncrementor(group, name, flowP) } 
 }
 
-object ScaldingRuntimeStatsProvider {
+private[summingbird] object ScaldingRuntimeStatsProvider {
   SummingbirdRuntimeStats.addPlatformStatProvider(ScaldingStatProvider)
 }
