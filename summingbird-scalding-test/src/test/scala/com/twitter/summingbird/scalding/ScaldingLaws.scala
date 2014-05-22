@@ -66,8 +66,6 @@ object ScaldingLaws extends Specification {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
-  sequential
-
   "The ScaldingPlatform" should {
 
     //Set up the job:
