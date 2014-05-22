@@ -4,6 +4,8 @@ import backtype.storm.metric.api.CountMetric
 import backtype.storm.task.TopologyContext
 import com.twitter.summingbird.{ CounterIncrementor, PlatformStatProvider }
 import com.twitter.summingbird.option.JobId
+import com.twitter.util.{ Promise, Await }
+import java.util.concurrent.ConcurrentHashMap
 import org.slf4j.LoggerFactory
 
 // Incrementor for Storm Counters 
@@ -12,27 +14,37 @@ private[summingbird] case class StormCounterIncrementor(metric: CountMetric) ext
   def incrBy(by: Long): Unit = metric.incrBy(by)
 }
 
-private[summingbird] case class StormStatProvider(jobID: JobId,
-                             context: TopologyContext,
-                             metrics: List[(String, String)]) extends PlatformStatProvider {
-  @transient private val logger = LoggerFactory.getLogger(classOf[StormStatProvider])
+object StormStatProvider extends PlatformStatProvider {
+  @transient private val logger = LoggerFactory.getLogger(StormStatProvider.getClass)
 
-  val stormMetrics: Map[String, CountMetric] = metrics.map {
-    case (groupName, metricName) => (groupName + "/" + metricName, new CountMetric)
-  }.toMap
-  logger.info("Stats for this Bolt: {}", stormMetrics.keySet mkString)
+  val stormMetricsPromise = new ConcurrentHashMap[JobId, Promise[Map[String, CountMetric]]]()
+
+  def registerMetrics(jobID: JobId,
+                      context: TopologyContext,
+                      metrics: List[(String, String)]) {
+
+    val metricsPromise = Promise[Map[String, CountMetric]]
+    if (stormMetricsPromise.putIfAbsent(jobID, metricsPromise) == null) {
+
+      val stormMetrics = metrics.map { case (groupName, metricName) =>
+        (groupName + "/" + metricName, new CountMetric)
+      }.toMap
+      logger.debug("Stats for this Bolt: {}", stormMetrics.keySet.mkString)
+
+      stormMetrics.foreach { case (name, metric) =>
+        logger.info("Registered metric {} with TopologyContext", name)
+        context.registerMetric(name, metric, 60)
+      }
+      metricsPromise.setValue(stormMetrics)
+    }
+  }
 
   def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[StormCounterIncrementor] =
-    if(passedJobId.get == jobID.get) {
+    if(stormMetricsPromise.containsKey(passedJobId)) {
+        val stormMetrics = Await.result(stormMetricsPromise.get(passedJobId))
         val metric = stormMetrics.getOrElse(group + "/" + name, sys.error("It is only valid to create counter objects during submission"))
         Some(StormCounterIncrementor(metric))
     } else {
       None
-    }
-
-  def registerMetrics: Unit =
-    stormMetrics.foreach { case (name, metric) =>
-      logger.info("Registered metric {} with TopologyContext", name)
-      context.registerMetric(name, metric, 60)
     }
 }
