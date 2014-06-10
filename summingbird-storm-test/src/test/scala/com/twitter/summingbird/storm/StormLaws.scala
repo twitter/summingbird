@@ -222,6 +222,21 @@ object StormLaws extends Specification {
     ) must beTrue
   }
 
+  "StormPlatform matches Scala for repeated tuple leftJoin jobs" in {
+    val original = sample[List[Int]]
+    val staticFunc = { i: Int => List((i -> i)) }
+    val returnedState =
+      StormTestRun.simpleRun[Int, Int, Int](original,
+        TestGraphs.repeatedTupleLeftJoinJob[Storm, Int, Int, Int, Int, Int](_, service, _)(staticFunc)(nextFn)
+      )
+
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.repeatedTupleLeftJoinInScala(original)(serviceFn)
+        (staticFunc)(nextFn),
+      returnedState.toScala
+    ) must beTrue
+  }
+
   "StormPlatform matches Scala for optionMap only jobs" in {
     val original = sample[List[Int]]
     val (id, storeSupplier) = genStore

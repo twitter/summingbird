@@ -93,6 +93,34 @@ object TestGraphs {
       .flatMapKeys(fnB)
       .sumByKey(store)
 
+  def repeatedTupleLeftJoinInScala[T, U, JoinedU, K, V: Monoid]
+    (source: TraversableOnce[T])
+    (service: K => Option[JoinedU])
+    (preJoinFn: T => TraversableOnce[(K, U)])
+    (postJoinFn: ((K, (U, Option[JoinedU]))) => TraversableOnce[(K, V)]): Map[K, V] =
+    MapAlgebra.sumByKey(
+      source
+        .flatMap(preJoinFn)
+        .flatMap{case (k, v) => List((k, v), (k, v))}
+        .map { case (k, v) => (k, (v, service(k))) }
+        .flatMap(postJoinFn)
+    )
+
+  def repeatedTupleLeftJoinJob[P <: Platform[P], T, U, JoinedU, K, V: Monoid](
+    source: Producer[P, T],
+    service: P#Service[K, JoinedU],
+    store: P#Store[K, V])
+    (preJoinFn: T => TraversableOnce[(K, U)])
+    (postJoinFn: ((K, (U, Option[JoinedU]))) => TraversableOnce[(K, V)]): TailProducer[P, (K, (Option[V], V))] =
+    source
+      .name("My named source")
+      .flatMap(preJoinFn)
+      .flatMap{case (k, v) => List((k, v), (k, v))}
+      .leftJoin(service)
+      .name("My named flatmap")
+      .flatMap(postJoinFn)
+      .sumByKey(store)
+
   def leftJoinInScala[T, U, JoinedU, K, V: Monoid]
     (source: TraversableOnce[T])
     (service: K => Option[JoinedU])

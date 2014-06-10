@@ -238,6 +238,56 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
     }
 
+    "match scala for leftJoin  repeated tuple leftJoin jobs" in {
+      val original = sample[List[Int]]
+      val prejoinMap = sample[(Int) => List[(Int, Int)]]
+      val service = sample[(Int,Int) => Option[Int]]
+      val postJoin = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
+      // We need to keep track of time correctly to use the service
+      var fakeTime = -1
+      val timeIncIt = new Iterator[Int] {
+        val inner = original.iterator
+        def hasNext = inner.hasNext
+        def next = {
+          fakeTime += 1
+          inner.next
+        }
+      }
+      val srvWithTime = { (key: Int) => service(fakeTime, key) }
+      val inMemory = TestGraphs.repeatedTupleLeftJoinInScala(timeIncIt)(srvWithTime)(prejoinMap)(postJoin)
+
+      // Add a time:
+      val allKeys = original.flatMap(prejoinMap).map { _._1 }
+      val allTimes = (0 until original.size)
+      val stream = for { time <- allTimes; key <- allKeys; v = service(time, key) } yield (time.toLong, (key, v))
+
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = TestUtil.randomBatcher(inWithTime)
+      val initStore = sample[Map[Int, Int]]
+      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
+
+      /**
+       * Create the batched service
+       */
+      val batchedService = stream.map{case (time, v) => (Timestamp(time), v)}.groupBy { case (ts, _) => batcher.batchOf(ts) }
+      val testService = new TestService[Int, Int]("srv", batcher, batcher.batchOf(Timestamp(0)).prev, batchedService)
+
+      val (buffer, source) = TestSource(inWithTime)
+
+      val summer =
+        TestGraphs.repeatedTupleLeftJoinJob[Scalding,(Long, Int),Int,Int,Int,Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
+
+      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val scald = Scalding("scalaCheckleftJoinJob")
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
+
+      scald.run(ws, mode, summer)
+      // Now check that the inMemory ==
+
+      TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
+    }
+
     "match scala for diamond jobs with write" in {
       val original = sample[List[Int]]
       val fn1 = sample[(Int) => List[(Int, Int)]]
@@ -301,7 +351,7 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") must beTrue
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
     }
- 
+
     "compute correct statistics" in {
       val original = sample[List[Int]]
       val fn = sample[(Int) => List[(Int, Int)]]
