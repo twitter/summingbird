@@ -22,7 +22,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.4.2",
+    version := "0.4.3rc4-5d8fc795f909c5fd111e1bc0d003a66f2dba25d3",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.0"),
     libraryDependencies ++= Seq(
@@ -63,8 +63,8 @@ object SummingbirdBuild extends Build {
         if (v.trim.toUpperCase.endsWith("SNAPSHOT"))
           Opts.resolver.sonatypeSnapshots
         else
-          Opts.resolver.sonatypeStaging
-          //"twttr" at "http://artifactory.local.twitter.com/libs-releases-local"
+          //Opts.resolver.sonatypeStaging
+          "twttr" at "http://artifactory.local.twitter.com/libs-releases-local"
       )
     },
 
