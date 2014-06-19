@@ -18,12 +18,13 @@ package com.twitter.summingbird.scalding.service
 
 import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.scalding.{Grouped => _, Source => SSource, _}
-import com.twitter.scalding.typed.{TypedPipe => _, _ }
+import com.twitter.scalding.{ Grouped => _, Source => SSource, _ }
+import com.twitter.scalding.typed.{ TypedPipe => _, _ }
 import cascading.flow.FlowDef
 import scala.util.control.NonFatal
 
-/** A UniqueKeyedService covers the case where Keys are globally
+/**
+ * A UniqueKeyedService covers the case where Keys are globally
  * unique and either are not present or have one value.
  * Examples could be Keys which are Unique IDs, such as UserIDs,
  * content IDs, cryptographic hashes, etc...
@@ -38,15 +39,15 @@ trait UniqueKeyedService[K, V] extends SimpleService[K, V] {
   /** You can override this to use hashJoin for instance */
   def doJoin[W](in: TypedPipe[(Timestamp, (K, W))],
     serv: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): TypedPipe[(Timestamp, (K, (W, Option[V])))] = {
-      implicit val ord: Ordering[K] = ordering
-      def withReducers[U, T](grouped: Grouped[U, T]) =
-        reducers.map { grouped.withReducers(_) }.getOrElse(grouped)
+    implicit val ord: Ordering[K] = ordering
+    def withReducers[U, T](grouped: Grouped[U, T]) =
+      reducers.map { grouped.withReducers(_) }.getOrElse(grouped)
 
-      withReducers(in.map { case (t, (k, w)) => (k, (t, w)) }.group)
-        .leftJoin(withReducers(serv.group))
-        .toTypedPipe
-        .map { case (k, ((t, w), optV)) => (t, (k, (w, optV))) }
-    }
+    withReducers(in.map { case (t, (k, w)) => (k, (t, w)) }.group)
+      .leftJoin(withReducers(serv.group))
+      .toTypedPipe
+      .map { case (k, ((t, w), optV)) => (t, (k, (w, optV))) }
+  }
 
   final override def serve[W](covering: DateRange,
     input: TypedPipe[(Timestamp, (K, W))])(implicit flowDef: FlowDef, mode: Mode) =
@@ -55,7 +56,7 @@ trait UniqueKeyedService[K, V] extends SimpleService[K, V] {
 
 trait SourceUniqueKeyedService[S <: SSource, K, V] extends UniqueKeyedService[K, V] {
   def source(dr: DateRange): S
-  def toPipe(s: S)(implicit flow: FlowDef, mode: Mode): TypedPipe[(K,V)]
+  def toPipe(s: S)(implicit flow: FlowDef, mode: Mode): TypedPipe[(K, V)]
   def reducers: Option[Int]
 
   def satisfiable(requested: DateRange, mode: Mode): Try[DateRange] =
@@ -67,15 +68,15 @@ trait SourceUniqueKeyedService[S <: SSource, K, V] extends UniqueKeyedService[K,
 
 object UniqueKeyedService extends java.io.Serializable {
 
-  def from[K:Ordering, V](fn: DateRange => Mappable[(K,V)],
-                          reducers: Option[Int] = None,
-                          requireFullySatisfiable: Boolean = false): UniqueKeyedService[K, V] =
-    fromAndThen[(K,V),K,V](fn, identity, reducers, requireFullySatisfiable)
+  def from[K: Ordering, V](fn: DateRange => Mappable[(K, V)],
+    reducers: Option[Int] = None,
+    requireFullySatisfiable: Boolean = false): UniqueKeyedService[K, V] =
+    fromAndThen[(K, V), K, V](fn, identity, reducers, requireFullySatisfiable)
 
   /** The Mappable is the subclass of Source that knows about the file system. */
-  def fromAndThen[T,K:Ordering,V](
+  def fromAndThen[T, K: Ordering, V](
     fn: DateRange => Mappable[T],
-    andThen: TypedPipe[T] => TypedPipe[(K,V)],
+    andThen: TypedPipe[T] => TypedPipe[(K, V)],
     inputReducers: Option[Int] = None,
     requireFullySatisfiable: Boolean = false): UniqueKeyedService[K, V] =
     new SourceUniqueKeyedService[Mappable[T], K, V] {

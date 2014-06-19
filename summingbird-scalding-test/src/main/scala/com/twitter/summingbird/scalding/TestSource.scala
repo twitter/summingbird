@@ -1,6 +1,6 @@
 
 
-  /*
+/*
  Copyright 2013 Twitter, Inc.
 
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,17 +22,15 @@ import com.twitter.algebird.monad._
 import com.twitter.summingbird.batch._
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
-import com.twitter.summingbird.{Producer, TimeExtractor }
+import com.twitter.summingbird.{ Producer, TimeExtractor }
 import scala.collection.mutable.Buffer
 import cascading.tuple.Tuple
 import cascading.flow.FlowDef
 
 object TestSource {
-    def apply[T](iter: Iterable[T])
-      (implicit mf: Manifest[T], te: TimeExtractor[T], tc: TupleConverter[T], tset: TupleSetter[T]):
-        (Map[ScaldingSource, Buffer[Tuple]], Producer[Scalding, T]) = {
-      val src = IterableSource(iter)
-      val prod = Scalding.sourceFromMappable { _ => src }
-      (Map(src -> iter.map { tset(_) }.toBuffer), prod)
+  def apply[T](iter: Iterable[T])(implicit mf: Manifest[T], te: TimeExtractor[T], tc: TupleConverter[T], tset: TupleSetter[T]): (Map[ScaldingSource, Buffer[Tuple]], Producer[Scalding, T]) = {
+    val src = IterableSource(iter)
+    val prod = Scalding.sourceFromMappable { _ => src }
+    (Map(src -> iter.map { tset(_) }.toBuffer), prod)
   }
 }

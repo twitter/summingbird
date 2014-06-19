@@ -24,15 +24,15 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import scala.util.Random
 
-import scala.collection.mutable.{Map => MMap}
+import scala.collection.mutable.{ Map => MMap }
 
 object DependantsTest extends Properties("Dependants") {
   import TestGraphGenerators._
   implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
   implicit def sink1: Memory#Sink[Int] = ((_) => Unit)
   implicit def sink2: Memory#Sink[(Int, Int)] = ((_) => Unit)
-  implicit val arbSource1: Arbitrary[Producer[Memory, Int]] = Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[Int]).map(Producer.source[Memory,Int](_)))
-  implicit val arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[(Int, Int)]).map(Producer.source[Memory,(Int, Int)](_)))
+  implicit val arbSource1: Arbitrary[Producer[Memory, Int]] = Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[Int]).map(Producer.source[Memory, Int](_)))
+  implicit val arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[(Int, Int)]).map(Producer.source[Memory, (Int, Int)](_)))
 
   implicit def genProducer: Arbitrary[Producer[Memory, _]] = Arbitrary(oneOf(genProd1, genProd2, summed))
 
@@ -47,7 +47,7 @@ object DependantsTest extends Properties("Dependants") {
   property("if transitive deps == non-transitive, then parents are sources") = forAll { (prod: Producer[Memory, _]) =>
     val deps = Producer.dependenciesOf(prod)
     (Producer.transitiveDependenciesOf(prod) == deps) ==> {
-      deps.forall { case s@Source(_) => true; case _ => false }
+      deps.forall { case s @ Source(_) => true; case _ => false }
     }
   }
   def implies(a: Boolean, b: => Boolean): Boolean = if (a) b else true
@@ -57,8 +57,8 @@ object DependantsTest extends Properties("Dependants") {
     deps.nodes.forall { t =>
       val tdepth = deps.depth(t).get
       implies(tdepth == 0, t.isInstanceOf[Source[_, _]]) &&
-      implies(tdepth > 0, (Producer.dependenciesOf(t).map { deps.depth(_).get }.max) < tdepth) &&
-      implies(tdepth > 0, Producer.dependenciesOf(t).exists { deps.depth(_) == Some(tdepth-1) })
+        implies(tdepth > 0, (Producer.dependenciesOf(t).map { deps.depth(_).get }.max) < tdepth) &&
+        implies(tdepth > 0, Producer.dependenciesOf(t).exists { deps.depth(_) == Some(tdepth - 1) })
     }
   }
 
@@ -81,7 +81,7 @@ object DependantsTest extends Properties("Dependants") {
     deps.size == deps.toSet.size
   }
 
-  property("if A is a dependency of B, then B is a dependant of A") = forAll { (prod:  Producer[Memory, _]) =>
+  property("if A is a dependency of B, then B is a dependant of A") = forAll { (prod: Producer[Memory, _]) =>
     val dependants = Dependants(prod)
 
     dependants.nodes.forall { n =>
@@ -98,7 +98,7 @@ object DependantsTest extends Properties("Dependants") {
 
       val tails = allTails.toSet
       tails.map { dependantsOf(_) }.forall { _.get.isEmpty } && {
-          nodes
+        nodes
           .filter { dependantsOf(_) == Some(Nil) }
           .forall(tails)
       }
@@ -110,17 +110,17 @@ object DependantsTest extends Properties("Dependants") {
     def allParents(n: Producer[Memory, Any]): Set[Producer[Memory, Any]] = {
       n match {
         case AlsoProducer(l, r) =>
-          Set(n, l, r).asInstanceOf[Set[Producer[Memory, Any]] ]
+          Set(n, l, r).asInstanceOf[Set[Producer[Memory, Any]]]
         case _ =>
           (n :: Producer.dependenciesOf(n))
             .toSet
-            .asInstanceOf[Set[Producer[Memory, Any]] ]
+            .asInstanceOf[Set[Producer[Memory, Any]]]
       }
     }
     @annotation.tailrec
     def fix[T](acc: Set[T])(fn: T => Set[T]): Set[T] = {
       val newSet = acc.flatMap(fn)
-      if(newSet == acc) acc
+      if (newSet == acc) acc
       else fix(newSet)(fn)
     }
     val alln = fix(Set(prod.asInstanceOf[Producer[Memory, Any]]))(allParents _)
@@ -143,7 +143,7 @@ object DependantsTest extends Properties("Dependants") {
 
   property("Sources + transitive dependants are all the nodes") = forAll { (prod: Producer[Memory, _]) =>
     val allNodes = Producer.entireGraphOf(prod)
-    val sources = allNodes.collect { case s@Source(_) => s }.toSet
+    val sources = allNodes.collect { case s @ Source(_) => s }.toSet
     val dependants = Dependants(prod)
     val sAndDown = (sources ++ sources.flatMap { dependants.transitiveDependantsOf(_) })
     allNodes.toSet == sAndDown
@@ -170,7 +170,7 @@ object DependantsTest extends Properties("Dependants") {
           case t: TailProducer[_, _] => t
         }.flatMap { n => n :: Producer.transitiveDependenciesOf(n) }.toSet
 
-        depTillWrite.collectFirst{ case MergedProducer(_, _) => true}.getOrElse(false) || writerDependencies.isEmpty || ((depTillWrite.toSet intersect writerDependencies) == depTillWrite.toSet)
+        depTillWrite.collectFirst { case MergedProducer(_, _) => true }.getOrElse(false) || writerDependencies.isEmpty || ((depTillWrite.toSet intersect writerDependencies) == depTillWrite.toSet)
       }
     }
 
@@ -179,10 +179,10 @@ object DependantsTest extends Properties("Dependants") {
     dependants.nodes.forall { n =>
       val tillWrite = dependants.transitiveDependantsTillOutput(n)
       val outputChildren = tillWrite.collect {
-        case s@Summer(_,_,_) => s
-        case w@WrittenProducer(_,_) => w
+        case s @ Summer(_, _, _) => s
+        case w @ WrittenProducer(_, _) => w
       }.flatMap { dependants.transitiveDependantsOf(_) }.toSet[Producer[Memory, Any]]
-      tillWrite.collectFirst{ case MergedProducer(_, _) => true}.getOrElse(false) || (tillWrite.toSet & outputChildren.toSet).size == 0
+      tillWrite.collectFirst { case MergedProducer(_, _) => true }.getOrElse(false) || (tillWrite.toSet & outputChildren.toSet).size == 0
     }
   }
 

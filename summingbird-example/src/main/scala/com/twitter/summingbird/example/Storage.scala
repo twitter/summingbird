@@ -17,7 +17,7 @@
 package com.twitter.summingbird.example
 
 import com.twitter.algebird.Monoid
-import com.twitter.bijection.{Base64String, Bijection, Codec, Injection}
+import com.twitter.bijection.{ Base64String, Bijection, Codec, Injection }
 import com.twitter.bijection.netty.Implicits._
 import com.twitter.conversions.time._
 import com.twitter.finagle.builder.ClientBuilder
@@ -25,15 +25,15 @@ import com.twitter.finagle.memcached.KetamaClientBuilder
 import com.twitter.finagle.memcached.protocol.text.Memcached
 import com.twitter.storehaus.Store
 import com.twitter.storehaus.algebra.MergeableStore
-import com.twitter.storehaus.memcache.{HashEncoder, MemcacheStore}
+import com.twitter.storehaus.memcache.{ HashEncoder, MemcacheStore }
 import com.twitter.summingbird.batch.BatchID
 import org.jboss.netty.buffer.ChannelBuffer
 
 /**
-  * TODO: Delete when https://github.com/twitter/storehaus/pull/121 is
-  * merged into Storehaus and Storehaus sees its next release. This
-  * pull req will make it easier to create Memcache store instances.
-  */
+ * TODO: Delete when https://github.com/twitter/storehaus/pull/121 is
+ * merged into Storehaus and Storehaus sees its next release. This
+ * pull req will make it easier to create Memcache store instances.
+ */
 object Memcache {
   val DEFAULT_TIMEOUT = 1.seconds
 
@@ -58,8 +58,7 @@ object Memcache {
    * Returns a function that encodes a key to a Memcache key string
    * given a unique namespace string.
    */
-  def keyEncoder[T](namespace: String)
-    (implicit inj: Codec[T]): T => String = { key: T =>
+  def keyEncoder[T](namespace: String)(implicit inj: Codec[T]): T => String = { key: T =>
     def concat(bytes: Array[Byte]): Array[Byte] =
       namespace.getBytes ++ bytes
 

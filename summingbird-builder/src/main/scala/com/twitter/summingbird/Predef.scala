@@ -17,23 +17,23 @@ limitations under the License.
 package com.twitter.summingbird
 
 /**
-  * Aliases for types and objects commonly used in Summingbird
-  * jobs. Importing these makes it easier to define jobs:
-  *
-  * {{{
-  * import com.twitter.summingbird.Predef._
-  *
-  * class MyJob(env: Env) extends AbstractJob {
-  *   import MyJob._  // assumed to hold flatmapper and sources
-  *
-  * implicit val batcher: Batcher = Batcher.ofHours(2)
-  * // Now, job creation is easy!
-  *
-  * }
-  * }}}
-  *
-  * @author Sam Ritchie
-  */
+ * Aliases for types and objects commonly used in Summingbird
+ * jobs. Importing these makes it easier to define jobs:
+ *
+ * {{{
+ * import com.twitter.summingbird.Predef._
+ *
+ * class MyJob(env: Env) extends AbstractJob {
+ *   import MyJob._  // assumed to hold flatmapper and sources
+ *
+ * implicit val batcher: Batcher = Batcher.ofHours(2)
+ * // Now, job creation is easy!
+ *
+ * }
+ * }}}
+ *
+ * @author Sam Ritchie
+ */
 object Predef {
   // Core types
   type AbstractJob = com.twitter.summingbird.AbstractJob
@@ -49,8 +49,7 @@ object Predef {
   val CompoundStore = com.twitter.summingbird.store.CompoundStore
 
   // Offline stores
-  type VersionedStore[K, V] =
-    com.twitter.summingbird.scalding.store.VersionedBatchStore[K, V, K, (BatchID, V)]
+  type VersionedStore[K, V] = com.twitter.summingbird.scalding.store.VersionedBatchStore[K, V, K, (BatchID, V)]
   val VersionedStore = com.twitter.summingbird.scalding.store.VersionedStore
 
   // Common options

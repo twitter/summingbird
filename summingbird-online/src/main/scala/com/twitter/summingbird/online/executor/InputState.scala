@@ -16,26 +16,25 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
-import java.util.concurrent.atomic.{AtomicReference, AtomicInteger}
+import java.util.concurrent.atomic.{ AtomicReference, AtomicInteger }
 
 class AtomicStateTransformer[T](initState: T) {
   private val curState = new AtomicReference(initState)
   def get: T = curState.get
-
 
   //oper cannot side effect (or re-running might break things).
   @annotation.tailrec
   final def updateWithState[S](oper: T => (S, T)): (S, T) = {
     val oldState = curState.get
     val (s, newState) = oper(oldState)
-    if(curState.compareAndSet(oldState, newState)) {
+    if (curState.compareAndSet(oldState, newState)) {
       (s, newState)
     } else {
       updateWithState(oper)
     }
   }
 
-  final def update(oper: T => T): T = updateWithState({x: T => (Unit, oper(x))})._2
+  final def update(oper: T => T): T = updateWithState({ x: T => (Unit, oper(x)) })._2
 }
 
 object InflightTuples {
@@ -57,14 +56,14 @@ case class InputState[T](state: T) {
   case class State(counter: Int, failed: Boolean) {
     def fail = this.copy(failed = true, counter = counter - 1)
     def decrBy(by: Int) = {
-      if(counter - by < 0) {
+      if (counter - by < 0) {
         throw new Exception("Invalid decrement counter cannot be less than 0")
       }
-      this.copy(counter = counter - by )
+      this.copy(counter = counter - by)
     }
     def incrBy(by: Int) = {
-      if(failed) throw new Exception("Cannot increment when already failed")
-      this.copy(counter = counter + by )
+      if (failed) throw new Exception("Cannot increment when already failed")
+      this.copy(counter = counter + by)
     }
     def incr = incrBy(1)
     def decr = decrBy(1)
@@ -73,7 +72,6 @@ case class InputState[T](state: T) {
   }
 
   val stateTracking = new AtomicStateTransformer(State(1, false))
-
 
   // Fanout is how many tuples one tuple became
   // so we increment by 1 less than the amount given
@@ -84,7 +82,7 @@ case class InputState[T](state: T) {
     val newS = stateTracking.update(_.incrBy(incrementAmount))
     // If we incremented on something that was 0 or negative
     // And not in a failed state, then this is an error
-    if((newS.counter - incrementAmount <= 0) && !newS.failed) {
+    if ((newS.counter - incrementAmount <= 0) && !newS.failed) {
       throw new Exception("Invalid call on an inputstate, we had already decremented to 0 and not failed.")
     }
     this
@@ -93,7 +91,7 @@ case class InputState[T](state: T) {
   // Returns true if it should be acked
   def ack[U](fn: (T => U)): Option[U] = {
     val newState = stateTracking.update(_.decr)
-    if(newState.doAck) {
+    if (newState.doAck) {
       InflightTuples.decr
       Some(fn(state))
     } else {

@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.chill
 
-import com.twitter.summingbird.{Platform, ExecutionConfig}
+import com.twitter.summingbird.{ Platform, ExecutionConfig }
 import com.twitter.chill.IKryoRegistrar
 
 /**

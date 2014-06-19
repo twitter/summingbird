@@ -15,7 +15,7 @@ private[summingbird] case class StormCounterIncrementor(metric: CountMetric) ext
 }
 
 // StormStatProvider global object that contains counter information for the Storm job(s)
-private [summingbird] object StormStatProvider extends PlatformStatProvider {
+private[summingbird] object StormStatProvider extends PlatformStatProvider {
   @transient private val logger = LoggerFactory.getLogger(StormStatProvider.getClass)
 
   // Keep a HashMap of JobId->Promise Map[String, CountMetric] where String is the Counter name
@@ -23,21 +23,23 @@ private [summingbird] object StormStatProvider extends PlatformStatProvider {
   private val metricsForJob = new ConcurrentHashMap[JobId, Promise[Map[String, CountMetric]]]()
 
   def registerMetrics(jobID: JobId,
-                      context: TopologyContext,
-                      metrics: List[(String, String)]) {
+    context: TopologyContext,
+    metrics: List[(String, String)]) {
 
     val metricsPromise = Promise[Map[String, CountMetric]]
 
     if (metricsForJob.putIfAbsent(jobID, metricsPromise) == null) {
-      val stormMetrics = metrics.map { case (groupName, metricName) =>
-        (groupName + "/" + metricName, new CountMetric)
+      val stormMetrics = metrics.map {
+        case (groupName, metricName) =>
+          (groupName + "/" + metricName, new CountMetric)
       }.toMap
       logger.debug("Stats for this Bolt: {}", stormMetrics.keySet.mkString)
 
       // Register metrics with the Storm TopologyContext
-      stormMetrics.foreach { case (name, metric) =>
-        logger.info("Registered metric {} with TopologyContext", name)
-        context.registerMetric(name, metric, 60)
+      stormMetrics.foreach {
+        case (name, metric) =>
+          logger.info("Registered metric {} with TopologyContext", name)
+          context.registerMetric(name, metric, 60)
       }
       // fullfill Promise
       metricsPromise.setValue(stormMetrics)
@@ -46,7 +48,7 @@ private [summingbird] object StormStatProvider extends PlatformStatProvider {
 
   // returns Storm counter incrementor to the Counter object in Summingbird job
   def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[StormCounterIncrementor] =
-    if(metricsForJob.containsKey(passedJobId)) {
+    if (metricsForJob.containsKey(passedJobId)) {
       // Get the stormMetrics once Promise was fullfilled
       val stormMetrics = Await.result(metricsForJob.get(passedJobId))
       val metric = stormMetrics.getOrElse(group + "/" + name, sys.error("It is only valid to create counter objects during submission"))

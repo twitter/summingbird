@@ -20,7 +20,7 @@ import com.twitter.algebird.monad._
 import com.twitter.summingbird.batch._
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
-import com.twitter.summingbird.scalding.batch.{BatchedService => BBatchedService}
+import com.twitter.summingbird.scalding.batch.{ BatchedService => BBatchedService }
 import scala.collection.mutable.Buffer
 import cascading.tuple.Tuple
 import cascading.flow.FlowDef
@@ -28,13 +28,12 @@ import cascading.flow.FlowDef
 class TestService[K, V](service: String,
   inBatcher: Batcher,
   minBatch: BatchID,
-  streams: Map[BatchID, Iterable[(Timestamp, (K, Option[V]))]])
-(implicit ord: Ordering[K],
-  tset: TupleSetter[(Timestamp, (K, Option[V]))],
-  tset2: TupleSetter[(Timestamp, (K, V))],
-  tconv: TupleConverter[(Timestamp, (K, Option[V]))],
-  tconv2: TupleConverter[(Timestamp, (K, V))])
-  extends BBatchedService[K, V] {
+  streams: Map[BatchID, Iterable[(Timestamp, (K, Option[V]))]])(implicit ord: Ordering[K],
+    tset: TupleSetter[(Timestamp, (K, Option[V]))],
+    tset2: TupleSetter[(Timestamp, (K, V))],
+    tconv: TupleConverter[(Timestamp, (K, Option[V]))],
+    tconv2: TupleConverter[(Timestamp, (K, V))])
+    extends BBatchedService[K, V] {
 
   val batcher = inBatcher
   val ordering = ord
@@ -57,8 +56,8 @@ class TestService[K, V](service: String,
                 case None => innerMap - k
                 case Some(v) => innerMap + (k -> (time -> v))
               }
-        }
-        map + (batch -> thisBatch)
+          }
+          map + (batch -> thisBatch)
       }
       .mapValues { innerMap =>
         innerMap.toSeq.map { case (k, (time, v)) => (time, (k, v)) }
@@ -82,10 +81,9 @@ class TestService[K, V](service: String,
   }
   override def readLast(exclusiveUB: BatchID, mode: Mode) = {
     val candidates = lasts.filter { _._1 < exclusiveUB }
-    if(candidates.isEmpty) {
+    if (candidates.isEmpty) {
       Left(List("No batches < :" + exclusiveUB.toString))
-    }
-    else {
+    } else {
       val (batch, _) = candidates.maxBy { _._1 }
       val mappable = lastMappable(batch)
       val rdr = Reader { (fd: (FlowDef, Mode)) =>

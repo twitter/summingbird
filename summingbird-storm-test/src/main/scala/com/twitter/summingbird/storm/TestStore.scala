@@ -18,24 +18,23 @@ package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
 import com.twitter.storehaus.algebra.MergeableStore
-import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.util.Future
-import java.util.{Collections, HashMap, Map => JMap, UUID}
+import java.util.{ Collections, HashMap, Map => JMap, UUID }
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable.SynchronizedMap
 import java.util.WeakHashMap
 import scala.collection.JavaConverters._
 
-
-
 object TestStore {
   private val testStores = new WeakHashMap[String, TestStore[_, _]]
 
   def apply[K, V: Semigroup](storeID: String): Option[TestStore[K, V]] =
-          (Option(testStores.get(storeID)).map{s =>
-              s.asInstanceOf[TestStore[K, V]]})
+    (Option(testStores.get(storeID)).map { s =>
+      s.asInstanceOf[TestStore[K, V]]
+    })
 
-  private def buildStore[K, V: Semigroup](initialData: Map[K, V]) : String = {
+  private def buildStore[K, V: Semigroup](initialData: Map[K, V]): String = {
     val storeID = UUID.randomUUID.toString
     val newInitStore = TestStore[K, V](storeID, initialData)
     testStores.synchronized {
@@ -44,39 +43,34 @@ object TestStore {
     storeID
   }
 
-  def createBatchedStore[K, V]
-                              (initialData: Map[(K, BatchID), V] = Map.empty[(K, BatchID), V])
-                              (implicit batcher: Batcher, valueSG: Semigroup[V]):
-                                      (String, MergeableStoreSupplier[K, V]) = {
+  def createBatchedStore[K, V](initialData: Map[(K, BatchID), V] = Map.empty[(K, BatchID), V])(implicit batcher: Batcher, valueSG: Semigroup[V]): (String, MergeableStoreSupplier[K, V]) = {
 
     val storeID = buildStore[(K, BatchID), V](initialData)
     val supplier = MergeableStoreSupplier.from(
-          TestStore.apply[(K, BatchID), V](storeID)
-          .getOrElse(sys.error("Weak hash map no longer contains store"))
-          )
+      TestStore.apply[(K, BatchID), V](storeID)
+        .getOrElse(sys.error("Weak hash map no longer contains store"))
+    )
     (storeID, supplier)
   }
 
-  def createStore[K, V: Semigroup](initialData: Map[K, V] = Map.empty[K, V]):
-                            (String, MergeableStoreSupplier[K, V]) = {
+  def createStore[K, V: Semigroup](initialData: Map[K, V] = Map.empty[K, V]): (String, MergeableStoreSupplier[K, V]) = {
     val storeID = buildStore[K, V](initialData)
     val supplier = MergeableStoreSupplier.fromOnlineOnly(
-          TestStore.apply[K, V](storeID)
-          .getOrElse(sys.error("Weak hash map no longer contains store"))
+      TestStore.apply[K, V](storeID)
+        .getOrElse(sys.error("Weak hash map no longer contains store"))
     )
 
     (storeID, supplier)
   }
 }
 
-
 case class TestStore[K, V: Semigroup](storeID: String, initialData: Map[K, V]) extends MergeableStore[K, V] {
   private val backingStore: JMap[K, Option[V]] =
-                Collections.synchronizedMap(new HashMap[K, Option[V]]())
+    Collections.synchronizedMap(new HashMap[K, Option[V]]())
   val updates: AtomicInteger = new AtomicInteger(0)
   val reads: AtomicInteger = new AtomicInteger(0)
 
-  def toScala: Map[K, V] = backingStore.asScala.collect{ case (k, Some(v)) => (k, v)}.toMap
+  def toScala: Map[K, V] = backingStore.asScala.collect { case (k, Some(v)) => (k, v) }.toMap
 
   private def getOpt(k: K) = {
     reads.incrementAndGet

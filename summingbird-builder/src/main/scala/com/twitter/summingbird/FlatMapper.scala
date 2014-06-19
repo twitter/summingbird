@@ -17,10 +17,10 @@
 package com.twitter.summingbird
 
 /**
-  * @author Oscar Boykin
-  * @author Sam Ritchie
-  * @author Ashu Singhal
-  */
+ * @author Oscar Boykin
+ * @author Sam Ritchie
+ * @author Ashu Singhal
+ */
 
 abstract class FlatMapper[-T, +U] extends (T => TraversableOnce[U]) {
   // transform an event to key value pairs

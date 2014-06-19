@@ -1,8 +1,8 @@
 package com.twitter.summingbird.spark
 
-import com.twitter.algebird.{Interval, Semigroup}
+import com.twitter.algebird.{ Interval, Semigroup }
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.option.{NonCommutative, Commutative, Commutativity}
+import com.twitter.summingbird.option.{ NonCommutative, Commutative, Commutativity }
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
@@ -22,16 +22,15 @@ trait SparkSink[T] extends Serializable {
 
 case class MergeResult[K, V](
   sumBeforeMerge: RDD[(Timestamp, (K, (Option[V], V)))],
-  writeClosure: () => Unit
-)
+  writeClosure: () => Unit)
 
 trait SparkStore[K, V] extends Serializable {
 
   def merge(sc: SparkContext,
-            timeSpan: Interval[Timestamp],
-            deltas: RDD[(Timestamp, (K, V))],
-            commutativity: Commutativity,
-            semigroup: Semigroup[V]): MergeResult[K, V]
+    timeSpan: Interval[Timestamp],
+    deltas: RDD[(Timestamp, (K, V))],
+    commutativity: Commutativity,
+    semigroup: Semigroup[V]): MergeResult[K, V]
 }
 
 abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, V] {
@@ -45,10 +44,10 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
   def write(sc: SparkContext, updatedSnapshot: RDD[(K, V)]): Unit
 
   override def merge(sc: SparkContext,
-                     timeSpan: Interval[Timestamp],
-                     deltas: RDD[(Timestamp, (K, V))],
-                     commutativity: Commutativity,
-                     @transient semigroup: Semigroup[V]): MergeResult[K, V] = {
+    timeSpan: Interval[Timestamp],
+    deltas: RDD[(Timestamp, (K, V))],
+    commutativity: Commutativity,
+    @transient semigroup: Semigroup[V]): MergeResult[K, V] = {
 
     val snapshotRdd = snapshot(sc, timeSpan)
     val extSemigroup = Externalizer(semigroup)
@@ -57,8 +56,9 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
       case Commutative => {
         val keyedDeltas = deltas.map { case (ts, (k, v)) => (k, (ts, v)) }
 
-        keyedDeltas.reduceByKey { case ((highestTs, sumSoFar), (ts, v)) =>
-          (Ordering[Timestamp].max(highestTs, ts), extSemigroup.get.plus(sumSoFar, v))
+        keyedDeltas.reduceByKey {
+          case ((highestTs, sumSoFar), (ts, v)) =>
+            (Ordering[Timestamp].max(highestTs, ts), extSemigroup.get.plus(sumSoFar, v))
         }
 
       }
@@ -82,22 +82,25 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
     }
 
     // TODO: these 'seqs that are actually options' are ugly
-    val grouped = summedDeltas.cogroup(snapshotRdd).map { case (k, (summedDeltaSeq, storedValueSeq)) =>
-      (k, storedValueSeq.headOption, summedDeltaSeq.headOption)
+    val grouped = summedDeltas.cogroup(snapshotRdd).map {
+      case (k, (summedDeltaSeq, storedValueSeq)) =>
+        (k, storedValueSeq.headOption, summedDeltaSeq.headOption)
     }
 
-    val sumBeforeMerge = grouped.flatMap { case (k, storedValue, summedDelta) =>
-      summedDelta.map { case (ts, d) => (ts, (k, (storedValue, d))) }
+    val sumBeforeMerge = grouped.flatMap {
+      case (k, storedValue, summedDelta) =>
+        summedDelta.map { case (ts, d) => (ts, (k, (storedValue, d))) }
     }
 
-    val updatedSnapshot = grouped.map { case (k, storedValue, summedDelta) =>
-      val v = (summedDelta.map(_._2), storedValue) match {
-        case (Some(delta), Some(sv)) => extSemigroup.get.plus(sv, delta)
-        case (Some(delta), None) => delta
-        case (None, Some(sv)) => sv
-        case _ => sys.error("This should never happen, both summedDelta and storedValue were None")
-      }
-      (k, v)
+    val updatedSnapshot = grouped.map {
+      case (k, storedValue, summedDelta) =>
+        val v = (summedDelta.map(_._2), storedValue) match {
+          case (Some(delta), Some(sv)) => extSemigroup.get.plus(sv, delta)
+          case (Some(delta), None) => delta
+          case (None, Some(sv)) => sv
+          case _ => sys.error("This should never happen, both summedDelta and storedValue were None")
+        }
+        (k, v)
     }
 
     val writeClosure = () => write(sc, updatedSnapshot)
@@ -109,6 +112,6 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
 // TODO: Need to implement the logic for time based lookups (finding what a value was for a given key at a given time)
 trait SparkService[K, LV] extends Serializable {
   def lookup[V](sc: SparkContext,
-                timeSpan: Interval[Timestamp],
-                rdd: RDD[(Timestamp, (K, V))]): RDD[(Timestamp, (K, (V, Option[LV])))]
+    timeSpan: Interval[Timestamp],
+    rdd: RDD[(Timestamp, (K, V))]): RDD[(Timestamp, (K, (V, Option[LV])))]
 }

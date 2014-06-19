@@ -16,18 +16,17 @@ import scala.reflect.ClassTag
 trait PlatformPlanner[P <: Platform[P]] {
 
   // some shorthand type aliases
-  type Prod[T] =  Producer[P, T]
-  type TailProd[T] =  TailProducer[P, T]
+  type Prod[T] = Producer[P, T]
+  type TailProd[T] = TailProducer[P, T]
   type Visited = Map[Prod[_], P#Plan[_]]
 
   case class PlanState[T](
     plan: P#Plan[T],
-    visited: Visited
-  )
+    visited: Visited)
 
   def visit[T](producer: Prod[T]) = toPlan(producer, Map.empty)
 
-  protected def toPlan[T](producer: Prod[T], visited:  Visited): PlanState[T] = {
+  protected def toPlan[T](producer: Prod[T], visited: Visited): PlanState[T] = {
     // short circuit if we've already visited this node
     visited.get(producer) match {
       case Some(s) => PlanState(s.asInstanceOf[P#Plan[T]], visited)
@@ -59,7 +58,7 @@ trait PlatformPlanner[P <: Platform[P]] {
 
       case LeftJoinedProducer(prod, service) => planLeftJoinedProducer(prod, visited, service)
 
-      case summer@Summer(prod, store, semigroup) => planSummer(summer, prod, visited, store, semigroup)
+      case summer @ Summer(prod, store, semigroup) => planSummer(summer, prod, visited, store, semigroup)
     }
 
     PlanState(updatedState.plan.asInstanceOf[P#Plan[T]], updatedState.visited + (outer -> updatedState.plan))

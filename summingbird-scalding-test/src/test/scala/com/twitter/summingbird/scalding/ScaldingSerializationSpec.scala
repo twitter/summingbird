@@ -16,9 +16,9 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
+import com.twitter.algebird.{ MapAlgebra, Monoid, Group, Interval, Last }
 import com.twitter.algebird.monad._
-import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs}
+import com.twitter.summingbird.{ Producer, TimeExtractor, TestGraphs }
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
 
@@ -35,10 +35,10 @@ import org.scalacheck.Properties
 import org.apache.hadoop.conf.Configuration
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap => MutableHashMap, Map => MutableMap, SynchronizedBuffer, SynchronizedMap}
+import scala.collection.mutable.{ ArrayBuffer, Buffer, HashMap => MutableHashMap, Map => MutableMap, SynchronizedBuffer, SynchronizedMap }
 
-import cascading.scheme.local.{TextDelimited => CLTextDelimited}
-import cascading.tuple.{Tuple, Fields, TupleEntry}
+import cascading.scheme.local.{ TextDelimited => CLTextDelimited }
+import cascading.tuple.{ Tuple, Fields, TupleEntry }
 import cascading.flow.FlowDef
 import cascading.tap.Tap
 import cascading.scheme.NullScheme
@@ -46,25 +46,24 @@ import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
 
-
 import org.specs2.mutable._
 
 class ScaldingSerializationSpecs extends Specification {
-  implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor( _._1 )
+  implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor(_._1)
 
   "ScaldingPlatform" should {
     "serialize Hadoop Jobs for single step jobs" in {
       // Add a time:
       val inWithTime = List(1, 2, 3).zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = TestUtil.randomBatcher(inWithTime)
-      val testStore = TestStore[Int,Int]("test", batcher, Iterable.empty, inWithTime.size)
+      val testStore = TestStore[Int, Int]("test", batcher, Iterable.empty, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
-      val summer = TestGraphs.singleStepJob[Scalding,(Long, Int),Int,Int](source, testStore) {
+      val summer = TestGraphs.singleStepJob[Scalding, (Long, Int), Int, Int](source, testStore) {
         tup => List((1 -> tup._2))
       }
 
-      val mode = HadoopTest(new Configuration, {case x: ScaldingSource => buffer.get(x)})
+      val mode = HadoopTest(new Configuration, { case x: ScaldingSource => buffer.get(x) })
       val intr = Interval.leftClosedRightOpen(Timestamp(0L), Timestamp(inWithTime.size.toLong))
       val scald = Scalding("scalaCheckJob")
 

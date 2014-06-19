@@ -28,29 +28,28 @@ import com.twitter.algebird.{
   ExclusiveUpper,
   InclusiveUpper
 }
-import cascading.flow.{FlowDef, Flow, FlowProcess}
+import cascading.flow.{ FlowDef, Flow, FlowProcess }
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.bijection.{AbstractInjection, Injection}
+import com.twitter.bijection.{ AbstractInjection, Injection }
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.scalding.Mode
-import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _}
+import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _ }
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
-import com.twitter.summingbird.scalding.source.{TimePathedSource => BTimePathedSource}
+import com.twitter.summingbird.scalding.source.{ TimePathedSource => BTimePathedSource }
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.option._
 import java.util.{ HashMap => JHashMap, Map => JMap, TimeZone }
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.io.serializer.{Serialization => HSerialization}
+import org.apache.hadoop.io.serializer.{ Serialization => HSerialization }
 import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
 import org.slf4j.LoggerFactory
 import scala.util.control.Exception.allCatch
-import scala.util.{Success, Failure}
-
+import scala.util.{ Success, Failure }
 
 object Scalding {
   @transient private val logger = LoggerFactory.getLogger(classOf[Scalding])
@@ -106,31 +105,30 @@ object Scalding {
   def intersect(dr1: DateRange, dr2: DateRange): Option[DateRange] =
     (dr1.as[Interval[Timestamp]] && (dr2.as[Interval[Timestamp]])).as[Option[DateRange]]
 
-  /** Given a constructor function, computes the maximum available range
+  /**
+   * Given a constructor function, computes the maximum available range
    * of time or gives an error.
    *
    * Works by calling validateTaps on the Mappable, so if that does not work correctly
    * this will be incorrect.
    */
-  def minify(mode: Mode, desired: DateRange)(factory: (DateRange) => SSource):
-    Either[List[FailureReason], DateRange] = {
-      try {
-        val available = (mode, factory(desired)) match {
-          case (hdfs: Hdfs, ts: STPS) =>
-            BTimePathedSource.satisfiableHdfs(hdfs, desired, factory.asInstanceOf[DateRange => STPS])
-          case _ => bisectingMinify(mode, desired)(factory)
-        }
-        available.flatMap { intersect(desired, _) }
-          .map(Right(_))
-          .getOrElse(Left(List("available: " + available + ", desired: " + desired)))
+  def minify(mode: Mode, desired: DateRange)(factory: (DateRange) => SSource): Either[List[FailureReason], DateRange] = {
+    try {
+      val available = (mode, factory(desired)) match {
+        case (hdfs: Hdfs, ts: STPS) =>
+          BTimePathedSource.satisfiableHdfs(hdfs, desired, factory.asInstanceOf[DateRange => STPS])
+        case _ => bisectingMinify(mode, desired)(factory)
       }
-      catch { case t: Throwable => toTry(t) }
-    }
+      available.flatMap { intersect(desired, _) }
+        .map(Right(_))
+        .getOrElse(Left(List("available: " + available + ", desired: " + desired)))
+    } catch { case t: Throwable => toTry(t) }
+  }
 
   private def bisectingMinify(mode: Mode, desired: DateRange)(factory: (DateRange) => SSource): Option[DateRange] = {
     def isGood(end: Long): Boolean = allCatch.opt(factory(DateRange(desired.start, RichDate(end))).validateTaps(mode)).isDefined
     val DateRange(start, end) = desired
-    if(isGood(start.timestamp)) {
+    if (isGood(start.timestamp)) {
       // The invariant is that low isGood, low < upper, and upper isGood == false
       @annotation.tailrec
       def findEnd(low: Long, upper: Long): Long =
@@ -138,89 +136,87 @@ object Scalding {
           low
         else {
           // mid must be > low because upper >= low + 2
-          val mid = low + (upper - low)/2
-          if(isGood(mid))
+          val mid = low + (upper - low) / 2
+          if (isGood(mid))
             findEnd(mid, upper)
           else
             findEnd(low, mid)
         }
 
-      if(isGood(end.timestamp)) Some(desired)
+      if (isGood(end.timestamp)) Some(desired)
       else Some(DateRange(desired.start, RichDate(findEnd(start.timestamp, end.timestamp))))
-    }
-    else {
+    } else {
       // No good data
       None
     }
   }
 
-  /** This uses minify to find the smallest subset we can run.
+  /**
+   * This uses minify to find the smallest subset we can run.
    * If you don't want this behavior, then use pipeFactoryExact which
    * either produces all the DateRange or the whole job fails.
    */
-  def pipeFactory[T](factory: (DateRange) => Mappable[T])
-    (implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
+  def pipeFactory[T](factory: (DateRange) => Mappable[T])(implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
     optionMappedPipeFactory(factory)(t => Some(t))
 
   /**
-    * Like pipeFactory, but allows the output of the factory to be mapped.
-    *
-    * Useful when using TextLine, for example, where the lines need to be
-    * parsed before you can extract the timestamps.
-    */
-  def mappedPipeFactory[T,U](factory: (DateRange) => Mappable[T])(fn: T => U)
-    (implicit timeOf: TimeExtractor[U]): PipeFactory[U] =
+   * Like pipeFactory, but allows the output of the factory to be mapped.
+   *
+   * Useful when using TextLine, for example, where the lines need to be
+   * parsed before you can extract the timestamps.
+   */
+  def mappedPipeFactory[T, U](factory: (DateRange) => Mappable[T])(fn: T => U)(implicit timeOf: TimeExtractor[U]): PipeFactory[U] =
     optionMappedPipeFactory(factory)(t => Some(fn(t)))
 
   /**
-    * Like pipeFactory, but allows the output of the factory to be mapped to an optional value.
-    *
-    * Useful when using TextLine, for example, where the lines need to be
-    * parsed before you can extract the timestamps.
-    */
-  def optionMappedPipeFactory[T,U](factory: (DateRange) => Mappable[T])(fn: T => Option[U])
-    (implicit timeOf: TimeExtractor[U]): PipeFactory[U] =
-    StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[U]]{
-      (timeMode: (Interval[Timestamp], Mode)) => {
-        val (timeSpan, mode) = timeMode
+   * Like pipeFactory, but allows the output of the factory to be mapped to an optional value.
+   *
+   * Useful when using TextLine, for example, where the lines need to be
+   * parsed before you can extract the timestamps.
+   */
+  def optionMappedPipeFactory[T, U](factory: (DateRange) => Mappable[T])(fn: T => Option[U])(implicit timeOf: TimeExtractor[U]): PipeFactory[U] =
+    StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[U]] {
+      (timeMode: (Interval[Timestamp], Mode)) =>
+        {
+          val (timeSpan, mode) = timeMode
 
-        toDateRange(timeSpan).right.flatMap { dr =>
-          minify(mode, dr)(factory)
-            .right.map { newDr =>
-              val newIntr = newDr.as[Interval[Timestamp]]
-              val mappable = factory(newDr)
-              ((newIntr, mode), Reader { (fdM: (FlowDef, Mode)) =>
-                TypedPipe.from(mappable)(fdM._1, fdM._2)
-                  .flatMap { t =>
-                    fn(t).flatMap { mapped =>
-                      val time = Timestamp(timeOf(mapped))
-                      if(newIntr(time)) Some((time, mapped)) else None
+          toDateRange(timeSpan).right.flatMap { dr =>
+            minify(mode, dr)(factory)
+              .right.map { newDr =>
+                val newIntr = newDr.as[Interval[Timestamp]]
+                val mappable = factory(newDr)
+                ((newIntr, mode), Reader { (fdM: (FlowDef, Mode)) =>
+                  TypedPipe.from(mappable)(fdM._1, fdM._2)
+                    .flatMap { t =>
+                      fn(t).flatMap { mapped =>
+                        val time = Timestamp(timeOf(mapped))
+                        if (newIntr(time)) Some((time, mapped)) else None
+                      }
                     }
-                  }
-              })
-            }
+                })
+              }
+          }
         }
-      }
     }
 
-  def pipeFactoryExact[T](factory: (DateRange) => Mappable[T])
-    (implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
-    StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[T]]{
-      (timeMode: (Interval[Timestamp], Mode)) => {
-        val (timeSpan, mode) = timeMode
+  def pipeFactoryExact[T](factory: (DateRange) => Mappable[T])(implicit timeOf: TimeExtractor[T]): PipeFactory[T] =
+    StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[T]] {
+      (timeMode: (Interval[Timestamp], Mode)) =>
+        {
+          val (timeSpan, mode) = timeMode
 
-        toDateRange(timeSpan).right.map { dr =>
-          val mappable = factory(dr)
-          ((timeSpan, mode), Reader { (fdM: (FlowDef, Mode)) =>
-            mappable.validateTaps(fdM._2) //This can throw, but that is what this caller wants
-            TypedPipe.from(mappable)(fdM._1, fdM._2)
-              .flatMap { t =>
-                val time = Timestamp(timeOf(t))
-                if(timeSpan(time)) Some((time, t)) else None
-              }
-          })
+          toDateRange(timeSpan).right.map { dr =>
+            val mappable = factory(dr)
+            ((timeSpan, mode), Reader { (fdM: (FlowDef, Mode)) =>
+              mappable.validateTaps(fdM._2) //This can throw, but that is what this caller wants
+              TypedPipe.from(mappable)(fdM._1, fdM._2)
+                .flatMap { t =>
+                  val time = Timestamp(timeOf(t))
+                  if (timeSpan(time)) Some((time, t)) else None
+                }
+            })
+          }
         }
-      }
     }
 
   def sourceFromMappable[T: TimeExtractor: Manifest](
@@ -228,9 +224,9 @@ object Scalding {
     Producer.source[Scalding, T](pipeFactory(factory))
 
   def toDateRange(timeSpan: Interval[Timestamp]): Try[DateRange] =
-      timeSpan.as[Option[DateRange]]
-        .map { Right(_) }
-        .getOrElse(Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString)))
+    timeSpan.as[Option[DateRange]]
+      .map { Right(_) }
+      .getOrElse(Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString)))
 
   def limitTimes[T](range: Interval[Timestamp], in: FlowToPipe[T]): FlowToPipe[T] =
     in.map { pipe => pipe.filter { case (time, _) => range(time) } }
@@ -242,10 +238,11 @@ object Scalding {
    * This does the AlsoProducer logic of making `ensure` a part of the
    * flow, but not this output.
    */
-  def also[L,R](ensure: FlowToPipe[L], result: FlowToPipe[R]): FlowToPipe[R] =
+  def also[L, R](ensure: FlowToPipe[L], result: FlowToPipe[R]): FlowToPipe[R] =
     for { _ <- ensure; r <- result } yield r
 
-  /** Memoize the inner reader
+  /**
+   * Memoize the inner reader
    *  This is not a performance optimization, but a correctness one applicable
    *  to some cases (namely any function that mutates the FlowDef or does IO).
    *  Though we are working in a referentially transparent manner, the application
@@ -253,7 +250,7 @@ object Scalding {
    *  For a fixed PipeFactory, we only want to mutate a given FlowDef once.
    *  If we memoize with this function, it guarantees that the PipeFactory
    *  is idempotent.
-   * */
+   */
   def memoize[T](pf: PipeFactory[T]): PipeFactory[T] = {
     val memo = new Memo[T]
     pf.map { rdr =>
@@ -261,8 +258,7 @@ object Scalding {
     }
   }
 
-
-  private def getOrElse[T <: AnyRef : Manifest](options: Map[String, Options], names: List[String], producer: Producer[Scalding, _], default: => T): T = {
+  private def getOrElse[T <: AnyRef: Manifest](options: Map[String, Options], names: List[String], producer: Producer[Scalding, _], default: => T): T = {
     val maybePair = (for {
       id <- names :+ "DEFAULT"
       innerOpts <- options.get(id)
@@ -271,16 +267,16 @@ object Scalding {
 
     maybePair match {
       case None =>
-          logger.debug("Producer (%s): Using default setting %s".format(producer.getClass.getName, default))
-          default
+        logger.debug("Producer (%s): Using default setting %s".format(producer.getClass.getName, default))
+        default
       case Some((id, opt)) =>
-          logger.info("Producer ({}) Using {} found via NamedProducer \"{}\"", Array[AnyRef](producer.getClass.getName, opt, id))
-          opt
+        logger.info("Producer ({}) Using {} found via NamedProducer \"{}\"", Array[AnyRef](producer.getClass.getName, opt, id))
+        opt
     }
   }
 
-
-  /** Return a PipeFactory that can cover as much as possible of the time range requested,
+  /**
+   * Return a PipeFactory that can cover as much as possible of the time range requested,
    * but the output state gives the actual, non-empty, interval that can be produced
    */
   private def buildFlow[T](options: Map[String, Options],
@@ -291,9 +287,8 @@ object Scalding {
     val names = dependants.namesOf(producer).map(_.id)
 
     def recurse[U](p: Producer[Scalding, U],
-      built: Map[Producer[Scalding, _], PipeFactory[_]] = built):
-      (PipeFactory[U], Map[Producer[Scalding, _], PipeFactory[_]]) =
-        buildFlow(options, p, fanOuts, dependants, built)
+      built: Map[Producer[Scalding, _], PipeFactory[_]] = built): (PipeFactory[U], Map[Producer[Scalding, _], PipeFactory[_]]) =
+      buildFlow(options, p, fanOuts, dependants, built)
 
     /**
      * The scalding Typed-API does not deal with TypedPipes with fanout,
@@ -306,13 +301,12 @@ object Scalding {
      * https://github.com/twitter/scalding/issues/513
      */
     def forceNode[U](p: PipeFactory[U]): PipeFactory[U] =
-      if(fanOuts(producer))
+      if (fanOuts(producer))
         p.map { flowP =>
           flowP.map { _.fork }
         }
       else
         p
-
 
     built.get(producer) match {
       case Some(pf) => (pf.asInstanceOf[PipeFactory[T]], built)
@@ -328,8 +322,8 @@ object Scalding {
             (srcPf, built)
           }
           case IdentityKeyedProducer(producer) => recurse(producer)
-          case NamedProducer(producer, newId)  => recurse(producer)
-          case summer@Summer(producer, store, monoid) =>
+          case NamedProducer(producer, newId) => recurse(producer)
+          case summer @ Summer(producer, store, monoid) =>
             /*
              * The store may already have materialized values, so we don't need the whole
              * input history, but to produce NEW batches, we may need some input.
@@ -357,12 +351,13 @@ object Scalding {
             val (fmp, m) = recurse(producer)
             (fmp.map { flowP =>
               flowP.map { typedPipe =>
-                typedPipe.flatMap { case (time, item) =>
-                  op(item).map((time, _))
+                typedPipe.flatMap {
+                  case (time, item) =>
+                    op(item).map((time, _))
                 }
               }
             }, m)
-          case kfm@KeyFlatMappedProducer(producer, op) =>
+          case kfm @ KeyFlatMappedProducer(producer, op) =>
             val (fmp, m) = recurse(producer)
             /**
              * If the following is true, it is safe to put a mapside reduce before this node:
@@ -370,31 +365,30 @@ object Scalding {
              * 2) there are only NoOp Producers between this node and the Summer
              */
             val downStream = dependants.transitiveDependantsTillOutput(kfm)
-            val maybeMerged = downStream.collect { case t: TailProducer[_, _] => t }
-              match {
-                case List(sAny:Summer[_,_,_]) =>
-                  val s = sAny.asInstanceOf[Summer[Scalding, Any, Any]]
-                  if(downStream.forall(d => Producer.isNoOp(d) || d == s)) {
-                    //only downstream are no-ops and the summer GO!
-                    getCommutativity(names, options, s) match {
-                      case Commutative =>
-                        logger.info("enabling flatMapKeys mapside caching")
-                        s.store.partialMerge(fmp, s.semigroup, Commutative)
-                      case NonCommutative =>
-                        logger.info("not enabling flatMapKeys mapside caching, due to non-commutativity")
-                        fmp
-                    }
+            val maybeMerged = downStream.collect { case t: TailProducer[_, _] => t } match {
+              case List(sAny: Summer[_, _, _]) =>
+                val s = sAny.asInstanceOf[Summer[Scalding, Any, Any]]
+                if (downStream.forall(d => Producer.isNoOp(d) || d == s)) {
+                  //only downstream are no-ops and the summer GO!
+                  getCommutativity(names, options, s) match {
+                    case Commutative =>
+                      logger.info("enabling flatMapKeys mapside caching")
+                      s.store.partialMerge(fmp, s.semigroup, Commutative)
+                    case NonCommutative =>
+                      logger.info("not enabling flatMapKeys mapside caching, due to non-commutativity")
+                      fmp
                   }
-                  else
-                    fmp
-                case _ => fmp
-              }
+                } else
+                  fmp
+              case _ => fmp
+            }
 
             // Map in two monads here, first state then reader
             (maybeMerged.map { flowP =>
               flowP.map { typedPipe =>
-                typedPipe.flatMap { case (time, (k, v)) =>
-                  op(k).map{newK => (time, (newK, v))}
+                typedPipe.flatMap {
+                  case (time, (k, v)) =>
+                    op(k).map { newK => (time, (newK, v)) }
                 }
               }
             }, m)
@@ -409,8 +403,9 @@ object Scalding {
 
             (fmpSharded.map { flowP =>
               flowP.map { typedPipe =>
-                typedPipe.flatMap { case (time, item) =>
-                  op(item).map((time, _))
+                typedPipe.flatMap {
+                  case (time, item) =>
+                    op(item).map((time, _))
                 }
               }
             }, m)
@@ -427,7 +422,8 @@ object Scalding {
             } yield Scalding.limitTimes(maxAvailable._1, merged)
             (merged, mr)
           }
-          /** The logic here is identical to a merge except we ignore what comes out of
+          /**
+           * The logic here is identical to a merge except we ignore what comes out of
            * the left side, BUT NOT THE TIME. we can't let the right get ahead of what the
            * left could do to be consistent with the rest of this code.
            */
@@ -463,30 +459,33 @@ object Scalding {
     planProducer(options, prod)
   }
 
-  /** Use this method to interop with existing scalding code
+  /**
+   * Use this method to interop with existing scalding code
    * Note this may return a smaller DateRange than you ask for
    * If you need an exact DateRange see toPipeExact.
    */
   def toPipe[T](dr: DateRange,
     prod: Producer[Scalding, T],
     opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[(DateRange, TypedPipe[(Timestamp, T)])] = {
-      val ts = dr.as[Interval[Timestamp]]
-      val pf = planProducer(opts, prod)
-      toPipe(ts, fd, mode, pf).right.map { case (ts, pipe) =>
+    val ts = dr.as[Interval[Timestamp]]
+    val pf = planProducer(opts, prod)
+    toPipe(ts, fd, mode, pf).right.map {
+      case (ts, pipe) =>
         (ts.as[Option[DateRange]].get, pipe)
-      }
+    }
   }
 
-  /** Use this method to interop with existing scalding code that expects
+  /**
+   * Use this method to interop with existing scalding code that expects
    * to schedule an exact DateRange or fail.
    */
   def toPipeExact[T](dr: DateRange,
     prod: Producer[Scalding, T],
     opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[TypedPipe[(Timestamp, T)]] = {
-      val ts = dr.as[Interval[Timestamp]]
-      val pf = planProducer(opts, prod)
-      toPipeExact(ts, fd, mode, pf)
-    }
+    val ts = dr.as[Interval[Timestamp]]
+    val pf = planProducer(opts, prod)
+    toPipeExact(ts, fd, mode, pf)
+  }
 
   def toPipe[T](timeSpan: Interval[Timestamp],
     flowDef: FlowDef,
@@ -496,7 +495,7 @@ object Scalding {
     pf((timeSpan, mode))
       .right
       .map { case (((ts, m), flowDefMutator)) => (ts, flowDefMutator((flowDef, m))) }
-    }
+  }
 
   def toPipeExact[T](timeSpan: Interval[Timestamp],
     flowDef: FlowDef,
@@ -505,27 +504,30 @@ object Scalding {
     logger.info("Planning on interval: {}", timeSpan.as[Option[DateRange]])
     pf((timeSpan, mode))
       .right
-      .flatMap { case (((ts, m), flowDefMutator)) =>
-        if(ts != timeSpan) Left(List("Could not load all of %s, only %s".format(ts, timeSpan)))
-        else Right(flowDefMutator((flowDef, m)))
+      .flatMap {
+        case (((ts, m), flowDefMutator)) =>
+          if (ts != timeSpan) Left(List("Could not load all of %s, only %s".format(ts, timeSpan)))
+          else Right(flowDefMutator((flowDef, m)))
       }
   }
 }
 
 // Jank to get around serialization issues
 class Memo[T] extends java.io.Serializable {
-  @transient private val mmap = scala.collection.mutable.Map[(FlowDef,Mode), TimedPipe[T]]()
-  def getOrElseUpdate(in: (FlowDef,Mode), rdr: Reader[(FlowDef,Mode),TimedPipe[T]]): TimedPipe[T] =
+  @transient private val mmap = scala.collection.mutable.Map[(FlowDef, Mode), TimedPipe[T]]()
+  def getOrElseUpdate(in: (FlowDef, Mode), rdr: Reader[(FlowDef, Mode), TimedPipe[T]]): TimedPipe[T] =
     mmap.getOrElseUpdate(in, rdr(in))
 }
 
-/** Use this option to write the logical graph that cascading
+/**
+ * Use this option to write the logical graph that cascading
  * produces before Map/Reduce planning.
  * Use the job name as the key
  */
 case class WriteDot(filename: String)
 
-/** Use this option to write map/reduce graph
+/**
+ * Use this option to write map/reduce graph
  * that cascading produces
  * Use the job name as the key
  */
@@ -535,8 +537,7 @@ class Scalding(
   val jobName: String,
   @transient val options: Map[String, Options],
   @transient transformConfig: SummingbirdConfig => SummingbirdConfig,
-  @transient passedRegistrars: List[IKryoRegistrar]
-  )
+  @transient passedRegistrars: List[IKryoRegistrar])
     extends Platform[Scalding] with java.io.Serializable {
 
   type Source[T] = PipeFactory[T]
@@ -580,11 +581,11 @@ class Scalding(
     conf.set("summingbird.jobname", jobName)
     // legacy name to match scalding
     conf.set("scalding.flow.submitted.timestamp",
-          System.currentTimeMillis.toString)
+      System.currentTimeMillis.toString)
     conf.set("summingbird.submitted.timestamp",
-          System.currentTimeMillis.toString)
+      System.currentTimeMillis.toString)
 
-    def ifUnset(k: String, v: String) { if(null == conf.get(k)) { conf.set(k, v) } }
+    def ifUnset(k: String, v: String) { if (null == conf.get(k)) { conf.set(k, v) } }
     // Set the mapside cache size, this is important to not be too small
     ifUnset("cascading.aggregateby.threshold", "100000")
   }
@@ -602,8 +603,9 @@ class Scalding(
   )
 
   private def setHadoopConfigDefaults(c: Configuration): Unit =
-    HADOOP_DEFAULTS.foreach { case (k, v) =>
-      c.set(k, v)
+    HADOOP_DEFAULTS.foreach {
+      case (k, v) =>
+        c.set(k, v)
     }
 
   // This is a side-effect-free computation that is called by run
@@ -612,14 +614,15 @@ class Scalding(
     flowDef.setName(jobName)
     Scalding.toPipe(timeSpan, flowDef, mode, pf)
       .right
-      .flatMap { case (ts, pipe) =>
-        // Now we have a populated flowDef, time to let Cascading do it's thing:
-        try {
-          Right((ts, mode.newFlowConnector(mode.config).connect(flowDef)))
-        } catch {
-          case (e: Throwable) => toTry(e)
-        }
-    }
+      .flatMap {
+        case (ts, pipe) =>
+          // Now we have a populated flowDef, time to let Cascading do it's thing:
+          try {
+            Right((ts, mode.newFlowConnector(mode.config).connect(flowDef)))
+          } catch {
+            case (e: Throwable) => toTry(e)
+          }
+      }
   }
 
   def run(state: WaitingState[Interval[Timestamp]],
@@ -643,7 +646,7 @@ class Scalding(
         setHadoopConfigDefaults(conf)
         updateConfig(conf)
         setIoSerializations(conf)
-      case HadoopTest(conf,_) =>
+      case HadoopTest(conf, _) =>
         setHadoopConfigDefaults(conf)
         updateConfig(conf)
         setIoSerializations(conf)
@@ -654,7 +657,7 @@ class Scalding(
     toFlow(prepareState.requested, mode, pf) match {
       case Left(errs) =>
         prepareState.fail(FlowPlanException(errs))
-      case Right((ts,flow)) =>
+      case Right((ts, flow)) =>
         mutate(flow)
         prepareState.willAccept(ts) match {
           case Right(runningState) =>

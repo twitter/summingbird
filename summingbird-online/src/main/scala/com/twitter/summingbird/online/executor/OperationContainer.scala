@@ -24,8 +24,7 @@ trait OperationContainer[Input, Output, State, WireFmt, RuntimeContext] {
   def encoder: Injection[Output, WireFmt]
   def executeTick: TraversableOnce[(List[State], Try[TraversableOnce[Output]])]
   def execute(state: State,
-              data: Input):
-               TraversableOnce[(List[State], Try[TraversableOnce[Output]])]
+    data: Input): TraversableOnce[(List[State], Try[TraversableOnce[Output]])]
   def init(ctx: RuntimeContext) {}
   def cleanup {}
   def notifyFailure(inputs: List[State], e: Throwable) {}

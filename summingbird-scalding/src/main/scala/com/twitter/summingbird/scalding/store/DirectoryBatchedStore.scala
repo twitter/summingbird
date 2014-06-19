@@ -17,19 +17,19 @@
 package com.twitter.summingbird.scalding.store
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileStatus, Path}
+import org.apache.hadoop.fs.{ FileStatus, Path }
 import org.apache.hadoop.io.Writable
 import cascading.flow.FlowDef
 import cascading.tuple.Fields
 
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
-import com.twitter.algebird.monad.{StateWithError, Reader}
+import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.bijection.{ Bijection, ImplicitBijection }
-import com.twitter.scalding.{Dsl, Mode, Hdfs, TypedPipe, IterableSource, WritableSequenceFile, MapsideReduce, TupleSetter, TupleConverter}
-import com.twitter.scalding.typed. TypedSink
+import com.twitter.scalding.{ Dsl, Mode, Hdfs, TypedPipe, IterableSource, WritableSequenceFile, MapsideReduce, TupleSetter, TupleConverter }
+import com.twitter.scalding.typed.TypedSink
 
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp}
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.scalding._
 
 /**
@@ -39,9 +39,8 @@ import com.twitter.summingbird.scalding._
  * @author Kevin Lin
  */
 
-class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
-(implicit inBatcher: Batcher, ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
-  extends batch.BatchedStore[K, V] {
+class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)(implicit inBatcher: Batcher, ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
+    extends batch.BatchedStore[K, V] {
   import Dsl._
 
   val batcher = inBatcher
@@ -56,12 +55,12 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
           val isGood = statuses.exists { fs: FileStatus =>
             fs.getPath.getName == "_SUCCESS"
           }
-          val lastModifyTime = Timestamp(statuses.map{_.getModificationTime}.max)
+          val lastModifyTime = Timestamp(statuses.map { _.getModificationTime }.max)
           (isGood, lastModifyTime)
-      }
-      .getOrElse((false, Timestamp(0)))
+        }
+        .getOrElse((false, Timestamp(0)))
 
-      (isGood, lastModifyTime, path.getName)
+    (isGood, lastModifyTime, path.getName)
   }
 
   /*
@@ -73,8 +72,8 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
         def hdfsPaths: List[String] = {
           val path = new Path(rootPath)
           Option(path.getFileSystem(conf).globStatus(path))
-            .map{ statuses: Array[FileStatus] =>
-              statuses.map {_.getPath.getName}
+            .map { statuses: Array[FileStatus] =>
+              statuses.map { _.getPath.getName }
             }
             .getOrElse(Array[String]())
             .toList
@@ -82,17 +81,17 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
 
         val lastBatchStatus =
           hdfsPaths.map(getFileStatus(_, conf))
-            .filter{input => input._1 && (BatchID(input._2) < exclusiveUB)}
-            .reduceOption{(a, b) => if (a._2 > b._2) a else b}
+            .filter { input => input._1 && (BatchID(input._2) < exclusiveUB) }
+            .reduceOption { (a, b) => if (a._2 > b._2) a else b }
             .getOrElse((false, 0, "0"))
 
         if (lastBatchStatus._1) BatchID(lastBatchStatus._3)
         else throw new Exception(
-           "No good data <= " + exclusiveUB + " is available at : " + rootPath)
+          "No good data <= " + exclusiveUB + " is available at : " + rootPath)
       }
       case _ => {
-         throw new Exception(
-           "DirectoryBatchedStore must work in Hdfs. Mode: " + mode.toString + " found.")
+        throw new Exception(
+          "DirectoryBatchedStore must work in Hdfs. Mode: " + mode.toString + " found.")
       }
     }
   }
@@ -106,7 +105,7 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)
     val lastID = getLastBatchID(exclusiveUB, mode)
 
     val src = WritableSequenceFile(rootPath + "/" + lastID.toString, 'key -> 'val)
-    val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(src.read(fd._1, fd._2), Fields.ALL)}
+    val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(src.read(fd._1, fd._2), Fields.ALL) }
     Right((lastID, rdr))
 
   }

@@ -18,9 +18,9 @@ package com.twitter.summingbird.scalding.store
 
 import cascading.flow.FlowDef
 import com.twitter.bijection.Injection
-import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe}
+import com.twitter.scalding.{ Dsl, Mode, TDsl, TypedPipe }
 import com.twitter.scalding.commons.source.VersionedKeyValSource
-import com.twitter.summingbird.batch.{ Batcher, BatchID, PrunedSpace, Timestamp}
+import com.twitter.summingbird.batch.{ Batcher, BatchID, PrunedSpace, Timestamp }
 import scala.util.control.Exception.allCatch
 import com.twitter.summingbird.scalding._
 
@@ -35,24 +35,24 @@ import com.twitter.summingbird.scalding._
 
 object VersionedStore {
   /**
-    * Returns a VersionedBatchStore that tags the BatchID alongside
-    * the stored value. This is required to serve data through a
-    * read-only key-value store designed to serve values in tandem
-    * with a realtime layer (that stores (K, BatchID) -> V)).
-    *
-    * The packing function receives the inclusive upper BatchID being
-    * committed. We actually need to store the exclusive upper bound
-    * alongside the value, so the packing function calls
-    * batchID.next. On the unpack, we drop the batchID, so no
-    * off-by-one error arises.
-    *
-    * See summingbird-client's ClientStore for more information on the
-    * merge between offline and online data.
-    */
+   * Returns a VersionedBatchStore that tags the BatchID alongside
+   * the stored value. This is required to serve data through a
+   * read-only key-value store designed to serve values in tandem
+   * with a realtime layer (that stores (K, BatchID) -> V)).
+   *
+   * The packing function receives the inclusive upper BatchID being
+   * committed. We actually need to store the exclusive upper bound
+   * alongside the value, so the packing function calls
+   * batchID.next. On the unpack, we drop the batchID, so no
+   * off-by-one error arises.
+   *
+   * See summingbird-client's ClientStore for more information on the
+   * merge between offline and online data.
+   */
   def apply[K, V](
-      rootPath: String,
-      versionsToKeep: Int = VersionedKeyValSource.defaultVersionsToKeep,
-      prunedSpace: PrunedSpace[(K,V)] = PrunedSpace.neverPruned)(
+    rootPath: String,
+    versionsToKeep: Int = VersionedKeyValSource.defaultVersionsToKeep,
+    prunedSpace: PrunedSpace[(K, V)] = PrunedSpace.neverPruned)(
       implicit injection: Injection[(K, (BatchID, V)), (Array[Byte], Array[Byte])],
       batcher: Batcher,
       ord: Ordering[K]): VersionedBatchStore[K, V, K, (BatchID, V)] =

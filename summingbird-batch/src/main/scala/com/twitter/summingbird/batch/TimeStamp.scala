@@ -32,10 +32,10 @@ case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
   // Delta between two timestamps
   def -(other: Timestamp): Milliseconds = Milliseconds(milliSinceEpoch - other.milliSinceEpoch)
   def incrementMillis(millis: Long) = Timestamp(milliSinceEpoch + millis)
-  def incrementSeconds(seconds: Long) = Timestamp(milliSinceEpoch + (seconds*1000L))
-  def incrementMinutes(minutes: Long) = Timestamp(milliSinceEpoch + (minutes*1000*60))
-  def incrementHours(hours: Long) = Timestamp(milliSinceEpoch + (hours*1000*60*60))
-  def incrementDays(days: Long) = Timestamp(milliSinceEpoch + (days*1000*60*60*24))
+  def incrementSeconds(seconds: Long) = Timestamp(milliSinceEpoch + (seconds * 1000L))
+  def incrementMinutes(minutes: Long) = Timestamp(milliSinceEpoch + (minutes * 1000 * 60))
+  def incrementHours(hours: Long) = Timestamp(milliSinceEpoch + (hours * 1000 * 60 * 60))
+  def incrementDays(days: Long) = Timestamp(milliSinceEpoch + (days * 1000 * 60 * 60 * 24))
 }
 
 object Timestamp {

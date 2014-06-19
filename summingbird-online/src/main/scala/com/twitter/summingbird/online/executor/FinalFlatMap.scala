@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
-import com.twitter.algebird.{SummingQueue, Semigroup, MapAlgebra}
+import com.twitter.algebird.{ SummingQueue, Semigroup, MapAlgebra }
 import com.twitter.algebird.util.summer.AsyncSummer
 import com.twitter.bijection.Injection
 import com.twitter.util.Future
@@ -33,7 +33,6 @@ import com.twitter.summingbird.online.option.{
   MaxEmitPerExecute,
   FlushFrequency
 }
-
 
 /**
  * @author Oscar Boykin
@@ -57,11 +56,10 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   maxEmitPerExec: MaxEmitPerExecute,
   summerShards: KeyValueShards,
   pDecoder: Injection[Event, D],
-  pEncoder: Injection[(Int, Map[Key, Value]), D]
-  )
-  extends AsyncBase[Event, (Int, Map[Key, Value]), S, D, RC](maxWaitingFutures,
-                                                          maxWaitingTime,
-                                                          maxEmitPerExec) {
+  pEncoder: Injection[(Int, Map[Key, Value]), D])
+    extends AsyncBase[Event, (Int, Map[Key, Value]), S, D, RC](maxWaitingFutures,
+      maxWaitingTime,
+      maxEmitPerExec) {
 
   type InS = S
   type OutputElement = (Int, Map[Key, Value])
@@ -75,14 +73,14 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   type SummerV = (List[S], Map[Key, Value])
   lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(List[S], Map[Key, Value])]])
 
-  private def formatResult(outData: Map[Int, (List[S], Map[Key, Value])])
-                        : TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])] = {
-    outData.iterator.map { case (outerKey, (tupList, valList)) =>
-      if(valList.isEmpty) {
-        (tupList, Future.value(Nil))
-      } else {
-        (tupList, Future.value(List((outerKey, valList))))
-      }
+  private def formatResult(outData: Map[Int, (List[S], Map[Key, Value])]): TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])] = {
+    outData.iterator.map {
+      case (outerKey, (tupList, valList)) =>
+        if (valList.isEmpty) {
+          (tupList, Future.value(Nil))
+        } else {
+          (tupList, Future.value(List((outerKey, valList))))
+        }
     }
   }
 
@@ -91,30 +89,29 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   }
 
   def cache(state: S,
-            items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
+    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
     try {
       val itemL = items.toList
-      if(itemL.size > 0) {
+      if (itemL.size > 0) {
         state.fanOut(itemL.size)
-        sCache.addAll(itemL.map{case (k, v) =>
-          summerShards.summerIdFor(k) -> (List(state), Map(k -> v))
+        sCache.addAll(itemL.map {
+          case (k, v) =>
+            summerShards.summerIdFor(k) -> (List(state), Map(k -> v))
         }).map(formatResult(_))
-      }
-      else { // Here we handle mapping to nothing, option map et. al
-          Future.value(
-            List(
-              (List(state), Future.value(Nil))
-            )
+      } else { // Here we handle mapping to nothing, option map et. al
+        Future.value(
+          List(
+            (List(state), Future.value(Nil))
           )
-        }
-    }
-    catch {
+        )
+      }
+    } catch {
       case t: Throwable => Future.exception(t)
     }
   }
 
   override def apply(state: S,
-                     tup: Event) =
+    tup: Event) =
     lockedOp.get.apply(tup).map { cache(state, _) }.flatten
 
   override def cleanup {

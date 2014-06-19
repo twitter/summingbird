@@ -21,26 +21,25 @@ import com.twitter.summingbird.storm.StormMetric
 import com.twitter.util.Duration
 
 /**
-  * Options used by the sink phase of the Storm Platform's topology.
-  *
-  * @author Oscar Boykin
-  * @author Sam Ritchie
-  * @author Ashu Singhal
-  */
-
+ * Options used by the sink phase of the Storm Platform's topology.
+ *
+ * @author Oscar Boykin
+ * @author Sam Ritchie
+ * @author Ashu Singhal
+ */
 
 /**
-  * SinkParallelism controls the number of executors storm allocates to
-  * the groupAndSum bolts. Each of these bolt executors is responsible
-  * for storing and committing some subset of the keyspace to the
-  * Sink's store, so higher parallelism will result in higher load on
-  * the store. The default sink parallelism is 5.
-  */
+ * SinkParallelism controls the number of executors storm allocates to
+ * the groupAndSum bolts. Each of these bolt executors is responsible
+ * for storing and committing some subset of the keyspace to the
+ * Sink's store, so higher parallelism will result in higher load on
+ * the store. The default sink parallelism is 5.
+ */
 case class SummerParallelism(parHint: Int)
 
 /**
-  * See FlatMapOptions.scala for an explanation.
-  */
+ * See FlatMapOptions.scala for an explanation.
+ */
 object SummerStormMetrics {
   def apply(metrics: => TraversableOnce[StormMetric[_]]) = new SummerStormMetrics(() => metrics)
   def unapply(metrics: SummerStormMetrics) = Some(metrics.metrics)

@@ -25,23 +25,20 @@ import com.twitter.scalding.typed.TypedSink
 
 import scala.collection.mutable.Buffer
 
-import cascading.scheme.local.{TextDelimited => CLTextDelimited}
-import cascading.tuple.{Tuple, TupleEntry}
+import cascading.scheme.local.{ TextDelimited => CLTextDelimited }
+import cascading.tuple.{ Tuple, TupleEntry }
 import cascading.flow.FlowDef
 
-
 object TestStore {
-  def apply[K, V](store: String, inBatcher: Batcher, initStore: Iterable[(K, V)], lastTime: Long, pruning: PrunedSpace[(K, V)] = PrunedSpace.neverPruned)
-    (implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)]) = {
+  def apply[K, V](store: String, inBatcher: Batcher, initStore: Iterable[(K, V)], lastTime: Long, pruning: PrunedSpace[(K, V)] = PrunedSpace.neverPruned)(implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)]) = {
     val startBatch = inBatcher.batchOf(Timestamp(0)).prev
     val endBatch = inBatcher.batchOf(Timestamp(lastTime)).next
     new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch, pruning)
   }
 }
 
-class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID, override val pruning: PrunedSpace[(K, V)])
-(implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
-  extends batch.BatchedStore[K, V] {
+class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID, override val pruning: PrunedSpace[(K, V)])(implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
+    extends batch.BatchedStore[K, V] {
 
   var writtenBatches = Set[BatchID](initBatch)
   val batches: Map[BatchID, Mappable[(K, V)]] =
@@ -66,10 +63,9 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
 
   override def readLast(exclusiveUB: BatchID, mode: Mode) = {
     val candidates = writtenBatches.filter { _ < exclusiveUB }
-    if(candidates.isEmpty) {
+    if (candidates.isEmpty) {
       Left(List("No batches < :" + exclusiveUB.toString))
-    }
-    else {
+    } else {
       val batch = candidates.max
       val mappable = batches(batch)
       val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable)(fd._1, fd._2) }

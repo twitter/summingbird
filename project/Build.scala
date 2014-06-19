@@ -6,6 +6,8 @@ import sbtassembly.Plugin._
 import AssemblyKeys._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+import scalariform.formatter.preferences._
+import com.typesafe.sbt.SbtScalariform._
 
 object SummingbirdBuild extends Build {
   def withCross(dep: ModuleID) =
@@ -19,13 +21,13 @@ object SummingbirdBuild extends Build {
       case version if version startsWith "2.9" => "org.specs2" %% "specs2" % "1.12.4.1" % "test"
       case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test"
   }
-  
+
   def isScala210x(scalaVersion: String) = scalaVersion match {
       case version if version startsWith "2.9" => false
       case version if version startsWith "2.10" => true
   }
 
-  val extraSettings = Project.defaultSettings ++ mimaDefaultSettings
+  val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
@@ -113,6 +115,13 @@ object SummingbirdBuild extends Build {
         </developer>
       </developers>)
   )
+
+  lazy val formattingPreferences = {
+   import scalariform.formatter.preferences._
+   FormattingPreferences().
+     setPreference(AlignParameters, false).
+     setPreference(PreserveSpaceBeforeArguments, true)
+  }
 
   lazy val summingbird = Project(
     id = "summingbird",
@@ -349,7 +358,7 @@ object SummingbirdBuild extends Build {
       }
     }
   }
-  
+
   val sparkDeps = Seq(
     "com.twitter" %% "algebird-core" % algebirdVersion,
     "com.twitter" %% "algebird-util" % algebirdVersion,
@@ -370,7 +379,7 @@ object SummingbirdBuild extends Build {
     skip in compile := !isScala210x(scalaVersion.value),
     skip in test := !isScala210x(scalaVersion.value),
     publishArtifact := isScala210x(scalaVersion.value),
-    libraryDependencies ++= buildSparkDeps(scalaVersion.value)    
+    libraryDependencies ++= buildSparkDeps(scalaVersion.value)
   )
   .settings(sparkAssemblyMergeSettings:_*)
   .dependsOn(

@@ -30,7 +30,7 @@ trait ExecutionConfig[P <: Platform[P]] {
   def getNamedOptions: Map[String, Options] = Map.empty
 
   // Supply a method to mutate the platform specific config
-  def transformConfig(m: Map[String,AnyRef]): Map[String,AnyRef] = m
+  def transformConfig(m: Map[String, AnyRef]): Map[String, AnyRef] = m
 
   def graph: TailProducer[P, Any]
 }

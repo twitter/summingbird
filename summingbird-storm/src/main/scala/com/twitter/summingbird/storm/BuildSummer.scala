@@ -17,14 +17,14 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
-import com.twitter.algebird.util.summer.{SyncSummingQueue, AsyncListSum, BufferSize, FlushFrequency, MemoryFlushPercent}
-import com.twitter.summingbird.online.option.{SummerBuilder, SummerConstructor}
+import com.twitter.algebird.util.summer.{ SyncSummingQueue, AsyncListSum, BufferSize, FlushFrequency, MemoryFlushPercent }
+import com.twitter.summingbird.online.option.{ SummerBuilder, SummerConstructor }
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.planner.Dag
 import com.twitter.summingbird.storm.planner.StormNode
-import com.twitter.util.{Future, FuturePool}
+import com.twitter.util.{ Future, FuturePool }
 
-import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.{ Executors, TimeUnit }
 
 import org.slf4j.LoggerFactory
 
@@ -60,18 +60,17 @@ object BuildSummer {
       val flushFrequency = storm.getOrElse(dag, node, DEFAULT_FLUSH_FREQUENCY)
       logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
 
-
       val useAsyncCache = storm.getOrElse(dag, node, DEFAULT_USE_ASYNC_CACHE)
       logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
 
-      if(!useAsyncCache.get) {
+      if (!useAsyncCache.get) {
         new SummerBuilder {
           def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {
             new SyncSummingQueue[K, V](
-                BufferSize(cacheSize.lowerBound),
-                FlushFrequency(flushFrequency.get),
-                MemoryFlushPercent(softMemoryFlush.get)
-              )
+              BufferSize(cacheSize.lowerBound),
+              FlushFrequency(flushFrequency.get),
+              MemoryFlushPercent(softMemoryFlush.get)
+            )
           }
         }
       } else {
@@ -86,10 +85,10 @@ object BuildSummer {
             val executor = Executors.newFixedThreadPool(asyncPoolSize.get)
             val futurePool = FuturePool(executor)
             val summer = new AsyncListSum[K, V](BufferSize(cacheSize.lowerBound),
-                FlushFrequency(flushFrequency.get),
-                MemoryFlushPercent(softMemoryFlush.get),
-                futurePool
-                )
+              FlushFrequency(flushFrequency.get),
+              MemoryFlushPercent(softMemoryFlush.get),
+              futurePool
+            )
             summer.withCleanup(() => {
               Future {
                 executor.shutdown

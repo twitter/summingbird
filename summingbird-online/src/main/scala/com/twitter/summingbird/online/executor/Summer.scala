@@ -16,38 +16,38 @@
 
 package com.twitter.summingbird.online.executor
 
-import com.twitter.util.{Await, Future, Promise}
+import com.twitter.util.{ Await, Future, Promise }
 import com.twitter.algebird.util.summer.AsyncSummer
-import com.twitter.algebird.{Semigroup, SummingQueue}
+import com.twitter.algebird.{ Semigroup, SummingQueue }
 import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.bijection.Injection
 
-import com.twitter.summingbird.online.{FlatMapOperation, Externalizer}
+import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer }
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
 /**
-  * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
-  * CacheSize sets the number of key-value pairs that the SinkBolt will accept
-  * (and sum into an internal map) before committing out to the online store.
-  *
-  * To perform this commit, the SinkBolt iterates through the map of aggregated
-  * kv pairs and performs a "+" on the store for each pair, sequencing these
-  * "+" calls together using the Future monad. If the store has high latency,
-  * these calls might take a bit of time to complete.
-  *
-  * MaxWaitingFutures(count) handles this problem by realizing a future
-  * representing the "+" of kv-pair n only when kvpair n + 100 shows up in the bolt,
-  * effectively pushing back against latency bumps in the host.
-  *
-  * The allowed latency before a future is forced is equal to
-  * (MaxWaitingFutures * execute latency).
-  *
-  * @author Oscar Boykin
-  * @author Ian O Connell
-  * @author Sam Ritchie
-  * @author Ashu Singhal
-  */
+ * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
+ * CacheSize sets the number of key-value pairs that the SinkBolt will accept
+ * (and sum into an internal map) before committing out to the online store.
+ *
+ * To perform this commit, the SinkBolt iterates through the map of aggregated
+ * kv pairs and performs a "+" on the store for each pair, sequencing these
+ * "+" calls together using the Future monad. If the store has high latency,
+ * these calls might take a bit of time to complete.
+ *
+ * MaxWaitingFutures(count) handles this problem by realizing a future
+ * representing the "+" of kv-pair n only when kvpair n + 100 shows up in the bolt,
+ * effectively pushing back against latency bumps in the host.
+ *
+ * The allowed latency before a future is forced is equal to
+ * (MaxWaitingFutures * execute latency).
+ *
+ * @author Oscar Boykin
+ * @author Ian O Connell
+ * @author Sam Ritchie
+ * @author Ashu Singhal
+ */
 
 class Summer[Key, Value: Semigroup, Event, S, D, RC](
   @transient storeSupplier: RC => Mergeable[Key, Value],
@@ -60,11 +60,10 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
   maxEmitPerExec: MaxEmitPerExecute,
   includeSuccessHandler: IncludeSuccessHandler,
   pDecoder: Injection[(Int, Map[Key, Value]), D],
-  pEncoder: Injection[Event, D]) extends
-    AsyncBase[(Int, Map[Key, Value]), Event, InputState[S], D, RC](
-      maxWaitingFutures,
-      maxWaitingTime,
-      maxEmitPerExec) {
+  pEncoder: Injection[Event, D]) extends AsyncBase[(Int, Map[Key, Value]), Event, InputState[S], D, RC](
+  maxWaitingFutures,
+  maxWaitingTime,
+  maxEmitPerExec) {
 
   val lockedOp = Externalizer(flatMapOp)
   val encoder = pEncoder
@@ -94,33 +93,32 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
   }
 
   private def handleResult(kvs: Map[Key, (List[InputState[S]], Value)]): TraversableOnce[(List[InputState[S]], Future[TraversableOnce[Event]])] =
-    store.multiMerge(kvs.mapValues(_._2)).iterator.map { case (k, beforeF) =>
-      val (tups, delta) = kvs(k)
-      (tups, beforeF.flatMap { before =>
-        lockedOp.get.apply((k, (before, delta)))
-      }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply() } )
+    store.multiMerge(kvs.mapValues(_._2)).iterator.map {
+      case (k, beforeF) =>
+        val (tups, delta) = kvs(k)
+        (tups, beforeF.flatMap { before =>
+          lockedOp.get.apply((k, (before, delta)))
+        }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply() })
     }.toList
-
 
   override def tick = sSummer.tick.map(handleResult(_))
 
   override def apply(state: InputState[S],
-                     tupList: (Int, Map[Key, Value])) = {
+    tupList: (Int, Map[Key, Value])) = {
     try {
       val (_, innerTuples) = tupList
       assert(innerTuples.size > 0, "Maps coming in must not be empty")
       state.fanOut(innerTuples.size)
-      val cacheEntries = innerTuples.map { case (k, v) =>
-        (k, (List(state), v))
+      val cacheEntries = innerTuples.map {
+        case (k, v) =>
+          (k, (List(state), v))
       }
 
       sSummer.addAll(cacheEntries).map(handleResult(_))
-    }
-    catch {
+    } catch {
       case t: Throwable => Future.exception(t)
     }
   }
-
 
   override def cleanup = Await.result(store.close)
 }

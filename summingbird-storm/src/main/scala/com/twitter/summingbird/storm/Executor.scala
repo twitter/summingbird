@@ -19,7 +19,6 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.chill.ChillExecutionConfig
 import com.twitter.scalding.Args
 
-
 /**
  * @author Ian O Connell
  */
@@ -33,14 +32,14 @@ object Executor {
     val config = generator(args)
 
     val storm = if (args.boolean("local")) {
-        Storm.local(config.getNamedOptions)
+      Storm.local(config.getNamedOptions)
     } else {
-        Storm.remote(config.getNamedOptions)
+      Storm.remote(config.getNamedOptions)
     }
 
     storm
-        .withRegistrars(config.registrars)
-        .withConfigUpdater { c => c.updated(config.transformConfig(c.toMap)) }
-        .run(config.graph, config.name)
+      .withRegistrars(config.registrars)
+      .withConfigUpdater { c => c.updated(config.transformConfig(c.toMap)) }
+      .run(config.graph, config.name)
   }
 }

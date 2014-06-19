@@ -18,14 +18,15 @@ package com.twitter.summingbird.scalding.batch
 
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
-import com.twitter.bijection.{Injection, Bijection, Conversion}
+import com.twitter.bijection.{ Injection, Bijection, Conversion }
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.scalding._
 import com.twitter.scalding.Mode
 
 import Conversion.asMethod
 
-/** Services and Stores are very similar, but not exact.
+/**
+ * Services and Stores are very similar, but not exact.
  * This shares the logic for them.
  */
 private class BatchedOperations(batcher: Batcher) {
@@ -36,7 +37,7 @@ private class BatchedOperations(batcher: Batcher) {
   }
 
   def batchToTimestamp(bint: Interval[BatchID]): Interval[Timestamp] =
-     bint.mapNonDecreasing { batcher.earliestTimeOf(_) }
+    bint.mapNonDecreasing { batcher.earliestTimeOf(_) }
 
   def intersect(batches: Interval[BatchID], ts: Interval[Timestamp]): Interval[Timestamp] =
     batchToTimestamp(batches) && ts
@@ -49,9 +50,10 @@ private class BatchedOperations(batcher: Batcher) {
     // Read the delta stream for the needed times
     in((inTimes, mode))
       .right
-      .map { case ((availableInput, innerm), f2p) =>
-        val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput.as[Interval[Timestamp]])
-        (batchesWeCanBuild, f2p)
+      .map {
+        case ((availableInput, innerm), f2p) =>
+          val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput.as[Interval[Timestamp]])
+          (batchesWeCanBuild, f2p)
       }
   }
 }

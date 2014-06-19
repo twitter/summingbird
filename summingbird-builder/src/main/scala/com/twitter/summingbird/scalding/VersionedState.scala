@@ -34,19 +34,17 @@ import com.twitter.summingbird.batch.store.HDFSMetadata
 
 import org.slf4j.LoggerFactory
 
-import scala.util.{Try => ScalaTry, Success, Failure}
+import scala.util.{ Try => ScalaTry, Success, Failure }
 
 /**
-  * State representation used by the builder API for compatibility.
-  */
+ * State representation used by the builder API for compatibility.
+ */
 private[scalding] object VersionedState {
-  def apply(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
-    (implicit batcher: Batcher): VersionedState =
+  def apply(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)(implicit batcher: Batcher): VersionedState =
     new VersionedState(meta, startDate, maxBatches)
 }
 
-private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)
-  (implicit batcher: Batcher) extends WaitingState[Interval[Timestamp]] { outer =>
+private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Timestamp], maxBatches: Int)(implicit batcher: Batcher) extends WaitingState[Interval[Timestamp]] { outer =>
 
   private val logger = LoggerFactory.getLogger(classOf[VersionedState])
 
@@ -66,13 +64,13 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
               None
           }
       }
-      .flatten
-      .headOption
+        .flatten
+        .headOption
     /**
-      * Returns a date interval spanning from the beginning of the the
-      * batch stored in the most recent metadata file to the current
-      * time.
-      */
+     * Returns a date interval spanning from the beginning of the the
+     * batch stored in the most recent metadata file to the current
+     * time.
+     */
     lazy val requested: Interval[Timestamp] = {
       val beginning: BatchID =
         startDate.map(batcher.batchOf(_))
@@ -88,7 +86,7 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
 
     def willAccept(available: Interval[Timestamp]) =
       available match {
-        case intr@Intersection(_, _) => // is finite:
+        case intr @ Intersection(_, _) => // is finite:
           Right(new VersionedRunningState(intr))
         case _ => {
           logger.info("Will not accept: %s".format(available))
@@ -96,10 +94,10 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
         }
       }
     /**
-      * failure has no side effect, since any job writing to a
-      * VersionedStore should itself be cleaning up the most recent
-      * failed version's data.
-      */
+     * failure has no side effect, since any job writing to a
+     * VersionedStore should itself be cleaning up the most recent
+     * failed version's data.
+     */
     def fail(err: Throwable) = {
       logger.error("Prepare failed", err)
       throw err
@@ -107,7 +105,7 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
   }
 
   private class VersionedRunningState(succeedPart: Interval.GenIntersection[Timestamp])
-    extends RunningState[Interval[Timestamp]] {
+      extends RunningState[Interval[Timestamp]] {
 
     def nextTime: Timestamp = succeedPart match {
       case Intersection(_, ExclusiveUpper(up)) => up
@@ -116,9 +114,9 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
     }
     def batchID: BatchID = batcher.batchOf(nextTime)
     /**
-      * Commit the new maximum completed interval to the backing
-      * HDFSMetadata instance.
-      */
+     * Commit the new maximum completed interval to the backing
+     * HDFSMetadata instance.
+     */
     def succeed = {
       logger.info("%s succeeded".format(batchID))
       meta.mostRecentVersion.foreach(_.put(Some(batchID.toString)))
@@ -126,10 +124,10 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
     }
 
     /**
-      * failure has no side effect, since any job writing to a
-      * VersionedStore should itself be cleaning up the most recent
-      * failed version's data.
-      */
+     * failure has no side effect, since any job writing to a
+     * VersionedStore should itself be cleaning up the most recent
+     * failed version's data.
+     */
     def fail(err: Throwable) = {
       logger.error("%s failed".format(batchID), err)
       throw err

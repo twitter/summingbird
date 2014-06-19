@@ -44,10 +44,10 @@ private[summingbird] object SummingbirdRuntimeStats {
 
   // invoke the ScaldingRuntimeStatsProvider object initializer on remote node
   private[this] lazy val platformsInit =
-    platformObjects.foreach { s: String => ScalaTry[Unit]{ Class.forName(s) } }
+    platformObjects.foreach { s: String => ScalaTry[Unit] { Class.forName(s) } }
 
   // A global set of PlatformStatProviders, use Java ConcurrentHashMap to create a thread-safe set
-  private val platformStatProviders = ParHashSet[WeakReference[PlatformStatProvider]]() 
+  private val platformStatProviders = ParHashSet[WeakReference[PlatformStatProvider]]()
 
   def hasStatProviders: Boolean = !platformStatProviders.isEmpty
 
@@ -63,18 +63,18 @@ private[summingbird] object SummingbirdRuntimeStats {
       provRef <- platformStatProviders
       prov <- provRef.get
       incr <- prov.counterIncrementor(jobID, group, name)
-      } yield incr)
+    } yield incr)
       .toList
       .headOption
       .getOrElse(sys.error("Could not find the platform stat provider for jobID " + jobID))
-    }
+  }
 }
 
-private[summingbird] object JobCounters{
+private[summingbird] object JobCounters {
   @annotation.tailrec
   private[this] final def getOrElseUpdate[K, V](map: ConcurrentHashMap[K, V], k: K, default: => V): V = {
     val v = map.get(k)
-    if(v == null) {
+    if (v == null) {
       map.putIfAbsent(k, default)
       getOrElseUpdate(map, k, default)
     } else {

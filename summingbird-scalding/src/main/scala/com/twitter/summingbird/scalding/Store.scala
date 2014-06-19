@@ -17,22 +17,21 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.Semigroup
-import com.twitter.algebird.monad.{StateWithError, Reader}
-import com.twitter.scalding.{Dsl, TypedPipe, MapsideReduce, TupleSetter, TupleConverter}
+import com.twitter.algebird.monad.{ StateWithError, Reader }
+import com.twitter.scalding.{ Dsl, TypedPipe, MapsideReduce, TupleSetter, TupleConverter }
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
 import cascading.flow.FlowDef
-
 
 import org.slf4j.LoggerFactory
 
 object Store extends java.io.Serializable {
   // This could be moved to scalding, but the API needs more design work
   // This DOES NOT trigger a grouping
-  def mapsideReduce[K,V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] = {
+  def mapsideReduce[K, V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] = {
     import Dsl._
     val fields = ('key, 'value)
-    val gpipe = pipe.toPipe(fields)(TupleSetter.tup2Setter[(K,V)])
+    val gpipe = pipe.toPipe(fields)(TupleSetter.tup2Setter[(K, V)])
     val msr = new MapsideReduce(sg, fields._1, fields._2, None)(
       TupleConverter.singleConverter[V], TupleSetter.singleSetter[V])
     TypedPipe.from(gpipe.eachTo(fields -> fields) { _ => msr }, fields)(TupleConverter.of[(K, V)])
@@ -41,17 +40,18 @@ object Store extends java.io.Serializable {
 
 trait Store[K, V] extends java.io.Serializable {
   /**
-    * Accepts deltas along with their timestamps, returns triples of
-    * (time, K, V(aggregated up to the time)).
-    *
-    * Same return as lookup on a ScaldingService.
-    */
+   * Accepts deltas along with their timestamps, returns triples of
+   * (time, K, V(aggregated up to the time)).
+   *
+   * Same return as lookup on a ScaldingService.
+   */
   def merge(delta: PipeFactory[(K, V)],
     sg: Semigroup[V],
     commutativity: Commutativity,
     reducers: Int): PipeFactory[(K, (Option[V], V))]
 
-  /** This is an optional method, by default it a pass-through.
+  /**
+   * This is an optional method, by default it a pass-through.
    * it may be called by ScaldingPlatform before a key transformation
    * that leads only to this store.
    */
