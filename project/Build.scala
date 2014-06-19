@@ -202,7 +202,9 @@ object SummingbirdBuild extends Build {
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   )
 
-  lazy val summingbirdCoreJava = module("core-java").dependsOn(
+  lazy val summingbirdCoreJava = module("core-java").settings(
+    publishArtifact in packageDoc := false
+  ).dependsOn(
     summingbirdCore % "test->test;compile->compile"
   )
 
@@ -259,6 +261,7 @@ object SummingbirdBuild extends Build {
   )
 
   lazy val summingbirdStormJava = module("storm-java").settings(
+    publishArtifact in packageDoc := false,
     libraryDependencies ++= Seq(
       "storm" % "storm" % "0.9.0-wip15" % "provided"
     )
