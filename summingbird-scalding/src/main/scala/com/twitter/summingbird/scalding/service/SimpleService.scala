@@ -15,16 +15,17 @@
  */
 
 package com.twitter.summingbird.scalding.service
-import com.twitter.algebird.monad.{Reader, StateWithError}
+import com.twitter.algebird.monad.{ Reader, StateWithError }
 import com.twitter.algebird.Interval
 
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.scalding.{Source => SSource, _}
+import com.twitter.scalding.{ Source => SSource, _ }
 import cascading.flow.FlowDef
 
-/** A UniqueKeyedService covers the case where Keys are globally
+/**
+ * A UniqueKeyedService covers the case where Keys are globally
  * unique and either are not present or have one value.
  * Examples could be Keys which are Unique IDs, such as UserIDs,
  * content IDs, cryptographic hashes, etc...
@@ -48,12 +49,13 @@ trait SimpleService[K, V] extends Service[K, V] {
         .flatMap { dr =>
           val ts = dr.as[Interval[Timestamp]]
           getKeys((ts, mode)).right
-            .map { case ((avail, m), getFlow) =>
-              val rdr = Reader({ implicit fdM: (FlowDef, Mode) =>
-                // This get can't fail because it came from a DateRange initially
-                serve(avail.as[Option[DateRange]].get, getFlow(fdM))
-              })
-              ((avail, m), rdr)
+            .map {
+              case ((avail, m), getFlow) =>
+                val rdr = Reader({ implicit fdM: (FlowDef, Mode) =>
+                  // This get can't fail because it came from a DateRange initially
+                  serve(avail.as[Option[DateRange]].get, getFlow(fdM))
+                })
+                ((avail, m), rdr)
             }
         }
     })

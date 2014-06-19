@@ -20,12 +20,12 @@ import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.util.Future
 
 /**
-  * MergeableStore that triggers a side effect on every call to put or
-  * merge.
-  *
-  * @author Sam Ritchie
-  * @author Oscar Boykin
-  */
+ * MergeableStore that triggers a side effect on every call to put or
+ * merge.
+ *
+ * @author Sam Ritchie
+ * @author Oscar Boykin
+ */
 
 class SideEffectStore[K, V](store: MergeableStore[K, V])(sideEffectFn: K => Future[Unit])
     extends MergeableStore[K, V] {

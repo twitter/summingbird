@@ -20,7 +20,7 @@ import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
 
 import scala.collection.JavaConverters._
-import scala.util.{Try, Success, Failure}
+import scala.util.{ Try, Success, Failure }
 
 import org.slf4j.LoggerFactory
 
@@ -54,18 +54,18 @@ private[summingbird] case class FileVersionTracking(root: String, fs: FileSystem
 
   def getAllVersions: List[Long] =
     getOnDiskVersions
-      .map{v =>
+      .map { v =>
         logVersion(v)
         v
       }
-      .collect{case Success(s) => s}
+      .collect { case Success(s) => s }
       .sorted
       .reverse
 
   def hasVersion(version: Long) = getAllVersions.contains(version)
 
   def tokenPath(version: Long): Path =
-      path(root, version.toString + FINISHED_VERSION_SUFFIX)
+    path(root, version.toString + FINISHED_VERSION_SUFFIX)
 
   def parseVersion(p: String): Try[Long] =
     Try(p.getName().dropRight(FINISHED_VERSION_SUFFIX.length()).toLong)

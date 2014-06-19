@@ -16,7 +16,6 @@
 
 package com.twitter.summingbird
 
-
 import com.twitter.summingbird.option.JobId
 
 /*

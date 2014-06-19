@@ -16,8 +16,18 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import com.twitter.algebird.{ Universe, Empty, Interval, Intersection,
-  InclusiveLower, ExclusiveUpper, InclusiveUpper, ExclusiveLower, Lower, Upper }
+import com.twitter.algebird.{
+  Universe,
+  Empty,
+  Interval,
+  Intersection,
+  InclusiveLower,
+  ExclusiveUpper,
+  InclusiveUpper,
+  ExclusiveLower,
+  Lower,
+  Upper
+}
 
 import scala.collection.immutable.SortedSet
 import java.util.{ Comparator, Date }
@@ -37,35 +47,35 @@ import java.io.Serializable
 
 object Batcher {
   /**
-    * Returns a batcher that assigns batches based on multiples of the
-    * supplied TimeUnit from the epoch.
-    */
+   * Returns a batcher that assigns batches based on multiples of the
+   * supplied TimeUnit from the epoch.
+   */
   def apply(value: Long, unit: TimeUnit) =
     new MillisecondBatcher(unit.toMillis(value))
 
   /**
-    * Returns a batcher that generates batches of the supplied number
-    * of minutes.
-    */
+   * Returns a batcher that generates batches of the supplied number
+   * of minutes.
+   */
   def ofMinutes(count: Long) = Batcher(count, TimeUnit.MINUTES)
 
   /**
-    * Returns a batcher that generates batches of the supplied number
-    * of hours.
-    */
+   * Returns a batcher that generates batches of the supplied number
+   * of hours.
+   */
   def ofHours(count: Long) = Batcher(count, TimeUnit.HOURS)
 
   /**
-    * Returns a batcher that generates batches of the supplied number
-    * of days.
-    */
+   * Returns a batcher that generates batches of the supplied number
+   * of days.
+   */
   def ofDays(count: Long) = Batcher(count, TimeUnit.DAYS)
 
-    /**
-    * Returns a batcher that assigns every input tuple to the same
-    * batch.
-    */
-  val unit: Batcher = new AbstractBatcher  {
+  /**
+   * Returns a batcher that assigns every input tuple to the same
+   * batch.
+   */
+  val unit: Batcher = new AbstractBatcher {
     override val currentBatch = BatchID(0L)
     def batchOf(t: Timestamp) = currentBatch
     def earliestTimeOf(batch: BatchID) = Timestamp.Min
@@ -73,7 +83,7 @@ object Batcher {
     override def latestTimeOf(batch: BatchID) = Timestamp.Max
 
     override def toInterval(b: BatchID): Interval[Timestamp] =
-      if(b == BatchID(0))
+      if (b == BatchID(0))
         Intersection(
           InclusiveLower(Timestamp.Min),
           InclusiveUpper(Timestamp.Max)
@@ -90,10 +100,10 @@ object Batcher {
         case Universe() => totalBatchInterval
         case ExclusiveUpper(upper) => Empty()
         case InclusiveLower(lower) =>
-          if(lower == Timestamp.Min) totalBatchInterval
+          if (lower == Timestamp.Min) totalBatchInterval
           else Empty()
         case InclusiveUpper(upper) =>
-          if(upper == Timestamp.Max) totalBatchInterval
+          if (upper == Timestamp.Max) totalBatchInterval
           else Empty()
         case ExclusiveLower(lower) => Empty()
         case Intersection(low, high) => batchesCoveredBy(low) && batchesCoveredBy(high)
@@ -115,10 +125,11 @@ trait Batcher extends Serializable {
 
   private def truncateUp(ts: Timestamp): BatchID = {
     val batch = batchOf(ts)
-    if(earliestTimeOf(batch) != ts) batch.next else batch
+    if (earliestTimeOf(batch) != ts) batch.next else batch
   }
 
-  /** Return the largest interval of batches completely covered by
+  /**
+   * Return the largest interval of batches completely covered by
    * the interval of time.
    */
   private def dateToBatch(interval: Interval[Timestamp])(onIncLow: (Timestamp) => BatchID)(onExcUp: (Timestamp) => BatchID): Interval[BatchID] = {
@@ -148,9 +159,9 @@ trait Batcher extends Serializable {
   }
 
   /**
-    * Returns true if the supplied timestamp sits at the floor of the
-    * supplied batch.
-    */
+   * Returns true if the supplied timestamp sits at the floor of the
+   * supplied batch.
+   */
   def isLowerBatchEdge(ts: Timestamp): Boolean =
     !BatchID.equiv.equiv(batchOf(ts), batchOf(ts.prev))
 
@@ -167,8 +178,8 @@ trait Batcher extends Serializable {
       case ExclusiveUpper(upper) => ExclusiveUpper(earliestTimeOf(upper))
       case InclusiveUpper(upper) => InclusiveUpper(latestTimeOf(upper))
       case InclusiveLower(lower) => InclusiveLower(earliestTimeOf(lower))
-      case ExclusiveLower(lower) =>  ExclusiveLower(latestTimeOf(lower))
-      case Intersection(low, high) =>  toTimestamp(low) && toTimestamp(high)
+      case ExclusiveLower(lower) => ExclusiveLower(latestTimeOf(lower))
+      case Intersection(low, high) => toTimestamp(low) && toTimestamp(high)
     }
 
   /** Returns the (inclusive) earliest time of the supplied batch. */
@@ -180,17 +191,18 @@ trait Batcher extends Serializable {
   /** Returns the current BatchID. */
   def currentBatch: BatchID = batchOf(Timestamp.now)
 
-  /** What batches are needed to cover the given interval
+  /**
+   * What batches are needed to cover the given interval
    * or: for all t in interval, batchOf(t) is in the result
    */
   def cover(interval: Interval[Timestamp]): Interval[BatchID] =
     dateToBatch(interval)(truncateDown)(truncateUp)
 
   /**
-    * Returns the sequence of BatchIDs that the supplied `other`
-    * batcher would need to fetch to fully enclose the supplied
-    * `batchID`.
-    */
+   * Returns the sequence of BatchIDs that the supplied `other`
+   * batcher would need to fetch to fully enclose the supplied
+   * `batchID`.
+   */
   def enclosedBy(batchID: BatchID, other: Batcher): Iterable[BatchID] = {
     val earliestInclusive = earliestTimeOf(batchID)
     val latestInclusive = latestTimeOf(batchID)
@@ -204,12 +216,12 @@ trait Batcher extends Serializable {
     val (bottom, top) = extremities
     SortedSet(
       BatchID.range(bottom, top).toSeq
-        .flatMap(enclosedBy(_, other)):_*
+        .flatMap(enclosedBy(_, other)): _*
     )
   }
 }
 
 /**
-  * Abstract class to extend for easier java interop.
-  */
+ * Abstract class to extend for easier java interop.
+ */
 abstract class AbstractBatcher extends Batcher

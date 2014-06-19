@@ -46,8 +46,8 @@ object BatchLaws extends Properties("BatchID") {
   property("BatchID should roll forward and backward") =
     forAll { (b: Long) =>
       BatchID(b).next.prev == BatchID(b) &&
-      BatchID(b).prev.next == BatchID(b) &&
-      BatchID(b).prev == BatchID(b - 1L)
+        BatchID(b).prev.next == BatchID(b) &&
+        BatchID(b).prev == BatchID(b - 1L)
     }
 
   property("range, toInterval and toIterable should be equivalent") =

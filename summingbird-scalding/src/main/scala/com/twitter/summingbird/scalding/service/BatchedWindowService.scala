@@ -16,9 +16,9 @@
 
 package com.twitter.summingbird.scalding.service
 
-import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp, Milliseconds}
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, Milliseconds }
 import com.twitter.summingbird.scalding._
-import com.twitter.scalding.{Mode, TypedPipe, AbsoluteDuration}
+import com.twitter.scalding.{ Mode, TypedPipe, AbsoluteDuration }
 import com.twitter.algebird.monad.Reader
 import cascading.flow.FlowDef
 
@@ -44,7 +44,7 @@ trait BatchedWindowService[K, V] extends batch.BatchedService[K, V] {
    * The batched window never reads an aggregated last. Instead we just output
    * an empty pipe that is outside the window.
    */
-  def readLast(exclusiveUB: BatchID, mode: Mode):  Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
+  def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
     val earliestInput = batcher.earliestTimeOf(exclusiveUB)
     val earliestNeededKey = earliestInput - windowSize
     // We may need values from this batch:
@@ -54,7 +54,8 @@ trait BatchedWindowService[K, V] extends batch.BatchedService[K, V] {
     Right((firstZeroBatch, Scalding.emptyFlowProducer))
   }
 
-  /** This executes the join algortihm on the streams.
+  /**
+   * This executes the join algortihm on the streams.
    * You are guaranteed that all the service data needed
    * to do the join is present
    */
@@ -65,10 +66,9 @@ trait BatchedWindowService[K, V] extends batch.BatchedService[K, V] {
 
     implicit val ord = ordering
     val win = windowSize // call this once so scala makes a smarter closure
-    LookupJoin.withWindow(incoming, servStream, reducers) { (l: Timestamp, r: Timestamp) => (l-r) < win }
+    LookupJoin.withWindow(incoming, servStream, reducers) { (l: Timestamp, r: Timestamp) => (l - r) < win }
       .map { case (t, (k, (w, optoptv))) => (t, (k, (w, flatOpt(optoptv)))) }
   }
 
 }
-
 

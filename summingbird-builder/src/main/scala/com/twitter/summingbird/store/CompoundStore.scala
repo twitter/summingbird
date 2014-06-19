@@ -45,7 +45,6 @@ object CompoundStore {
   def fromOffline[K, V](store: BatchedStore[K, V]): CompoundStore[K, V] =
     new CompoundStore(Some(store), None)
 
-  def apply[K, V](offlineStore: BatchedStore[K, V], onlineSupplier: => MergeableStore[(K, BatchID), V])
-      : CompoundStore[K, V] =
+  def apply[K, V](offlineStore: BatchedStore[K, V], onlineSupplier: => MergeableStore[(K, BatchID), V]): CompoundStore[K, V] =
     new CompoundStore(Some(offlineStore), Some(() => onlineSupplier))
 }

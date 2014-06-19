@@ -33,13 +33,13 @@ case class SpoutParallelism(parHint: Int)
 case class FlatMapParallelism(parHint: Int)
 
 /**
-  * This workaround is necessary because val parameters can't be
-  * call-by-name.  We pass a function so that the metrics aren't
-  * serialized. Beyond the storm IMetric not being serializable,
-  * passing a value also causes problems with the instance registered
-  * in the bolt being different from the one used in the summingbird
-  * job.
-  */
+ * This workaround is necessary because val parameters can't be
+ * call-by-name.  We pass a function so that the metrics aren't
+ * serialized. Beyond the storm IMetric not being serializable,
+ * passing a value also causes problems with the instance registered
+ * in the bolt being different from the one used in the summingbird
+ * job.
+ */
 object FlatMapStormMetrics {
   def apply(metrics: => TraversableOnce[StormMetric[IMetric]]) = new FlatMapStormMetrics(() => metrics)
   def unapply(metrics: FlatMapStormMetrics) = Some(metrics.metrics)
@@ -51,7 +51,6 @@ object FlatMapStormMetrics {
  */
 class FlatMapStormMetrics(val metrics: () => TraversableOnce[StormMetric[IMetric]])
 
-
 object SpoutStormMetrics {
   def apply(metrics: => TraversableOnce[StormMetric[IMetric]]) = new SpoutStormMetrics(() => metrics)
   def unapply(metrics: SpoutStormMetrics) = Some(metrics.metrics)
@@ -59,7 +58,7 @@ object SpoutStormMetrics {
 
 class SpoutStormMetrics(val metrics: () => TraversableOnce[StormMetric[IMetric]]) {
   def toSpoutMetrics: () => TraversableOnce[Metric[IMetric]] =
-    {() => metrics().map{ x: StormMetric[IMetric] => Metric(x.name, x.metric, x.interval.inSeconds)}}
+    { () => metrics().map { x: StormMetric[IMetric] => Metric(x.name, x.metric, x.interval.inSeconds) } }
 }
 
 /**

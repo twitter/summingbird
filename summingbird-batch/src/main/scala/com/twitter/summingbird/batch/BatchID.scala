@@ -64,8 +64,8 @@ object BatchID {
     }
 
   /**
-    * Returns true if the supplied interval of BatchID can
-    */
+   * Returns true if the supplied interval of BatchID can
+   */
   def toInterval(iter: TraversableOnce[BatchID]): Option[Interval[BatchID]] =
     iter
       .map { b => (b, b, 1L) }
@@ -74,18 +74,19 @@ object BatchID {
         val (rmin, rmax, rcnt) = right
         (lmin min rmin, lmax max rmax, lcnt + rcnt)
       }
-      .flatMap { case (min, max, cnt) =>
-        if ((min + cnt) == (max + 1L)) {
-          Some(Interval.leftClosedRightOpen(min, max.next).right.get)
-        }
-        else {
-          // These batches are not contiguous, not an interval
-          None
-        }
+      .flatMap {
+        case (min, max, cnt) =>
+          if ((min + cnt) == (max + 1L)) {
+            Some(Interval.leftClosedRightOpen(min, max.next).right.get)
+          } else {
+            // These batches are not contiguous, not an interval
+            None
+          }
       }
       .orElse(Some(Empty[BatchID]())) // there was nothing it iter
 
-  /** Returns all the BatchIDs that are contained in the interval
+  /**
+   * Returns all the BatchIDs that are contained in the interval
    */
   def toIterable(interval: Interval[BatchID]): Iterable[BatchID] =
     interval match {
@@ -116,10 +117,10 @@ object BatchID {
   }
 
   implicit val batchID2String: Injection[BatchID, String] =
-    Injection.buildCatchInvert[BatchID,String] { _.toString } { BatchID(_) }
+    Injection.buildCatchInvert[BatchID, String] { _.toString } { BatchID(_) }
 
   implicit val batchID2Long: Bijection[BatchID, Long] =
-    Bijection.build[BatchID,Long] { _.id } { BatchID(_) }
+    Bijection.build[BatchID, Long] { _.id } { BatchID(_) }
 
   implicit val batchID2Bytes: Injection[BatchID, Array[Byte]] =
     Injection.connect[BatchID, Long, Array[Byte]]

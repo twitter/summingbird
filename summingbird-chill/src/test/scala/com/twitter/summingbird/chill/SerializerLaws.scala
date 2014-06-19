@@ -40,7 +40,7 @@ object SerializationLaws extends Properties("SerializationLaws") {
     KryoPool.withBuffer(1, kinst, 100, 10000).deepCopy(t)
   }
 
-  def roundTrips[T:Arbitrary:KSerializer:Equiv] = forAll { (t: T) =>
+  def roundTrips[T: Arbitrary: KSerializer: Equiv] = forAll { (t: T) =>
     val kser = implicitly[KSerializer[T]]
     Equiv[T].equiv(round(kser, t), t)
   }

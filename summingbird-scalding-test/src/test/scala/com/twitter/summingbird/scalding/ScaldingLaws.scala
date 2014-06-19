@@ -16,14 +16,13 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
+import com.twitter.algebird.{ MapAlgebra, Monoid, Group, Interval, Last }
 import com.twitter.algebird.monad._
-import com.twitter.summingbird.{Producer, TimeExtractor, TestGraphs}
+import com.twitter.summingbird.{ Producer, TimeExtractor, TestGraphs }
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.SummingbirdRuntimeStats
-
 
 import java.util.TimeZone
 import java.io.File
@@ -38,11 +37,11 @@ import org.scalacheck.Properties
 import org.apache.hadoop.conf.Configuration
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable.{ArrayBuffer, Buffer, HashMap => MutableHashMap, Map => MutableMap, SynchronizedBuffer, SynchronizedMap}
-import scala.util.{Try => ScalaTry}
+import scala.collection.mutable.{ ArrayBuffer, Buffer, HashMap => MutableHashMap, Map => MutableMap, SynchronizedBuffer, SynchronizedMap }
+import scala.util.{ Try => ScalaTry }
 
-import cascading.scheme.local.{TextDelimited => CLTextDelimited}
-import cascading.tuple.{Tuple, Fields, TupleEntry}
+import cascading.scheme.local.{ TextDelimited => CLTextDelimited }
+import cascading.tuple.{ Tuple, Fields, TupleEntry }
 import cascading.flow.Flow
 import cascading.stats.FlowStats
 import cascading.tap.Tap
@@ -51,13 +50,11 @@ import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
 
-
 import org.specs2.mutable._
 
-
 /**
-  * Tests for Summingbird's Scalding planner.
-  */
+ * Tests for Summingbird's Scalding planner.
+ */
 
 object ScaldingLaws extends Specification {
   import MapAlgebra.sparseEquiv
@@ -77,11 +74,11 @@ object ScaldingLaws extends Specification {
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = TestUtil.randomBatcher(inWithTime)
-      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
+      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
-      val summer = TestGraphs.singleStepJob[Scalding,(Long,Int),Int,Int](source, testStore)(t =>
-          fn(t._2))
+      val summer = TestGraphs.singleStepJob[Scalding, (Long, Int), Int, Int](source, testStore)(t =>
+        fn(t._2))
 
       val scald = Scalding("scalaCheckJob")
       val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
@@ -106,18 +103,18 @@ object ScaldingLaws extends Specification {
       }
 
       val pruner = new PrunedSpace[(Int, Int)] {
-          def prune(item: (Int, Int), writeTime: Timestamp) = {
-            prunedList.contains(item._1)
-          }
+        def prune(item: (Int, Int), writeTime: Timestamp) = {
+          prunedList.contains(item._1)
+        }
       }
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = TestUtil.randomBatcher(inWithTime)
-      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size, pruner)
+      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size, pruner)
       val (buffer, source) = TestSource(inWithTime)
 
-      val summer = TestGraphs.singleStepJob[Scalding,(Long,Int),Int,Int](source, testStore)(t =>
-          fn(t._2))
+      val summer = TestGraphs.singleStepJob[Scalding, (Long, Int), Int, Int](source, testStore)(t =>
+        fn(t._2))
 
       val scald = Scalding("scalaCheckJob")
       val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
@@ -132,19 +129,19 @@ object ScaldingLaws extends Specification {
 
     "match scala for flatMapKeys jobs" in {
       val original = sample[List[Int]]
-      val initStore = sample[Map[Int,Int]]
+      val initStore = sample[Map[Int, Int]]
       val fnA = sample[(Int) => List[(Int, Int)]]
       val fnB = sample[Int => List[Int]]
       val inMemory = TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB)
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = TestUtil.randomBatcher(inWithTime)
-      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
+      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
 
       val (buffer, source) = TestSource(inWithTime)
 
-      val summer = TestGraphs.singleStepMapKeysJob[Scalding,(Long,Int),Int,Int, Int](source, testStore)(t =>
-          fnA(t._2), fnB)
+      val summer = TestGraphs.singleStepMapKeysJob[Scalding, (Long, Int), Int, Int, Int](source, testStore)(t =>
+        fnA(t._2), fnB)
 
       val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val scald = Scalding("scalaCheckJob")
@@ -159,8 +156,8 @@ object ScaldingLaws extends Specification {
 
     "match scala for multiple summer jobs" in {
       val original = sample[List[Int]]
-      val initStoreA = sample[Map[Int,Int]]
-      val initStoreB = sample[Map[Int,Int]]
+      val initStoreA = sample[Map[Int, Int]]
+      val initStoreB = sample[Map[Int, Int]]
       val fnA = sample[(Int) => List[(Int)]]
       val fnB = sample[(Int) => List[(Int, Int)]]
       val fnC = sample[(Int) => List[(Int, Int)]]
@@ -169,11 +166,11 @@ object ScaldingLaws extends Specification {
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = TestUtil.randomBatcher(inWithTime)
-      val testStoreA = TestStore[Int,Int]("testA", batcher, initStoreA, inWithTime.size)
-      val testStoreB = TestStore[Int,Int]("testB", batcher, initStoreB, inWithTime.size)
+      val testStoreA = TestStore[Int, Int]("testA", batcher, initStoreA, inWithTime.size)
+      val testStoreB = TestStore[Int, Int]("testB", batcher, initStoreB, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
-      val tail = TestGraphs.multipleSummerJob[Scalding, (Long, Int), Int, Int, Int, Int, Int](source, testStoreA, testStoreB)({t => fnA(t._2)}, fnB, fnC)
+      val tail = TestGraphs.multipleSummerJob[Scalding, (Long, Int), Int, Int, Int, Int, Int](source, testStoreA, testStoreB)({ t => fnA(t._2) }, fnB, fnC)
 
       val scald = Scalding("scalaCheckMultipleSumJob")
       val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
@@ -187,11 +184,10 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original, Monoid.plus(initStoreB, inMemoryB), testStoreB) must beTrue
     }
 
-
     "match scala for leftJoin jobs" in {
       val original = sample[List[Int]]
       val prejoinMap = sample[(Int) => List[(Int, Int)]]
-      val service = sample[(Int,Int) => Option[Int]]
+      val service = sample[(Int, Int) => Option[Int]]
       val postJoin = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
       // We need to keep track of time correctly to use the service
       var fakeTime = -1
@@ -214,18 +210,18 @@ object ScaldingLaws extends Specification {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = TestUtil.randomBatcher(inWithTime)
       val initStore = sample[Map[Int, Int]]
-      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
+      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
 
       /**
        * Create the batched service
        */
-      val batchedService = stream.map{case (time, v) => (Timestamp(time), v)}.groupBy { case (ts, _) => batcher.batchOf(ts) }
+      val batchedService = stream.map { case (time, v) => (Timestamp(time), v) }.groupBy { case (ts, _) => batcher.batchOf(ts) }
       val testService = new TestService[Int, Int]("srv", batcher, batcher.batchOf(Timestamp(0)).prev, batchedService)
 
       val (buffer, source) = TestSource(inWithTime)
 
       val summer =
-        TestGraphs.leftJoinJob[Scalding,(Long, Int),Int,Int,Int,Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
+        TestGraphs.leftJoinJob[Scalding, (Long, Int), Int, Int, Int, Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
 
       val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val scald = Scalding("scalaCheckleftJoinJob")
@@ -241,7 +237,7 @@ object ScaldingLaws extends Specification {
     "match scala for leftJoin  repeated tuple leftJoin jobs" in {
       val original = sample[List[Int]]
       val prejoinMap = sample[(Int) => List[(Int, Int)]]
-      val service = sample[(Int,Int) => Option[Int]]
+      val service = sample[(Int, Int) => Option[Int]]
       val postJoin = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
       // We need to keep track of time correctly to use the service
       var fakeTime = -1
@@ -264,18 +260,18 @@ object ScaldingLaws extends Specification {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = TestUtil.randomBatcher(inWithTime)
       val initStore = sample[Map[Int, Int]]
-      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
+      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
 
       /**
        * Create the batched service
        */
-      val batchedService = stream.map{case (time, v) => (Timestamp(time), v)}.groupBy { case (ts, _) => batcher.batchOf(ts) }
+      val batchedService = stream.map { case (time, v) => (Timestamp(time), v) }.groupBy { case (ts, _) => batcher.batchOf(ts) }
       val testService = new TestService[Int, Int]("srv", batcher, batcher.batchOf(Timestamp(0)).prev, batchedService)
 
       val (buffer, source) = TestSource(inWithTime)
 
       val summer =
-        TestGraphs.repeatedTupleLeftJoinJob[Scalding,(Long, Int),Int,Int,Int,Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
+        TestGraphs.repeatedTupleLeftJoinJob[Scalding, (Long, Int), Int, Int, Int, Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
 
       val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val scald = Scalding("scalaCheckleftJoinJob")
@@ -297,12 +293,12 @@ object ScaldingLaws extends Specification {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = TestUtil.randomBatcher(inWithTime)
       val initStore = sample[Map[Int, Int]]
-      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
-      val testSink = new TestSink[(Long,Int)]
+      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
+      val testSink = new TestSink[(Long, Int)]
       val (buffer, source) = TestSource(inWithTime)
 
       val summer = TestGraphs
-        .diamondJob[Scalding,(Long, Int),Int,Int](source,
+        .diamondJob[Scalding, (Long, Int), Int, Int](source,
           testSink,
           testStore)(t => fn1(t._2))(t => fn2(t._2))
 
@@ -318,7 +314,7 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
       val wrongSink = sinkOut.map { _._2 }.toList != inWithTime
       wrongSink must be_==(false)
-      if(wrongSink) {
+      if (wrongSink) {
         println("input: " + inWithTime)
         println("SinkExtra: " + (sinkOut.map(_._2).toSet -- inWithTime.toSet))
         println("SinkMissing: " + (inWithTime.toSet -- sinkOut.map(_._2).toSet))
@@ -326,19 +322,19 @@ object ScaldingLaws extends Specification {
     }
 
     "Correctly aggregate multiple sumByKeys" in {
-      val original = sample[List[(Int,Int)]]
+      val original = sample[List[(Int, Int)]]
       val keyExpand = sample[(Int) => List[Int]]
       val (inMemoryA, inMemoryB) = TestGraphs.twoSumByKeyInScala(original, keyExpand)
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = TestUtil.randomBatcher(inWithTime)
       val initStore = sample[Map[Int, Int]]
-      val testStoreA = TestStore[Int,Int]("testA", batcher, initStore, inWithTime.size)
-      val testStoreB = TestStore[Int,Int]("testB", batcher, initStore, inWithTime.size)
+      val testStoreA = TestStore[Int, Int]("testA", batcher, initStore, inWithTime.size)
+      val testStoreB = TestStore[Int, Int]("testB", batcher, initStore, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
       val summer = TestGraphs
-        .twoSumByKey[Scalding,Int,Int,Int](source.map(_._2), testStoreA, keyExpand, testStoreB)
+        .twoSumByKey[Scalding, Int, Int, Int](source.map(_._2), testStoreA, keyExpand, testStoreB)
 
       val scald = Scalding("scalding-diamond-Job")
       val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
@@ -359,12 +355,12 @@ object ScaldingLaws extends Specification {
       val inMemory = TestGraphs.singleStepInScala(original)(fn)
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
       val batcher = TestUtil.randomBatcher(inWithTime)
-      val testStore = TestStore[Int,Int]("test", batcher, initStore, inWithTime.size)
+      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
       val jobID: JobId = new JobId("scalding.job.testJobId")
-      val summer = TestGraphs.jobWithStats[Scalding,(Long,Int),Int,Int](jobID, source, testStore)(t =>
-          fn(t._2))
+      val summer = TestGraphs.jobWithStats[Scalding, (Long, Int), Int, Int](jobID, source, testStore)(t =>
+        fn(t._2))
       val scald = Scalding("scalaCheckJob").withConfigUpdater { sbconf =>
         sbconf.put("scalding.job.uniqueId", jobID.get)
       }
@@ -374,7 +370,7 @@ object ScaldingLaws extends Specification {
       val mode: Mode = HadoopTest(conf, t => (testStore.sourceToBuffer ++ buffer).get(t))
 
       var flow: Flow[_] = null
-      scald.run(ws, mode, scald.plan(summer), {f: Flow[_] => flow = f})
+      scald.run(ws, mode, scald.plan(summer), { f: Flow[_] => flow = f })
 
       val flowStats: FlowStats = flow.getFlowStats()
       val origCounter: Long = flowStats.getCounterValue("scalding.test", "orig_counter")
@@ -387,8 +383,8 @@ object ScaldingLaws extends Specification {
     }
 
     "contain and be able to init a ScaldingRuntimeStatsProvider object" in {
-     val s = SummingbirdRuntimeStats.SCALDING_STATS_MODULE
-     ScalaTry[Unit]{Class.forName(s)}.toOption must beSome
+      val s = SummingbirdRuntimeStats.SCALDING_STATS_MODULE
+      ScalaTry[Unit] { Class.forName(s) }.toOption must beSome
     }
   }
 }

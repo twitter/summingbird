@@ -30,11 +30,9 @@ import scala.collection.JavaConverters._
 import java.security.Permission
 import com.twitter.util.Duration
 
-
-
 /**
-  * This stops Storm's exception handling triggering an exit(1)
-  */
+ * This stops Storm's exception handling triggering an exit(1)
+ */
 private[storm] class MySecurityManager extends SecurityManager {
   override def checkExit(status: Int): Unit = {
     throw new SecurityException();
@@ -57,7 +55,6 @@ object StormTestRun {
     ret.setCleanupState(false)
     ret
   }
-
 
   private def tryRun(plannedTopology: PlannedTopology): Unit = {
     //Before running the external Command
@@ -82,8 +79,7 @@ object StormTestRun {
     apply(topo)
   }
 
-  def simpleRun[T, K, V: Semigroup](original: List[T], mkJob: (Producer[Storm, T], Storm#Store[K, V]) => TailProducer[Storm, Any])
-      : TestStore[K, V] = {
+  def simpleRun[T, K, V: Semigroup](original: List[T], mkJob: (Producer[Storm, T], Storm#Store[K, V]) => TailProducer[Storm, Any]): TestStore[K, V] = {
 
     implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
 
@@ -96,8 +92,8 @@ object StormTestRun {
 
     implicit val s = Storm.local(Map(
       "DEFAULT" -> Options().set(CacheSize(4))
-                      .set(FlushFrequency(Duration.fromMilliseconds(1)))
-      ))
+        .set(FlushFrequency(Duration.fromMilliseconds(1)))
+    ))
 
     apply(job)
     TestStore[K, V](id).getOrElse(sys.error("Error running test, unable to find store at the end"))
@@ -105,7 +101,7 @@ object StormTestRun {
 
   def apply(plannedTopology: PlannedTopology) {
     this.synchronized {
-       try {
+      try {
         tryRun(plannedTopology)
       } catch {
         case _: Throwable =>

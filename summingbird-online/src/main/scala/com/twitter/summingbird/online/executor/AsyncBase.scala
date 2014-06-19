@@ -17,17 +17,18 @@ limitations under the License.
 package com.twitter.summingbird.online.executor
 
 import com.twitter.summingbird.online.Queue
-import com.twitter.summingbird.online.option.{MaxWaitingFutures, MaxFutureWaitTime, MaxEmitPerExecute}
-import com.twitter.util.{Await, Duration, Future}
-import scala.util.{Try, Success, Failure}
+import com.twitter.summingbird.online.option.{ MaxWaitingFutures, MaxFutureWaitTime, MaxEmitPerExecute }
+import com.twitter.util.{ Await, Duration, Future }
+import scala.util.{ Try, Success, Failure }
 import java.util.concurrent.TimeoutException
-import org.slf4j.{LoggerFactory, Logger}
+import org.slf4j.{ LoggerFactory, Logger }
 
-abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I,O,S,D, RC] {
+abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I, O, S, D, RC] {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  /** If you can use Future.value below, do so. The double Future is here to deal with
+  /**
+   * If you can use Future.value below, do so. The double Future is here to deal with
    * cases that need to complete operations after or before doing a FlatMapOperation or
    * doing a store merge
    */
@@ -38,7 +39,7 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
   private lazy val responses = Queue.linkedNonBlocking[(List[S], Try[TraversableOnce[O]])]
 
   override def executeTick =
-    finishExecute(tick.onFailure{ thr => responses.put(((List(), Failure(thr)))) })
+    finishExecute(tick.onFailure { thr => responses.put(((List(), Failure(thr)))) })
 
   override def execute(state: S, data: I) =
     finishExecute(apply(state, data).onFailure { thr => responses.put(((List(state), Failure(thr)))) })
@@ -53,30 +54,31 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
   private def handleSuccess(fut: Future[TraversableOnce[(List[S], Future[TraversableOnce[O]])]]) =
     fut.onSuccess { iter: TraversableOnce[(List[S], Future[TraversableOnce[O]])] =>
 
-        // Collect the result onto our responses
-        val iterSize = iter.foldLeft(0) { case (iterSize, (tups, res)) =>
+      // Collect the result onto our responses
+      val iterSize = iter.foldLeft(0) {
+        case (iterSize, (tups, res)) =>
           res.onSuccess { t => responses.put(((tups, Success(t)))) }
           res.onFailure { t => responses.put(((tups, Failure(t)))) }
           // Make sure there are not too many outstanding:
-          if(addOutstandingFuture(res.unit)) {
+          if (addOutstandingFuture(res.unit)) {
             iterSize + 1
           } else {
             iterSize
           }
-        }
-        if(outstandingFutures.size > maxWaitingFutures.get) {
-          /*
+      }
+      if (outstandingFutures.size > maxWaitingFutures.get) {
+        /*
            * This can happen on large key expansion.
            * May indicate maxWaitingFutures is too low.
            */
-          logger.debug(
-            "Exceeded maxWaitingFutures({}), put {} futures", maxWaitingFutures.get, iterSize
-          )
-        }
+        logger.debug(
+          "Exceeded maxWaitingFutures({}), put {} futures", maxWaitingFutures.get, iterSize
+        )
       }
+    }
 
   private def addOutstandingFuture(fut: Future[Unit]): Boolean = {
-    if(!fut.isDefined) {
+    if (!fut.isDefined) {
       outstandingFutures.put(fut.unit)
       true
     } else {
@@ -87,11 +89,10 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
   private def forceExtraFutures {
     outstandingFutures.dequeueAll(_.isDefined)
     val toForce = outstandingFutures.trimTo(maxWaitingFutures.get).toIndexedSeq
-    if(!toForce.isEmpty) {
+    if (!toForce.isEmpty) {
       try {
         Await.ready(Future.collect(toForce), maxWaitingTime.get)
-      }
-      catch {
+      } catch {
         case te: TimeoutException =>
           logger.error("forceExtra failed on %d Futures".format(toForce.size), te)
       }

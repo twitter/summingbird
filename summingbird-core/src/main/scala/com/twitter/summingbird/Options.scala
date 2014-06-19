@@ -17,10 +17,10 @@
 package com.twitter.summingbird
 
 /**
-  * intra-graph options.
-  * Rather than use string keys, the .getClass of the option is used.
-  * It is up to you to have classes that make sense and match what is consumed.
-  */
+ * intra-graph options.
+ * Rather than use string keys, the .getClass of the option is used.
+ * It is up to you to have classes that make sense and match what is consumed.
+ */
 
 object Options {
   def apply(opts: Map[Class[_], Any] = Map.empty): Options = new Options(opts)

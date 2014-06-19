@@ -21,13 +21,13 @@ import org.scalacheck.Prop._
 import org.specs2.mutable._
 
 import com.twitter.summingbird.batch._
-import com.twitter.algebird.{Interval, ExclusiveUpper, Empty}
+import com.twitter.algebird.{ Interval, ExclusiveUpper, Empty }
 import java.util.concurrent.TimeUnit
 
 object BatcherLaws extends Properties("Batcher") {
   import Generators._
 
-  def batchIdIdentity(batcher : Batcher) = { (b : BatchID) =>
+  def batchIdIdentity(batcher: Batcher) = { (b: BatchID) =>
     batcher.batchOf(batcher.earliestTimeOf(b))
   }
 
@@ -82,7 +82,6 @@ object BatcherLaws extends Properties("Batcher") {
       batchIntervalTransformToTs(batcher, Interval.leftOpenRightClosed(_, _)) &&
       batchIntervalTransformToTs(batcher, Interval.leftClosedRightOpen(_, _))
 
-
   property("UnitBatcher should always return the same batch") = {
     val batcher = Batcher.unit
     val ident = batchIdIdentity(batcher)
@@ -117,8 +116,8 @@ object BatcherLaws extends Properties("Batcher") {
       val flooredBatch = BatchID(if (millis < 0) (hourIndex - 1) else hourIndex)
 
       (hourlyBatcher.batchOf(Timestamp(millis)) == flooredBatch) &&
-      (hourlyBatcher.earliestTimeOf(flooredBatch).milliSinceEpoch ==
-        hourlyBatchFloor(flooredBatch.id))
+        (hourlyBatcher.earliestTimeOf(flooredBatch).milliSinceEpoch ==
+          hourlyBatchFloor(flooredBatch.id))
     }
 
   property("DurationBatcher should fully enclose each batch with a single batch") =
@@ -139,10 +138,10 @@ object BatcherLaws extends Properties("Batcher") {
       initialTime > 0 ==> {
         Stream.iterate(Timestamp(initialTime * 1000L))(_.incrementSeconds(1))
           .take(100).forall { t =>
-          if (t.milliSinceEpoch % (1000 * 10) == 0)
-            tenSecondBatcher.isLowerBatchEdge(t)
-          else !tenSecondBatcher.isLowerBatchEdge(t)
-        }
+            if (t.milliSinceEpoch % (1000 * 10) == 0)
+              tenSecondBatcher.isLowerBatchEdge(t)
+            else !tenSecondBatcher.isLowerBatchEdge(t)
+          }
       }
     }
   }

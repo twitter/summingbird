@@ -33,14 +33,15 @@ trait SummingbirdConfig { self =>
   }
   def updated(newMap: Map[String, AnyRef]): SummingbirdConfig = {
     val removedKeys: Set[String] = keys.toSet -- newMap.keys
-    val changedOrAddedKeys = newMap.flatMap{ case (k, v) =>
+    val changedOrAddedKeys = newMap.flatMap {
+      case (k, v) =>
         val oldVal = get(k)
-        if(oldVal != Some(v)) {
+        if (oldVal != Some(v)) {
           Some((k, v))
         } else None
-      }
+    }
     val newWithoutRemoved = removedKeys.foldLeft(self)(_.remove(_))
-    changedOrAddedKeys.foldLeft(newWithoutRemoved) {_ + _}
+    changedOrAddedKeys.foldLeft(newWithoutRemoved) { _ + _ }
   }
 }
 
@@ -71,23 +72,22 @@ trait ReadableMap {
   def keys: Set[String]
 }
 
-
 object WrappingConfig {
   def apply(backingConfig: ReadableMap) = new WrappingConfig(
-                                                backingConfig,
-                                                Map[String, AnyRef](),
-                                                Set[String]())
+    backingConfig,
+    Map[String, AnyRef](),
+    Set[String]())
 }
 
 case class WrappingConfig(private val backingConfig: ReadableMap,
-                            updates: Map[String, AnyRef],
-                            removes: Set[String]) extends SummingbirdConfig {
+    updates: Map[String, AnyRef],
+    removes: Set[String]) extends SummingbirdConfig {
 
   def get(key: String) = {
     updates.get(key) match {
-      case s@Some(_) => s
+      case s @ Some(_) => s
       case None =>
-        if(removes.contains(key))
+        if (removes.contains(key))
           None
         else
           backingConfig.get(key)

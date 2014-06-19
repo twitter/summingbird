@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.scalding.source
 
-import com.twitter.scalding.{TimePathedSource => STPS, _}
+import com.twitter.scalding.{ TimePathedSource => STPS, _ }
 import org.apache.hadoop.fs.Path
 import org.slf4j.LoggerFactory
 
@@ -34,7 +34,7 @@ object TimePathedSource extends java.io.Serializable {
     { (dr: DateRange) =>
       val newStart = dr.start - sdiff
       val newEnd = dr.end - ediff
-      if(newStart > newEnd) None else Some(DateRange(newStart, newEnd))
+      if (newStart > newEnd) None else Some(DateRange(newStart, newEnd))
     }
   }
 
@@ -42,25 +42,24 @@ object TimePathedSource extends java.io.Serializable {
   private def minifyRec(init: DateRange,
     expander: DateRange => DateRange,
     vertractor: DateRange => Option[DateRange]): Option[DateRange] = {
-      val expanded = expander(init)
-      val unex = unexpander(init, expander)
-      vertractor(expanded) match {
-        case None => None
-        case Some(rt) if rt.contains(expanded) => Some(init) // we can satisfy init
-        case Some(subset) =>
-          unex(subset) match {
-            case None => None
-            case Some(newInit) if newInit.contains(init) =>
-              sys.error("DateRange expansion ill-behaved: %s -> %s -> %s -> %s".format(init, expanded, subset, newInit))
-            case Some(newInit) => minifyRec(newInit, expander, vertractor)
-          }
-      }
+    val expanded = expander(init)
+    val unex = unexpander(init, expander)
+    vertractor(expanded) match {
+      case None => None
+      case Some(rt) if rt.contains(expanded) => Some(init) // we can satisfy init
+      case Some(subset) =>
+        unex(subset) match {
+          case None => None
+          case Some(newInit) if newInit.contains(init) =>
+            sys.error("DateRange expansion ill-behaved: %s -> %s -> %s -> %s".format(init, expanded, subset, newInit))
+          case Some(newInit) => minifyRec(newInit, expander, vertractor)
+        }
+    }
   }
 
   def minify(expander: DateRange => DateRange,
     vertractor: DateRange => Option[DateRange]): (DateRange => Option[DateRange]) =
-      { (init: DateRange) => minifyRec(init, expander, vertractor) }
-
+    { (init: DateRange) => minifyRec(init, expander, vertractor) }
 
   def satisfiableHdfs(mode: Hdfs, desired: DateRange, fn: DateRange => STPS): Option[DateRange] = {
     val expander: (DateRange => DateRange) = fn.andThen(_.dateRange)
@@ -75,16 +74,17 @@ object TimePathedSource extends java.io.Serializable {
     val stepSize: Option[Duration] =
       List("%1$tH" -> Hours(1), "%1$td" -> Days(1)(tz),
         "%1$tm" -> Months(1)(tz), "%1$tY" -> Years(1)(tz))
-        .find { unitDur : (String, Duration) => pattern.contains(unitDur._1) }
+        .find { unitDur: (String, Duration) => pattern.contains(unitDur._1) }
         .map(_._2)
 
     def allPaths(dateRange: DateRange): Iterable[(DateRange, String)] =
-      stepSize.map { dateRange.each(_)
-        .map { dr => (dr, toPath(dr.start)) }
+      stepSize.map {
+        dateRange.each(_)
+          .map { dr => (dr, toPath(dr.start)) }
       }
-      .getOrElse(List((dateRange, pattern))) // This must not have any time after all
+        .getOrElse(List((dateRange, pattern))) // This must not have any time after all
 
-    def pathIsGood(p : String): Boolean = {
+    def pathIsGood(p: String): Boolean = {
       val path = new Path(p)
       val valid = Option(path.getFileSystem(mode.conf).globStatus(path))
         .map(_.length > 0)

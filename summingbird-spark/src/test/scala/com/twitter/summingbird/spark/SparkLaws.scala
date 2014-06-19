@@ -5,7 +5,7 @@ import com.twitter.algebird._
 import com.twitter.summingbird.Source
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.option.{Commutative, NonCommutative, Commutativity, MonoidIsCommutative}
+import com.twitter.summingbird.option.{ Commutative, NonCommutative, Commutativity, MonoidIsCommutative }
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.scalacheck.Arbitrary
@@ -16,23 +16,23 @@ import scala.util.Random
 // TODO: consider whether using mockito / easymock mocks here makes more sense
 object SparkLaws {
 
-  def untimedMemSource[T](s: Seq[T]) = timedMemSource(s.map{ x => (Timestamp(1), x) })
-  
+  def untimedMemSource[T](s: Seq[T]) = timedMemSource(s.map { x => (Timestamp(1), x) })
+
   def timedMemSource[T](s: Seq[(Timestamp, T)]) = new SparkSource[T] {
     override def rdd(sc: SparkContext, timeSpan: Interval[Timestamp]): RDD[(Timestamp, T)] = {
       sc.makeRDD(s)
     }
   }
 
-  def memStore[K : ClassTag, V : ClassTag](m: Map[K, V]) = new SimpleSparkStore[K, V] {
+  def memStore[K: ClassTag, V: ClassTag](m: Map[K, V]) = new SimpleSparkStore[K, V] {
     var result: Map[K, V] = _
     var commutativity: Commutativity = _
 
     override def merge(sc: SparkContext,
-                       timeSpan: Interval[Timestamp],
-                       deltas: RDD[(Timestamp, (K, V))],
-                       commutativity: Commutativity,
-                       semigroup: Semigroup[V]): MergeResult[K, V] = {
+      timeSpan: Interval[Timestamp],
+      deltas: RDD[(Timestamp, (K, V))],
+      commutativity: Commutativity,
+      semigroup: Semigroup[V]): MergeResult[K, V] = {
 
       this.commutativity = commutativity
       super.merge(sc, timeSpan, deltas, commutativity, semigroup)
@@ -61,18 +61,19 @@ object SparkLaws {
 
   def memService[K, LV](f: K => Option[LV], keys: Set[K]): SparkService[K, LV] = {
     val m = keys.flatMap {
-      k => f(k).map {
-        v => (k, v) }
+      k =>
+        f(k).map {
+          v => (k, v)
+        }
     }.toMap
 
     memService(m)
   }
 
   case class SparseDiff[K, V](
-    extra: Map[K, V],
-    missing: Map[K, V],
-    wrong: Seq[String]
-  ) {
+      extra: Map[K, V],
+      missing: Map[K, V],
+      wrong: Seq[String]) {
     val explainDiff: String = Seq(
       "Extra entries: " + extra,
       "Missing entries: " + missing,
@@ -82,24 +83,24 @@ object SparkLaws {
     val isEmpty = extra.isEmpty && missing.isEmpty && wrong.isEmpty
   }
 
-  def sparseDiff[K, V : Monoid](found: Map[K, V], expected: Map[K, V]): SparseDiff[K, V] = {
+  def sparseDiff[K, V: Monoid](found: Map[K, V], expected: Map[K, V]): SparseDiff[K, V] = {
     val foundFiltered = found.filter { case (k, v) => Monoid.isNonZero(v) }
     val expectedFiltered = expected.filter { case (k, v) => Monoid.isNonZero(v) }
     val extra = foundFiltered -- expectedFiltered.keySet
     val missing = expectedFiltered -- foundFiltered.keySet
     val wrongEntries = expectedFiltered
       .filter { case (k, v) => found.contains(k) && found(k) != v }
-      .map { case (k, v) => "[found: %s, expected: %s]".format((k, found(k)), (k,v)) }
+      .map { case (k, v) => "[found: %s, expected: %s]".format((k, found(k)), (k, v)) }
 
     SparseDiff(extra, missing, wrongEntries.toSeq)
   }
 
-  def assertNotSparseEqual[K, V : Monoid](found: Map[K, V], expected: Map[K, V], name: String = "found map"): Unit = {
+  def assertNotSparseEqual[K, V: Monoid](found: Map[K, V], expected: Map[K, V], name: String = "found map"): Unit = {
     val diff = sparseDiff(found, expected)
     assert(!diff.isEmpty, "%s should not be equal to expected".format(name))
   }
 
-  def assertSparseEqual[K, V : Monoid](found: Map[K, V], expected: Map[K, V], name: String = "found map"): Unit = {
+  def assertSparseEqual[K, V: Monoid](found: Map[K, V], expected: Map[K, V], name: String = "found map"): Unit = {
     val diff = sparseDiff(found, expected)
     assert(diff.isEmpty, "%s is wrong\n".format(name) + diff.explainDiff)
   }
@@ -216,7 +217,7 @@ class SparkLaws extends Specification {
       val source = untimedMemSource(original)
       val store = memStore(initStore)
 
-      val serviceKeys = original.flatMap(preJoinFn).map {_._1}.toSet
+      val serviceKeys = original.flatMap(preJoinFn).map { _._1 }.toSet
       val service = memService(serviceFn, serviceKeys)
 
       val job = TestGraphs.leftJoinJob[SparkPlatform, Int, Int, Int, Int, Int](Source[SparkPlatform, Int](source), service, store)(preJoinFn)(postJoinFn)
@@ -320,12 +321,12 @@ class SparkLaws extends Specification {
 
     "respects global default commutativity" in {
       commutativityTest(Map("DEFAULT" -> Options().set(MonoidIsCommutative(false))), NonCommutative)
-      commutativityTest(Map("DEFAULT" -> Options().set(MonoidIsCommutative(true))), Commutative, assertFail=true)
+      commutativityTest(Map("DEFAULT" -> Options().set(MonoidIsCommutative(true))), Commutative, assertFail = true)
     }
 
     "respects explicitly specified commutativity" in {
       commutativityTest(Map("mySummer" -> Options().set(MonoidIsCommutative(false))), NonCommutative, summerName = Some("mySummer"))
-      commutativityTest(Map("mySummer" -> Options().set(MonoidIsCommutative(true))), Commutative, summerName = Some("mySummer"), assertFail=true)
+      commutativityTest(Map("mySummer" -> Options().set(MonoidIsCommutative(true))), Commutative, summerName = Some("mySummer"), assertFail = true)
       commutativityTest(Map("unrelatedSummer" -> Options().set(MonoidIsCommutative(true))), NonCommutative, summerName = Some("mySummer"))
       commutativityTest(Map("unrelatedSummer" -> Options().set(MonoidIsCommutative(false))), NonCommutative, summerName = Some("mySummer"))
     }

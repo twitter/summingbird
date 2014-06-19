@@ -16,5 +16,4 @@ limitations under the License.
 
 package com.twitter.summingbird.option
 
-
 case class JobId(get: String)

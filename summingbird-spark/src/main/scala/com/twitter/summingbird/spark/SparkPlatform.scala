@@ -1,13 +1,13 @@
 package com.twitter.summingbird.spark
 
-import com.twitter.algebird.{Semigroup, Interval}
+import com.twitter.algebird.{ Semigroup, Interval }
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Timestamp
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import scala.collection.mutable.{ArrayBuffer, Buffer => ScalaBuffer}
+import scala.collection.mutable.{ ArrayBuffer, Buffer => ScalaBuffer }
 import scala.reflect.ClassTag
-import com.twitter.summingbird.option.{MonoidIsCommutative, Commutativity, NonCommutative, Commutative}
+import com.twitter.summingbird.option.{ MonoidIsCommutative, Commutativity, NonCommutative, Commutative }
 import com.twitter.chill.Externalizer
 import scala.collection.mutable
 
@@ -20,10 +20,9 @@ import scala.collection.mutable
  * @author Alex Levenson
  */
 class SparkPlatform(
-  sc: SparkContext,
-  timeSpan: Interval[Timestamp],
-  options: Map[String, Options] = Map.empty
-) extends Platform[SparkPlatform] with PlatformPlanner[SparkPlatform] {
+    sc: SparkContext,
+    timeSpan: Interval[Timestamp],
+    options: Map[String, Options] = Map.empty) extends Platform[SparkPlatform] with PlatformPlanner[SparkPlatform] {
 
   override type Source[T] = SparkSource[T]
   override type Store[K, V] = SparkStore[K, V]
@@ -58,7 +57,7 @@ class SparkPlatform(
   override def planOptionMappedProducer[T, U: ClassTag](
     prod: Prod[T],
     visited: Visited,
-    fn: (T) => Option[U]): PlanState[U]  = {
+    fn: (T) => Option[U]): PlanState[U] = {
 
     planFlatMappedProducer[T, U](prod, visited, x => fn(x))
   }
@@ -71,8 +70,9 @@ class SparkPlatform(
     val extFn = Externalizer(fn)
 
     val planState = toPlan(prod, visited)
-    val flatMapped = planState.plan.flatMap { case (ts, v) =>
-      extFn.get(v).map { u => (ts, u) }
+    val flatMapped = planState.plan.flatMap {
+      case (ts, v) =>
+        extFn.get(v).map { u => (ts, u) }
     }
 
     planState.copy(plan = flatMapped)
@@ -109,14 +109,13 @@ class SparkPlatform(
     resultPlanState
   }
 
-  override def planWrittenProducer[T: ClassTag](prod: Prod[T], visited: Visited, sink: Sink[T]): PlanState[T]  = {
+  override def planWrittenProducer[T: ClassTag](prod: Prod[T], visited: Visited, sink: Sink[T]): PlanState[T] = {
     val planState = toPlan(prod, visited)
     writeClosures += { () => sink.write(sc, planState.plan, timeSpan) }
     planState
   }
 
-  override def planLeftJoinedProducer[K: ClassTag, V: ClassTag, JoinedV](prod: Prod[(K, V)], visited: Visited, service: Service[K, JoinedV]):
-    PlanState[(K, (V, Option[JoinedV]))] = {
+  override def planLeftJoinedProducer[K: ClassTag, V: ClassTag, JoinedV](prod: Prod[(K, V)], visited: Visited, service: Service[K, JoinedV]): PlanState[(K, (V, Option[JoinedV]))] = {
 
     val planState = toPlan(prod, visited)
 

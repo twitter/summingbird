@@ -39,18 +39,17 @@ object MergeOperations {
    */
   def pivot[K] = Pivot.of[(K, BatchID), K, BatchID]
 
-  def collect[T, U](seq: Seq[(T, Future[U])])(implicit collect: FutureCollector[(T, U)])
-      : Future[Seq[(T, U)]] =
+  def collect[T, U](seq: Seq[(T, Future[U])])(implicit collect: FutureCollector[(T, U)]): Future[Seq[(T, U)]] =
     collect {
       seq.map { case (t, futureU) => futureU.map(t -> _) }
     }
 
   def mergeResults[K, V: Semigroup](
     m1: Map[K, Future[Seq[Option[(BatchID, V)]]]],
-    m2: Map[K, Future[Seq[Option[(BatchID, V)]]]]
-  ): Map[K, Future[Option[(BatchID, V)]]] =
-    Semigroup.plus(m1, m2).map { case (k, v) =>
-      k -> v.map(sortedSum(_))
+    m2: Map[K, Future[Seq[Option[(BatchID, V)]]]]): Map[K, Future[Option[(BatchID, V)]]] =
+    Semigroup.plus(m1, m2).map {
+      case (k, v) =>
+        k -> v.map(sortedSum(_))
     }
 
   def dropBatches[K, V](m: Map[K, Future[Option[(BatchID, V)]]]): Map[K, Future[Option[V]]] =
@@ -60,33 +59,33 @@ object MergeOperations {
    * Pivots each BatchID out of the key and into the Value's future.
    */
   def pivotBatches[K, V](m: Map[(K, BatchID), FOpt[V]]): Map[K, Future[Seq[Option[(BatchID, V)]]]] =
-    pivot.withValue(m).map { case (k, it) =>
-      k -> collect(it.toSeq).map { _.map { case (batchID, optV) => optV.map(batchID -> _) } }
+    pivot.withValue(m).map {
+      case (k, it) =>
+        k -> collect(it.toSeq).map { _.map { case (batchID, optV) => optV.map(batchID -> _) } }
     }
 
   def decrementOfflineBatch[K, V](m: Map[K, FOpt[(BatchID, V)]]): Map[K, Future[Seq[Option[(BatchID, V)]]]] =
-    m.map { case (k, futureOptV) =>
-      k -> futureOptV.map { optV =>
-        Seq(optV.map { case (batchID, v) => (batchID.prev, v) })
-      }
+    m.map {
+      case (k, futureOptV) =>
+        k -> futureOptV.map { optV =>
+          Seq(optV.map { case (batchID, v) => (batchID.prev, v) })
+        }
     }
 
   /**
-    * Selects the most recent BatchID between the offlineStore and the BatchID calculated
-    * with batchesToKeep. The more recent BatchID is used as the begining of the 
-    * range used to query the onlineStore.
-    */
+   * Selects the most recent BatchID between the offlineStore and the BatchID calculated
+   * with batchesToKeep. The more recent BatchID is used as the begining of the
+   * range used to query the onlineStore.
+   */
   def expand(offlineReturn: Option[BatchID], nowBatch: BatchID, batchesToKeep: Int): Iterable[BatchID] = {
     val initBatch = Semigroup.plus(
       Some(nowBatch - (batchesToKeep - 1)), offlineReturn
     ).get // This will never throw, as this option can never be None
-          // (because we included an explicit "Some" inside)
+    // (because we included an explicit "Some" inside)
     BatchID.range(initBatch, nowBatch)
   }
 
-  def generateOnlineKeys[K](ks: Seq[K], nowBatch: BatchID, batchesToKeep: Int)
-    (lookup: K => FOpt[BatchID])(implicit collect: FutureCollector[(K, Iterable[BatchID])])
-      : Future[Set[(K, BatchID)]] =
+  def generateOnlineKeys[K](ks: Seq[K], nowBatch: BatchID, batchesToKeep: Int)(lookup: K => FOpt[BatchID])(implicit collect: FutureCollector[(K, Iterable[BatchID])]): Future[Set[(K, BatchID)]] =
     for {
       collected <- collect(
         ks.map { k => lookup(k).map { k -> expand(_, nowBatch, batchesToKeep) } }

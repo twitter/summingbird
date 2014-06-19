@@ -19,16 +19,16 @@ package com.twitter.summingbird.sink
 import com.twitter.util.Future
 
 /**
-  * Represents a location to which intermediate results of the
-  * "flatMap" operation can be written for consumption by other
-  * jobs. This sink can be implemented using, for example, a kestrel
-  * fanout or kafka topic.
-  */
+ * Represents a location to which intermediate results of the
+ * "flatMap" operation can be written for consumption by other
+ * jobs. This sink can be implemented using, for example, a kestrel
+ * fanout or kafka topic.
+ */
 trait OnlineSink[-Event] extends (Event => Future[Unit]) {
   /**
-    * Note that the flatMap operation WILL error if this future errors, so be sure
-    * to handle appropriate exceptions here.
-    */
+   * Note that the flatMap operation WILL error if this future errors, so be sure
+   * to handle appropriate exceptions here.
+   */
   def write(event: Event): Future[Unit]
   final def apply(e: Event) = write(e)
 }

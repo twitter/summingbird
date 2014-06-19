@@ -19,18 +19,18 @@ package com.twitter.summingbird.storm
 import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, Testing }
 import backtype.storm.generated.StormTopology
 import backtype.storm.testing.{ CompleteTopologyParam, MockedSources }
-import com.twitter.algebird.{MapAlgebra, Semigroup}
+import com.twitter.algebird.{ MapAlgebra, Semigroup }
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{BatchID, Batcher}
+import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird.storm.option._
 import com.twitter.summingbird.memory._
 import com.twitter.summingbird.planner._
 import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
-import java.util.{Collections, HashMap, Map => JMap, UUID}
+import java.util.{ Collections, HashMap, Map => JMap, UUID }
 import java.util.concurrent.atomic.AtomicInteger
 import org.specs2.mutable._
 import org.scalacheck._
@@ -47,8 +47,8 @@ import scala.collection.mutable.{
 import java.security.Permission
 
 /**
-  * Tests for Summingbird's Storm planner.
-  */
+ * Tests for Summingbird's Storm planner.
+ */
 object StormLaws extends Specification {
   sequential
   import MapAlgebra.sparseEquiv
@@ -67,16 +67,15 @@ object StormLaws extends Specification {
 
   def genStore: (String, Storm#Store[Int, Int]) = TestStore.createStore[Int, Int]()
 
-  def genSink:() => ((Int) => Future[Unit]) = () => {x: Int =>
-      append(x)
-      Future.Unit
-    }
+  def genSink: () => ((Int) => Future[Unit]) = () => { x: Int =>
+    append(x)
+    Future.Unit
+  }
 
-  def memoryPlanWithoutSummer(original: List[Int])(mkJob: (Producer[Memory, Int], Memory#Sink[Int]) => TailProducer[Memory, Int])
-  : List[Int] = {
+  def memoryPlanWithoutSummer(original: List[Int])(mkJob: (Producer[Memory, Int], Memory#Sink[Int]) => TailProducer[Memory, Int]): List[Int] = {
     val memory = new Memory
     val outputList = ArrayBuffer[Int]()
-    val sink: (Int) => Unit = {x: Int => outputList += x}
+    val sink: (Int) => Unit = { x: Int => outputList += x }
 
     val job = mkJob(
       Memory.toSource(original),
@@ -89,12 +88,11 @@ object StormLaws extends Specification {
 
   val outputList = new ArrayBuffer[Int] with SynchronizedBuffer[Int]
 
-  def append(x: Int):Unit = {
+  def append(x: Int): Unit = {
     StormLaws.outputList += x
   }
 
-  def runWithOutSummer(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Sink[Int]) => TailProducer[Storm, Int])
-      : List[Int] = {
+  def runWithOutSummer(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Sink[Int]) => TailProducer[Storm, Int]): List[Int] = {
     val cluster = new LocalCluster()
 
     val job = mkJob(
@@ -120,7 +118,7 @@ object StormLaws extends Specification {
     val original = sample[List[Int]]
     val returnedState =
       StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(testFn)
+        TestGraphs.singleStepJob[Storm, Int, Int, Int](_, _)(testFn)
       )
 
     Equiv[Map[Int, Int]].equiv(
@@ -131,10 +129,10 @@ object StormLaws extends Specification {
 
   "FlatMap to nothing" in {
     val original = sample[List[Int]]
-    val fn = {(x: Int) => List[(Int, Int)]()}
+    val fn = { (x: Int) => List[(Int, Int)]() }
     val returnedState =
       StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(fn)
+        TestGraphs.singleStepJob[Storm, Int, Int, Int](_, _)(fn)
       )
 
     Equiv[Map[Int, Int]].equiv(
@@ -146,13 +144,12 @@ object StormLaws extends Specification {
   "OptionMap and FlatMap" in {
     val original = sample[List[Int]]
     val fnA = sample[Int => Option[Int]]
-    val fnB = sample[Int => List[(Int,Int)]]
+    val fnB = sample[Int => List[(Int, Int)]]
 
     val returnedState =
       StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
+        TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_, _)(fnA, fnB)
       )
-
 
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.twinStepOptionMapFlatMapScala(original)(fnA, fnB),
@@ -162,12 +159,12 @@ object StormLaws extends Specification {
 
   "OptionMap to nothing and FlatMap" in {
     val original = sample[List[Int]]
-    val fnA = {(x: Int) => None }
-    val fnB = sample[Int => List[(Int,Int)]]
+    val fnA = { (x: Int) => None }
+    val fnB = sample[Int => List[(Int, Int)]]
 
     val returnedState =
       StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
+        TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_, _)(fnA, fnB)
       )
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.twinStepOptionMapFlatMapScala(original)(fnA, fnB),
@@ -178,12 +175,12 @@ object StormLaws extends Specification {
   "StormPlatform matches Scala for large expansion single step jobs" in {
     val original = sample[List[Int]]
     val expander = sample[Int => List[(Int, Int)]]
-    val expansionFunc = {(x: Int) =>
-                          expander(x).flatMap{case (k, v) => List((k, v), (k, v), (k, v), (k, v), (k, v))}
-                        }
+    val expansionFunc = { (x: Int) =>
+      expander(x).flatMap { case (k, v) => List((k, v), (k, v), (k, v), (k, v), (k, v)) }
+    }
     val returnedState =
       StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.singleStepJob[Storm, Int, Int, Int](_,_)(expansionFunc)
+        TestGraphs.singleStepJob[Storm, Int, Int, Int](_, _)(expansionFunc)
       )
 
     Equiv[Map[Int, Int]].equiv(
@@ -192,13 +189,13 @@ object StormLaws extends Specification {
     ) must beTrue
   }
 
-   "StormPlatform matches Scala for flatmap keys jobs" in {
-    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13 ,41, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13 ,41) // sample[List[Int]]
+  "StormPlatform matches Scala for flatmap keys jobs" in {
+    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41) // sample[List[Int]]
     val fnA = sample[Int => List[(Int, Int)]]
     val fnB = sample[Int => List[Int]]
     val returnedState =
       StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.singleStepMapKeysJob[Storm, Int, Int, Int, Int](_,_)(fnA, fnB)
+        TestGraphs.singleStepMapKeysJob[Storm, Int, Int, Int, Int](_, _)(fnA, fnB)
       )
 
     Equiv[Map[Int, Int]].equiv(
@@ -216,8 +213,7 @@ object StormLaws extends Specification {
       )
 
     Equiv[Map[Int, Int]].equiv(
-      TestGraphs.leftJoinInScala(original)(serviceFn)
-        (staticFunc)(nextFn),
+      TestGraphs.leftJoinInScala(original)(serviceFn)(staticFunc)(nextFn),
       returnedState.toScala
     ) must beTrue
   }
@@ -231,8 +227,7 @@ object StormLaws extends Specification {
       )
 
     Equiv[Map[Int, Int]].equiv(
-      TestGraphs.repeatedTupleLeftJoinInScala(original)(serviceFn)
-        (staticFunc)(nextFn),
+      TestGraphs.repeatedTupleLeftJoinInScala(original)(serviceFn)(staticFunc)(nextFn),
       returnedState.toScala
     ) must beTrue
   }
@@ -252,31 +247,30 @@ object StormLaws extends Specification {
     StormTestRun(producer)
 
     Equiv[Map[Int, Int]].equiv(
-        MapAlgebra.sumByKey(original.filter(_ % 2 == 0).map(_ -> 10)),
-        TestStore[Int, Int](id).get.toScala
+      MapAlgebra.sumByKey(original.filter(_ % 2 == 0).map(_ -> 10)),
+      TestStore[Int, Int](id).get.toScala
     ) must beTrue
   }
 
   "StormPlatform matches Scala for MapOnly/NoSummer" in {
     val original = sample[List[Int]]
-    val doubler = {x: Int => List(x*2)}
+    val doubler = { x: Int => List(x * 2) }
 
     val stormOutputList =
       runWithOutSummer(original)(
         TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler)
       ).sorted
 
-
     val memoryOutputList =
-      memoryPlanWithoutSummer(original) (TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
+      memoryPlanWithoutSummer(original)(TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
 
-    stormOutputList must_==(memoryOutputList)
+    stormOutputList must_== (memoryOutputList)
   }
 
   "StormPlatform with multiple summers" in {
-    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13 ,41, 1, 2, 3, 4, 5, 6, 7,  8, 9, 10, 11, 12, 13 ,41) // sample[List[Int]]
-    val doubler = {(x): (Int) => List((x -> x*2))}
-    val simpleOp = {(x): (Int) => List(x * 10)}
+    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41) // sample[List[Int]]
+    val doubler = { (x): (Int) => List((x -> x * 2)) }
+    val simpleOp = { (x): (Int) => List(x * 10) }
 
     val source = Storm.source(TraversableSpout(original))
     val (store1Id, store1) = genStore
@@ -301,7 +295,7 @@ object StormLaws extends Specification {
     ) must beTrue
   }
 
-   "StormPlatform should be efficent in real world job" in {
+  "StormPlatform should be efficent in real world job" in {
     val original1 = sample[List[Int]]
     val original2 = sample[List[Int]]
     val original3 = sample[List[Int]]
@@ -324,14 +318,13 @@ object StormLaws extends Specification {
     val service = StoreWrapper[Int, Int](() => ReadableStore.fromFn(serviceFn))
 
     val tail = TestGraphs.realJoinTestJob[Storm, Int, Int, Int, Int, Int, Int, Int, Int, Int](source1, source2, source3, source4,
-                service, store1, fn1, fn2, fn3, preJoinFn, postJoinFn)
+      service, store1, fn1, fn2, fn3, preJoinFn, postJoinFn)
 
     OnlinePlan(tail).nodes.size must beLessThan(10)
     StormTestRun(tail)
 
-
     val scalaA = TestGraphs.realJoinTestJobInScala(original1, original2, original3, original4,
-                serviceFn, fn1, fn2, fn3, preJoinFn, postJoinFn)
+      serviceFn, fn1, fn2, fn3, preJoinFn, postJoinFn)
 
     val store1Map = TestStore[Int, Int](store1Id).get.toScala
     Equiv[Map[Int, Int]].equiv(

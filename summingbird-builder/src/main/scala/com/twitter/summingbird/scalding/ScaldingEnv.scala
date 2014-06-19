@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.scalding.{Args, Hdfs, RichDate, DateParser}
+import com.twitter.scalding.{ Args, Hdfs, RichDate, DateParser }
 import com.twitter.summingbird.batch.store.HDFSMetadata
 import com.twitter.summingbird.{ Env, Summer, TailProducer, AbstractJob }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
@@ -28,7 +28,6 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.util.GenericOptionsParser
 import java.util.TimeZone
 
-
 /**
  * @author Oscar Boykin
  * @author Sam Ritchie
@@ -39,7 +38,7 @@ import java.util.TimeZone
 // the intermediate key-values for using a store as a service
 // in another job.
 // Prefer using .write in the -core API.
-case class StoreIntermediateData[K, V](sink: Sink[(K,V)]) extends java.io.Serializable
+case class StoreIntermediateData[K, V](sink: Sink[(K, V)]) extends java.io.Serializable
 
 // TODO (https://github.com/twitter/summingbird/issues/69): Add
 // documentation later describing command-line args. start-time,
@@ -75,11 +74,11 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
   // a batch size of one hour; For big recomputations, one might want
   // to process a day's worth of data with each Hadoop run. Do this by
   // setting --batches to "24" until the recomputation's finished.
-  def batches : Int = args.getOrElse("batches","1").toInt
+  def batches: Int = args.getOrElse("batches", "1").toInt
 
   // The number of reducers to use for the Scalding piece of the
   // Summingbird job.
-  def reducers : Int = args.getOrElse("reducers","20").toInt
+  def reducers: Int = args.getOrElse("reducers", "20").toInt
 
   // Used to insert a write just before the store so the store
   // can be used as a Service
@@ -115,10 +114,10 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
         .name(scaldingBuilder.id)
 
     val scald = Scalding(name, opts)
-        .withRegistrars(ajob.registrars ++ builder.registrar.getRegistrars.asScala)
-        .withConfigUpdater{ c =>
-          c.updated(ajob.transformConfig(c.toMap))
-        }
+      .withRegistrars(ajob.registrars ++ builder.registrar.getRegistrars.asScala)
+      .withConfigUpdater { c =>
+        c.updated(ajob.transformConfig(c.toMap))
+      }
 
     def getStatePath(ss: Store[_, _]): Option[String] =
       ss match {
@@ -149,19 +148,17 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
 
     try {
       scald.run(stateFn(conf), Hdfs(true, conf), toRun)
-    }
-    catch {
-      case f@FlowPlanException(errs) =>
+    } catch {
+      case f @ FlowPlanException(errs) =>
         /* This is generally due to data not being ready, don't give a failed error code */
-       if(!args.boolean("scalding.nothrowplan")) {
-         println("use: --scalding.nothrowplan to not give a failing error code in this case")
-         throw f
-       }
-       else {
-         println("[ERROR]: ========== FlowPlanException =========")
-         errs.foreach { println(_) }
-         println("========== FlowPlanException =========")
-       }
+        if (!args.boolean("scalding.nothrowplan")) {
+          println("use: --scalding.nothrowplan to not give a failing error code in this case")
+          throw f
+        } else {
+          println("[ERROR]: ========== FlowPlanException =========")
+          errs.foreach { println(_) }
+          println("========== FlowPlanException =========")
+        }
     }
   }
 }

@@ -23,13 +23,13 @@ import com.twitter.tormenta.spout.Spout
 import java.util.Date
 
 /**
-  * An EventSource[Event,Time] is a compound source that mixes together
-  * the notions of an online and offline source:
-  *
-  * @author Oscar Boykin
-  * @author Sam Ritchie
-  * @author Ashu Singhal
-  */
+ * An EventSource[Event,Time] is a compound source that mixes together
+ * the notions of an online and offline source:
+ *
+ * @author Oscar Boykin
+ * @author Sam Ritchie
+ * @author Ashu Singhal
+ */
 
 case class EventSource[T: Manifest](offline: Option[OfflineSource[T]], spout: Option[Spout[T]]) {
   def withTime(fn: T => Date)(implicit inj: Injection[T, Array[Byte]]): SourceBuilder[T] =

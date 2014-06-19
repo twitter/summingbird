@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.scalding.batch
 
-import com.twitter.algebird.monad.{StateWithError, Reader}
+import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.{ Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.scalding._
@@ -26,16 +26,19 @@ import cascading.flow.FlowDef
 trait BatchedSink[T] extends Sink[T] {
   def batcher: Batcher
 
-  /** If this full stream for this batch is already materialized, return it
+  /**
+   * If this full stream for this batch is already materialized, return it
    */
   def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[T]]
 
-  /** Instances may choose to write out materialized streams
+  /**
+   * Instances may choose to write out materialized streams
    * by implementing this. This is what readStream returns.
    */
   def writeStream(batchID: BatchID, stream: TimedPipe[T])(implicit flowDef: FlowDef, mode: Mode): Unit
 
-  /** in will completely cover these batches
+  /**
+   * in will completely cover these batches
    * Return a new FlowToPipe with the write as a side effect
    */
   protected def writeBatches(inter: Interval[BatchID], in: FlowToPipe[T]): FlowToPipe[T] =
@@ -49,8 +52,9 @@ trait BatchedSink[T] extends Sink[T] {
       // We need to write each of these.
       iter.foreach { batch =>
         val range = batcher.toInterval(batch)
-        writeStream(batch, inPipe.filter { case (time, _) =>
-          range(time)
+        writeStream(batch, inPipe.filter {
+          case (time, _) =>
+            range(time)
         })(flowMode._1, flowMode._2)
       }
       inPipe
@@ -66,19 +70,20 @@ trait BatchedSink[T] extends Sink[T] {
 
       // Maybe an inclusive interval of batches to pull from incoming
       val batchesToWrite: Option[(BatchID, BatchID)] = batchStreams
-          .dropWhile { _._2.isDefined }
-          .map { _._1 }
-          .toList match {
-            case Nil => None
-            case list => Some((list.min, list.max))
-          }
+        .dropWhile { _._2.isDefined }
+        .map { _._1 }
+        .toList match {
+          case Nil => None
+          case list => Some((list.min, list.max))
+        }
 
-      val newlyWritten = batchesToWrite.map { case (lower, upper) =>
-        // Compute the times we need to read of the deltas
-        val incBatches = Interval.leftClosedRightOpen(lower, upper.next)
-        batchOps.readBatched(incBatches, mode, incoming)
-          .right
-          .map { case (inbatches, flow2Pipe) => (inbatches, writeBatches(inbatches, flow2Pipe)) }
+      val newlyWritten = batchesToWrite.map {
+        case (lower, upper) =>
+          // Compute the times we need to read of the deltas
+          val incBatches = Interval.leftClosedRightOpen(lower, upper.next)
+          batchOps.readBatched(incBatches, mode, incoming)
+            .right
+            .map { case (inbatches, flow2Pipe) => (inbatches, writeBatches(inbatches, flow2Pipe)) }
       }
       // This data is already on disk and will not be recomputed
       val existing = batchStreams

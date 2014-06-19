@@ -22,7 +22,8 @@ import com.twitter.summingbird.batch._
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
 import com.twitter.scalding.typed.TypedSink
 
-/** This is a test sink that assumes single threaded testing with
+/**
+ * This is a test sink that assumes single threaded testing with
  * cascading local mode
  */
 class TestSink[T] extends Sink[T] {

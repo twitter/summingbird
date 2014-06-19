@@ -71,12 +71,12 @@ object HDFSState {
   /**
    * Returns true if each timestamp represents the first
    * millisecond of a batch.
-    */
+   */
   def alignedToBatchBoundaries(
     low: Lower[Timestamp],
     high: Upper[Timestamp])(implicit b: Batcher): Boolean =
     b.isLowerBatchEdge(toInclusiveLower(low)) &&
-    b.isLowerBatchEdge(toExclusiveUpper(high))
+      b.isLowerBatchEdge(toExclusiveUpper(high))
 
   def toInclusiveLower(low: Lower[Timestamp]): Timestamp =
     low match {
@@ -107,7 +107,7 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
       config.startTime.map(batcher.batchOf(_))
         .orElse {
           val mostRecentB = versionedStore.mostRecentVersion
-                .map(t => batcher.batchOf(Timestamp(t)).next)
+            .map(t => batcher.batchOf(Timestamp(t)).next)
           logger.info("Most recent batch found on disk: " + mostRecentB.toString)
           mostRecentB
         }.map(InclusiveLower(_)).getOrElse {
@@ -134,10 +134,9 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
      */
     override def willAccept(available: Interval[Timestamp]) =
       available match {
-        case intersection @ Intersection(low, high)
-            if (alignedToBatchBoundaries(low, high) &&
-              fitsCurrentBatchStart(low) &&
-              hasStarted.compareAndSet(false, true)) =>
+        case intersection @ Intersection(low, high) if (alignedToBatchBoundaries(low, high) &&
+          fitsCurrentBatchStart(low) &&
+          hasStarted.compareAndSet(false, true)) =>
           Right(new Running(intersection, hasStarted))
         case _ => Left(HDFSState(config))
       }
@@ -146,7 +145,7 @@ class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
   }
 
   private class Running(succeedPart: Interval.GenIntersection[Timestamp], bool: AtomicBoolean)
-    extends RunningState[Interval[Timestamp]] {
+      extends RunningState[Interval[Timestamp]] {
     def setStopped = assert(
       bool.compareAndSet(true, false),
       "Concurrent modification of HDFSState!"

@@ -16,17 +16,19 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import java.util.{Calendar, Date, TimeZone}
+import java.util.{ Calendar, Date, TimeZone }
 
 object CalendarBatcher {
   /** Type wrapper for the Int's defined in java.util.Calendar */
   trait CalField {
-    /** This is the java.util.Calendar statir int for this field.
+    /**
+     * This is the java.util.Calendar statir int for this field.
      * Such statics are dangerous to use as they are easy to mistake for counts,
      * thus we use this trait
      */
     def javaIntValue: Int
-    /** What is the standard size in milliseconds for this unit of time.
+    /**
+     * What is the standard size in milliseconds for this unit of time.
      * Does not need to be precise, but it will improve the speed of
      * unitsSinceEpoch of it is as accurate as possible
      */
@@ -37,14 +39,13 @@ object CalendarBatcher {
       val start = Calendar.getInstance(tz)
       start.setTimeInMillis(0L)
       var toCnt = cnt
-      while(toCnt != 0L) {
+      while (toCnt != 0L) {
         // the biggest part of this that fits in an Int
         def next(v: Long): Long = {
-          if(v < 0) {
+          if (v < 0) {
             // max is towards zero
             Int.MinValue.toLong max v
-          }
-          else {
+          } else {
             Int.MaxValue.toLong min v
           }
         }
@@ -66,8 +67,8 @@ object CalendarBatcher {
           low
         else {
           // mid must be > low because upper >= low + 2
-          val mid = low + (upper - low)/2
-          if(notAfter(mid))
+          val mid = low + (upper - low) / 2
+          if (notAfter(mid))
             search(mid, upper)
           else
             search(low, mid)
@@ -79,12 +80,12 @@ object CalendarBatcher {
       val skip = 10L
       @annotation.tailrec
       def makeBefore(prev: Long = guess): Long = {
-        if(notAfter(prev)) prev
+        if (notAfter(prev)) prev
         else makeBefore(prev - skip)
       }
       @annotation.tailrec
       def makeAfter(prev: Long = guess): Long = {
-        if(!notAfter(prev)) prev
+        if (!notAfter(prev)) prev
         else makeAfter(prev + skip)
       }
       // Return the largest value that is not after the date (<=)
@@ -114,13 +115,14 @@ object CalendarBatcher {
     ofHours(hours)(TimeZone.getTimeZone("UTC"))
 }
 
-/** This batcher numbers batches based on a Calendar, not just milliseconds.
+/**
+ * This batcher numbers batches based on a Calendar, not just milliseconds.
  * Many offline HDFS sources at Twitter are batched in this way based on hour
  * or day in the UTC calendar
  */
 final case class CalendarBatcher(unitCount: Int,
-  calField: CalendarBatcher.CalField)(implicit tz: TimeZone) extends Batcher {
+    calField: CalendarBatcher.CalField)(implicit tz: TimeZone) extends Batcher {
 
-  final def batchOf(t : Timestamp) = BatchID(calField.unitsSinceEpoch(t.toDate)(tz)/unitCount)
+  final def batchOf(t: Timestamp) = BatchID(calField.unitsSinceEpoch(t.toDate)(tz) / unitCount)
   final def earliestTimeOf(batch: BatchID) = calField.toDate(batch.id.toInt * unitCount)(tz)
 }
