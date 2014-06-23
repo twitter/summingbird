@@ -216,9 +216,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     }
 
     val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
-    tormentaSpout.registerMetrics(metrics.toSpoutMetrics)
 
-    val stormSpout = tormentaSpout.getSpout
+    val stormSpout = tormentaSpout.registerMetrics(metrics.toSpoutMetrics).getSpout
     val parallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SPOUT_PARALLELISM)).parHint
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
