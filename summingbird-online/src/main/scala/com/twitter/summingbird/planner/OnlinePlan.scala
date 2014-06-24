@@ -127,9 +127,10 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
            */
           case _ if (forkedNodes.contains(dep)) => true
           /*
-           * This next rule says: we can pull no-ops down into summer nodes, but if
-           * the next is not a no-op, we currently can't. It might be nice to pull value flatMaps
-           * into summer nodes, but that is not yet done.
+           * This next rule says: we can pull no-ops down into summer nodes, otherwise
+           * we split to enable map-side aggregation. If the Semigroup is not commutative,
+           * it might make possibly sense to pull value flatMap-ing down, but generally
+           * we want to push things higher up in the Dag, not further down.
            */
           case SummerNode(_) if !noOpProducer(dep) => true
           /*
