@@ -60,7 +60,7 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
   var dumpNumber = 1
-  def dumpGraph(dag: MemoryDag): String = {
+  def dumpGraph[P <: Platform[P]](dag: Dag[P]): String = {
     import java.io._
     import com.twitter.summingbird.viz.VizGraph
     val targetPath = "/tmp/failingGraph" + dumpNumber + ".dot"
@@ -82,6 +82,16 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     targetPath
   }
 
+  def summersOnlyShareNoOps[P <: Platform[P]](dag: Dag[P]): Boolean =
+    dag.nodes.forall { n =>
+      val producersWithoutNOP = n.members.filterNot(Producer.isNoOp(_))
+      producersWithoutNOP.forall { p =>
+        val inError = (p.isInstanceOf[Summer[_, _, _]] && producersWithoutNOP.size != 1)
+        if (inError) dumpGraph(dag)
+        !inError
+      }
+    }
+
   property("Dag Nodes must be unique") = forAll { (dag: MemoryDag) =>
     dag.nodes.size == dag.nodes.toSet.size
   }
@@ -93,15 +103,7 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
   }
 
   property("If a Node contains a Summer, all other producers must be NOP's") = forAll { (dag: MemoryDag) =>
-    dag.nodes.forall { n =>
-      val producersWithoutNOP = n.members.filterNot(Producer.isNoOp(_))
-      val firstP = producersWithoutNOP.headOption
-      producersWithoutNOP.forall { p =>
-        val inError = (p.isInstanceOf[Summer[_, _, _]] && producersWithoutNOP.size != 1)
-        if (inError) dumpGraph(dag)
-        !inError
-      }
-    }
+    summersOnlyShareNoOps(dag)
   }
 
   property("The first producer in a online node cannot be a NamedProducer") = forAll { (dag: MemoryDag) =>
@@ -162,7 +164,7 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     }
   }
 
-  property("Prior to a summer the Nonde should be a FlatMap Node") = forAll { (dag: MemoryDag) =>
+  property("Prior to a summer the Node should be a FlatMap Node") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall { n =>
       val firstP = n.members.last
       val success = firstP match {

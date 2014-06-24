@@ -73,17 +73,17 @@ object Producer {
   /** the list of the Producers, this producer directly depends on */
   def dependenciesOf[P <: Platform[P]](p: Producer[P, Any]): List[Producer[P, Any]] =
     p match {
-      case AlsoProducer(_, prod) => List(prod)
+      case Source(_) => List()
+      case AlsoProducer(_, producer) => List(producer)
       case NamedProducer(producer, _) => List(producer)
       case IdentityKeyedProducer(producer) => List(producer)
-      case Source(_) => List()
       case OptionMappedProducer(producer, _) => List(producer)
       case FlatMappedProducer(producer, _) => List(producer)
       case KeyFlatMappedProducer(producer, _) => List(producer)
-      case MergedProducer(l, r) => List(l, r)
       case WrittenProducer(producer, _) => List(producer)
       case LeftJoinedProducer(producer, _) => List(producer)
       case Summer(producer, _, _) => List(producer)
+      case MergedProducer(l, r) => List(l, r)
     }
 
   /**
@@ -311,7 +311,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
    * It may trigger optimizations, that can significantly improve performance
    */
   def mapKeys[K2](fn: K => K2): KeyedProducer[P, K2, V] =
-    KeyFlatMappedProducer(this, fn.andThen(Set(_)))
+    KeyFlatMappedProducer(this, fn.andThen(Iterator(_)))
 
   /** Prefer this to a raw map as this may be optimized to avoid a key reshuffle */
   def mapValues[U](fn: V => U): KeyedProducer[P, K, U] =
