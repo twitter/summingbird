@@ -180,4 +180,23 @@ object PlannerSpec extends Specification {
         true must beFalse
     }
   }
+  "Chained SumByKey with extra Also is okay" in {
+    val store1 = testStore
+    val part1: TailProducer[Memory, (Int, (Option[Int], Int))] = arbSource1.map { i => (i % 10, i * i) }.sumByKey(store1).name("Sarnatsky")
+    val store2 = testStore
+    val part2 = part1.mapValues { case (optV, v) => v }
+      .mapKeys(_ => 1).name("Preexpanded")
+      .sumByKey(store2).name("All done")
+    Try(OnlinePlan(part1.also(part2))) match {
+      case Success(graph) =>
+        TopologyPlannerLaws.dumpGraph(graph)
+        TopologyPlannerLaws.dumpGraph(part2)
+        TopologyPlannerLaws.summersOnlyShareNoOps(graph) must beTrue
+      case Failure(error) =>
+        val path = TopologyPlannerLaws.dumpGraph(part2)
+        error.printStackTrace
+        println("Dumped failing graph to: " + path)
+        true must beFalse
+    }
+  }
 }
