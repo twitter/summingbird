@@ -34,9 +34,15 @@ object CalendarBatcher {
      */
     def defaultSize: Long
 
+    def timeZone: TimeZone
+
+    private[this] val cachedCal: ThreadLocal[Calendar] = new ThreadLocal[Calendar] {
+      override def initialValue = Calendar.getInstance(timeZone)
+    }
+
     /** the date of exactly cnt units since the epoch */
-    def toDate(cnt: Long)(implicit tz: TimeZone): Date = {
-      val start = Calendar.getInstance(tz)
+    def toDate(cnt: Long): Date = {
+      val start = cachedCal.get
       start.setTimeInMillis(0L)
       var toCnt = cnt
       while (toCnt != 0L) {
@@ -57,7 +63,7 @@ object CalendarBatcher {
     }
 
     /** The floor of the units since the epoch of d */
-    def unitsSinceEpoch(d: Date)(implicit tz: TimeZone): Long = {
+    def unitsSinceEpoch(d: Date): Long = {
 
       def notAfter(units: Long): Boolean = !(toDate(units).after(d))
 
@@ -93,20 +99,23 @@ object CalendarBatcher {
     }
   }
 
-  case object Hours extends CalField {
+  def hoursField(tz: TimeZone): CalField = new CalField {
     def javaIntValue = Calendar.HOUR
     def defaultSize = 1000L * 60L * 60L
+    def timeZone = tz
   }
-  case object Days extends CalField {
+
+  def daysField(tz: TimeZone): CalField = new CalField {
     def javaIntValue = Calendar.DAY_OF_YEAR
     def defaultSize = 1000L * 60L * 60L * 24L
+    def timeZone = tz
   }
 
   def ofDays(days: Int)(implicit tz: TimeZone): CalendarBatcher =
-    CalendarBatcher(days, Days)
+    CalendarBatcher(days, daysField(tz))
 
   def ofHours(hours: Int)(implicit tz: TimeZone): CalendarBatcher =
-    CalendarBatcher(hours, Hours)
+    CalendarBatcher(hours, hoursField(tz))
 
   def ofDaysUtc(days: Int): CalendarBatcher =
     ofDays(days)(TimeZone.getTimeZone("UTC"))
@@ -120,9 +129,7 @@ object CalendarBatcher {
  * Many offline HDFS sources at Twitter are batched in this way based on hour
  * or day in the UTC calendar
  */
-final case class CalendarBatcher(unitCount: Int,
-    calField: CalendarBatcher.CalField)(implicit tz: TimeZone) extends Batcher {
-
-  final def batchOf(t: Timestamp) = BatchID(calField.unitsSinceEpoch(t.toDate)(tz) / unitCount)
-  final def earliestTimeOf(batch: BatchID) = calField.toDate(batch.id.toInt * unitCount)(tz)
+final case class CalendarBatcher(unitCount: Int, calField: CalendarBatcher.CalField) extends Batcher {
+  final def batchOf(t: Timestamp) = BatchID(calField.unitsSinceEpoch(t.toDate) / unitCount)
+  final def earliestTimeOf(batch: BatchID) = calField.toDate(batch.id.toInt * unitCount)
 }
