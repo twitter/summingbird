@@ -53,4 +53,13 @@ object Timestamp {
   implicit val timestamp2Long: Bijection[Timestamp, Long] =
     Bijection.build[Timestamp, Long] { _.milliSinceEpoch } { Timestamp(_) }
 
+  implicit val timestampSuccessible: Successible[Timestamp] = new Successible[Timestamp] {
+    def next(old: Timestamp) = Some(old.next)
+    def ordering: Ordering[Timestamp] = Timestamp.orderingOnTimestamp
+  }
+
+  implicit val timestampPredecessible: Predecessible[Timestamp] = new Predecessible[Timestamp] {
+    def prev(old: Timestamp) = Some(old.prev)
+    def ordering: Ordering[Timestamp] = Timestamp.orderingOnTimestamp
+  }
 }
