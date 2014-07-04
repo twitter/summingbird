@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import com.twitter.algebird.Monoid
+import com.twitter.algebird.{ Monoid, Predecessible, Successible }
 import com.twitter.bijection.Bijection
 import java.util.Date
 import com.twitter.scalding.RichDate
@@ -53,4 +53,13 @@ object Timestamp {
   implicit val timestamp2Long: Bijection[Timestamp, Long] =
     Bijection.build[Timestamp, Long] { _.milliSinceEpoch } { Timestamp(_) }
 
+  implicit val timestampSuccessible: Successible[Timestamp] = new Successible[Timestamp] {
+    def next(old: Timestamp) = if (old.milliSinceEpoch != Long.MaxValue) Some(old.next) else None
+    def ordering: Ordering[Timestamp] = Timestamp.orderingOnTimestamp
+  }
+
+  implicit val timestampPredecessible: Predecessible[Timestamp] = new Predecessible[Timestamp] {
+    def prev(old: Timestamp) = if (old.milliSinceEpoch != Long.MinValue) Some(old.prev) else None
+    def ordering: Ordering[Timestamp] = Timestamp.orderingOnTimestamp
+  }
 }
