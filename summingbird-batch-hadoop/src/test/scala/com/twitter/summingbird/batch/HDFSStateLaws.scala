@@ -111,8 +111,11 @@ object HDFSStateLaws extends Specification {
   }
 
   def withTmpDir(doWithTmpFolder: String => Unit) = {
-    val path = "/tmp/" + UUID.randomUUID
-    doWithTmpFolder(path)
-    FileSystem.get(new Configuration()).delete(new Path(path),true)
+    val path = "/tmp/fancy" + UUID.randomUUID
+    try {
+      doWithTmpFolder(path)
+    }finally {
+      FileSystem.get(new Configuration()).delete(new Path(path), true)
+    }
   }
 }
