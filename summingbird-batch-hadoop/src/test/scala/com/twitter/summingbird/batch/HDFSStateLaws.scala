@@ -16,23 +16,78 @@
 
 package com.twitter.summingbird.batch
 
-import com.twitter.algebird.Interval
-import com.twitter.scalding.{ DateParser, RichDate }
-import com.twitter.summingbird._
-import com.twitter.summingbird.batch._
-import com.twitter.summingbird.batch.state.HDFSState
 import java.io.File
-import java.util.{ TimeZone, UUID }
+import java.util.{TimeZone, UUID}
+
+import com.twitter.algebird.{Intersection, Interval}
+import com.twitter.scalding.{DateParser, RichDate}
+import com.twitter.summingbird.batch.state.HDFSState
 import org.apache.hadoop.conf.Configuration
-import org.scalacheck.Prop._
-import org.scalacheck.Properties
 import org.specs2.mutable._
 
 object HDFSStateLaws extends Specification {
-  def tempPath: String = {
-    val path = "/tmp/" + UUID.randomUUID
-    new File(path).deleteOnExit
-    path
+
+  val batchLength: Long = 30
+  implicit val batcher = Batcher.ofMinutes(batchLength)
+  implicit def tz = TimeZone.getTimeZone("UTC")
+  implicit def parser = DateParser.default
+
+  "make sure HDFSState creates checkpoint" in {
+    withTmpDir { path =>
+
+
+      val startDate: Timestamp = RichDate("2012-12-26T09:45").value
+      val numBatches: Long = 10
+      val state = HDFSState(path, startTime = Some(startDate), numBatches = numBatches) //startDate is specified for the first run
+      val preparedState = state.begin
+      val requested = preparedState.requested
+
+      shouldCheckpointInterval(batcher, state, requested, path)
+
+      //after the first batch, startTime is not needed
+      //it should read from the HDFS folder to decide what is the start time
+      //put it simply: start from where you left
+      val nextState = HDFSState(path, startTime = None, numBatches = numBatches)
+      val nextPrepareState = nextState.begin
+      nextPrepareState.requested match {
+        case intersection@Intersection(low, high) => {
+          val startBatchTime: Timestamp = batcher.earliestTimeOf(batcher.batchOf(startDate))
+          val expectedNextRunStartMillis: Long = startBatchTime.incrementMinutes(numBatches * batchLength).milliSinceEpoch
+          low.least.get.milliSinceEpoch mustEqual expectedNextRunStartMillis
+        }
+        case _ => failure("requested interval should be an interseciton")
+      }
+      shouldCheckpointInterval(batcher, nextState, nextPrepareState.requested, path)
+    }
+  }
+
+  "make sure HDFSState creates partial checkpoint" in {
+    withTmpDir { path =>
+      val startDate: Option[Timestamp] = Some("2012-12-26T09:45").map(RichDate(_).value)
+      val numBatches: Long = 10
+      val config = HDFSState.Config(path, new Configuration, startDate, numBatches)
+      val waitingState: HDFSState = HDFSState(config)
+      val startBatchTime: Timestamp = batcher.earliestTimeOf(batcher.batchOf(startDate.get))
+      // Not aligned with batch size
+      val partialIncompleteInterval: Interval[Timestamp] = leftClosedRightOpenInterval(startBatchTime, RichDate("2012-12-26T10:40").value)
+      shouldNotAcceptInterval(waitingState, partialIncompleteInterval)
+
+      //artificially create a 1 millis hole
+      val intervalWithHoles: Interval[Timestamp] = leftClosedRightOpenInterval(startBatchTime.incrementMillis(1), RichDate("2012-12-26T11:30").value)
+      shouldNotAcceptInterval(waitingState, intervalWithHoles)
+
+      val partialCompleteInterval: Interval[Timestamp] = leftClosedRightOpenInterval(startBatchTime, RichDate("2012-12-26T11:30").value)
+      shouldCheckpointInterval(batcher, waitingState, partialCompleteInterval, path)
+    }
+  }
+
+  def leftClosedRightOpenInterval(low: Timestamp, high: Timestamp) = Interval.leftClosedRightOpen[Timestamp](low, high).right.get
+
+  def shouldNotAcceptInterval(state: WaitingState[Interval[Timestamp]], interval: Interval[Timestamp], message: String = "PreparedState accepted a bad Interval!") = {
+    state.begin.willAccept(interval) match {
+      case Left(t) => t
+      case Right(t) => sys.error(message)
+    }
   }
 
   def completeState[T](either: Either[WaitingState[T], RunningState[T]]): WaitingState[T] = {
@@ -42,79 +97,21 @@ object HDFSStateLaws extends Specification {
     }
   }
 
-  "make sure HDFSState creates checkpoint" in {
-    implicit val batcher = Batcher.ofMinutes(30)
-    implicit def tz = TimeZone.getTimeZone("UTC")
-    implicit def parser = DateParser.default
-
-    val path: String = tempPath
-    val startDate: Option[Timestamp] = Some("2012-12-26T09:45").map(RichDate(_).value)
-    val numBatches: Long = 10
-    val state = HDFSState(path, startTime = startDate, numBatches = numBatches)
-    val preparedState = state.begin
-    val runningState = preparedState.willAccept(preparedState.requested)
-    completeState(runningState)
-
-    BatchID.range(
-      batcher.batchOf(startDate.get),
-      batcher.batchOf(startDate.get) + numBatches - 1).foreach { t =>
-        (path + "/" +
-          batcher.earliestTimeOf(t)
-          .milliSinceEpoch + ".version") must beAnExistingPath
+  def shouldCheckpointInterval(batcher: Batcher, state: WaitingState[Interval[Timestamp]], interval: Interval[Timestamp], path: String) = {
+    completeState(state.begin.willAccept(interval))
+    interval match {
+      case intersection@Intersection(low, high) => {
+        BatchID.range(batcher.batchOf(low.least.get), batcher.batchOf(high.greatest.get)).foreach(t => (path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
       }
-
-    //cleanup
-    BatchID.range(
-      batcher.batchOf(startDate.get),
-      batcher.batchOf(startDate.get) + numBatches - 1)
-      .foreach { t =>
-        new File(path + "/" + batcher.earliestTimeOf(t)
-          .milliSinceEpoch + ".version").delete
-      }
+      case _ => sys.error("interval should be an intersection")
+    }
   }
 
-  "make sure HDFSState creates partial checkpoint" in {
-    implicit val batcher: Batcher = new MillisecondBatcher(30 * 60 * 1000L)
-    implicit def tz = TimeZone.getTimeZone("UTC")
-    implicit def parser = DateParser.default
-
-    val path: String = tempPath
-    val startDate: Option[Timestamp] = Some("2012-12-26T09:45").map(RichDate(_).value)
-    val numBatches: Long = 10
-    val config = HDFSState.Config(path, new Configuration, startDate, numBatches)
-
-    // Not aligned with batch size
-    val partialIncompleteInterval: Interval[Timestamp] = Interval.leftClosedRightOpen[Timestamp](
-      batcher.earliestTimeOf(batcher.batchOf(startDate.get)),
-      RichDate("2012-12-26T10:40").value
-    ).right.get
-
-    val partialCompleteInterval: Interval[Timestamp] = Interval.leftClosedRightOpen[Timestamp](
-      batcher.earliestTimeOf(batcher.batchOf(startDate.get)),
-      RichDate("2012-12-26T11:30").value
-    ).right.get
-
-    val runningState = HDFSState(config).begin.willAccept(partialIncompleteInterval)
-    val waitingState = runningState match {
-      case Left(t) => t
-      case Right(t) => sys.error("PreparedState accepted a bad Interval!")
-    }
-
-    // reuse the waitingstate
-    val waitingState2 = completeState(waitingState.begin.willAccept(partialCompleteInterval))
-
-    BatchID.range(batcher.batchOf(startDate.get), batcher.batchOf(RichDate("2012-12-26T11:30").value) - 1)
-      .foreach(t => (path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
-
-    // start from where you left
-    val preparedState2 = waitingState2.begin
-    completeState(preparedState2.willAccept(preparedState2.requested))
-
-    BatchID.range(batcher.batchOf(startDate.get), batcher.batchOf(startDate.get) + numBatches - 1)
-      .foreach(t => (path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
-
-    //cleanup
-    BatchID.range(batcher.batchOf(startDate.get), batcher.batchOf(startDate.get) + numBatches - 1)
-      .foreach(t => new File(path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version").delete)
+  def withTmpDir(doWithTmpFolder: String => Unit) = {
+    val path = "/tmp/" + UUID.randomUUID
+    new File(path).deleteOnExit
+    new File(path).mkdir()
+    doWithTmpFolder(path)
+    new File(path).deleteOnExit //clean up
   }
 }
