@@ -23,6 +23,9 @@ import com.twitter.algebird.{Intersection, Interval}
 import com.twitter.scalding.{DateParser, RichDate}
 import com.twitter.summingbird.batch.state.HDFSState
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.Path
+
 import org.specs2.mutable._
 
 object HDFSStateLaws extends Specification {
@@ -109,9 +112,7 @@ object HDFSStateLaws extends Specification {
 
   def withTmpDir(doWithTmpFolder: String => Unit) = {
     val path = "/tmp/" + UUID.randomUUID
-    new File(path).deleteOnExit
-    new File(path).mkdir()
     doWithTmpFolder(path)
-    new File(path).deleteOnExit //clean up
+    FileSystem.get(new Configuration()).delete(new Path(path),true)
   }
 }
