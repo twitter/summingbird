@@ -20,12 +20,11 @@ import com.twitter.algebird._
 import com.twitter.summingbird.batch._
 
 /**
- * To create an implemetation of CheckpointState you need first define a sub-trait of CheckpointStore, then mix it in with CheckpointState,
- * see {@link com.twitter.summingbird.batch.state.HDFSState} for an example
+ * To create an implemetation of CheckpointState you need first define a class of CheckpointStore
+ * see {@link com.twitter.summingbird.batch.state.HDFSCheckpointStore} for an example
  *
- * Sub-traits of CheckpointStore should be responsible for getting the startBatch by checking the checkpoints of
+ * Subclass of CheckpointStore should be responsible for getting the startBatch by checking the checkpoints of
  * previous batch run and getting the endBatch by number of batches the clients asks to run.
- * It implements cake pattern with CheckpointState. Checkpointstate must mixes in an implementation of the CheckpointStore.
  * The CheckpointStore should provide concrete implementation of how to read previous batch and checkpointing current batch
  * Type T is the token of each batch run created by startBatch(), the token is then provided back to checkPoint store for checkpointing Success or Failure.
  * @author Tianshuo Deng
@@ -59,20 +58,20 @@ trait CheckpointStore[T] {
  * State machine for checkpointed states. It creates the requested time interval by asking checkpoint store for startBatch and endBatch.
  * After flow planner minifies the time interval(by checking data available), it decides to accept the interval by making sure there is no
  * hole in between the start time of the interval and the end time of previous batch run.
- * It requires a CheckpointStore to be mixed-in.
+ * It requires a CheckpointStore to be provided
  */
 trait CheckpointState[T] extends WaitingState[Interval[Timestamp]] {
-  this: CheckpointStore[T] =>
+  def checkpointStore:CheckpointStore[T]
   //guard for concurrent modification
   private val hasStarted = new AtomicBoolean(false)
 
   override def begin: PrepareState[Interval[Timestamp]] = new CheckpointPrepareState(this)
 
-  class CheckpointPrepareState(val waitingState: CheckpointState[T]) extends PrepareState[Interval[Timestamp]] {
+  private class CheckpointPrepareState(val waitingState: CheckpointState[T]) extends PrepareState[Interval[Timestamp]] {
 
-    def requested: Interval[Timestamp] = Intersection(startBatch, endBatch).mapNonDecreasing(batcher.earliestTimeOf(_))
+    def requested: Interval[Timestamp] = Intersection(checkpointStore.startBatch, checkpointStore.endBatch).mapNonDecreasing(checkpointStore.batcher.earliestTimeOf(_))
 
-    val earliestTimestamp = batcher.earliestTimeOf(startBatch.lower)
+    val earliestTimestamp = checkpointStore.batcher.earliestTimeOf(checkpointStore.startBatch.lower)
 
     def matchesCurrentBatchStart(low: Option[Timestamp]): Boolean = {
       low.map(Equiv[Timestamp].equiv(_, earliestTimestamp)).getOrElse(false)
@@ -89,7 +88,7 @@ trait CheckpointState[T] extends WaitingState[Interval[Timestamp]] {
           hasStarted.compareAndSet(false, true)) =>
           intersection.toLeftClosedRightOpen match {
             case Some(leftClosedRightOpenIntersection) => {
-              val batchToken: T = checkpointBatchStart(leftClosedRightOpenIntersection)
+              val batchToken: T = checkpointStore.checkpointBatchStart(leftClosedRightOpenIntersection)
               Right(new CheckpointRunningState(this, intersection, hasStarted, batchToken))
             }
             case _ => Left(waitingState)
@@ -98,12 +97,12 @@ trait CheckpointState[T] extends WaitingState[Interval[Timestamp]] {
       }
 
     override def fail(err: Throwable) = {
-      checkpointPlanFailure(err)
-      throw err
+      checkpointStore.checkpointPlanFailure(err)
+      waitingState
     }
   }
 
-  class CheckpointRunningState(prepareState: CheckpointPrepareState, succeedPart: Interval.GenIntersection[Timestamp], isRunning: AtomicBoolean, val batchToken: T) extends RunningState[Interval[Timestamp]] {
+  private class CheckpointRunningState(prepareState: CheckpointPrepareState, succeedPart: Interval.GenIntersection[Timestamp], isRunning: AtomicBoolean, val batchToken: T) extends RunningState[Interval[Timestamp]] {
     private def setStopped = assert(
       isRunning.compareAndSet(true, false),
       "Concurrent modification of HDFSState!"
@@ -114,12 +113,12 @@ trait CheckpointState[T] extends WaitingState[Interval[Timestamp]] {
      */
     override def succeed = {
       setStopped
-      checkpointSuccessfulRun(batchToken)
-      prepareState.waitingState // go back to waiting state
+      checkpointStore.checkpointSuccessfulRun(batchToken)
+      prepareState.waitingState // go back to waiting state           .
     }
 
     override def fail(err: Throwable) = {
-      checkpointFailure(batchToken, err)
+      checkpointStore.checkpointFailure(batchToken, err)
       prepareState.waitingState
     }
   }
@@ -132,7 +131,7 @@ trait CheckpointState[T] extends WaitingState[Interval[Timestamp]] {
     high: Upper[Timestamp]): Boolean = {
     (for {
       lowerBound <- low.least
-      upperBound <- high.greatest
-    } yield batcher.isLowerBatchEdge(lowerBound) && batcher.isLowerBatchEdge(upperBound.next)).getOrElse(false)
+      upperBound <- high.strictUpperBound
+    } yield checkpointStore.batcher.isLowerBatchEdge(lowerBound) && checkpointStore.batcher.isLowerBatchEdge(upperBound)).getOrElse(false)
   }
 }

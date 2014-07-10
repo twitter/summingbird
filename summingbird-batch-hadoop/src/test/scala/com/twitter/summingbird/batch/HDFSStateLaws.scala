@@ -37,8 +37,6 @@ object HDFSStateLaws extends Specification {
 
   "make sure HDFSState creates checkpoint" in {
     withTmpDir { path =>
-
-
       val startDate: Timestamp = RichDate("2012-12-26T09:45").value
       val numBatches: Long = 10
       val state = HDFSState(path, startTime = Some(startDate), numBatches = numBatches) //startDate is specified for the first run

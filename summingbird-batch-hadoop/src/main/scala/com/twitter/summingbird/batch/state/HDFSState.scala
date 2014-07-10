@@ -47,13 +47,13 @@ object HDFSState {
     new HDFSState(config)
 }
 
-class HDFSState(val config: HDFSState.Config)(implicit val batcher: Batcher) extends CheckpointState[Iterable[BatchID]] with HDFSCheckpointStore
+class HDFSState(val config: HDFSState.Config)(implicit val batcher: Batcher) extends CheckpointState[Iterable[BatchID]]{
+  override val checkpointStore = new HDFSCheckpointStore(config)
+}
 
-trait HDFSCheckpointStore extends CheckpointStore[scala.collection.Iterable[BatchID]] {
+class HDFSCheckpointStore(val config:HDFSState.Config)(implicit val batcher: Batcher) extends CheckpointStore[Iterable[BatchID]] {
 
   import com.twitter.summingbird.batch.state.HDFSState._
-
-  def config: HDFSState.Config
 
   protected lazy val versionedStore =
     new FileVersionTracking(config.rootPath, FileSystem.get(config.conf))
@@ -90,5 +90,7 @@ trait HDFSCheckpointStore extends CheckpointStore[scala.collection.Iterable[Batc
     runningBatches.foreach { b => versionedStore.deleteVersion(version(b))}
   }
 
-  override def checkpointPlanFailure(err: Throwable) = Unit
+  override def checkpointPlanFailure(err: Throwable) = {
+    throw err
+  }
 }
