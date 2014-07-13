@@ -31,7 +31,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.4.2",
+    version := "0.5.0",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.4"),
     // To support hadoop 1.x
@@ -169,7 +169,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.4.2" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.5.0" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
