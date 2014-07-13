@@ -16,9 +16,9 @@
 
 package com.twitter.summingbird.scalding.service
 
-import com.twitter.algebird.monad.{StateWithError, Reader}
+import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.Semigroup
-import com.twitter.scalding.{Mode, TypedPipe}
+import com.twitter.scalding.{ Mode, TypedPipe }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import cascading.flow.FlowDef
 import com.twitter.summingbird.scalding._
@@ -27,9 +27,9 @@ import com.twitter.summingbird.scalding._
  * Use this when you have written JUST BEFORE the store.
  * This is what you get from an IntermediateWrite in Builder API.
  */
-class BatchedDeltaService[K, V:Semigroup](val store: batch.BatchedStore[K, V],
-  val deltas: batch.BatchedSink[(K, V)],
-  override val reducers: Option[Int] = None) extends batch.BatchedService[K, V] {
+class BatchedDeltaService[K, V: Semigroup](val store: batch.BatchedStore[K, V],
+    val deltas: batch.BatchedSink[(K, V)],
+    override val reducers: Option[Int] = None) extends batch.BatchedService[K, V] {
 
   assert(store.batcher == deltas.batcher, "Batchers do not match")
 
@@ -44,7 +44,8 @@ class BatchedDeltaService[K, V:Semigroup](val store: batch.BatchedStore[K, V],
   override def readLast(exclusiveUB: BatchID, mode: Mode) =
     store.readLast(exclusiveUB, mode)
 
-  /** This executes the join algorithm on the streams.
+  /**
+   * This executes the join algorithm on the streams.
    * You are guaranteed that all the service data needed
    * to do the join is present.
    */

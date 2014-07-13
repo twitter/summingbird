@@ -17,7 +17,7 @@
 package com.twitter.summingbird.batch
 
 import com.twitter.algebird.Interval
-import com.twitter.scalding.{DateParser, RichDate}
+import com.twitter.scalding.{ DateParser, RichDate }
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState

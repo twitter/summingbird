@@ -1,4 +1,29 @@
-# summingbird #
+# Summingbird #
+
+## 0.5.0
+* Bumps version of other projects. Changes to compile with latest scalding...: https://github.com/twitter/summingbird/pull/533
+* Safely checking for the internal storm Implementation detail: https://github.com/twitter/summingbird/pull/528
+* add implicit Successible and Predecessible for Timestamp: https://github.com/twitter/summingbird/pull/530
+* Removes redundant Future.unit call: https://github.com/twitter/summingbird/pull/526
+* Optimize CalendarBatcher a bit: https://github.com/twitter/summingbird/pull/527
+* Fixes java publishing to not error in the doc generation/publishing -- i...: https://github.com/twitter/summingbird/pull/519
+* Fix online plan bug with multiple serial summers and certain no-ops: https://github.com/twitter/summingbird/pull/524
+* Fixing tormentaSpout.registerMetric call in scheduleSpout: https://github.com/twitter/summingbird/pull/521
+* Use scalariform: https://github.com/twitter/summingbird/pull/520
+* Adds a test for a bug if a flatMap immediately before a leftJoin produce...: https://github.com/twitter/summingbird/pull/518
+* Fixed Storm stats bug with Promise: https://github.com/twitter/summingbird/pull/514
+* Platform-independent stats storm scalding: https://github.com/twitter/summingbird/pull/503
+* Experimental Java API and example: https://github.com/twitter/summingbird/pull/499
+* First pass at a spark platform for summingbird: https://github.com/twitter/summingbird/pull/502
+* Add summingbird logo: https://github.com/twitter/summingbird/pull/504
+* expose flow object to mutate function: https://github.com/twitter/summingbird/pull/501
+* Support java6 with our one java file: https://github.com/twitter/summingbird/pull/498
+* New async summers from algebird: https://github.com/twitter/summingbird/pull/497
+* Feature/stat store: https://github.com/twitter/summingbird/pull/495
+* Add some option documentation: https://github.com/twitter/summingbird/pull/491
+* Yet another cache: https://github.com/twitter/summingbird/pull/470
+* Monoid to semigroup: https://github.com/twitter/summingbird/pull/487
+
 ## 0.4.2
 * Use scalding version 0.9.0rc17 which has some bug fixes
 * Add fully satisfiable flag to UniqueKeyedService: https://github.com/twitter/summingbird/pull/489

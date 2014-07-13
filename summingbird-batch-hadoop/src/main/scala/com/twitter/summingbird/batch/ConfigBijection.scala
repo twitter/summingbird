@@ -32,7 +32,7 @@ private[summingbird] object ConfigBijection {
     new Bijection[Map[String, AnyRef], Configuration] {
       override def apply(config: Map[String, AnyRef]) = {
         val conf = new Configuration(false) // false means don't read defaults
-        config foreach { case (k,v) => conf.set(k,v.toString) }
+        config foreach { case (k, v) => conf.set(k, v.toString) }
         conf
       }
       override def invert(config: Configuration) =
@@ -43,6 +43,6 @@ private[summingbird] object ConfigBijection {
             m + (k -> v)
           }
     }
-  val fromJavaMap: Bijection[JMap[String,AnyRef], Configuration] =
-    Bijection.connect[JMap[String,AnyRef], Map[String,AnyRef], Configuration]
+  val fromJavaMap: Bijection[JMap[String, AnyRef], Configuration] =
+    Bijection.connect[JMap[String, AnyRef], Map[String, AnyRef], Configuration]
 }

@@ -24,22 +24,24 @@ sealed trait Commutativity extends Serializable
 case object NonCommutative extends Commutativity
 case object Commutative extends Commutativity
 
-/** A readable way to specify commutivity in a way
+/**
+ * A readable way to specify commutivity in a way
  * that works with the Class-based Options system.
  * We do this so we can use the classOf[MonoidIsCommutative]
  * as the key for the option.
  */
 object MonoidIsCommutative {
-  /** Assume false unless the user says otherwise
+  /**
+   * Assume false unless the user says otherwise
    */
   val default = MonoidIsCommutative(NonCommutative)
-  /** True if the Monoid is commutative, false otherwise.
+  /**
+   * True if the Monoid is commutative, false otherwise.
    */
   def apply(isCommutative: Boolean): MonoidIsCommutative =
-    if(isCommutative) {
+    if (isCommutative) {
       MonoidIsCommutative(Commutative)
-    }
-    else {
+    } else {
       default
     }
 }

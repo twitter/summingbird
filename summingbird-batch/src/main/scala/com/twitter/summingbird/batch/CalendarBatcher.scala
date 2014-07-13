@@ -16,35 +16,42 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import java.util.{Calendar, Date, TimeZone}
+import java.util.{ Calendar, Date, TimeZone }
 
 object CalendarBatcher {
   /** Type wrapper for the Int's defined in java.util.Calendar */
   trait CalField {
-    /** This is the java.util.Calendar statir int for this field.
+    /**
+     * This is the java.util.Calendar statir int for this field.
      * Such statics are dangerous to use as they are easy to mistake for counts,
      * thus we use this trait
      */
     def javaIntValue: Int
-    /** What is the standard size in milliseconds for this unit of time.
+    /**
+     * What is the standard size in milliseconds for this unit of time.
      * Does not need to be precise, but it will improve the speed of
      * unitsSinceEpoch of it is as accurate as possible
      */
     def defaultSize: Long
 
+    def timeZone: TimeZone
+
+    private[this] val cachedCal: ThreadLocal[Calendar] = new ThreadLocal[Calendar] {
+      override def initialValue = Calendar.getInstance(timeZone)
+    }
+
     /** the date of exactly cnt units since the epoch */
-    def toDate(cnt: Long)(implicit tz: TimeZone): Date = {
-      val start = Calendar.getInstance(tz)
+    def toDate(cnt: Long): Date = {
+      val start = cachedCal.get
       start.setTimeInMillis(0L)
       var toCnt = cnt
-      while(toCnt != 0L) {
+      while (toCnt != 0L) {
         // the biggest part of this that fits in an Int
         def next(v: Long): Long = {
-          if(v < 0) {
+          if (v < 0) {
             // max is towards zero
             Int.MinValue.toLong max v
-          }
-          else {
+          } else {
             Int.MaxValue.toLong min v
           }
         }
@@ -56,7 +63,7 @@ object CalendarBatcher {
     }
 
     /** The floor of the units since the epoch of d */
-    def unitsSinceEpoch(d: Date)(implicit tz: TimeZone): Long = {
+    def unitsSinceEpoch(d: Date): Long = {
 
       def notAfter(units: Long): Boolean = !(toDate(units).after(d))
 
@@ -66,8 +73,8 @@ object CalendarBatcher {
           low
         else {
           // mid must be > low because upper >= low + 2
-          val mid = low + (upper - low)/2
-          if(notAfter(mid))
+          val mid = low + (upper - low) / 2
+          if (notAfter(mid))
             search(mid, upper)
           else
             search(low, mid)
@@ -79,12 +86,12 @@ object CalendarBatcher {
       val skip = 10L
       @annotation.tailrec
       def makeBefore(prev: Long = guess): Long = {
-        if(notAfter(prev)) prev
+        if (notAfter(prev)) prev
         else makeBefore(prev - skip)
       }
       @annotation.tailrec
       def makeAfter(prev: Long = guess): Long = {
-        if(!notAfter(prev)) prev
+        if (!notAfter(prev)) prev
         else makeAfter(prev + skip)
       }
       // Return the largest value that is not after the date (<=)
@@ -92,20 +99,23 @@ object CalendarBatcher {
     }
   }
 
-  case object Hours extends CalField {
+  def hoursField(tz: TimeZone): CalField = new CalField {
     def javaIntValue = Calendar.HOUR
     def defaultSize = 1000L * 60L * 60L
+    def timeZone = tz
   }
-  case object Days extends CalField {
+
+  def daysField(tz: TimeZone): CalField = new CalField {
     def javaIntValue = Calendar.DAY_OF_YEAR
     def defaultSize = 1000L * 60L * 60L * 24L
+    def timeZone = tz
   }
 
   def ofDays(days: Int)(implicit tz: TimeZone): CalendarBatcher =
-    CalendarBatcher(days, Days)
+    CalendarBatcher(days, daysField(tz))
 
   def ofHours(hours: Int)(implicit tz: TimeZone): CalendarBatcher =
-    CalendarBatcher(hours, Hours)
+    CalendarBatcher(hours, hoursField(tz))
 
   def ofDaysUtc(days: Int): CalendarBatcher =
     ofDays(days)(TimeZone.getTimeZone("UTC"))
@@ -114,13 +124,12 @@ object CalendarBatcher {
     ofHours(hours)(TimeZone.getTimeZone("UTC"))
 }
 
-/** This batcher numbers batches based on a Calendar, not just milliseconds.
+/**
+ * This batcher numbers batches based on a Calendar, not just milliseconds.
  * Many offline HDFS sources at Twitter are batched in this way based on hour
  * or day in the UTC calendar
  */
-final case class CalendarBatcher(unitCount: Int,
-  calField: CalendarBatcher.CalField)(implicit tz: TimeZone) extends Batcher {
-
-  final def batchOf(t : Timestamp) = BatchID(calField.unitsSinceEpoch(t.toDate)(tz)/unitCount)
-  final def earliestTimeOf(batch: BatchID) = calField.toDate(batch.id.toInt * unitCount)(tz)
+final case class CalendarBatcher(unitCount: Int, calField: CalendarBatcher.CalField) extends Batcher {
+  final def batchOf(t: Timestamp) = BatchID(calField.unitsSinceEpoch(t.toDate) / unitCount)
+  final def earliestTimeOf(batch: BatchID) = calField.toDate(batch.id.toInt * unitCount)
 }

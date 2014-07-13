@@ -33,7 +33,7 @@ import com.twitter.summingbird.builder.CompletedBuilder
 // Scalding.
 
 object Env {
-  def apply(inargs : Array[String]) : Env = {
+  def apply(inargs: Array[String]): Env = {
     val mode = inargs(0)
     val job = inargs(1)
     val restArgs = inargs.tail.tail
@@ -50,7 +50,7 @@ object Env {
     }
   }
 
-  def main(inargs : Array[String]) {
+  def main(inargs: Array[String]) {
     Env(inargs).run
   }
 }
@@ -58,11 +58,11 @@ object Env {
 /**
  * Any environment data an AbstractJob may need. This state is mutable.
  */
-abstract class Env(val jobName : String) extends java.io.Serializable {
-  val args : Args
-  @transient var builder : CompletedBuilder[_,_,_] = null
+abstract class Env(val jobName: String) extends java.io.Serializable {
+  val args: Args
+  @transient var builder: CompletedBuilder[_, _, _] = null
 
   // This is where the builder is actually populated.
   protected def abstractJob: AbstractJob = AbstractJob(jobName, this)
-  def run : Unit
+  def run: Unit
 }

@@ -16,7 +16,6 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-
 /**
  * Batcher implementation based on a fixed-width batch of
  * milliseconds.
@@ -28,7 +27,7 @@ package com.twitter.summingbird.batch
 
 class MillisecondBatcher(val durationMillis: Long) extends AbstractBatcher {
   require(durationMillis > 0, "a batch must have a non-zero size")
-  def batchOf(t : Timestamp) = {
+  def batchOf(t: Timestamp) = {
     val timeInMillis = t.milliSinceEpoch
     val batch = BatchID(timeInMillis / durationMillis)
 
@@ -42,7 +41,7 @@ class MillisecondBatcher(val durationMillis: Long) extends AbstractBatcher {
   def earliestTimeOf(batch: BatchID) = {
     val id = batch.id
     // Correct for the rounding-to-zero issue described above.
-    if(id >= 0L)
+    if (id >= 0L)
       Timestamp(id * durationMillis)
     else
       Timestamp(id * durationMillis + 1L)

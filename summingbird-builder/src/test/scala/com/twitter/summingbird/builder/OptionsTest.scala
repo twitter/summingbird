@@ -17,11 +17,11 @@ limitations under the License.
 package com.twitter.summingbird.builder
 
 import com.twitter.summingbird.batch.ConfigBijection
-import com.twitter.summingbird.scalding.{Scalding, ScaldingEnv}
+import com.twitter.summingbird.scalding.{ Scalding, ScaldingEnv }
 import com.twitter.summingbird.scalding.store.InitialBatchedStore
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{Batcher, BatchID}
-import com.twitter.summingbird.option.{MonoidIsCommutative => BMonoidIsCommutative, _}
+import com.twitter.summingbird.batch.{ Batcher, BatchID }
+import com.twitter.summingbird.option.{ MonoidIsCommutative => BMonoidIsCommutative, _ }
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
 import org.specs2.mutable._
@@ -36,13 +36,12 @@ class TestJob1(env: Env) extends AbstractJob(env) {
   implicit def batcher = Batcher.ofHours(1)
 
   try {
-  EventSource[Long](Some(null), None)
-    .withTime(new java.util.Date(_))
-    .map { e => (e % 2, e) }
-    .groupAndSumTo(CompoundStore.fromOffline[Long, Long](new InitialBatchedStore(BatchID(12L), null)))
-    .set(BMonoidIsCommutative(true))
-  }
-  catch {
+    EventSource[Long](Some(null), None)
+      .withTime(new java.util.Date(_))
+      .map { e => (e % 2, e) }
+      .groupAndSumTo(CompoundStore.fromOffline[Long, Long](new InitialBatchedStore(BatchID(12L), null)))
+      .set(BMonoidIsCommutative(true))
+  } catch {
     case t: Throwable => t.printStackTrace
   }
 }
@@ -69,6 +68,6 @@ class OptionsTest extends Specification {
     Scalding
       .getCommutativity(names,
         opts,
-        summers.head.asInstanceOf[Summer[Scalding,_,_]]) must be_==(Commutative)
+        summers.head.asInstanceOf[Summer[Scalding, _, _]]) must be_==(Commutative)
   }
 }

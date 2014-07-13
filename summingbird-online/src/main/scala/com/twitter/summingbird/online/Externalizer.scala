@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.online
 
-import com.twitter.chill.{Externalizer => ChillExtern, KryoInstantiator, ScalaKryoInstantiator}
+import com.twitter.chill.{ Externalizer => ChillExtern, KryoInstantiator, ScalaKryoInstantiator }
 
 object Externalizer {
   def apply[T](t: T): Externalizer[T] = {

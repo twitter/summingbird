@@ -7,10 +7,10 @@ import com.twitter.summingbird.batch._
 import com.twitter.util.{ Await, Future }
 
 /**
-  * The backing map of a TestStore holds an Option[V] -- keys that are
-  * present in the map will be mapped to successful futures. Missing
-  * keys are interpreted as failed futures.
-  */
+ * The backing map of a TestStore holds an Option[V] -- keys that are
+ * present in the map will be mapped to successful futures. Missing
+ * keys are interpreted as failed futures.
+ */
 
 case class TestStore[K, +V](m: Map[K, Option[V]]) extends ReadableStore[K, V] {
   override def get(k: K) =

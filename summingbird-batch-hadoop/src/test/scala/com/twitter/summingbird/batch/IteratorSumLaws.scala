@@ -45,7 +45,7 @@ object IteratorSumLaws extends Properties("IteratorSumLaws") {
   }
   property("partials gives partial sums") = forAll { (in: List[(Int, Long)]) =>
     val s = partials(in.iterator).toList
-    in.isEmpty || ( s.last._2._1.getOrElse(0L) == (in.dropRight(1).map(_._2).sum) )
+    in.isEmpty || (s.last._2._1.getOrElse(0L) == (in.dropRight(1).map(_._2).sum))
   }
   property("optimizedPairSemigroup works") = {
     val opsg = optimizedPairSemigroup[Int, Long](20)

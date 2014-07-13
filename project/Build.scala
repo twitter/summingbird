@@ -2,8 +2,12 @@ package summingbird
 
 import sbt._
 import Keys._
+import sbtassembly.Plugin._
+import AssemblyKeys._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+import scalariform.formatter.preferences._
+import com.typesafe.sbt.SbtScalariform._
 
 object SummingbirdBuild extends Build {
   def withCross(dep: ModuleID) =
@@ -18,14 +22,23 @@ object SummingbirdBuild extends Build {
       case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test"
   }
 
-  val extraSettings = Project.defaultSettings ++ mimaDefaultSettings
+  def isScala210x(scalaVersion: String) = scalaVersion match {
+      case version if version startsWith "2.9" => false
+      case version if version startsWith "2.10" => true
+  }
+
+  val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.4.2",
+    version := "0.5.0",
     scalaVersion := "2.9.3",
-    crossScalaVersions := Seq("2.9.3", "2.10.0"),
+    crossScalaVersions := Seq("2.9.3", "2.10.4"),
+    // To support hadoop 1.x
+    javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
+
     libraryDependencies ++= Seq(
+      "junit" % "junit" % "4.11" % "test",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
       "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
       // These satisify's scaldings log4j needs when in test mode
@@ -34,6 +47,8 @@ object SummingbirdBuild extends Build {
     ),
 
     libraryDependencies <+= scalaVersion(specs2Import(_)),
+
+    libraryDependencies += "com.novocode" % "junit-interface" % "0.10" % "test",
 
     resolvers ++= Seq(
       Opts.resolver.sonatypeSnapshots,
@@ -101,6 +116,13 @@ object SummingbirdBuild extends Build {
       </developers>)
   )
 
+  lazy val formattingPreferences = {
+   import scalariform.formatter.preferences._
+   FormattingPreferences().
+     setPreference(AlignParameters, false).
+     setPreference(PreserveSpaceBeforeArguments, true)
+  }
+
   lazy val summingbird = Project(
     id = "summingbird",
     base = file("."),
@@ -111,26 +133,29 @@ object SummingbirdBuild extends Build {
     publishLocal := { }
   ).aggregate(
     summingbirdCore,
+    summingbirdCoreJava,
     summingbirdBatch,
     summingbirdBatchHadoop,
     summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
     summingbirdStormTest,
+    summingbirdStormJava,
     summingbirdScalding,
     summingbirdScaldingTest,
+    summingbirdSpark,
     summingbirdBuilder,
     summingbirdChill,
     summingbirdExample
   )
 
   val dfsDatastoresVersion = "1.3.4"
-  val bijectionVersion = "0.6.2"
-  val algebirdVersion = "0.5.0"
-  val scaldingVersion = "0.9.0rc17"
-  val storehausVersion = "0.9.0"
+  val bijectionVersion = "0.6.3"
+  val algebirdVersion = "0.7.0"
+  val scaldingVersion = "0.11.1"
+  val storehausVersion = "0.9.1"
   val utilVersion = "6.3.8"
-  val chillVersion = "0.3.6"
+  val chillVersion = "0.4.0"
   val tormentaVersion = "0.7.0"
 
   lazy val slf4jVersion = "1.6.6"
@@ -144,7 +169,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.4.2" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.5.0" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
@@ -186,9 +211,16 @@ object SummingbirdBuild extends Build {
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   )
 
+  lazy val summingbirdCoreJava = module("core-java").settings(
+    publishArtifact in packageDoc := false
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile"
+  )
+
   lazy val summingbirdOnline = module("online").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
+      "com.twitter" %% "algebird-util" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "chill" % chillVersion,
@@ -235,6 +267,17 @@ object SummingbirdBuild extends Build {
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
     summingbirdStorm
+  )
+
+  lazy val summingbirdStormJava = module("storm-java").settings(
+    publishArtifact in packageDoc := false,
+    libraryDependencies ++= Seq(
+      "storm" % "storm" % "0.9.0-wip15" % "provided"
+    )
+  ).dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreJava % "test->test;compile->compile",
+    summingbirdStorm % "test->test;compile->compile"
   )
 
   lazy val summingbirdScalding = module("scalding").settings(
@@ -301,5 +344,49 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "tormenta-twitter" % tormentaVersion,
       "com.twitter" %% "storehaus-memcache" % storehausVersion
     )
-  ).dependsOn(summingbirdCore, summingbirdStorm)
+  ).dependsOn(summingbirdCore, summingbirdCoreJava, summingbirdStorm, summingbirdStormJava)
+
+  lazy val sparkAssemblyMergeSettings = assemblySettings :+ {
+    mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
+      {
+        //case PathList("org", "w3c", xs @ _*) => MergeStrategy.first
+        //case "about.html"     => MergeStrategy.discard
+        case PathList("com", "esotericsoftware", "minlog", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "commons", "beanutils", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "commons", "collections", xs @ _*) => MergeStrategy.first
+        case PathList("org", "apache", "jasper", xs @ _*) => MergeStrategy.first
+        case "log4j.properties"     => MergeStrategy.concat
+        case x if x.endsWith(".xsd") || x.endsWith(".dtd") => MergeStrategy.first
+        case x => old(x)
+      }
+    }
+  }
+
+  val sparkDeps = Seq(
+    "com.twitter" %% "algebird-core" % algebirdVersion,
+    "com.twitter" %% "algebird-util" % algebirdVersion,
+    "com.twitter" %% "algebird-bijection" % algebirdVersion,
+    "com.twitter" %% "bijection-json" % bijectionVersion,
+    "com.twitter" %% "chill" % chillVersion,
+    "com.twitter" % "chill-hadoop" % chillVersion,
+    "com.twitter" %% "chill-bijection" % chillVersion,
+    "commons-lang" % "commons-lang" % "2.6",
+    "commons-httpclient" % "commons-httpclient" % "3.1",
+    "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
+  )
+
+  def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()
+
+  lazy val summingbirdSpark = module("spark").settings(
+    resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
+    skip in compile := !isScala210x(scalaVersion.value),
+    skip in test := !isScala210x(scalaVersion.value),
+    publishArtifact := isScala210x(scalaVersion.value),
+    libraryDependencies ++= buildSparkDeps(scalaVersion.value)
+  )
+  .settings(sparkAssemblyMergeSettings:_*)
+  .dependsOn(
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdChill
+  )
 }

@@ -17,21 +17,20 @@
 package com.twitter.summingbird
 
 /**
-  * I tried to make Unzip2 an object with an apply method that took
-  * all three type parameters, but ran into issues:
-
-  [error] /Users/sritchie/code/twitter/summingbird/summingbird-core/src/main/scala/com/twitter/summingbird/PairedPlatform.scala:38: constructor of type com.twitter.summingbird.IdentityKeyedProducer[P,K,V] cannot be uniquely instantiated to expected type com.twitter.summingbird.Producer[com.twitter.summingbird.Platform2[P1,P2],T]
-[error]  --- because ---
-[error] undetermined type
-
-  */
+ * I tried to make Unzip2 an object with an apply method that took
+ * all three type parameters, but ran into issues:
+ *
+ * [error] /Users/sritchie/code/twitter/summingbird/summingbird-core/src/main/scala/com/twitter/summingbird/PairedPlatform.scala:38: constructor of type com.twitter.summingbird.IdentityKeyedProducer[P,K,V] cannot be uniquely instantiated to expected type com.twitter.summingbird.Producer[com.twitter.summingbird.Platform2[P1,P2],T]
+ * [error]  --- because ---
+ * [error] undetermined type
+ *
+ */
 case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
 
   private def cast[T](p: Any): (Producer[P1, T], Producer[P2, T]) =
     p.asInstanceOf[(Producer[P1, T], Producer[P2, T])]
 
-  def apply[T](root: Producer[Platform2[P1, P2], T])
-      : (Producer[P1, T], Producer[P2, T]) =
+  def apply[T](root: Producer[Platform2[P1, P2], T]): (Producer[P1, T], Producer[P2, T]) =
     root match {
       case AlsoProducer(ensure, result) =>
         val (le, re) = apply(ensure)
@@ -86,9 +85,9 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
 }
 
 /**
-  * Platform capable of planning and executing two underlying
-  * platforms in parallel.
-  */
+ * Platform capable of planning and executing two underlying
+ * platforms in parallel.
+ */
 class Platform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
     extends Platform[Platform2[P1, P2]] {
   // The type of the inputs for this platform
@@ -98,7 +97,7 @@ class Platform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
   type Service[K, V] = (P1#Service[K, V], P2#Service[K, V])
   type Plan[T] = (P1#Plan[T], P2#Plan[T])
 
-private def tCast[T](p: (Producer[P1, T], Producer[P2, T])): (TailProducer[P1, T], TailProducer[P2, T]) =
+  private def tCast[T](p: (Producer[P1, T], Producer[P2, T])): (TailProducer[P1, T], TailProducer[P2, T]) =
     p.asInstanceOf[(TailProducer[P1, T], TailProducer[P2, T])]
 
   def plan[T](producer: TailProducer[Platform2[P1, P2], T]): Plan[T] = {

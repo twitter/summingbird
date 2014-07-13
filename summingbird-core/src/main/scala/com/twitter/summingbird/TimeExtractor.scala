@@ -17,9 +17,9 @@ limitations under the License.
 package com.twitter.summingbird
 
 /**
-  * TimeExtractor is really just a function, but we've used a
-  * specialized type for implicit resolution and serializability.
-  */
+ * TimeExtractor is really just a function, but we've used a
+ * specialized type for implicit resolution and serializability.
+ */
 
 object TimeExtractor {
   def apply[T](fn: T => Long): TimeExtractor[T] =
@@ -28,7 +28,8 @@ object TimeExtractor {
     }
 }
 
-/** This cannot be a subclass of function and use the pattern
+/**
+ * This cannot be a subclass of function and use the pattern
  * of implicit dependencies, since then you get an implicit function.
  * Not good
  */

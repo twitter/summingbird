@@ -17,14 +17,13 @@
 package com.twitter.summingbird
 
 /**
-  * @author Aaron Siegel
-  */
+ * @author Aaron Siegel
+ */
 case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
   private def cast[T](p: Any): (Option[Producer[P1, T]], Option[Producer[P2, T]]) =
     p.asInstanceOf[(Option[Producer[P1, T]], Option[Producer[P2, T]])]
 
-  def apply[T](root: Producer[OptionalPlatform2[P1, P2], T])
-      : (Option[Producer[P1, T]], Option[Producer[P2, T]]) =
+  def apply[T](root: Producer[OptionalPlatform2[P1, P2], T]): (Option[Producer[P1, T]], Option[Producer[P2, T]]) =
     root match {
       case AlsoProducer(ensure, result) =>
         val (le, re) = apply(ensure)
@@ -88,9 +87,9 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
 }
 
 /**
-  * Platform capable of planning and executing at most 2 underlying
-  * platforms in parallel.
-  */
+ * Platform capable of planning and executing at most 2 underlying
+ * platforms in parallel.
+ */
 class OptionalPlatform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
     extends Platform[OptionalPlatform2[P1, P2]] {
   // The type of the inputs for this platform
@@ -102,7 +101,6 @@ class OptionalPlatform2[P1 <: Platform[P1], P2 <: Platform[P2]](p1: P1, p2: P2)
 
   private def tCast[T](p: (Option[Producer[P1, T]], Option[Producer[P2, T]])): (Option[TailProducer[P1, T]], Option[TailProducer[P2, T]]) =
     p.asInstanceOf[(Option[TailProducer[P1, T]], Option[TailProducer[P2, T]])]
-
 
   override def plan[T](producer: TailProducer[OptionalPlatform2[P1, P2], T]): Plan[T] = {
     val (leftProducer, rightProducer) = tCast(OptionalUnzip2[P1, P2]()(producer))

@@ -73,7 +73,8 @@ private[summingbird] object HDFSMetadata {
       .get.put(obj)
 }
 
-/** Class to access metadata for a single versioned output directory
+/**
+ * Class to access metadata for a single versioned output directory
  * @param rootPath the base root path to where versions of a single output are stored
  */
 class HDFSMetadata(conf: Configuration, rootPath: String) {
@@ -82,12 +83,14 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
     new BacktypeVersionedStore(fs, rootPath)
   }
 
-  /** path to a specific version WHETHER OR NOT IT EXISTS
+  /**
+   * path to a specific version WHETHER OR NOT IT EXISTS
    */
   private def pathOf(version: Long): Path =
     new Path(versionedStore.versionPath(version), HDFSMetadata.METADATA_FILE)
 
-  /** The greatest version number that has been completed on disk
+  /**
+   * The greatest version number that has been completed on disk
    */
   def mostRecentVersion: Option[HDFSVersionMetadata] =
     Option(versionedStore.mostRecentVersion)
@@ -108,7 +111,8 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
       it <- hmd.get[T].toOption if fn(it)
     } yield (it, hmd)
 
-  /** This touches the filesystem once on each call, newest (largest) to oldest (smallest)
+  /**
+   * This touches the filesystem once on each call, newest (largest) to oldest (smallest)
    * This relies on dfs-datastore doing the sorting, which it does
    * last we checked
    */
@@ -130,7 +134,8 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
     versions.find { _ == version }.map { apply(_) }
 }
 
-/** Refers to a specific version on disk. Allows reading and writing metadata to specific locations
+/**
+ * Refers to a specific version on disk. Allows reading and writing metadata to specific locations
  */
 private[summingbird] class HDFSVersionMetadata private[store] (val version: Long, conf: Configuration, val path: Path) {
   private def getString: Try[String] =
@@ -141,7 +146,8 @@ private[summingbird] class HDFSVersionMetadata private[store] (val version: Long
       is.close
       str
     }
-  /** get an item from the metadata file. If there is any failure, you get None.
+  /**
+   * get an item from the metadata file. If there is any failure, you get None.
    */
   def get[T: JsonNodeInjection]: Try[T] =
     getString.flatMap { JsonInjection.fromString[T](_) }
@@ -157,5 +163,5 @@ private[summingbird] class HDFSVersionMetadata private[store] (val version: Long
   def put[T: JsonNodeInjection](obj: Option[T]) = putString {
     obj.map { JsonInjection.toString[T].apply(_) }
       .getOrElse("")
-    }
+  }
 }

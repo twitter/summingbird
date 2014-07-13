@@ -14,20 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.online
-import com.twitter.util.Future
-import com.twitter.algebird.Semigroup
+package com.twitter.summingbird.option
 
-/**
- * @author Ian O Connell
- */
-trait AsyncCache[Key, Value] {
-  def forceTick: Future[Map[Key, Value]]
-  def tick: Future[Map[Key, Value]]
-  def insert(vals: TraversableOnce[(Key, Value)]): Future[Map[Key, Value]]
-  def cleanup: Future[Unit] = Future.Unit
-}
-
-trait CacheBuilder[Key, Value] extends Serializable {
-  def apply(sg: Semigroup[Value]): AsyncCache[Key, Value]
-}
+case class JobId(get: String)

@@ -18,7 +18,7 @@ package com.twitter.summingbird.batch
 
 import scala.collection.JavaConverters._
 import org.apache.hadoop.conf.Configuration
-import com.twitter.summingbird.{WrappingConfig, ReadableMap}
+import com.twitter.summingbird.{ WrappingConfig, ReadableMap }
 
 object BatchConfig {
   def apply(backingConfig: Configuration) = WrappingConfig(new WrappedHadoopConfig(backingConfig))
@@ -26,7 +26,7 @@ object BatchConfig {
 
 class WrappedHadoopConfig(backingConfig: Configuration) extends ReadableMap {
   def get(key: String): Option[AnyRef] =
-    if(keys.contains(key))
+    if (keys.contains(key))
       Some(backingConfig.get(key))
     else
       None

@@ -17,7 +17,7 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.util.Future
-import com.twitter.storehaus.{Store, WritableStore}
+import com.twitter.storehaus.{ Store, WritableStore }
 
 trait StormSink[-T] {
   def toFn: T => Future[Unit]
@@ -27,7 +27,7 @@ class SinkFn[T](fn: => T => Future[Unit]) extends StormSink[T] {
   lazy val toFn = fn
 }
 
-class WritableStoreSink[K,V](writable: => WritableStore[K, V]) extends StormSink[(K, V)] {
+class WritableStoreSink[K, V](writable: => WritableStore[K, V]) extends StormSink[(K, V)] {
   private lazy val store = writable // only construct it once
   def toFn = store.put(_)
 }
@@ -35,8 +35,8 @@ class WritableStoreSink[K,V](writable: => WritableStore[K, V]) extends StormSink
 /**
  * Used to do leftJoins of streams against other streams
  */
-class StormBuffer[K,V](supplier: => Store[K, V]) extends StormSink[(K, V)] with StormService[K, V] {
+class StormBuffer[K, V](supplier: => Store[K, V]) extends StormSink[(K, V)] with StormService[K, V] {
   private lazy val constructed = supplier // only construct it once
-  def toFn = { (kv: (K,V)) => constructed.put((kv._1, Some(kv._2))) }
+  def toFn = { (kv: (K, V)) => constructed.put((kv._1, Some(kv._2))) }
   def store = { () => constructed }
 }

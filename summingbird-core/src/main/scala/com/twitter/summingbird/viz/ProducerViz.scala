@@ -17,7 +17,7 @@
 package com.twitter.summingbird.viz
 
 import com.twitter.summingbird._
-import scala.collection.mutable.{Map => MMap}
+import scala.collection.mutable.{ Map => MMap }
 
 case class ProducerViz[P <: Platform[P]](tail: Producer[P, _]) {
   private val dependantState = Dependants(tail)
@@ -45,19 +45,19 @@ case class ProducerViz[P <: Platform[P]](tail: Producer[P, _]) {
             newName
           }
           case None =>
-            nodeLookupTable +=  (node -> preferredName)
+            nodeLookupTable += (node -> preferredName)
             nameLookupTable += (preferredName -> 1)
             preferredName
         }
     }
   }
 
-  override def toString() : String = {
+  override def toString(): String = {
     val base = "digraph summingbirdGraph {\n"
     val graphStr = dependantState.nodes.flatMap { evalNode =>
       val children = dependantState.dependantsOf(evalNode).getOrElse(sys.error("Invalid node: %s, unable to find dependants".format(evalNode)))
       val nodeName = getName(evalNode)
-      children.map{ c  =>
+      children.map { c =>
         "\"%s\" -> \"%s\"\n".format(nodeName, getName(c))
       }
     }.mkString("")

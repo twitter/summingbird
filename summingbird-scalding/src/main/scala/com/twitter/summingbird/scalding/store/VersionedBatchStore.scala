@@ -20,13 +20,13 @@ import com.twitter.summingbird.batch.store.HDFSMetadata
 import cascading.flow.FlowDef
 import com.twitter.bijection.Injection
 import cascading.flow.FlowDef
-import com.twitter.scalding.{Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, TupleSetter}
+import com.twitter.scalding.{ Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, TupleSetter }
 import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.summingbird.scalding.batch.BatchedStore
-import com.twitter.summingbird.scalding.{Try, FlowProducer, Scalding}
+import com.twitter.summingbird.scalding.{ Try, FlowProducer, Scalding }
 import com.twitter.algebird.monad.Reader
 import com.twitter.summingbird.scalding._
-import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import scala.util.{ Try => ScalaTry }
 
 /**
@@ -39,13 +39,10 @@ import scala.util.{ Try => ScalaTry }
  */
 
 object VersionedBatchStore {
-  def apply[K, V, K2, V2](rootPath: String, versionsToKeep: Int)
-    (pack: (BatchID, (K, V)) => (K2, V2))
-    (unpack: ((K2, V2)) => (K, V))(
-    implicit
-      batcher: Batcher,
-      injection: Injection[(K2, V2), (Array[Byte], Array[Byte])],
-      ordering: Ordering[K]): VersionedBatchStore[K, V, K2, V2] =
+  def apply[K, V, K2, V2](rootPath: String, versionsToKeep: Int)(pack: (BatchID, (K, V)) => (K2, V2))(unpack: ((K2, V2)) => (K, V))(
+    implicit batcher: Batcher,
+    injection: Injection[(K2, V2), (Array[Byte], Array[Byte])],
+    ordering: Ordering[K]): VersionedBatchStore[K, V, K2, V2] =
     new VersionedBatchStore(rootPath, versionsToKeep, batcher)(pack)(unpack)
 }
 
@@ -55,14 +52,14 @@ object VersionedBatchStore {
  */
 abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends BatchedStore[K, V] {
   /**
-    * Returns a snapshot of the store's (K, V) pairs aggregated up to
-    * (but not including!) the time covered by the supplied batchID.
-    *
-    * Aggregating the readLast for a particular batchID with the
-    * stream stored for the same batchID will return the aggregate up
-    * to (but not including) batchID.next. Streams deal with inclusive
-    * upper bound.
-    */
+   * Returns a snapshot of the store's (K, V) pairs aggregated up to
+   * (but not including!) the time covered by the supplied batchID.
+   *
+   * Aggregating the readLast for a particular batchID with the
+   * stream stored for the same batchID will return the aggregate up
+   * to (but not including) batchID.next. Streams deal with inclusive
+   * upper bound.
+   */
   override def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
     mode match {
       case hdfs: HdfsMode =>
@@ -76,18 +73,18 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
   }
 
   /**
-    * These functions convert back and forth between a specific
-    * BatchID and the earliest time of the BatchID just after it.
-    *
-    * The version numbers are the exclusive upper-bound of time
-    * covered by this store, while the batchIDs are the inclusive
-    * upper bound. Put another way, all events that occured before the
-    * version are included in this store.
-    */
+   * These functions convert back and forth between a specific
+   * BatchID and the earliest time of the BatchID just after it.
+   *
+   * The version numbers are the exclusive upper-bound of time
+   * covered by this store, while the batchIDs are the inclusive
+   * upper bound. Put another way, all events that occured before the
+   * version are included in this store.
+   */
   def batchIDToVersion(b: BatchID): Long = batcher.earliestTimeOf(b.next).milliSinceEpoch
   def versionToBatchID(ver: Long): BatchID = batcher.batchOf(Timestamp(ver)).prev
 
-  protected def lastBatch(exclusiveUB: BatchID, mode: HdfsMode): Option[(BatchID, FlowProducer[TypedPipe[(K,V)]])] = {
+  protected def lastBatch(exclusiveUB: BatchID, mode: HdfsMode): Option[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
     val meta = HDFSMetadata(mode.conf, rootPath)
     /*
      * The deprecated Summingbird builder API coordinated versioning
@@ -117,7 +114,7 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
         .flatMap { str => ScalaTry(BatchID(str).prev) }
         .map { oldbatch =>
           val newBatch = versionToBatchID(ver)
-          if(newBatch > oldbatch) {
+          if (newBatch > oldbatch) {
             println("## WARNING ##")
             println("in BatchStore(%s)".format(rootPath))
             println("Old-style version number is ahead of what the new-style would be.")
@@ -146,53 +143,52 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
  * Mappable.  The source parameter is pass-by-name to avoid needing
  * the hadoop Configuration object when running the storm job.
  */
-class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)
-  (pack: (BatchID, (K, V)) => (K2, V2))
-  (unpack: ((K2, V2)) => (K, V))(
+class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)(pack: (BatchID, (K, V)) => (K2, V2))(unpack: ((K2, V2)) => (K, V))(
   implicit @transient injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])
     extends VersionedBatchStoreBase[K, V](rootPath) {
 
-  /** Make sure not to keep more than versionsToKeep when we write out.
+  /**
+   * Make sure not to keep more than versionsToKeep when we write out.
    * If this is out of sync with VersionedKeyValSource we can have issues
    */
   override def select(b: List[BatchID]): List[BatchID] = b.takeRight(versionsToKeep)
 
   /**
-    * writeLast receives an INCLUSIVE upper bound on batchID and a
-    * pipe of all key-value pairs aggregated up to (and including)
-    * that batchID. (Yes, this is confusing, since a number of other
-    * methods talk about the EXCLUSIVE upper bound.)
-    *
-    * This implementation of writeLast sinks all key-value pairs out
-    * into a VersionedStore directory whose tagged version is the
-    * EXCLUSIVE upper bound on batchID, or "batchID.next".
-    */
+   * writeLast receives an INCLUSIVE upper bound on batchID and a
+   * pipe of all key-value pairs aggregated up to (and including)
+   * that batchID. (Yes, this is confusing, since a number of other
+   * methods talk about the EXCLUSIVE upper bound.)
+   *
+   * This implementation of writeLast sinks all key-value pairs out
+   * into a VersionedStore directory whose tagged version is the
+   * EXCLUSIVE upper bound on batchID, or "batchID.next".
+   */
   override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
     import Dsl._
     val batchVersion = batchIDToVersion(batchID)
     /**
-      * The Builder API used to not specify a sinkVersion, leading to
-      * versions tagged with the wall clock time. When builder API
-      * users migrate over to the new code, they can run into a
-      * situation where the new version created has a lower version
-      * than the current maximum version in the directory.
-      *
-      * This behavior clashes with the current VersionedState
-      * implementation, which decides what data to source by querying
-      * meta.mostRecentVersion. If mostRecentVersion doesn't change
-      * from run to run, the job will process the same data over and
-      * over.
-      *
-      * To solve this issue and assist with migrations, if the
-      * existing max version in the directory has a timestamp that's
-      * greater than that of the batchID being committed, we add a
-      * single millisecond to the current version, guaranteeing that
-      * we're writing a new max version (but only bumping a tiny bit
-      * forward).
-      *
-      * After a couple of job runs the batchID version should start
-      * winning.
-      */
+     * The Builder API used to not specify a sinkVersion, leading to
+     * versions tagged with the wall clock time. When builder API
+     * users migrate over to the new code, they can run into a
+     * situation where the new version created has a lower version
+     * than the current maximum version in the directory.
+     *
+     * This behavior clashes with the current VersionedState
+     * implementation, which decides what data to source by querying
+     * meta.mostRecentVersion. If mostRecentVersion doesn't change
+     * from run to run, the job will process the same data over and
+     * over.
+     *
+     * To solve this issue and assist with migrations, if the
+     * existing max version in the directory has a timestamp that's
+     * greater than that of the batchID being committed, we add a
+     * single millisecond to the current version, guaranteeing that
+     * we're writing a new max version (but only bumping a tiny bit
+     * forward).
+     *
+     * After a couple of job runs the batchID version should start
+     * winning.
+     */
     val newVersion: Option[Long] = mode match {
       case m: HdfsMode => {
         val meta = HDFSMetadata(m.conf, rootPath)
@@ -205,20 +201,20 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
     }
 
     lastVals.map(pack(batchID, _))
-      .toPipe((0,1))
+      .toPipe((0, 1))
       .write(VersionedKeyValSource[K2, V2](rootPath,
-        sourceVersion=None,
-        sinkVersion=newVersion,
-        maxFailures=0,
-        versionsToKeep=versionsToKeep))
+        sourceVersion = None,
+        sinkVersion = newVersion,
+        maxFailures = 0,
+        versionsToKeep = versionsToKeep))
   }
 
   /**
-    * Returns a FlowProducer that supplies all data for the given
-    * specific version within this store's rootPath.
-    */
+   * Returns a FlowProducer that supplies all data for the given
+   * specific version within this store's rootPath.
+   */
   protected def readVersion(v: Long): FlowProducer[TypedPipe[(K, V)]] = Reader { (flowMode: (FlowDef, Mode)) =>
-    val mappable = VersionedKeyValSource[K2, V2](rootPath, sourceVersion=Some(v))
+    val mappable = VersionedKeyValSource[K2, V2](rootPath, sourceVersion = Some(v))
     TypedPipe.from(mappable)(flowMode._1, flowMode._2)
       .map(unpack)
   }

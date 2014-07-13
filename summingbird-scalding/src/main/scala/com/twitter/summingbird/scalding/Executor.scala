@@ -16,10 +16,10 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.summingbird._
-import com.twitter.scalding.{RichDate, DateParser, Hdfs, Args}
+import com.twitter.scalding.{ RichDate, DateParser, Hdfs, Args }
 
-import com.twitter.summingbird.batch.{Timestamp, WaitingState}
-import com.twitter.summingbird.batch.option.{FlatMapShards, Reducers}
+import com.twitter.summingbird.batch.{ Timestamp, WaitingState }
+import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.chill.ChillExecutionConfig
 import com.twitter.algebird.Interval
 
@@ -33,13 +33,11 @@ import org.slf4j.LoggerFactory
  * @author Ian O Connell
  */
 
-
 trait ScaldingExecutionConfig extends ChillExecutionConfig[Scalding] {
   def getWaitingState(
     hadoopConfig: Configuration,
     startDate: Option[Timestamp],
-    batches: Int
-  ): WaitingState[Interval[Timestamp]]
+    batches: Int): WaitingState[Interval[Timestamp]]
 }
 
 object Executor {
@@ -71,39 +69,37 @@ object Executor {
     // a batch size of one hour; For big recomputations, one might want
     // to process a day's worth of data with each Hadoop run. Do this by
     // setting --batches to "24" until the recomputation's finished.
-    def batches : Int = args.getOrElse("batches","1").toInt
+    def batches: Int = args.getOrElse("batches", "1").toInt
 
-    def reducers : Int = args.getOrElse("reducers","20").toInt
+    def reducers: Int = args.getOrElse("reducers", "20").toInt
 
     // Immediately shuffles the input data into the supplied number of shards
     // Should only be used if the mapper tasks are doing heavy work
     // and would be faster to force a shuffle immediately after the data is read
-    def shards : Int = args.getOrElse("shards","0").toInt
+    def shards: Int = args.getOrElse("shards", "0").toInt
 
     val options = Map("DEFAULT" -> Options().set(Reducers(reducers)).set(FlatMapShards(shards))) ++ config.getNamedOptions
 
     val scaldPlatform = Scalding(config.name, options)
-        .withRegistrars(config.registrars)
-        .withConfigUpdater { c => c.updated(config.transformConfig(c.toMap)) }
+      .withRegistrars(config.registrars)
+      .withConfigUpdater { c => c.updated(config.transformConfig(c.toMap)) }
 
     val toRun = scaldPlatform.plan(config.graph)
 
     try {
-        scaldPlatform
-          .run(config.getWaitingState(hadoopConf, startDate, batches), Hdfs(true, hadoopConf), toRun)
-    }
-    catch {
-      case f@FlowPlanException(errs) =>
+      scaldPlatform
+        .run(config.getWaitingState(hadoopConf, startDate, batches), Hdfs(true, hadoopConf), toRun)
+    } catch {
+      case f @ FlowPlanException(errs) =>
         /* This is generally due to data not being ready, don't give a failed error code */
-       if(!args.boolean("scalding.nothrowplan")) {
-         logger.error("use: --scalding.nothrowplan to not give a failing error code in this case")
-         throw f
-       }
-       else {
-         logger.info("[ERROR]: ========== FlowPlanException =========")
-         errs.foreach { logger.info(_) }
-         logger.info("========== FlowPlanException =========")
-       }
+        if (!args.boolean("scalding.nothrowplan")) {
+          logger.error("use: --scalding.nothrowplan to not give a failing error code in this case")
+          throw f
+        } else {
+          logger.info("[ERROR]: ========== FlowPlanException =========")
+          errs.foreach { logger.info(_) }
+          logger.info("========== FlowPlanException =========")
+        }
     }
   }
 }

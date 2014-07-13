@@ -17,8 +17,8 @@ limitations under the License.
 package com.twitter.summingbird
 
 /**
-  * Base trait for summingbird compilers.
-  */
+ * Base trait for summingbird compilers.
+ */
 trait Platform[P <: Platform[P]] {
   // The type of the inputs for this platform
   type Source[_]
@@ -26,7 +26,6 @@ trait Platform[P <: Platform[P]] {
   type Sink[_]
   type Service[_, _]
   type Plan[_]
-
 
   // derived types, that are used for intermediate graphs
   type Buffer[k, v] = Service[k, v] with Sink[(k, v)]

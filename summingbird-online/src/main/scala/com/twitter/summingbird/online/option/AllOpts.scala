@@ -1,15 +1,16 @@
 package com.twitter.summingbird.online.option
+
 import com.twitter.util.Duration
+import com.twitter.algebird.Semigroup
 
 case class OnlineSuccessHandler(handlerFn: Unit => Unit)
 
-
 /**
-  * Kryo serialization problems have been observed with using
-  * OnlineSuccessHandler. This enables easy disabling of the handler.
-  * TODO (https://github.com/twitter/summingbird/issues/82): remove
-  * once we know what the hell is going on with this
-  */
+ * Kryo serialization problems have been observed with using
+ * OnlineSuccessHandler. This enables easy disabling of the handler.
+ * TODO (https://github.com/twitter/summingbird/issues/82): remove
+ * once we know what the hell is going on with this
+ */
 case class IncludeSuccessHandler(get: Boolean)
 
 object IncludeSuccessHandler {
@@ -19,17 +20,17 @@ object IncludeSuccessHandler {
 case class OnlineExceptionHandler(handlerFn: PartialFunction[Throwable, Unit])
 
 /**
-  * MaxWaitingFutures is the maximum number of key-value pairs that the
-  * SinkBolt in Storm will process before starting to force the
-  * futures. For example, setting MaxWaitingFutures(100) means that if
-  * a key-value pair is added to the OnlineStore and the (n - 100)th
-  * write has not completed, Storm will block before moving on to the
-  * next key-value pair.
-
-  * TODO (https://github.com/twitter/summingbird/issues/83): look into
-  * removing this due to the possibility of deadlock with the sink's
-  * cache.
-  */
+ * MaxWaitingFutures is the maximum number of key-value pairs that the
+ * SinkBolt in Storm will process before starting to force the
+ * futures. For example, setting MaxWaitingFutures(100) means that if
+ * a key-value pair is added to the OnlineStore and the (n - 100)th
+ * write has not completed, Storm will block before moving on to the
+ * next key-value pair.
+ *
+ * TODO (https://github.com/twitter/summingbird/issues/83): look into
+ * removing this due to the possibility of deadlock with the sink's
+ * cache.
+ */
 case class MaxWaitingFutures(get: Int)
 
 /**
@@ -41,36 +42,44 @@ case class MaxWaitingFutures(get: Int)
  */
 case class MaxFutureWaitTime(get: Duration)
 
-/*
-  FlushFrequency is how often regardless of traffic a given Cache should be flushed to the network.
-*/
+/**
+ * FlushFrequency is how often, regardless of traffic, a given Cache should be flushed to the network.
+ */
 case class FlushFrequency(get: Duration)
 
-/*
- UseAsyncCache is used to enable a background asynchronous cache. These do all cache related operations in background threads.
+/**
+ * UseAsyncCache is used to enable a background asynchronous cache. These do all cache related operations in
+ * background threads.
  */
 case class UseAsyncCache(get: Boolean)
 
-/*
-  AsyncPoolSize controls the size of the fixed thread pool used to back an asynchronous cache.
-  Only will have an effect if UseAsyncCache is true
-*/
+/**
+ * AsyncPoolSize controls the size of the fixed thread pool used to back an asynchronous cache.
+ * Only will have an effect if UseAsyncCache is true
+ */
 case class AsyncPoolSize(get: Int)
 
-/*
-  MaxEmitPerExecute controls the number of elements that can at once be emitted to the underlying platform.
-  Must be careful this is >> than your fan out or more tuples could be generated than are emitted.
-*/
+/**
+ * MaxEmitPerExecute controls the number of elements that can at once be emitted to the underlying platform.
+ * Must be careful this is >> than your fan out or more tuples could be generated than are emitted.
+ */
 case class MaxEmitPerExecute(get: Int)
 
-/*
- SoftMemoryFlushPercent is the percentage of memory used in the JVM at which a flush will be triggered of the cache.
-*/
+/**
+ * SoftMemoryFlushPercent is the percentage of memory used in the JVM at which a flush will be triggered of the cache.
+ */
 case class SoftMemoryFlushPercent(get: Float) {
   require(0 < get && get <= 100.0, "must be a percentage.")
 }
 
-/*
-  ValueCombinerCacheSize is used in cache's that support it as a trigger to crush down a high locality of values without emitting
-*/
+/**
+ * ValueCombinerCacheSize is used in caches that support it as a trigger to crush down a high locality of
+ * values without emitting.
+ */
 case class ValueCombinerCacheSize(get: Int)
+
+trait SummerBuilder extends Serializable {
+  def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]]
+}
+
+case class SummerConstructor(get: SummerBuilder)

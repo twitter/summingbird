@@ -18,8 +18,8 @@ package com.twitter.summingbird.online
 
 import com.twitter.util.{ Await, Duration, Future, Try }
 
-import java.util.{Queue => JQueue}
-import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, LinkedBlockingQueue, TimeUnit}
+import java.util.{ Queue => JQueue }
+import java.util.concurrent.{ ArrayBlockingQueue, BlockingQueue, LinkedBlockingQueue, TimeUnit }
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 /**
@@ -33,7 +33,8 @@ object Queue {
    */
   def apply[T]() = linkedNonBlocking[T]
 
-  /** Use this for blocking puts when the size is reached
+  /**
+   * Use this for blocking puts when the size is reached
    */
   def arrayBlocking[T](size: Int): Queue[T] =
     fromBlocking(new ArrayBlockingQueue(size))
@@ -68,7 +69,8 @@ object Queue {
  */
 abstract class Queue[T] {
 
-  /** These are the only two methods to implement.
+  /**
+   * These are the only two methods to implement.
    * these must be thread-safe.
    */
   protected def add(t: T): Unit
@@ -102,7 +104,7 @@ abstract class Queue[T] {
   def poll: Option[T] = {
     val res = pollNonBlocking
     // This is for performance sensitive code. Prefering if to match defensively
-    if(res.isDefined) count.decrementAndGet
+    if (res.isDefined) count.decrementAndGet
     res
   }
 
@@ -125,18 +127,17 @@ abstract class Queue[T] {
   // fold on all the elements ready:
   @annotation.tailrec
   final def foldLeft[V](init: V)(fn: (V, T) => V): V =
-   poll match {
+    poll match {
       case None => init
       case Some(it) => foldLeft(fn(init, it))(fn)
     }
 
-
   /** Take all the items currently in the queue */
   def toSeq: Seq[T] = trimTo(0)
 
-
-  /** Take items currently in the queue up to the max sequence size we want to return
-      Due to threading/muliple readers/writers this will not be an exact size
+  /**
+   * Take items currently in the queue up to the max sequence size we want to return
+   * Due to threading/muliple readers/writers this will not be an exact size
    */
 
   def take(maxSeqSize: Int): Seq[T] = trimTo(math.max(size - maxSeqSize, 0))
@@ -149,14 +150,13 @@ abstract class Queue[T] {
 
     @annotation.tailrec
     def loop(size: Int, acc: List[T] = Nil): List[T] = {
-      if(size > maxLength) {
+      if (size > maxLength) {
         pollNonBlocking match {
           case None => acc.reverse // someone else cleared us out
           case Some(item) =>
-            loop(count.decrementAndGet, item::acc)
+            loop(count.decrementAndGet, item :: acc)
         }
-      }
-      else acc.reverse
+      } else acc.reverse
     }
     loop(count.get)
   }

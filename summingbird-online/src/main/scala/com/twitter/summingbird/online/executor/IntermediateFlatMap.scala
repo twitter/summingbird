@@ -27,24 +27,21 @@ import com.twitter.summingbird.online.option.{
   MaxEmitPerExecute
 }
 
-
-class IntermediateFlatMap[T,U,S,D](
-  @transient flatMapOp: FlatMapOperation[T, U],
-  maxWaitingFutures: MaxWaitingFutures,
-  maxWaitingTime: MaxFutureWaitTime,
-  maxEmitPerExec: MaxEmitPerExecute,
-  pDecoder: Injection[T, D],
-  pEncoder: Injection[U, D]
-  ) extends AsyncBase[T, U, S, D](maxWaitingFutures, maxWaitingTime, maxEmitPerExec) {
+class IntermediateFlatMap[T, U, S, D, RC](
+    @transient flatMapOp: FlatMapOperation[T, U],
+    maxWaitingFutures: MaxWaitingFutures,
+    maxWaitingTime: MaxFutureWaitTime,
+    maxEmitPerExec: MaxEmitPerExecute,
+    pDecoder: Injection[T, D],
+    pEncoder: Injection[U, D]) extends AsyncBase[T, U, S, D, RC](maxWaitingFutures, maxWaitingTime, maxEmitPerExec) {
 
   val encoder = pEncoder
   val decoder = pDecoder
 
   val lockedOp = Externalizer(flatMapOp)
 
-
   override def apply(state: S,
-                     tup: T): Future[Iterable[(List[S], Future[TraversableOnce[U]])]] =
+    tup: T): Future[Iterable[(List[S], Future[TraversableOnce[U]])]] =
     lockedOp.get.apply(tup).map { res =>
       List((List(state), Future.value(res)))
     }

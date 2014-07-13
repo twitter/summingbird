@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{MapAlgebra, Monoid, Group, Interval, Last}
+import com.twitter.algebird.{ MapAlgebra, Monoid, Group, Interval, Last }
 import com.twitter.algebird.monad._
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.TimeExtractor
@@ -28,14 +28,14 @@ import org.scalacheck.Prop._
 import org.scalacheck.Properties
 
 object TestUtil {
-  def simpleTimeExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor( _._1 )
+  def simpleTimeExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor(_._1)
 
-  def compareMaps[K,V:Group](original: Iterable[Any], inMemory: Map[K, V], testStore: TestStore[K, V], name: String = ""): Boolean = {
+  def compareMaps[K, V: Group](original: Iterable[Any], inMemory: Map[K, V], testStore: TestStore[K, V], name: String = ""): Boolean = {
     val produced = testStore.lastToIterable.toMap
     val diffMap = Group.minus(inMemory, produced)
     val wrong = Monoid.isNonZero(diffMap)
-    if(wrong) {
-      if(!name.isEmpty) println("%s is wrong".format(name))
+    if (wrong) {
+      if (!name.isEmpty) println("%s is wrong".format(name))
       println("input: " + original)
       println("input size: " + original.size)
       println("input batches: " + testStore.batcher.batchOf(Timestamp(original.size)))
@@ -50,7 +50,7 @@ object TestUtil {
 
   def batchedCover(batcher: Batcher, minTime: Long, maxTime: Long): Interval[Timestamp] =
     batcher.cover(
-      Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime+1L))
+      Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime + 1L))
     ).mapNonDecreasing(b => batcher.earliestTimeOf(b.next))
 
   val simpleBatcher = new Batcher {
@@ -71,7 +71,7 @@ object TestUtil {
   }
 
   def randomBatcher(items: Iterable[(Long, Any)]): Batcher = {
-    if(items.isEmpty) simpleBatcher
+    if (items.isEmpty) simpleBatcher
     else randomBatcher(items.iterator.map(_._1).min, items.iterator.map(_._1).max)
   }
 
@@ -80,9 +80,9 @@ object TestUtil {
     val delta = (maxtimeInc - mintimeInc)
     val MaxBatches = 5L min delta
     val batches = 1L + Gen.choose(0L, MaxBatches).sample.get
-    if(batches == 1L) simpleBatcher
+    if (batches == 1L) simpleBatcher
     else {
-      val timePerBatch = (delta + 1L)/batches
+      val timePerBatch = (delta + 1L) / batches
       new MillisecondBatcher(timePerBatch)
     }
   }

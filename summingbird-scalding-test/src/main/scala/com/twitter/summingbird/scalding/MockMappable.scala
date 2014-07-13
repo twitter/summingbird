@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
 
-import cascading.tuple.{Tuple, Fields, TupleEntry}
+import cascading.tuple.{ Tuple, Fields, TupleEntry }
 import cascading.tap.Tap
 import cascading.scheme.NullScheme
 import org.apache.hadoop.mapred.JobConf
@@ -35,6 +35,6 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
   }
   override def hashCode = id.hashCode
 
-  override def createTap(readOrWrite : AccessMode)(implicit mode : Mode) : Tap[_,_,_] =
-    TestTapFactory(this, new NullScheme[JobConf, RecordReader[_,_], OutputCollector[_,_], T, T](Fields.ALL, Fields.ALL)).createTap(readOrWrite)
+  override def createTap(readOrWrite: AccessMode)(implicit mode: Mode): Tap[_, _, _] =
+    TestTapFactory(this, new NullScheme[JobConf, RecordReader[_, _], OutputCollector[_, _], T, T](Fields.ALL, Fields.ALL)).createTap(readOrWrite)
 }
