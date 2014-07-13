@@ -618,7 +618,12 @@ class Scalding(
         case (ts, pipe) =>
           // Now we have a populated flowDef, time to let Cascading do it's thing:
           try {
-            Right((ts, mode.newFlowConnector(mode.config).connect(flowDef)))
+            val config: Config = mode match {
+              case Hdfs(_, conf) => Config.fromHadoop(conf)
+              case HadoopTest(conf, _) => Config.fromHadoop(conf)
+              case _ => Config.empty
+            }
+            Right((ts, mode.newFlowConnector(config).connect(flowDef)))
           } catch {
             case (e: Throwable) => toTry(e)
           }
