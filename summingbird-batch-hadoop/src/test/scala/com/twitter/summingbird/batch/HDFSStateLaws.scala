@@ -16,11 +16,10 @@
 
 package com.twitter.summingbird.batch
 
-import java.io.File
-import java.util.{TimeZone, UUID}
+import java.util.{ TimeZone, UUID }
 
-import com.twitter.algebird.{Intersection, Interval}
-import com.twitter.scalding.{DateParser, RichDate}
+import com.twitter.algebird.{ Intersection, Interval }
+import com.twitter.scalding.{ DateParser, RichDate }
 import com.twitter.summingbird.batch.state.HDFSState
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
@@ -51,7 +50,7 @@ object HDFSStateLaws extends Specification {
       val nextState = HDFSState(path, startTime = None, numBatches = numBatches)
       val nextPrepareState = nextState.begin
       nextPrepareState.requested match {
-        case intersection@Intersection(low, high) => {
+        case intersection @ Intersection(low, high) => {
           val startBatchTime: Timestamp = batcher.earliestTimeOf(batcher.batchOf(startDate))
           val expectedNextRunStartMillis: Long = startBatchTime.incrementMinutes(numBatches * batchLength).milliSinceEpoch
           low.least.get.milliSinceEpoch mustEqual expectedNextRunStartMillis
@@ -101,7 +100,7 @@ object HDFSStateLaws extends Specification {
   def shouldCheckpointInterval(batcher: Batcher, state: WaitingState[Interval[Timestamp]], interval: Interval[Timestamp], path: String) = {
     completeState(state.begin.willAccept(interval))
     interval match {
-      case intersection@Intersection(low, high) => {
+      case intersection @ Intersection(low, high) => {
         BatchID.range(batcher.batchOf(low.least.get), batcher.batchOf(high.greatest.get)).foreach(t => (path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
       }
       case _ => sys.error("interval should be an intersection")
@@ -109,10 +108,10 @@ object HDFSStateLaws extends Specification {
   }
 
   def withTmpDir(doWithTmpFolder: String => Unit) = {
-    val path = "/tmp/fancy" + UUID.randomUUID
+    val path = "/tmp/" + UUID.randomUUID
     try {
       doWithTmpFolder(path)
-    }finally {
+    } finally {
       FileSystem.get(new Configuration()).delete(new Path(path), true)
     }
   }

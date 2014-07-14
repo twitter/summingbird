@@ -15,8 +15,8 @@
  */
 package com.twitter.summingbird.batch.state
 
-import com.twitter.algebird.{ExclusiveUpper, InclusiveLower, Intersection}
-import com.twitter.summingbird.batch.{BatchID, Batcher, Timestamp}
+import com.twitter.algebird.{ ExclusiveUpper, InclusiveLower, Intersection }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.slf4j.LoggerFactory
@@ -26,18 +26,23 @@ import org.slf4j.LoggerFactory
  * store that tracks the batches currently processed.
  */
 object HDFSState {
-  @transient val logger = LoggerFactory.getLogger(classOf[HDFSState])
 
-  case class Config(rootPath: String, conf: Configuration, startTime: Option[Timestamp], numBatches: Long)
+  case class Config(rootPath: String,
+    conf: Configuration,
+    startTime: Option[Timestamp],
+    numBatches: Long)
 
   /**
    * Returns a new HDFSState tuned to the given state path. Each run
    * will fire up at most numBatches batches.
+   *
    * Pass in a startTime to restart the process from the specified
    * time.
    */
-  def apply(path: String, conf: Configuration = new Configuration, startTime: Option[Timestamp] = None, numBatches: Long = 1)(implicit b: Batcher): HDFSState =
-    HDFSState(Config(path, conf, startTime, numBatches))
+  def apply(path: String,
+    conf: Configuration = new Configuration,
+    startTime: Option[Timestamp] = None,
+    numBatches: Long = 1)(implicit b: Batcher): HDFSState = HDFSState(Config(path, conf, startTime, numBatches))
 
   /**
    * Returns an HDFSState created directly from a Config object.
@@ -46,13 +51,13 @@ object HDFSState {
     new HDFSState(config)
 }
 
-class HDFSState(val config: HDFSState.Config)(implicit val batcher: Batcher) extends CheckpointState[Iterable[BatchID]]{
+class HDFSState(val config: HDFSState.Config)(implicit val batcher: Batcher) extends CheckpointState[Iterable[BatchID]] {
   override val checkpointStore = new HDFSCheckpointStore(config)
 }
 
-class HDFSCheckpointStore(val config:HDFSState.Config)(implicit val batcher: Batcher) extends CheckpointStore[Iterable[BatchID]] {
+class HDFSCheckpointStore(val config: HDFSState.Config)(implicit val batcher: Batcher) extends CheckpointStore[Iterable[BatchID]] {
 
-  import com.twitter.summingbird.batch.state.HDFSState._
+  @transient private val logger = LoggerFactory.getLogger(classOf[HDFSState])
 
   protected lazy val versionedStore =
     new FileVersionTracking(config.rootPath, FileSystem.get(config.conf))
@@ -63,25 +68,24 @@ class HDFSCheckpointStore(val config:HDFSState.Config)(implicit val batcher: Bat
   val startBatch: InclusiveLower[BatchID] =
     config.startTime.map(batcher.batchOf(_))
       .orElse {
-      val mostRecentB = versionedStore.mostRecentVersion
-        .map(t => batcher.batchOf(Timestamp(t)).next)
-      logger.info("Most recent batch found on disk: " + mostRecentB.toString)
-      mostRecentB
-    }.map(InclusiveLower(_)).getOrElse {
-      sys.error {
-        "You must provide startTime in config " +
-          "at least for the first run!"
+        val mostRecentB = versionedStore.mostRecentVersion
+          .map(t => batcher.batchOf(Timestamp(t)).next)
+        logger.info("Most recent batch found on disk: " + mostRecentB.toString)
+        mostRecentB
+      }.map(InclusiveLower(_)).getOrElse {
+        sys.error {
+          "You must provide startTime in config " +
+            "at least for the first run!"
+        }
       }
-    }
-
 
   val endBatch: ExclusiveUpper[BatchID] = ExclusiveUpper(startBatch.lower + config.numBatches)
 
   override def checkpointBatchStart(intersection: Intersection[InclusiveLower, ExclusiveUpper, Timestamp]): Iterable[BatchID] = BatchID.toIterable(batcher.batchesCoveredBy(intersection))
 
-  override def checkpointSuccessfulRun(runningBatches: Iterable[BatchID]) = runningBatches.foreach { b => versionedStore.succeedVersion(version(b))}
+  override def checkpointSuccessfulRun(runningBatches: Iterable[BatchID]) = runningBatches.foreach { b => versionedStore.succeedVersion(version(b)) }
 
-  override def checkpointFailure(runningBatches: Iterable[BatchID], err: Throwable) = runningBatches.foreach { b => versionedStore.deleteVersion(version(b))}
+  override def checkpointFailure(runningBatches: Iterable[BatchID], err: Throwable) = runningBatches.foreach { b => versionedStore.deleteVersion(version(b)) }
 
   override def checkpointPlanFailure(err: Throwable) = throw err
 
