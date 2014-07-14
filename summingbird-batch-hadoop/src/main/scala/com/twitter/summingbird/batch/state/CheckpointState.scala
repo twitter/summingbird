@@ -25,8 +25,9 @@ import com.twitter.summingbird.batch._
  *
  * Subclass of CheckpointStore should be responsible for getting the startBatch by checking the checkpoints of
  * previous batch run and getting the endBatch by number of batches the clients asks to run.
- * The CheckpointStore should provide concrete implementation of how to read previous batch and checkpointing current batch
- * Type T is the token of each batch run created by startBatch(), the token is then provided back to checkPoint store for checkpointing Success or Failure.
+ * The CheckpointStore should provide concrete implementation of how to read previous batch and checkpoint current batch
+ * Type T is the token of each batch run created by startBatch(), the token is then provided back to checkPoint store
+ * for checkpoint Success or Failure.
  * @author Tianshuo Deng
  */
 trait CheckpointStore[T] {
@@ -55,9 +56,10 @@ trait CheckpointStore[T] {
 }
 
 /**
- * State machine for checkpointed states. It creates the requested time interval by asking checkpoint store for startBatch and endBatch.
- * After flow planner minifies the time interval(by checking data available), it decides to accept the interval by making sure there is no
- * hole in between the start time of the interval and the end time of previous batch run.
+ * State machine for checkpoint states. It creates the requested time interval by asking CheckpointStore for startBatch
+ * and endBatch.
+ * After flow planner minifies the time interval(by checking data available), it decides to accept the interval by
+ * making sure there is no hole in between the start time of the interval and the end time of previous batch run.
  * It requires a CheckpointStore to be provided
  */
 trait CheckpointState[T] extends WaitingState[Interval[Timestamp]] {
@@ -73,24 +75,21 @@ trait CheckpointState[T] extends WaitingState[Interval[Timestamp]] {
 
     val earliestTimestamp = checkpointStore.batcher.earliestTimeOf(checkpointStore.startBatch.lower)
 
-    def matchesCurrentBatchStart(low: Option[Timestamp]): Boolean = {
-      low.map(Equiv[Timestamp].equiv(_, earliestTimestamp)).getOrElse(false)
-    }
+    def matchesCurrentBatchStart(low: Option[Timestamp]): Boolean = low.map(Equiv[Timestamp].equiv(_, earliestTimestamp)).getOrElse(false)
 
     /**
-     * only accept interval that aligns size of the batch interval
-     * must start from (current) startBatch
+     * Only accept interval that aligns size of the batch interval
+     * Must start from (current) startBatch
      */
     override def willAccept(available: Interval[Timestamp]) =
       available match {
-        case intersection @ Intersection(low, high) if (alignedToBatchBoundaries(low, high) &&
+        case intersection @ Intersection(low, high) if alignedToBatchBoundaries(low, high) &&
           matchesCurrentBatchStart(low.least) && // no holes in the middle
-          hasStarted.compareAndSet(false, true)) =>
+          hasStarted.compareAndSet(false, true) =>
           intersection.toLeftClosedRightOpen match {
-            case Some(leftClosedRightOpenIntersection) => {
+            case Some(leftClosedRightOpenIntersection) =>
               val batchToken: T = checkpointStore.checkpointBatchStart(leftClosedRightOpenIntersection)
               Right(new CheckpointRunningState(this, intersection, hasStarted, batchToken))
-            }
             case _ => Left(waitingState)
           }
         case _ => Left(waitingState)

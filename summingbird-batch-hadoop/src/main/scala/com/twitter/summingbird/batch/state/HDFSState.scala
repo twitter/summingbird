@@ -33,7 +33,6 @@ object HDFSState {
   /**
    * Returns a new HDFSState tuned to the given state path. Each run
    * will fire up at most numBatches batches.
-   *
    * Pass in a startTime to restart the process from the specified
    * time.
    */
@@ -61,7 +60,7 @@ class HDFSCheckpointStore(val config:HDFSState.Config)(implicit val batcher: Bat
   private def version(b: BatchID) =
     batcher.earliestTimeOf(b).milliSinceEpoch
 
-  val startBatch: InclusiveLower[BatchID] = {
+  val startBatch: InclusiveLower[BatchID] =
     config.startTime.map(batcher.batchOf(_))
       .orElse {
       val mostRecentB = versionedStore.mostRecentVersion
@@ -74,23 +73,16 @@ class HDFSCheckpointStore(val config:HDFSState.Config)(implicit val batcher: Bat
           "at least for the first run!"
       }
     }
-  }
+
 
   val endBatch: ExclusiveUpper[BatchID] = ExclusiveUpper(startBatch.lower + config.numBatches)
 
-  override def checkpointBatchStart(intersection: Intersection[InclusiveLower, ExclusiveUpper, Timestamp]): Iterable[BatchID] = {
-    BatchID.toIterable(batcher.batchesCoveredBy(intersection))
-  }
+  override def checkpointBatchStart(intersection: Intersection[InclusiveLower, ExclusiveUpper, Timestamp]): Iterable[BatchID] = BatchID.toIterable(batcher.batchesCoveredBy(intersection))
 
-  override def checkpointSuccessfulRun(runningBatches: Iterable[BatchID]) = {
-    runningBatches.foreach { b => versionedStore.succeedVersion(version(b))}
-  }
+  override def checkpointSuccessfulRun(runningBatches: Iterable[BatchID]) = runningBatches.foreach { b => versionedStore.succeedVersion(version(b))}
 
-  override def checkpointFailure(runningBatches: Iterable[BatchID], err: Throwable) = {
-    runningBatches.foreach { b => versionedStore.deleteVersion(version(b))}
-  }
+  override def checkpointFailure(runningBatches: Iterable[BatchID], err: Throwable) = runningBatches.foreach { b => versionedStore.deleteVersion(version(b))}
 
-  override def checkpointPlanFailure(err: Throwable) = {
-    throw err
-  }
+  override def checkpointPlanFailure(err: Throwable) = throw err
+
 }
