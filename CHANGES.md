@@ -1,5 +1,8 @@
 # Summingbird #
 
+## 0.5.1
+* Change the javac options for doc generation in java to be successful. (Blocks maven publishing)
+
 ## 0.5.0
 * Bumps version of other projects. Changes to compile with latest scalding...: https://github.com/twitter/summingbird/pull/533
 * Safely checking for the internal storm Implementation detail: https://github.com/twitter/summingbird/pull/528

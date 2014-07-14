@@ -39,7 +39,6 @@ object SummingbirdBuild extends Build {
 
     javacOptions in doc ~= { (options: Seq[String]) =>
       val targetPos = options.indexOf("-target")
-      println(options)
       if(targetPos > -1) {
         options.take(targetPos) ++ options.drop(targetPos + 2)
       } else options
@@ -385,6 +384,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdSpark = module("spark").settings(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
     skip in compile := !isScala210x(scalaVersion.value),
+    skip in doc := !isScala210x(scalaVersion.value),
     skip in test := !isScala210x(scalaVersion.value),
     publishArtifact := isScala210x(scalaVersion.value),
     libraryDependencies ++= buildSparkDeps(scalaVersion.value)
