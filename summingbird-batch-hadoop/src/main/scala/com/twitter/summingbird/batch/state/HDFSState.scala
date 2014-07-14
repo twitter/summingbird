@@ -42,7 +42,8 @@ object HDFSState {
   def apply(path: String,
     conf: Configuration = new Configuration,
     startTime: Option[Timestamp] = None,
-    numBatches: Long = 1)(implicit b: Batcher): HDFSState = HDFSState(Config(path, conf, startTime, numBatches))
+    numBatches: Long = 1)(implicit b: Batcher): HDFSState =
+    HDFSState(Config(path, conf, startTime, numBatches))
 
   /**
    * Returns an HDFSState created directly from a Config object.
@@ -51,11 +52,13 @@ object HDFSState {
     new HDFSState(config)
 }
 
-class HDFSState(val config: HDFSState.Config)(implicit val batcher: Batcher) extends CheckpointState[Iterable[BatchID]] {
+class HDFSState(val config: HDFSState.Config)(implicit val batcher: Batcher)
+    extends CheckpointState[Iterable[BatchID]] {
   override val checkpointStore = new HDFSCheckpointStore(config)
 }
 
-class HDFSCheckpointStore(val config: HDFSState.Config)(implicit val batcher: Batcher) extends CheckpointStore[Iterable[BatchID]] {
+class HDFSCheckpointStore(val config: HDFSState.Config)(implicit val batcher: Batcher)
+    extends CheckpointStore[Iterable[BatchID]] {
 
   @transient private val logger = LoggerFactory.getLogger(classOf[HDFSState])
 
@@ -81,11 +84,14 @@ class HDFSCheckpointStore(val config: HDFSState.Config)(implicit val batcher: Ba
 
   val endBatch: ExclusiveUpper[BatchID] = ExclusiveUpper(startBatch.lower + config.numBatches)
 
-  override def checkpointBatchStart(intersection: Intersection[InclusiveLower, ExclusiveUpper, Timestamp]): Iterable[BatchID] = BatchID.toIterable(batcher.batchesCoveredBy(intersection))
+  override def checkpointBatchStart(intersection: Intersection[InclusiveLower, ExclusiveUpper, Timestamp]): Iterable[BatchID] =
+    BatchID.toIterable(batcher.batchesCoveredBy(intersection))
 
-  override def checkpointSuccessfulRun(runningBatches: Iterable[BatchID]) = runningBatches.foreach { b => versionedStore.succeedVersion(version(b)) }
+  override def checkpointSuccessfulRun(runningBatches: Iterable[BatchID]) =
+    runningBatches.foreach { b => versionedStore.succeedVersion(version(b)) }
 
-  override def checkpointFailure(runningBatches: Iterable[BatchID], err: Throwable) = runningBatches.foreach { b => versionedStore.deleteVersion(version(b)) }
+  override def checkpointFailure(runningBatches: Iterable[BatchID], err: Throwable) =
+    runningBatches.foreach { b => versionedStore.deleteVersion(version(b)) }
 
   override def checkpointPlanFailure(err: Throwable) = throw err
 
