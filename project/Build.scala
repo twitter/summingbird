@@ -37,6 +37,13 @@ object SummingbirdBuild extends Build {
     // To support hadoop 1.x
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
+    javacOptions in doc ~= { (options: Seq[String]) =>
+      val targetPos = options.indexOf("-target")
+      if(targetPos > -1) {
+        options.take(targetPos) ++ options.drop(targetPos + 2)
+      } else options
+    },
+
     libraryDependencies ++= Seq(
       "junit" % "junit" % "4.11" % "test",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
@@ -211,9 +218,7 @@ object SummingbirdBuild extends Build {
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   )
 
-  lazy val summingbirdCoreJava = module("core-java").settings(
-    publishArtifact in packageDoc := false
-  ).dependsOn(
+  lazy val summingbirdCoreJava = module("core-java").dependsOn(
     summingbirdCore % "test->test;compile->compile"
   )
 
@@ -270,7 +275,6 @@ object SummingbirdBuild extends Build {
   )
 
   lazy val summingbirdStormJava = module("storm-java").settings(
-    publishArtifact in packageDoc := false,
     libraryDependencies ++= Seq(
       "storm" % "storm" % "0.9.0-wip15" % "provided"
     )
@@ -380,6 +384,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdSpark = module("spark").settings(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
     skip in compile := !isScala210x(scalaVersion.value),
+    skip in doc := !isScala210x(scalaVersion.value),
     skip in test := !isScala210x(scalaVersion.value),
     publishArtifact := isScala210x(scalaVersion.value),
     libraryDependencies ++= buildSparkDeps(scalaVersion.value)
