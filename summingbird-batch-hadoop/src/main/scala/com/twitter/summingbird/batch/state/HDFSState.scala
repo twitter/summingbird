@@ -15,35 +15,19 @@
  */
 package com.twitter.summingbird.batch.state
 
-import com.twitter.algebird.{
-  ExclusiveLower,
-  ExclusiveUpper,
-  InclusiveLower,
-  InclusiveUpper,
-  Intersection,
-  Interval,
-  Lower,
-  Upper
-}
-import com.twitter.bijection.Conversion.asMethod
+import com.twitter.algebird.{ ExclusiveUpper, InclusiveLower, Intersection }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
-import com.twitter.summingbird.batch.{ PrepareState, RunningState, WaitingState }
-import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
-
-// import Scalding.dateRangeInjection
-
 import org.slf4j.LoggerFactory
+
 /**
  * State implementation that uses an HDFS folder as a crude key-value
  * store that tracks the batches currently processed.
  */
 object HDFSState {
-  @transient private val logger = LoggerFactory.getLogger(classOf[HDFSState])
 
-  case class Config(
-    rootPath: String,
+  case class Config(rootPath: String,
     conf: Configuration,
     startTime: Option[Timestamp],
     numBatches: Long)
@@ -55,8 +39,7 @@ object HDFSState {
    * Pass in a startTime to restart the process from the specified
    * time.
    */
-  def apply(
-    path: String,
+  def apply(path: String,
     conf: Configuration = new Configuration,
     startTime: Option[Timestamp] = None,
     numBatches: Long = 1)(implicit b: Batcher): HDFSState =
@@ -67,115 +50,49 @@ object HDFSState {
    */
   def apply(config: Config)(implicit batcher: Batcher): HDFSState =
     new HDFSState(config)
-
-  /**
-   * Returns true if each timestamp represents the first
-   * millisecond of a batch.
-   */
-  def alignedToBatchBoundaries(
-    low: Lower[Timestamp],
-    high: Upper[Timestamp])(implicit b: Batcher): Boolean =
-    b.isLowerBatchEdge(toInclusiveLower(low)) &&
-      b.isLowerBatchEdge(toExclusiveUpper(high))
-
-  def toInclusiveLower(low: Lower[Timestamp]): Timestamp =
-    low match {
-      case InclusiveLower(lb) => lb
-      case ExclusiveLower(lb) => lb.next
-    }
-
-  def toExclusiveUpper(high: Upper[Timestamp]): Timestamp =
-    high match {
-      case InclusiveUpper(hb) => hb.next
-      case ExclusiveUpper(hb) => hb
-    }
 }
 
-class HDFSState(config: HDFSState.Config)(implicit batcher: Batcher)
-    extends WaitingState[Interval[Timestamp]] {
-  import HDFSState._
+class HDFSState(val config: HDFSState.Config)(implicit val batcher: Batcher)
+    extends CheckpointState[Iterable[BatchID]] {
+  override val checkpointStore = new HDFSCheckpointStore(config)
+}
 
-  private val hasStarted = new AtomicBoolean(false)
+class HDFSCheckpointStore(val config: HDFSState.Config)(implicit val batcher: Batcher)
+    extends CheckpointStore[Iterable[BatchID]] {
 
-  def begin: PrepareState[Interval[Timestamp]] = new Prep
+  @transient private val logger = LoggerFactory.getLogger(classOf[HDFSState])
 
   protected lazy val versionedStore =
     new FileVersionTracking(config.rootPath, FileSystem.get(config.conf))
 
-  private class Prep extends PrepareState[Interval[Timestamp]] {
-    private lazy val startBatch: InclusiveLower[BatchID] =
-      config.startTime.map(batcher.batchOf(_))
-        .orElse {
-          val mostRecentB = versionedStore.mostRecentVersion
-            .map(t => batcher.batchOf(Timestamp(t)).next)
-          logger.info("Most recent batch found on disk: " + mostRecentB.toString)
-          mostRecentB
-        }.map(InclusiveLower(_)).getOrElse {
-          sys.error {
-            "You must provide startTime in config " +
-              "at least for the first run!"
-          }
+  private def version(b: BatchID) =
+    batcher.earliestTimeOf(b).milliSinceEpoch
+
+  val startBatch: InclusiveLower[BatchID] =
+    config.startTime.map(batcher.batchOf(_))
+      .orElse {
+        val mostRecentB = versionedStore.mostRecentVersion
+          .map(t => batcher.batchOf(Timestamp(t)).next)
+        logger.info("Most recent batch found on disk: " + mostRecentB.toString)
+        mostRecentB
+      }.map(InclusiveLower(_)).getOrElse {
+        sys.error {
+          "You must provide startTime in config " +
+            "at least for the first run!"
         }
-
-    private lazy val earliestTimestamp = batcher.earliestTimeOf(startBatch.lower)
-    private lazy val endBatch: ExclusiveUpper[BatchID] =
-      ExclusiveUpper(startBatch.lower + config.numBatches)
-
-    override def requested =
-      Intersection(startBatch, endBatch)
-        .mapNonDecreasing(batcher.earliestTimeOf(_))
-
-    def fitsCurrentBatchStart(low: Lower[Timestamp]): Boolean =
-      Equiv[Timestamp].equiv(toInclusiveLower(low), earliestTimestamp)
-
-    /**
-     * only accept interval that aligns size of the batch interval
-     * must start from (current) startBatch
-     */
-    override def willAccept(available: Interval[Timestamp]) =
-      available match {
-        case intersection @ Intersection(low, high) if (alignedToBatchBoundaries(low, high) &&
-          fitsCurrentBatchStart(low) &&
-          hasStarted.compareAndSet(false, true)) =>
-          Right(new Running(intersection, hasStarted))
-        case _ => Left(HDFSState(config))
       }
 
-    override def fail(err: Throwable) = throw err
-  }
+  val endBatch: ExclusiveUpper[BatchID] = ExclusiveUpper(startBatch.lower + config.numBatches)
 
-  private class Running(succeedPart: Interval.GenIntersection[Timestamp], bool: AtomicBoolean)
-      extends RunningState[Interval[Timestamp]] {
-    def setStopped = assert(
-      bool.compareAndSet(true, false),
-      "Concurrent modification of HDFSState!"
-    )
-    private lazy val runningBatches =
-      BatchID.toIterable(batcher.batchesCoveredBy(succeedPart))
+  override def checkpointBatchStart(intersection: Intersection[InclusiveLower, ExclusiveUpper, Timestamp]): Iterable[BatchID] =
+    BatchID.toIterable(batcher.batchesCoveredBy(intersection))
 
-    private def version(b: BatchID) =
-      batcher.earliestTimeOf(b).milliSinceEpoch
+  override def checkpointSuccessfulRun(runningBatches: Iterable[BatchID]) =
+    runningBatches.foreach { b => versionedStore.succeedVersion(version(b)) }
 
-    /**
-     * On success, mark a successful version for every BatchID.
-     */
-    def succeed = {
-      setStopped
-      runningBatches.foreach { b => versionedStore.succeedVersion(version(b)) }
-      HDFSState(config)
-    }
+  override def checkpointFailure(runningBatches: Iterable[BatchID], err: Throwable) =
+    runningBatches.foreach { b => versionedStore.deleteVersion(version(b)) }
 
-    /**
-     * On failure, nuke a version for every BatchID. (None of these
-     * should exist on the filesystem, since only one process should
-     * be running at a time.)
-     */
-    def fail(err: Throwable) = {
-      // mark the state as failed. This is defensive, as no one should
-      // have created ANYTHING inside of these folders.
-      setStopped
-      runningBatches.foreach { b => versionedStore.deleteVersion(version(b)) }
-      throw err
-    }
-  }
+  override def checkpointPlanFailure(err: Throwable) = throw err
+
 }
