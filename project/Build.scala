@@ -31,11 +31,18 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.4.2",
+    version := "0.5.1",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.4"),
     // To support hadoop 1.x
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
+
+    javacOptions in doc ~= { (options: Seq[String]) =>
+      val targetPos = options.indexOf("-target")
+      if(targetPos > -1) {
+        options.take(targetPos) ++ options.drop(targetPos + 2)
+      } else options
+    },
 
     libraryDependencies ++= Seq(
       "junit" % "junit" % "4.11" % "test",
@@ -150,12 +157,12 @@ object SummingbirdBuild extends Build {
   )
 
   val dfsDatastoresVersion = "1.3.4"
-  val bijectionVersion = "0.6.2"
-  val algebirdVersion = "0.6.0"
-  val scaldingVersion = "0.9.1"
-  val storehausVersion = "0.9.0"
+  val bijectionVersion = "0.6.3"
+  val algebirdVersion = "0.7.0"
+  val scaldingVersion = "0.11.1"
+  val storehausVersion = "0.9.1"
   val utilVersion = "6.3.8"
-  val chillVersion = "0.3.6"
+  val chillVersion = "0.4.0"
   val tormentaVersion = "0.7.0"
 
   lazy val slf4jVersion = "1.6.6"
@@ -169,7 +176,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.4.2" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.5.0" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
@@ -211,9 +218,7 @@ object SummingbirdBuild extends Build {
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   )
 
-  lazy val summingbirdCoreJava = module("core-java").settings(
-    publishArtifact in packageDoc := false
-  ).dependsOn(
+  lazy val summingbirdCoreJava = module("core-java").dependsOn(
     summingbirdCore % "test->test;compile->compile"
   )
 
@@ -270,7 +275,6 @@ object SummingbirdBuild extends Build {
   )
 
   lazy val summingbirdStormJava = module("storm-java").settings(
-    publishArtifact in packageDoc := false,
     libraryDependencies ++= Seq(
       "storm" % "storm" % "0.9.0-wip15" % "provided"
     )
@@ -380,6 +384,7 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdSpark = module("spark").settings(
     resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
     skip in compile := !isScala210x(scalaVersion.value),
+    skip in doc := !isScala210x(scalaVersion.value),
     skip in test := !isScala210x(scalaVersion.value),
     publishArtifact := isScala210x(scalaVersion.value),
     libraryDependencies ++= buildSparkDeps(scalaVersion.value)

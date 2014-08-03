@@ -24,7 +24,6 @@ import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.{ Tuple, TupleImpl, Fields }
 
 import java.util.{ Map => JMap }
-
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{ InflightTuples, InputState }
@@ -140,14 +139,25 @@ case class BaseBolt[I, O](jobID: JobId,
    * This is clearly not safe, but done to deal with GC issues since
    * storm keeps references to values
    */
-  private lazy val valuesField = {
+  private lazy val valuesField: Option[(Tuple) => Unit] = {
     val tupleClass = classOf[TupleImpl]
-    val vf = tupleClass.getDeclaredField("values")
-    vf.setAccessible(true)
-    vf
+    try {
+      val vf = tupleClass.getDeclaredField("values")
+      vf.setAccessible(true)
+      Some({ t: Tuple => vf.set(t, null) })
+    } catch {
+      case _: NoSuchFieldException =>
+        try {
+          val m = tupleClass.getDeclaredMethod("resetValues", null)
+          Some({ t: Tuple => m.invoke(t) })
+        } catch {
+          case _: NoSuchMethodException =>
+            None
+        }
+    }
   }
 
   private def clearValues(t: Tuple): Unit = {
-    valuesField.set(t, null)
+    valuesField.foreach(fn => fn(t))
   }
 }
