@@ -70,6 +70,7 @@ object SummingbirdBuild extends Build {
     scalacOptions ++= Seq(
       "-unchecked",
       "-deprecation",
+      "-Xlint",
       "-Yresolve-term-conflict:package"
     ),
 

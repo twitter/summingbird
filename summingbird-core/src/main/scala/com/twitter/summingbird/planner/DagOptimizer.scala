@@ -219,7 +219,6 @@ trait DagOptimizer[P <: Platform[P]] {
       }
     }
   }
-
   /**
    * (a ++ b).flatMap(fn) == (a.flatMap(fn) ++ b.flatMap(fn))
    * and since Merge is usually a no-op when combined with a grouping operation, it
