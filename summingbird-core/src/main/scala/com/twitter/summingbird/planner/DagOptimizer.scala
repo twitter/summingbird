@@ -157,7 +157,18 @@ trait DagOptimizer[P <: Platform[P]] {
     }
   }
 
-  def toProducer[T](lit: Literal[T, Prod]): Producer[P, T] = lit.evaluate
+  /**
+   * Create an ExpressionDag for the given node. This should be the
+   * final tail of the graph. You can apply optimizations on this
+   * Dag and then use the Id returned to evaluate it back to an
+   * optimized producer
+   */
+  def expressionDag[T](p: Producer[P, T]): (ExpressionDag[Prod], Id[T]) = {
+    val prodToLit = new GenFunction[Prod, LitProd] {
+      def apply[T] = { p => toLiteral(p) }
+    }
+    ExpressionDag[T, Prod](p, prodToLit)
+  }
 
   /*
    * Here are some generic optimization rules that might apply to all
@@ -170,11 +181,9 @@ trait DagOptimizer[P <: Platform[P]] {
    * the AST that we generate and optimize along the way
    */
   object RemoveNames extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]): (Id[T] => Option[Expr[T, Prod]]) = { id =>
-      on.evaluate(id) match {
-        case Some(NamedProducer(p, _)) => Some(Var(on.idOf(p)))
-        case _ => None
-      }
+    def apply[T](on: ExpressionDag[Prod]) = {
+      case NamedProducer(p, _) => Some(p)
+      case _ => None
     }
   }
 
@@ -183,14 +192,10 @@ trait DagOptimizer[P <: Platform[P]] {
    * types, they have no meaning at runtime.
    */
   object RemoveIdentityKeyed extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = { id =>
-      on.evaluate(id) match {
-        case Some(IdentityKeyedProducer(p)) =>
-          val idOf = on.idOf(p)
-            .asInstanceOf[Id[T]] // The standard scala inability to see that T must be (K, V) here
-          Some(Var(idOf))
-        case _ => None
-      }
+    def apply[T](on: ExpressionDag[Prod]) = {
+      // scala can't see that (K, V) <: T
+      case IdentityKeyedProducer(p) => Some(p.asInstanceOf[Prod[T]])
+      case _ => None
     }
   }
 
@@ -198,25 +203,17 @@ trait DagOptimizer[P <: Platform[P]] {
    * a.flatMap(fn).flatMap(fn2) can be written as a.flatMap(compose(fn, fn2))
    */
   object FlatMapFusion extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = { id =>
-      import on._
-      evaluate(id) match {
-        //Can't fuse flatMaps when on fanout
-        case Some(FlatMappedProducer(in1 @ FlatMappedProducer(in0, fn0), fn1)) if (fanOut(in1) < 2) =>
-          // TODO: There should probably be a case class here
-          // to check for reference equality with named elements from the original graph
-          def compose[T1, T2, T3](g: T1 => TraversableOnce[T2],
-            h: T2 => TraversableOnce[T3]): T1 => TraversableOnce[T3] = { t1: T1 =>
-            g(t1).flatMap(h)
-          }
-          // We have to jump through these type hoops to satisfy the compiler
-          def flatMap[T1, T2, T3](g: T1 => TraversableOnce[T2],
-            h: T2 => TraversableOnce[T3]): Prod[T1] => Prod[T3] = { in: Prod[T1] =>
-            in.flatMap(compose(g, h))
-          }
-          Some(Unary(idOf(in0), flatMap(fn0, fn1)))
-        case _ => None
-      }
+    def apply[T](on: ExpressionDag[Prod]) = {
+      //Can't fuse flatMaps when on fanout
+      case FlatMappedProducer(in1 @ FlatMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) < 2) =>
+        // TODO: There should probably be a case class here
+        // to check for reference equality with named elements from the original graph
+        def compose[T1, T2, T3](g: T1 => TraversableOnce[T2],
+          h: T2 => TraversableOnce[T3]): T1 => TraversableOnce[T3] = { t1: T1 =>
+          g(t1).flatMap(h)
+        }
+        Some(FlatMappedProducer(in0, compose(fn0, fn1)))
+      case _ => None
     }
   }
   /**
@@ -225,18 +222,11 @@ trait DagOptimizer[P <: Platform[P]] {
    * often pays to get merges as high the graph as possible
    */
   object MergePullUp extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = { id =>
-      import on._
-      evaluate(id) match {
-        //Can't do this operation if the merge fans out
-        case Some(FlatMappedProducer(m @ MergedProducer(a, b), fn)) if (fanOut(m) < 2) =>
-          // We have to jump through these type hoops to satisfy the compiler
-          def op[T1, T2](f: T1 => TraversableOnce[T2]): (Prod[T1], Prod[T1]) => Prod[T2] =
-            { (left, right) => left.flatMap(f) ++ right.flatMap(f) }
-
-          Some(Binary(idOf(a), idOf(b), op(fn)))
-        case _ => None
-      }
+    def apply[T](on: ExpressionDag[Prod]) = {
+      //Can't do this operation if the merge fans out
+      case FlatMappedProducer(m @ MergedProducer(a, b), fn) if (on.fanOut(m) < 2) =>
+        Some((a.flatMap(fn)) ++ (b.flatMap(fn)))
+      case _ => None
     }
   }
 }

@@ -28,6 +28,13 @@ trait HMap[K[_], V[_]] {
   override def toString: String =
     "H%s".format(map)
 
+  override def equals(that: Any): Boolean = that match {
+    case null => false
+    case h: HMap[_, _] => map.equals(h.map)
+    case _ => false
+  }
+  override def hashCode = map.hashCode
+
   def +[T](kv: (K[T], V[T])): HMap[K, V] = {
     val self = this
     new HMap[K, V] {
@@ -41,6 +48,14 @@ trait HMap[K[_], V[_]] {
     }
   }
   def apply[T](id: K[T]): V[T] = get(id).get
+
+  def contains[T](id: K[T]): Boolean = get(id).isDefined
+
+  def filter(pred: GenFunction[Pair, ({ type BoolT[T] = Boolean })#BoolT]): HMap[K, V] = {
+    val filtered = map.asInstanceOf[Map[K[Any], V[Any]]].filter(pred.apply[Any])
+    new HMap[K, V] { val map = filtered.asInstanceOf[Map[K[_], V[_]]] }
+  }
+
   def get[T](id: K[T]): Option[V[T]] =
     map.get(id).asInstanceOf[Option[V[T]]]
 
@@ -68,11 +83,11 @@ trait HMap[K[_], V[_]] {
       }
   }
 
-  def collect[R[_]](p: GenPartial[Pair, R]): Iterable[R[_]] =
-    map.asInstanceOf[Iterable[(K[Any], V[Any])]].collect(p.apply)
+  def collect[R[_]](p: GenPartial[Pair, R]): Stream[R[_]] =
+    map.toStream.asInstanceOf[Stream[(K[Any], V[Any])]].collect(p.apply)
 
-  def collectValues[R[_]](p: GenPartial[V, R]): Iterable[R[_]] =
-    map.values.asInstanceOf[Iterable[V[Any]]].collect(p.apply)
+  def collectValues[R[_]](p: GenPartial[V, R]): Stream[R[_]] =
+    map.values.toStream.asInstanceOf[Stream[V[Any]]].collect(p.apply)
 }
 
 // This is a function that preserves the inner type

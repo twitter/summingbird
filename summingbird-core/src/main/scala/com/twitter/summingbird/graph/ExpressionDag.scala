@@ -50,7 +50,7 @@ object Literal {
     evaluate(HMap.empty[({ type L[T] = Literal[T, N] })#L, N], lit)._2
 
   // Memoized version of the above to handle diamonds
-  protected def evaluate[T, N[_]](hm: HMap[({ type L[T] = Literal[T, N] })#L, N], lit: Literal[T, N]): (HMap[({ type L[T] = Literal[T, N] })#L, N], N[T]) =
+  private def evaluate[T, N[_]](hm: HMap[({ type L[T] = Literal[T, N] })#L, N], lit: Literal[T, N]): (HMap[({ type L[T] = Literal[T, N] })#L, N], N[T]) =
     hm.get(lit) match {
       case Some(prod) => (hm, prod)
       case None =>
@@ -69,11 +69,33 @@ object Literal {
     }
 }
 
-trait ExpressionDag[N[_]] { self =>
+sealed trait ExpressionDag[N[_]] { self =>
   // Once we fix N above, we can make E[T] = Expr[T, N]
   type E[t] = Expr[t, N]
-  def idToExp: HMap[Id, E]
+  type Lit[t] = Literal[t, N]
+
+  /**
+   * These have package visibility to test
+   * the law that for all Expr, the node they
+   * evaluate to is unique
+   */
+  protected[graph] def idToExp: HMap[Id, E]
+  protected[graph] def nodeToId: HMap[N, Id]
+  protected def nodeToLiteral: GenFunction[N, Lit]
+  protected def roots: Set[Id[_]]
   protected def nextId: Int
+
+  private def copy(id2Exp: HMap[Id, E] = self.idToExp,
+    node2Id: HMap[N, Id] = self.nodeToId,
+    node2Literal: GenFunction[N, Lit] = self.nodeToLiteral,
+    gcroots: Set[Id[_]] = self.roots,
+    id: Int = self.nextId): ExpressionDag[N] = new ExpressionDag[N] {
+    def idToExp = id2Exp
+    def nodeToId = node2Id
+    def roots = gcroots
+    def nodeToLiteral = node2Literal
+    def nextId = id
+  }
 
   override def toString: String =
     "ExpressionDag(idToExp = %s)".format(idToExp)
@@ -82,8 +104,52 @@ trait ExpressionDag[N[_]] { self =>
   private val idToN =
     new HCache[Id, ({ type ON[T] = Option[N[T]] })#ON]()
 
-  // This is a cache of Node[T] => Id[T]
-  private val nodeToId = new HCache[N, ({ type OI[T] = Option[Id[T]] })#OI]()
+  /**
+   * Add a GC root, or tail in the DAG, that can never be deleted
+   * currently, we only support a single root
+   */
+  private def addRoot[_](id: Id[_]) = copy(gcroots = roots + id)
+
+  /**
+   * Which ids are reachable from the roots
+   */
+  private def reachableIds: Set[Id[_]] = {
+    // We actually don't care about the return type of the Set
+    // This is a constant function at the type level
+    type IdSet[t] = Set[Id[_]]
+    def expand(s: Set[Id[_]]): Set[Id[_]] = {
+      val partial = new GenPartial[HMap[Id, E]#Pair, IdSet] {
+        def apply[T] = {
+          case (id, Const(_)) if s(id) => s
+          case (id, Var(v)) if s(id) => s + v
+          case (id, Unary(id0, _)) if s(id) => s + id0
+          case (id, Binary(id0, id1, _)) if s(id) => (s + id0) + id1
+        }
+      }
+      // Note this Stream must always be non-empty as long as roots are
+      idToExp.collect[IdSet](partial)
+        .reduce(_ ++ _)
+    }
+    // call expand while we are still growing
+    def go(s: Set[Id[_]]): Set[Id[_]] = {
+      val step = expand(s)
+      if (step == s) s
+      else go(step)
+    }
+    go(roots)
+  }
+
+  private def gc: ExpressionDag[N] = {
+    val goodIds = reachableIds
+    type BoolT[t] = Boolean
+    val toKeepI2E = idToExp.filter(new GenFunction[HMap[Id, E]#Pair, BoolT] {
+      def apply[T] = { idExp => goodIds(idExp._1) }
+    })
+    val toKeepN2I = nodeToId.filter(new GenFunction[HMap[N, Id]#Pair, BoolT] {
+      def apply[T] = { idExp => goodIds(idExp._2) }
+    })
+    copy(id2Exp = toKeepI2E, node2Id = toKeepN2I)
+  }
 
   /**
    * Apply the given rule to the given dag until
@@ -100,61 +166,60 @@ trait ExpressionDag[N[_]] { self =>
     curr
   }
 
+  protected def toExpr[T](n: N[T]): (ExpressionDag[N], Expr[T, N]) = {
+    val (dag, id) = ensure(n)
+    val exp = dag.idToExp(id)
+    (dag, exp)
+  }
+
   /**
    * apply the rule at the first place that satisfies
    * it, and return from there.
    */
   def applyOnce(rule: Rule[N]): ExpressionDag[N] = {
-    val getP = new GenPartial[Id, E] {
+    val getN = new GenPartial[HMap[Id, E]#Pair, HMap[Id, N]#Pair] {
       def apply[U] = {
         val fn = rule.apply[U](self)
 
-        { case x if fn(x).isDefined => fn(x).get }
+        {
+          case (id, exp) if fn(exp.evaluate(idToExp)).isDefined =>
+            // Sucks to have to call fn, twice, but oh well
+            (id, fn(exp.evaluate(idToExp)).get)
+        }
       }
     }
-    idToExp.updateFirst(getP) match {
+    /*
+     * The loss of type information in HMap.collect causes
+     * some pains below, but the cast is narrowly scoped
+     * and doesn't leak out.
+     */
+    idToExp.collect[HMap[Id, N]#Pair](getN).headOption match {
       case None => this
-      case Some((newIdExp, xid)) =>
-        // the type below helps the compiler
-        def act[T](id: Id[T]) = {
-          val newN: N[T] = newIdExp(id).evaluate(newIdExp)
-          new ExpressionDag[N] {
-            def idToExp = newIdExp
-            def nextId = self.nextId
-          }
+      case Some(tup) =>
+        def act[T](i: Id[T], n: N[T]) = {
+          val oldNode = evaluate(i)
+          val (dag, exp) = toExpr(n)
+          dag.copy(id2Exp = dag.idToExp + (i -> exp),
+            node2Id = (dag.nodeToId - oldNode) + (n -> i))
         }
-        // Run, and then apply the rule again
-        act(xid).apply(rule)
+        val casted = tup.asInstanceOf[(Id[Any], N[Any])]
+        act(casted._1, casted._2).gc
     }
   }
 
-  private def addExp[T](node: N[T], id: Id[T], exp: Expr[T, N]): ExpressionDag[N] =
-    new ExpressionDag[N] {
-      val idToExp = self.idToExp + (id -> exp)
-      val nextId = self.nextId
-    }
-
-  private def assignId[T](l: Literal[T, N]): (ExpressionDag[N], Id[T]) = {
-    val id0 = Id[T](nextId)
-    (new ExpressionDag[N] {
-      val idToExp = self.idToExp
-      val nextId = self.nextId + 1
-    }, id0)
+  // This is only called by ensure
+  private def addExp[T](node: N[T], exp: Expr[T, N]): (ExpressionDag[N], Id[T]) = {
+    val nodeId = Id[T](nextId)
+    (copy(id2Exp = idToExp + (nodeId -> exp),
+      node2Id = nodeToId + (node -> nodeId),
+      id = nextId + 1), nodeId)
   }
 
   /**
-   * This finds some Id in the current graph that evaluates
+   * This finds the Id[T] in the current graph that is equivalent
    * to the given N[T]
    */
-  def find[T](node: N[T]): Option[Id[T]] = nodeToId.getOrElseUpdate(node, {
-    val partial = new GenPartial[HMap[Id, E]#Pair, Id] {
-      def apply[T] = {
-        case (id, e) if e.evaluate(idToExp) == node => id
-      }
-    }
-    idToExp.collect(partial).headOption
-      .asInstanceOf[Option[Id[T]]]
-  })
+  def find[T](node: N[T]): Option[Id[T]] = nodeToId.get(node)
 
   /**
    * This throws if the node is missing, use find if this is not
@@ -162,47 +227,62 @@ trait ExpressionDag[N[_]] { self =>
    * possibly get this to not compile if it could throw.
    */
   def idOf[T](node: N[T]): Id[T] =
-    find(node).getOrElse(sys.error("could not get node: %s\n from %s".format(node, this)))
+    find(node)
+      .getOrElse(sys.error("could not get node: %s\n from %s".format(node, this)))
 
   /**
    * ensure the given literal node is present in the Dag
+   * Note: it is important that at each moment, each node has
+   * at most one id in the graph. Put another way, for all
+   * Id[T] in the graph evaluate(id) is distinct.
    */
-  protected def ensure[T](lit: Literal[T, N]): (ExpressionDag[N], Id[T]) = {
-    val node = lit.evaluate
+  protected def ensure[T](node: N[T]): (ExpressionDag[N], Id[T]) =
     find(node) match {
       case Some(id) => (this, id)
-      case None =>
+      case None => {
+        val lit: Lit[T] = nodeToLiteral.apply[T](node)
         lit match {
           case ConstLit(n) =>
-            val (exp1, id) = assignId(lit)
-            (exp1.addExp(node, id, Const(n)), id)
+            /**
+             * Since the code is not performance critical, but correctness critical, and we can't
+             * check this property with the typesystem easily, check it here
+             */
+            assert(n == node,
+              "Equality or nodeToLiteral is incorrect: nodeToLit(%s) = ConstLit(%s)".format(node, n))
+            addExp(node, Const(n))
           case UnaryLit(prev, fn) =>
-            val (exp1, idprev) = ensure(prev)
-            val (exp2, id) = exp1.assignId(lit)
-            (exp2.addExp(node, id, Unary(idprev, fn)), id)
+            val (exp1, idprev) = ensure(prev.evaluate)
+            exp1.addExp(node, Unary(idprev, fn))
           case BinaryLit(n1, n2, fn) =>
-            val (exp1, id1) = ensure(n1)
-            val (exp2, id2) = exp1.ensure(n1)
-            val (exp3, id) = exp2.assignId(lit)
-            (exp3.addExp(node, id, Binary(id1, id2, fn)), id)
+            val (exp1, id1) = ensure(n1.evaluate)
+            val (exp2, id2) = exp1.ensure(n2.evaluate)
+            exp2.addExp(node, Binary(id1, id2, fn))
         }
+      }
     }
-  }
 
   /**
    * After applying rules to your Dag, use this method
-   * to get the original node type
+   * to get the original node type.
+   * Only call this on an Id[T] that was generated by
+   * this dag or a parent.
    */
-  def evaluate[T](id: Id[T]): Option[N[T]] =
+  def evaluate[T](id: Id[T]): N[T] =
+    evaluateOption(id).getOrElse(sys.error("Could not evaluate: %s\nin %s".format(id, this)))
+
+  def evaluateOption[T](id: Id[T]): Option[N[T]] =
     idToN.getOrElseUpdate(id, {
-      idToExp.get(id).map { exp =>
-        exp.evaluate(idToExp)
+      val partial = new GenPartial[HMap[N, Id]#Pair, N] {
+        def apply[T] = { case (n, thisId) if (id == thisId) => n }
       }
+      nodeToId.collect(partial).headOption.asInstanceOf[Option[N[T]]]
     })
 
   /**
    * Return the number of nodes that depend on the
    * given Id, TODO we might want to cache these.
+   * We need to garbage collect nodes that are
+   * no longer reachable from the root
    */
   def fanOut(id: Id[_]): Int = {
     // We make a fake IntT[T] which is just Int
@@ -218,22 +298,50 @@ trait ExpressionDag[N[_]] { self =>
     idToExp.collectValues[({ type IntT[T] = Int })#IntT](partial).sum
   }
 
-  def fanOut(node: N[_]): Int = fanOut(idOf(node))
+  /**
+   * Returns 0 if the node is absent, which is true
+   * use .contains(n) to check for containment
+   */
+  def fanOut(node: N[_]): Int = find(node).map(fanOut(_)).getOrElse(0)
+  def contains(node: N[_]): Boolean = find(node).isDefined
 }
 
 object ExpressionDag {
-  private def empty[N[_]]: ExpressionDag[N] = new ExpressionDag[N] {
-    def idToExp = HMap.empty[Id, ({ type E[t] = Expr[t, N] })#E]
-    def nextId = 0
+  private def empty[N[_]](n2l: GenFunction[N, ({ type L[t] = Literal[t, N] })#L]): ExpressionDag[N] =
+    new ExpressionDag[N] {
+      val idToExp = HMap.empty[Id, ({ type E[t] = Expr[t, N] })#E]
+      val nodeToId = HMap.empty[N, Id]
+      val nodeToLiteral = n2l
+      val roots = Set.empty[Id[_]]
+      val nextId = 0
+    }
+
+  /**
+   * This creates a new ExpressionDag rooted at the given tail node
+   */
+  def apply[T, N[_]](n: N[T],
+    nodeToLit: GenFunction[N, ({ type L[t] = Literal[t, N] })#L]): (ExpressionDag[N], Id[T]) = {
+    val (dag, id) = empty(nodeToLit).ensure(n)
+    (dag.addRoot(id), id)
   }
-  def apply[T, N[_]](tail: Literal[T, N]): (ExpressionDag[N], Id[T]) =
-    empty.ensure(tail)
+
+  /**
+   * This is the most useful function. Given a N[T] and a way to convert to Literal[T, N],
+   * apply the given rule until it no longer applies, and return the N[T] which is
+   * equivalent under the given rule
+   */
+  def applyRule[T, N[_]](n: N[T],
+    nodeToLit: GenFunction[N, ({ type L[t] = Literal[t, N] })#L],
+    rule: Rule[N]): N[T] = {
+    val (dag, id) = apply(n, nodeToLit)
+    dag(rule).evaluate(id)
+  }
 }
 
 /**
  * This implements a simplification rule on ExpressionDags
  */
-trait Rule[N[_]] {
+trait Rule[N[_]] { self =>
   /**
    * If the given Id can be replaced with a simpler expression,
    * return Some(expr) else None.
@@ -241,13 +349,13 @@ trait Rule[N[_]] {
    * If it is convenient, you might write a partial function
    * and then call .lift to get the correct Function type
    */
-  def apply[T](on: ExpressionDag[N]): (Id[T] => Option[Expr[T, N]])
+  def apply[T](on: ExpressionDag[N]): (N[T] => Option[N[T]])
 
-  // // If the current rule cannot apply, then try the argument here
-  // def orElse(that: Rule[N]): Rule[N] = new Rule[N] {
-  //   def apply[T](on: ExpressionDag[N]) = { id =>
-  //     self(on)(id).orElse(that(on)(id))
-  //   }
-  // }
+  // If the current rule cannot apply, then try the argument here
+  def orElse(that: Rule[N]): Rule[N] = new Rule[N] {
+    def apply[T](on: ExpressionDag[N]) = { n =>
+      self.apply(on)(n).orElse(that.apply(on)(n))
+    }
+  }
 }
 
