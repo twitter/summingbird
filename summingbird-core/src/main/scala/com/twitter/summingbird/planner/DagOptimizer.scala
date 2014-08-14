@@ -205,26 +205,63 @@ trait DagOptimizer[P <: Platform[P]] {
   object FlatMapFusion extends Rule[Prod] {
     def apply[T](on: ExpressionDag[Prod]) = {
       //Can't fuse flatMaps when on fanout
-      case FlatMappedProducer(in1 @ FlatMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) < 2) =>
-        // TODO: There should probably be a case class here
-        // to check for reference equality with named elements from the original graph
-        def compose[T1, T2, T3](g: T1 => TraversableOnce[T2],
-          h: T2 => TraversableOnce[T3]): T1 => TraversableOnce[T3] = { t1: T1 =>
-          g(t1).flatMap(h)
-        }
-        Some(FlatMappedProducer(in0, compose(fn0, fn1)))
+      case FlatMappedProducer(in1 @ FlatMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
+        Some(FlatMappedProducer(in0, ComposedFlatMap(fn0, fn1)))
       case _ => None
     }
   }
+
+  // a.optionMap(b).optionMap(c) == a.optionMap(compose(b, c))
+  object OptionMapFusion extends Rule[Prod] {
+    def apply[T](on: ExpressionDag[Prod]) = {
+      //Can't fuse flatMaps when on fanout
+      case OptionMappedProducer(in1 @ OptionMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
+        Some(OptionMappedProducer(in0, ComposedOptionMap(fn0, fn1)))
+      case _ => None
+    }
+  }
+
+  /**
+   * Combine flatMaps followed by optionMap into a single operation
+   *
+   * On the other direction, you might not want to run optionMap with flatMap since some
+   * platforms (storm) can't easily control source parallelism, so we don't want to push
+   * big expansions up to sources
+   */
+  object FlatThenOptionFusion extends Rule[Prod] {
+    def apply[T](on: ExpressionDag[Prod]) = {
+      //Can't fuse flatMaps when on fanout
+      case OptionMappedProducer(in1 @ FlatMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
+        Some(FlatMappedProducer(in0, ComposedFlatMap(fn0, OptionToFlat(fn1))))
+      case _ => None
+    }
+  }
+
+  /**
+   * (a.flatMap(f1) ++ a.flatMap(f2)) == a.flatMap { i => f1(i) ++ f2(i) }
+   */
+  object DiamondToFlatMap extends Rule[Prod] {
+    def apply[T](on: ExpressionDag[Prod]) = {
+      //Can't fuse flatMaps when on fanout
+      case MergedProducer(left @ FlatMappedProducer(inleft, fnleft),
+        right @ FlatMappedProducer(inright, fnright)) if (inleft == inright) && (on.fanOut(left) == 1) && (on.fanOut(right) == 1) =>
+        Some(FlatMappedProducer(inleft, MergeResults(fnleft, fnright)))
+      case _ => None
+    }
+  }
+
   /**
    * (a ++ b).flatMap(fn) == (a.flatMap(fn) ++ b.flatMap(fn))
+   * (a ++ b).optionMap(fn) == (a.optionMap(fn) ++ b.optionMap(fn))
    * and since Merge is usually a no-op when combined with a grouping operation, it
-   * often pays to get merges as high the graph as possible
+   * often pays to get merges as high the graph as possible.
    */
   object MergePullUp extends Rule[Prod] {
+    //Can't do this operation if the merge fans out
     def apply[T](on: ExpressionDag[Prod]) = {
-      //Can't do this operation if the merge fans out
-      case FlatMappedProducer(m @ MergedProducer(a, b), fn) if (on.fanOut(m) < 2) =>
+      case OptionMappedProducer(m @ MergedProducer(a, b), fn) if (on.fanOut(m) == 1) =>
+        Some((a.optionMap(fn)) ++ (b.optionMap(fn)))
+      case FlatMappedProducer(m @ MergedProducer(a, b), fn) if (on.fanOut(m) == 1) =>
         Some((a.flatMap(fn)) ++ (b.flatMap(fn)))
       case _ => None
     }
