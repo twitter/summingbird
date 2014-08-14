@@ -35,25 +35,19 @@ trait HMap[K[_], V[_]] {
   }
   override def hashCode = map.hashCode
 
-  def +[T](kv: (K[T], V[T])): HMap[K, V] = {
-    val self = this
-    new HMap[K, V] {
-      override protected val map = self.map + kv
-    }
-  }
-  def -[T](k: K[T]): HMap[K, V] = {
-    val self = this
-    new HMap[K, V] {
-      override protected val map = self.map - k
-    }
-  }
+  def +[T](kv: (K[T], V[T])): HMap[K, V] =
+    HMap.from[K, V](map + kv)
+
+  def -[T](k: K[T]): HMap[K, V] =
+    HMap.from[K, V](map - k)
+
   def apply[T](id: K[T]): V[T] = get(id).get
 
   def contains[T](id: K[T]): Boolean = get(id).isDefined
 
   def filter(pred: GenFunction[Pair, ({ type BoolT[T] = Boolean })#BoolT]): HMap[K, V] = {
     val filtered = map.asInstanceOf[Map[K[Any], V[Any]]].filter(pred.apply[Any])
-    new HMap[K, V] { val map = filtered.asInstanceOf[Map[K[_], V[_]]] }
+    HMap.from[K, V](filtered.asInstanceOf[Map[K[_], V[_]]])
   }
 
   def get[T](id: K[T]): Option[V[T]] =
@@ -100,7 +94,9 @@ trait GenPartial[T[_], R[_]] {
 }
 
 object HMap {
-  def empty[K[_], V[_]]: HMap[K, V] = new HMap[K, V] { override val map = Map.empty[K[_], V[_]] }
+  def empty[K[_], V[_]]: HMap[K, V] = from(Map.empty[K[_], V[_]])
+  private def from[K[_], V[_]](m: Map[K[_], V[_]]): HMap[K, V] =
+    new HMap[K, V] { override val map = m }
 }
 
 /**
