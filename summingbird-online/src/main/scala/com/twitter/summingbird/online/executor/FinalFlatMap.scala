@@ -75,15 +75,16 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(List[S], Value)]])
 
   private def formatResult(outData: Map[Key, (List[S], Value)]): TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])] = {
-    val aggregatedForSummers = MapAlgebra.sumByKey(outData.toSeq.map {
+    val batched: TraversableOnce[(Int, (List[S], Map[Key, Value]))] = MapAlgebra.sumByKey(outData.map {
       case (k, (listS, v)) =>
         summerShards.summerIdFor(k) -> (listS, Map(k -> v))
     }).toSeq
 
-    aggregatedForSummers.map {
+    batched.map {
       case (outerKey, (listS, innerMap)) =>
         (listS, Future.value(List((outerKey, innerMap))))
     }
+
   }
 
   override def tick: Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
