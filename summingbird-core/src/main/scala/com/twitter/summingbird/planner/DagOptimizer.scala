@@ -266,5 +266,40 @@ trait DagOptimizer[P <: Platform[P]] {
       case _ => None
     }
   }
+
+  /**
+   * We can always push all Also nodes all the way to the bottom of the dag
+   * MergedProducer(AlsoProducer(t, a), b) == AlsoProducer(t, MergedProducer(a, b))
+   *
+   * Unary(l, fn), if l == AlsoProducer(tail, r) can be changed to
+   *   AlsoProducer(tail, fn(r))
+   */
+  object AlsoPullUp extends Rule[Prod] {
+    def apply[T](on: ExpressionDag[Prod]) = {
+      case a @ AlsoProducer(_, _) => None // If we are already an also, we are done
+      case MergedProducer(AlsoProducer(tail, l), r) =>
+        Some(AlsoProducer(tail, l ++ r))
+      case MergedProducer(l, AlsoProducer(tail, r)) =>
+        Some(AlsoProducer(tail, l ++ r))
+      case node => on.toLiteral(node) match {
+        // There are a lot of unary operators, use the literal graph here:
+        // note that this cannot be an Also, due to the first case
+        case UnaryLit(alsoLit, fn) =>
+          alsoLit.evaluate match {
+            case AlsoProducer(tail, rest) =>
+              fn(rest) match {
+                case rightTail: TailProducer[_, _] =>
+                  // The type of the result must be T, but scala
+                  // can't see this
+                  val typedTail = rightTail.asInstanceOf[TailProducer[P, T]]
+                  Some(new AlsoTailProducer(tail, typedTail))
+                case nonTail => Some(AlsoProducer(tail, nonTail))
+              }
+            case _ => None
+          }
+        case _ => None
+      }
+    }
+  }
 }
 

@@ -173,6 +173,11 @@ sealed trait ExpressionDag[N[_]] { self =>
   }
 
   /**
+   * Convert a N[T] to a Literal[T, N]
+   */
+  def toLiteral[T](n: N[T]): Literal[T, N] = nodeToLiteral.apply[T](n)
+
+  /**
    * apply the rule at the first place that satisfies
    * it, and return from there.
    */
@@ -240,7 +245,7 @@ sealed trait ExpressionDag[N[_]] { self =>
     find(node) match {
       case Some(id) => (this, id)
       case None => {
-        val lit: Lit[T] = nodeToLiteral.apply[T](node)
+        val lit: Lit[T] = toLiteral(node)
         lit match {
           case ConstLit(n) =>
             /**
