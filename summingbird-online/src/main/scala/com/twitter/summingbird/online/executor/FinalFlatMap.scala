@@ -33,6 +33,7 @@ import com.twitter.summingbird.online.option.{
   MaxEmitPerExecute,
   FlushFrequency
 }
+import scala.collection.breakOut
 
 /**
  * @author Oscar Boykin
@@ -69,19 +70,25 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
 
   val lockedOp = Externalizer(flatMapOp)
 
-  type SummerK = Int
-  type SummerV = (List[S], Map[Key, Value])
-  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(List[S], Map[Key, Value])]])
+  type SummerK = Key
+  type SummerV = (List[S], Value)
+  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(List[S], Value)]])
 
-  private def formatResult(outData: Map[Int, (List[S], Map[Key, Value])]): TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])] = {
-    outData.iterator.map {
-      case (outerKey, (tupList, valList)) =>
-        if (valList.isEmpty) {
-          (tupList, Future.value(Nil))
-        } else {
-          (tupList, Future.value(List((outerKey, valList))))
-        }
+  private def formatResult(outData: Map[Key, (List[S], Value)]): TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])] = {
+    val batched: Iterator[TraversableOnce[(Int, (List[S], Map[Key, Value]))]] = outData.iterator.grouped(1000).map { iter: Seq[(Key, (List[S], Value))] =>
+      MapAlgebra.sumByKey(iter.map {
+        case (k, (listS, v)) =>
+          summerShards.summerIdFor(k) -> (listS, Map(k -> v))
+      }).toSeq
     }
+
+    batched.flatMap { innerBatched =>
+      innerBatched.map {
+        case (outerKey, (listS, innerMap)) =>
+          (listS, Future.value(List((outerKey, innerMap))))
+      }
+    }.toSeq
+
   }
 
   override def tick: Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
@@ -96,7 +103,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
         state.fanOut(itemL.size)
         sCache.addAll(itemL.map {
           case (k, v) =>
-            summerShards.summerIdFor(k) -> (List(state), Map(k -> v))
+            k -> (List(state), v)
         }).map(formatResult(_))
       } else { // Here we handle mapping to nothing, option map et. al
         Future.value(
