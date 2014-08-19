@@ -18,11 +18,11 @@ package com.twitter.summingbird.graph
 
 /**
  * This is a weak heterogenous map. It uses equals on the keys,
- * to it is your responsibilty that if k: K[_] == k2: K[_] then
+ * so it is your responsibilty that if k: K[_] == k2: K[_] then
  * the types are actually equal (either be careful or store a
- * type identifier.
+ * type identifier).
  */
-trait HMap[K[_], V[_]] {
+sealed abstract class HMap[K[_], V[_]] {
   type Pair[t] = (K[t], V[t])
   protected val map: Map[K[_], V[_]]
   override def toString: String =
@@ -38,7 +38,7 @@ trait HMap[K[_], V[_]] {
   def +[T](kv: (K[T], V[T])): HMap[K, V] =
     HMap.from[K, V](map + kv)
 
-  def -[T](k: K[T]): HMap[K, V] =
+  def -(k: K[_]): HMap[K, V] =
     HMap.from[K, V](map - k)
 
   def apply[T](id: K[T]): V[T] = get(id).get
