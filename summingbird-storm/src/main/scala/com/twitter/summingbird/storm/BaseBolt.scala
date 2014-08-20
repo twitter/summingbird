@@ -24,7 +24,7 @@ import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.{ Tuple, TupleImpl, Fields }
 
 import java.util.{ Map => JMap }
-import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
+import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{ InflightTuples, InputState }
 import com.twitter.summingbird.option.JobId
@@ -47,6 +47,7 @@ case class BaseBolt[I, O](jobID: JobId,
     hasDependants: Boolean,
     outputFields: Fields,
     ackOnEntry: AckOnEntry,
+    maxExecutePerSec: MaxExecutePerSecond,
     executor: OperationContainer[I, O, InputState[Tuple], JList[AnyRef], TopologyContext]) extends IRichBolt {
 
   @transient protected lazy val logger: Logger =
@@ -57,6 +58,44 @@ case class BaseBolt[I, O](jobID: JobId,
 
   private var collector: OutputCollector = null
 
+  private[this] var executedThisPeriod = 0L
+  private[this] var lastPeriod = 0L
+  private[this] var lowerBound = maxExecutePerSec.lowerBound * 10
+  private[this] var upperBound = maxExecutePerSec.upperBound * 10
+  private[this] val PERIOD_LENGTH_MS = 10000L
+
+  private[this] val rampPeriods = maxExecutePerSec.rampUptimeMS / PERIOD_LENGTH_MS
+  private[this] val deltaPerPeriod: Long = if (rampPeriods > 0) (upperBound - lowerBound) / rampPeriods else 0
+
+  private[this] lazy val startPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
+  private[this] lazy val endRampPeriod = startPeriod + rampPeriods
+
+  @annotation.tailrec
+  private def rateLimit: Unit = {
+    val recurse = this.synchronized {
+      val currentPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
+
+      if (currentPeriod == lastPeriod) {
+        val maxPerPeriod = if (currentPeriod < endRampPeriod) {
+          ((currentPeriod - startPeriod) * deltaPerPeriod) + lowerBound
+        } else {
+          upperBound
+        }
+        if (executedThisPeriod > maxPerPeriod) {
+          true
+        } else {
+          executedThisPeriod = executedThisPeriod + 1
+          false
+        }
+      } else {
+        lastPeriod = currentPeriod
+        executedThisPeriod = 0L
+        false
+      }
+    }
+    if (recurse) rateLimit else ()
+  }
+
   // Should we ack immediately on reception instead of at the end
   private val earlyAck = ackOnEntry.get
 
@@ -65,13 +104,14 @@ case class BaseBolt[I, O](jobID: JobId,
     logger.error(message, err)
   }
 
-  private def fail(inputs: List[InputState[Tuple]], error: Throwable): Unit = {
+  private def fail(inputs: Seq[InputState[Tuple]], error: Throwable): Unit = {
     executor.notifyFailure(inputs, error)
     if (!earlyAck) { inputs.foreach(_.fail(collector.fail(_))) }
     logError("Storm DAG of: %d tuples failed".format(inputs.size), error)
   }
 
   override def execute(tuple: Tuple) = {
+    rateLimit
     /**
      * System ticks come with a fixed stream id
      */
@@ -95,7 +135,7 @@ case class BaseBolt[I, O](jobID: JobId,
     }
   }
 
-  private def finish(inputs: List[InputState[Tuple]], results: TraversableOnce[O]) {
+  private def finish(inputs: Seq[InputState[Tuple]], results: TraversableOnce[O]) {
     var emitCount = 0
     if (hasDependants) {
       if (anchorTuples.anchor) {

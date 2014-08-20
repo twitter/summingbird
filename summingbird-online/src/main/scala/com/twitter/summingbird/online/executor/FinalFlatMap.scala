@@ -34,6 +34,8 @@ import com.twitter.summingbird.online.option.{
   FlushFrequency
 }
 import scala.collection.breakOut
+import scala.collection.mutable.{ Map => MMap, ListBuffer }
+import scala.collection.{ Map => CMap }
 
 /**
  * @author Oscar Boykin
@@ -46,7 +48,10 @@ import scala.collection.breakOut
 // Its supplied by the planning system usually to ensure its large enough to cover the space
 // used by the summers times some delta.
 private[summingbird] case class KeyValueShards(get: Int) {
-  def summerIdFor[K](k: K): Int = k.hashCode % get
+  def summerIdFor[K](k: K): Int = {
+    val candidate = k.hashCode % get
+    if (candidate < 0) candidate * -1 else candidate
+  }
 }
 
 class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
@@ -57,13 +62,13 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   maxEmitPerExec: MaxEmitPerExecute,
   summerShards: KeyValueShards,
   pDecoder: Injection[Event, D],
-  pEncoder: Injection[(Int, Map[Key, Value]), D])
-    extends AsyncBase[Event, (Int, Map[Key, Value]), S, D, RC](maxWaitingFutures,
+  pEncoder: Injection[(Int, CMap[Key, Value]), D])
+    extends AsyncBase[Event, (Int, CMap[Key, Value]), S, D, RC](maxWaitingFutures,
       maxWaitingTime,
       maxEmitPerExec) {
 
   type InS = S
-  type OutputElement = (Int, Map[Key, Value])
+  type OutputElement = (Int, CMap[Key, Value])
 
   val encoder = pEncoder
   val decoder = pDecoder
@@ -71,28 +76,38 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   val lockedOp = Externalizer(flatMapOp)
 
   type SummerK = Key
-  type SummerV = (List[S], Value)
-  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(List[S], Value)]])
+  type SummerV = (Seq[S], Value)
+  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(Seq[S], Value)]])
 
-  private def formatResult(outData: Map[Key, (List[S], Value)]): TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])] = {
-    val batched: TraversableOnce[(Int, (List[S], Map[Key, Value]))] = MapAlgebra.sumByKey(outData.map {
-      case (k, (listS, v)) =>
-        summerShards.summerIdFor(k) -> (listS, Map(k -> v))
-    }).toSeq
+  private def formatResult(outData: Map[Key, (Seq[S], Value)]): TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])] = {
+    if (outData.isEmpty) {
+      List(
+        (List(), Future.value(Nil))
+      )
+    } else {
+      var mmMap = MMap[Int, (ListBuffer[S], MMap[Key, Value])]()
+      // var outerArray = Array[MMap[Int, (ListBuffer[S], MMap[Key, Value]]()
 
-    batched.map {
-      case (outerKey, (listS, innerMap)) =>
-        (listS, Future.value(List((outerKey, innerMap))))
+      outData.toIterator.foreach {
+        case (k, (listS, v)) =>
+          val newK = summerShards.summerIdFor(k)
+          val oldVal = mmMap.getOrElseUpdate(newK, (ListBuffer[S](), MMap[Key, Value]()))
+          oldVal._1 ++= listS
+          oldVal._2 += k -> v
+      }
+
+      mmMap.toIterator.map {
+        case (outerKey, (listS, innerMap)) =>
+          (listS, Future.value(List((outerKey, innerMap))))
+      }
     }
-
   }
 
-  override def tick: Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
+  override def tick: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] =
     sCache.tick.map(formatResult(_))
-  }
 
   def cache(state: S,
-    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
+    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] = {
     try {
       val itemL = items.toList
       if (itemL.size > 0) {

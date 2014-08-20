@@ -43,6 +43,8 @@ import com.twitter.util.{ Future, Time }
 
 import org.slf4j.LoggerFactory
 
+import scala.collection.{ Map => CMap }
+
 import Constants._
 
 /*
@@ -287,6 +289,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
     logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
 
+    val maxExecutePerSec = getOrElse(stormDag, node, DEFAULT_MAX_EXECUTE_PER_SEC)
+    logger.info("[{}] maxExecutePerSec : {}", nodeName, maxExecutePerSec.toString)
+
     val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
       val ((k, batchID), (optiVWithTS, (ts, v))) = op
       val optiV = optiVWithTS.map(_._2)
@@ -303,6 +308,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       shouldEmit,
       new Fields(VALUE_FIELD),
       ackOnEntry,
+      maxExecutePerSec,
       new executor.Summer(
         wrappedStore,
         flatmapOp,
@@ -313,7 +319,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
         maxEmitPerExecute,
         getOrElse(stormDag, node, IncludeSuccessHandler.default),
-        new KeyValueInjection[Int, Map[ExecutorKeyType, ExecutorValueType]],
+        new KeyValueInjection[Int, CMap[ExecutorKeyType, ExecutorValueType]],
         new SingleItemInjection[ExecutorOutputType])
     )
 
