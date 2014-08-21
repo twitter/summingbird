@@ -177,6 +177,14 @@ trait DagOptimizer[P <: Platform[P]] {
     ExpressionDag[T, Prod](p, prodToLit)
   }
 
+  /**
+   * Optimize the given producer according to the rule
+   */
+  def optimize[T](p: Producer[P, T], rule: Rule[Prod]): Producer[P, T] = {
+    val (dag, id) = expressionDag(p)
+    dag(rule).evaluate(id)
+  }
+
   /*
    * Here are some generic optimization rules that might apply to all
    * graphs regardless of underlying platform
@@ -221,6 +229,32 @@ trait DagOptimizer[P <: Platform[P]] {
       //Can't fuse flatMaps when on fanout
       case OptionMappedProducer(in1 @ OptionMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
         OptionMappedProducer(in0, ComposedOptionMap(fn0, fn1))
+    }
+  }
+
+  /**
+   * If you don't care to distinguish between optionMap and flatMap,
+   * you can use this rule
+   */
+  object OptionToFlatMap extends Rule[Prod] {
+    def apply[T](on: ExpressionDag[Prod]) = {
+      //Can't fuse flatMaps when on fanout
+      case OptionMappedProducer(in, fn) => Some(in.flatMap(OptionToFlat(fn)))
+      case _ => None
+    }
+  }
+  /**
+   * If you can't optimize KeyFlatMaps, use this
+   */
+  object KeyFlatMapToFlatMap extends Rule[Prod] {
+    def apply[T](on: ExpressionDag[Prod]) = {
+      //Can't fuse flatMaps when on fanout
+      // TODO: we need to case class here to not lose the irreducible which may be named
+      case KeyFlatMappedProducer(in, fn) =>
+        // we know that (K, V) <: T due to the case match, but scala can't see it
+        def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
+        Some(cast(in.flatMap { case (k, v) => fn(k).map((_, v)) }))
+      case _ => None
     }
   }
 
