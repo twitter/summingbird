@@ -121,6 +121,12 @@ object ExpressionDagTests extends Properties("ExpressionDag") {
     }
   }
 
+  object RemoveInc extends PartialRule[Formula] {
+    def applyWhere[T](on: ExpressionDag[Formula]) = {
+      case Inc(f, by) => Sum(f, Constant(by))
+    }
+  }
+
   //Check the Node[T] <=> Id[T] is an Injection for all nodes reachable from the root
 
   property("toLiteral/Literal.evaluate is a bijection") = forAll(genForm) { form =>
@@ -135,6 +141,17 @@ object ExpressionDagTests extends Properties("ExpressionDag") {
   property("CombineInc does not change results") = forAll(genForm) { form =>
     val simplified = ExpressionDag.applyRule(form, toLiteral, CombineInc)
     form.evaluate == simplified.evaluate
+  }
+
+  property("RemoveInc removes all Inc") = forAll(genForm) { form =>
+    val noIncForm = ExpressionDag.applyRule(form, toLiteral, RemoveInc)
+    def noInc(f: Formula[Int]): Boolean = f match {
+      case Constant(_) => true
+      case Inc(_, _) => false
+      case Sum(l, r) => noInc(l) && noInc(r)
+      case Product(l, r) => noInc(l) && noInc(r)
+    }
+    noInc(noIncForm) && (noIncForm.evaluate == form.evaluate)
   }
 
   /**

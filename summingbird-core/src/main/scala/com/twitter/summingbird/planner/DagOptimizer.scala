@@ -21,38 +21,45 @@ import com.twitter.summingbird.graph._
 import com.twitter.algebird.Semigroup
 
 trait DagOptimizer[P <: Platform[P]] {
-  protected def mkAlso[T, U]: (Producer[P, T], Producer[P, U]) => Producer[P, U] = {
+
+  type Prod[T] = Producer[P, T]
+
+  /**
+   * This makes a potentially unsound cast. Since this method is only use
+   * in converting from an AlsoProducer to a Literal[T, Prod] below, it is
+   * not actually dangerous because we always use it in a safe position.
+   */
+  protected def mkAlso[T, U]: (Prod[T], Prod[U]) => Prod[U] = {
     (left, right) => AlsoProducer(left.asInstanceOf[TailProducer[P, T]], right)
   }
-  protected def mkMerge[T]: (Producer[P, T], Producer[P, T]) => Producer[P, T] = {
+  protected def mkMerge[T]: (Prod[T], Prod[T]) => Prod[T] = {
     (left, right) => MergedProducer(left, right)
   }
-  protected def mkNamed[T](name: String): (Producer[P, T] => Producer[P, T]) = {
+  protected def mkNamed[T](name: String): (Prod[T] => Prod[T]) = {
     prod => NamedProducer(prod, name)
   }
-  protected def mkIdentKey[K, V]: (Producer[P, (K, V)] => Producer[P, (K, V)]) = {
+  protected def mkIdentKey[K, V]: (Prod[(K, V)] => Prod[(K, V)]) = {
     prod => IdentityKeyedProducer(prod)
   }
-  protected def mkOptMap[T, U](fn: T => Option[U]): (Producer[P, T] => Producer[P, U]) = {
+  protected def mkOptMap[T, U](fn: T => Option[U]): (Prod[T] => Prod[U]) = {
     prod => OptionMappedProducer(prod, fn)
   }
-  protected def mkFlatMapped[T, U](fn: T => TraversableOnce[U]): (Producer[P, T] => Producer[P, U]) = {
+  protected def mkFlatMapped[T, U](fn: T => TraversableOnce[U]): (Prod[T] => Prod[U]) = {
     prod => FlatMappedProducer(prod, fn)
   }
-  protected def mkKeyFM[T, U, V](fn: T => TraversableOnce[U]): (Producer[P, (T, V)] => Producer[P, (U, V)]) = {
+  protected def mkKeyFM[T, U, V](fn: T => TraversableOnce[U]): (Prod[(T, V)] => Prod[(U, V)]) = {
     prod => KeyFlatMappedProducer(prod, fn)
   }
-  protected def mkWritten[T, U >: T](sink: P#Sink[U]): (Producer[P, T] => Producer[P, T]) = {
+  protected def mkWritten[T, U >: T](sink: P#Sink[U]): (Prod[T] => Prod[T]) = {
     prod => WrittenProducer[P, T, U](prod, sink)
   }
-  protected def mkSrv[K, T, V](serv: P#Service[K, V]): (Producer[P, (K, T)] => Producer[P, (K, (T, Option[V]))]) = {
+  protected def mkSrv[K, T, V](serv: P#Service[K, V]): (Prod[(K, T)] => Prod[(K, (T, Option[V]))]) = {
     prod => LeftJoinedProducer(prod, serv)
   }
-  protected def mkSum[K, V](store: P#Store[K, V], sg: Semigroup[V]): (Producer[P, (K, V)] => Producer[P, (K, (Option[V], V))]) = {
+  protected def mkSum[K, V](store: P#Store[K, V], sg: Semigroup[V]): (Prod[(K, V)] => Prod[(K, (Option[V], V))]) = {
     prod => Summer(prod, store, sg)
   }
 
-  type Prod[T] = Producer[P, T]
   type LitProd[T] = Literal[T, Prod]
 
   /**
@@ -180,10 +187,9 @@ trait DagOptimizer[P <: Platform[P]] {
    * parts of the input graph (functions, stores, sinks, sources, etc...) and not
    * the AST that we generate and optimize along the way
    */
-  object RemoveNames extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = {
-      case NamedProducer(p, _) => Some(p)
-      case _ => None
+  object RemoveNames extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
+      case NamedProducer(p, _) => p
     }
   }
 
@@ -191,33 +197,30 @@ trait DagOptimizer[P <: Platform[P]] {
    * Identity keyed producer is just a trick to make scala see methods on keyed
    * types, they have no meaning at runtime.
    */
-  object RemoveIdentityKeyed extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = {
+  object RemoveIdentityKeyed extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
       // scala can't see that (K, V) <: T
-      case IdentityKeyedProducer(p) => Some(p.asInstanceOf[Prod[T]])
-      case _ => None
+      case IdentityKeyedProducer(p) => p.asInstanceOf[Prod[T]]
     }
   }
 
   /**
    * a.flatMap(fn).flatMap(fn2) can be written as a.flatMap(compose(fn, fn2))
    */
-  object FlatMapFusion extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = {
+  object FlatMapFusion extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
       //Can't fuse flatMaps when on fanout
       case FlatMappedProducer(in1 @ FlatMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
-        Some(FlatMappedProducer(in0, ComposedFlatMap(fn0, fn1)))
-      case _ => None
+        FlatMappedProducer(in0, ComposedFlatMap(fn0, fn1))
     }
   }
 
   // a.optionMap(b).optionMap(c) == a.optionMap(compose(b, c))
-  object OptionMapFusion extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = {
+  object OptionMapFusion extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
       //Can't fuse flatMaps when on fanout
       case OptionMappedProducer(in1 @ OptionMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
-        Some(OptionMappedProducer(in0, ComposedOptionMap(fn0, fn1)))
-      case _ => None
+        OptionMappedProducer(in0, ComposedOptionMap(fn0, fn1))
     }
   }
 
@@ -228,25 +231,23 @@ trait DagOptimizer[P <: Platform[P]] {
    * platforms (storm) can't easily control source parallelism, so we don't want to push
    * big expansions up to sources
    */
-  object FlatThenOptionFusion extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = {
+  object FlatThenOptionFusion extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
       //Can't fuse flatMaps when on fanout
       case OptionMappedProducer(in1 @ FlatMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
-        Some(FlatMappedProducer(in0, ComposedFlatMap(fn0, OptionToFlat(fn1))))
-      case _ => None
+        FlatMappedProducer(in0, ComposedFlatMap(fn0, OptionToFlat(fn1)))
     }
   }
 
   /**
    * (a.flatMap(f1) ++ a.flatMap(f2)) == a.flatMap { i => f1(i) ++ f2(i) }
    */
-  object DiamondToFlatMap extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = {
+  object DiamondToFlatMap extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
       //Can't fuse flatMaps when on fanout
       case MergedProducer(left @ FlatMappedProducer(inleft, fnleft),
         right @ FlatMappedProducer(inright, fnright)) if (inleft == inright) && (on.fanOut(left) == 1) && (on.fanOut(right) == 1) =>
-        Some(FlatMappedProducer(inleft, MergeResults(fnleft, fnright)))
-      case _ => None
+        FlatMappedProducer(inleft, MergeResults(fnleft, fnright))
     }
   }
 
@@ -256,14 +257,13 @@ trait DagOptimizer[P <: Platform[P]] {
    * and since Merge is usually a no-op when combined with a grouping operation, it
    * often pays to get merges as high the graph as possible.
    */
-  object MergePullUp extends Rule[Prod] {
+  object MergePullUp extends PartialRule[Prod] {
     //Can't do this operation if the merge fans out
-    def apply[T](on: ExpressionDag[Prod]) = {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
       case OptionMappedProducer(m @ MergedProducer(a, b), fn) if (on.fanOut(m) == 1) =>
-        Some((a.optionMap(fn)) ++ (b.optionMap(fn)))
+        (a.optionMap(fn)) ++ (b.optionMap(fn))
       case FlatMappedProducer(m @ MergedProducer(a, b), fn) if (on.fanOut(m) == 1) =>
-        Some((a.flatMap(fn)) ++ (b.flatMap(fn)))
-      case _ => None
+        (a.flatMap(fn)) ++ (b.flatMap(fn))
     }
   }
 

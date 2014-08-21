@@ -17,8 +17,12 @@
 package com.twitter.summingbird.graph
 
 /**
- * The variables are assigned Ids. Each Id is associate with
+ * The Expressions are assigned Ids. Each Id is associated with
  * an expression of inner type T.
+ *
+ * This is done to put an indirection in the ExpressionDag that
+ * allows us to rewrite nodes by simply replacing the expressions
+ * associated with given Ids.
  *
  * T is a phantom type used by the type system
  */
@@ -35,6 +39,10 @@ final case class Id[T](id: Int)
  *
  * To add nodes to the graph, add depth to the final node returned in
  * a Unary or Binary expression.
+ *
+ * TODO: see the approach here: https://gist.github.com/pchiusano/1369239
+ * Which seems to show a way to do currying, so we can handle general
+ * arity
  */
 sealed trait Expr[T, N[_]] {
   def evaluate(idToExp: HMap[Id, ({ type E[t] = Expr[t, N] })#E]): N[T] =
