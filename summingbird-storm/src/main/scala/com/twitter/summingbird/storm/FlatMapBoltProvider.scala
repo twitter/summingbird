@@ -97,15 +97,6 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
   private val maxWaitTime = getOrElse(DEFAULT_MAX_FUTURE_WAIT_TIME)
   logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
 
-  private val flushFrequency = getOrElse(DEFAULT_FLUSH_FREQUENCY)
-  logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
-
-  private val cacheSize = getOrElse(DEFAULT_FM_CACHE)
-  logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
-
-  private val useAsyncCache = getOrElse(DEFAULT_USE_ASYNC_CACHE)
-  logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
-
   private val ackOnEntry = getOrElse(DEFAULT_ACK_ON_ENTRY)
   logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
 

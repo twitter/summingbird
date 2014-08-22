@@ -36,6 +36,17 @@ private[summingbird] trait PlatformStatProvider {
 }
 
 private[summingbird] object SummingbirdRuntimeStats {
+  private class MutableSetSynchronizedWrapper[T] {
+    private[this] val innerContainer = scala.collection.mutable.Set[T]()
+    def isEmpty: Boolean = innerContainer.synchronized { !innerContainer.isEmpty }
+    def toSeq: Seq[T] = innerContainer.synchronized { innerContainer.toSeq }
+    def add(e: T): Unit = innerContainer.synchronized { innerContainer += e }
+  }
+
+  // A global set of PlatformStatProviders, ParHashSet in scala seemed to trigger a deadlock
+  // So a simple wrapper on a mutable set is used.
+  private[this] val platformStatProviders = new MutableSetSynchronizedWrapper[WeakReference[PlatformStatProvider]]
+
   val SCALDING_STATS_MODULE = "com.twitter.summingbird.scalding.ScaldingRuntimeStatsProvider$"
 
   // Need to explicitly invoke the object initializer on remote node
@@ -46,13 +57,10 @@ private[summingbird] object SummingbirdRuntimeStats {
   private[this] lazy val platformsInit =
     platformObjects.foreach { s: String => ScalaTry[Unit] { Class.forName(s) } }
 
-  // A global set of PlatformStatProviders, use Java ConcurrentHashMap to create a thread-safe set
-  private val platformStatProviders = ParHashSet[WeakReference[PlatformStatProvider]]()
-
-  def hasStatProviders: Boolean = !platformStatProviders.isEmpty
+  def hasStatProviders: Boolean = platformStatProviders.isEmpty
 
   def addPlatformStatProvider(pp: PlatformStatProvider): Unit =
-    platformStatProviders += new WeakReference(pp)
+    platformStatProviders.add(new WeakReference(pp))
 
   def getPlatformCounterIncrementor(jobID: JobId, group: String, name: String): CounterIncrementor = {
     platformsInit
@@ -60,7 +68,7 @@ private[summingbird] object SummingbirdRuntimeStats {
     // return the incrementor for the Counter specified by group/name
     // We return the first PMP that matches the jobID, in reality there should be only one
     (for {
-      provRef <- platformStatProviders
+      provRef <- platformStatProviders.toSeq
       prov <- provRef.get
       incr <- prov.counterIncrementor(jobID, group, name)
     } yield incr)
