@@ -81,7 +81,8 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   type SummerV = (Seq[S], Value)
   lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(Seq[S], Value)]])
 
-  private[this] val noData = List(
+  // Lazy transient as const futures are not serializable
+  @transient private[this] lazy val noData = List(
     (List(), Future.value(Nil))
   )
 
