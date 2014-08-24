@@ -35,6 +35,8 @@ import com.twitter.summingbird.online.option.{
 }
 import scala.collection.breakOut
 import scala.collection.mutable.{ Map => MMap, ListBuffer }
+// These CMaps we generate in the FFM, we use it as an immutable wrapper around
+// a mutable map.
 import scala.collection.{ Map => CMap }
 
 /**
@@ -79,14 +81,15 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   type SummerV = (Seq[S], Value)
   lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(Seq[S], Value)]])
 
+  private[this] val noData = List(
+    (List(), Future.value(Nil))
+  )
+
   private def formatResult(outData: Map[Key, (Seq[S], Value)]): TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])] = {
     if (outData.isEmpty) {
-      List(
-        (List(), Future.value(Nil))
-      )
+      noData
     } else {
       var mmMap = MMap[Int, (ListBuffer[S], MMap[Key, Value])]()
-      // var outerArray = Array[MMap[Int, (ListBuffer[S], MMap[Key, Value]]()
 
       outData.toIterator.foreach {
         case (k, (listS, v)) =>

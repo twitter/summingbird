@@ -60,8 +60,9 @@ case class BaseBolt[I, O](jobID: JobId,
 
   private[this] var executedThisPeriod = 0L
   private[this] var lastPeriod = 0L
-  private[this] var lowerBound = maxExecutePerSec.lowerBound * 10
-  private[this] var upperBound = maxExecutePerSec.upperBound * 10
+
+  private[this] val lowerBound = maxExecutePerSec.lowerBound * 10
+  private[this] val upperBound = maxExecutePerSec.upperBound * 10
   private[this] val PERIOD_LENGTH_MS = 10000L
 
   private[this] val rampPeriods = maxExecutePerSec.rampUptimeMS / PERIOD_LENGTH_MS
@@ -70,10 +71,17 @@ case class BaseBolt[I, O](jobID: JobId,
   private[this] lazy val startPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
   private[this] lazy val endRampPeriod = startPeriod + rampPeriods
 
+  /*
+    This is the rate limit how many tuples we allow the bolt to process per second.
+    Due to variablitiy in how many things arrive we expand it out and work in 10 second blocks.
+    This does a linear ramp up from the lower bound to the upper bound over the time period.
+  */
   @annotation.tailrec
   private def rateLimit: Unit = {
-    val recurse = this.synchronized {
-      val currentPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
+    val sleepTime = this.synchronized {
+      val baseTime = System.currentTimeMillis
+      val currentPeriod = baseTime / PERIOD_LENGTH_MS
+      val timeTillNextPeriod = (currentPeriod + 1) * PERIOD_LENGTH_MS - baseTime
 
       if (currentPeriod == lastPeriod) {
         val maxPerPeriod = if (currentPeriod < endRampPeriod) {
@@ -82,18 +90,23 @@ case class BaseBolt[I, O](jobID: JobId,
           upperBound
         }
         if (executedThisPeriod > maxPerPeriod) {
-          true
+          timeTillNextPeriod
         } else {
           executedThisPeriod = executedThisPeriod + 1
-          false
+          0
         }
       } else {
         lastPeriod = currentPeriod
         executedThisPeriod = 0L
-        false
+        0
       }
     }
-    if (recurse) rateLimit else ()
+    if (sleepTime > 0) {
+      Thread.sleep(sleepTime)
+      rateLimit
+    } else {
+      ()
+    }
   }
 
   // Should we ack immediately on reception instead of at the end

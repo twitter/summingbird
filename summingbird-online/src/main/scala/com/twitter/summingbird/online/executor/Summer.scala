@@ -26,6 +26,8 @@ import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer }
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
+// These CMaps we generate in the FFM, we use it as an immutable wrapper around
+// a mutable map.
 import scala.collection.{ Map => CMap }
 
 /**
