@@ -59,8 +59,8 @@ class UniqueKeyedServiceSpec extends Specification {
     (1003, (400L, None))
   )
 
-  "A unique key join service" should {
-    "correctly join with source" in {
+  "A multikey join service" should {
+    "correctly join with multiple keys" in {
 
       JobTest(new UniqueKeyJoinJob(_))
         .source(TypedTsv[(Timestamp, (Int, Long))]("input0"), input)
