@@ -95,9 +95,9 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
       outData.toIterator.foreach {
         case (k, (listS, v)) =>
           val newK = summerShards.summerIdFor(k)
-          val oldVal = mmMap.getOrElseUpdate(newK, (ListBuffer[S](), MMap[Key, Value]()))
-          oldVal._1 ++= listS
-          oldVal._2 += k -> v
+          val (buffer, mmap) = mmMap.getOrElseUpdate(newK, (ListBuffer[S](), MMap[Key, Value]()))
+          buffer ++= listS
+          mmap += k -> v
       }
 
       mmMap.toIterator.map {
