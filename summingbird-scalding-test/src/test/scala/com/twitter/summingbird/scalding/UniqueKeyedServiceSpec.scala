@@ -12,7 +12,6 @@ import org.specs2.mutable._
  * Test Job for UniqueKeyedService
  */
 class UniqueKeyJoinJob(args: Args) extends Job(args) {
-  import TDsl._
 
   // K: Int, W: Long, V: String
   val input = TypedTsv[(Timestamp, (Int, Long))]("input0") // left side of the join
