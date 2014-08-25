@@ -1,6 +1,5 @@
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.OptionMonoid
 import com.twitter.scalding._
 import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.summingbird.batch.Timestamp
