@@ -28,10 +28,7 @@ class UniqueKeyJoinJob(args: Args) extends Job(args) {
 
   val output = uniqueKeyJoiner
     .doJoin(TypedPipe.from(input), TypedPipe.from(serv))
-    .map[(Int, (Long, Option[String]))] {
-      case (t, (k, (w, optV))) => (k, (w, optV))
-    }
-    .write(TypedTsv[(Int, (Long, Option[String]))]("output"))
+    .write(TypedTsv[(Timestamp, (Int, (Long, Option[String])))]("output"))
 }
 
 /**
@@ -52,9 +49,9 @@ class UniqueKeyedServiceSpec extends Specification {
   val typedSource = service.toMap
 
   val expectedResult = Set(
-    (1001, (300L, Some("a-1001"))),
-    (1002, (200L, Some("b-1002"))),
-    (1003, (400L, None))
+    (Timestamp(1001), (1001, (300L, Some("a-1001")))),
+    (Timestamp(1003), (1002, (200L, Some("b-1002")))),
+    (Timestamp(1003), (1003, (400L, None)))
   )
 
   "A unique key join service" should {
@@ -64,7 +61,7 @@ class UniqueKeyedServiceSpec extends Specification {
         .source(TypedTsv[(Timestamp, (Int, Long))]("input0"), input)
         .source(TypedTsv[(Int, String)]("input1"), service)
         .source(VersionedKeyValSource[Int, String]("input2"), typedSource)
-        .sink[(Int, (Long, Option[String]))](TypedTsv[(Int, (Long, Option[String]))]("output")) { outBuf =>
+        .sink[(Timestamp, (Int, (Long, Option[String])))](TypedTsv[(Timestamp, (Int, (Long, Option[String])))]("output")) { outBuf =>
           // Make sure the doJoin outputs exact number of records for the inputs.
           input.size must be_==(outBuf.size)
           // Make sure the result is exact as expected.
