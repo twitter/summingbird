@@ -19,8 +19,9 @@ package com.twitter.summingbird.example
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.Options
 import com.twitter.summingbird.option.CacheSize
-import com.twitter.summingbird.storm.{ StormStore, Storm, Executor, StormExecutionConfig }
-import com.twitter.summingbird.storm.option.{ FlatMapParallelism, SummerParallelism, SpoutParallelism }
+import com.twitter.summingbird.online.MergeableStoreFactory
+import com.twitter.summingbird.storm.{ Storm, Executor, StormExecutionConfig }
+import com.twitter.summingbird.online.option.{ FlatMapParallelism, SummerParallelism, SourceParallelism }
 import backtype.storm.{ Config => BTConfig }
 import com.twitter.scalding.Args
 import com.twitter.tormenta.spout.TwitterSpout
@@ -95,7 +96,7 @@ object StormRunner {
    * the param to store is by name, so this is still not created created
    * yet
    */
-  val storeSupplier: StormStore[String, Long] = Storm.store(stringLongStore)
+  val storeSupplier: MergeableStoreFactory[String, Long] = Storm.store(stringLongStore)
 
   /**
    * This function will be called by the storm runner to request the info
@@ -122,7 +123,7 @@ object StormRunner {
       override def getNamedOptions: Map[String, Options] = Map(
         "DEFAULT" -> Options().set(SummerParallelism(2))
           .set(FlatMapParallelism(80))
-          .set(SpoutParallelism(16))
+          .set(SourceParallelism(16))
           .set(CacheSize(100))
       )
       override def graph = wordCount[Storm](spout, storeSupplier)

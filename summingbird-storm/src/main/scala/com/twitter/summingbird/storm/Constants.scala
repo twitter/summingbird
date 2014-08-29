@@ -17,12 +17,9 @@ limitations under the License.
 package com.twitter.summingbird.storm
 
 import com.twitter.summingbird.storm.option._
-import com.twitter.summingbird.option._
-import com.twitter.summingbird.online.option._
+import com.twitter.summingbird.online.OnlineDefaultConstants
 
-import com.twitter.util.Duration
-
-object Constants {
+object Constants extends OnlineDefaultConstants {
   val AGG_KEY = "aggKey"
   val AGG_VALUE = "aggValue"
   val AGG_BATCH = "aggBatchID"
@@ -31,27 +28,9 @@ object Constants {
   val VALUE_FIELD = "value"
   val GROUP_BY_SUM = "groupBySum"
 
-  val DEFAULT_SPOUT_PARALLELISM = SpoutParallelism(1)
   val DEFAULT_SPOUT_STORM_METRICS = SpoutStormMetrics(None)
-  val DEFAULT_FM_PARALLELISM = FlatMapParallelism(5)
   val DEFAULT_FM_STORM_METRICS = FlatMapStormMetrics(None)
-  val DEFAULT_FM_CACHE = CacheSize(0)
-  val DEFAULT_SUMMER_PARALLELISM = SummerParallelism(5)
-  val DEFAULT_ONLINE_SUCCESS_HANDLER = OnlineSuccessHandler(_ => {})
-  val DEFAULT_ONLINE_EXCEPTION_HANDLER = OnlineExceptionHandler(Map.empty)
-  val DEFAULT_SUMMER_CACHE = CacheSize(0)
   val DEFAULT_SUMMER_STORM_METRICS = SummerStormMetrics(None)
-  val DEFAULT_MONOID_IS_COMMUTATIVE = MonoidIsCommutative.default
-  val DEFAULT_MAX_WAITING_FUTURES = MaxWaitingFutures(10)
-  val DEFAULT_MAX_FUTURE_WAIT_TIME = MaxFutureWaitTime(Duration.fromSeconds(60))
   val DEFAULT_FM_PREFER_LOCAL_DEPENDENCY = PreferLocalDependency(false)
-  val DEFAULT_FLUSH_FREQUENCY = FlushFrequency(Duration.fromSeconds(10))
-  val DEFAULT_USE_ASYNC_CACHE = UseAsyncCache(false)
-  val DEFAULT_ASYNC_POOL_SIZE = AsyncPoolSize(Runtime.getRuntime().availableProcessors())
-  val DEFAULT_SOFT_MEMORY_FLUSH_PERCENT = SoftMemoryFlushPercent(80.0F)
-  val DEFAULT_VALUE_COMBINER_CACHE_SIZE = ValueCombinerCacheSize(100)
   val DEFAULT_ACK_ON_ENTRY = AckOnEntry(false)
-  val DEFAULT_MAX_EMIT_PER_EXECUTE = MaxEmitPerExecute(Int.MaxValue)
-  val DEFAULT_MAX_EXECUTE_PER_SEC = MaxExecutePerSecond(lowerBound = Int.MaxValue, upperBound = Int.MaxValue, rampUptimeMS = 0L)
-  val DEFAULT_SUMMER_BATCH_MULTIPLIER = SummerBatchMultiplier(1)
 }

@@ -14,12 +14,15 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird
+package com.twitter.summingbird.online
 
 import com.twitter.storehaus.ReadableStore
 
-/**
- * Package containing the Summingbird Storm platform.
- */
-package object storm {
+object ReadableServiceFactory {
+  def apply[K, V](store: => ReadableStore[K, V]) =
+    new ReadableServiceFactory({ (_: Unit) => store })
+
 }
+
+case class ReadableServiceFactory[-K, +V](
+  override val store: Function1[Unit, ReadableStore[K, V]]) extends OnlineServiceFactory[K, V]

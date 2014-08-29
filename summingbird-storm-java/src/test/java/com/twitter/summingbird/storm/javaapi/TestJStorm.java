@@ -20,8 +20,8 @@ import com.twitter.summingbird.javaapi.JProducers;
 import com.twitter.summingbird.javaapi.Sink;
 import com.twitter.summingbird.storm.Storm;
 import com.twitter.summingbird.storm.StormSink;
-import com.twitter.summingbird.storm.option.SpoutParallelism;
 import com.twitter.summingbird.storm.spout.TraversableSpout;
+import com.twitter.summingbird.online.option.SourceParallelism;
 import com.twitter.util.Future;
 import com.twitter.util.Future$;
 
@@ -40,7 +40,7 @@ public class TestJStorm {
     JStorm storm = JStorm.local();
     JProducer<Storm, String> source = JStorm.source(
         new TraversableSpout<Tuple2<Timestamp, String>>(asScalaIterable(input), "field"),
-        JProducers.<SpoutParallelism>none());
+        JProducers.<SourceParallelism>none());
     Sink<Storm, StormSink<String>, String> sink = JStorm.sink(new Callable<Function<String,Future<BoxedUnit>>>() {
       @Override
       public Function<String, Future<BoxedUnit>> call() throws Exception {

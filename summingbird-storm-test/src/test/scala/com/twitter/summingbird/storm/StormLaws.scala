@@ -26,6 +26,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird.storm.option._
+import com.twitter.summingbird.online._
 import com.twitter.summingbird.memory._
 import com.twitter.summingbird.planner._
 import com.twitter.tormenta.spout.Spout
@@ -110,7 +111,7 @@ object StormLaws extends Specification {
   }
 
   val serviceFn = sample[Int => Option[Int]]
-  val service = StoreWrapper[Int, Int](() => ReadableStore.fromFn(serviceFn))
+  val service = ReadableServiceFactory[Int, Int](ReadableStore.fromFn(serviceFn))
 
   // ALL TESTS START AFTER THIS LINE
 
@@ -315,7 +316,7 @@ object StormLaws extends Specification {
     val postJoinFn = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
 
     val serviceFn = sample[Int => Option[Int]]
-    val service = StoreWrapper[Int, Int](() => ReadableStore.fromFn(serviceFn))
+    val service = ReadableServiceFactory[Int, Int](ReadableStore.fromFn(serviceFn))
 
     val tail = TestGraphs.realJoinTestJob[Storm, Int, Int, Int, Int, Int, Int, Int, Int, Int](source1, source2, source3, source4,
       service, store1, fn1, fn2, fn3, preJoinFn, postJoinFn)

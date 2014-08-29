@@ -22,10 +22,12 @@ import backtype.storm.tuple.Fields
 import backtype.storm.tuple.Tuple
 
 import com.twitter.algebird.{ Semigroup, Monoid }
+import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
+import com.twitter.summingbird.online.OnlineServiceFactory
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{ IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime, SummerBuilder }
 import com.twitter.summingbird.option.{ CacheSize, JobId }
@@ -71,10 +73,9 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       case (acc, p) =>
         p match {
           case LeftJoinedProducer(_, wrapper) =>
-            val newService = wrapper.store
             FlatMapOperation.combine(
               acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-              newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
+              wrapper.asInstanceOf[OnlineServiceFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
           case OptionMappedProducer(_, op) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
           case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
           case WrittenProducer(_, sinkSupplier) =>

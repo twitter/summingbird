@@ -19,6 +19,7 @@ package com.twitter.summingbird.storm
 import com.twitter.algebird.Semigroup
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.online._
 import com.twitter.util.Future
 import java.util.{ Collections, HashMap, Map => JMap, UUID }
 import java.util.concurrent.atomic.AtomicInteger
@@ -43,19 +44,19 @@ object TestStore {
     storeID
   }
 
-  def createBatchedStore[K, V](initialData: Map[(K, BatchID), V] = Map.empty[(K, BatchID), V])(implicit batcher: Batcher, valueSG: Semigroup[V]): (String, MergeableStoreSupplier[K, V]) = {
+  def createBatchedStore[K, V](initialData: Map[(K, BatchID), V] = Map.empty[(K, BatchID), V])(implicit batcher: Batcher, valueSG: Semigroup[V]): (String, MergeableStoreFactory[K, V]) = {
 
     val storeID = buildStore[(K, BatchID), V](initialData)
-    val supplier = MergeableStoreSupplier.from(
+    val supplier = MergeableStoreFactory.from(
       TestStore.apply[(K, BatchID), V](storeID)
         .getOrElse(sys.error("Weak hash map no longer contains store"))
     )
     (storeID, supplier)
   }
 
-  def createStore[K, V: Semigroup](initialData: Map[K, V] = Map.empty[K, V]): (String, MergeableStoreSupplier[K, V]) = {
+  def createStore[K, V: Semigroup](initialData: Map[K, V] = Map.empty[K, V]): (String, MergeableStoreFactory[K, V]) = {
     val storeID = buildStore[K, V](initialData)
-    val supplier = MergeableStoreSupplier.fromOnlineOnly(
+    val supplier = MergeableStoreFactory.fromOnlineOnly(
       TestStore.apply[K, V](storeID)
         .getOrElse(sys.error("Weak hash map no longer contains store"))
     )

@@ -233,7 +233,8 @@ object SummingbirdBuild extends Build {
       withCross("com.twitter" %% "util-core" % utilVersion)
     )
   ).dependsOn(
-    summingbirdCore % "test->test;compile->compile"
+    summingbirdCore % "test->test;compile->compile",
+    summingbirdBatch
   )
 
   lazy val summingbirdStorm = module("storm").settings(

@@ -104,10 +104,10 @@ object FlatMapOperation {
     new FunctionKeyFlatMapOperation(fm)
 
   def combine[T, K, V, JoinedV](fmSupplier: => FlatMapOperation[T, (K, V)],
-    storeSupplier: () => ReadableStore[K, JoinedV]): FlatMapOperation[T, (K, (V, Option[JoinedV]))] =
+    storeSupplier: OnlineServiceFactory[K, JoinedV]): FlatMapOperation[T, (K, (V, Option[JoinedV]))] =
     new FlatMapOperation[T, (K, (V, Option[JoinedV]))] {
       lazy val fm = fmSupplier
-      lazy val store = storeSupplier()
+      lazy val store = storeSupplier.store()
       override def apply(t: T) =
         fm.apply(t).flatMap { trav: TraversableOnce[(K, V)] =>
           val resultList = trav.toSeq // Can't go through this twice

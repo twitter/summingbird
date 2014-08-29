@@ -24,7 +24,8 @@ import backtype.storm.topology.OutputFieldsDeclarer
 import backtype.storm.tuple.{ Tuple, TupleImpl, Fields }
 
 import java.util.{ Map => JMap }
-import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
+import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
+import com.twitter.summingbird.online.option.MaxExecutePerSecond
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{ InflightTuples, InputState }
 import com.twitter.summingbird.option.JobId
