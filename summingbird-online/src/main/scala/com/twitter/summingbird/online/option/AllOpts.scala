@@ -78,23 +78,32 @@ case class SoftMemoryFlushPercent(get: Float) {
  */
 case class ValueCombinerCacheSize(get: Int)
 
+/**
+ * A SummerBuilder is a generic trait that should be implemented to build a totally custom aggregator.
+ * This is the same trait for both map side and reduce side aggregation.
+ */
 trait SummerBuilder extends Serializable {
   def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]]
 }
 
+/**
+ * The SummerConstructor option, set this instead of CacheSize, AsyncPoolSize, etc.. to provide how to construct the aggregation for this bolt
+ */
 case class SummerConstructor(get: SummerBuilder)
 
+/**
+ * How many instances/tasks of this flatmap task should be spawned in the environment
+ */
 case class FlatMapParallelism(parHint: Int)
 
 /**
- * Maximum number of tuples to execute in a given second per mapper
+ * Parallelism in the number of instances/tasks to attempt to achieve for a given source
  */
-case class MaxExecutePerSecond(lowerBound: Long, upperBound: Long, rampUptimeMS: Long) {
-  require(rampUptimeMS >= 0L, "Ramp up time must greater than or equal to zero")
-}
-
 case class SourceParallelism(parHint: Int)
 
+/**
+ * How many instances/tasks of this summer task should be spawned in the environment
+ */
 case class SummerParallelism(parHint: Int)
 
 /**

@@ -18,6 +18,12 @@ package com.twitter.summingbird.online
 
 import com.twitter.storehaus.ReadableStore
 
+/*
+ * What we would like to pass around to describe a service.
+ * That is its a factory that produces readable store's.
+ *
+ * The Function1 here is to allow cleaner diasy chaining of operations via andThen.
+ */
 trait OnlineServiceFactory[-K, +V] {
   def store: Function1[Unit, ReadableStore[K, V]]
 }

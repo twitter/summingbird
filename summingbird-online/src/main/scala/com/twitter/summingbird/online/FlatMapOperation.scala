@@ -21,7 +21,7 @@ import com.twitter.util.{ Future, Await }
 import java.io.{ Closeable, Serializable }
 
 // Represents the logic in the flatMap bolts
-trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
+trait FlatMapOperation[-T, +U] extends Serializable with Closeable { self =>
   def apply(t: T): Future[TraversableOnce[U]]
 
   override def close {}
@@ -31,6 +31,14 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
    * Not used yet so commented out
    */
   def maybeFlush: Future[TraversableOnce[U]] = Future.value(Seq.empty[U])
+
+  // Helper to add a simple U => S operation at the end of a FlatMapOperation
+  def map[S](fn: U => S): FlatMapOperation[T, S] =
+    self.andThen(FlatMapOperation(fn.andThen(r => Seq(r))))
+
+  // Helper to add a simple U => TraversableOnce[S] operation at the end of a FlatMapOperation
+  def flatMap[S](fn: U => TraversableOnce[S]): FlatMapOperation[T, S] =
+    self.andThen(FlatMapOperation(fn))
 
   /**
    * TODO: Think about getting an implicit FutureCollector here, in

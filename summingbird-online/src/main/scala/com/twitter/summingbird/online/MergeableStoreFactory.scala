@@ -19,6 +19,11 @@ package com.twitter.summingbird.online
 import com.twitter.storehaus.algebra.{ MergeableStore, Mergeable, StoreAlgebra }
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
 
+/*
+ * A MergeableStoreFactory is used in online jobs where we need a means to create a storehaus store, and have a batcher for that store.
+ *
+ * We use Function1 since it makes daisy chaining operations much cleaner with .andThen
+ */
 object MergeableStoreFactory {
 
   def from[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreFactory[K, V] =

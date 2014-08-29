@@ -27,7 +27,6 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
-import com.twitter.summingbird.online.OnlineServiceFactory
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option.{ IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime, SummerBuilder }
 import com.twitter.summingbird.option.{ CacheSize, JobId }
@@ -39,6 +38,11 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.{ Map => CMap }
 
+/**
+ * These are helper functions for building a bolt from a Node[Storm] element.
+ * There are two main codepaths here, for intermediate flat maps and final flat maps.
+ * The primary difference between those two being the the presents of map side aggreagtion in a final flatmap.
+ */
 object FlatMapBoltProvider {
   @transient private val logger = LoggerFactory.getLogger(FlatMapBoltProvider.getClass)
   private def wrapTimeBatchIDKV[T, K, V](existingOp: FlatMapOperation[T, (K, V)])(batcher: Batcher): FlatMapOperation[(Timestamp, T), ((K, BatchID), (Timestamp, V))] = {
@@ -63,32 +67,9 @@ object FlatMapBoltProvider {
 
 case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
   import FlatMapBoltProvider._
+  import Producer2FlatMapOperation._
 
   def getOrElse[T <: AnyRef: Manifest](default: T, queryNode: StormNode = node) = storm.getOrElse(stormDag, queryNode, default)
-  /**
-   * Keep the crazy casts localized in here
-   */
-  private def foldOperations[T, U](producers: List[Producer[Storm, _]]): FlatMapOperation[T, U] =
-    producers.foldLeft(FlatMapOperation.identity[Any]) {
-      case (acc, p) =>
-        p match {
-          case LeftJoinedProducer(_, wrapper) =>
-            FlatMapOperation.combine(
-              acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-              wrapper.asInstanceOf[OnlineServiceFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
-          case OptionMappedProducer(_, op) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
-          case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
-          case WrittenProducer(_, sinkSupplier) =>
-            acc.andThen(FlatMapOperation.write(() => sinkSupplier.toFn))
-          case IdentityKeyedProducer(_) => acc
-          case MergedProducer(_, _) => acc
-          case NamedProducer(_, _) => acc
-          case AlsoProducer(_, _) => acc
-          case Source(_) => sys.error("Should not schedule a source inside a flat mapper")
-          case Summer(_, _, _) => sys.error("Should not schedule a Summer inside a flat mapper")
-          case KeyFlatMappedProducer(_, op) => acc.andThen(FlatMapOperation.keyFlatMap[Any, Any, Any](op).asInstanceOf[FlatMapOperation[Any, Any]])
-        }
-    }.asInstanceOf[FlatMapOperation[T, U]]
 
   // Boilerplate extracting of the options from the DAG
   private val nodeName = stormDag.getNodeName(node)

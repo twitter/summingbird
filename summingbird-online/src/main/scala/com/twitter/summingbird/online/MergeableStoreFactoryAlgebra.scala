@@ -22,7 +22,7 @@ import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import com.twitter.util.{ Future, Time }
 
 // Cannot use a MergeableProxy here since we change the type.
-class WrappedMergeable[K, V](self: Mergeable[K, V]) extends Mergeable[K, (Timestamp, V)] {
+class WrappedTSInMergeable[K, V](self: Mergeable[K, V]) extends Mergeable[K, (Timestamp, V)] {
   // Since we don't keep a timestamp in the store
   // this makes it clear that the 'right' or newest timestamp from the stream
   // will always be the timestamp outputted
@@ -54,7 +54,7 @@ object MergeableStoreFactoryAlgebra {
       */
   def wrapOnlineFactory[K, V](supplier: MergeableStoreFactory[K, V]): MergeableStoreFactory[K, (Timestamp, V)] =
     {
-      val mergeable = supplier.store.andThen { s => new WrappedMergeable(s) }
+      val mergeable = supplier.store.andThen { s => new WrappedTSInMergeable(s) }
 
       MergeableStoreFactory[K, (Timestamp, V)](mergeable, supplier.batcher)
     }
