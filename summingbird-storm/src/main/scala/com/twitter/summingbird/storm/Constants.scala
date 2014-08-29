@@ -52,5 +52,6 @@ object Constants {
   val DEFAULT_VALUE_COMBINER_CACHE_SIZE = ValueCombinerCacheSize(100)
   val DEFAULT_ACK_ON_ENTRY = AckOnEntry(false)
   val DEFAULT_MAX_EMIT_PER_EXECUTE = MaxEmitPerExecute(Int.MaxValue)
+  val DEFAULT_MAX_EXECUTE_PER_SEC = MaxExecutePerSecond(lowerBound = Int.MaxValue, upperBound = Int.MaxValue, rampUptimeMS = 0L)
   val DEFAULT_SUMMER_BATCH_MULTIPLIER = SummerBatchMultiplier(1)
 }
