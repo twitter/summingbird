@@ -101,7 +101,7 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)(
     lastVals.write(TypedSink[(K, V)](outSource))
   }
 
-  override def readLast(exclusiveUB: BatchID, mode: Mode) = {
+  override def readLast(exclusiveUB: BatchID, mode: Mode)(implicit f: FlowDef, m: Mode) = {
     val lastID = getLastBatchID(exclusiveUB, mode)
 
     val src = WritableSequenceFile(rootPath + "/" + lastID.toString, 'key -> 'val)

@@ -186,7 +186,7 @@ object Scalding {
                 val newIntr = newDr.as[Interval[Timestamp]]
                 val mappable = factory(newDr)
                 ((newIntr, mode), Reader { (fdM: (FlowDef, Mode)) =>
-                  TypedPipe.from(mappable)(fdM._1, fdM._2)
+                  TypedPipe.from(mappable)
                     .flatMap { t =>
                       fn(t).flatMap { mapped =>
                         val time = Timestamp(timeOf(mapped))
@@ -209,7 +209,7 @@ object Scalding {
             val mappable = factory(dr)
             ((timeSpan, mode), Reader { (fdM: (FlowDef, Mode)) =>
               mappable.validateTaps(fdM._2) //This can throw, but that is what this caller wants
-              TypedPipe.from(mappable)(fdM._1, fdM._2)
+              TypedPipe.from(mappable)
                 .flatMap { t =>
                   val time = Timestamp(timeOf(t))
                   if (timeSpan(time)) Some((time, t)) else None

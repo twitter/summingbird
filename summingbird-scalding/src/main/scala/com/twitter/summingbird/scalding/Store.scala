@@ -28,6 +28,11 @@ import org.slf4j.LoggerFactory
 object Store extends java.io.Serializable {
   // This could be moved to scalding, but the API needs more design work
   // This DOES NOT trigger a grouping
+
+  // KG: adding implicit flowDef and mode here propagates to:
+  // BatchedStore sumByBatches -> partialMerge & mergeBatched -> merge ->
+  // ScaldingPlatform bulidFlow -> .. -> plan
+  // Q: how can we pass the scalding implicits (flowdef and mode) to the store during planning?
   def mapsideReduce[K, V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] = {
     import Dsl._
     val fields = ('key, 'value)
