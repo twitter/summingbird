@@ -41,7 +41,7 @@ class BatchedDeltaService[K, V: Semigroup](val store: batch.BatchedStore[K, V],
         pipe.mapValues { kv: (K, V) => (kv._1, Some(kv._2)) } // case confused compiler here
       }
     }
-  override def readLast(exclusiveUB: BatchID, mode: Mode) =
+  override def readLast(exclusiveUB: BatchID, mode: Mode)(implicit flowDef: FlowDef, m: Mode) =
     store.readLast(exclusiveUB, mode)
 
   /**

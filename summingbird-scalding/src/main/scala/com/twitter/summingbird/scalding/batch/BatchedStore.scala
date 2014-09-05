@@ -65,7 +65,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
    * combining the last from batchID and the deltas from batchID.next you get the stream
    * for batchID.next
    */
-  def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])]
+  def readLast(exclusiveUB: BatchID, mode: Mode)(implicit f: FlowDef, m: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])]
 
   /** Record a computed batch of code */
   def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit
@@ -240,6 +240,8 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       .right
       .flatMap {
         case (firstNewBatch, lastNewBatch) =>
+        // KG: need to pass implicit flowdef here, but this will cause merge to need implicit, which goes up to
+        // plan call. How can we pass flowdef here?
           readLast(firstNewBatch, mode)
             .right
             .flatMap {

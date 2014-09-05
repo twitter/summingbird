@@ -135,7 +135,7 @@ object BatchedService extends java.io.Serializable {
     override val reducers = reducerOption
     override def readStream(batchID: BatchID, mode: Mode) =
       sink.readStream(batchID, mode)
-    override def readLast(exclusiveUB: BatchID, mode: Mode) =
+    override def readLast(exclusiveUB: BatchID, mode: Mode)(implicit flowDef: FlowDef, m: Mode) =
       store.readLast(exclusiveUB, mode)
   }
 

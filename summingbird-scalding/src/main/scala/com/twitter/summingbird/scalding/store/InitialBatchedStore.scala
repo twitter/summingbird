@@ -36,7 +36,7 @@ class InitialBatchedStore[K, V](val firstNonZero: BatchID, override val proxy: B
     else sys.error("Earliest batch set at :" + firstNonZero + " but tried to write: " + batchID)
 
   // Here is where we switch:
-  override def readLast(exclusiveUB: BatchID, mode: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
+  override def readLast(exclusiveUB: BatchID, mode: Mode)(implicit flowDef: FlowDef, m: Mode): Try[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
     if (exclusiveUB > firstNonZero) proxy.readLast(exclusiveUB, mode)
     else if (exclusiveUB == firstNonZero) Right((firstNonZero.prev, Scalding.emptyFlowProducer[(K, V)]))
     else Left(List("Earliest batch set at :" + firstNonZero + " but tried to read: " + exclusiveUB))
