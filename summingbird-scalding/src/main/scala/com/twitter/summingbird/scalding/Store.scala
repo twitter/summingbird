@@ -28,14 +28,9 @@ import org.slf4j.LoggerFactory
 object Store extends java.io.Serializable {
   // This could be moved to scalding, but the API needs more design work
   // This DOES NOT trigger a grouping
-  def mapsideReduce[K, V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] = {
-    import Dsl._
-    val fields = ('key, 'value)
-    val gpipe = pipe.toPipe(fields)(TupleSetter.tup2Setter[(K, V)])
-    val msr = new MapsideReduce(sg, fields._1, fields._2, None)(
-      TupleConverter.singleConverter[V], TupleSetter.singleSetter[V])
-    TypedPipe.from(gpipe.eachTo(fields -> fields) { _ => msr }, fields)(TupleConverter.of[(K, V)])
-  }
+
+  def mapsideReduce[K, V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] =
+    pipe.sumByLocalKeys
 }
 
 trait Store[K, V] extends java.io.Serializable {
