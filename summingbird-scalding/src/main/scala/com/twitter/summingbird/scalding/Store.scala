@@ -25,14 +25,6 @@ import cascading.flow.FlowDef
 
 import org.slf4j.LoggerFactory
 
-object Store extends java.io.Serializable {
-  // This could be moved to scalding, but the API needs more design work
-  // This DOES NOT trigger a grouping
-
-  def mapsideReduce[K, V](pipe: TypedPipe[(K, V)])(implicit sg: Semigroup[V]): TypedPipe[(K, V)] =
-    pipe.sumByLocalKeys
-}
-
 trait Store[K, V] extends java.io.Serializable {
   /**
    * Accepts deltas along with their timestamps, returns triples of
