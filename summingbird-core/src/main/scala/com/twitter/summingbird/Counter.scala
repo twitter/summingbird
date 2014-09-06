@@ -31,5 +31,5 @@ case class Counter(group: String, name: String)(implicit jobID: JobId) {
 
   def incrBy(amount: Long): Unit = incrCounter.incrBy(amount)
 
-  def incr: Unit = incrBy(1L)
+  def incr(): Unit = incrBy(1L)
 }

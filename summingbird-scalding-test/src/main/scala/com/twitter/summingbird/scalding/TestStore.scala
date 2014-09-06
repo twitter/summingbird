@@ -68,7 +68,7 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
     } else {
       val batch = candidates.max
       val mappable = batches(batch)
-      val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable)(fd._1, fd._2) }
+      val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable) }
       Right((batch, rdr))
     }
   }
