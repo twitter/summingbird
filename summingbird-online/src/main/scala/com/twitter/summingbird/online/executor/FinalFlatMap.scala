@@ -50,10 +50,8 @@ import scala.collection.{ Map => CMap }
 // Its supplied by the planning system usually to ensure its large enough to cover the space
 // used by the summers times some delta.
 private[summingbird] case class KeyValueShards(get: Int) {
-  def summerIdFor[K](k: K): Int = {
-    val candidate = k.hashCode % get
-    if (candidate < 0) candidate * -1 else candidate
-  }
+  def summerIdFor[K](k: K): Int =
+    math.abs(k.hashCode % get)
 }
 
 class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
