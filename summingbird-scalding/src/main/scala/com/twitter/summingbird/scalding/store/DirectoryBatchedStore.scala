@@ -105,7 +105,7 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)(
     val lastID = getLastBatchID(exclusiveUB, mode)
 
     val src = WritableSequenceFile(rootPath + "/" + lastID.toString, 'key -> 'val)
-    val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(src.read(fd._1, fd._2), Fields.ALL) }
+    val rdr = Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(src.read(fd._1, fd._2), Fields.ALL)(fd._1, fd._2, implicitly[TupleConverter[(K, V)]]) }
     Right((lastID, rdr))
 
   }
