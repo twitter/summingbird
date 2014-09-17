@@ -236,25 +236,23 @@ trait DagOptimizer[P <: Platform[P]] {
    * If you don't care to distinguish between optionMap and flatMap,
    * you can use this rule
    */
-  object OptionToFlatMap extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = {
+  object OptionToFlatMap extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
       //Can't fuse flatMaps when on fanout
-      case OptionMappedProducer(in, fn) => Some(in.flatMap(OptionToFlat(fn)))
-      case _ => None
+      case OptionMappedProducer(in, fn) => in.flatMap(OptionToFlat(fn))
     }
   }
   /**
    * If you can't optimize KeyFlatMaps, use this
    */
-  object KeyFlatMapToFlatMap extends Rule[Prod] {
-    def apply[T](on: ExpressionDag[Prod]) = {
+  object KeyFlatMapToFlatMap extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
       //Can't fuse flatMaps when on fanout
       // TODO: we need to case class here to not lose the irreducible which may be named
       case KeyFlatMappedProducer(in, fn) =>
         // we know that (K, V) <: T due to the case match, but scala can't see it
         def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
-        Some(cast(in.flatMap { case (k, v) => fn(k).map((_, v)) }))
-      case _ => None
+        cast(in.flatMap { case (k, v) => fn(k).map((_, v)) })
     }
   }
 
