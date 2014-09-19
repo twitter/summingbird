@@ -21,37 +21,60 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
 import collection.mutable.{ Map => MutableMap }
 import scala.util.Try
+import java.util.concurrent.ConcurrentHashMap
 
 object Memory {
   implicit def toSource[T](traversable: TraversableOnce[T])(implicit mf: Manifest[T]): Producer[Memory, T] =
     Producer.source[Memory, T](traversable)
 }
 
-private[summingbird] case class MemoryCounterIncrementor(metric: MutableMap[(String, String), Long], group: String, name: String)
-    extends CounterIncrementor {
-  def incrBy(by: Long): Unit = {
-    val oldVal: Long = metric.remove((group, name)).get
-    val newVal = by + oldVal
-    metric += ((group, name) -> newVal)
+/**
+ * Mutable counter for the Memory platform
+ */
+class MemoryCounter {
+
+  private var count: Long = 0L
+
+  def incr(by: Long): Unit = {
+    count += by
   }
+
+  def get: Long = count
+}
+
+private[summingbird] case class MemoryCounterIncrementor(metric: MemoryCounter) extends CounterIncrementor {
+  def incrBy(by: Long): Unit = metric.incr(by)
 }
 
 private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
 
-  val metricsForJob: MutableMap[JobId, MutableMap[(String, String), Long]] = MutableMap.empty
+  private val metricsForJob = new ConcurrentHashMap[JobId, Map[String, MemoryCounter]]()
 
-  def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[MemoryCounterIncrementor] = {
-    if (metricsForJob.contains(passedJobId)) {
-      //    val metric = metricsForJob.get(passedJobId).get((group, name))
-      Some(MemoryCounterIncrementor(metricsForJob.get(passedJobId).get, group, name))
+  def getMetricsForJob(jobID: JobId): Option[Map[String, MemoryCounter]] = {
+    if (metricsForJob.containsKey(jobID)) {
+      Some(metricsForJob.get(jobID))
     } else {
       None
     }
   }
 
-  def registerCounter(jobID: JobId, group: String, name: String) = {
-    metricsForJob.getOrElseUpdate(jobID, MutableMap.empty)
-    metricsForJob.get(jobID).get.getOrElseUpdate((group, name), 0L)
+  def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[MemoryCounterIncrementor] = {
+    if (metricsForJob.containsKey(passedJobId)) {
+      Some(MemoryCounterIncrementor(metricsForJob.get(passedJobId).getOrElse(group + "/" + name,
+        sys.error("It is only valid to create counter objects during submission"))))
+    } else {
+      None
+    }
+  }
+
+  def registerCounters(jobID: JobId, metrics: List[(String, String)]) = {
+    if (!metricsForJob.containsKey(jobID)) {
+      val memoryMetrics = metrics.map {
+        case (g, n) =>
+          (g + "/" + n, new MemoryCounter())
+      }.toMap
+      metricsForJob.put(jobID, memoryMetrics)
+    }
   }
 }
 
@@ -65,7 +88,11 @@ class Memory(jobID: JobId = JobId("memory.job")) extends Platform[Memory] {
   private type Prod[T] = Producer[Memory, T]
   private type JamfMap = Map[Prod[_], Stream[_]]
 
-  def counters = MemoryStatProvider.metricsForJob.get(jobID)
+  def counter(group: String, name: String): Long = {
+    //TODO: add safety
+    val metrics: Map[String, MemoryCounter] = MemoryStatProvider.getMetricsForJob(jobID).get
+    metrics.get(group + "/" + name).get.get
+  }
 
   def toStream[T, K, V](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
     jamfs.get(outerProducer) match {
@@ -134,7 +161,7 @@ class Memory(jobID: JobId = JobId("memory.job")) extends Platform[Memory] {
     val registeredCounters: List[(String, String)] =
       Try { JobCounters.registeredCountersForJob.get(jobID).toList }.toOption.getOrElse(Nil)
 
-    registeredCounters.map { c => MemoryStatProvider.registerCounter(jobID, c._1, c._2) }
+    MemoryStatProvider.registerCounters(jobID, registeredCounters)
     SummingbirdRuntimeStats.addPlatformStatProvider(MemoryStatProvider)
     toStream(prod, Map.empty)._1
   }

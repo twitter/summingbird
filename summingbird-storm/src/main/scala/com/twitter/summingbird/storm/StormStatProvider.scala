@@ -8,7 +8,7 @@ import com.twitter.util.{ Promise, Await }
 import java.util.concurrent.ConcurrentHashMap
 import org.slf4j.LoggerFactory
 
-// Incrementor for Storm Counters 
+// Incrementor for Storm Counters
 // Returned to the Summingbird Counter object to call incrBy function in SB job code
 private[summingbird] case class StormCounterIncrementor(metric: CountMetric) extends CounterIncrementor {
   def incrBy(by: Long): Unit = metric.incrBy(by)
