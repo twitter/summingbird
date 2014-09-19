@@ -18,14 +18,44 @@ package com.twitter.summingbird.memory
 
 import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
+import com.twitter.summingbird.option.JobId
 import collection.mutable.{ Map => MutableMap }
+import scala.util.Try
 
 object Memory {
   implicit def toSource[T](traversable: TraversableOnce[T])(implicit mf: Manifest[T]): Producer[Memory, T] =
     Producer.source[Memory, T](traversable)
 }
 
-class Memory extends Platform[Memory] {
+private[summingbird] case class MemoryCounterIncrementor(metric: MutableMap[(String, String), Long], group: String, name: String)
+    extends CounterIncrementor {
+  def incrBy(by: Long): Unit = {
+    val oldVal: Long = metric.remove((group, name)).get
+    val newVal = by + oldVal
+    metric += ((group, name) -> newVal)
+  }
+}
+
+private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
+
+  val metricsForJob: MutableMap[JobId, MutableMap[(String, String), Long]] = MutableMap.empty
+
+  def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[MemoryCounterIncrementor] = {
+    if (metricsForJob.contains(passedJobId)) {
+      //    val metric = metricsForJob.get(passedJobId).get((group, name))
+      Some(MemoryCounterIncrementor(metricsForJob.get(passedJobId).get, group, name))
+    } else {
+      None
+    }
+  }
+
+  def registerCounter(jobID: JobId, group: String, name: String) = {
+    metricsForJob.getOrElseUpdate(jobID, MutableMap.empty)
+    metricsForJob.get(jobID).get.getOrElseUpdate((group, name), 0L)
+  }
+}
+
+class Memory(jobID: JobId = JobId("memory.job")) extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]
   type Sink[-T] = (T => Unit)
@@ -34,6 +64,8 @@ class Memory extends Platform[Memory] {
 
   private type Prod[T] = Producer[Memory, T]
   private type JamfMap = Map[Prod[_], Stream[_]]
+
+  def counters = MemoryStatProvider.metricsForJob.get(jobID)
 
   def toStream[T, K, V](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
     jamfs.get(outerProducer) match {
@@ -98,8 +130,14 @@ class Memory extends Platform[Memory] {
         (s.asInstanceOf[Stream[T]], m + (outerProducer -> s))
     }
 
-  def plan[T](prod: TailProducer[Memory, T]): Stream[T] =
+  def plan[T](prod: TailProducer[Memory, T]): Stream[T] = {
+    val registeredCounters: List[(String, String)] =
+      Try { JobCounters.registeredCountersForJob.get(jobID).toList }.toOption.getOrElse(Nil)
+
+    registeredCounters.map { c => MemoryStatProvider.registerCounter(jobID, c._1, c._2) }
+    SummingbirdRuntimeStats.addPlatformStatProvider(MemoryStatProvider)
     toStream(prod, Map.empty)._1
+  }
 
   def run(iter: Stream[_]) {
     // Force the entire stream, taking care not to hold on to the

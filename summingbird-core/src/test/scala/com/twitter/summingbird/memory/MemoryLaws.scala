@@ -18,6 +18,7 @@ package com.twitter.summingbird.memory
 
 import com.twitter.algebird.{ MapAlgebra, Monoid }
 import com.twitter.summingbird._
+import com.twitter.summingbird.option.JobId
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
 import collection.mutable.{ Map => MutableMap, ListBuffer }
@@ -105,6 +106,32 @@ object MemoryLaws extends Specification {
       TestGraphs.lookupJobInScala(input, srv))
   }
 
+  /**
+   * Tests the in-memory planner against a job with a single flatMap
+   * operation and some test counters
+   * TODO: move this to TestGraph to reuse in ScaldingLaws?
+   */
+  def counterChecker[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv]: Boolean = {
+    val jobID: JobId = new JobId("memory.job.testJobId")
+    val mem = new Memory(jobID)
+    val fn = sample[(T) => List[(K, V)]]
+    val sourceMaker = Memory.toSource[T](_)
+    val original = sample[List[T]]
+    val source = sourceMaker(original)
+    val store: Memory#Store[K, V] = MutableMap.empty[K, V]
+
+    val prod = TestGraphs.jobWithStats[Memory, T, K, V](jobID, source, store)(t => fn(t))
+    mem.run(mem.plan(prod))
+
+    val origCounter = mem.counters.get(("counter.test", "orig_counter"))
+    val fmCounter = mem.counters.get(("counter.test", "fm_counter"))
+    val fltrCounter = mem.counters.get(("counter.test", "fltr_counter"))
+
+    (origCounter == original.size) &&
+      (fmCounter == (original.flatMap(fn).size * 2)) &&
+      (fltrCounter == (original.flatMap(fn).size))
+  }
+
   "The Memory Platform" should {
     //Set up the job:
     "singleStep w/ Int, Int, Set[Int]" in { singleStepLaw[Int, Int, Set[Int]] must beTrue }
@@ -120,6 +147,8 @@ object MemoryLaws extends Specification {
     "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must beTrue }
 
     "lookupCollect w/ Int, Int" in { lookupCollectChecker[Int, Int] must beTrue }
+
+    "counters w/ Int, Int" in { counterChecker[Int, Int, Int] must beTrue }
   }
 
 }

@@ -38,7 +38,7 @@ private[summingbird] trait PlatformStatProvider {
 private[summingbird] object SummingbirdRuntimeStats {
   private class MutableSetSynchronizedWrapper[T] {
     private[this] val innerContainer = scala.collection.mutable.Set[T]()
-    def isEmpty: Boolean = innerContainer.synchronized { !innerContainer.isEmpty }
+    def isEmpty: Boolean = innerContainer.synchronized { innerContainer.isEmpty }
     def toSeq: Seq[T] = innerContainer.synchronized { innerContainer.toSeq }
     def add(e: T): Unit = innerContainer.synchronized { innerContainer += e }
   }

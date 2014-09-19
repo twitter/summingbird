@@ -18,7 +18,6 @@ package com.twitter.summingbird
 
 import com.twitter.algebird.MapAlgebra
 import com.twitter.algebird.{ Monoid, Semigroup }
-import com.twitter.summingbird.Counter
 import com.twitter.summingbird.option.JobId
 import org.scalacheck.Arbitrary
 import org.scalacheck.Prop._
@@ -220,9 +219,9 @@ object TestGraphs {
 
   def jobWithStats[P <: Platform[P], T, K, V: Monoid](id: JobId, source: Producer[P, T], store: P#Store[K, V])(fn: T => TraversableOnce[(K, V)]): TailProducer[P, (K, (Option[V], V))] = {
     implicit val jobID: JobId = id
-    val origCounter = Counter("scalding.test", "orig_counter")
-    val fmCounter = Counter("scalding.test", "fm_counter")
-    val fltrCounter = Counter("scalding.test", "fltr_counter")
+    val origCounter = Counter("counter.test", "orig_counter")
+    val fmCounter = Counter("counter.test", "fm_counter")
+    val fltrCounter = Counter("counter.test", "fltr_counter")
     source
       .flatMap { x => origCounter.incr; fn(x) }.name("FM")
       .filter { x => fmCounter.incrBy(2); true }
