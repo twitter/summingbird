@@ -48,6 +48,10 @@ object NullPlan extends ConcurrentMemoryPlan {
   def run(implicit ec: ExecutionContext) = Future.successful(())
 }
 
+/**
+ * This type is what we model the summingbird graphs into.
+ * Below, inside PhysicalNode, you will see several implementations
+ */
 sealed trait PhysicalNode[-I] {
   def push(item: I)(implicit ec: ExecutionContext): Future[Unit]
 }
@@ -60,13 +64,26 @@ object PhysicalNode {
 
     def push(item: Nothing)(implicit ec: ExecutionContext) = Future.successful(())
   }
+  /**
+   * This target is the end of the line for a target that has no dependants.
+   */
   case object NullTarget extends PhysicalNode[Any] {
     def push(item: Any)(implicit ec: ExecutionContext) = Future.successful(())
   }
+  /**
+   * This is a convenience that pushes each item it receieves a sequence of other
+   * PhysicalNodes. This is so we don't have to deal with the notion of fan-out
+   * on the summingbird graph (multiple consumers from a single node) in each type
+   * of node.
+   */
   case class FanOut[T](targets: Seq[PhysicalNode[T]]) extends PhysicalNode[T] {
     def push(item: T)(implicit ec: ExecutionContext) =
       Future.sequence(targets.map(_.push(item))).map(_ => ())
   }
+  /**
+   * This is the PhysicalNode that implements flatMap and sends it on to the next
+   * Node.
+   */
   case class FlatMap[I, O](fn: I => TraversableOnce[O],
       target: PhysicalNode[O]) extends PhysicalNode[I] {
 
@@ -101,6 +118,10 @@ object PhysicalNode {
       target.push((k, (go, v)))
     }
   }
+  /**
+   * This does a write and after that succeeds, pushes
+   * onto the next node (which may be the NullTarget)
+   */
   case class Writer[T](queue: BlockingQueue[T],
     target: PhysicalNode[T])
       extends PhysicalNode[T] {
@@ -122,6 +143,11 @@ class ConcurrentMemory extends Platform[ConcurrentMemory] with DagOptimizer[Conc
 
   type ProdCons[T] = Prod[Any]
 
+  /**
+   * This is the main recursive function that plans "that" to
+   * PhysicalNode by planning all its dependants first, then
+   * planning the that to push into those dependants next
+   */
   private def toPhys[T](deps: Dependants[ConcurrentMemory],
     planned0: HMap[ProdCons, PhysicalNode],
     that: Prod[Any]): (HMap[ProdCons, PhysicalNode], PhysicalNode[T]) =
@@ -193,7 +219,13 @@ class ConcurrentMemory extends Platform[ConcurrentMemory] with DagOptimizer[Conc
     }
 
   def plan[T](prod: TailProducer[ConcurrentMemory, T]): ConcurrentMemoryPlan = {
-    val ourRule = OptionToFlatMap.orElse(KeyFlatMapToFlatMap)
+    /*
+     * These rules should normalize the graph into a plannable state by the toPhys
+     * recursive function (removing no-op nodes and converting optionMap and KeyFlatMap to just
+     * flatMap)
+     */
+    val ourRule = OptionToFlatMap
+      .orElse(KeyFlatMapToFlatMap)
       .orElse(FlatMapFusion)
       .orElse(RemoveNames)
       .orElse(RemoveIdentityKeyed)
