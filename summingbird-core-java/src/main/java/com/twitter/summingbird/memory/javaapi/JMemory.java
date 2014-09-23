@@ -19,6 +19,7 @@ import com.twitter.summingbird.javaapi.Source;
 import com.twitter.summingbird.javaapi.Store;
 import com.twitter.summingbird.javaapi.impl.JProducerImpl;
 import com.twitter.summingbird.memory.Memory;
+import com.twitter.summingbird.option.JobId;
 
 /**
  * Wrapper of the Memory platform to use in Java
@@ -26,6 +27,17 @@ import com.twitter.summingbird.memory.Memory;
  *
  */
 public class JMemory {
+
+  private JobId jobId;
+  private Memory platform;
+
+  /**
+   * @param jobId
+   */
+  public JMemory(JobId jId) {
+    jobId = jId;
+    platform = new Memory(jobId);
+  }
 
   private static <IN> Function1<IN, Void> toScala(final JSink<IN> f) {
     return new AbstractFunction1<IN, Void>() {
@@ -69,7 +81,6 @@ public class JMemory {
     return new Service<Memory, Function1<K, Option<V>>, K, V>(JProducerImpl.toScala(service));
   }
 
-  private Memory platform = new Memory();
 
   /**
    * @param tail

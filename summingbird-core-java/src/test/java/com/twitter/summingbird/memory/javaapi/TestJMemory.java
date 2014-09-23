@@ -30,6 +30,7 @@ import com.twitter.summingbird.javaapi.Predicate;
 import com.twitter.summingbird.javaapi.Service;
 import com.twitter.summingbird.javaapi.Sink;
 import com.twitter.summingbird.memory.Memory;
+import com.twitter.summingbird.option.JobId;
 
 public class TestJMemory {
 
@@ -78,7 +79,7 @@ public class TestJMemory {
     }
   };
 
-  private JMemory platform = new JMemory();
+  private JMemory platform = new JMemory(new JobId("test.memory.job"));
 
   private <T> Sink<Memory, ?, T> sink(final List<T> out) {
     Sink<Memory, Function1<T, Void>, T> sink = JMemory.sink(new JSink<T>() {
