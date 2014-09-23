@@ -60,8 +60,9 @@ private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
 
   def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[MemoryCounterIncrementor] = {
     if (metricsForJob.containsKey(passedJobId)) {
-      Some(MemoryCounterIncrementor(metricsForJob.get(passedJobId).getOrElse(group + "/" + name,
-        sys.error("It is only valid to create counter objects during submission"))))
+      val metric = metricsForJob.get(passedJobId).getOrElse(group + "/" + name,
+        sys.error("It is only valid to create counter objects during job submission"))
+      Some(MemoryCounterIncrementor(metric))
     } else {
       None
     }
@@ -70,8 +71,8 @@ private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
   def registerCounters(jobID: JobId, metrics: List[(String, String)]) = {
     if (!metricsForJob.containsKey(jobID)) {
       val memoryMetrics = metrics.map {
-        case (g, n) =>
-          (g + "/" + n, new MemoryCounter())
+        case (group, name) =>
+          (group + "/" + name, new MemoryCounter())
       }.toMap
       metricsForJob.put(jobID, memoryMetrics)
     }
@@ -88,11 +89,8 @@ class Memory(jobID: JobId = JobId("memory.job")) extends Platform[Memory] {
   private type Prod[T] = Producer[Memory, T]
   private type JamfMap = Map[Prod[_], Stream[_]]
 
-  def counter(group: String, name: String): Long = {
-    //TODO: add safety
-    val metrics: Map[String, MemoryCounter] = MemoryStatProvider.getMetricsForJob(jobID).get
-    metrics.get(group + "/" + name).get.get
-  }
+  def counter(group: String, name: String): Option[Long] =
+    MemoryStatProvider.getMetricsForJob(jobID).flatMap{_.get(group + "/" + name).map{_.get}}
 
   def toStream[T, K, V](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
     jamfs.get(outerProducer) match {

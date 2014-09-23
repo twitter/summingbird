@@ -109,7 +109,6 @@ object MemoryLaws extends Specification {
   /**
    * Tests the in-memory planner against a job with a single flatMap
    * operation and some test counters
-   * TODO: move this to TestGraph to reuse in ScaldingLaws?
    */
   def counterChecker[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv]: Boolean = {
     val jobID: JobId = new JobId("memory.job.testJobId")
@@ -123,9 +122,9 @@ object MemoryLaws extends Specification {
     val prod = TestGraphs.jobWithStats[Memory, T, K, V](jobID, source, store)(t => fn(t))
     mem.run(mem.plan(prod))
 
-    val origCounter = mem.counter("counter.test", "orig_counter")
-    val fmCounter = mem.counter("counter.test", "fm_counter")
-    val fltrCounter = mem.counter("counter.test", "fltr_counter")
+    val origCounter = mem.counter("counter.test", "orig_counter").get
+    val fmCounter = mem.counter("counter.test", "fm_counter").get
+    val fltrCounter = mem.counter("counter.test", "fltr_counter").get
 
     (origCounter == original.size) &&
       (fmCounter == (original.flatMap(fn).size * 2)) &&
@@ -148,7 +147,7 @@ object MemoryLaws extends Specification {
 
     "lookupCollect w/ Int, Int" in { lookupCollectChecker[Int, Int] must beTrue }
 
-    "counters w/ Int, Int" in { counterChecker[Int, Int, Int] must beTrue }
+    "counters w/ Int, Int, Int" in { counterChecker[Int, Int, Int] must beTrue }
   }
 
 }
