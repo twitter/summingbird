@@ -21,62 +21,10 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
 import collection.mutable.{ Map => MutableMap }
 import scala.util.Try
-import java.util.concurrent.ConcurrentHashMap
 
 object Memory {
   implicit def toSource[T](traversable: TraversableOnce[T])(implicit mf: Manifest[T]): Producer[Memory, T] =
     Producer.source[Memory, T](traversable)
-}
-
-/**
- * Mutable counter for the Memory platform
- */
-class MemoryCounter {
-
-  private var count: Long = 0L
-
-  def incr(by: Long): Unit = {
-    count += by
-  }
-
-  def get: Long = count
-}
-
-private[summingbird] case class MemoryCounterIncrementor(metric: MemoryCounter) extends CounterIncrementor {
-  def incrBy(by: Long): Unit = metric.incr(by)
-}
-
-private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
-
-  private val metricsForJob = new ConcurrentHashMap[JobId, Map[String, MemoryCounter]]()
-
-  def getMetricsForJob(jobID: JobId): Option[Map[String, MemoryCounter]] = {
-    if (metricsForJob.containsKey(jobID)) {
-      Some(metricsForJob.get(jobID))
-    } else {
-      None
-    }
-  }
-
-  def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[MemoryCounterIncrementor] = {
-    if (metricsForJob.containsKey(passedJobId)) {
-      val metric = metricsForJob.get(passedJobId).getOrElse(group + "/" + name,
-        sys.error("It is only valid to create counter objects during job submission"))
-      Some(MemoryCounterIncrementor(metric))
-    } else {
-      None
-    }
-  }
-
-  def registerCounters(jobID: JobId, metrics: List[(String, String)]) = {
-    if (!metricsForJob.containsKey(jobID)) {
-      val memoryMetrics = metrics.map {
-        case (group, name) =>
-          (group + "/" + name, new MemoryCounter())
-      }.toMap
-      metricsForJob.put(jobID, memoryMetrics)
-    }
-  }
 }
 
 class Memory(jobID: JobId = JobId("memory.job")) extends Platform[Memory] {
@@ -90,7 +38,7 @@ class Memory(jobID: JobId = JobId("memory.job")) extends Platform[Memory] {
   private type JamfMap = Map[Prod[_], Stream[_]]
 
   def counter(group: String, name: String): Option[Long] =
-    MemoryStatProvider.getMetricsForJob(jobID).flatMap { _.get(group + "/" + name).map { _.get } }
+    MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group + "/" + name).map { _.get } }
 
   def toStream[T, K, V](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
     jamfs.get(outerProducer) match {
