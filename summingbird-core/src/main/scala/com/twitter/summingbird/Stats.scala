@@ -57,7 +57,7 @@ private[summingbird] object SummingbirdRuntimeStats {
   private[this] lazy val platformsInit =
     platformObjects.foreach { s: String => ScalaTry[Unit] { Class.forName(s) } }
 
-  def hasStatProviders: Boolean = platformStatProviders.isEmpty
+  def hasStatProviders: Boolean = !platformStatProviders.isEmpty
 
   def addPlatformStatProvider(pp: PlatformStatProvider): Unit =
     platformStatProviders.add(new WeakReference(pp))

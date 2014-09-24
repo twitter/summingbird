@@ -107,8 +107,10 @@ class Memory(jobID: JobId = JobId("memory.job")) extends Platform[Memory] {
     val registeredCounters: List[(String, String)] =
       Try { JobCounters.registeredCountersForJob.get(jobID).toList }.toOption.getOrElse(Nil)
 
-    MemoryStatProvider.registerCounters(jobID, registeredCounters)
-    SummingbirdRuntimeStats.addPlatformStatProvider(MemoryStatProvider)
+    if (!registeredCounters.isEmpty) {
+      MemoryStatProvider.registerCounters(jobID, registeredCounters)
+      SummingbirdRuntimeStats.addPlatformStatProvider(MemoryStatProvider)
+    }
     toStream(prod, Map.empty)._1
   }
 
