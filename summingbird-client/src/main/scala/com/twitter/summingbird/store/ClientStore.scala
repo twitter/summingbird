@@ -32,12 +32,12 @@ import com.twitter.util.Future
  */
 
 object ClientStore {
-  def apply[K, V](onlineStore: ReadableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
+  def apply[K, V](onlineStore: ReadableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher, monoid: Semigroup[V]): ClientStore[K, V] =
     apply(ReadableStore.empty, onlineStore, batchesToKeep)
 
   // If no online store exists, supply an empty store and instruct the
   // client to keep a single batch.
-  def apply[K, V](offlineStore: ReadableStore[K, (BatchID, V)])(implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
+  def apply[K, V](offlineStore: ReadableStore[K, (BatchID, V)])(implicit batcher: Batcher, monoid: Semigroup[V]): ClientStore[K, V] =
     apply(offlineStore, ReadableStore.empty, 1)
 
   def defaultOnlineKeyFilter[K] = (k: K) => true
@@ -45,7 +45,7 @@ object ClientStore {
   def apply[K, V](
     offlineStore: ReadableStore[K, (BatchID, V)],
     onlineStore: ReadableStore[(K, BatchID), V],
-    batchesToKeep: Int)(implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
+    batchesToKeep: Int)(implicit batcher: Batcher, monoid: Semigroup[V]): ClientStore[K, V] =
     new ClientStore[K, V](offlineStore, onlineStore,
       batcher, batchesToKeep, defaultOnlineKeyFilter[K], FutureCollector.bestEffort)
 
@@ -53,7 +53,7 @@ object ClientStore {
     offlineStore: ReadableStore[K, (BatchID, V)],
     onlineStore: ReadableStore[(K, BatchID), V],
     batchesToKeep: Int,
-    onlineKeyFilter: K => Boolean)(implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
+    onlineKeyFilter: K => Boolean)(implicit batcher: Batcher, monoid: Semigroup[V]): ClientStore[K, V] =
     new ClientStore[K, V](offlineStore, onlineStore,
       batcher, batchesToKeep, onlineKeyFilter, FutureCollector.bestEffort)
 
@@ -62,7 +62,7 @@ object ClientStore {
     onlineStore: ReadableStore[(K, BatchID), V],
     batchesToKeep: Int,
     onlineKeyFilter: K => Boolean,
-    collector: FutureCollector[(K, Iterable[BatchID])])(implicit batcher: Batcher, monoid: Monoid[V]): ClientStore[K, V] =
+    collector: FutureCollector[(K, Iterable[BatchID])])(implicit batcher: Batcher, monoid: Semigroup[V]): ClientStore[K, V] =
     new ClientStore[K, V](offlineStore, onlineStore, batcher, batchesToKeep, onlineKeyFilter, collector)
 }
 
@@ -119,12 +119,15 @@ class ClientStore[K, V: Semigroup](
     collector: FutureCollector[(K, Iterable[BatchID])]) extends ReadableStore[K, V] {
   import MergeOperations._
 
-  override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, FOpt[V]] = {
+  override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, FOpt[V]] =
+    multiGetBatch(batcher.currentBatch, ks)
+
+  protected def multiGetBatch[K1 <: K](batch: BatchID, ks: Set[K1]): Map[K1, FOpt[V]] = {
     val offlineResult: Map[K1, FOpt[(BatchID, V)]] = offlineStore.multiGet(ks)
     val liftedOffline = decrementOfflineBatch(offlineResult)
     val possibleOnlineKeys = ks.filter(onlineKeyFilter)
     val m: Future[Map[K1, FOpt[V]]] = for {
-      onlineKeys <- generateOnlineKeys(possibleOnlineKeys.toSeq, batcher.currentBatch, batchesToKeep)(
+      onlineKeys <- generateOnlineKeys(possibleOnlineKeys.toSeq, batch, batchesToKeep)(
         offlineResult.andThen(_.map { _.map { _._1 } })
       )(collector.asInstanceOf[FutureCollector[(K1, Iterable[BatchID])]])
       onlineResult: Map[(K1, BatchID), FOpt[V]] = onlineStore.multiGet(onlineKeys)
