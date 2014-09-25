@@ -20,7 +20,6 @@ import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
 import collection.mutable.{ Map => MutableMap }
-import scala.util.Try
 
 object Memory {
   implicit def toSource[T](traversable: TraversableOnce[T])(implicit mf: Manifest[T]): Producer[Memory, T] =
@@ -104,8 +103,9 @@ class Memory(jobID: JobId = JobId("memory.job")) extends Platform[Memory] {
     }
 
   def plan[T](prod: TailProducer[Memory, T]): Stream[T] = {
+
     val registeredCounters: List[(String, String)] =
-      Try { JobCounters.registeredCountersForJob.get(jobID).toList }.toOption.getOrElse(Nil)
+      JobCounters.getCountersForJob(jobID).getOrElse(Nil)
 
     if (!registeredCounters.isEmpty) {
       MemoryStatProvider.registerCounters(jobID, registeredCounters)

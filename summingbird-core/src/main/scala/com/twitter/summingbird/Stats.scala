@@ -20,7 +20,7 @@ import com.twitter.summingbird.option.JobId
 import scala.collection.JavaConverters._
 import scala.collection.parallel.mutable.ParHashSet
 import scala.ref.WeakReference
-import scala.util.{ Try => ScalaTry }
+import scala.util.Try
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
 
@@ -55,7 +55,7 @@ private[summingbird] object SummingbirdRuntimeStats {
 
   // invoke the ScaldingRuntimeStatsProvider object initializer on remote node
   private[this] lazy val platformsInit =
-    platformObjects.foreach { s: String => ScalaTry[Unit] { Class.forName(s) } }
+    platformObjects.foreach { s: String => Try[Unit] { Class.forName(s) } }
 
   def hasStatProviders: Boolean = !platformStatProviders.isEmpty
 
@@ -90,8 +90,12 @@ private[summingbird] object JobCounters {
     }
   }
 
-  val registeredCountersForJob: ConcurrentHashMap[JobId, ParHashSet[(String, String)]] =
+  private val registeredCountersForJob: ConcurrentHashMap[JobId, ParHashSet[(String, String)]] =
     new ConcurrentHashMap[JobId, ParHashSet[(String, String)]]()
+
+  def getCountersForJob(jobID: JobId): Option[List[(String, String)]] = {
+    Try { registeredCountersForJob.get(jobID).toList }.toOption
+  }
 
   def registerCounter(jobID: JobId, group: String, name: String): Unit = {
     if (!SummingbirdRuntimeStats.hasStatProviders) {

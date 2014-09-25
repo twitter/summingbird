@@ -19,26 +19,27 @@ package com.twitter.summingbird.memory
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Mutable counter for the Memory platform
  */
 class MemoryCounter {
 
-  private var count: Long = 0L
+  private var count: AtomicLong = new AtomicLong()
 
   /**
    * Increment the counter
    * @param by - the amount to increment the counter by
    */
   def incr(by: Long): Unit = {
-    count += by
+    val c = count.addAndGet(by)
   }
 
   /**
    * Get the counter value
    */
-  def get: Long = count
+  def get: Long = count.get()
 }
 
 /**
@@ -91,7 +92,7 @@ private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
         case (group, name) =>
           (group + "/" + name, new MemoryCounter())
       }.toMap
-      countersForJob.put(jobID, memoryCounters)
+      countersForJob.putIfAbsent(jobID, memoryCounters)
     }
   }
 }
