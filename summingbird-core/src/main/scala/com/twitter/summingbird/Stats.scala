@@ -98,9 +98,7 @@ private[summingbird] object JobCounters {
   }
 
   def registerCounter(jobID: JobId, group: String, name: String): Unit = {
-    if (!SummingbirdRuntimeStats.hasStatProviders) {
-      val set = getOrElseUpdate(registeredCountersForJob, jobID, ParHashSet[(String, String)]())
-      set += ((group, name))
-    }
+    val set = getOrElseUpdate(registeredCountersForJob, jobID, ParHashSet[(String, String)]())
+    set += ((group, name))
   }
 }
