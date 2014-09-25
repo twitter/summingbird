@@ -26,7 +26,7 @@ object Memory {
     Producer.source[Memory, T](traversable)
 }
 
-class Memory(jobID: JobId = JobId("memory.job")) extends Platform[Memory] {
+class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]
   type Sink[-T] = (T => Unit)

@@ -111,8 +111,8 @@ object MemoryLaws extends Specification {
    * operation and some test counters
    */
   def counterChecker[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv]: Boolean = {
-    val jobID: JobId = new JobId("memory.job.testJobId")
-    val mem = new Memory(jobID)
+    implicit val jobID: JobId = new JobId("memory.job.testJobId")
+    val mem = new Memory
     val fn = sample[(T) => List[(K, V)]]
     val sourceMaker = Memory.toSource[T](_)
     val original = sample[List[T]]
