@@ -28,8 +28,8 @@ import com.twitter.summingbird.option.JobId;
  */
 public class JMemory {
 
-  private JobId jobId;
-  private Memory platform;
+  private final JobId jobId;
+  private final Memory platform;
 
   /**
    * @param jobId
