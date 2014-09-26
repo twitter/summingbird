@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong
  */
 class MemoryCounter {
 
-  private var count: AtomicLong = new AtomicLong()
+  private val count: AtomicLong = new AtomicLong()
 
   /**
    * Increment the counter
@@ -60,18 +60,13 @@ private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
   /**
    * Returns the counters for the job
    */
-  def getCountersForJob(jobID: JobId): Option[Map[String, MemoryCounter]] = {
-    if (countersForJob.containsKey(jobID)) {
-      Some(countersForJob.get(jobID))
-    } else {
-      None
-    }
-  }
+  def getCountersForJob(jobID: JobId): Option[Map[String, MemoryCounter]] =
+    Option(countersForJob.get(jobID))
 
   /**
    * Memory counter incrementor, used by the Counter object in Summingbird job
    */
-  def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[MemoryCounterIncrementor] = {
+  def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[MemoryCounterIncrementor] =
     if (countersForJob.containsKey(passedJobId)) {
       val counter = countersForJob.get(passedJobId).getOrElse(group + "/" + name,
         sys.error("It is only valid to create counter objects during job submission"))
@@ -79,7 +74,6 @@ private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
     } else {
       None
     }
-  }
 
   /**
    * Registers counters with the MemoryStatProvider
@@ -87,12 +81,21 @@ private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
    * @param counters - list of counter names with format (group, name)
    */
   def registerCounters(jobID: JobId, counters: List[(String, String)]): Unit = {
-    if (!countersForJob.containsKey(jobID)) {
-      val memoryCounters = counters.map {
-        case (group, name) =>
-          (group + "/" + name, new MemoryCounter())
-      }.toMap
-      countersForJob.putIfAbsent(jobID, memoryCounters)
-    }
+    val memoryCounters = counters.map {
+      case (group, name) =>
+        (group + "/" + name, new MemoryCounter())
+    }.toMap
+
+    @annotation.tailrec
+    def put(m: Map[String, MemoryCounter]): Unit =
+      countersForJob.putIfAbsent(jobID, memoryCounters) match {
+        case null => () // The jobID was not present
+        case previous if (previous.keySet & m.keySet).nonEmpty => // Key intersection nonempty
+          // prefer the old values
+          if (countersForJob.replace(jobID, previous, (m ++ previous))) () else put(m)
+        case _ => () // there is something there, but the keys are all present
+      }
+
+    put(memoryCounters)
   }
 }

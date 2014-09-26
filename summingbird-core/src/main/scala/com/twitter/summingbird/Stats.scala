@@ -38,7 +38,7 @@ private[summingbird] trait PlatformStatProvider {
 private[summingbird] object SummingbirdRuntimeStats {
   private class MutableSetSynchronizedWrapper[T] {
     private[this] val innerContainer = scala.collection.mutable.Set[T]()
-    def isEmpty: Boolean = innerContainer.synchronized { innerContainer.isEmpty }
+    def nonEmpty: Boolean = innerContainer.synchronized { innerContainer.nonEmpty }
     def toSeq: Seq[T] = innerContainer.synchronized { innerContainer.toSeq }
     def add(e: T): Unit = innerContainer.synchronized { innerContainer += e }
   }
@@ -57,7 +57,7 @@ private[summingbird] object SummingbirdRuntimeStats {
   private[this] lazy val platformsInit =
     platformObjects.foreach { s: String => Try[Unit] { Class.forName(s) } }
 
-  def hasStatProviders: Boolean = !platformStatProviders.isEmpty
+  def hasStatProviders: Boolean = platformStatProviders.nonEmpty
 
   def addPlatformStatProvider(pp: PlatformStatProvider): Unit =
     platformStatProviders.add(new WeakReference(pp))
@@ -93,9 +93,8 @@ private[summingbird] object JobCounters {
   private val registeredCountersForJob: ConcurrentHashMap[JobId, ParHashSet[(String, String)]] =
     new ConcurrentHashMap[JobId, ParHashSet[(String, String)]]()
 
-  def getCountersForJob(jobID: JobId): Option[List[(String, String)]] = {
-    Try { registeredCountersForJob.get(jobID).toList }.toOption
-  }
+  def getCountersForJob(jobID: JobId): Option[List[(String, String)]] =
+    Option(registeredCountersForJob.get(jobID)).map(_.toList)
 
   def registerCounter(jobID: JobId, group: String, name: String): Unit = {
     val set = getOrElseUpdate(registeredCountersForJob, jobID, ParHashSet[(String, String)]())
