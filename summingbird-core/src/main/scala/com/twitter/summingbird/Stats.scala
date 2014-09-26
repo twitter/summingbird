@@ -93,7 +93,7 @@ private[summingbird] object JobCounters {
   private val registeredCountersForJob: ConcurrentHashMap[JobId, ParHashSet[(String, String)]] =
     new ConcurrentHashMap[JobId, ParHashSet[(String, String)]]()
 
-  def getCountersForJob(jobID: JobId): Option[List[(String, String)]] =
+  def getCountersForJob(jobID: JobId): Option[Seq[(String, String)]] =
     Option(registeredCountersForJob.get(jobID)).map(_.toList)
 
   def registerCounter(jobID: JobId, group: String, name: String): Unit = {

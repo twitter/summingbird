@@ -104,7 +104,7 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
 
   def plan[T](prod: TailProducer[Memory, T]): Stream[T] = {
 
-    val registeredCounters: List[(String, String)] =
+    val registeredCounters: Seq[(String, String)] =
       JobCounters.getCountersForJob(jobID).getOrElse(Nil)
 
     if (!registeredCounters.isEmpty) {

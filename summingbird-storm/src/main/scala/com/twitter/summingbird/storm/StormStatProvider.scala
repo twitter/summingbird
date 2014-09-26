@@ -24,7 +24,7 @@ private[summingbird] object StormStatProvider extends PlatformStatProvider {
 
   def registerMetrics(jobID: JobId,
     context: TopologyContext,
-    metrics: List[(String, String)]) {
+    metrics: Seq[(String, String)]) {
 
     val metricsPromise = Promise[Map[String, CountMetric]]
 

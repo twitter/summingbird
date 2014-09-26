@@ -67,12 +67,9 @@ private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
    * Memory counter incrementor, used by the Counter object in Summingbird job
    */
   def counterIncrementor(jobID: JobId, group: String, name: String): Option[MemoryCounterIncrementor] =
-    if (countersForJob.containsKey(jobID)) {
-      val counter = countersForJob.get(jobID).getOrElse(group + "/" + name,
-        sys.error("It is only valid to create counter objects during job submission"))
-      Some(MemoryCounterIncrementor(counter))
-    } else {
-      None
+    Option(countersForJob.get(jobID)).flatMap { m =>
+      Option(MemoryCounterIncrementor(m.getOrElse(group + "/" + name,
+        sys.error("It is only valid to create counter objects during job submission"))))
     }
 
   /**
@@ -80,7 +77,7 @@ private[summingbird] object MemoryStatProvider extends PlatformStatProvider {
    * @param jobID for the job
    * @param counters - list of counter names with format (group, name)
    */
-  def registerCounters(jobID: JobId, counters: List[(String, String)]): Unit = {
+  def registerCounters(jobID: JobId, counters: Seq[(String, String)]): Unit = {
     val memoryCounters = counters.map {
       case (group, name) =>
         (group + "/" + name, new MemoryCounter())

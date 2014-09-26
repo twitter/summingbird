@@ -52,7 +52,7 @@ case class BaseBolt[I, O](jobID: JobId,
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  val countersForBolt: List[(String, String)] =
+  val countersForBolt: Seq[(String, String)] =
     JobCounters.getCountersForJob(jobID).getOrElse(Nil)
 
   private var collector: OutputCollector = null
