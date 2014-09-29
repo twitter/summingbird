@@ -32,7 +32,7 @@ private[summingbird] trait PlatformStatProvider {
   // Incrementor for a Counter identified by group/name for the specific jobID
   // Returns an incrementor function for the Counter wrapped in an Option
   // to ensure we catch when the incrementor cannot be obtained for the specified jobID
-  def counterIncrementor(jobId: JobId, group: String, name: String): Option[CounterIncrementor]
+  def counterIncrementor(jobId: JobId, group: Group, name: Name): Option[CounterIncrementor]
 }
 
 private[summingbird] object SummingbirdRuntimeStats {
@@ -62,7 +62,7 @@ private[summingbird] object SummingbirdRuntimeStats {
   def addPlatformStatProvider(pp: PlatformStatProvider): Unit =
     platformStatProviders.add(new WeakReference(pp))
 
-  def getPlatformCounterIncrementor(jobID: JobId, group: String, name: String): CounterIncrementor = {
+  def getPlatformCounterIncrementor(jobID: JobId, group: Group, name: Name): CounterIncrementor = {
     platformsInit
     // Find the PlatformMetricProvider (PMP) that matches the jobID
     // return the incrementor for the Counter specified by group/name
@@ -90,14 +90,14 @@ private[summingbird] object JobCounters {
     }
   }
 
-  private val registeredCountersForJob: ConcurrentHashMap[JobId, ParHashSet[(String, String)]] =
-    new ConcurrentHashMap[JobId, ParHashSet[(String, String)]]()
+  private val registeredCountersForJob: ConcurrentHashMap[JobId, ParHashSet[(Group, Name)]] =
+    new ConcurrentHashMap[JobId, ParHashSet[(Group, Name)]]()
 
-  def getCountersForJob(jobID: JobId): Option[Seq[(String, String)]] =
+  def getCountersForJob(jobID: JobId): Option[Seq[(Group, Name)]] =
     Option(registeredCountersForJob.get(jobID)).map(_.toList)
 
-  def registerCounter(jobID: JobId, group: String, name: String): Unit = {
-    val set = getOrElseUpdate(registeredCountersForJob, jobID, ParHashSet[(String, String)]())
+  def registerCounter(jobID: JobId, group: Group, name: Name): Unit = {
+    val set = getOrElseUpdate(registeredCountersForJob, jobID, ParHashSet[(Group, Name)]())
     set += ((group, name))
   }
 }

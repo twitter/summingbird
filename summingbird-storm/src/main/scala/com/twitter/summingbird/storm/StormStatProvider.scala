@@ -2,7 +2,7 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.metric.api.CountMetric
 import backtype.storm.task.TopologyContext
-import com.twitter.summingbird.{ CounterIncrementor, PlatformStatProvider }
+import com.twitter.summingbird.{ CounterIncrementor, Group, Name, PlatformStatProvider }
 import com.twitter.summingbird.option.JobId
 import com.twitter.util.{ Promise, Await }
 import java.util.concurrent.ConcurrentHashMap
@@ -24,7 +24,7 @@ private[summingbird] object StormStatProvider extends PlatformStatProvider {
 
   def registerMetrics(jobID: JobId,
     context: TopologyContext,
-    metrics: Seq[(String, String)]) {
+    metrics: Seq[(Group, Name)]) {
 
     val metricsPromise = Promise[Map[String, CountMetric]]
 
@@ -47,10 +47,10 @@ private[summingbird] object StormStatProvider extends PlatformStatProvider {
   }
 
   // returns Storm counter incrementor to the Counter object in Summingbird job
-  def counterIncrementor(jobID: JobId, group: String, name: String): Option[StormCounterIncrementor] =
+  def counterIncrementor(jobID: JobId, group: Group, name: Name): Option[StormCounterIncrementor] =
     Option(metricsForJob.get(jobID)).map { m =>
-      val sM = Await.result(m)
-      StormCounterIncrementor(sM.getOrElse(group + "/" + name,
+      val sM: Map[String, CountMetric] = Await.result(m)
+      StormCounterIncrementor(sM.getOrElse(group.toString + "/" + name.toString,
         sys.error("It is only valid to create counter objects during job submission")))
     }
 }

@@ -28,7 +28,7 @@ import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecu
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{ InflightTuples, InputState }
 import com.twitter.summingbird.option.JobId
-import com.twitter.summingbird.{ JobCounters, SummingbirdRuntimeStats }
+import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
 
 import scala.collection.JavaConverters._
 
@@ -52,7 +52,7 @@ case class BaseBolt[I, O](jobID: JobId,
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  val countersForBolt: Seq[(String, String)] =
+  val countersForBolt: Seq[(Group, Name)] =
     JobCounters.getCountersForJob(jobID).getOrElse(Nil)
 
   private var collector: OutputCollector = null

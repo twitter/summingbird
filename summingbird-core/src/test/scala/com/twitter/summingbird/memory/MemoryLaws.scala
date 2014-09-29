@@ -122,9 +122,9 @@ object MemoryLaws extends Specification {
     val prod = TestGraphs.jobWithStats[Memory, T, K, V](jobID, source, store)(t => fn(t))
     mem.run(mem.plan(prod))
 
-    val origCounter = mem.counter("counter.test", "orig_counter").get
-    val fmCounter = mem.counter("counter.test", "fm_counter").get
-    val fltrCounter = mem.counter("counter.test", "fltr_counter").get
+    val origCounter = mem.counter(Group("counter.test"), Name("orig_counter")).get
+    val fmCounter = mem.counter(Group("counter.test"), Name("fm_counter")).get
+    val fltrCounter = mem.counter(Group("counter.test"), Name("fltr_counter")).get
 
     (origCounter == original.size) &&
       (fmCounter == (original.flatMap(fn).size * 2)) &&

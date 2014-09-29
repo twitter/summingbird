@@ -219,9 +219,9 @@ object TestGraphs {
 
   def jobWithStats[P <: Platform[P], T, K, V: Monoid](id: JobId, source: Producer[P, T], store: P#Store[K, V])(fn: T => TraversableOnce[(K, V)]): TailProducer[P, (K, (Option[V], V))] = {
     implicit val jobID: JobId = id
-    val origCounter = Counter("counter.test", "orig_counter")
-    val fmCounter = Counter("counter.test", "fm_counter")
-    val fltrCounter = Counter("counter.test", "fltr_counter")
+    val origCounter = Counter(Group("counter.test"), Name("orig_counter"))
+    val fmCounter = Counter(Group("counter.test"), Name("fm_counter"))
+    val fltrCounter = Counter(Group("counter.test"), Name("fltr_counter"))
     source
       .flatMap { x => origCounter.incr; fn(x) }.name("FM")
       .filter { x => fmCounter.incrBy(2); true }
