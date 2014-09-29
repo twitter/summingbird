@@ -31,7 +31,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.5.1",
+    version := "0.5.2-t1412029703000-ac6ba35a5bc56ad74f4ad016b77e4818633cceb5",
     scalaVersion := "2.9.3",
     crossScalaVersions := Seq("2.9.3", "2.10.4"),
     // To support hadoop 1.x

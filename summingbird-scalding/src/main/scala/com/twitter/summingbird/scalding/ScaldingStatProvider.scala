@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 // Incrementor for Scalding Counter (Stat)
 // Returned to the Summingbird Counter object to call incrBy function in Summingbird job code
 private[summingbird] case class ScaldingCounterIncrementor(group: Group, name: Name, fp: FlowProcess[_]) extends CounterIncrementor {
-  def incrBy(by: Long): Unit = fp.increment(group.toString, name.toString, by)
+  def incrBy(by: Long): Unit = fp.increment(group.getString, name.getString, by)
 }
 
 private[summingbird] object ScaldingStatProvider extends PlatformStatProvider {
