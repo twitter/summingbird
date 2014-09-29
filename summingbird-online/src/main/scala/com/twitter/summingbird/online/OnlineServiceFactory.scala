@@ -25,5 +25,5 @@ import com.twitter.storehaus.ReadableStore
  * The Function1 here is to allow cleaner diasy chaining of operations via andThen.
  */
 trait OnlineServiceFactory[-K, +V] {
-  def store: Function1[Unit, ReadableStore[K, V]]
+  def store: () => ReadableStore[K, V]
 }

@@ -133,7 +133,7 @@ case class SourceBuilder[T: Manifest] private (
       node = node.asInstanceOf[Node[(K, V)]].leftJoin((
         service.offline,
         service.online.map { fn: Function0[ReadableStore[K, JoinedValue]] =>
-          ReadableServiceFactory(fn())
+          ReadableServiceFactory(fn)
         }
       ))
     )
