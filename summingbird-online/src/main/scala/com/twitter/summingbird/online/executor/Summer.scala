@@ -54,7 +54,7 @@ import scala.collection.{ Map => CMap }
  */
 
 class Summer[Key, Value: Semigroup, Event, S, D, RC](
-  @transient storeSupplier: Function1[Unit, Mergeable[Key, Value]],
+  @transient storeSupplier: () => Mergeable[Key, Value],
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
@@ -85,7 +85,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
 
   override def init(runtimeContext: RC) {
     super.init(runtimeContext)
-    storePromise.setValue(storeBox.get(()))
+    storePromise.setValue(storeBox.get())
     store.toString // Do the lazy evaluation now so we can connect before tuples arrive.
 
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
