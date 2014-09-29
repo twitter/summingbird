@@ -31,7 +31,7 @@ private[summingbird] object StormStatProvider extends PlatformStatProvider {
     if (metricsForJob.putIfAbsent(jobID, metricsPromise) == null) {
       val stormMetrics = metrics.map {
         case (groupName, metricName) =>
-          (groupName + "/" + metricName, new CountMetric)
+          (groupName.getString + "/" + metricName.getString, new CountMetric)
       }.toMap
       logger.debug("Stats for this Bolt: {}", stormMetrics.keySet.mkString)
 
@@ -50,7 +50,7 @@ private[summingbird] object StormStatProvider extends PlatformStatProvider {
   def counterIncrementor(jobID: JobId, group: Group, name: Name): Option[StormCounterIncrementor] =
     Option(metricsForJob.get(jobID)).map { m =>
       val sM: Map[String, CountMetric] = Await.result(m)
-      StormCounterIncrementor(sM.getOrElse(group.toString + "/" + name.toString,
+      StormCounterIncrementor(sM.getOrElse(group.getString + "/" + name.getString,
         sys.error("It is only valid to create counter objects during job submission")))
     }
 }
