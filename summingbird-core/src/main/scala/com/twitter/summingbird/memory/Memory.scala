@@ -37,7 +37,7 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
   private type JamfMap = Map[Prod[_], Stream[_]]
 
   def counter(group: Group, name: Name): Option[Long] =
-    MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.toString + "/" + name.toString).map { _.get } }
+    MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }
 
   def toStream[T, K, V](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
     jamfs.get(outerProducer) match {

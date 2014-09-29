@@ -18,9 +18,9 @@ package com.twitter.summingbird
 
 import com.twitter.summingbird.option.JobId
 
-case class Group(override val toString: String)
+case class Group(getString: String)
 
-case class Name(override val toString: String)
+case class Name(getString: String)
 
 /*
  User-defined Counter
