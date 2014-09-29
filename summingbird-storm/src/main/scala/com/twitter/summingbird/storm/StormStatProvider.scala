@@ -47,13 +47,10 @@ private[summingbird] object StormStatProvider extends PlatformStatProvider {
   }
 
   // returns Storm counter incrementor to the Counter object in Summingbird job
-  def counterIncrementor(passedJobId: JobId, group: String, name: String): Option[StormCounterIncrementor] =
-    if (metricsForJob.containsKey(passedJobId)) {
-      // Get the stormMetrics once Promise was fullfilled
-      val stormMetrics = Await.result(metricsForJob.get(passedJobId))
-      val metric = stormMetrics.getOrElse(group + "/" + name, sys.error("It is only valid to create counter objects during submission"))
-      Some(StormCounterIncrementor(metric))
-    } else {
-      None
+  def counterIncrementor(jobID: JobId, group: String, name: String): Option[StormCounterIncrementor] =
+    Option(metricsForJob.get(jobID)).map { m =>
+      val sM = Await.result(m)
+      StormCounterIncrementor(sM.getOrElse(group + "/" + name,
+        sys.error("It is only valid to create counter objects during job submission")))
     }
 }
