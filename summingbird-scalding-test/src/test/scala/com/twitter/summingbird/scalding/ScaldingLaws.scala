@@ -373,9 +373,9 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, scald.plan(summer), { f: Flow[_] => flow = f })
 
       val flowStats: FlowStats = flow.getFlowStats()
-      val origCounter: Long = flowStats.getCounterValue("scalding.test", "orig_counter")
-      val fmCounter: Long = flowStats.getCounterValue("scalding.test", "fm_counter")
-      val fltrCounter: Long = flowStats.getCounterValue("scalding.test", "fltr_counter")
+      val origCounter: Long = flowStats.getCounterValue("counter.test", "orig_counter")
+      val fmCounter: Long = flowStats.getCounterValue("counter.test", "fm_counter")
+      val fltrCounter: Long = flowStats.getCounterValue("counter.test", "fltr_counter")
       // Now check that the stats are computed correctly
       origCounter must be_==(original.size)
       fmCounter must be_==(original.flatMap(fn).size * 2)
