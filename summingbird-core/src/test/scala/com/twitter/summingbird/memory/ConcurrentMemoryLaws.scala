@@ -18,6 +18,7 @@ package com.twitter.summingbird.memory
 
 import com.twitter.algebird.{ MapAlgebra, Monoid }
 import com.twitter.summingbird._
+import com.twitter.summingbird.option.JobId
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingQueue, ConcurrentHashMap }
@@ -116,6 +117,34 @@ object ConcurrentMemoryLaws extends Specification {
     unorderedEq(buffData, correctData)
   }
 
+  /**
+   * Tests the in-memory planner against a job with a single flatMap
+   * operation and some test counters
+   */
+  def counterChecker[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv]: Boolean = {
+    implicit val jobID: JobId = new JobId("concurrent.memory.job.testJobId")
+    val mem = new ConcurrentMemory
+    val input = sample[List[T]]
+
+    val fn = sample[(T) => List[(K, V)]]
+    val sourceMaker = ConcurrentMemory.toSource[T](_)
+    val original = sample[List[T]]
+    val source = sourceMaker(original)
+    val store: ConcurrentMemory#Store[K, V] = new ConcurrentHashMap[K, V]()
+
+    val prod = TestGraphs.jobWithStats[ConcurrentMemory, T, K, V](jobID, source, store)(t => fn(t))
+    Await.result(mem.plan(prod).run, Duration.Inf)
+    //mem.run(mem.plan(prod))
+
+    val origCounter = mem.counter(Group("counter.test"), Name("orig_counter")).get
+    val fmCounter = mem.counter(Group("counter.test"), Name("fm_counter")).get
+    val fltrCounter = mem.counter(Group("counter.test"), Name("fltr_counter")).get
+
+    (origCounter == original.size) &&
+      (fmCounter == (original.flatMap(fn).size * 2)) &&
+      (fltrCounter == (original.flatMap(fn).size))
+  }
+
   "The ConcurrentMemory Platform" should {
     //Set up the job:
     "singleStep w/ Int, Int, Set[Int]" in { singleStepLaw[Int, Int, Set[Int]] must beTrue }
@@ -132,6 +161,8 @@ object ConcurrentMemoryLaws extends Specification {
     "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must beTrue }
 
     "lookupCollect w/ Int, Int" in { lookupCollectChecker[Int, Int] must beTrue }
+
+    "counters w/ Int, Int, Int" in { counterChecker[Int, Int, Int] must beTrue }
   }
 
 }

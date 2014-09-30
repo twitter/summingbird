@@ -22,12 +22,13 @@ import com.twitter.summingbird.planner.DagOptimizer
 
 import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.summingbird._
+import com.twitter.summingbird.option.JobId
 import scala.collection.mutable.Buffer
 import scala.concurrent.{ ExecutionContext, Future }
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingQueue, ConcurrentHashMap }
 
 object ConcurrentMemory {
-  implicit def source[T](traversable: TraversableOnce[T]): Producer[ConcurrentMemory, T] =
+  implicit def toSource[T](traversable: TraversableOnce[T]): Producer[ConcurrentMemory, T] =
     Producer.source[ConcurrentMemory, T](traversable)
 }
 
@@ -132,7 +133,9 @@ object PhysicalNode {
   }
 }
 
-class ConcurrentMemory extends Platform[ConcurrentMemory] with DagOptimizer[ConcurrentMemory] {
+class ConcurrentMemory(implicit jobID: JobId = JobId("default.concurrent.memory.jobId"))
+    extends Platform[ConcurrentMemory] with DagOptimizer[ConcurrentMemory] {
+
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = ConcurrentHashMap[K, V]
   type Sink[T] = BlockingQueue[T]
@@ -142,6 +145,9 @@ class ConcurrentMemory extends Platform[ConcurrentMemory] with DagOptimizer[Conc
   import PhysicalNode._
 
   type ProdCons[T] = Prod[Any]
+
+  def counter(group: Group, name: Name): Option[Long] =
+    MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }
 
   /**
    * This is the main recursive function that plans "that" to
@@ -219,6 +225,16 @@ class ConcurrentMemory extends Platform[ConcurrentMemory] with DagOptimizer[Conc
     }
 
   def plan[T](prod: TailProducer[ConcurrentMemory, T]): ConcurrentMemoryPlan = {
+    /*
+     * Register the counters
+     */
+    val registeredCounters: Seq[(Group, Name)] =
+      JobCounters.getCountersForJob(jobID).getOrElse(Nil)
+
+    if (!registeredCounters.isEmpty) {
+      MemoryStatProvider.registerCounters(jobID, registeredCounters)
+      SummingbirdRuntimeStats.addPlatformStatProvider(MemoryStatProvider)
+    }
     /*
      * These rules should normalize the graph into a plannable state by the toPhys
      * recursive function (removing no-op nodes and converting optionMap and KeyFlatMap to just
