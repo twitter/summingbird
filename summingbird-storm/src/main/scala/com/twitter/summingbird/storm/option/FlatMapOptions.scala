@@ -29,10 +29,6 @@ import java.io.Serializable
  * @author Ashu Singhal
  */
 
-case class SpoutParallelism(parHint: Int)
-
-case class FlatMapParallelism(parHint: Int)
-
 /**
  * This workaround is necessary because val parameters can't be
  * call-by-name.  We pass a function so that the metrics aren't
@@ -76,8 +72,9 @@ case class PreferLocalDependency(get: Boolean)
  * normal replay mechanisms.
  */
 case class AckOnEntry(get: Boolean)
+
 /**
- * Maximum number of tuples to execute in a given second per mapper
+ * Maximum number of elements to execute in a given second per task
  */
 case class MaxExecutePerSecond(lowerBound: Long, upperBound: Long, rampUptimeMS: Long) {
   require(rampUptimeMS >= 0L, "Ramp up time must greater than or equal to zero")

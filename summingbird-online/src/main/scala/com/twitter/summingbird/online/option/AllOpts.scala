@@ -2,6 +2,7 @@ package com.twitter.summingbird.online.option
 
 import com.twitter.util.Duration
 import com.twitter.algebird.Semigroup
+import com.twitter.algebird.util.summer.AsyncSummer
 
 case class OnlineSuccessHandler(handlerFn: Unit => Unit)
 
@@ -78,8 +79,37 @@ case class SoftMemoryFlushPercent(get: Float) {
  */
 case class ValueCombinerCacheSize(get: Int)
 
+/**
+ * A SummerBuilder is a generic trait that should be implemented to build a totally custom aggregator.
+ * This is the same trait for both map side and reduce side aggregation.
+ */
 trait SummerBuilder extends Serializable {
-  def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]]
+  def getSummer[K, V: Semigroup]: AsyncSummer[(K, V), Map[K, V]]
 }
 
+/**
+ * The SummerConstructor option, set this instead of CacheSize, AsyncPoolSize, etc.. to provide how to construct the aggregation for this bolt
+ */
 case class SummerConstructor(get: SummerBuilder)
+
+/**
+ * How many instances/tasks of this flatmap task should be spawned in the environment
+ */
+case class FlatMapParallelism(parHint: Int)
+
+/**
+ * Parallelism in the number of instances/tasks to attempt to achieve for a given source
+ */
+case class SourceParallelism(parHint: Int)
+
+/**
+ * How many instances/tasks of this summer task should be spawned in the environment
+ */
+case class SummerParallelism(parHint: Int)
+
+/**
+ * This value is mulitplied by the summer parallelism to set the true value used to hash and shard the
+ * key/value pairs. This allows for there to be more, smaller batches sent out to a number of threads
+ * which are set by SummerParallelism.
+ */
+case class SummerBatchMultiplier(get: Int)

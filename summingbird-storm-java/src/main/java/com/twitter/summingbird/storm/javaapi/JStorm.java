@@ -32,17 +32,18 @@ import com.twitter.summingbird.storm.RemoteStorm;
 import com.twitter.summingbird.storm.SinkFn;
 import com.twitter.summingbird.storm.SpoutSource;
 import com.twitter.summingbird.storm.Storm;
-import com.twitter.summingbird.storm.StormService;
 import com.twitter.summingbird.storm.StormSink;
 import com.twitter.summingbird.storm.StormSource;
-import com.twitter.summingbird.storm.StormStore;
-import com.twitter.summingbird.storm.option.SpoutParallelism;
+import com.twitter.summingbird.online.OnlineServiceFactory;
+import com.twitter.summingbird.online.ReadableServiceFactory;
+import com.twitter.summingbird.online.MergeableStoreFactory;
+import com.twitter.summingbird.online.option.SourceParallelism;
 import com.twitter.tormenta.spout.Spout;
 import com.twitter.util.Future;
 
 public class JStorm {
 
-  public static <T> JProducer<Storm, T> source(Spout<Tuple2<Timestamp, T>> spout, Option<SpoutParallelism> parallelism) {
+  public static <T> JProducer<Storm, T> source(Spout<Tuple2<Timestamp, T>> spout, Option<SourceParallelism> parallelism) {
     return source(new SpoutSource<T>(spout, parallelism));
   }
 
@@ -50,8 +51,8 @@ public class JStorm {
 	  return JProducers.<Storm, T>source(new Source<Storm, StormSource<T>, T>(source));
   }
 
-  public static <K,V> Store<Storm, StormStore<K, V>, K, V> store(StormStore<K, V> store) {
-    return new Store<Storm, StormStore<K, V>, K, V>(store);
+  public static <K,V> Store<Storm, MergeableStoreFactory<K, V>, K, V> store(MergeableStoreFactory<K, V> store) {
+    return new Store<Storm, MergeableStoreFactory<K, V>, K, V>(store);
   }
 
   public static <T> Sink<Storm, StormSink<T>, T> sink(final Callable<Function<T, com.twitter.util.Future<scala.runtime.BoxedUnit>>> sink) {
@@ -71,11 +72,11 @@ public class JStorm {
     return new Sink<Storm, StormSink<T>, T>(sink);
   }
 
-  public static <K,V> Service<Storm, StormService<K, V>, K, V> service(StormService<K, V> service) {
-    return new Service<Storm, StormService<K, V>, K, V>(service);
+  public static <K,V> Service<Storm, OnlineServiceFactory<K, V>, K, V> service(OnlineServiceFactory<K, V> service) {
+    return new Service<Storm, OnlineServiceFactory<K, V>, K, V>(service);
   }
 
-  public static <STORMBUFFER extends StormService<K, V> & StormSink<Tuple2<K, V>>, K, V> Buffer<Storm, STORMBUFFER, K, V> buffer(STORMBUFFER service) {
+  public static <STORMBUFFER extends OnlineServiceFactory<K, V> & StormSink<Tuple2<K, V>>, K, V> Buffer<Storm, STORMBUFFER, K, V> buffer(STORMBUFFER service) {
     return new Buffer<Storm, STORMBUFFER, K, V>(service);
   }
 

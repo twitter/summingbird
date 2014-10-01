@@ -38,6 +38,7 @@ import org.slf4j.{ LoggerFactory, Logger }
 /**
  *
  * @author Oscar Boykin
+ * @author Ian O Connell
  * @author Sam Ritchie
  * @author Ashu Singhal
  */

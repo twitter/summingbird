@@ -19,7 +19,9 @@ package com.twitter.summingbird.storm
 import com.twitter.util.Future
 import com.twitter.storehaus.{ Store, WritableStore }
 
-trait StormSink[-T] {
+import com.twitter.summingbird.online._
+
+trait StormSink[-T] extends java.io.Serializable {
   def toFn: T => Future[Unit]
 }
 
@@ -35,8 +37,8 @@ class WritableStoreSink[K, V](writable: => WritableStore[K, V]) extends StormSin
 /**
  * Used to do leftJoins of streams against other streams
  */
-class StormBuffer[K, V](supplier: => Store[K, V]) extends StormSink[(K, V)] with StormService[K, V] {
+class StormBuffer[K, V](supplier: => Store[K, V]) extends StormSink[(K, V)] with OnlineServiceFactory[K, V] {
   private lazy val constructed = supplier // only construct it once
   def toFn = { (kv: (K, V)) => constructed.put((kv._1, Some(kv._2))) }
-  def store = { () => constructed }
+  def create = constructed
 }

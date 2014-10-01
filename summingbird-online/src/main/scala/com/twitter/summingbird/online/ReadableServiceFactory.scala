@@ -14,12 +14,16 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird
+package com.twitter.summingbird.online
 
 import com.twitter.storehaus.ReadableStore
 
-/**
- * Package containing the Summingbird Storm platform.
+/*
+ * This is our default supplied instance of the OnlineServiceFactory.
+ * This is a class for wrapping ReadableStore constructors into our wrapping type.
  */
-package object storm {
+
+case class ReadableServiceFactory[-K, +V](
+    store: () => ReadableStore[K, V]) extends OnlineServiceFactory[K, V] {
+  def create = store()
 }

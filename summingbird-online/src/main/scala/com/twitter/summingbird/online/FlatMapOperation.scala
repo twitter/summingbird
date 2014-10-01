@@ -32,6 +32,14 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
    */
   def maybeFlush: Future[TraversableOnce[U]] = Future.value(Seq.empty[U])
 
+  // Helper to add a simple U => S operation at the end of a FlatMapOperation
+  def map[S](fn: U => S): FlatMapOperation[T, S] =
+    andThen(FlatMapOperation(fn.andThen(r => Iterator(r))))
+
+  // Helper to add a simple U => TraversableOnce[S] operation at the end of a FlatMapOperation
+  def flatMap[S](fn: U => TraversableOnce[S]): FlatMapOperation[T, S] =
+    andThen(FlatMapOperation(fn))
+
   /**
    * TODO: Think about getting an implicit FutureCollector here, in
    * case we don't want to completely choke on large expansions (and
@@ -104,10 +112,10 @@ object FlatMapOperation {
     new FunctionKeyFlatMapOperation(fm)
 
   def combine[T, K, V, JoinedV](fmSupplier: => FlatMapOperation[T, (K, V)],
-    storeSupplier: () => ReadableStore[K, JoinedV]): FlatMapOperation[T, (K, (V, Option[JoinedV]))] =
+    storeSupplier: OnlineServiceFactory[K, JoinedV]): FlatMapOperation[T, (K, (V, Option[JoinedV]))] =
     new FlatMapOperation[T, (K, (V, Option[JoinedV]))] {
       lazy val fm = fmSupplier
-      lazy val store = storeSupplier()
+      lazy val store = storeSupplier.create
       override def apply(t: T) =
         fm.apply(t).flatMap { trav: TraversableOnce[(K, V)] =>
           val resultList = trav.toSeq // Can't go through this twice

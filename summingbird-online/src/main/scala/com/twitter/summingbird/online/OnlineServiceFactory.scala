@@ -14,13 +14,16 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird
+package com.twitter.summingbird.online
 
 import com.twitter.storehaus.ReadableStore
 
-/**
- * Package containing the Summingbird Online platform.
+/*
+ * What we would like to pass around to describe a service.
+ * That is its a factory that produces readable store's.
+ *
+ * The Function1 here is to allow cleaner diasy chaining of operations via andThen.
  */
-package object online {
-  type StoreFactory[K, V] = () => ReadableStore[K, V]
+trait OnlineServiceFactory[-K, +V] extends java.io.Serializable {
+  def create: ReadableStore[K, V]
 }
