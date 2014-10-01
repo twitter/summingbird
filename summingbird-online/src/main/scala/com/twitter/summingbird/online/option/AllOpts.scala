@@ -2,6 +2,7 @@ package com.twitter.summingbird.online.option
 
 import com.twitter.util.Duration
 import com.twitter.algebird.Semigroup
+import com.twitter.algebird.util.summer.AsyncSummer
 
 case class OnlineSuccessHandler(handlerFn: Unit => Unit)
 
@@ -83,7 +84,7 @@ case class ValueCombinerCacheSize(get: Int)
  * This is the same trait for both map side and reduce side aggregation.
  */
 trait SummerBuilder extends Serializable {
-  def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]]
+  def getSummer[K, V: Semigroup]: AsyncSummer[(K, V), Map[K, V]]
 }
 
 /**

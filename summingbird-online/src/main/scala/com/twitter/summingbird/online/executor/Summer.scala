@@ -22,7 +22,7 @@ import com.twitter.algebird.{ Semigroup, SummingQueue }
 import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.bijection.Injection
 
-import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer }
+import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer, MergeableStoreFactory }
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
@@ -54,7 +54,7 @@ import scala.collection.{ Map => CMap }
  */
 
 class Summer[Key, Value: Semigroup, Event, S, D, RC](
-  @transient storeSupplier: () => Mergeable[Key, Value],
+  @transient storeSupplier: MergeableStoreFactory[Key, Value],
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
@@ -85,7 +85,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
 
   override def init(runtimeContext: RC) {
     super.init(runtimeContext)
-    storePromise.setValue(storeBox.get())
+    storePromise.setValue(storeBox.get.store())
     store.toString // Do the lazy evaluation now so we can connect before tuples arrive.
 
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None

@@ -96,7 +96,7 @@ object StormRunner {
    * the param to store is by name, so this is still not created created
    * yet
    */
-  val storeSupplier: MergeableStoreFactory[String, Long] = Storm.store(stringLongStore)
+  val storeSupplier: MergeableStoreFactory[(String, BatchID), Long] = Storm.store(stringLongStore)
 
   /**
    * This function will be called by the storm runner to request the info

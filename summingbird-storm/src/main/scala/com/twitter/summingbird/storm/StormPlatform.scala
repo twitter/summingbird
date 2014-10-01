@@ -72,10 +72,10 @@ object Storm {
     new WritableStoreSink[K, V](store)
 
   // This can be used in jobs that do not have a batch component
-  def onlineOnlyStore[K, V](store: => MergeableStore[K, V]): MergeableStoreFactory[K, V] =
+  def onlineOnlyStore[K, V](store: => MergeableStore[K, V]): MergeableStoreFactory[(K, BatchID), V] =
     MergeableStoreFactory.fromOnlineOnly(store)
 
-  def store[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreFactory[K, V] =
+  def store[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreFactory[(K, BatchID), V] =
     MergeableStoreFactory.from(store)
 
   def service[K, V](serv: => ReadableStore[K, V]): ReadableServiceFactory[K, V] = ReadableServiceFactory(() => serv)
@@ -101,7 +101,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   @transient private val logger = LoggerFactory.getLogger(classOf[Storm])
 
   type Source[+T] = StormSource[T]
-  type Store[-K, V] = MergeableStoreFactory[K, V]
+  type Store[-K, V] = MergeableStoreFactory[(K, BatchID), V]
   type Sink[-T] = StormSink[T]
   type Service[-K, +V] = OnlineServiceFactory[K, V]
   type Plan[T] = PlannedTopology
@@ -189,12 +189,12 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     type ExecutorValueType = (Timestamp, V)
     type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
 
-    val supplier = summer.store match {
-      case m: MergeableStoreFactory[K, V] => m
+    val supplier: MergeableStoreFactory[ExecutorKeyType, V] = summer.store match {
+      case m: MergeableStoreFactory[ExecutorKeyType, V] => m
       case _ => sys.error("Should never be able to get here, looking for a MergeableStoreFactory from %s".format(summer.store))
     }
 
-    val wrappedStore: MergeableStoreFactory[K, ExecutorValueType] =
+    val wrappedStore: MergeableStoreFactory[ExecutorKeyType, ExecutorValueType] =
       MergeableStoreFactoryAlgebra.wrapOnlineFactory(supplier)
 
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
@@ -230,7 +230,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       ackOnEntry,
       maxExecutePerSec,
       new executor.Summer(
-        wrappedStore.store,
+        wrappedStore,
         flatmapOp,
         getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
         getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),

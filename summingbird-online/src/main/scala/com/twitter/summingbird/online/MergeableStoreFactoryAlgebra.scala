@@ -54,7 +54,7 @@ object MergeableStoreFactoryAlgebra {
       */
   def wrapOnlineFactory[K, V](supplier: MergeableStoreFactory[K, V]): MergeableStoreFactory[K, (Timestamp, V)] =
     {
-      val mergeable: () => Mergeable[(K, BatchID), (Timestamp, V)] =
+      val mergeable: () => Mergeable[K, (Timestamp, V)] =
         () => { new WrappedTSInMergeable(supplier.store()) }
 
       MergeableStoreFactory[K, (Timestamp, V)](mergeable, supplier.batcher)

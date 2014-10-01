@@ -121,6 +121,8 @@ class ClientStore[K, V: Semigroup](
 
   override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, FOpt[V]] = {
     val offlineResult: Map[K1, FOpt[(BatchID, V)]] = offlineStore.multiGet(ks)
+    // For combining later we move the offline result batch id from being the exclusive upper bound
+    // to the inclusive upper bound.
     val liftedOffline = decrementOfflineBatch(offlineResult)
     val possibleOnlineKeys = ks.filter(onlineKeyFilter)
     val m: Future[Map[K1, FOpt[V]]] = for {

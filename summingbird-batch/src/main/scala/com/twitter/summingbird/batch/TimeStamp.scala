@@ -64,6 +64,8 @@ object Timestamp {
   }
 
   // This is a right semigroup, that given any two Timestamps just take the one on the right.
+  // The reason we did this is because we don't want to give a stronger contract to the semigroup
+  // than the store actually respects
   val rightSemigroup = new Semigroup[Timestamp] {
     def plus(a: Timestamp, b: Timestamp) = b
     override def sumOption(ti: TraversableOnce[Timestamp]) =

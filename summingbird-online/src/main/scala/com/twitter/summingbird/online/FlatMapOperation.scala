@@ -34,7 +34,7 @@ trait FlatMapOperation[-T, +U] extends Serializable with Closeable {
 
   // Helper to add a simple U => S operation at the end of a FlatMapOperation
   def map[S](fn: U => S): FlatMapOperation[T, S] =
-    andThen(FlatMapOperation(fn.andThen(r => Seq(r))))
+    andThen(FlatMapOperation(fn.andThen(r => Iterator(r))))
 
   // Helper to add a simple U => TraversableOnce[S] operation at the end of a FlatMapOperation
   def flatMap[S](fn: U => TraversableOnce[S]): FlatMapOperation[T, S] =
@@ -115,7 +115,7 @@ object FlatMapOperation {
     storeSupplier: OnlineServiceFactory[K, JoinedV]): FlatMapOperation[T, (K, (V, Option[JoinedV]))] =
     new FlatMapOperation[T, (K, (V, Option[JoinedV]))] {
       lazy val fm = fmSupplier
-      lazy val store = storeSupplier.store()
+      lazy val store = storeSupplier.create
       override def apply(t: T) =
         fm.apply(t).flatMap { trav: TraversableOnce[(K, V)] =>
           val resultList = trav.toSeq // Can't go through this twice

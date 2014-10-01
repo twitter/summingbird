@@ -44,7 +44,7 @@ object TestStore {
     storeID
   }
 
-  def createBatchedStore[K, V](initialData: Map[(K, BatchID), V] = Map.empty[(K, BatchID), V])(implicit batcher: Batcher, valueSG: Semigroup[V]): (String, MergeableStoreFactory[K, V]) = {
+  def createBatchedStore[K, V](initialData: Map[(K, BatchID), V] = Map.empty[(K, BatchID), V])(implicit batcher: Batcher, valueSG: Semigroup[V]): (String, MergeableStoreFactory[(K, BatchID), V]) = {
 
     val storeID = buildStore[(K, BatchID), V](initialData)
     val supplier = MergeableStoreFactory.from(
@@ -54,7 +54,7 @@ object TestStore {
     (storeID, supplier)
   }
 
-  def createStore[K, V: Semigroup](initialData: Map[K, V] = Map.empty[K, V]): (String, MergeableStoreFactory[K, V]) = {
+  def createStore[K, V: Semigroup](initialData: Map[K, V] = Map.empty[K, V]): (String, MergeableStoreFactory[(K, BatchID), V]) = {
     val storeID = buildStore[K, V](initialData)
     val supplier = MergeableStoreFactory.fromOnlineOnly(
       TestStore.apply[K, V](storeID)

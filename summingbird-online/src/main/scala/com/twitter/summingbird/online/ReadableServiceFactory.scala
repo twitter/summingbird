@@ -24,4 +24,6 @@ import com.twitter.storehaus.ReadableStore
  */
 
 case class ReadableServiceFactory[-K, +V](
-  override val store: () => ReadableStore[K, V]) extends OnlineServiceFactory[K, V]
+    store: () => ReadableStore[K, V]) extends OnlineServiceFactory[K, V] {
+  def create = store()
+}
