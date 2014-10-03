@@ -40,20 +40,21 @@ object ClientMergeable {
  * a merge into the online store and return the total sum.
  */
 class ClientMergeable[K, V: Semigroup](
-  offlineStore: ReadableStore[K, (BatchID, V)],
-  onlineStore: ReadableStore[(K, BatchID), V] with Mergeable[(K, BatchID), V],
-  batcher: Batcher,
-  batchesToKeep: Int,
-  onlineKeyFilter: K => Boolean,
-  collector: FutureCollector[(K, Iterable[BatchID])])
-    extends ClientStore[K, V](offlineStore, onlineStore, batcher, batchesToKeep, onlineKeyFilter, collector)
-    with Mergeable[(K, BatchID), V] {
+    offlineStore: ReadableStore[K, (BatchID, V)],
+    onlineStore: ReadableStore[(K, BatchID), V] with Mergeable[(K, BatchID), V],
+    batcher: Batcher,
+    batchesToKeep: Int,
+    onlineKeyFilter: K => Boolean,
+    collector: FutureCollector[(K, Iterable[BatchID])]) extends Mergeable[(K, BatchID), V] {
 
-  import MergeOperations._
+  def readable: ClientStore[K, V] =
+    new ClientStore(offlineStore, onlineStore, batcher, batchesToKeep, onlineKeyFilter, collector)
+
+  import MergeOperations.FOpt
 
   def semigroup = implicitly[Semigroup[V]]
 
-  private val fsg: Semigroup[FOpt[V]] = new Semigroup[FOpt[V]] {
+  private def fsg: Semigroup[FOpt[V]] = new Semigroup[FOpt[V]] {
     def plus(left: FOpt[V], right: FOpt[V]): FOpt[V] =
       left.join(right).map { case (l, v) => Monoid.plus(l, v) }
   }
@@ -81,9 +82,9 @@ class ClientMergeable[K, V: Semigroup](
         Future.collect(firstRes.iterator.map(_._2).toIndexedSeq).unit
 
       val fmap = previousIsDone.map { _ =>
-        firstRes ++ multiMerge(nextCall)
+        multiMerge(nextCall)
       }
-      FutureOps.liftFutureValues(ks.keySet, fmap)
+      firstRes ++ FutureOps.liftFutureValues(ks.keySet, fmap)
     } else firstRes
   }
 
@@ -94,7 +95,7 @@ class ClientMergeable[K, V: Semigroup](
       .map {
         case (b, kvs) =>
           val batch = kvs.head._1._2 // kvs can't be empty in mapValues
-          val existing: Map[K, FOpt[V]] = multiGetBatch[K](batch.prev, kvs.map { case ((k, _), v) => k }(breakOut))
+          val existing: Map[K, FOpt[V]] = readable.multiGetBatch[K](batch.prev, kvs.map { case ((k, _), v) => k }(breakOut))
           // Now we merge into the current store:
           val preMerge: Map[K, FOpt[V]] = onlineStore.multiMerge(kvs)
             .map { case ((k, _), v) => (k, v) }(breakOut)

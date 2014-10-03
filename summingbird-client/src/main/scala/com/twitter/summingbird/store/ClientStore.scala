@@ -122,7 +122,11 @@ class ClientStore[K, V: Semigroup](
   override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, FOpt[V]] =
     multiGetBatch(batcher.currentBatch, ks)
 
-  protected def multiGetBatch[K1 <: K](batch: BatchID, ks: Set[K1]): Map[K1, FOpt[V]] = {
+  /*
+   * This is a big hint that in fact this store should be a
+   * ReadableStore[(K, BatchID), V]
+   */
+  def multiGetBatch[K1 <: K](batch: BatchID, ks: Set[K1]): Map[K1, FOpt[V]] = {
     val offlineResult: Map[K1, FOpt[(BatchID, V)]] = offlineStore.multiGet(ks)
     val liftedOffline = decrementOfflineBatch(offlineResult)
     val possibleOnlineKeys = ks.filter(onlineKeyFilter)
