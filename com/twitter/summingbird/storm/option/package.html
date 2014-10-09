@@ -1,0 +1,284 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>option - com.twitter.summingbird.storm.option</title>
+          <meta name="description" content="option - com.twitter.summingbird.storm.option" />
+          <meta name="keywords" content="option com.twitter.summingbird.storm.option" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'com.twitter.summingbird.storm.option.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="com">com</a>.<a href="../../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird.storm">storm</a></p>
+        <h1>option</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">option</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="com.twitter.summingbird.storm.option.AckOnEntry" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AckOnEntryextendsProductwithSerializable"></a>
+      <a id="AckOnEntry:AckOnEntry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AckOnEntry.html"><span class="name">AckOnEntry</span></a><span class="params">(<span name="get">get: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">If this is set to true, this means that a bolt will ack a tuple as soon as it is received and processing begins;
+otherwise, the tuple will be acked when the bolt completes.</p>
+    </li><li name="com.twitter.summingbird.storm.option.AnchorTuples" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AnchorTuplesextendsSerializablewithProductwithSerializable"></a>
+      <a id="AnchorTuples:AnchorTuples"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AnchorTuples.html"><span class="name">AnchorTuples</span></a><span class="params">(<span name="anchor">anchor: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">If true, the topology will anchor tuples in all flatMap bolts and
+ack in the final sink bolt.</p>
+    </li><li name="com.twitter.summingbird.storm.option.FlatMapParallelism" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FlatMapParallelismextendsProductwithSerializable"></a>
+      <a id="FlatMapParallelism:FlatMapParallelism"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatMapParallelism.html"><span class="name">FlatMapParallelism</span></a><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FlatMapStormMetricsextendsAnyRef"></a>
+      <a id="FlatMapStormMetrics:FlatMapStormMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatMapStormMetrics.html"><span class="name">FlatMapStormMetrics</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">When a bolt is prepared, these metrics will be use by being called with the TopologyContext for the storm
+bolt.</p>
+    </li><li name="com.twitter.summingbird.storm.option.PreferLocalDependency" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PreferLocalDependencyextendsProductwithSerializable"></a>
+      <a id="PreferLocalDependency:PreferLocalDependency"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="PreferLocalDependency.html"><span class="name">PreferLocalDependency</span></a><span class="params">(<span name="get">get: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This signals that the storm bolts should use localOrShuffleGrouping, which means that if the downstream bolt
+has a task on the same local worker, the output will only go to those tasks.</p>
+    </li><li name="com.twitter.summingbird.storm.option.SpoutParallelism" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SpoutParallelismextendsProductwithSerializable"></a>
+      <a id="SpoutParallelism:SpoutParallelism"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SpoutParallelism.html"><span class="name">SpoutParallelism</span></a><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Options used by the flatMapping stage of a storm topology.</p>
+    </li><li name="com.twitter.summingbird.storm.option.SpoutStormMetrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SpoutStormMetricsextendsSerializable"></a>
+      <a id="SpoutStormMetrics:SpoutStormMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SpoutStormMetrics.html"><span class="name">SpoutStormMetrics</span></a><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.storm.option.SummerBatchMultiplier" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SummerBatchMultiplierextendsProductwithSerializable"></a>
+      <a id="SummerBatchMultiplier:SummerBatchMultiplier"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SummerBatchMultiplier.html"><span class="name">SummerBatchMultiplier</span></a><span class="params">(<span name="get">get: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This value is mulitplied by the summer parallelism to set the true value used to hash and shard the
+key/value pairs.</p>
+    </li><li name="com.twitter.summingbird.storm.option.SummerParallelism" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SummerParallelismextendsProductwithSerializable"></a>
+      <a id="SummerParallelism:SummerParallelism"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SummerParallelism.html"><span class="name">SummerParallelism</span></a><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">SinkParallelism controls the number of executors storm allocates to
+the groupAndSum bolts.</p>
+    </li><li name="com.twitter.summingbird.storm.option.SummerStormMetrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SummerStormMetricsextendsAnyRef"></a>
+      <a id="SummerStormMetrics:SummerStormMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SummerStormMetrics.html"><span class="name">SummerStormMetrics</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="com.twitter.summingbird.storm.option.AnchorTuples" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AnchorTuples"></a>
+      <a id="AnchorTuples:AnchorTuples"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="AnchorTuples$.html"><span class="name">AnchorTuples</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FlatMapStormMetrics"></a>
+      <a id="FlatMapStormMetrics:FlatMapStormMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatMapStormMetrics$.html"><span class="name">FlatMapStormMetrics</span></a>
+      </span>
+      </h4>
+      <p class="comment cmt">This workaround is necessary because val parameters can't be
+call-by-name.</p>
+    </li><li name="com.twitter.summingbird.storm.option.SpoutStormMetrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SpoutStormMetrics"></a>
+      <a id="SpoutStormMetrics:SpoutStormMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SpoutStormMetrics$.html"><span class="name">SpoutStormMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.storm.option.SummerStormMetrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SummerStormMetrics"></a>
+      <a id="SummerStormMetrics:SummerStormMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SummerStormMetrics$.html"><span class="name">SummerStormMetrics</span></a>
+      </span>
+      </h4>
+      <p class="comment cmt">See FlatMapOptions.</p>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../../lib/template.js"></script>
+    </body>
+      </html>

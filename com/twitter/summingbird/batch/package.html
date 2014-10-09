@@ -1,0 +1,399 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>batch - com.twitter.summingbird.batch</title>
+          <meta name="description" content="batch - com.twitter.summingbird.batch" />
+          <meta name="keywords" content="batch com.twitter.summingbird.batch" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'com.twitter.summingbird.batch.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a></p>
+        <h1>batch</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batch</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="com.twitter.summingbird.batch.AbstractBatcher" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="AbstractBatcherextendsBatcher"></a>
+      <a id="AbstractBatcher:AbstractBatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AbstractBatcher.html"><span class="name">AbstractBatcher</span></a><span class="result"> extends <a href="Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Abstract class to extend for easier java interop.</p>
+    </li><li name="com.twitter.summingbird.batch.BatchID" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BatchIDextendsOrdered[com.twitter.summingbird.batch.BatchID]withSerializable"></a>
+      <a id="BatchID:BatchID"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BatchID.html"><span class="name">BatchID</span></a><span class="result"> extends <span class="extype" name="scala.Ordered">Ordered</span>[<a href="BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>] with <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.Batcher" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BatcherextendsSerializable"></a>
+      <a id="Batcher:Batcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Batcher.html"><span class="name">Batcher</span></a><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.CalendarBatcher" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CalendarBatcherextendsBatcherwithProductwithSerializable"></a>
+      <a id="CalendarBatcher:CalendarBatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CalendarBatcher.html"><span class="name">CalendarBatcher</span></a><span class="params">(<span name="unitCount">unitCount: <span class="extype" name="scala.Int">Int</span></span>, <span name="calField">calField: <a href="CalendarBatcher$$CalField.html" class="extype" name="com.twitter.summingbird.batch.CalendarBatcher.CalField">CalField</a></span>)</span><span class="result"> extends <a href="Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This batcher numbers batches based on a Calendar, not just milliseconds.</p>
+    </li><li name="com.twitter.summingbird.batch.CombinedBatcher" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CombinedBatcherextendsBatcher"></a>
+      <a id="CombinedBatcher:CombinedBatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CombinedBatcher.html"><span class="name">CombinedBatcher</span></a><span class="result"> extends <a href="Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">strictly before the beforeBound, we use the before Batcher.</p>
+    </li><li name="com.twitter.summingbird.batch.MillisecondBatcher" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MillisecondBatcherextendsAbstractBatcher"></a>
+      <a id="MillisecondBatcher:MillisecondBatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MillisecondBatcher.html"><span class="name">MillisecondBatcher</span></a><span class="result"> extends <a href="AbstractBatcher.html" class="extype" name="com.twitter.summingbird.batch.AbstractBatcher">AbstractBatcher</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Batcher implementation based on a fixed-width batch of
+milliseconds.</p>
+    </li><li name="com.twitter.summingbird.batch.Milliseconds" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MillisecondsextendsOrdered[com.twitter.summingbird.batch.Milliseconds]withProductwithSerializable"></a>
+      <a id="Milliseconds:Milliseconds"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Milliseconds.html"><span class="name">Milliseconds</span></a><span class="params">(<span name="toLong">toLong: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Ordered">Ordered</span>[<a href="Milliseconds.html" class="extype" name="com.twitter.summingbird.batch.Milliseconds">Milliseconds</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.PrepareState" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PrepareState[T]extendsAnyRef"></a>
+      <a id="PrepareState[T]:PrepareState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="PrepareState.html"><span class="name">PrepareState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.PrunedSpace" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PrunedSpace[-T]extendsSerializable"></a>
+      <a id="PrunedSpace[-T]:PrunedSpace[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="PrunedSpace.html"><span class="name">PrunedSpace</span></a><span class="tparams">[<span name="T">-T</span>]</span><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.RunningState" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="RunningState[T]extendsAnyRef"></a>
+      <a id="RunningState[T]:RunningState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="RunningState.html"><span class="name">RunningState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.Timestamp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TimestampextendsOrdered[com.twitter.summingbird.batch.Timestamp]withProductwithSerializable"></a>
+      <a id="Timestamp:Timestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Timestamp.html"><span class="name">Timestamp</span></a><span class="params">(<span name="milliSinceEpoch">milliSinceEpoch: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Ordered">Ordered</span>[<a href="Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.WaitingState" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="WaitingState[T]extendsAnyRef"></a>
+      <a id="WaitingState[T]:WaitingState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="WaitingState.html"><span class="name">WaitingState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Job state models the memory of when the next job should
+try to cover
+</p>
+    </li><li name="com.twitter.summingbird.batch.WrappedHadoopConfig" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WrappedHadoopConfigextendsReadableMap"></a>
+      <a id="WrappedHadoopConfig:WrappedHadoopConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="WrappedHadoopConfig.html"><span class="name">WrappedHadoopConfig</span></a><span class="result"> extends <a href="../ReadableMap.html" class="extype" name="com.twitter.summingbird.ReadableMap">ReadableMap</a></span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="com.twitter.summingbird.batch.BatchConfig" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BatchConfig"></a>
+      <a id="BatchConfig:BatchConfig"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BatchConfig$.html"><span class="name">BatchConfig</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.BatchID" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BatchID"></a>
+      <a id="BatchID:BatchID"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BatchID$.html"><span class="name">BatchID</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The Batch is the fundamental work unit of the Hadoop portion of
+Summingbird.</p>
+    </li><li name="com.twitter.summingbird.batch.Batcher" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Batcher"></a>
+      <a id="Batcher:Batcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Batcher$.html"><span class="name">Batcher</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">For the purposes of batching, each Event object has exactly one
+Time (in millis).</p>
+    </li><li name="com.twitter.summingbird.batch.CalendarBatcher" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CalendarBatcher"></a>
+      <a id="CalendarBatcher:CalendarBatcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CalendarBatcher$.html"><span class="name">CalendarBatcher</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.Milliseconds" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Milliseconds"></a>
+      <a id="Milliseconds:Milliseconds"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Milliseconds$.html"><span class="name">Milliseconds</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.PrunedSpace" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PrunedSpace"></a>
+      <a id="PrunedSpace:PrunedSpace"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PrunedSpace$.html"><span class="name">PrunedSpace</span></a><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.Timestamp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Timestamp"></a>
+      <a id="Timestamp:Timestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Timestamp$.html"><span class="name">Timestamp</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.option" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="option"></a>
+      <a id="option:option"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="option/package.html"><span class="name">option</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.state" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="state"></a>
+      <a id="state:state"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="state/package.html"><span class="name">state</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.store" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="store"></a>
+      <a id="store:store"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="store/package.html"><span class="name">store</span></a>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../lib/template.js"></script>
+    </body>
+      </html>

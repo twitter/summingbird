@@ -1,0 +1,197 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>spark - com.twitter.summingbird.spark</title>
+          <meta name="description" content="spark - com.twitter.summingbird.spark" />
+          <meta name="keywords" content="spark com.twitter.summingbird.spark" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'com.twitter.summingbird.spark.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a></p>
+        <h1>spark</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">spark</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="com.twitter.summingbird.spark.MergeResult" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MergeResult[K,V]extendsProductwithSerializable"></a>
+      <a id="MergeResult[K,V]:MergeResult[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MergeResult.html"><span class="name">MergeResult</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="sumBeforeMerge">sumBeforeMerge: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, (<span class="extype" name="com.twitter.summingbird.spark.MergeResult.K">K</span>, (<span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.spark.MergeResult.V">V</span>], <span class="extype" name="com.twitter.summingbird.spark.MergeResult.V">V</span>)))]</span>, <span name="writeClosure">writeClosure: () ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.spark.PlatformPlanner" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PlatformPlanner[P&lt;:com.twitter.summingbird.Platform[P]]extendsAnyRef"></a>
+      <a id="PlatformPlanner[P&lt;:Platform[P]]:PlatformPlanner[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="PlatformPlanner.html"><span class="name">PlatformPlanner</span></a><span class="tparams">[<span name="P">P &lt;: <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.P">P</span>]</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The DAG handed to a platform by summingbird is a little hard to work with
+given that all the generic types have been erased.</p>
+    </li><li name="com.twitter.summingbird.spark.SimpleSparkStore" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SimpleSparkStore[K,V]extendsSparkStore[K,V]"></a>
+      <a id="SimpleSparkStore[K,V]:SimpleSparkStore[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SimpleSparkStore.html"><span class="name">SimpleSparkStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <a href="SparkStore.html" class="extype" name="com.twitter.summingbird.spark.SparkStore">SparkStore</a>[<span class="extype" name="com.twitter.summingbird.spark.SimpleSparkStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SimpleSparkStore.V">V</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SparkPlatformextendsPlatform[com.twitter.summingbird.spark.SparkPlatform]withPlatformPlanner[com.twitter.summingbird.spark.SparkPlatform]"></a>
+      <a id="SparkPlatform:SparkPlatform"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkPlatform.html"><span class="name">SparkPlatform</span></a><span class="result"> extends <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<a href="SparkPlatform.html" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>] with <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a>[<a href="SparkPlatform.html" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">This is a first pass at an offline <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a> that executes on apache spark.</p>
+    </li><li name="com.twitter.summingbird.spark.SparkService" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SparkService[K,LV]extendsSerializable"></a>
+      <a id="SparkService[K,LV]:SparkService[K,LV]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkService.html"><span class="name">SparkService</span></a><span class="tparams">[<span name="K">K</span>, <span name="LV">LV</span>]</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.spark.SparkSink" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SparkSink[T]extendsSerializable"></a>
+      <a id="SparkSink[T]:SparkSink[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkSink.html"><span class="name">SparkSink</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.spark.SparkSource" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SparkSource[T]extendsSerializable"></a>
+      <a id="SparkSource[T]:SparkSource[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkSource.html"><span class="name">SparkSource</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.spark.SparkStore" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SparkStore[K,V]extendsSerializable"></a>
+      <a id="SparkStore[K,V]:SparkStore[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkStore.html"><span class="name">SparkStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../lib/template.js"></script>
+    </body>
+      </html>

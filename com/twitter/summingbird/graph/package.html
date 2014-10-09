@@ -1,0 +1,197 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>graph - com.twitter.summingbird.graph</title>
+          <meta name="description" content="graph - com.twitter.summingbird.graph" />
+          <meta name="keywords" content="graph com.twitter.summingbird.graph" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'com.twitter.summingbird.graph.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a></p>
+        <h1>graph</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">graph</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Collection of graph algorithms</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-core/src/main/scala/com/twitter/summingbird/graph/package.scala" target="_blank">package.scala</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="com.twitter.summingbird.graph"><span>graph</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="com.twitter.summingbird.graph.DependantGraph" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DependantGraph[T]extendsAnyRef"></a>
+      <a id="DependantGraph[T]:DependantGraph[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DependantGraph.html"><span class="name">DependantGraph</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Given Dag and a List of immutable nodes, and a function to get
+dependencies, compute the dependants (reverse the graph)
+</p>
+    </li><li name="com.twitter.summingbird.graph.NeighborFn" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NeighborFn[T]=T=&gt;Iterable[T]"></a>
+      <a id="NeighborFn[T]:(T)⇒Iterable[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">NeighborFn</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> = (<span class="extype" name="com.twitter.summingbird.graph.NeighborFn.T">T</span>) ⇒ <span class="extype" name="scala.Iterable">Iterable</span>[<span class="extype" name="com.twitter.summingbird.graph.NeighborFn.T">T</span>]</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="com.twitter.summingbird.graph.package#dagDepth" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dagDepth[T](nodes:Iterable[T])(nf:T=&gt;Iterable[T]):Map[T,Int]"></a>
+      <a id="dagDepth[T](Iterable[T])((T)⇒Iterable[T]):Map[T,Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dagDepth</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="nodes">nodes: <span class="extype" name="scala.Iterable">Iterable</span>[<span class="extype" name="com.twitter.summingbird.graph.dagDepth.T">T</span>]</span>)</span><span class="params">(<span name="nf">nf: (<span class="extype" name="com.twitter.summingbird.graph.dagDepth.T">T</span>) ⇒ <span class="extype" name="scala.Iterable">Iterable</span>[<span class="extype" name="com.twitter.summingbird.graph.dagDepth.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="com.twitter.summingbird.graph.dagDepth.T">T</span>, <span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return the depth of each node in the dag.</p><div class="fullcomment"><div class="comment cmt"><p>Return the depth of each node in the dag.
+a node that has no dependencies has depth == 0
+else it is max of parent + 1</p><p>Behavior is not defined if the graph is not a DAG (for now, it runs forever, may throw later)
+</p></div></div>
+    </li><li name="com.twitter.summingbird.graph.package#depthFirstOf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="depthFirstOf[T](t:T)(nf:T=&gt;Iterable[T]):List[T]"></a>
+      <a id="depthFirstOf[T](T)((T)⇒Iterable[T]):List[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">depthFirstOf</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="t">t: <span class="extype" name="com.twitter.summingbird.graph.depthFirstOf.T">T</span></span>)</span><span class="params">(<span name="nf">nf: (<span class="extype" name="com.twitter.summingbird.graph.depthFirstOf.T">T</span>) ⇒ <span class="extype" name="scala.Iterable">Iterable</span>[<span class="extype" name="com.twitter.summingbird.graph.depthFirstOf.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.List">List</span>[<span class="extype" name="com.twitter.summingbird.graph.depthFirstOf.T">T</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return the depth first enumeration of reachable nodes,
+NOT INCLUDING INPUT, unless it can be reached via neighbors
+</p>
+    </li><li name="com.twitter.summingbird.graph.package#reversed" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="reversed[T](nodes:Iterable[T])(nf:T=&gt;Iterable[T]):T=&gt;Iterable[T]"></a>
+      <a id="reversed[T](Iterable[T])((T)⇒Iterable[T]):(T)⇒Iterable[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">reversed</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="nodes">nodes: <span class="extype" name="scala.Iterable">Iterable</span>[<span class="extype" name="com.twitter.summingbird.graph.reversed.T">T</span>]</span>)</span><span class="params">(<span name="nf">nf: (<span class="extype" name="com.twitter.summingbird.graph.reversed.T">T</span>) ⇒ <span class="extype" name="scala.Iterable">Iterable</span>[<span class="extype" name="com.twitter.summingbird.graph.reversed.T">T</span>]</span>)</span><span class="result">: (<span class="extype" name="com.twitter.summingbird.graph.reversed.T">T</span>) ⇒ <span class="extype" name="scala.Iterable">Iterable</span>[<span class="extype" name="com.twitter.summingbird.graph.reversed.T">T</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Return a NeighborFn for the graph of reversed edges defined by
+this set of nodes and nf
+We avoid Sets which use hash-codes which may depend on addresses
+which are not stable from one run to the next.</p>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../lib/template.js"></script>
+    </body>
+      </html>

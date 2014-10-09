@@ -1,0 +1,798 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>SparkPlatform - com.twitter.summingbird.spark.SparkPlatform</title>
+          <meta name="description" content="SparkPlatform - com.twitter.summingbird.spark.SparkPlatform" />
+          <meta name="keywords" content="SparkPlatform com.twitter.summingbird.spark.SparkPlatform" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'com.twitter.summingbird.spark.SparkPlatform';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img src="../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.spark">spark</a></p>
+        <h1>SparkPlatform</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SparkPlatform</span><span class="result"> extends <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>] with <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>]</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>This is a first pass at an offline <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a> that executes on apache spark.</p><p>TODO: add the logic for seeing what time spans each source / store / service can cover
+      and finding the max they all cover together etc.
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-spark/src/main/scala/com/twitter/summingbird/spark/SparkPlatform.scala" target="_blank">SparkPlatform.scala</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>], <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="com.twitter.summingbird.spark.SparkPlatform"><span>SparkPlatform</span></li><li class="in" name="com.twitter.summingbird.spark.PlatformPlanner"><span>PlatformPlanner</span></li><li class="in" name="com.twitter.summingbird.Platform"><span>Platform</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="com.twitter.summingbird.spark.SparkPlatform#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(sc:org.apache.spark.SparkContext,timeSpan:com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp],options:Map[String,com.twitter.summingbird.Options]):com.twitter.summingbird.spark.SparkPlatform"></a>
+      <a id="&lt;init&gt;:SparkPlatform"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SparkPlatform</span><span class="params">(<span name="sc">sc: <span class="extype" name="org.apache.spark.SparkContext">SparkContext</span></span>, <span name="timeSpan">timeSpan: <span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>, <span name="options">options: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../Options.html" class="extype" name="com.twitter.summingbird.Options">Options</a>] = <span class="defval" name="scala.this.Predef.Map.empty[String, Nothing]">...</span></span>)</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="com.twitter.summingbird.Platform.Buffer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Buffer[k,v]=Platform.this.Service[k,v]withPlatform.this.Sink[(k,v)]"></a>
+      <a id="Buffer[k,v]:Buffer[k,v]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = <a href="#Service[K,LV]=com.twitter.summingbird.spark.SparkService[K,LV]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.Platform.Buffer.k">k</span>, <span class="extype" name="com.twitter.summingbird.Platform.Buffer.v">v</span>] with <a href="#Sink[T]=com.twitter.summingbird.spark.SparkSink[T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Sink">Sink</a>[(<span class="extype" name="com.twitter.summingbird.Platform.Buffer.k">k</span>, <span class="extype" name="com.twitter.summingbird.Platform.Buffer.v">v</span>)]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform.Plan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Plan[T]=org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,T)]"></a>
+      <a id="Plan[T]:Plan[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> = <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.Plan.T">T</span>)]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.PlatformPlanner.PlanState" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PlanState[T]extendsProductwithSerializable"></a>
+      <a id="PlanState[T]:PlanState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="PlatformPlanner$PlanState.html"><span class="name">PlanState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="plan">plan: <span class="extype" name="com.twitter.summingbird.Platform.Plan">P.Plan</span>[<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState.T">T</span>]</span>, <span name="visited">visited: <a href="PlatformPlanner.html#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.Visited">Visited</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.PlatformPlanner.Prod" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Prod[T]=com.twitter.summingbird.Producer[P,T]"></a>
+      <a id="Prod[T]:Prod[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Prod</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> = <a href="../Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>, <span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.Prod.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform.Service" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Service[K,LV]=com.twitter.summingbird.spark.SparkService[K,LV]"></a>
+      <a id="Service[K,LV]:Service[K,LV]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Service</span><span class="tparams">[<span name="K">K</span>, <span name="LV">LV</span>]</span><span class="result"> = <a href="SparkService.html" class="extype" name="com.twitter.summingbird.spark.SparkService">SparkService</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.Service.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.Service.LV">LV</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform.Sink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Sink[T]=com.twitter.summingbird.spark.SparkSink[T]"></a>
+      <a id="Sink[T]:Sink[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Sink</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> = <a href="SparkSink.html" class="extype" name="com.twitter.summingbird.spark.SparkSink">SparkSink</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.Sink.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform.Source" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Source[T]=com.twitter.summingbird.spark.SparkSource[T]"></a>
+      <a id="Source[T]:Source[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Source</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> = <a href="SparkSource.html" class="extype" name="com.twitter.summingbird.spark.SparkSource">SparkSource</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.Source.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform.Store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Store[K,V]=com.twitter.summingbird.spark.SparkStore[K,V]"></a>
+      <a id="Store[K,V]:Store[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Store</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> = <a href="SparkStore.html" class="extype" name="com.twitter.summingbird.spark.SparkStore">SparkStore</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.Store.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.Store.V">V</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.PlatformPlanner.TailProd" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TailProd[T]=com.twitter.summingbird.TailProducer[P,T]"></a>
+      <a id="TailProd[T]:TailProd[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">TailProd</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> = <a href="../TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>, <span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.TailProd.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.PlatformPlanner.Visited" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]"></a>
+      <a id="Visited:Visited"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Visited</span><span class="result"> = <span class="extype" name="scala.collection.immutable.Map">Map</span>[<a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[_], <a href="#Plan[T]=org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,T)]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Plan">Plan</a>[_]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:AnyRef):Boolean"></a>
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:AnyRef):Boolean"></a>
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#getCommutativity" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getCommutativity(summer:com.twitter.summingbird.Summer[com.twitter.summingbird.spark.SparkPlatform,_,_]):com.twitter.summingbird.option.Commutativity"></a>
+      <a id="getCommutativity(Summer[SparkPlatform,_,_]):Commutativity"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getCommutativity</span><span class="params">(<span name="summer">summer: <a href="../Summer.html" class="extype" name="com.twitter.summingbird.Summer">Summer</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>, _, _]</span>)</span><span class="result">: <a href="../option/Commutativity.html" class="extype" name="com.twitter.summingbird.option.Commutativity">Commutativity</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.AnyRef">AnyRef</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#plan" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="plan[T](completed:com.twitter.summingbird.TailProducer[com.twitter.summingbird.spark.SparkPlatform,T]):org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,T)]"></a>
+      <a id="plan[T](TailProducer[SparkPlatform,T]):RDD[(Timestamp,T)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">plan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="completed">completed: <a href="../TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.plan.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.plan.T">T</span>)]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planAlsoProducer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planAlsoProducer[E,R](ensure:SparkPlatform.this.TailProd[E],result:SparkPlatform.this.Prod[R],visited:SparkPlatform.this.Visited)(implicitevidence$3:scala.reflect.ClassTag[R]):SparkPlatform.this.PlanState[R]"></a>
+      <a id="planAlsoProducer[E,R](TailProd[E],Prod[R],Visited)(ClassTag[R]):PlanState[R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planAlsoProducer</span><span class="tparams">[<span name="E">E</span>, <span name="R">R</span>]</span><span class="params">(<span name="ensure">ensure: <a href="#TailProd[T]=com.twitter.summingbird.TailProducer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.TailProd">TailProd</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planAlsoProducer.E">E</span>]</span>, <span name="result">result: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planAlsoProducer.R">R</span>]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planAlsoProducer.R">R</span>]</span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planAlsoProducer.R">R</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planFlatMappedProducer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planFlatMappedProducer[T,U](prod:SparkPlatform.this.Prod[T],visited:SparkPlatform.this.Visited,fn:T=&gt;TraversableOnce[U])(implicitevidence$2:scala.reflect.ClassTag[U]):SparkPlatform.this.PlanState[U]"></a>
+      <a id="planFlatMappedProducer[T,U](Prod[T],Visited,(T)⇒TraversableOnce[U])(ClassTag[U]):PlanState[U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planFlatMappedProducer</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="prod">prod: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planFlatMappedProducer.T">T</span>]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planFlatMappedProducer.T">T</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planFlatMappedProducer.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planFlatMappedProducer.U">U</span>]</span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planFlatMappedProducer.U">U</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planIdentityKeyedProducer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planIdentityKeyedProducer[K,V](prod:SparkPlatform.this.Prod[(K,V)],visited:SparkPlatform.this.Visited):SparkPlatform.this.PlanState[(K,V)]"></a>
+      <a id="planIdentityKeyedProducer[K,V](Prod[(K,V)],Visited):PlanState[(K,V)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planIdentityKeyedProducer</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="prod">prod: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[(<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planIdentityKeyedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planIdentityKeyedProducer.V">V</span>)]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[(<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planIdentityKeyedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planIdentityKeyedProducer.V">V</span>)]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planKeyFlatMappedProducer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planKeyFlatMappedProducer[K,V,K2](prod:SparkPlatform.this.Prod[(K,V)],visited:SparkPlatform.this.Visited,fn:K=&gt;TraversableOnce[K2]):SparkPlatform.this.PlanState[(K2,V)]"></a>
+      <a id="planKeyFlatMappedProducer[K,V,K2](Prod[(K,V)],Visited,(K)⇒TraversableOnce[K2]):PlanState[(K2,V)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planKeyFlatMappedProducer</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>, <span name="K2">K2</span>]</span><span class="params">(<span name="prod">prod: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[(<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planKeyFlatMappedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planKeyFlatMappedProducer.V">V</span>)]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planKeyFlatMappedProducer.K">K</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planKeyFlatMappedProducer.K2">K2</span>]</span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[(<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planKeyFlatMappedProducer.K2">K2</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planKeyFlatMappedProducer.V">V</span>)]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planLeftJoinedProducer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planLeftJoinedProducer[K,V,JoinedV](prod:SparkPlatform.this.Prod[(K,V)],visited:SparkPlatform.this.Visited,service:SparkPlatform.this.Service[K,JoinedV])(implicitevidence$5:scala.reflect.ClassTag[K],implicitevidence$6:scala.reflect.ClassTag[V]):SparkPlatform.this.PlanState[(K,(V,Option[JoinedV]))]"></a>
+      <a id="planLeftJoinedProducer[K,V,JoinedV](Prod[(K,V)],Visited,Service[K,JoinedV])(ClassTag[K],ClassTag[V]):PlanState[(K,(V,Option[JoinedV]))]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planLeftJoinedProducer</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>, <span name="JoinedV">JoinedV</span>]</span><span class="params">(<span name="prod">prod: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[(<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planLeftJoinedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planLeftJoinedProducer.V">V</span>)]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>, <span name="service">service: <a href="#Service[K,LV]=com.twitter.summingbird.spark.SparkService[K,LV]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planLeftJoinedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planLeftJoinedProducer.JoinedV">JoinedV</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planLeftJoinedProducer.K">K</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planLeftJoinedProducer.V">V</span>]</span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[(<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planLeftJoinedProducer.K">K</span>, (<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planLeftJoinedProducer.V">V</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planLeftJoinedProducer.JoinedV">JoinedV</span>]))]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planMergedProducer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planMergedProducer[T](left:SparkPlatform.this.Prod[T],right:SparkPlatform.this.Prod[T],visited:SparkPlatform.this.Visited):SparkPlatform.this.PlanState[T]"></a>
+      <a id="planMergedProducer[T](Prod[T],Prod[T],Visited):PlanState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planMergedProducer</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="left">left: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planMergedProducer.T">T</span>]</span>, <span name="right">right: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planMergedProducer.T">T</span>]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planMergedProducer.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planNamedProducer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planNamedProducer[T](prod:SparkPlatform.this.Prod[T],name:String,visited:SparkPlatform.this.Visited):SparkPlatform.this.PlanState[T]"></a>
+      <a id="planNamedProducer[T](Prod[T],String,Visited):PlanState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planNamedProducer</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="prod">prod: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planNamedProducer.T">T</span>]</span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planNamedProducer.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planOptionMappedProducer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planOptionMappedProducer[T,U](prod:SparkPlatform.this.Prod[T],visited:SparkPlatform.this.Visited,fn:T=&gt;Option[U])(implicitevidence$1:scala.reflect.ClassTag[U]):SparkPlatform.this.PlanState[U]"></a>
+      <a id="planOptionMappedProducer[T,U](Prod[T],Visited,(T)⇒Option[U])(ClassTag[U]):PlanState[U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planOptionMappedProducer</span><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="prod">prod: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planOptionMappedProducer.T">T</span>]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planOptionMappedProducer.T">T</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planOptionMappedProducer.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planOptionMappedProducer.U">U</span>]</span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planOptionMappedProducer.U">U</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planSource" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planSource[T](source:SparkPlatform.this.Source[T],visited:SparkPlatform.this.Visited):SparkPlatform.this.PlanState[T]"></a>
+      <a id="planSource[T](Source[T],Visited):PlanState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planSource</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="source">source: <a href="#Source[T]=com.twitter.summingbird.spark.SparkSource[T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Source">Source</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSource.T">T</span>]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSource.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planSummer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planSummer[K,V](summer:com.twitter.summingbird.Summer[com.twitter.summingbird.spark.SparkPlatform,K,V],prod:SparkPlatform.this.Prod[(K,V)],visited:SparkPlatform.this.Visited,store:SparkPlatform.this.Store[K,V],semigroup:com.twitter.algebird.Semigroup[V])(implicitevidence$7:scala.reflect.ClassTag[K],implicitevidence$8:scala.reflect.ClassTag[V]):SparkPlatform.this.PlanState[(K,(Option[V],V))]"></a>
+      <a id="planSummer[K,V](Summer[SparkPlatform,K,V],Prod[(K,V)],Visited,Store[K,V],Semigroup[V])(ClassTag[K],ClassTag[V]):PlanState[(K,(Option[V],V))]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planSummer</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="summer">summer: <a href="../Summer.html" class="extype" name="com.twitter.summingbird.Summer">Summer</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.V">V</span>]</span>, <span name="prod">prod: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[(<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.V">V</span>)]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>, <span name="store">store: <a href="#Store[K,V]=com.twitter.summingbird.spark.SparkStore[K,V]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Store">Store</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.V">V</span>]</span>, <span name="semigroup">semigroup: <span class="extype" name="com.twitter.algebird.Semigroup">Semigroup</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.K">K</span>]</span>, <span name="arg1">arg1: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.V">V</span>]</span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[(<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.K">K</span>, (<span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.V">V</span>], <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planSummer.V">V</span>))]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#planWrittenProducer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planWrittenProducer[T](prod:SparkPlatform.this.Prod[T],visited:SparkPlatform.this.Visited,sink:SparkPlatform.this.Sink[T])(implicitevidence$4:scala.reflect.ClassTag[T]):SparkPlatform.this.PlanState[T]"></a>
+      <a id="planWrittenProducer[T](Prod[T],Visited,Sink[T])(ClassTag[T]):PlanState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planWrittenProducer</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="prod">prod: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planWrittenProducer.T">T</span>]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>, <span name="sink">sink: <a href="#Sink[T]=com.twitter.summingbird.spark.SparkSink[T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Sink">Sink</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planWrittenProducer.T">T</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planWrittenProducer.T">T</span>]</span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.planWrittenProducer.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a> → <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#run" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="run[T](completed:com.twitter.summingbird.TailProducer[com.twitter.summingbird.spark.SparkPlatform,T]):Unit"></a>
+      <a id="run[T](TailProducer[SparkPlatform,T]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">run</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="completed">completed: <a href="../TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>, <span class="extype" name="com.twitter.summingbird.spark.SparkPlatform.run.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.spark.SparkPlatform#run" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="run():Unit"></a>
+      <a id="run():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">run</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.PlatformPlanner#toPlan" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toPlan[T](producer:PlatformPlanner.this.Prod[T],visited:PlatformPlanner.this.Visited):PlatformPlanner.this.PlanState[T]"></a>
+      <a id="toPlan[T](Prod[T],Visited):PlanState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toPlan</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="producer">producer: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.toPlan.T">T</span>]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Visited">Visited</a></span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.toPlan.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="com.twitter.summingbird.spark.PlatformPlanner#visit" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="visit[T](producer:PlatformPlanner.this.Prod[T]):PlatformPlanner.this.PlanState[T]"></a>
+      <a id="visit[T](Prod[T]):PlanState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">visit</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="producer">producer: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.SparkPlatform.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.visit.T">T</span>]</span>)</span><span class="result">: <a href="#PlanState[T]extendsProductwithSerializable" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.visit.T">T</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="com.twitter.summingbird.spark.PlatformPlanner">
+              <h3>Inherited from <a href="PlatformPlanner.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner">PlatformPlanner</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>]</h3>
+            </div><div class="parent" name="com.twitter.summingbird.Platform">
+              <h3>Inherited from <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<a href="" class="extype" name="com.twitter.summingbird.spark.SparkPlatform">SparkPlatform</a>]</h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../lib/template.js"></script>
+    </body>
+      </html>

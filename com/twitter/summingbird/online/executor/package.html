@@ -1,0 +1,199 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>executor - com.twitter.summingbird.online.executor</title>
+          <meta name="description" content="executor - com.twitter.summingbird.online.executor" />
+          <meta name="keywords" content="executor com.twitter.summingbird.online.executor" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'com.twitter.summingbird.online.executor.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="com">com</a>.<a href="../../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird.online">online</a></p>
+        <h1>executor</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executor</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="com.twitter.summingbird.online.executor.AsyncBase" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="AsyncBase[I,O,S,D,RC]extendsSerializablewithOperationContainer[I,O,S,D,RC]"></a>
+      <a id="AsyncBase[I,O,S,D,RC]:AsyncBase[I,O,S,D,RC]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AsyncBase.html"><span class="name">AsyncBase</span></a><span class="tparams">[<span name="I">I</span>, <span name="O">O</span>, <span name="S">S</span>, <span name="D">D</span>, <span name="RC">RC</span>]</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <a href="OperationContainer.html" class="extype" name="com.twitter.summingbird.online.executor.OperationContainer">OperationContainer</a>[<span class="extype" name="com.twitter.summingbird.online.executor.AsyncBase.I">I</span>, <span class="extype" name="com.twitter.summingbird.online.executor.AsyncBase.O">O</span>, <span class="extype" name="com.twitter.summingbird.online.executor.AsyncBase.S">S</span>, <span class="extype" name="com.twitter.summingbird.online.executor.AsyncBase.D">D</span>, <span class="extype" name="com.twitter.summingbird.online.executor.AsyncBase.RC">RC</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.executor.AtomicStateTransformer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AtomicStateTransformer[T]extendsAnyRef"></a>
+      <a id="AtomicStateTransformer[T]:AtomicStateTransformer[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AtomicStateTransformer.html"><span class="name">AtomicStateTransformer</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.executor.FinalFlatMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FinalFlatMap[Event,Key,Value,S&lt;:com.twitter.summingbird.online.executor.InputState[_],D,RC]extendsAsyncBase[Event,(Int,Map[Key,Value]),S,D,RC]"></a>
+      <a id="FinalFlatMap[Event,Key,Value,S&lt;:InputState[_],D,RC]:FinalFlatMap[Event,Key,Value,S,D,RC]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FinalFlatMap.html"><span class="name">FinalFlatMap</span></a><span class="tparams">[<span name="Event">Event</span>, <span name="Key">Key</span>, <span name="Value">Value</span>, <span name="S">S &lt;: <a href="InputState.html" class="extype" name="com.twitter.summingbird.online.executor.InputState">InputState</a>[_]</span>, <span name="D">D</span>, <span name="RC">RC</span>]</span><span class="result"> extends <a href="AsyncBase.html" class="extype" name="com.twitter.summingbird.online.executor.AsyncBase">AsyncBase</a>[<span class="extype" name="com.twitter.summingbird.online.executor.FinalFlatMap.Event">Event</span>, (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="com.twitter.summingbird.online.executor.FinalFlatMap.Key">Key</span>, <span class="extype" name="com.twitter.summingbird.online.executor.FinalFlatMap.Value">Value</span>]), <span class="extype" name="com.twitter.summingbird.online.executor.FinalFlatMap.S">S</span>, <span class="extype" name="com.twitter.summingbird.online.executor.FinalFlatMap.D">D</span>, <span class="extype" name="com.twitter.summingbird.online.executor.FinalFlatMap.RC">RC</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.executor.InputState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InputState[T]extendsProductwithSerializable"></a>
+      <a id="InputState[T]:InputState[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="InputState.html"><span class="name">InputState</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="state">state: <span class="extype" name="com.twitter.summingbird.online.executor.InputState.T">T</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.executor.IntermediateFlatMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IntermediateFlatMap[T,U,S,D,RC]extendsAsyncBase[T,U,S,D,RC]"></a>
+      <a id="IntermediateFlatMap[T,U,S,D,RC]:IntermediateFlatMap[T,U,S,D,RC]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IntermediateFlatMap.html"><span class="name">IntermediateFlatMap</span></a><span class="tparams">[<span name="T">T</span>, <span name="U">U</span>, <span name="S">S</span>, <span name="D">D</span>, <span name="RC">RC</span>]</span><span class="result"> extends <a href="AsyncBase.html" class="extype" name="com.twitter.summingbird.online.executor.AsyncBase">AsyncBase</a>[<span class="extype" name="com.twitter.summingbird.online.executor.IntermediateFlatMap.T">T</span>, <span class="extype" name="com.twitter.summingbird.online.executor.IntermediateFlatMap.U">U</span>, <span class="extype" name="com.twitter.summingbird.online.executor.IntermediateFlatMap.S">S</span>, <span class="extype" name="com.twitter.summingbird.online.executor.IntermediateFlatMap.D">D</span>, <span class="extype" name="com.twitter.summingbird.online.executor.IntermediateFlatMap.RC">RC</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.executor.OperationContainer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="OperationContainer[Input,Output,State,WireFmt,RuntimeContext]extendsAnyRef"></a>
+      <a id="OperationContainer[Input,Output,State,WireFmt,RuntimeContext]:OperationContainer[Input,Output,State,WireFmt,RuntimeContext]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="OperationContainer.html"><span class="name">OperationContainer</span></a><span class="tparams">[<span name="Input">Input</span>, <span name="Output">Output</span>, <span name="State">State</span>, <span name="WireFmt">WireFmt</span>, <span name="RuntimeContext">RuntimeContext</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.executor.Summer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Summer[Key,Value,Event,S,D,RC]extendsAsyncBase[(Int,Map[Key,Value]),Event,com.twitter.summingbird.online.executor.InputState[S],D,RC]"></a>
+      <a id="Summer[Key,Value,Event,S,D,RC]:Summer[Key,Value,Event,S,D,RC]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Summer.html"><span class="name">Summer</span></a><span class="tparams">[<span name="Key">Key</span>, <span name="Value">Value</span>, <span name="Event">Event</span>, <span name="S">S</span>, <span name="D">D</span>, <span name="RC">RC</span>]</span><span class="result"> extends <a href="AsyncBase.html" class="extype" name="com.twitter.summingbird.online.executor.AsyncBase">AsyncBase</a>[(<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="com.twitter.summingbird.online.executor.Summer.Key">Key</span>, <span class="extype" name="com.twitter.summingbird.online.executor.Summer.Value">Value</span>]), <span class="extype" name="com.twitter.summingbird.online.executor.Summer.Event">Event</span>, <a href="InputState.html" class="extype" name="com.twitter.summingbird.online.executor.InputState">InputState</a>[<span class="extype" name="com.twitter.summingbird.online.executor.Summer.S">S</span>], <span class="extype" name="com.twitter.summingbird.online.executor.Summer.D">D</span>, <span class="extype" name="com.twitter.summingbird.online.executor.Summer.RC">RC</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="com.twitter.summingbird.online.executor.InflightTuples" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InflightTuples"></a>
+      <a id="InflightTuples:InflightTuples"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="InflightTuples$.html"><span class="name">InflightTuples</span></a>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../../lib/template.js"></script>
+    </body>
+      </html>
