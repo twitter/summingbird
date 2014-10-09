@@ -16,7 +16,54 @@
 
 package com.twitter.summingbird.scalding
 
-trait Service[K, +V] extends java.io.Serializable {
+import com.twitter.algebird.Semigroup
+import com.twitter.summingbird.{ Dependants, Producer, Summer }
+import com.twitter.summingbird.scalding.batch.BatchedStore
+
+sealed trait Service[K, +V] extends java.io.Serializable
+
+/**
+ * This represents a service that is *external* to the current job.
+ * This does not include joins for data that is generated in the same
+ * Producer graph
+ */
+trait ExternalService[K, +V] extends Service[K, V] {
   // A static, or write-once service can  potentially optimize this without writing the (K, V) stream out
   def lookup[W](getKeys: PipeFactory[(K, W)]): PipeFactory[(K, (W, Option[V]))]
+}
+
+/**
+ * This represents a join against data that is materialized by a store
+ * in the current job
+ */
+sealed trait InternalService[K, +V] extends Service[K, V]
+case class StoreService[K, V](store: BatchedStore[K, V]) extends InternalService[K, V]
+
+/**
+ * Here are some methods that are useful in planning the execution of Internal Services
+ */
+private[scalding] object InternalService {
+  /**
+   * This returns true if the dependants of the left does not
+   * contain the store
+   */
+  def doesNotDependOnStore[K, V](left: Producer[Scalding, Any],
+    store: BatchedStore[K, V]): Boolean =
+    Producer.transitiveDependenciesOf(left)
+      .collectFirst { case Summer(_, thatStore, _) if thatStore == store => () }
+      .isDefined
+
+  def storeIsJoined[K, V](dag: Dependants[Scalding], store: Store[K, V]): Boolean =
+    sys.error("?")
+
+  def getSummer[K, V](dag: Dependants[Scalding],
+    store: BatchedStore[K, V]): Option[Summer[Scalding, K, V]] =
+    sys.error("?")
+
+  // Just call LookupJoin here
+  def doIndependentJoin[K, U, V](input: Producer[Scalding, (K, U)],
+    toJoin: Producer[Scalding, (K, V)],
+    sg: Semigroup[V],
+    built: Map[Producer[Scalding, _], PipeFactory[_]]): (PipeFactory[(K, (U, Option[V]))], Map[Producer[Scalding, _], PipeFactory[_]]) =
+    sys.error("?")
 }
