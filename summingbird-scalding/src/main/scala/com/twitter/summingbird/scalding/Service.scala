@@ -60,10 +60,13 @@ private[scalding] object InternalService {
     store: BatchedStore[K, V]): Option[Summer[Scalding, K, V]] =
     sys.error("?")
 
-  // Just call LookupJoin here
-  def doIndependentJoin[K, U, V](input: Producer[Scalding, (K, U)],
-    toJoin: Producer[Scalding, (K, V)],
-    sg: Semigroup[V],
-    built: Map[Producer[Scalding, _], PipeFactory[_]]): (PipeFactory[(K, (U, Option[V]))], Map[Producer[Scalding, _], PipeFactory[_]]) =
+  /**
+   * Just wire in LookupJoin here. This method assumes that
+   * the FlowToPipe is already on the matching time, so we don't
+   * need to worry about that here.
+   */
+  def doIndependentJoin[K, U, V](input: FlowToPipe[(K, U)],
+    toJoin: FlowToPipe[(K, V)],
+    sg: Semigroup[V]): FlowToPipe[(K, (U, Option[V]))] =
     sys.error("?")
 }

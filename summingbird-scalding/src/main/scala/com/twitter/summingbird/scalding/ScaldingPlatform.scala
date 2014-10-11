@@ -293,6 +293,14 @@ object Scalding {
       forceFanOut: Boolean = forceFanOut): (PipeFactory[U], Map[Producer[Scalding, _], PipeFactory[_]]) =
       buildFlow(options, p, fanOuts, dependants, built, forceFanOut)
 
+    // This is used to join in the StateWithError monad that we use to plan
+    implicit val modeSemigroup: Semigroup[Mode] = new Semigroup[Mode] {
+      def plus(left: Mode, right: Mode) = {
+        assert(left == right, "Mode cannot change during planning")
+        left
+      }
+    }
+
     /**
      * The scalding Typed-API does not deal with TypedPipes with fanout,
      * it just computes both branches twice. We call this function
@@ -358,7 +366,18 @@ object Scalding {
                 .getOrElse(
                   sys.error("join %s is against store not in the entire job's Dag".format(ljp))
                 )
-              InternalService.doIndependentJoin[K, U, V](left, storeLog, sg, built)
+              val (leftPf, m1) = recurse(left)
+              // We have to force the fanOut on the storeLog because this kind of fanout
+              // due to joining is not visible in the Dependants dag
+              val (logPf, m2) = recurse(storeLog, built = m1, forceFanOut = true)
+              // We have to combine the last snapshot on disk with the deltas:
+              val allDeltas = bstore.readDeltaLog(logPf)
+              val res = for {
+                leftAndDelta <- leftPf.join(allDeltas)
+                joined = InternalService.doIndependentJoin[K, U, V](leftAndDelta._1, leftAndDelta._2, sg)
+                maxAvailable <- StateWithError.getState // read the latest state, which is the time
+              } yield Scalding.limitTimes(maxAvailable._1, joined)
+              (res, m2)
             }
             go(left, store)
           case ljp @ LeftJoinedProducer(_, _) =>
@@ -433,10 +452,7 @@ object Scalding {
             val (pfl, ml) = recurse(l)
             val (pfr, mr) = recurse(r, built = ml)
             val merged = for {
-              // concatenate errors (++) and find the intersection (&&) of times
-              leftAndRight <- pfl.join(pfr,
-                { (lerr: List[FailureReason], rerr: List[FailureReason]) => lerr ++ rerr },
-                { case ((tsl, leftFM), (tsr, _)) => (tsl && tsr, leftFM) })
+              leftAndRight <- pfl.join(pfr)
               merged = Scalding.merge(leftAndRight._1, leftAndRight._2)
               maxAvailable <- StateWithError.getState // read the latest state, which is the time
             } yield Scalding.limitTimes(maxAvailable._1, merged)
@@ -451,10 +467,7 @@ object Scalding {
             val (pfl, ml) = recurse(l)
             val (pfr, mr) = recurse(r, built = ml)
             val onlyRight = for {
-              // concatenate errors (++) and find the intersection (&&) of times
-              leftAndRight <- pfl.join(pfr,
-                { (lerr: List[FailureReason], rerr: List[FailureReason]) => lerr ++ rerr },
-                { case ((tsl, leftFM), (tsr, _)) => (tsl && tsr, leftFM) })
+              leftAndRight <- pfl.join(pfr)
               justRight = Scalding.also(leftAndRight._1, leftAndRight._2)
               maxAvailable <- StateWithError.getState // read the latest state, which is the time
             } yield Scalding.limitTimes(maxAvailable._1, justRight)
