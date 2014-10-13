@@ -229,6 +229,10 @@ object Scalding {
       .map { Right(_) }
       .getOrElse(Left(List("only finite time ranges are supported by scalding: " + timeSpan.toString)))
 
+  /**
+   * This makes sure that the output FlowToPipe[T] produces a TypedPipe[T] with only
+   * times in the given time interval.
+   */
   def limitTimes[T](range: Interval[Timestamp], in: FlowToPipe[T]): FlowToPipe[T] =
     in.map { pipe => pipe.filter { case (time, _) => range(time) } }
 
@@ -355,7 +359,7 @@ object Scalding {
              */
             val (pf, m) = recurse(left)
             (service.lookup(pf), m)
-          case ljp @ LeftJoinedProducer(left, StoreService(store)) if InternalService.doesNotDependOnStore(left, store) =>
+          case ljp @ LeftJoinedProducer(left, StoreService(store)) if InternalService.leftDoesNotDependOnStore(left, store) =>
             /*
              * This is the simplest case of joining against a store. Here we just need the input to
              * the store and call LookupJoin
@@ -375,7 +379,8 @@ object Scalding {
               val res = for {
                 leftAndDelta <- leftPf.join(allDeltas)
                 joined = InternalService.doIndependentJoin[K, U, V](leftAndDelta._1, leftAndDelta._2, sg)
-                maxAvailable <- StateWithError.getState // read the latest state, which is the time
+                // read the latest state, which is the (time interval, mode)
+                maxAvailable <- StateWithError.getState
               } yield Scalding.limitTimes(maxAvailable._1, joined)
               (res, m2)
             }

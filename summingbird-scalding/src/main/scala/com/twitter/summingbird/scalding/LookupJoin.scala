@@ -140,27 +140,29 @@ object LookupJoin extends Serializable {
            */
           (None: Option[(T, JoinedV)], None: Option[(T, V, Option[JoinedV])])
         ) {
-            case ((optTJV, result), (time, Left(v))) =>
+            case ((None, result), (time, Left(v))) =>
+              // The was no value previously
+              (None, Some((time, v, None)))
+
+            case ((prev @ Some((oldt, jv)), result), (time, Left(v))) =>
               // Left(v) means that we have a new value from the left
               // pipe that we need to join against the current
               // "lastJoined" value sitting in scanLeft's state. This
               // is equivalent to a lookup on the data in the right
               // pipe at time "thisTime".
-              val filteredJoined = optTJV.flatMap {
-                case (oldt, jv) =>
-                  if (gate(time, oldt)) Some(jv)
-                  else None
-              }
-              (optTJV, Some((time, v, filteredJoined)))
+              val filteredJoined = if (gate(time, oldt)) Some(jv) else None
+              (prev, Some((time, v, filteredJoined)))
 
-            case ((optTJV, result), (time, Right(joined))) =>
+            case ((None, result), (time, Right(joined))) =>
+              // There was no value before, so we just update to joined
+              (Some((time, joined)), None)
+
+            case ((Some((oldt, oldJ)), result), (time, Right(joined))) =>
               // Right(joinedV) means that we've received a new value
               // to use in the simulated realtime service
               // described in the comments above
-              val nextJoined = optTJV
-                .filter { case (oldt, _) => gate(time, oldt) } // did it fall out of cache?
-                .map { case (_, oldJ) => Semigroup.plus(oldJ, joined) }
-                .getOrElse(joined)
+              // did it fall out of cache?
+              val nextJoined = if (gate(time, oldt)) Semigroup.plus(oldJ, joined) else joined
               (Some((time, nextJoined)), None)
           }.toTypedPipe
 

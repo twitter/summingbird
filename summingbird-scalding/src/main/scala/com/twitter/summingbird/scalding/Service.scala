@@ -47,7 +47,7 @@ private[scalding] object InternalService {
    * This returns true if the dependants of the left does not
    * contain the store
    */
-  def doesNotDependOnStore[K, V](left: Producer[Scalding, Any],
+  def leftDoesNotDependOnStore[K, V](left: Producer[Scalding, Any],
     store: BatchedStore[K, V]): Boolean =
     Producer.transitiveDependenciesOf(left)
       .collectFirst { case Summer(_, thatStore, _) if thatStore == store => () }
