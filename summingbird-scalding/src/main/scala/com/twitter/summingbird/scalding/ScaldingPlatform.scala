@@ -236,15 +236,21 @@ object Scalding {
   def limitTimes[T](range: Interval[Timestamp], in: FlowToPipe[T]): FlowToPipe[T] =
     in.map { pipe => pipe.filter { case (time, _) => range(time) } }
 
+  private[scalding] def joinFP[T, U](left: FlowToPipe[T], right: FlowToPipe[U]): FlowProducer[(TimedPipe[T], TimedPipe[U])] =
+    for {
+      t <- left
+      u <- right
+    } yield ((t, u))
+
   def merge[T](left: FlowToPipe[T], right: FlowToPipe[T]): FlowToPipe[T] =
-    for { l <- left; r <- right } yield (l ++ r)
+    joinFP(left, right).map { case (l, r) => l ++ r }
 
   /**
    * This does the AlsoProducer logic of making `ensure` a part of the
    * flow, but not this output.
    */
   def also[L, R](ensure: FlowToPipe[L], result: FlowToPipe[R]): FlowToPipe[R] =
-    for { _ <- ensure; r <- result } yield r
+    joinFP(ensure, result).map { case (_, r) => r }
 
   /**
    * Memoize the inner reader
@@ -385,8 +391,33 @@ object Scalding {
               (res, m2)
             }
             go(left, store)
-          case ljp @ LeftJoinedProducer(_, _) =>
-            sys.error("Cannot (yet) handle cases where we a store depends on a join of itself: " + ljp)
+          case ljp @ LeftJoinedProducer(left, StoreService(store)) if InternalService.isValidLoopJoin(dependants, left, store) =>
+            def go[K, V, U](incoming: Producer[Scalding, (K, V)], bs: BatchedStore[K, U]) = {
+              val (flatMapFn, others) = InternalService.getLoopInputs(dependants, incoming, bs)
+              val (leftPf, m1) = recurse(incoming)
+              val (merges, m2) = recurse(others, built = m1)
+              val deltaLog = bs.readDeltaLog(merges)
+              val reducers = getOrElse(options, names, ljp, Reducers.default).count
+              implicit val keyOrdering = bs.ordering
+              val Summer(storeLog, _, sg) = InternalService.getSummer[K, U](dependants, bs)
+                .getOrElse(
+                  sys.error("join %s is against store not in the entire job's Dag".format(ljp))
+                )
+              implicit val semigroup: Semigroup[U] = sg
+              logger.info("Service {} using {} reducers (-1 means unset)", ljp, reducers)
+              val res: PipeFactory[(K, (V, Option[U]))] = for {
+                leftAndMerge <- leftPf.join(deltaLog)
+                flowToPipe = Scalding.joinFP(leftAndMerge._1, leftAndMerge._2)
+                servOut = flowToPipe.map {
+                  case (lpipe, dpipe) =>
+                    InternalService.loopJoin[Timestamp, K, V, U](lpipe, dpipe, flatMapFn, Some(reducers))
+                }
+                // servOut is both the store output and the join output
+                plannedStore = servOut.map(_._1)
+              } yield plannedStore
+              (res, m2)
+            }
+            go(left, store)
           case WrittenProducer(producer, sink) =>
             val (pf, m) = recurse(producer)
             (sink.write(pf), m)

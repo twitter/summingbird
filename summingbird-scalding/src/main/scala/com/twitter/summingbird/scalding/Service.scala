@@ -17,6 +17,7 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.Semigroup
+import com.twitter.scalding.TypedPipe
 import com.twitter.summingbird.{ Dependants, Producer, Summer }
 import com.twitter.summingbird.scalding.batch.BatchedStore
 
@@ -53,6 +54,15 @@ private[scalding] object InternalService {
       .collectFirst { case Summer(_, thatStore, _) if thatStore == store => () }
       .isDefined
 
+  def isValidLoopJoin[K, V](dag: Dependants[Scalding], left: Producer[Scalding, Any],
+    store: BatchedStore[K, V]): Boolean =
+    /*
+       * this needs to check if:
+       * 1) There is only one dependant path from join to store.
+       * 2) After the join, there are only flatMapValues (later we can handle merges as well)
+       */
+    sys.error("?")
+
   def storeIsJoined[K, V](dag: Dependants[Scalding], store: Store[K, V]): Boolean =
     sys.error("?")
 
@@ -69,4 +79,91 @@ private[scalding] object InternalService {
     toJoin: FlowToPipe[(K, V)],
     sg: Semigroup[V]): FlowToPipe[(K, (U, Option[V]))] =
     sys.error("?")
+
+  /**
+   * This looks into the dag, and finds the mapping function into the store
+   * and a producer of any merged input into the store
+   */
+  def getLoopInputs[K, U, V](dag: Dependants[Scalding],
+    left: Producer[Scalding, (K, V)],
+    store: BatchedStore[K, U]): ((((V, Option[U])) => TraversableOnce[U]), Producer[Scalding, (K, U)]) =
+    sys.error("?")
+  /**
+   * This is for the case where the left items come in, then we
+   * Sum the second storeLog
+   */
+  def loopJoin[T: Ordering, K: Ordering, V, U: Semigroup](left: TypedPipe[(T, (K, V))],
+    storeLog: TypedPipe[(T, (K, U))],
+    valueExpansion: ((V, Option[U])) => TraversableOnce[U],
+    reducers: Option[Int]): (TypedPipe[(T, (K, (V, Option[U])))], TypedPipe[(T, (K, (Option[U], U)))]) = {
+
+    def sum(opt: Option[U], u: U): U = if (opt.isDefined) Semigroup.plus(opt.get, u) else u
+
+    /**
+     * Make sure lookups happen before writes to the store IF the timestamp
+     * is the same (reads and writes at the same time are ordered so that reads
+     * happen first since they are earlier in the graph).
+     * This weird E trick is because the inferred type below is
+     * Product with Serializable with Either[V, U]
+     */
+    implicit def lookupFirst[E <: Either[V, U]]: Ordering[E] = Ordering.by {
+      case Left(_) => 0
+      case Right(_) => 1
+    }
+
+    val bothPipes = (left.map { case (t, (k, v)) => (k, (t, Left(v))) } ++
+      storeLog.map { case (t, (k, u)) => (k, (t, Right(u))) })
+      .group
+      .withReducers(reducers.getOrElse(-1)) // jank, but scalding needs a way to maybe set reducers
+      .sorted
+      .scanLeft((None: Option[(T, (V, Option[U]))], None: Option[(T, (Option[U], U))])) {
+        case ((_, None), (time, Left(v))) =>
+          /*
+           * This is a lookup, but there is no value for this key
+           */
+          val joinResult = Some((time, (v, None)))
+          val sumResult = Semigroup.sumOption(valueExpansion((v, None))).map(u => (time, (None, u)))
+          (joinResult, sumResult)
+        case ((_, Some((_, (optu, u)))), (time, Left(v))) =>
+          /*
+           * This is a lookup, and there is an existing value
+           */
+          val currentU = Some(sum(optu, u))
+          val joinResult = Some((time, (v, currentU)))
+          val sumResult = Semigroup.sumOption(valueExpansion((v, currentU))).map(u => (time, (currentU, u)))
+          (joinResult, sumResult)
+        case ((_, None), (time, Right(u))) =>
+          /*
+           * This is merging in new data into the store not coming in from the service
+           * (either from the store history or from a merge after the leftJoin, but
+           * There was previously no data.
+           */
+          val joinResult = None
+          val sumResult = Some((time, (None, u)))
+          (joinResult, sumResult)
+        case ((_, Some((_, (optu, oldu)))), (time, Right(u))) =>
+          /*
+           * This is the case where we are updating a non-empty key. This should
+           * only be triggered by a merged data-stream after the join since
+           * store initialization
+           */
+          val joinResult = None
+          val currentU = Some(sum(optu, oldu))
+          val sumResult = Some((time, (currentU, u)))
+          (joinResult, sumResult)
+      }
+      .toTypedPipe
+      // We forceToDisk because we can't do two writes from one TypedPipe
+      .forceToDisk
+
+    val leftOut = bothPipes.collect {
+      case (k, (Some((t, vu)), _)) =>
+        (t, (k, vu))
+    }
+    val rightOut = bothPipes.collect {
+      case (k, (_, Some((t, optuu)))) =>
+        (t, (k, optuu))
+    }
+    (leftOut, rightOut)
+  }
 }

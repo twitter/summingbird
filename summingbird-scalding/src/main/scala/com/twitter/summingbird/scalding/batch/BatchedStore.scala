@@ -251,6 +251,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
    * state, and data from this input covering all the time SINCE the last snapshot.
    * The Interval[Timestamp] in the state is updated to be the intersection with the
    * Interval[BatchID]
+   *
    */
   final def readBatched[T](input: PipeFactory[T]): PlannerOutput[(BatchID, FlowProducer[TypedPipe[(K, V)]], Interval[BatchID], FlowToPipe[T])] =
     // StateWithError lacks filter, so it can't unpack tuples (scala limitation)
@@ -291,6 +292,9 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
    * This combines the current inputs along with the last checkpoint on disk to get a log
    * of all deltas with a timestamp
    * This is useful to leftJoin against a store.
+   * TODO: This should not limit to batch boundaries, the batch store
+   * should handle only writing the data for full batches, but we can materialize
+   * more data if it is needed downstream.
    */
   def readDeltaLog(delta: PipeFactory[(K, V)]): PipeFactory[(K, V)] =
     readBatched(delta).map {
