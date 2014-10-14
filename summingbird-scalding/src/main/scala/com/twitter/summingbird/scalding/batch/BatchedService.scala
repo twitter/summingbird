@@ -24,7 +24,7 @@ import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding
 import cascading.flow.FlowDef
 
-trait BatchedService[K, V] extends Service[K, V] {
+trait BatchedService[K, V] extends ExternalService[K, V] {
   // The batcher that describes this service
   def batcher: Batcher
   def ordering: Ordering[K]

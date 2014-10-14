@@ -50,6 +50,9 @@ trait DagOptimizer[P <: Platform[P]] {
   protected def mkKeyFM[T, U, V](fn: T => TraversableOnce[U]): (Prod[(T, V)] => Prod[(U, V)]) = {
     prod => KeyFlatMappedProducer(prod, fn)
   }
+  protected def mkValueFM[K, U, V](fn: U => TraversableOnce[V]): (Prod[(K, U)] => Prod[(K, V)]) = {
+    prod => ValueFlatMappedProducer(prod, fn)
+  }
   protected def mkWritten[T, U >: T](sink: P#Sink[U]): (Prod[T] => Prod[T]) = {
     prod => WrittenProducer[P, T, U](prod, sink)
   }
@@ -121,6 +124,11 @@ trait DagOptimizer[P <: Platform[P]] {
       val lit = UnaryLit[(K, V), (K2, V), N](l1, mkKeyFM(kf.fn))
       (h1 + (kf -> lit), lit)
     }
+    def vfm[K, V, V2](kf: ValueFlatMappedProducer[P, K, V, V2]): (M, L[(K, V2)]) = {
+      val (h1, l1) = toLiteral(hm, kf.producer)
+      val lit = UnaryLit[(K, V), (K, V2), N](l1, mkValueFM(kf.fn))
+      (h1 + (kf -> lit), lit)
+    }
     def writer[T1 <: T, U >: T1](w: WrittenProducer[P, T1, U]): (M, L[T]) = {
       val (h1, l1) = toLiteral(hm, w.producer)
       val lit = UnaryLit[T1, T, N](l1, mkWritten[T1, U](w.sink))
@@ -158,6 +166,7 @@ trait DagOptimizer[P <: Platform[P]] {
           // but I can't convince scala of this without the cast.
           case ik @ IdentityKeyedProducer(producer) => cast(ikp(ik))
           case kf @ KeyFlatMappedProducer(producer, fn) => cast(kfm(kf))
+          case vf @ ValueFlatMappedProducer(producer, fn) => cast(vfm(vf))
           case j @ LeftJoinedProducer(producer, srv) => cast(joined(j))
           case s @ Summer(producer, store, sg) => cast(summer(s))
         }
@@ -253,6 +262,18 @@ trait DagOptimizer[P <: Platform[P]] {
         // we know that (K, V) <: T due to the case match, but scala can't see it
         def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
         cast(in.flatMap { case (k, v) => fn(k).map((_, v)) })
+    }
+  }
+  /**
+   * If you can't optimize ValueFlatMaps, use this
+   */
+  object ValueFlatMapToFlatMap extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
+      // TODO: we need to case class here to not lose the irreducible which may be named
+      case ValueFlatMappedProducer(in, fn) =>
+        // we know that (K, V) <: T due to the case match, but scala can't see it
+        def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
+        cast(in.flatMap { case (k, v) => fn(v).map((k, _)) })
     }
   }
 
