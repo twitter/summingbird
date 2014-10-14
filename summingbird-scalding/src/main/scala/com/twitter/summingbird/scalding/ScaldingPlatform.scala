@@ -432,6 +432,17 @@ object Scalding {
                 }
               }
             }, m)
+          case ValueFlatMappedProducer(producer, op) =>
+            // Map in two monads here, first state then reader
+            val (fmp, m) = recurse(producer)
+            (fmp.map { flowP =>
+              flowP.map { typedPipe =>
+                typedPipe.flatMap {
+                  case (time, (k, v)) =>
+                    op(v).map(u => (time, (k, u)))
+                }
+              }
+            }, m)
           case kfm @ KeyFlatMappedProducer(producer, op) =>
             val (fmp, m) = recurse(producer)
             /**
