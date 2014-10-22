@@ -35,6 +35,8 @@ import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
 import org.slf4j.LoggerFactory
 
+import scala.collection.{ Map => CMap }
+
 object FlatMapBoltProvider {
   @transient private val logger = LoggerFactory.getLogger(FlatMapBoltProvider.getClass)
   private def wrapTimeBatchIDKV[T, K, V](existingOp: FlatMapOperation[T, (K, V)])(batcher: Batcher): FlatMapOperation[(Timestamp, T), ((K, BatchID), (Timestamp, V))] = {
@@ -97,17 +99,11 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
   private val maxWaitTime = getOrElse(DEFAULT_MAX_FUTURE_WAIT_TIME)
   logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
 
-  private val flushFrequency = getOrElse(DEFAULT_FLUSH_FREQUENCY)
-  logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
-
-  private val cacheSize = getOrElse(DEFAULT_FM_CACHE)
-  logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
-
-  private val useAsyncCache = getOrElse(DEFAULT_USE_ASYNC_CACHE)
-  logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
-
   private val ackOnEntry = getOrElse(DEFAULT_ACK_ON_ENTRY)
   logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
+
+  val maxExecutePerSec = getOrElse(DEFAULT_MAX_EXECUTE_PER_SEC)
+  logger.info("[{}] maxExecutePerSec : {}", nodeName, maxExecutePerSec.toString)
 
   private val maxEmitPerExecute = getOrElse(DEFAULT_MAX_EMIT_PER_EXECUTE)
   logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
@@ -116,7 +112,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
     type ExecutorInput = (Timestamp, T)
     type ExecutorKey = Int
     type InnerValue = (Timestamp, V)
-    type ExecutorValue = Map[(K, BatchID), InnerValue]
+    type ExecutorValue = CMap[(K, BatchID), InnerValue]
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
@@ -144,6 +140,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       true,
       new Fields(AGG_KEY, AGG_VALUE),
       ackOnEntry,
+      maxExecutePerSec,
       new executor.FinalFlatMap(
         wrappedOperation,
         builder,
@@ -171,6 +168,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       stormDag.dependantsOf(node).size > 0,
       new Fields(VALUE_FIELD),
       ackOnEntry,
+      maxExecutePerSec,
       new executor.IntermediateFlatMap(
         wrappedOperation,
         maxWaiting,

@@ -76,7 +76,7 @@ class TestService[K, V](service: String,
   override def readStream(batchID: BatchID, mode: Mode): Option[FlowToPipe[(K, Option[V])]] = {
     streams.get(batchID).map { iter =>
       val mappable = streamMappable(batchID)
-      Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable)(fd._1, fd._2) }
+      Reader { (fd: (FlowDef, Mode)) => TypedPipe.from(mappable) }
     }
   }
   override def readLast(exclusiveUB: BatchID, mode: Mode) = {
@@ -87,7 +87,7 @@ class TestService[K, V](service: String,
       val (batch, _) = candidates.maxBy { _._1 }
       val mappable = lastMappable(batch)
       val rdr = Reader { (fd: (FlowDef, Mode)) =>
-        TypedPipe.from(mappable)(fd._1, fd._2).values
+        TypedPipe.from(mappable).values
       }
       Right((batch, rdr))
     }
