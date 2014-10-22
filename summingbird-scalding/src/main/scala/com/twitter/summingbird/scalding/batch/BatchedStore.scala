@@ -101,7 +101,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
         ((k, batch), (t, v))
     }
     (commutativity match {
-      case Commutative => Store.mapsideReduce(inits)
+      case Commutative => inits.sumByLocalKeys
       case NonCommutative => inits
     })
   }

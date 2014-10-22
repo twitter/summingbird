@@ -33,6 +33,11 @@ import com.twitter.summingbird.online.option.{
   MaxEmitPerExecute,
   FlushFrequency
 }
+import scala.collection.breakOut
+import scala.collection.mutable.{ Map => MMap, ListBuffer }
+// These CMaps we generate in the FFM, we use it as an immutable wrapper around
+// a mutable map.
+import scala.collection.{ Map => CMap }
 
 /**
  * @author Oscar Boykin
@@ -45,7 +50,10 @@ import com.twitter.summingbird.online.option.{
 // Its supplied by the planning system usually to ensure its large enough to cover the space
 // used by the summers times some delta.
 private[summingbird] case class KeyValueShards(get: Int) {
-  def summerIdFor[K](k: K): Int = k.hashCode % get
+  def summerIdFor[K](k: K): Int = {
+    val candidate = k.hashCode % get
+    if (candidate < 0) candidate * -1 else candidate
+  }
 }
 
 class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
@@ -56,47 +64,61 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   maxEmitPerExec: MaxEmitPerExecute,
   summerShards: KeyValueShards,
   pDecoder: Injection[Event, D],
-  pEncoder: Injection[(Int, Map[Key, Value]), D])
-    extends AsyncBase[Event, (Int, Map[Key, Value]), S, D, RC](maxWaitingFutures,
+  pEncoder: Injection[(Int, CMap[Key, Value]), D])
+    extends AsyncBase[Event, (Int, CMap[Key, Value]), S, D, RC](maxWaitingFutures,
       maxWaitingTime,
       maxEmitPerExec) {
 
   type InS = S
-  type OutputElement = (Int, Map[Key, Value])
+  type OutputElement = (Int, CMap[Key, Value])
 
   val encoder = pEncoder
   val decoder = pDecoder
 
   val lockedOp = Externalizer(flatMapOp)
 
-  type SummerK = Int
-  type SummerV = (List[S], Map[Key, Value])
-  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(List[S], Map[Key, Value])]])
+  type SummerK = Key
+  type SummerV = (Seq[S], Value)
+  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(Seq[S], Value)]])
 
-  private def formatResult(outData: Map[Int, (List[S], Map[Key, Value])]): TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])] = {
-    outData.iterator.map {
-      case (outerKey, (tupList, valList)) =>
-        if (valList.isEmpty) {
-          (tupList, Future.value(Nil))
-        } else {
-          (tupList, Future.value(List((outerKey, valList))))
-        }
+  // Lazy transient as const futures are not serializable
+  @transient private[this] lazy val noData = List(
+    (List(), Future.value(Nil))
+  )
+
+  private def formatResult(outData: Map[Key, (Seq[S], Value)]): TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])] = {
+    if (outData.isEmpty) {
+      noData
+    } else {
+      var mmMap = MMap[Int, (ListBuffer[S], MMap[Key, Value])]()
+
+      outData.toIterator.foreach {
+        case (k, (listS, v)) =>
+          val newK = summerShards.summerIdFor(k)
+          val (buffer, mmap) = mmMap.getOrElseUpdate(newK, (ListBuffer[S](), MMap[Key, Value]()))
+          buffer ++= listS
+          mmap += k -> v
+      }
+
+      mmMap.toIterator.map {
+        case (outerKey, (listS, innerMap)) =>
+          (listS, Future.value(List((outerKey, innerMap))))
+      }
     }
   }
 
-  override def tick: Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
+  override def tick: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] =
     sCache.tick.map(formatResult(_))
-  }
 
   def cache(state: S,
-    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(List[S], Future[TraversableOnce[OutputElement]])]] = {
+    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] = {
     try {
       val itemL = items.toList
       if (itemL.size > 0) {
         state.fanOut(itemL.size)
         sCache.addAll(itemL.map {
           case (k, v) =>
-            summerShards.summerIdFor(k) -> (List(state), Map(k -> v))
+            k -> (List(state), v)
         }).map(formatResult(_))
       } else { // Here we handle mapping to nothing, option map et. al
         Future.value(

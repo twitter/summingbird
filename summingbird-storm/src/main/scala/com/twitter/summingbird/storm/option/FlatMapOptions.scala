@@ -76,3 +76,9 @@ case class PreferLocalDependency(get: Boolean)
  * normal replay mechanisms.
  */
 case class AckOnEntry(get: Boolean)
+/**
+ * Maximum number of tuples to execute in a given second per mapper
+ */
+case class MaxExecutePerSecond(lowerBound: Long, upperBound: Long, rampUptimeMS: Long) {
+  require(rampUptimeMS >= 0L, "Ramp up time must greater than or equal to zero")
+}
