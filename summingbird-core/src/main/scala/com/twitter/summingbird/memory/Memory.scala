@@ -38,7 +38,6 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
 
   def counter(group: String, name: String): Option[Long] =
     MemoryStatProvider.getCountersForJob(jobID).flatMap { c =>
-      println(c)
       c.get(group + "/" + name).map { _.get }
     }
 
@@ -110,7 +109,6 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
     val registeredCounters: Seq[(String, String)] =
       Option(JobCounters.registeredCountersForJob.get(jobID)).map(_.toList).getOrElse(Nil)
 
-    println("registered counters: " + registeredCounters)
     if (!registeredCounters.isEmpty) {
       MemoryStatProvider.registerCounters(jobID, registeredCounters)
       SummingbirdRuntimeStats.addPlatformStatProvider(MemoryStatProvider)
