@@ -20,7 +20,7 @@ import com.twitter.summingbird.option.JobId
 import scala.collection.JavaConverters._
 import scala.collection.parallel.mutable.ParHashSet
 import scala.ref.WeakReference
-import scala.util.{ Try => ScalaTry }
+import scala.util.Try
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
 
@@ -38,7 +38,7 @@ private[summingbird] trait PlatformStatProvider {
 private[summingbird] object SummingbirdRuntimeStats {
   private class MutableSetSynchronizedWrapper[T] {
     private[this] val innerContainer = scala.collection.mutable.Set[T]()
-    def isEmpty: Boolean = innerContainer.synchronized { !innerContainer.isEmpty }
+    def nonEmpty: Boolean = innerContainer.synchronized { innerContainer.nonEmpty }
     def toSeq: Seq[T] = innerContainer.synchronized { innerContainer.toSeq }
     def add(e: T): Unit = innerContainer.synchronized { innerContainer += e }
   }
@@ -55,9 +55,9 @@ private[summingbird] object SummingbirdRuntimeStats {
 
   // invoke the ScaldingRuntimeStatsProvider object initializer on remote node
   private[this] lazy val platformsInit =
-    platformObjects.foreach { s: String => ScalaTry[Unit] { Class.forName(s) } }
+    platformObjects.foreach { s: String => Try[Unit] { Class.forName(s) } }
 
-  def hasStatProviders: Boolean = platformStatProviders.isEmpty
+  def hasStatProviders: Boolean = platformStatProviders.nonEmpty
 
   def addPlatformStatProvider(pp: PlatformStatProvider): Unit =
     platformStatProviders.add(new WeakReference(pp))
@@ -94,9 +94,7 @@ private[summingbird] object JobCounters {
     new ConcurrentHashMap[JobId, ParHashSet[(String, String)]]()
 
   def registerCounter(jobID: JobId, group: String, name: String): Unit = {
-    if (!SummingbirdRuntimeStats.hasStatProviders) {
-      val set = getOrElseUpdate(registeredCountersForJob, jobID, ParHashSet[(String, String)]())
-      set += ((group, name))
-    }
+    val set = getOrElseUpdate(registeredCountersForJob, jobID, ParHashSet[(String, String)]())
+    set += ((group, name))
   }
 }
