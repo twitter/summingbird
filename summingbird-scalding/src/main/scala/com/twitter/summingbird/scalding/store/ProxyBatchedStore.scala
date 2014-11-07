@@ -29,6 +29,7 @@ abstract class ProxyBatchedStore[K, V] extends batch.BatchedStore[K, V] {
   def proxy: batch.BatchedStore[K, V]
   override def batcher = proxy.batcher
   override def ordering = proxy.ordering
+  override def semigroup = proxy.semigroup
   override def select(b: List[BatchID]) = proxy.select(b)
   override def pruning = proxy.pruning
   override def readLast(exclusiveUB: BatchID, mode: Mode) = proxy.readLast(exclusiveUB, mode)

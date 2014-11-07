@@ -284,6 +284,61 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
     }
 
+    "match scala for leftJoin on store (with no dependency between the two) jobs" in {
+      // TODO: what if the two sources are of different sizes here?
+      val original1 = sample[List[Int]]
+      val original2Fn = sample[(Int) => Int]
+      val original2 = original1.map { v => original2Fn(v) }
+
+      val fnA = sample[(Int) => List[(Int, Int)]]
+      val fnB = sample[(Int) => List[(Int, Int)]]
+      val postJoin = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
+
+      def toTime[T, U](fn: T => TraversableOnce[U]): ((Long, T)) => TraversableOnce[(Long, U)] =
+        (x: (Long, T)) => fn(x._2).map((x._1, _))
+
+      val fnAWithTime = toTime(fnA)
+      val fnBWithTime = toTime(fnB)
+      val postJoinWithTime = toTime(postJoin)
+
+      val inWithTime1 = original1.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val inWithTime2 = original2.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      val (inMemoryA, inMemoryB) =
+        TestGraphs.leftJoinAgainstStoreInScala(inWithTime1, inWithTime2)(fnAWithTime)(fnBWithTime)(postJoinWithTime)
+
+      val batcher = TestUtil.randomBatcher(inWithTime2)
+
+      val storeAndServiceInit = sample[Map[Int, Int]]
+      val storeAndServiceStore = TestStore[Int, Int]("storeAndService", batcher, storeAndServiceInit, inWithTime1.size)
+      val storeAndService = TestStoreService[Int, Int](storeAndServiceStore)
+
+      val finalStoreInit = sample[Map[Int, Int]]
+      val finalStore = TestStore[Int, Int]("finalStore", batcher, finalStoreInit, inWithTime1.size)
+
+      // the end range needs to be multiple of batchsize
+      val endTimeOfLastBatch1 = batcher.latestTimeOf(batcher.batchOf(Timestamp(inWithTime1.size))).milliSinceEpoch
+      val endTimeOfLastBatch2 = batcher.latestTimeOf(batcher.batchOf(Timestamp(inWithTime2.size))).milliSinceEpoch
+      val (buffer1, source1) = TestSource(inWithTime1, Some(DateRange(RichDate(0), RichDate(endTimeOfLastBatch1))))
+      val (buffer2, source2) = TestSource(inWithTime2, Some(DateRange(RichDate(0), RichDate(endTimeOfLastBatch2))))
+
+      val summer =
+        TestGraphs.leftJoinAgainstStoreJob[Scalding, (Long, Int), (Long, Int), Int, Int, Int, Int](source1, source2,
+          storeAndService,
+          finalStore)(tup => fnA(tup._2))(tup => fnB(tup._2))(postJoin)
+
+      val intr = TestUtil.batchedCover(batcher, 0L, original2.size.toLong)
+      val scald = Scalding("scalaCheckleftJoinJob")
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode((storeAndService.sourceToBuffer ++ finalStore.sourceToBuffer ++ buffer1 ++ buffer2).get(_))
+
+      scald.run(ws, mode, summer)
+
+      // Now check that the inMemory ==
+      TestUtil.compareMaps(original1, Monoid.plus(storeAndServiceInit, inMemoryA), storeAndServiceStore) must beTrue
+      TestUtil.compareMaps(original2, Monoid.plus(finalStoreInit, inMemoryB), finalStore) must beTrue
+    }
+
     "match scala for diamond jobs with write" in {
       val original = sample[List[Int]]
       val fn1 = sample[(Int) => List[(Int, Int)]]

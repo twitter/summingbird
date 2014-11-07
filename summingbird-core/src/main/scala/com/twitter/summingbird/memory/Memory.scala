@@ -26,11 +26,20 @@ object Memory {
     Producer.source[Memory, T](traversable)
 }
 
+trait MemoryService[-K, +V] {
+  def get(k: K): Option[V]
+}
+
+//TODO: make this abstract class and implement in Java
+case class MapAsMemoryService[K, V](m: MutableMap[K, V]) extends MemoryService[K, V] {
+  def get(k: K) = m.get(k)
+}
+
 class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]
   type Sink[-T] = (T => Unit)
-  type Service[-K, +V] = (K => Option[V])
+  type Service[-K, +V] = MemoryService[K, V]
   type Plan[T] = Stream[T]
 
   private type Prod[T] = Producer[Memory, T]
@@ -83,7 +92,7 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
           case LeftJoinedProducer(producer, service) =>
             val (s, m) = toStream(producer, jamfs)
             val joined = s.map {
-              case (k, v) => (k, (v, service(k)))
+              case (k, v) => (k, (v, service.get(k)))
             }
             (joined, m)
 

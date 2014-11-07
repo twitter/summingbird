@@ -79,11 +79,16 @@ object TestUtil {
     // we can have between 1 and (maxtime - mintime + 1) batches.
     val delta = (maxtimeInc - mintimeInc)
     val MaxBatches = 5L min delta
-    val batches = 1L + Gen.choose(0L, MaxBatches).sample.get
+    val batches = 1L + Gen.choose(1L, MaxBatches).sample.get
+    assert(batches > 1L, " We should never get a unit batcher for the tests (TODO)")
+    val timePerBatch = (delta + 1L) / batches
+    new MillisecondBatcher(timePerBatch)
+    /*
     if (batches == 1L) simpleBatcher
     else {
       val timePerBatch = (delta + 1L) / batches
       new MillisecondBatcher(timePerBatch)
     }
+    */
   }
 }

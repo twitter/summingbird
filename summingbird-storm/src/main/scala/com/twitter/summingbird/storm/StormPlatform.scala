@@ -33,7 +33,7 @@ import com.twitter.summingbird.chill.SBChillRegistrar
 import com.twitter.summingbird.online._
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.JobId
-import com.twitter.summingbird.planner.{ Dag, OnlinePlan, SummerNode, FlatMapNode, SourceNode }
+import com.twitter.summingbird.planner.{ Dag, DagOptimizer, OnlinePlan, SummerNode, FlatMapNode, SourceNode }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.summingbird.viz.VizGraph
@@ -307,7 +307,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   def withConfigUpdater(fn: SummingbirdConfig => SummingbirdConfig): Storm
 
   def plan[T](tail: TailProducer[Storm, T]): PlannedTopology = {
-    val stormDag = OnlinePlan(tail)
+    /*
+     * TODO: storm does not yet know about ValueFlatMapped, so remove it before
+     * planning
+     */
+    val dagOptimizer = new DagOptimizer[Storm] {}
+    val stormTail = dagOptimizer.optimize(tail, dagOptimizer.ValueFlatMapToFlatMap)
+    val stormDag = OnlinePlan(stormTail.asInstanceOf[TailProducer[Storm, T]])
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = genConfig(stormDag)
     val jobID = JobId(config.get("storm.job.uniqueId").asInstanceOf[String])

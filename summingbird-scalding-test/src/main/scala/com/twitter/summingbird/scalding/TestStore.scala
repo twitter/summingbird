@@ -16,6 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
+import com.twitter.algebird.Semigroup
 import com.twitter.algebird.monad._
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.state.HDFSState
@@ -30,14 +31,16 @@ import cascading.tuple.{ Tuple, TupleEntry }
 import cascading.flow.FlowDef
 
 object TestStore {
-  def apply[K, V](store: String, inBatcher: Batcher, initStore: Iterable[(K, V)], lastTime: Long, pruning: PrunedSpace[(K, V)] = PrunedSpace.neverPruned)(implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)]) = {
+  def apply[K, V](store: String, inBatcher: Batcher,
+    initStore: Iterable[(K, V)], lastTime: Long,
+    pruning: PrunedSpace[(K, V)] = PrunedSpace.neverPruned)(implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)], sg: Semigroup[V]) = {
     val startBatch = inBatcher.batchOf(Timestamp(0)).prev
     val endBatch = inBatcher.batchOf(Timestamp(lastTime)).next
     new TestStore[K, V](store, inBatcher, startBatch, initStore, endBatch, pruning)
   }
 }
 
-class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID, override val pruning: PrunedSpace[(K, V)])(implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
+class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID, override val pruning: PrunedSpace[(K, V)])(implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)], sg: Semigroup[V])
     extends batch.BatchedStore[K, V] {
 
   var writtenBatches = Set[BatchID](initBatch)
@@ -57,6 +60,7 @@ class TestStore[K, V](store: String, inBatcher: Batcher, initBatch: BatchID, ini
 
   val batcher = inBatcher
   val ordering = ord
+  val semigroup = sg
 
   def mockFor(b: BatchID): Mappable[(K, V)] =
     new MockMappable(store + b.toString)

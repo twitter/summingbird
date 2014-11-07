@@ -22,7 +22,7 @@ import org.apache.hadoop.io.Writable
 import cascading.flow.FlowDef
 import cascading.tuple.Fields
 
-import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
+import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper, Semigroup }
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.bijection.{ Bijection, ImplicitBijection }
 import com.twitter.scalding.{ Dsl, Mode, Hdfs, TypedPipe, IterableSource, WritableSequenceFile, MapsideReduce, TupleSetter, TupleConverter }
@@ -39,12 +39,13 @@ import com.twitter.summingbird.scalding._
  * @author Kevin Lin
  */
 
-class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)(implicit inBatcher: Batcher, ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
+class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)(implicit inBatcher: Batcher, ord: Ordering[K], tset: TupleSetter[(K, V)], sg: Semigroup[V], tconv: TupleConverter[(K, V)])
     extends batch.BatchedStore[K, V] {
   import Dsl._
 
   val batcher = inBatcher
   val ordering = ord
+  val semigroup = sg
 
   protected def getFileStatus(p: String, conf: Configuration) = {
     val path = new Path(p)

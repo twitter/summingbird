@@ -116,6 +116,117 @@ object TestGraphs {
       .flatMap(postJoinFn)
       .sumByKey(store)
 
+  def scanSum[V: Semigroup](it: Iterator[V]): Iterator[(Option[V], V)] = {
+    var prev: Option[V] = None
+    it.map { v =>
+      val res = (prev, v)
+      prev = prev.map(Semigroup.plus(_, v)).orElse(Some(v))
+      res
+    }
+  }
+
+  def leftJoinAgainstStoreInScala[T1, T2, U, JoinedU: Monoid, K: Ordering, V: Monoid](source1: TraversableOnce[T1], source2: TraversableOnce[T2])(simpleFM1: T1 => TraversableOnce[(Long, (K, JoinedU))])(simpleFM2: T2 => TraversableOnce[(Long, (K, U))])(postJoinFn: ((Long, (K, (U, Option[JoinedU])))) => TraversableOnce[(Long, (K, V))]): (Map[K, JoinedU], Map[K, V]) = {
+
+    val firstStore = MapAlgebra.sumByKey(
+      source1
+        .flatMap(simpleFM1)
+        .map { x: (Long, (K, JoinedU)) => (x._2) } // drop the time from the key for the store
+    )
+
+    // create the delta stream
+    val sumStream: Iterable[(Long, (K, (Option[JoinedU], JoinedU)))] =
+      source1
+        .flatMap(simpleFM1)
+        .toList.groupBy(_._1)
+        .mapValues {
+          _.map { case (time, (k, joinedu)) => (k, joinedu) }
+            .groupBy(_._1)
+            .mapValues { l => scanSum(l.iterator.map(_._2)).toList }
+            .toIterable
+            .flatMap { case (k, lv) => lv.map { case (optju, ju) => (k, (optju, ju)) } }
+        }
+        .toIterable
+        .flatMap { case (time, lv) => lv.map { case (k, (optju, ju)) => (time, (k, (optju, ju))) } }
+
+    // implicit ordering on the either pair
+    implicit def eitherOrd[T, U]: Ordering[Either[T, U]] =
+      new Ordering[Either[T, U]] {
+        def compare(l: Either[T, U], r: Either[T, U]) =
+          (l, r) match {
+            case (Left(_), Right(_)) => -1
+            case (Right(_), Left(_)) => 1
+            case (Left(_), Left(_)) => 0
+            case (Right(_), Right(_)) => 0
+          }
+      }
+
+    // zip the left and right streams
+    val leftAndRight: Iterable[(K, (Long, Either[U, JoinedU]))] =
+      source2
+        .flatMap(simpleFM2)
+        .toList
+        .map { case (time, (k, u)) => (k, (time, Left(u))) }
+        .++(sumStream.map { case (time, (k, (optju, ju))) => (k, (time, Right(ju))) })
+
+    // scan left to join the left values and the right summing result stream
+    val resultStream: List[(Long, (K, (U, Option[JoinedU])))] =
+      leftAndRight
+        .groupBy(_._1)
+        .mapValues {
+          _.map(_._2).toList.sortBy(identity)
+            .scanLeft(Option.empty[(Long, JoinedU)], Option.empty[(Long, U, Option[JoinedU])]) {
+              case ((None, result), (time, Left(u))) => {
+                // The was no value previously
+                (None, Some((time, u, None)))
+              }
+              case ((prev @ Some((oldt, ju)), result), (time, Left(u))) => {
+                // gate the time for window join?
+                (prev, Some((time, u, Some(ju))))
+              }
+              case ((None, result), (time, Right(joined))) => {
+                (Some((time, joined)), None)
+              }
+
+              case ((Some((oldt, oldJ)), result), (time, Right(joined))) => {
+                val nextJoined = Semigroup.plus(oldJ, joined)
+                (Some((time, nextJoined)), None)
+              }
+            }
+        }.toList.flatMap { case (k, lv) => lv.map { case ((_, optuju)) => (k, optuju) } }
+        .flatMap {
+          case (k, opt) => opt.map { o: (Long, U, Option[JoinedU]) => (o._1, (k, (o._2, o._3))) }
+        }
+
+    // compute the final store result after join
+    val finalStore = MapAlgebra.sumByKey(
+      resultStream
+        .flatMap(postJoinFn)
+        .map { case (time, (k, v)) => (k, v) } // drop the time
+    )
+    (firstStore, finalStore)
+  }
+
+  def leftJoinAgainstStoreJob[P <: Platform[P], T1, T2, U, K, JoinedU: Monoid, V: Monoid](
+    source1: Producer[P, T1],
+    source2: Producer[P, T2],
+    storeAndService: P#Store[K, JoinedU] with P#Service[K, JoinedU],
+    store: P#Store[K, V])(simpleFM1: T1 => TraversableOnce[(K, JoinedU)])(simpleFM2: T2 => TraversableOnce[(K, U)])(postJoinFn: ((K, (U, Option[JoinedU]))) => TraversableOnce[(K, V)]): TailProducer[P, (K, (Option[V], V))] = {
+
+    // sum to first store
+    val dag1 = source1
+      .flatMap(simpleFM1)
+      .sumByKey(storeAndService)
+
+    // join second source with stream from first store
+    val dag2 = source2
+      .flatMap(simpleFM2)
+      .leftJoin(storeAndService)
+      .flatMap(postJoinFn)
+      .sumByKey(store)
+
+    dag1.also(dag2)
+  }
+
   def realJoinTestJob[P <: Platform[P], T1, T2, T3, T4, K1, K2, U, JoinedU, V: Monoid](
     source1: Producer[P, T1],
     source2: Producer[P, T2],
@@ -196,15 +307,6 @@ object TestGraphs {
       .mapValues(_._2)
       .flatMapKeys(fn)
       .sumByKey(store2)
-
-  def scanSum[V: Semigroup](it: Iterator[V]): Iterator[(Option[V], V)] = {
-    var prev: Option[V] = None
-    it.map { v =>
-      val res = (prev, v)
-      prev = prev.map(Semigroup.plus(_, v)).orElse(Some(v))
-      res
-    }
-  }
 
   def twoSumByKeyInScala[K1, V: Semigroup, K2](in: List[(K1, V)], fn: K1 => List[K2]): (Map[K1, V], Map[K2, V]) = {
     val sum1 = MapAlgebra.sumByKey(in)

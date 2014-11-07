@@ -30,6 +30,7 @@ import com.twitter.summingbird.javaapi.Predicate;
 import com.twitter.summingbird.javaapi.Service;
 import com.twitter.summingbird.javaapi.Sink;
 import com.twitter.summingbird.memory.Memory;
+import com.twitter.summingbird.memory.MapAsMemoryService;
 import com.twitter.summingbird.option.JobId;
 
 public class TestJMemory {
@@ -39,10 +40,18 @@ public class TestJMemory {
   private static final Integer[] LENGTH = { 3, 3, 5 };
   private static final String[] LESS_THAN_4 = { "one", "two" };
   private static final String[] FLATTENED = { "o", "e", "t", "o", "th", "ee" };
+  private static final HashMap<String, Integer> SERVICE;
+  static
+  {
+      SERVICE = new HashMap<String, Integer>();
+      SERVICE.put("one", 3);
+      SERVICE.put("two", 3);
+      SERVICE.put("three", 5);
+  }
 
   private static final JProducer<Memory, String> SOURCE = source(asList(INPUT));
 
-  private static final Service<Memory, Function1<String, Option<Integer>>, String, Integer> LENGTH_SERVICE = service(new Function<String, Option<Integer>>() {
+  private static final Service<Memory, MapAsMemoryService<String, Integer>, String, Integer> LENGTH_SERVICE = service(new HashMap<String, Integer>(SERVICE) {
     public Option<Integer> apply(String p) {
       return new Some<Integer>(p.length());
     }

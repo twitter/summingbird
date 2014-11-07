@@ -18,7 +18,7 @@ package com.twitter.summingbird.online
 
 import com.twitter.summingbird._
 import com.twitter.summingbird.planner._
-import com.twitter.summingbird.memory.Memory
+import com.twitter.summingbird.memory._
 import scala.collection.mutable.{ Map => MMap }
 import org.scalacheck._
 import Gen._
@@ -31,22 +31,12 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
   private type MemoryDag = Dag[Memory]
 
   import TestGraphGenerators._
+  import MemoryArbitraries._
 
   implicit def sink1: Memory#Sink[Int] = sample[Int => Unit]
   implicit def sink2: Memory#Sink[(Int, Int)] = sample[((Int, Int)) => Unit]
 
   implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
-
-  implicit val arbSource1: Arbitrary[Producer[Memory, Int]] =
-    Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[Int]).map {
-      x: List[Int] =>
-        Memory.toSource(x)
-    })
-  implicit val arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] =
-    Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[(Int, Int)]).map {
-      x: List[(Int, Int)] =>
-        IdentityKeyedProducer(Memory.toSource(x))
-    })
 
   lazy val genGraph: Gen[TailProducer[Memory, _]] = for {
     tail <- oneOf(summed, written)
