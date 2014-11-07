@@ -245,6 +245,7 @@ class ConcurrentMemory(implicit jobID: JobId = JobId("default.concurrent.memory.
       .orElse(FlatMapFusion)
       .orElse(RemoveNames)
       .orElse(RemoveIdentityKeyed)
+      .orElse(ValueFlatMapToFlatMap)
 
     val deps = Dependants(optimize(prod, ourRule))
     val heads = deps.nodes.collect { case s @ Source(_) => s }

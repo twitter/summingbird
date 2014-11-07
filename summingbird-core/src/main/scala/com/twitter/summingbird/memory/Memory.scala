@@ -19,6 +19,7 @@ package com.twitter.summingbird.memory
 import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
+import com.twitter.summingbird.planner.DagOptimizer
 import collection.mutable.{ Map => MutableMap }
 
 object Memory {
@@ -112,7 +113,6 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
     }
 
   def plan[T](prod: TailProducer[Memory, T]): Stream[T] = {
-
     val registeredCounters: Seq[(Group, Name)] =
       JobCounters.getCountersForJob(jobID).getOrElse(Nil)
 
@@ -120,7 +120,12 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
       MemoryStatProvider.registerCounters(jobID, registeredCounters)
       SummingbirdRuntimeStats.addPlatformStatProvider(MemoryStatProvider)
     }
-    toStream(prod, Map.empty)._1
+
+    val dagOptimizer = new DagOptimizer[Memory] {}
+    val memoryTail = dagOptimizer.optimize(prod, dagOptimizer.ValueFlatMapToFlatMap)
+    val memoryDag = memoryTail.asInstanceOf[TailProducer[Memory, T]]
+
+    toStream(memoryDag, Map.empty)._1
   }
 
   def run(iter: Stream[_]) {

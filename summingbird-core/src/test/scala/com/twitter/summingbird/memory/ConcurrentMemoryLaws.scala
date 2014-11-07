@@ -160,7 +160,7 @@ object ConcurrentMemoryLaws extends Specification {
 
     "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must beTrue }
 
-    //TODO: broken now "lookupCollect w/ Int, Int" in { lookupCollectChecker[Int, Int] must beTrue }
+    "lookupCollect w/ Int, Int" in { lookupCollectChecker[Int, Int] must beTrue }
 
     "counters w/ Int, Int, Int" in { counterChecker[Int, Int, Int] must beTrue }
   }
