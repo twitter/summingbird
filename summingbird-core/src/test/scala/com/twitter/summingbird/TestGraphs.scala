@@ -125,7 +125,7 @@ object TestGraphs {
     }
   }
 
-  def leftJoinAgainstStoreInScala[T1, T2, U, JoinedU: Monoid, K: Ordering, V: Monoid](source1: TraversableOnce[T1], source2: TraversableOnce[T2])(simpleFM1: T1 => TraversableOnce[(Long, (K, JoinedU))])(simpleFM2: T2 => TraversableOnce[(Long, (K, U))])(postJoinFn: ((Long, (K, (U, Option[JoinedU])))) => TraversableOnce[(Long, (K, V))]): (Map[K, JoinedU], Map[K, V]) = {
+  def leftJoinWithStoreInScala[T1, T2, U, JoinedU: Monoid, K: Ordering, V: Monoid](source1: TraversableOnce[T1], source2: TraversableOnce[T2])(simpleFM1: T1 => TraversableOnce[(Long, (K, JoinedU))])(simpleFM2: T2 => TraversableOnce[(Long, (K, U))])(postJoinFn: ((Long, (K, (U, Option[JoinedU])))) => TraversableOnce[(Long, (K, V))]): (Map[K, JoinedU], Map[K, V]) = {
 
     val firstStore = MapAlgebra.sumByKey(
       source1
@@ -206,7 +206,7 @@ object TestGraphs {
     (firstStore, finalStore)
   }
 
-  def leftJoinAgainstStoreJob[P <: Platform[P], T1, T2, U, K, JoinedU: Monoid, V: Monoid](
+  def leftJoinWithStoreJob[P <: Platform[P], T1, T2, U, K, JoinedU: Monoid, V: Monoid](
     source1: Producer[P, T1],
     source2: Producer[P, T2],
     storeAndService: P#Store[K, JoinedU] with P#Service[K, JoinedU],
@@ -225,6 +225,17 @@ object TestGraphs {
       .sumByKey(store)
 
     dag1.also(dag2)
+  }
+
+  def leftJoinWithDependentStoreJob[P <: Platform[P], T, U, K, V: Monoid](
+    source: Producer[P, T],
+    storeAndService: P#Store[K, V] with P#Service[K, V])(simpleFM1: T => TraversableOnce[(K, U)])(postJoinFn: ((U, Option[V])) => TraversableOnce[V]): TailProducer[P, (K, (Option[V], V))] = {
+
+    source
+      .flatMap(simpleFM1)
+      .leftJoin(storeAndService)
+      .flatMapValues(postJoinFn)
+      .sumByKey(storeAndService)
   }
 
   def realJoinTestJob[P <: Platform[P], T1, T2, T3, T4, K1, K2, U, JoinedU, V: Monoid](

@@ -64,8 +64,26 @@ private[scalding] object InternalService {
   def leftDoesNotDependOnStore[K, V](left: Producer[Scalding, Any],
     store: BatchedStore[K, V]): Boolean = {
     !(Producer.transitiveDependenciesOf(left)
-      .collectFirst { case Summer(_, StoreService(thatStore), _) if thatStore == store => () }
+      .collectFirst { case Summer(_, StoreService(thatStore), _) if thatStore == store => println("found store, thatStore: " + thatStore + " looking for store: " + store); () }
       .isDefined)
+    false
+  }
+
+  def storeDoesNotDependOnJoin[K, V](dag: Dependants[Scalding],
+    joinProducer: Producer[Scalding, Any],
+    store: BatchedStore[K, V]): Boolean = {
+
+    // in all of the graph, find a summer node Summer(_, thatStore, _) where thatStore == store
+    // and see if this summer depends on the given join
+    !(dag.nodes.map { n =>
+      n match {
+        case summer @ Summer(_, StoreService(thatStore), _) if thatStore == store =>
+          Producer.transitiveDependenciesOf(summer)
+            .collectFirst { case ljp @ LeftJoinedProducer(l, s) if ljp == joinProducer => () }
+            .isDefined
+        case _ => false
+      }
+    }.contains(true)) // this will return true if the store does depend on store, so negate that
   }
 
   def isValidLoopJoin[K, V](dag: Dependants[Scalding], left: Producer[Scalding, Any],
@@ -75,7 +93,7 @@ private[scalding] object InternalService {
        * 1) There is only one dependant path from join to store.
        * 2) After the join, there are only flatMapValues (later we can handle merges as well)
        */
-    false //sys.error("?")
+    true //sys.error("?")
 
   def storeIsJoined[K, V](dag: Dependants[Scalding], store: Store[K, V]): Boolean = {
     dag.nodes.map { p =>
@@ -122,8 +140,45 @@ private[scalding] object InternalService {
    */
   def getLoopInputs[K, U, V](dag: Dependants[Scalding],
     left: Producer[Scalding, (K, V)],
-    store: BatchedStore[K, U]): ((((V, Option[U])) => TraversableOnce[U]), Producer[Scalding, (K, U)]) =
-    sys.error("?")
+    store: BatchedStore[K, U]): ((((V, Option[U])) => TraversableOnce[U]), Producer[Scalding, (K, U)]) = {
+
+    println("dag: " + dag)
+    println("left: " + left)
+
+    type ValueFlatMapFn = (((V, Option[U])) => TraversableOnce[U])
+
+    val summerToStore = getSummer[K, U](dag, store).getOrElse(sys.error("Could not find the Summer for store."))
+
+    val res: Option[(ValueFlatMapFn, Producer[Scalding, (K, U)])] = {
+      val depsOfSummer: List[Producer[Scalding, Any]] = Producer.transitiveDependenciesOf(summerToStore)
+
+      def recurse(p: Producer[Scalding, Any], cummulativeFn: ValueFlatMapFn): (ValueFlatMapFn, Boolean) = {
+        p match {
+          case ValueFlatMappedProducer(prod, fn: ValueFlatMapFn) =>
+            recurse(prod, (e: (V, Option[U])) => { cummulativeFn(e); fn(e) })
+          case LeftJoinedProducer(prod, joined) if prod == left =>
+            (cummulativeFn, true) // done
+          case _ =>
+            (cummulativeFn, false)
+        }
+      }
+
+      val initFn: ((V, Option[U])) => TraversableOnce[U] = (x: (V, Option[U])) => List[U]()
+      val (fn, valid) = recurse(depsOfSummer.head, initFn)
+
+      if (valid) {
+        val Summer(prod, store, sg) = summerToStore
+        println(" PRODUCER TO SUMMER: " + prod)
+        Some((fn, prod))
+      } else {
+        Option.empty[(ValueFlatMapFn, Producer[Scalding, (K, U)])]
+      }
+    }
+    val x = Option.empty[(ValueFlatMapFn, Producer[Scalding, (K, U)])]
+    //res.getOrElse(sys.error("Could not find correct loop inputs"))
+    x.get
+
+  }
   /**
    * This is for the case where the left items come in, then we
    * Sum the second storeLog

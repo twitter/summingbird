@@ -113,7 +113,7 @@ object MemoryLaws extends Specification {
     val postJoinFn = sample[((K, (U, Option[JoinedU]))) => List[(K, V)]]
 
     val plan = platform.plan {
-      TestGraphs.leftJoinAgainstStoreJob[Memory, T, T, U, K, JoinedU, V](sourceMaker(items1),
+      TestGraphs.leftJoinWithStoreJob[Memory, T, T, U, K, JoinedU, V](sourceMaker(items1),
         sourceMaker(items2),
         storeAndService,
         finalStore)(fnA)(fnB)(postJoinFn)

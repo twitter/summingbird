@@ -32,6 +32,9 @@ trait DagOptimizer[P <: Platform[P]] {
   protected def mkAlso[T, U]: (Prod[T], Prod[U]) => Prod[U] = {
     (left, right) => AlsoProducer(left.asInstanceOf[TailProducer[P, T]], right)
   }
+  protected def mkAlsoTail[T, U]: (Prod[T], Prod[U]) => Prod[U] = {
+    (left, right) => new AlsoTailProducer(left.asInstanceOf[TailProducer[P, T]], right.asInstanceOf[TailProducer[P, U]])
+  }
   protected def mkMerge[T]: (Prod[T], Prod[T]) => Prod[T] = {
     (left, right) => MergedProducer(left, right)
   }
@@ -91,6 +94,12 @@ trait DagOptimizer[P <: Platform[P]] {
       val (h1, l1) = toLiteral(hm, a.ensure)
       val (h2, l2) = toLiteral(h1, a.result)
       val lit = BinaryLit[R, T, T, N](l1, l2, mkAlso)
+      (h2 + (a -> lit), lit)
+    }
+    def alsoTail[R](a: AlsoTailProducer[P, R, T]): (M, L[T]) = {
+      val (h1, l1) = toLiteral(hm, a.ensure)
+      val (h2, l2) = toLiteral(h1, a.result)
+      val lit = BinaryLit[R, T, T, N](l1, l2, mkAlsoTail)
       (h2 + (a -> lit), lit)
     }
     def merge(m: MergedProducer[P, T]): (M, L[T]) = {
@@ -156,6 +165,7 @@ trait DagOptimizer[P <: Platform[P]] {
       case None =>
         prod match {
           case s @ Source(_) => source(s)
+          case a: AlsoTailProducer[_, _, _] => alsoTail(a.asInstanceOf[AlsoTailProducer[P, _, T]])
           case a @ AlsoProducer(_, _) => also(a)
           case m @ MergedProducer(l, r) => merge(m)
           case n @ NamedProducer(producer, name) => named(n)
