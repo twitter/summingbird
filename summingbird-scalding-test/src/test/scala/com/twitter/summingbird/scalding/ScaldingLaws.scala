@@ -307,7 +307,7 @@ object ScaldingLaws extends Specification {
       val (inMemoryA, inMemoryB) =
         TestGraphs.leftJoinAgainstStoreInScala(inWithTime1, inWithTime2)(fnAWithTime)(fnBWithTime)(postJoinWithTime)
 
-      val batcher = TestUtil.randomBatcher(inWithTime2)
+      val batcher = TestUtil.randomBatcher(inWithTime1)
 
       val storeAndServiceInit = sample[Map[Int, Int]]
       val storeAndServiceStore = TestStore[Int, Int]("storeAndService", batcher, storeAndServiceInit, inWithTime1.size)
@@ -327,7 +327,7 @@ object ScaldingLaws extends Specification {
           storeAndService,
           finalStore)(tup => fnA(tup._2))(tup => fnB(tup._2))(postJoin)
 
-      val intr = TestUtil.batchedCover(batcher, 0L, original2.size.toLong)
+      val intr = TestUtil.batchedCover(batcher, 0L, original1.size.toLong)
       val scald = Scalding("scalaCheckleftJoinJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode((storeAndService.sourceToBuffer ++ finalStore.sourceToBuffer ++ buffer1 ++ buffer2).get(_))

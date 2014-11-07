@@ -372,7 +372,7 @@ object Scalding {
              */
             val (pf, m) = recurse(left)
             (service.lookup(pf), m)
-          case ljp @ LeftJoinedProducer(left, StoreService(store)) if InternalService.storeDoesNotDependOnJoin(dependants, left, store) =>
+          case ljp @ LeftJoinedProducer(left, StoreService(store)) if InternalService.leftDoesNotDependOnStore(left, store) =>
             /*
              * This is the simplest case of joining against a store. Here we just need the input to
              * the store and call LookupJoin

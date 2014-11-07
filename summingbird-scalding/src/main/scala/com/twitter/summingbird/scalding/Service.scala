@@ -68,23 +68,6 @@ private[scalding] object InternalService {
       .isDefined)
   }
 
-  def storeDoesNotDependOnJoin[K, V](dag: Dependants[Scalding],
-    joinProducer: Producer[Scalding, Any],
-    store: BatchedStore[K, V]): Boolean = {
-
-    // in all of the graph, find a summer node Summer(_, thatStore, _) where thatStore == store
-    // and see if this summer depends on the given join
-    !(dag.nodes.map { n =>
-      n match {
-        case summer @ Summer(_, StoreService(thatStore), _) if thatStore == store =>
-          Producer.transitiveDependenciesOf(summer)
-            .collectFirst { case ljp @ LeftJoinedProducer(l, s) if ljp == joinProducer => () }
-            .isDefined
-        case _ => false
-      }
-    }.contains(true)) // this will return true if the store does depend on store, so negate that
-  }
-
   def isValidLoopJoin[K, V](dag: Dependants[Scalding], left: Producer[Scalding, Any],
     store: BatchedStore[K, V]): Boolean =
     /*
