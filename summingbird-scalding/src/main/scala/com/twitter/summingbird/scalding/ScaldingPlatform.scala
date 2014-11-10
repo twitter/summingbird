@@ -386,7 +386,7 @@ object Scalding {
                 .getOrElse(
                   sys.error("join %s is against store not in the entire job's Dag".format(ljp))
                 )
-              val (leftPf: PipeFactory[(K, U)], m1) = recurse(left)
+              val (leftPf, m1) = recurse(left)
               // We have to force the fanOut on the storeLog because this kind of fanout
               // due to joining is not visible in the Dependants dag
               val (logPf, m2) = recurse(storeLog, built = m1, forceFanOut = true)
@@ -404,10 +404,17 @@ object Scalding {
 
           case ljp @ LeftJoinedProducer(left, StoreService(store)) if InternalService.isValidLoopJoin(dependants, left, store) =>
             def go[K, V, U](incoming: Producer[Scalding, (K, V)], bs: BatchedStore[K, U]) = {
-              val (flatMapFn, others) = InternalService.getLoopInputs(dependants, incoming, bs)
+              val (flatMapFn, othersOpt) = InternalService.getLoopInputs(dependants, incoming, bs)
               val (leftPf, m1) = recurse(incoming)
-              val (merges, m2) = recurse(others, built = m1)
-              val deltaLog = bs.readDeltaLog(merges)
+
+              val (deltaLogOpt, m2) = othersOpt match {
+                case Some(o) =>
+                  val (merges, m2) = recurse(o, built = m1)
+                  (Some(bs.readDeltaLog(merges)), m2)
+                case None =>
+                  (None, m1)
+              }
+
               val reducers = getOrElse(options, names, ljp, Reducers.default).count
               implicit val keyOrdering = bs.ordering
               val Summer(storeLog, _, sg) = InternalService.getSummer[K, U](dependants, bs)
@@ -416,9 +423,14 @@ object Scalding {
                 )
               implicit val semigroup: Semigroup[U] = sg
               logger.info("Service {} using {} reducers (-1 means unset)", ljp, reducers)
+
               val res: PipeFactory[(K, (V, Option[U]))] = for {
-                leftAndMerge <- leftPf.join(deltaLog)
-                flowToPipe = Scalding.joinFP(leftAndMerge._1, leftAndMerge._2)
+                flowToPipe <- deltaLogOpt.map { del =>
+                  leftPf.join(del).map {
+                    case (ftpA, ftpB) =>
+                      Scalding.joinFP(ftpA, ftpB)
+                  }
+                }.getOrElse(leftPf.map { p => p.map((_, TypedPipe.empty)) })
                 servOut = flowToPipe.map {
                   case (lpipe, dpipe) =>
                     InternalService.loopJoin[Timestamp, K, V, U](lpipe, dpipe, flatMapFn, Some(reducers))
@@ -426,7 +438,35 @@ object Scalding {
                 // servOut is both the store output and the join output
                 plannedStore = servOut.map(_._1)
               } yield plannedStore
+
               (res, m2)
+              /*
+              if (deltaLogAndMap.isDefined) {
+                val res: PipeFactory[(K, (V, Option[U]))] = for {
+                  leftAndMerge <- leftPf.join(deltaLogAndMap.get._1)
+                  flowToPipe = Scalding.joinFP(leftAndMerge._1, leftAndMerge._2)
+                  servOut = flowToPipe.map {
+                    case (lpipe, dpipe) =>
+                      InternalService.loopJoin[Timestamp, K, V, U](lpipe, dpipe, flatMapFn, Some(reducers))
+                  }
+                  // servOut is both the store output and the join output
+                  plannedStore = servOut.map(_._1)
+                } yield plannedStore
+                (res, map)
+              } else { // only left available
+                val res: PipeFactory[(K, (V, Option[U]))] = for {
+                  //leftAndMerge <- leftPf.join(deltaLog)
+                  flowToPipe <- leftPf //Scalding.joinFP(leftAndMerge._1, leftAndMerge._2)
+                  servOut = flowToPipe.map {
+                    case lpipe =>
+                      InternalService.loopJoin[Timestamp, K, V, U](lpipe, TypedPipe.empty, flatMapFn, Some(reducers))
+                  }
+                  // servOut is both the store output and the join output
+                  plannedStore = servOut.map(_._1)
+                } yield plannedStore
+                (res, map)
+              }
+              */
             }
             go(left, store)
           case WrittenProducer(producer, sink) =>

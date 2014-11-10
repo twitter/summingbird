@@ -140,7 +140,7 @@ private[scalding] object InternalService {
    */
   def getLoopInputs[K, U, V](dag: Dependants[Scalding],
     left: Producer[Scalding, (K, V)],
-    store: BatchedStore[K, U]): ((((V, Option[U])) => TraversableOnce[U]), Producer[Scalding, (K, U)]) = {
+    store: BatchedStore[K, U]): ((((V, Option[U])) => TraversableOnce[U]), Option[Producer[Scalding, (K, U)]]) = {
 
     println("dag: " + dag)
     println("left: " + left)
@@ -149,7 +149,7 @@ private[scalding] object InternalService {
 
     val summerToStore = getSummer[K, U](dag, store).getOrElse(sys.error("Could not find the Summer for store."))
 
-    val res: Option[(ValueFlatMapFn, Producer[Scalding, (K, U)])] = {
+    val res: Option[(ValueFlatMapFn, Option[Producer[Scalding, (K, U)]])] = {
       val depsOfSummer: List[Producer[Scalding, Any]] = Producer.transitiveDependenciesOf(summerToStore)
 
       def recurse(p: Producer[Scalding, Any], cummulativeFn: ValueFlatMapFn): (ValueFlatMapFn, Boolean) = {
@@ -167,18 +167,14 @@ private[scalding] object InternalService {
       val (fn, valid) = recurse(depsOfSummer.head, initFn)
 
       if (valid) {
-        val Summer(prod, store, sg) = summerToStore
-        println(" PRODUCER TO SUMMER: " + prod)
-        Some((fn, prod))
+        Some((fn, None))
       } else {
-        Option.empty[(ValueFlatMapFn, Producer[Scalding, (K, U)])]
+        Option.empty[(ValueFlatMapFn, Option[Producer[Scalding, (K, U)]])]
       }
     }
-    val x = Option.empty[(ValueFlatMapFn, Producer[Scalding, (K, U)])]
-    //res.getOrElse(sys.error("Could not find correct loop inputs"))
-    x.get
-
+    res.getOrElse(sys.error("Could not find correct loop inputs"))
   }
+
   /**
    * This is for the case where the left items come in, then we
    * Sum the second storeLog
@@ -207,7 +203,7 @@ private[scalding] object InternalService {
       .group
       .withReducers(reducers.getOrElse(-1)) // jank, but scalding needs a way to maybe set reducers
       .sorted
-      .scanLeft((None: Option[(T, (V, Option[U]))], None: Option[(T, (Option[U], U))])) {
+      .scanLeft((Option.empty[(T, (V, Option[U]))], Option.empty[(T, (Option[U], U))])) {
         case ((_, None), (time, Left(v))) =>
           /*
            * This is a lookup, but there is no value for this key

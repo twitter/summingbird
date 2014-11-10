@@ -144,7 +144,7 @@ object LookupJoin extends Serializable {
            * JoinedV is updated and Some(newValue) when a (K, V)
            * shows up and a new join occurs.
            */
-          (Option.empty[(T, JoinedV)], None: Option[(T, V, Option[JoinedV])])
+          (Option.empty[(T, JoinedV)], Option.empty[(T, V, Option[JoinedV])])
         ) {
             case ((None, result), (time, Left(v))) => {
               // The was no value previously
