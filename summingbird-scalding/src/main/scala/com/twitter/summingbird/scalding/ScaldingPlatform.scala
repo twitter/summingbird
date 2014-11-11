@@ -425,12 +425,14 @@ object Scalding {
               logger.info("Service {} using {} reducers (-1 means unset)", ljp, reducers)
 
               val res: PipeFactory[(K, (V, Option[U]))] = for {
+                // Handle the Option[Producer] return value from getLoopInputs properly.
+                // If there was no producer returned, pass an empty TypedPipe to the join for that part.
                 flowToPipe <- deltaLogOpt.map { del =>
                   leftPf.join(del).map {
                     case (ftpA, ftpB) =>
-                      Scalding.joinFP(ftpA, ftpB)
+                      Scalding.joinFP(ftpA, ftpB) // extra producer for store, join the two FlowToPipes
                   }
-                }.getOrElse(leftPf.map { p => p.map((_, TypedPipe.empty)) })
+                }.getOrElse(leftPf.map { p => p.map((_, TypedPipe.empty)) }) // no extra producer for store
                 servOut = flowToPipe.map {
                   case (lpipe, dpipe) =>
                     InternalService.loopJoin[Timestamp, K, V, U](lpipe, dpipe, flatMapFn, Some(reducers))
@@ -440,33 +442,6 @@ object Scalding {
               } yield plannedStore
 
               (res, m2)
-              /*
-              if (deltaLogAndMap.isDefined) {
-                val res: PipeFactory[(K, (V, Option[U]))] = for {
-                  leftAndMerge <- leftPf.join(deltaLogAndMap.get._1)
-                  flowToPipe = Scalding.joinFP(leftAndMerge._1, leftAndMerge._2)
-                  servOut = flowToPipe.map {
-                    case (lpipe, dpipe) =>
-                      InternalService.loopJoin[Timestamp, K, V, U](lpipe, dpipe, flatMapFn, Some(reducers))
-                  }
-                  // servOut is both the store output and the join output
-                  plannedStore = servOut.map(_._1)
-                } yield plannedStore
-                (res, map)
-              } else { // only left available
-                val res: PipeFactory[(K, (V, Option[U]))] = for {
-                  //leftAndMerge <- leftPf.join(deltaLog)
-                  flowToPipe <- leftPf //Scalding.joinFP(leftAndMerge._1, leftAndMerge._2)
-                  servOut = flowToPipe.map {
-                    case lpipe =>
-                      InternalService.loopJoin[Timestamp, K, V, U](lpipe, TypedPipe.empty, flatMapFn, Some(reducers))
-                  }
-                  // servOut is both the store output and the join output
-                  plannedStore = servOut.map(_._1)
-                } yield plannedStore
-                (res, map)
-              }
-              */
             }
             go(left, store)
           case WrittenProducer(producer, sink) =>

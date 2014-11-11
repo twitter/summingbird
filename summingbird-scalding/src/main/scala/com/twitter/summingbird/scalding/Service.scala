@@ -139,23 +139,27 @@ private[scalding] object InternalService {
    * and a producer of any merged input into the store
    */
   def getLoopInputs[K, U, V](dag: Dependants[Scalding],
-    left: Producer[Scalding, (K, V)],
-    store: BatchedStore[K, U]): ((((V, Option[U])) => TraversableOnce[U]), Option[Producer[Scalding, (K, U)]]) = {
+    left: Producer[Scalding, (K, U)],
+    store: BatchedStore[K, V]): ((((U, Option[V])) => TraversableOnce[V]), Option[Producer[Scalding, (K, V)]]) = {
 
-    println("dag: " + dag)
-    println("left: " + left)
+    val summerToStore = getSummer[K, V](dag, store).getOrElse(sys.error("Could not find the Summer for store."))
 
-    type ValueFlatMapFn = (((V, Option[U])) => TraversableOnce[U])
+    type ValueFlatMapFn = ((U, Option[V])) => TraversableOnce[V]
 
-    val summerToStore = getSummer[K, U](dag, store).getOrElse(sys.error("Could not find the Summer for store."))
-
-    val res: Option[(ValueFlatMapFn, Option[Producer[Scalding, (K, U)]])] = {
+    val res: Option[(ValueFlatMapFn, Option[Producer[Scalding, (K, V)]])] = {
       val depsOfSummer: List[Producer[Scalding, Any]] = Producer.transitiveDependenciesOf(summerToStore)
 
-      def recurse(p: Producer[Scalding, Any], cummulativeFn: ValueFlatMapFn): (ValueFlatMapFn, Boolean) = {
+      def recurse(p: Producer[Scalding, Any], cummulativeFn: (Any) => Any, firstPass: Boolean): ((Any) => Any, Boolean) = {
         p match {
-          case ValueFlatMappedProducer(prod, fn: ValueFlatMapFn) =>
-            recurse(prod, (e: (V, Option[U])) => { cummulativeFn(e); fn(e) })
+          case ValueFlatMappedProducer(prod, fn) =>
+            if (firstPass) // first producer before store, just keep this function
+              recurse(prod, fn, false)
+            else { // middle or last producer after join, compose the functions
+              val newFn = (e: Any) =>
+                fn(e).asInstanceOf[TraversableOnce[Any]]
+                  .flatMap { r => cummulativeFn(r).asInstanceOf[TraversableOnce[Any]] }
+              recurse(prod, newFn, false)
+            }
           case LeftJoinedProducer(prod, joined) if prod == left =>
             (cummulativeFn, true) // done
           case _ =>
@@ -163,16 +167,15 @@ private[scalding] object InternalService {
         }
       }
 
-      val initFn: ((V, Option[U])) => TraversableOnce[U] = (x: (V, Option[U])) => List[U]()
-      val (fn, valid) = recurse(depsOfSummer.head, initFn)
+      val (fn, valid) = recurse(depsOfSummer.head, (e: Any) => (), true)
 
       if (valid) {
-        Some((fn, None))
+        Some((fn.asInstanceOf[ValueFlatMapFn], None))
       } else {
-        Option.empty[(ValueFlatMapFn, Option[Producer[Scalding, (K, U)]])]
+        Option.empty[(ValueFlatMapFn, Option[Producer[Scalding, (K, V)]])]
       }
     }
-    res.getOrElse(sys.error("Could not find correct loop inputs"))
+    res.getOrElse(sys.error("Could not find get correct loop inputs. Check the job DAG for validity."))
   }
 
   /**
@@ -215,7 +218,7 @@ private[scalding] object InternalService {
           /*
            * This is a lookup, and there is an existing value
            */
-          val currentU = Some(sum(optu, u))
+          val currentU = Some(sum(optu, u)) // isn't u already a sum and optu prev value?
           val joinResult = Some((time, (v, currentU)))
           val sumResult = Semigroup.sumOption(valueExpansion((v, currentU))).map(u => (time, (currentU, u)))
           (joinResult, sumResult)
