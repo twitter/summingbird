@@ -28,6 +28,21 @@ import org.scalacheck.Prop._
  */
 
 object TestGraphs {
+  // implicit ordering on the either pair
+  implicit def eitherOrd[T, U]: Ordering[Either[T, U]] =
+    new Ordering[Either[T, U]] {
+      def compare(l: Either[T, U], r: Either[T, U]) =
+        (l, r) match {
+          case (Left(_), Right(_)) => -1
+          case (Right(_), Left(_)) => 1
+          case (Left(_), Left(_)) => 0
+          case (Right(_), Right(_)) => 0
+        }
+    }
+
+  // helper sum function for Option[V], V pair
+  def sum[V: Monoid](opt: Option[V], v: V): V = if (opt.isDefined) Semigroup.plus(opt.get, v) else v
+
   def diamondJobInScala[T, K, V: Monoid](source: TraversableOnce[T])(fnA: T => TraversableOnce[(K, V)])(fnB: T => TraversableOnce[(K, V)]): Map[K, V] = {
     val stream = source.toStream
     val left = stream.flatMap(fnA)
@@ -148,18 +163,6 @@ object TestGraphs {
         .toIterable
         .flatMap { case (time, lv) => lv.map { case (k, (optju, ju)) => (time, (k, (optju, ju))) } }
 
-    // implicit ordering on the either pair
-    implicit def eitherOrd[T, U]: Ordering[Either[T, U]] =
-      new Ordering[Either[T, U]] {
-        def compare(l: Either[T, U], r: Either[T, U]) =
-          (l, r) match {
-            case (Left(_), Right(_)) => -1
-            case (Right(_), Left(_)) => 1
-            case (Left(_), Left(_)) => 0
-            case (Right(_), Right(_)) => 0
-          }
-      }
-
     // zip the left and right streams
     val leftAndRight: Iterable[(K, (Long, Either[U, JoinedU]))] =
       source2
@@ -229,53 +232,12 @@ object TestGraphs {
 
   def leftJoinWithDependentStoreInScala[T, U, K: Ordering, V: Monoid](source: TraversableOnce[T])(simpleFM: T => TraversableOnce[(Long, (K, U))])(flatMapValuesFn: ((Long, (U, Option[V]))) => TraversableOnce[(Long, V)]): Map[K, V] = {
 
-    // implicit ordering on the either
-    implicit def lookupFirst[E <: Either[V, U]]: Ordering[E] = Ordering.by {
-      case Left(_) => 0
-      case Right(_) => 1
-    }
-
-    /*
-    // Simulate the sum stream the store stream coming into the store from either store history
-    // or a merged producer
-    // TODO...
-    // create the delta stream
-    val sumStream: Iterable[(Long, (K, (Option[JoinedU], JoinedU)))] =
-      source1
-        .flatMap(simpleFM1)
-        .toList.groupBy(_._1)
-        .mapValues {
-          _.map { case (time, (k, joinedu)) => (k, joinedu) }
-            .groupBy(_._1)
-            .mapValues { l => scanSum(l.iterator.map(_._2)).toList }
-            .toIterable
-            .flatMap { case (k, lv) => lv.map { case (optju, ju) => (k, (optju, ju)) } }
-        }
-        .toIterable
-        .flatMap { case (time, lv) => lv.map { case (k, (optju, ju)) => (time, (k, (optju, ju))) } }
-        */
-    // implicit ordering on the either pair
-    implicit def eitherOrd[T, U]: Ordering[Either[T, U]] =
-      new Ordering[Either[T, U]] {
-        def compare(l: Either[T, U], r: Either[T, U]) =
-          (l, r) match {
-            case (Left(_), Right(_)) => -1
-            case (Right(_), Left(_)) => 1
-            case (Left(_), Left(_)) => 0
-            case (Right(_), Right(_)) => 0
-          }
-      }
-
-    def sum(opt: Option[V], v: V): V = if (opt.isDefined) Semigroup.plus(opt.get, v) else v
-
     // zip the left and right streams
     val leftAndRight: Iterable[(K, (Long, Either[U, V]))] =
       source
         .flatMap(simpleFM)
         .toList
         .map { case (time, (k, u)) => (k, (time, Left(u))) }
-    // for now, we don't have a right sum stream
-    //   .++(sumStream.map { case (time, (k, (optju, ju))) => (k, (time, Right(ju))) })
 
     // scan left to join the left values and the right summing result stream
     val resultStream: List[(K, List[(Option[(Long, (U, Option[V]))], Option[(Long, (Option[V], V))])])] = //  : List[(Long, (K, (U, Option[V])))] =
@@ -331,7 +293,74 @@ object TestGraphs {
     )
   }
 
-  def leftJoinWithDependentStoreJob[P <: Platform[P], T, T1, T2, U, K, V: Monoid](
+  //TODO reuse logic, no need to have two tests here
+  def leftJoinWithDependentStoreWithMergedInScala[T1, T2, U, K: Ordering, V: Monoid](source1: TraversableOnce[T1], source2: TraversableOnce[T2])(simpleFM1: T1 => TraversableOnce[(Long, (K, U))])(simpleFM2: T2 => TraversableOnce[(Long, (K, V))])(flatMapValuesFn: ((Long, (U, Option[V]))) => TraversableOnce[(Long, V)]): Map[K, V] = {
+
+    val mergedInput: TraversableOnce[(Long, (K, V))] = source2.flatMap(simpleFM2)
+
+    // zip the left and right streams
+    val leftAndRight: Iterable[(K, (Long, Either[U, V]))] =
+      source1
+        .flatMap(simpleFM1)
+        .toList
+        .map { case (time, (k, u)) => (k, (time, Left(u))) }
+        .++(mergedInput.map { case (time, (k, v)) => (k, (time, Right(v))) })
+
+    // scan left to join the left values and the right summing result stream
+    val resultStream: List[(K, List[(Option[(Long, (U, Option[V]))], Option[(Long, (Option[V], V))])])] = //  : List[(Long, (K, (U, Option[V])))] =
+      leftAndRight
+        .groupBy(_._1)
+        .mapValues {
+          _.map(_._2).toList.sortBy(identity)
+            .scanLeft((Option.empty[(Long, (U, Option[V]))], Option.empty[(Long, (Option[V], V))])) {
+              case ((_, None), (time, Left(u))) =>
+                /*
+                 * This is a lookup, but there is no value for this key
+                 */
+                val joinResult = Some((time, (u, None)))
+                val sumResult = Semigroup.sumOption(flatMapValuesFn(time, (u, None))).map(v => (time, (None, v._2)))
+                (joinResult, sumResult)
+              case ((_, Some((_, (optv, v)))), (time, Left(u))) =>
+                /*
+                 * This is a lookup, and there is an existing value
+                 */
+                val currentV = Some(sum(optv, v)) // isn't u already a sum and optu prev value?
+                val joinResult = Some((time, (u, currentV)))
+                val sumResult = Semigroup.sumOption(flatMapValuesFn(time, (u, currentV))).map(v => (time, (currentV, v._2)))
+                (joinResult, sumResult)
+              case ((_, None), (time, Right(v))) =>
+                /*
+                 * This is merging in new data into the store not coming in from the service
+                 * (either from the store history or from a merge after the leftJoin, but
+                 * There was previously no data.
+                 */
+                val joinResult = None
+                val sumResult = Some((time, (None, v)))
+                (joinResult, sumResult)
+              case ((_, Some((_, (optv, oldv)))), (time, Right(v))) =>
+                /*
+                 * This is the case where we are updating a non-empty key. This should
+                 * only be triggered by a merged data-stream after the join since
+                 * store initialization
+                 */
+                val joinResult = None
+                val currentV = Some(sum(optv, oldv))
+                val sumResult = Some((time, (currentV, v)))
+                (joinResult, sumResult)
+            }
+        }.toList
+
+    // compute the final store result after join
+    MapAlgebra.sumByKey(
+      resultStream.flatMap { case (k, lopts) => lopts.map { case ((_, optoptv)) => (k, optoptv) } }
+        .flatMap {
+          case (k, opt) => opt.map { o: (Long, (Option[V], V)) => (o._1, (k, (o._2._1, o._2._2))) }
+        }
+        .map { case (time, (k, (optv, v))) => (k, v) } // drop the time
+    )
+  }
+
+  def leftJoinWithDependentStoreMultipleFlatMapValuesJob[P <: Platform[P], T, T1, T2, U, K, V: Monoid](
     source: Producer[P, T],
     storeAndService: P#Store[K, V] with P#Service[K, V])(simpleFM1: T => TraversableOnce[(K, U)])(valuesFlatMap1: ((U, Option[V])) => TraversableOnce[T1])(valuesFlatMap2: (T1) => TraversableOnce[T2])(valuesFlatMap3: (T2) => TraversableOnce[V]): TailProducer[P, (K, (Option[V], V))] = {
 
@@ -341,6 +370,33 @@ object TestGraphs {
       .flatMapValues(valuesFlatMap1)
       .flatMapValues(valuesFlatMap2)
       .flatMapValues(valuesFlatMap3)
+      .sumByKey(storeAndService)
+  }
+
+  def leftJoinWithDependentStoreJob[P <: Platform[P], T, U, K, V: Monoid](
+    source: Producer[P, T],
+    storeAndService: P#Store[K, V] with P#Service[K, V])(simpleFM1: T => TraversableOnce[(K, U)])(valuesFlatMap: ((U, Option[V])) => TraversableOnce[V]): TailProducer[P, (K, (Option[V], V))] = {
+
+    source
+      .flatMap(simpleFM1)
+      .leftJoin(storeAndService)
+      .flatMapValues(valuesFlatMap)
+      .sumByKey(storeAndService)
+  }
+
+  def leftJoinWithDependentStoreWithMergedJob[P <: Platform[P], T1, T2, U, K, V: Monoid](
+    source1: Producer[P, T1],
+    source2: Producer[P, T2],
+    storeAndService: P#Store[K, V] with P#Service[K, V])(simpleFM1: T1 => TraversableOnce[(K, U)])(simpleFM2: T2 => TraversableOnce[(K, V)])(valuesFlatMap: ((U, Option[V])) => TraversableOnce[V]): TailProducer[P, (K, (Option[V], V))] = {
+
+    val m = source2
+      .flatMap(simpleFM2)
+
+    source1
+      .flatMap(simpleFM1)
+      .leftJoin(storeAndService)
+      .flatMapValues(valuesFlatMap) // (K, V)
+      .merge(m) // (K, V)
       .sumByKey(storeAndService)
   }
 

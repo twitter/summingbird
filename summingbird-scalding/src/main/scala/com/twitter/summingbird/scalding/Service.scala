@@ -87,13 +87,34 @@ private[scalding] object InternalService {
   }
 
   def isValidLoopJoin[K, V](dag: Dependants[Scalding], left: Producer[Scalding, Any],
-    store: BatchedStore[K, V]): Boolean =
+    store: BatchedStore[K, V]): Boolean = {
     /*
        * this needs to check if:
        * 1) There is only one dependant path from join to store.
        * 2) After the join, there are only flatMapValues (later we can handle merges as well)
        */
-    true //sys.error("?")
+    val summerToStore =
+      getSummer[K, V](dag, store).getOrElse(sys.error("Could not find the Summer for store."))
+
+    val depsOfSummer: List[Producer[Scalding, Any]] = Producer.transitiveDependenciesOf(summerToStore)
+    println("depsOfSummer: " + depsOfSummer)
+
+    def flatMapValuesOnly(p: Producer[Scalding, Any]): Boolean = {
+      p match {
+        case ValueFlatMappedProducer(lprod, fn) =>
+          flatMapValuesOnly(lprod)
+        case MergedProducer(lprod, rprod) => // is OK?
+          flatMapValuesOnly(lprod)
+        case IdentityKeyedProducer(prod) => // is OK?
+          flatMapValuesOnly(prod)
+        case LeftJoinedProducer(prod, joined) if prod == left =>
+          true // done, valid dag
+        case _ =>
+          false // hit a node that is not one of the allowed ones, invalid loop
+      }
+    }
+    flatMapValuesOnly(depsOfSummer.head)
+  }
 
   def storeIsJoined[K, V](dag: Dependants[Scalding], store: Store[K, V]): Boolean = {
     dag.nodes.map { p =>
@@ -149,28 +170,34 @@ private[scalding] object InternalService {
     val res: Option[(ValueFlatMapFn, Option[Producer[Scalding, (K, V)]])] = {
       val depsOfSummer: List[Producer[Scalding, Any]] = Producer.transitiveDependenciesOf(summerToStore)
 
-      def recurse(p: Producer[Scalding, Any], cummulativeFn: (Any) => Any, firstPass: Boolean): ((Any) => Any, Boolean) = {
+      def recurse(p: Producer[Scalding, Any],
+        cummulativeFn: (Any) => Any,
+        mergedProducer: Option[Producer[Scalding, Any]],
+        firstPass: Boolean): ((Any) => Any, Option[Producer[Scalding, Any]], Boolean) = {
         p match {
           case ValueFlatMappedProducer(prod, fn) =>
             if (firstPass) // first producer before store, just keep this function
-              recurse(prod, fn, false)
+              recurse(prod, fn, mergedProducer, false)
             else { // middle or last producer after join, compose the functions
               val newFn = (e: Any) =>
-                fn(e).asInstanceOf[TraversableOnce[Any]]
-                  .flatMap { r => cummulativeFn(r).asInstanceOf[TraversableOnce[Any]] }
-              recurse(prod, newFn, false)
+                fn(e).flatMap { r => cummulativeFn(r).asInstanceOf[TraversableOnce[Any]] }
+              recurse(prod, newFn, mergedProducer, false)
             }
+          case MergedProducer(lprod, rprod) => // what if we hit multiple prods?
+            recurse(lprod, cummulativeFn, Some(rprod), firstPass)
+          case IdentityKeyedProducer(prod) =>
+            recurse(prod, cummulativeFn, mergedProducer, firstPass)
           case LeftJoinedProducer(prod, joined) if prod == left =>
-            (cummulativeFn, true) // done
+            (cummulativeFn, mergedProducer, true) // done
           case _ =>
-            (cummulativeFn, false)
+            (cummulativeFn, mergedProducer, false)
         }
       }
 
-      val (fn, valid) = recurse(depsOfSummer.head, (e: Any) => (), true)
+      val (fn, mProd, valid) = recurse(depsOfSummer.head, (e: Any) => (), None, true)
 
       if (valid) {
-        Some((fn.asInstanceOf[ValueFlatMapFn], None))
+        Some((fn.asInstanceOf[ValueFlatMapFn], mProd.asInstanceOf[Option[Producer[Scalding, (K, V)]]]))
       } else {
         Option.empty[(ValueFlatMapFn, Option[Producer[Scalding, (K, V)]])]
       }
