@@ -465,7 +465,9 @@ object Scalding {
               flowP.map { typedPipe =>
                 typedPipe.flatMap {
                   case (time, (k, v)) =>
-                    op(v).map(u => (time, (k, u)))
+                    //println("IN VALUEFM, (key, value) coming in: " + (k, v))
+                    //op(v).map { u => println("IN VALUEFM, output: " + (time, (k, u))); (time, (k, u)) }
+                    op(v).map { u => (time, (k, u)) }
                 }
               }
             }, m)

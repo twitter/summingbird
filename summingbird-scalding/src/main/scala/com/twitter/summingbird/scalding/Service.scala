@@ -97,15 +97,14 @@ private[scalding] object InternalService {
       getSummer[K, V](dag, store).getOrElse(sys.error("Could not find the Summer for store."))
 
     val depsOfSummer: List[Producer[Scalding, Any]] = Producer.transitiveDependenciesOf(summerToStore)
-    println("depsOfSummer: " + depsOfSummer)
 
     def flatMapValuesOnly(p: Producer[Scalding, Any]): Boolean = {
       p match {
         case ValueFlatMappedProducer(lprod, fn) =>
           flatMapValuesOnly(lprod)
-        case MergedProducer(lprod, rprod) => // is OK?
+        case MergedProducer(lprod, rprod) =>
           flatMapValuesOnly(lprod)
-        case IdentityKeyedProducer(prod) => // is OK?
+        case IdentityKeyedProducer(prod) =>
           flatMapValuesOnly(prod)
         case LeftJoinedProducer(prod, joined) if prod == left =>
           true // done, valid dag
@@ -184,7 +183,12 @@ private[scalding] object InternalService {
               recurse(prod, newFn, mergedProducer, false)
             }
           case MergedProducer(lprod, rprod) => // what if we hit multiple prods?
-            recurse(lprod, cummulativeFn, Some(rprod), firstPass)
+            // we need to return only the first MergedProducer we hit (that contains more
+            // merged producers, if there are multiple). If we already hit one, just pass it down
+            if (mergedProducer.isDefined)
+              recurse(lprod, cummulativeFn, mergedProducer, firstPass)
+            else
+              recurse(lprod, cummulativeFn, Some(rprod), firstPass)
           case IdentityKeyedProducer(prod) =>
             recurse(prod, cummulativeFn, mergedProducer, firstPass)
           case LeftJoinedProducer(prod, joined) if prod == left =>
