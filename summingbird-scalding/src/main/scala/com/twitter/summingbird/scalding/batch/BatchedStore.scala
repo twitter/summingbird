@@ -105,7 +105,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
         ((k, batch), (t, v))
     }
     (commutativity match {
-      case Commutative => inits // .sumByLocalKeys
+      case Commutative => inits.sumByLocalKeys
       case NonCommutative => inits
     })
   }
@@ -235,7 +235,6 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
     (batchOps.coverIt(timeSpan).toList match {
       case Nil => Left(List("Timespan is covered by Nil: %s batcher: %s".format(timeSpan, batcher)))
-      //case list => Right((in, list))
       case list => Right((in, list))
     })
   })

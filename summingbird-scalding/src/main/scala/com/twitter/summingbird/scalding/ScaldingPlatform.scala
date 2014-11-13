@@ -233,11 +233,8 @@ object Scalding {
    * This makes sure that the output FlowToPipe[T] produces a TypedPipe[T] with only
    * times in the given time interval.
    */
-  def limitTimes[T](range: Interval[Timestamp], in: FlowToPipe[T]): FlowToPipe[T] = {
-    in.map { pipe =>
-      { pipe.filter { case (time, _) => range(time) } }
-    }
-  }
+  def limitTimes[T](range: Interval[Timestamp], in: FlowToPipe[T]): FlowToPipe[T] =
+    in.map { pipe => pipe.filter { case (time, _) => range(time) } }
 
   private[scalding] def joinFP[T, U](left: FlowToPipe[T], right: FlowToPipe[U]): FlowProducer[(TimedPipe[T], TimedPipe[U])] =
     for {
@@ -372,7 +369,6 @@ object Scalding {
              */
             val (pf, m) = recurse(left)
             (service.lookup(pf), m)
-          //case ljp @ LeftJoinedProducer(left, StoreService(store)) if InternalService.leftDoesNotDependOnStore(left, store) =>
           case ljp @ LeftJoinedProducer(left, StoreService(store)) if InternalService.storeDoesNotDependOnJoin(dependants, ljp, store) =>
             /*
              * This is the simplest case of joining against a store. Here we just need the input to
@@ -414,7 +410,6 @@ object Scalding {
                 case None =>
                   (None, m1)
               }
-
               val reducers = getOrElse(options, names, ljp, Reducers.default).count
               implicit val keyOrdering = bs.ordering
               val Summer(storeLog, _, sg) = InternalService.getSummer[K, U](dependants, bs)
@@ -465,8 +460,6 @@ object Scalding {
               flowP.map { typedPipe =>
                 typedPipe.flatMap {
                   case (time, (k, v)) =>
-                    //println("IN VALUEFM, (key, value) coming in: " + (k, v))
-                    //op(v).map { u => println("IN VALUEFM, output: " + (time, (k, u))); (time, (k, u)) }
                     op(v).map { u => (time, (k, u)) }
                 }
               }
@@ -518,9 +511,8 @@ object Scalding {
             (fmpSharded.map { flowP =>
               flowP.map { typedPipe =>
                 typedPipe.flatMap {
-                  case (time, item) => {
+                  case (time, item) =>
                     op(item).map((time, _))
-                  }
                 }
               }
             }, m)
@@ -600,7 +592,6 @@ object Scalding {
     flowDef: FlowDef,
     mode: Mode,
     pf: PipeFactory[T]): Try[(Interval[Timestamp], TimedPipe[T])] = {
-    // logger.info("Planning on interval: {}", timeSpan.as[Option[DateRange]])
     logger.info("topipe Planning on interval: {}", timeSpan)
     pf((timeSpan, mode))
       .right

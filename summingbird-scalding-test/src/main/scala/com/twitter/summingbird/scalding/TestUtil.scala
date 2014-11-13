@@ -83,12 +83,5 @@ object TestUtil {
     assert(batches > 1L, " We should never get a unit batcher for the tests (TODO)")
     val timePerBatch = (delta + 1L) / batches
     new MillisecondBatcher(timePerBatch)
-    /*
-    if (batches == 1L) simpleBatcher
-    else {
-      val timePerBatch = (delta + 1L) / batches
-      new MillisecondBatcher(timePerBatch)
-    }
-    */
   }
 }
