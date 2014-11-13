@@ -65,7 +65,6 @@ object ScaldingLaws extends Specification {
 
   "The ScaldingPlatform" should {
 
-    /*
     //Set up the job:
     "match scala for single step jobs" in {
       val original = sample[List[Int]]
@@ -340,118 +339,7 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original2, Monoid.plus(finalStoreInit, inMemoryB), finalStore) must beTrue
     }
 
-    "match scala for leftJoin with store (with dependency between store and join, flatMapValues only) jobs" in {
-      val original = sample[List[Int]]
-      val fnA = sample[(Int) => List[(Int, Int)]]
-      val valuesFlatMap = sample[((Int, Option[Int])) => List[Int]]
-      /*
-      // compose multiple functions
-      val valuesFlatMap1 = sample[((Int, Option[Int])) => List[String]]
-      val valuesFlatMap2 = sample[(String) => List[Long]]
-      val valuesFlatMap3 = sample[(Long) => List[Int]]
-
-      val valuesFlatMap =
-        (e: ((Int, Option[Int]))) =>
-          valuesFlatMap1(e).flatMap { x => { valuesFlatMap2(x).flatMap { y => valuesFlatMap3(y) } } }
-          */
-
-      def toTime[T, U](fn: T => TraversableOnce[U]): ((Long, T)) => TraversableOnce[(Long, U)] =
-        (x: (Long, T)) => fn(x._2).map((x._1, _))
-
-      val fnAWithTime = toTime(fnA)
-      val valuesFlatMapWithTime = toTime(valuesFlatMap)
-
-      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
-
-      val inMemoryStore =
-        TestGraphs.leftJoinWithDependentStoreInScala(inWithTime)(fnAWithTime)(valuesFlatMapWithTime)
-
-      val batcher = TestUtil.randomBatcher(inWithTime)
-
-      val storeAndServiceInit = sample[Map[Int, Int]]
-      val storeAndServiceStore = TestStore[Int, Int]("storeAndService", batcher, storeAndServiceInit, inWithTime.size)
-      val storeAndService = TestStoreService[Int, Int](storeAndServiceStore)
-
-      // the end range needs to be multiple of batchsize
-      val endTimeOfLastBatch = batcher.latestTimeOf(batcher.batchOf(Timestamp(inWithTime.size))).milliSinceEpoch
-      val (buffer, source) = TestSource(inWithTime, Some(DateRange(RichDate(0), RichDate(endTimeOfLastBatch))))
-
-      /*
-      val summer =
-        TestGraphs.leftJoinWithDependentStoreMultipleFlatMapValuesJob[Scalding, (Long, Int), String, Long, Int, Int, Int](source,
-          storeAndService)(tup => fnA(tup._2))(valuesFlatMap1)(valuesFlatMap2)(valuesFlatMap3)
-*/
-      val summer =
-        TestGraphs.leftJoinWithDependentStoreJob[Scalding, (Long, Int), Int, Int, Int](source,
-          storeAndService)(tup => fnA(tup._2))(valuesFlatMap)
-
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
-      val scald = Scalding("scalaCheckleftJoinWithDependentJob")
-      val ws = new LoopState(intr)
-      val mode: Mode = TestMode((storeAndService.sourceToBuffer ++ buffer).get(_))
-
-      scald.run(ws, mode, summer)
-
-      // Now check that the inMemory ==
-      TestUtil.compareMaps(original, Monoid.plus(storeAndServiceInit, inMemoryStore), storeAndServiceStore) must beTrue
-    }
-
-    "match scala for leftJoin with store (with dependency between store and join, flatMapValues and merge) jobs" in {
-      val original1 = sample[List[Int]]
-      val original2Fn = sample[(Int) => Int]
-      val original2 = original1.map { v => original2Fn(v) }
-
-      val fnA = sample[(Int) => List[(Int, Int)]]
-      val fnB = sample[(Int) => List[(Int, Int)]]
-
-      val valuesFlatMap = sample[((Int, Option[Int])) => List[Int]]
-
-      def toTime[T, U](fn: T => TraversableOnce[U]): ((Long, T)) => TraversableOnce[(Long, U)] =
-        (x: (Long, T)) => fn(x._2).map((x._1, _))
-
-      val fnAWithTime = toTime(fnA)
-      val fnBWithTime = toTime(fnB)
-      val valuesFlatMapWithTime = toTime(valuesFlatMap)
-
-      val inWithTime1 = original1.zipWithIndex.map { case (item, time) => (time.toLong, item) }
-      val inWithTime2 = original2.zipWithIndex.map { case (item, time) => (time.toLong, item) }
-
-      val inMemoryStore =
-        TestGraphs.leftJoinWithDependentStoreWithMergedInScala(inWithTime1,
-          inWithTime2)(fnAWithTime)(fnBWithTime)(valuesFlatMapWithTime)
-
-      val batcher = TestUtil.randomBatcher(inWithTime1)
-
-      val storeAndServiceInit = sample[Map[Int, Int]]
-      val storeAndServiceStore = TestStore[Int, Int]("storeAndService", batcher, storeAndServiceInit, inWithTime1.size)
-      val storeAndService = TestStoreService[Int, Int](storeAndServiceStore)
-
-      // the end range needs to be multiple of batchsize
-      val endTimeOfLastBatch1 = batcher.latestTimeOf(batcher.batchOf(Timestamp(inWithTime1.size))).milliSinceEpoch
-      val (buffer1, source1) = TestSource(inWithTime1, Some(DateRange(RichDate(0), RichDate(endTimeOfLastBatch1))))
-
-      val endTimeOfLastBatch2 = batcher.latestTimeOf(batcher.batchOf(Timestamp(inWithTime2.size))).milliSinceEpoch
-      val (buffer2, source2) = TestSource(inWithTime2, Some(DateRange(RichDate(0), RichDate(endTimeOfLastBatch2))))
-
-      val summer =
-        TestGraphs.leftJoinWithDependentStoreWithMergedJob[Scalding, (Long, Int), (Long, Int), Int, Int, Int](source1,
-          source2,
-          storeAndService)(tup => fnA(tup._2))(tup => fnB(tup._2))(valuesFlatMap)
-
-      val intr = TestUtil.batchedCover(batcher, 0L, original1.size.toLong)
-      val scald = Scalding("scalaCheckleftJoinWithDependentJob")
-      val ws = new LoopState(intr)
-      val mode: Mode = TestMode((storeAndService.sourceToBuffer ++ buffer1 ++ buffer2).get(_))
-
-      scald.run(ws, mode, summer)
-
-      // Now check that the inMemory ==
-      TestUtil.compareMaps(original1, Monoid.plus(storeAndServiceInit, inMemoryStore), storeAndServiceStore) must beTrue
-    }
-
-*/
-
-    "match scala for leftJoin with store (with dependency between store and join, flatMapValues and multiple merge) jobs" in {
+    "match scala for leftJoin with store (with dependency between store and join) jobs" in {
       val original1 = sample[List[Int]]
       val original2Fn = sample[(Int) => Int]
       val original2 = original1.map { v => original2Fn(v) }
@@ -462,7 +350,13 @@ object ScaldingLaws extends Specification {
       val fnB = sample[(Int) => List[(Int, Int)]]
       val fnC = sample[(Int) => List[(Int, Int)]]
 
-      val valuesFlatMap = sample[((Int, Option[Int])) => List[Int]]
+      // compose multiple flatMapValues functions
+      val valuesFlatMap1 = sample[((Int, Option[Int])) => List[String]]
+      val valuesFlatMap2 = sample[(String) => List[Int]]
+
+      val valuesFlatMap =
+        (e: ((Int, Option[Int]))) =>
+          valuesFlatMap1(e).flatMap { x => { valuesFlatMap2(x) } }
 
       def toTime[T, U](fn: T => TraversableOnce[U]): ((Long, T)) => TraversableOnce[(Long, U)] =
         (x: (Long, T)) => fn(x._2).map((x._1, _))
@@ -477,7 +371,7 @@ object ScaldingLaws extends Specification {
       val inWithTime3 = original3.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       val inMemoryStore =
-        TestGraphs.leftJoinWithDependentStoreWithMulitpleMergedInScala(inWithTime1,
+        TestGraphs.leftJoinWithDependentStoreInScala(inWithTime1,
           inWithTime2, inWithTime3)(fnAWithTime)(fnBWithTime)(fnCWithTime)(valuesFlatMapWithTime)
 
       val batcher = TestUtil.randomBatcher(inWithTime1)
@@ -493,10 +387,10 @@ object ScaldingLaws extends Specification {
       val (buffer3, source3) = TestSource(inWithTime3, Some(DateRange(RichDate(0), RichDate(endTimeOfLastBatch))))
 
       val summer =
-        TestGraphs.leftJoinWithDependentStoreWithMultipleMergedJob[Scalding, (Long, Int), (Long, Int), (Long, Int), Int, Int, Int](source1,
+        TestGraphs.leftJoinWithDependentStoreJob[Scalding, (Long, Int), (Long, Int), (Long, Int), String, Int, Int, Int](source1,
           source2,
           source3,
-          storeAndService)(tup => fnA(tup._2))(tup => fnB(tup._2))(tup => fnC(tup._2))(valuesFlatMap)
+          storeAndService)(tup => fnA(tup._2))(tup => fnB(tup._2))(tup => fnC(tup._2))(valuesFlatMap1)(valuesFlatMap2)
 
       val intr = TestUtil.batchedCover(batcher, 0L, original1.size.toLong)
       val scald = Scalding("scalaCheckleftJoinWithDependentJob")
@@ -509,7 +403,6 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original1, Monoid.plus(storeAndServiceInit, inMemoryStore), storeAndServiceStore) must beTrue
     }
 
-    /*
     "match scala for diamond jobs with write" in {
       val original = sample[List[Int]]
       val fn1 = sample[(Int) => List[(Int, Int)]]
@@ -612,6 +505,5 @@ object ScaldingLaws extends Specification {
       val s = SummingbirdRuntimeStats.SCALDING_STATS_MODULE
       ScalaTry[Unit] { Class.forName(s) }.toOption must beSome
     }
-    */
   }
 }
