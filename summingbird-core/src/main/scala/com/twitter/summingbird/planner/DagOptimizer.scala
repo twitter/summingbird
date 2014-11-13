@@ -41,6 +41,9 @@ trait DagOptimizer[P <: Platform[P]] {
   protected def mkNamed[T](name: String): (Prod[T] => Prod[T]) = {
     prod => NamedProducer(prod, name)
   }
+  protected def mkTPNamed[T](name: String): (Prod[T] => Prod[T]) = {
+    prod => new TPNamedProducer(prod.asInstanceOf[TailProducer[P, T]], name)
+  }
   protected def mkIdentKey[K, V]: (Prod[(K, V)] => Prod[(K, V)]) = {
     prod => IdentityKeyedProducer(prod)
   }
@@ -113,6 +116,11 @@ trait DagOptimizer[P <: Platform[P]] {
       val lit = UnaryLit[T, T, N](l1, mkNamed(n.id))
       (h1 + (n -> lit), lit)
     }
+    def namedTP(n: TPNamedProducer[P, T]): (M, L[T]) = {
+      val (h1, l1) = toLiteral(hm, n.producer)
+      val lit = UnaryLit[T, T, N](l1, mkTPNamed(n.id))
+      (h1 + (n -> lit), lit)
+    }
     def ikp[K, V](ik: IdentityKeyedProducer[P, K, V]): (M, L[(K, V)]) = {
       val (h1, l1) = toLiteral(hm, ik.producer)
       val lit = UnaryLit[(K, V), (K, V), N](l1, mkIdentKey)
@@ -168,6 +176,7 @@ trait DagOptimizer[P <: Platform[P]] {
           case a: AlsoTailProducer[_, _, _] => alsoTail(a.asInstanceOf[AlsoTailProducer[P, _, T]])
           case a @ AlsoProducer(_, _) => also(a)
           case m @ MergedProducer(l, r) => merge(m)
+          case n: TPNamedProducer[_, _] => namedTP(n.asInstanceOf[TPNamedProducer[P, T]])
           case n @ NamedProducer(producer, name) => named(n)
           case w @ WrittenProducer(producer, sink) => writer(w)
           case fm @ FlatMappedProducer(producer, fn) => flm(fm)
