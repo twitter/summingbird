@@ -253,11 +253,10 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
    * The Interval[Timestamp] in the state is updated to be the intersection with the
    * Interval[BatchID]
    *
-   * Note: here we are working with two spaces of batchid/timestamps - one for the data source and one
-   * for the store. The source produces data for:
-   * Interval(InclusiveLower(Timestamp(N)), ExclusiveUpper(Timestamp(M)))
-   * while we write to the store data for:
-   * Interval(InclusiveLower(Timestamp(N+batchSize)), ExclusiveUpper(Timestamp(M+batchSize)))
+   * Note: here we are working with two spaces of batchid/timestamps - for the data source (delta)
+   * and for the store. The delta batch ID = InclusiveLower(time), the store batch ID =
+   * ExclusiveUpper(time). Thus, the delta batch IDs are "shifted" by 1 from the store batch IDs.
+   * We need to be careful about what space we are in and when necessary, convert between the two.
    */
   final def readBatched[T](input: PipeFactory[T]): PlannerOutput[(BatchID, FlowProducer[TypedPipe[(K, V)]], Interval[BatchID], FlowToPipe[T])] = {
     // StateWithError lacks filter, so it can't unpack tuples (scala limitation)
@@ -282,37 +281,36 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       readBatchesFlow <- fromEither(batchOps.readBatched(deltaBatches, mode, input))
 
       // the batches we can read from the source
-      readBatchesFromDeltaSource = readBatchesFlow._1
+      readDeltaBatches = readBatchesFlow._1
+
       // Make sure that the batches we can read includes the batch just after the last
       // snapshot. We can't roll the store forward without this.
-      _ <- fromEither[FactoryInput](if (readBatchesFromDeltaSource.contains(firstDeltaBatch)) Right(()) else
+      _ <- fromEither[FactoryInput](if (readDeltaBatches.contains(firstDeltaBatch)) Right(()) else
         Left(List("Cannot load an entire initial batch: " + firstDeltaBatch.toString
-          + " of deltas at: " + this.toString + " only: " + readBatchesFromDeltaSource.toString)))
-      // The time we can read in the intersection of what was requested and the
+          + " of deltas at: " + this.toString + " only: " + readDeltaBatches.toString)))
+
+      // The time we can read is the intersection of what was requested and the
       // the batches we can get from the input
 
-      // shift the batches read from store to the batches for the store
-      batchesToWriteToStore = readBatchesFromDeltaSource.mapNonDecreasing(_.next)
+      // shift the delta batch IDs to the batch IDs for the store (see comment above def readBatches)
+      writeStoreBatches = readDeltaBatches.mapNonDecreasing(_.next)
 
       // get the intersection of the batches available to write to store with
       // the requested time interval
-      availableTimespanForStore = batchOps.intersect(batchesToWriteToStore, timeSpanForStore)
+      availableStoreBatches = batchOps.intersectToBatch(writeStoreBatches, timeSpanForStore)
 
-      // convert to batch interval
-      availableBatchIntervalForStore = batcher.batchesCoveredBy(availableTimespanForStore)
-
-      // now need to convert back to the source timespan/batch space
+      // now need to convert back to the delta timespan/batch space
       // so that we can correctly filter the data coming out of the source
-      batchIntervalToReadFromSource = availableBatchIntervalForStore.mapNonDecreasing(_.prev)
-      timespanToReadFromSource = batchIntervalToReadFromSource.mapNonDecreasing(b => batcher.earliestTimeOf(b))
+      deltaBatchesToRead = availableStoreBatches.mapNonDecreasing(_.prev)
+      deltaTimespan = batchOps.batchToTimestamp(deltaBatchesToRead)
 
       // Make sure we don't return any time stamps outside of the
-      // timespanToReadFromSource timespan
-      flowT = Scalding.limitTimes(timespanToReadFromSource, readBatchesFlow._2)
+      // deltaTimespan timespan
+      flowT = Scalding.limitTimes(deltaTimespan, readBatchesFlow._2)
 
       // create another state capturing the available delta batches and mode
-      _ <- putState((timespanToReadFromSource, mode))
-    } yield (lastBatch, lastSnapshot, readBatchesFromDeltaSource, flowT)
+      _ <- putState((deltaTimespan, mode))
+    } yield (lastBatch, lastSnapshot, readDeltaBatches, flowT)
   }
 
   /**

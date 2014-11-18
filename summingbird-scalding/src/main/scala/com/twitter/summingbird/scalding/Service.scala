@@ -57,16 +57,6 @@ case class StoreService[K, V](store: BatchedStore[K, V]) extends InternalService
  * Here are some methods that are useful in planning the execution of Internal Services
  */
 private[scalding] object InternalService {
-  /**
-   * This returns true if the dependants of the left does not
-   * contain the store
-   */
-  def leftDoesNotDependOnStore[K, V](left: Producer[Scalding, Any],
-    store: BatchedStore[K, V]): Boolean = {
-    !(Producer.transitiveDependenciesOf(left)
-      .collectFirst { case Summer(_, StoreService(thatStore), _) if thatStore == store => () }
-      .isDefined)
-  }
 
   def storeDoesNotDependOnJoin[K, V](dag: Dependants[Scalding],
     joinProducer: Producer[Scalding, Any],
@@ -111,7 +101,11 @@ private[scalding] object InternalService {
           false // hit a node that is not one of the allowed ones, invalid loop
       }
     }
-    recurse(depsOfSummer.head)
+    val validLoop = recurse(depsOfSummer.head)
+
+    if (!validLoop) sys.error("Invalid Loop Join! Check the operations between join and store (only [flatMap|map]Values allowed.")
+
+    validLoop
   }
 
   def storeIsJoined[K, V](dag: Dependants[Scalding], store: Store[K, V]): Boolean = {

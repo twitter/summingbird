@@ -44,6 +44,9 @@ private class BatchedOperations(batcher: Batcher) {
   def intersect(batches: Interval[BatchID], ts: Interval[Timestamp]): Interval[Timestamp] =
     batchToTimestamp(batches) && ts
 
+  def intersectToBatch(batches1: Interval[BatchID], ts: Interval[Timestamp]): Interval[BatchID] =
+    batcher.batchesCoveredBy(batchToTimestamp(batches1) && ts)
+
   def intersect(batches: Iterable[BatchID], ts: Interval[Timestamp]): Option[Interval[Timestamp]] =
     BatchID.toInterval(batches).map { intersect(_, ts) }
 
