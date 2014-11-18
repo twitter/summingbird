@@ -284,7 +284,7 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
     }
 
-    "match scala for leftJoin with store (with no dependency between the two) jobs" in {
+    "match scala for leftJoin with store (no dependency between the two) jobs" in {
       // TODO: what if the two sources are of different sizes here?
       val original1 = sample[List[Int]]
       val original2Fn = sample[(Int) => Int]
