@@ -17,7 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.scalding.store
 
 import cascading.flow.FlowDef
-import com.twitter.algebird.Semigroup
 import com.twitter.bijection.Injection
 import com.twitter.scalding.{ Dsl, Mode, TDsl, TypedPipe }
 import com.twitter.scalding.commons.source.VersionedKeyValSource
@@ -56,8 +55,7 @@ object VersionedStore {
     prunedSpace: PrunedSpace[(K, V)] = PrunedSpace.neverPruned)(
       implicit injection: Injection[(K, (BatchID, V)), (Array[Byte], Array[Byte])],
       batcher: Batcher,
-      ord: Ordering[K],
-      sg: Semigroup[V]): VersionedBatchStore[K, V, K, (BatchID, V)] =
+      ord: Ordering[K]): VersionedBatchStore[K, V, K, (BatchID, V)] =
     new VersionedBatchStore[K, V, K, (BatchID, V)](
       rootPath, versionsToKeep, batcher
     )({ case (batchID, (k, v)) => (k, (batchID.next, v)) })({ case (k, (_, v)) => (k, v) }) {

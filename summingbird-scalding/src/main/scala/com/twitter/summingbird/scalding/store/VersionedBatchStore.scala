@@ -25,7 +25,6 @@ import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.scalding.{ Try, FlowProducer, Scalding }
 import com.twitter.algebird.monad.Reader
-import com.twitter.algebird.Semigroup
 import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import scala.util.{ Try => ScalaTry }
@@ -43,8 +42,7 @@ object VersionedBatchStore {
   def apply[K, V, K2, V2](rootPath: String, versionsToKeep: Int)(pack: (BatchID, (K, V)) => (K2, V2))(unpack: ((K2, V2)) => (K, V))(
     implicit batcher: Batcher,
     injection: Injection[(K2, V2), (Array[Byte], Array[Byte])],
-    ordering: Ordering[K],
-    semigroup: Semigroup[V]): VersionedBatchStore[K, V, K2, V2] =
+    ordering: Ordering[K]): VersionedBatchStore[K, V, K2, V2] =
     new VersionedBatchStore(rootPath, versionsToKeep, batcher)(pack)(unpack)
 }
 
@@ -146,7 +144,7 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
  * the hadoop Configuration object when running the storm job.
  */
 class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)(pack: (BatchID, (K, V)) => (K2, V2))(unpack: ((K2, V2)) => (K, V))(
-  implicit @transient injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K], override val semigroup: Semigroup[V])
+  implicit @transient injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])
     extends VersionedBatchStoreBase[K, V](rootPath) {
 
   /**

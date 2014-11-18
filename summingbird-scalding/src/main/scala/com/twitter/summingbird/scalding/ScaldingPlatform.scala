@@ -377,7 +377,6 @@ object Scalding {
              */
             def go[K, U, V](left: Producer[Scalding, (K, U)], bstore: BatchedStore[K, V]) = {
               implicit val keyOrdering = bstore.ordering
-              implicit val valueSemigroup = bstore.semigroup
               val Summer(storeLog, _, sg) = InternalService.getSummer[K, V](dependants, bstore)
                 .getOrElse(
                   sys.error("join %s is against store not in the entire job's Dag".format(ljp))
@@ -390,7 +389,7 @@ object Scalding {
               val allDeltas: PipeFactory[(K, V)] = bstore.readDeltaLog(logPf)
               val res = for {
                 leftAndDelta <- leftPf.join(allDeltas)
-                joined = InternalService.doIndependentJoin[K, U, V](leftAndDelta._1, leftAndDelta._2, sg)(keyOrdering, valueSemigroup)
+                joined = InternalService.doIndependentJoin[K, U, V](leftAndDelta._1, leftAndDelta._2, sg)(keyOrdering, sg)
                 // read the latest state, which is the (time interval, mode)
                 maxAvailable <- StateWithError.getState
               } yield Scalding.limitTimes(maxAvailable._1, joined)

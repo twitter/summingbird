@@ -40,8 +40,6 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
   implicit def ordering: Ordering[K]
 
-  def semigroup: Semigroup[V]
-
   /**
    * Override select if you don't want to materialize every
    * batch. Note that select MUST return a list containing the final
@@ -123,7 +121,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     commutativity match {
       case Commutative => delta.map { flow =>
         flow.map { typedP =>
-          sumByBatches(typedP, capturedBatcher, Commutative)(semigroup)
+          sumByBatches(typedP, capturedBatcher, Commutative)
             .map { case ((k, _), (ts, v)) => (ts, (k, v)) }
         }
       }
