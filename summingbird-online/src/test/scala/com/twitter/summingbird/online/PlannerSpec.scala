@@ -180,7 +180,6 @@ object PlannerSpec extends Specification {
         true must beFalse
     }
   }
-
   "Chained SumByKey with extra Also is okay" in {
     val store1 = testStore
     val part1: TailProducer[Memory, (Int, (Option[Int], Int))] = arbSource1.map { i => (i % 10, i * i) }.sumByKey(store1).name("Sarnatsky")

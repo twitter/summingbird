@@ -89,7 +89,7 @@ private[scalding] object InternalService {
 
     def recurse(p: Producer[Scalding, Any]): Boolean = {
       p match {
-        case ValueFlatMappedProducer(lprod, fn) =>
+        case ValueFlatMappedProducer(lprod, _) =>
           recurse(lprod)
         case IdentityKeyedProducer(prod) =>
           recurse(prod)
@@ -103,7 +103,8 @@ private[scalding] object InternalService {
     }
     val validLoop = recurse(depsOfSummer.head)
 
-    if (!validLoop) sys.error("Invalid Loop Join! Check the operations between join and store (only [flatMap|map]Values allowed.")
+    if (!validLoop)
+      sys.error("Invalid Loop Join! Check the operations between join and store (only [flatMap|map]Values allowed.")
 
     validLoop
   }

@@ -133,6 +133,7 @@ trait Batcher extends Serializable {
    * the interval of time.
    */
   private def dateToBatch(interval: Interval[Timestamp])(onIncLow: (Timestamp) => BatchID)(onExcUp: (Timestamp) => BatchID): Interval[BatchID] = {
+
     interval match {
       case Empty() => Empty()
       case Universe() => Universe()
