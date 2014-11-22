@@ -64,7 +64,7 @@ private[scalding] object InternalService {
 
     // in all of the graph, find a summer node Summer(_, thatStore, _) where thatStore == store
     // and see if this summer depends on the given leftJoin
-    !(dag.nodes.map { n =>
+    !dag.nodes.exists { n =>
       n match {
         case summer @ Summer(_, StoreService(thatStore), _) if thatStore == store =>
           Producer.transitiveDependenciesOf(summer)
@@ -72,7 +72,7 @@ private[scalding] object InternalService {
             .isDefined
         case _ => false
       }
-    }.contains(true)) // this will return true if the store does depend on store, so negate that
+    }
   }
 
   def isValidLoopJoin[K, V](dag: Dependants[Scalding], left: Producer[Scalding, Any],
@@ -101,35 +101,27 @@ private[scalding] object InternalService {
           false // hit a node that is not one of the allowed ones, invalid loop
       }
     }
-    val validLoop = recurse(depsOfSummer.head)
-
-    if (!validLoop)
-      sys.error("Invalid Loop Join! Check the operations between join and store (only [flatMap|map]Values allowed.")
-
-    validLoop
+    recurse(depsOfSummer.head)
   }
 
-  def storeIsJoined[K, V](dag: Dependants[Scalding], store: Store[K, V]): Boolean = {
-    dag.nodes.map { p =>
+  def storeIsJoined[K, V](dag: Dependants[Scalding], store: Store[K, V]): Boolean =
+    dag.nodes.exists { p =>
       p match {
         case LeftJoinedProducer(l, StoreService(s)) => s == store
         case _ => false
       }
-    }.contains(true)
-  }
+    }
 
   // Get the summer that sums into the given store
   def getSummer[K, V](dag: Dependants[Scalding],
     store: BatchedStore[K, V]): Option[Summer[Scalding, K, V]] = {
     // what to do if there is more than one summer here?
-    val opts = dag.nodes.map { p =>
+    dag.nodes.collectFirst { p =>
       p match {
         case summer @ Summer(p, StoreService(thatStore), _) if (thatStore == store) =>
-          Some(summer.asInstanceOf[Summer[Scalding, K, V]]) // is this safe to do?
-        case _ => None
+          summer.asInstanceOf[Summer[Scalding, K, V]]
       }
     }
-    opts.foldLeft[Option[Summer[Scalding, K, V]]](opts.head)((x, y) => x.orElse(y))
   }
 
   /**
@@ -137,16 +129,15 @@ private[scalding] object InternalService {
    * the FlowToPipe is already on the matching time, so we don't
    * need to worry about that here.
    */
-  def doIndependentJoin[K: Ordering, U, V: Semigroup](input: FlowToPipe[(K, U)],
+  def doIndependentJoin[K: Ordering, U, V](input: FlowToPipe[(K, U)],
     toJoin: FlowToPipe[(K, V)],
-    sg: Semigroup[V]): FlowToPipe[(K, (U, Option[V]))] = {
+    sg: Semigroup[V]): FlowToPipe[(K, (U, Option[V]))] =
 
     Reader[FlowInput, KeyValuePipe[K, (U, Option[V])]] { (flowMode: (FlowDef, Mode)) =>
       val left = input(flowMode)
       val right = toJoin(flowMode)
-      LookupJoin.rightSumming(left, right)
+      LookupJoin.rightSumming(left, right)(implicitly, implicitly, sg)
     }
-  }
 
   /**
    * This looks into the dag, and finds the mapping function into the store
@@ -156,12 +147,11 @@ private[scalding] object InternalService {
     left: Producer[Scalding, (K, U)],
     store: BatchedStore[K, V]): ((((U, Option[V])) => TraversableOnce[V]), Option[Producer[Scalding, (K, V)]]) = {
 
-    val summerToStore = getSummer[K, V](dag, store).getOrElse(sys.error("Could not find the Summer for store."))
+    val Summer(summerProd, _, _) = getSummer[K, V](dag, store).getOrElse(sys.error("Could not find the Summer for store."))
 
     type ValueFlatMapFn = ((U, Option[V])) => TraversableOnce[V]
 
     val res: Option[(ValueFlatMapFn, Option[Producer[Scalding, (K, V)]])] = {
-      val depsOfSummer: List[Producer[Scalding, Any]] = Producer.transitiveDependenciesOf(summerToStore)
       /*
        * Return the (maybe composed from multiple fns) value[Flat]Map function,
        * and two boolean flags: 1) seen at least one ValueFlatMap and
@@ -170,7 +160,7 @@ private[scalding] object InternalService {
        */
       def recurse(p: Producer[Scalding, Any],
         cummulativeFn: (Any) => Any,
-        seenOneValueFM: Boolean): ((Any) => Any, Boolean, Boolean) = {
+        seenOneValueFM: Boolean): ((Any) => Any, Boolean, Boolean) =
         p match {
           case ValueFlatMappedProducer(prod, fn) =>
             if (!seenOneValueFM) // first producer before store, just keep this function
@@ -189,9 +179,8 @@ private[scalding] object InternalService {
           case _ =>
             (cummulativeFn, seenOneValueFM, false)
         }
-      }
 
-      val (fn, seenAtLeastOneValueFM, validDag) = recurse(depsOfSummer.head, (e: Any) => (), false)
+      val (fn, seenAtLeastOneValueFM, validDag) = recurse(summerProd, (e: Any) => (), false)
 
       assert(seenAtLeastOneValueFM == true, sys.error("Must have at least one [flatMap|map]Values between join and store."))
 

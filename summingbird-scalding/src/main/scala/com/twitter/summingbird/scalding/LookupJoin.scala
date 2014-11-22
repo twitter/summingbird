@@ -123,9 +123,6 @@ object LookupJoin extends Serializable {
         .group
         .withReducers(reducers.getOrElse(-1)) // -1 means default in scalding
         .sortBy(identity)
-        .mapGroup { (k, iter) =>
-          iter
-        }
         /**
          * Grouping by K leaves values of (T, Either[V, JoinedV]). Sort
          * by time and scanLeft. The iterator will now represent pairs of

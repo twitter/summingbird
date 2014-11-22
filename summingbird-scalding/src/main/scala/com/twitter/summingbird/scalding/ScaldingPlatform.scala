@@ -389,7 +389,7 @@ object Scalding {
               val allDeltas: PipeFactory[(K, V)] = bstore.readDeltaLog(logPf)
               val res = for {
                 leftAndDelta <- leftPf.join(allDeltas)
-                joined = InternalService.doIndependentJoin[K, U, V](leftAndDelta._1, leftAndDelta._2, sg)(keyOrdering, sg)
+                joined = InternalService.doIndependentJoin[K, U, V](leftAndDelta._1, leftAndDelta._2, sg)
                 // read the latest state, which is the (time interval, mode)
                 maxAvailable <- StateWithError.getState
               } yield Scalding.limitTimes(maxAvailable._1, joined)
@@ -438,6 +438,8 @@ object Scalding {
               (res, m2)
             }
             go(left, store)
+          case ljp @ LeftJoinedProducer(left, StoreService(store)) =>
+            sys.error("Unsupported Join against store: not a valid loop join. If the store depends on join output, only the values can change (filterValues, mapValues, flatMapValues).")
           case WrittenProducer(producer, sink) =>
             val (pf, m) = recurse(producer)
             (sink.write(pf), m)
