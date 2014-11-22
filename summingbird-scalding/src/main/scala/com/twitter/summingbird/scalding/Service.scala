@@ -159,33 +159,28 @@ private[scalding] object InternalService {
        * ValueFlatMappedProducer (at least one), IdentityKeyedProducer and NamedProducer
        */
       def recurse(p: Producer[Scalding, Any],
-        cummulativeFn: (Any) => Any,
-        seenOneValueFM: Boolean): ((Any) => Any, Boolean, Boolean) =
+        cummulativeFn: Option[(Any) => TraversableOnce[Any]]): Option[(Any) => TraversableOnce[Any]] =
         p match {
           case ValueFlatMappedProducer(prod, fn) =>
-            if (!seenOneValueFM) // first producer before store, just keep this function
-              recurse(prod, fn, true)
-            else { // middle or last producer after join, compose the functions
+            if (!cummulativeFn.isDefined) // first map values function, just keep this function
+              recurse(prod, Some(fn))
+            else { // middle or last producer before join, compose the functions
               val newFn = (e: Any) =>
-                fn(e).flatMap { r => cummulativeFn(r).asInstanceOf[TraversableOnce[Any]] }
-              recurse(prod, newFn, true)
+                fn(e).flatMap { r => cummulativeFn.get(r) }
+              recurse(prod, Some(newFn))
             }
           case IdentityKeyedProducer(prod) =>
-            recurse(prod, cummulativeFn, seenOneValueFM)
+            recurse(prod, cummulativeFn)
           case NamedProducer(prod, _) =>
-            recurse(prod, cummulativeFn, seenOneValueFM)
+            recurse(prod, cummulativeFn)
           case LeftJoinedProducer(prod, joined) if prod == left =>
-            (cummulativeFn, seenOneValueFM, true) // done
-          case _ =>
-            (cummulativeFn, seenOneValueFM, false)
+            cummulativeFn
         }
 
-      val (fn, seenAtLeastOneValueFM, validDag) = recurse(summerProd, (e: Any) => (), false)
+      val fn = recurse(summerProd, None)
 
-      assert(seenAtLeastOneValueFM == true, sys.error("Must have at least one [flatMap|map]Values between join and store."))
-
-      if (validDag)
-        Some((fn.asInstanceOf[ValueFlatMapFn], None))
+      if (fn.isDefined)
+        Some((fn.get.asInstanceOf[ValueFlatMapFn], None))
       else
         Option.empty[(ValueFlatMapFn, Option[Producer[Scalding, (K, V)]])]
     }
