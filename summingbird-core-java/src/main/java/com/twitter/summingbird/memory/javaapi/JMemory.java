@@ -19,7 +19,6 @@ import com.twitter.summingbird.javaapi.Source;
 import com.twitter.summingbird.javaapi.Store;
 import com.twitter.summingbird.javaapi.impl.JProducerImpl;
 import com.twitter.summingbird.memory.Memory;
-import com.twitter.summingbird.memory.MapAsMemoryService;
 import com.twitter.summingbird.option.JobId;
 
 /**
@@ -27,6 +26,7 @@ import com.twitter.summingbird.option.JobId;
  * @author Julien Le Dem
  *
  */
+
 public class JMemory {
 
   private final JobId jobId;
@@ -78,8 +78,8 @@ public class JMemory {
    * @param service
    * @return the corresponding Service to use in JProducer.lookup
    */
-  public static <K,V> Service<Memory, MapAsMemoryService<K, V>, K, V> service(Map<K, V> service) {
-    return new Service<Memory, MapAsMemoryService<K, V>, K, V>(new MapAsMemoryService(JavaConversions.asScalaMap(service)));
+  public static <K,V> Service<Memory, JMemoryService<K, V>, K, V> service(Map<K, V> service) {
+    return new Service<Memory, JMemoryService<K, V>, K, V>(new JMemoryService(service));
   }
 
 

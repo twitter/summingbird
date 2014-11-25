@@ -31,11 +31,6 @@ trait MemoryService[-K, +V] {
   def get(k: K): Option[V]
 }
 
-//TODO: make this abstract class and implement in Java
-case class MapAsMemoryService[K, V](m: MutableMap[K, V]) extends MemoryService[K, V] {
-  def get(k: K) = m.get(k)
-}
-
 class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]

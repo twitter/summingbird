@@ -188,11 +188,18 @@ private[scalding] object InternalService {
   }
 
   /**
-   * This is for the case where the left items come in, then we
-   * Sum the second storeLog
+   * This is for the case where the left items come in, then we sum the second mergeLog.
+   *
+   * @param left TypedPipe of producer of input to the join
+   * @param mergeLog TypedPipe of merges to the store
+   * @param valueExpansion a function on the values coming out of the join
+   * @param reduers an option number of reducers to use for the join
+   *
+   * This function performs the loop join by sorting the input by time and then calling scanLeft to merge the two TypedPipes.
+   * The result is a join stream and the output stream of the store.
    */
   def loopJoin[T: Ordering, K: Ordering, V, U: Semigroup](left: TypedPipe[(T, (K, V))],
-    storeLog: TypedPipe[(T, (K, U))],
+    mergeLog: TypedPipe[(T, (K, U))],
     valueExpansion: ((V, Option[U])) => TraversableOnce[U],
     reducers: Option[Int]): (TypedPipe[(T, (K, (V, Option[U])))], TypedPipe[(T, (K, (Option[U], U)))]) = {
 
@@ -211,7 +218,7 @@ private[scalding] object InternalService {
     }
 
     val bothPipes = (left.map { case (t, (k, v)) => (k, (t, Left(v))) } ++
-      storeLog.map { case (t, (k, u)) => (k, (t, Right(u))) })
+      mergeLog.map { case (t, (k, u)) => (k, (t, Right(u))) })
       .group
       .withReducers(reducers.getOrElse(-1)) // jank, but scalding needs a way to maybe set reducers
       .sorted

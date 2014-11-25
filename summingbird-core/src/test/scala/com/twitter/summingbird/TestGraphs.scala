@@ -53,7 +53,12 @@ object TestGraphs {
     }
   }
 
-  //TODO: add (++) a merged producer here when that is supported
+  /**
+   * This function simulates the loop join in ScaldingPlatform loopJoin. Used when joining against a store and the store depends on the result of the join.
+   * The function takes an Iterable of Either and a valuesFn function. The Eithers in the Iterable are updates to the store, corresponding to the two TypedPipes
+   * in ScaldingPlatform loopJoin (summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/ScaldingPlatform.scala).
+   * The result is a join stream and the output stream of the store.
+   */
   private def loopJoinInScala[K: Ordering, U, V: Monoid](leftAndRight: Iterable[(K, (Long, Either[U, V]))], valuesFn: ((Long, (U, Option[V]))) => TraversableOnce[(Long, V)]): List[(K, List[(Option[(Long, (U, Option[V]))], Option[(Long, (Option[V], V))])])] = {
     leftAndRight
       .groupBy(_._1)
