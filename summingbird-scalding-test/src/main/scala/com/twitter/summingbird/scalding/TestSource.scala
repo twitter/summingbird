@@ -29,7 +29,7 @@ import cascading.flow.FlowDef
 
 class LocalIterableSource[+T](src: Iterable[T], valid: Boolean) extends IterableSource[T](src) {
   override def validateTaps(mode: Mode): Unit = {
-    if (!valid) throw new Exception("Cannot create valid source with the provided DateRange.")
+    assert(valid, "Cannot create valid source with the provided DateRange")
   }
 }
 object TestSource {
@@ -38,7 +38,7 @@ object TestSource {
     val src = IterableSource(iter)
     val prod = Scalding.sourceFromMappable { dr =>
       if (dateRangeOpt.isDefined) {
-        val valid = if (dateRangeOpt.get.contains(dr)) true else false
+        val valid = dateRangeOpt.get.contains(dr)
         new LocalIterableSource(iter, valid)
       } else {
         src

@@ -105,22 +105,18 @@ private[scalding] object InternalService {
   }
 
   def storeIsJoined[K, V](dag: Dependants[Scalding], store: Store[K, V]): Boolean =
-    dag.nodes.exists { p =>
-      p match {
-        case LeftJoinedProducer(l, StoreService(s)) => s == store
-        case _ => false
-      }
+    dag.nodes.exists {
+      case LeftJoinedProducer(l, StoreService(s)) => s == store
+      case _ => false
     }
 
   // Get the summer that sums into the given store
   def getSummer[K, V](dag: Dependants[Scalding],
     store: BatchedStore[K, V]): Option[Summer[Scalding, K, V]] = {
     // what to do if there is more than one summer here?
-    dag.nodes.collectFirst { p =>
-      p match {
-        case summer @ Summer(p, StoreService(thatStore), _) if (thatStore == store) =>
-          summer.asInstanceOf[Summer[Scalding, K, V]]
-      }
+    dag.nodes.collectFirst {
+      case summer @ Summer(p, StoreService(thatStore), _) if (thatStore == store) =>
+        summer.asInstanceOf[Summer[Scalding, K, V]]
     }
   }
 
@@ -162,12 +158,13 @@ private[scalding] object InternalService {
         cummulativeFn: Option[(Any) => TraversableOnce[Any]]): Option[(Any) => TraversableOnce[Any]] =
         p match {
           case ValueFlatMappedProducer(prod, fn) =>
-            if (!cummulativeFn.isDefined) // first map values function, just keep this function
-              recurse(prod, Some(fn))
-            else { // middle or last producer before join, compose the functions
-              val newFn = (e: Any) =>
-                fn(e).flatMap { r => cummulativeFn.get(r) }
-              recurse(prod, Some(newFn))
+            cummulativeFn match {
+              case Some(cfn) => {
+                val newFn = (e: Any) => fn(e).flatMap { r => cfn(r) }
+                recurse(prod, Some(newFn))
+              }
+              case None => recurse(prod, Some(fn))
+
             }
           case IdentityKeyedProducer(prod) =>
             recurse(prod, cummulativeFn)
@@ -178,12 +175,9 @@ private[scalding] object InternalService {
         }
 
       val fn = recurse(summerProd, None)
-
-      if (fn.isDefined)
-        Some((fn.get.asInstanceOf[ValueFlatMapFn], None))
-      else
-        Option.empty[(ValueFlatMapFn, Option[Producer[Scalding, (K, V)]])]
+      fn.map { f => (f.asInstanceOf[ValueFlatMapFn], None) }
     }
+
     res.getOrElse(sys.error("Could not find correct loop inputs for leftJoin-store loop. Check the job DAG for validity."))
   }
 

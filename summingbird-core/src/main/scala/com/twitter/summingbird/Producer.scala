@@ -338,7 +338,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def values: Producer[P, V] = map(_._2)
 }
 
-case class KeyFlatMappedProducer[P <: Platform[P], K, V, K2](producer: KeyedProducer[P, K, V], fn: K => TraversableOnce[K2]) extends KeyedProducer[P, K2, V]
+case class KeyFlatMappedProducer[P <: Platform[P], K, V, K2](producer: Producer[P, (K, V)], fn: K => TraversableOnce[K2]) extends KeyedProducer[P, K2, V]
 
 case class ValueFlatMappedProducer[P <: Platform[P], K, V, V2](producer: Producer[P, (K, V)],
   fn: V => TraversableOnce[V2]) extends KeyedProducer[P, K, V2]
