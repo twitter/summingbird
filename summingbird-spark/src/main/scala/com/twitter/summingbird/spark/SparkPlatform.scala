@@ -78,6 +78,22 @@ class SparkPlatform(
     planState.copy(plan = flatMapped)
   }
 
+  override def planValueFlatMappedProducer[K, V, U: ClassTag](
+    prod: Prod[(K, V)],
+    visited: Visited,
+    @transient fn: (V) => TraversableOnce[U]): PlanState[(K, U)] = {
+
+    val extFn = Externalizer(fn)
+
+    val planState = toPlan(prod, visited)
+    val valueFlatMapped = planState.plan.flatMap {
+      case (ts, (k, v)) =>
+        extFn.get(v).map { u => (ts, (k, u)) }
+    }
+
+    planState.copy(plan = valueFlatMapped)
+  }
+
   override def planMergedProducer[T](left: Prod[T], right: Prod[T], visited: Visited): PlanState[T] = {
     // plan down both sides of the tree
     val leftPlanState = toPlan(left, visited)

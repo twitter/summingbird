@@ -26,6 +26,7 @@ import com.twitter.summingbird.option.JobId;
  * @author Julien Le Dem
  *
  */
+
 public class JMemory {
 
   private final JobId jobId;
@@ -77,8 +78,8 @@ public class JMemory {
    * @param service
    * @return the corresponding Service to use in JProducer.lookup
    */
-  public static <K,V> Service<Memory, Function1<K, Option<V>>, K, V> service(Function<K, Option<V>> service) {
-    return new Service<Memory, Function1<K, Option<V>>, K, V>(JProducerImpl.toScala(service));
+  public static <K,V> Service<Memory, JMemoryService<K, V>, K, V> service(Map<K, V> service) {
+    return new Service<Memory, JMemoryService<K, V>, K, V>(new JMemoryService(service));
   }
 
 

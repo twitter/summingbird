@@ -28,6 +28,7 @@ import Conversion.asMethod
 /**
  * Services and Stores are very similar, but not exact.
  * This shares the logic for them.
+ * TODO: Much of this logic should be in summingbird.batch
  */
 private class BatchedOperations(batcher: Batcher) {
 
@@ -36,11 +37,15 @@ private class BatchedOperations(batcher: Batcher) {
     BatchID.toIterable(batchInterval)
   }
 
+  // This does not look correct. How does this work for closed intervals for instance?
   def batchToTimestamp(bint: Interval[BatchID]): Interval[Timestamp] =
     bint.mapNonDecreasing { batcher.earliestTimeOf(_) }
 
   def intersect(batches: Interval[BatchID], ts: Interval[Timestamp]): Interval[Timestamp] =
     batchToTimestamp(batches) && ts
+
+  def intersectToBatch(batches1: Interval[BatchID], ts: Interval[Timestamp]): Interval[BatchID] =
+    batcher.batchesCoveredBy(batchToTimestamp(batches1) && ts)
 
   def intersect(batches: Iterable[BatchID], ts: Interval[Timestamp]): Option[Interval[Timestamp]] =
     BatchID.toInterval(batches).map { intersect(_, ts) }
@@ -52,7 +57,7 @@ private class BatchedOperations(batcher: Batcher) {
       .right
       .map {
         case ((availableInput, innerm), f2p) =>
-          val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput.as[Interval[Timestamp]])
+          val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput)
           (batchesWeCanBuild, f2p)
       }
   }

@@ -40,6 +40,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       case AlsoProducer(_, _) => true
       // The rest are flatMaps, joins, merges or tails
       case FlatMappedProducer(_, _) => false
+      case ValueFlatMappedProducer(_, _) => false
       case KeyFlatMappedProducer(_, _) => false
       case LeftJoinedProducer(_, _) => false
       case Summer(_, _, _) => false
@@ -56,6 +57,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
       case AlsoProducer(_, _) => true
       // All the rest have some direct effect on the plan
       case FlatMappedProducer(_, _) => false
+      case ValueFlatMappedProducer(_, _) => false
       case KeyFlatMappedProducer(_, _) => false
       case LeftJoinedProducer(_, _) => false
       case OptionMappedProducer(_, _) => false
@@ -187,6 +189,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V]) {
         case IdentityKeyedProducer(producer) => maybeSplitThenRecurse(dependantProducer, producer)
         case OptionMappedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
         case FlatMappedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
+        case ValueFlatMappedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
         case KeyFlatMappedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
         case WrittenProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)
         case LeftJoinedProducer(producer, _) => maybeSplitThenRecurse(dependantProducer, producer)

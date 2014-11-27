@@ -21,13 +21,32 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
-import collection.mutable.{ Map => MutableMap, ListBuffer }
+import collection.mutable.{ Map => MutableMap, ListBuffer, HashMap => MutableHashMap }
 
 import org.specs2.mutable._
-
+import org.scalacheck._
+import Gen._
 /**
  * Tests for Summingbird's in-memory planner.
  */
+
+object MemoryArbitraries {
+  implicit def arbSource1[K: Arbitrary]: Arbitrary[Producer[Memory, K]] =
+    Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[K]).map(Producer.source[Memory, K](_)))
+  implicit def arbSource2[K: Arbitrary, V: Arbitrary]: Arbitrary[KeyedProducer[Memory, K, V]] =
+    Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[(K, V)]).map(Producer.source[Memory, (K, V)](_)))
+  implicit def arbService[K: Arbitrary, V: Arbitrary]: Arbitrary[MemoryService[K, V]] =
+    Arbitrary(
+      for {
+        k <- Gen.listOfN(100, Arbitrary.arbitrary[K])
+        v <- Gen.listOfN(100, Arbitrary.arbitrary[V])
+      } yield {
+        val m = new MutableHashMap[K, V]() with MemoryService[K, V]
+        k.zip(v).foreach(p => m.put(p._1, p._2))
+        m
+      }
+    )
+}
 
 object MemoryLaws extends Specification {
   // This is dangerous, obviously. The Memory platform tested here
@@ -68,8 +87,62 @@ object MemoryLaws extends Specification {
    * service functions.
    */
   def leftJoinLaw[T: Manifest: Arbitrary, K: Arbitrary, U: Arbitrary, JoinedU: Arbitrary, V: Monoid: Arbitrary: Equiv] = {
-    val serviceFn = Arbitrary.arbitrary[K => Option[JoinedU]].sample.get
-    testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn, identity, sample[List[T]], sample[T => List[(K, U)]], sample[((K, (U, Option[JoinedU]))) => List[(K, V)]])
+    import MemoryArbitraries._
+    val serviceFn: MemoryService[K, JoinedU] = Arbitrary.arbitrary[MemoryService[K, JoinedU]].sample.get
+    testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn,
+      { svc => { (k: K) => svc.get(k) } },
+      sample[List[T]],
+      sample[T => List[(K, U)]],
+      sample[((K, (U, Option[JoinedU]))) => List[(K, V)]])
+  }
+
+  /**
+   * Tests the in-memory planner by generating arbitrary flatMap and
+   * service functions and joining against a store (independent of the join).
+   */
+  def leftJoinAgainstStoreChecker[T: Manifest: Arbitrary, K: Arbitrary, U: Arbitrary, JoinedU: Monoid: Arbitrary, V: Monoid: Arbitrary: Equiv] = {
+    val platform = new Memory
+    val finalStore: Memory#Store[K, V] = MutableMap.empty[K, V]
+    val storeAndService: Memory#Store[K, JoinedU] with Memory#Service[K, JoinedU] = new MutableHashMap[K, JoinedU]() with MemoryService[K, JoinedU]
+    val sourceMaker = Memory.toSource[T](_)
+    val items1 = sample[List[T]]
+    val items2 = sample[List[T]]
+
+    val fnA = sample[(T) => List[(K, JoinedU)]]
+    val fnB = sample[(T) => List[(K, U)]]
+    val postJoinFn = sample[((K, (U, Option[JoinedU]))) => List[(K, V)]]
+
+    val plan = platform.plan {
+      TestGraphs.leftJoinWithStoreJob[Memory, T, T, U, K, JoinedU, V](sourceMaker(items1),
+        sourceMaker(items2),
+        storeAndService,
+        finalStore)(fnA)(fnB)(postJoinFn)
+    }
+    platform.run(plan)
+    val serviceFn = storeAndService.get(_)
+    val lookupFn = finalStore.get(_)
+
+    val storeAndServiceMatches = MapAlgebra.sumByKey(
+      items1
+        .flatMap(fnA)
+    ).forall {
+        case (k, v) =>
+          val lv: JoinedU = serviceFn(k).getOrElse(Monoid.zero[JoinedU])
+          Equiv[JoinedU].equiv(v, lv)
+      }
+
+    val finalStoreMatches = MapAlgebra.sumByKey(
+      items2.
+        flatMap(fnB)
+        .map { case (k, u) => (k, (u, serviceFn(k))) }
+        .flatMap(postJoinFn)
+    ).forall {
+        case (k, v) =>
+          val lv = lookupFn(k).getOrElse(Monoid.zero[V])
+          Equiv[V].equiv(v, lv)
+      }
+
+    storeAndServiceMatches && finalStoreMatches
   }
 
   def mapKeysChecker[T: Manifest: Arbitrary, K1: Arbitrary, K2: Arbitrary, V: Monoid: Arbitrary: Equiv](): Boolean = {
@@ -95,15 +168,16 @@ object MemoryLaws extends Specification {
   }
 
   def lookupCollectChecker[T: Arbitrary: Equiv: Manifest, U: Arbitrary: Equiv]: Boolean = {
+    import MemoryArbitraries._
     val mem = new Memory
     val input = sample[List[T]]
-    val srv = sample[T => Option[U]]
+    val srv = sample[MemoryService[T, U]]
     var buffer = Vector[(T, U)]() // closure to mutate this
     val prod = TestGraphs.lookupJob[Memory, T, U](Memory.toSource(input), srv, { tu: (T, U) => buffer = buffer :+ tu })
     mem.run(mem.plan(prod))
     // check it out:
     Equiv[List[(T, U)]].equiv((buffer.toList),
-      TestGraphs.lookupJobInScala(input, srv))
+      TestGraphs.lookupJobInScala(input, { (t: T) => srv.get(t) }))
   }
 
   /**
@@ -142,6 +216,7 @@ object MemoryLaws extends Specification {
     "diamond w/ String, Short, Map[Set[Int], Long]" in { diamondLaw[String, Short, Map[Set[Int], Long]] must beTrue }
 
     "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must beTrue }
+    "leftJoinAgainstStore w/ Int, Int, String, Long, Int" in { leftJoinAgainstStoreChecker[Int, Int, String, Long, Int] must beTrue }
 
     "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must beTrue }
 

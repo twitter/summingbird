@@ -94,6 +94,12 @@ object StripNamedNode {
         { producerL: List[Producer[P, Any]] => p.copy(producer = producerL(0)) }
       )
 
+      case p @ ValueFlatMappedProducer(producer, _) => ProducerF(
+        List(producer),
+        p,
+        { producerL: List[Producer[P, Any]] => p.copy(producer = castToKeyed(producerL(0))) }
+      )
+
       case p @ KeyFlatMappedProducer(producer, _) => ProducerF(
         List(producer),
         p,

@@ -24,15 +24,15 @@ import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import scala.util.Random
 
-import scala.collection.mutable.{ Map => MMap }
+import scala.collection.mutable.{ Map => MMap, HashMap => MHashMap }
 
 object DependantsTest extends Properties("Dependants") {
   import TestGraphGenerators._
+  import MemoryArbitraries._
   implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
+  implicit def testService: Memory#Service[Int, Int] = new MHashMap[Int, Int]() with MemoryService[Int, Int]
   implicit def sink1: Memory#Sink[Int] = ((_) => Unit)
   implicit def sink2: Memory#Sink[(Int, Int)] = ((_) => Unit)
-  implicit val arbSource1: Arbitrary[Producer[Memory, Int]] = Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[Int]).map(Producer.source[Memory, Int](_)))
-  implicit val arbSource2: Arbitrary[KeyedProducer[Memory, Int, Int]] = Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[(Int, Int)]).map(Producer.source[Memory, (Int, Int)](_)))
 
   implicit def genProducer: Arbitrary[Producer[Memory, _]] = Arbitrary(oneOf(genProd1, genProd2, summed))
 
@@ -150,7 +150,7 @@ object DependantsTest extends Properties("Dependants") {
   }
 
   property("transitiveDependantsTillOutput finds outputs as a subset of dependants") =
-    forAll { (prod: Producer[Memory, Any]) =>
+    forAll { (prod: Producer[Memory, _]) =>
       val dependants = Dependants(prod)
       dependants.nodes.forall { n =>
         val output = dependants.transitiveDependantsTillOutput(n).collect {
@@ -162,7 +162,7 @@ object DependantsTest extends Properties("Dependants") {
     }
 
   property("transitiveDependantsTillOutput is a subset of writers dependencies") =
-    forAll { (prod: Producer[Memory, Any]) =>
+    forAll { (prod: Producer[Memory, _]) =>
       val dependants = Dependants(prod)
       dependants.nodes.forall { n =>
         val depTillWrite = dependants.transitiveDependantsTillOutput(n)
@@ -174,7 +174,7 @@ object DependantsTest extends Properties("Dependants") {
       }
     }
 
-  property("transitiveDependantsTillOutput finds no children of outputs") = forAll { (prod: Producer[Memory, Any]) =>
+  property("transitiveDependantsTillOutput finds no children of outputs") = forAll { (prod: Producer[Memory, _]) =>
     val dependants = Dependants(prod)
     dependants.nodes.forall { n =>
       val tillWrite = dependants.transitiveDependantsTillOutput(n)
