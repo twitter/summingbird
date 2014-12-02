@@ -25,5 +25,5 @@ import com.twitter.storehaus.ReadableStore
 
 case class ReadableServiceFactory[-K, +V](
     store: () => ReadableStore[K, V]) extends OnlineServiceFactory[K, V] {
-  def serviceStore = store()
+  def serviceStore = store
 }

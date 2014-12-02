@@ -28,11 +28,11 @@ object CombinedServiceStoreFactory {
     new CombinedServiceStoreFactory[K, V] {
       def mergeableStore = mStore
       def mergeableBatcher = b
-      def serviceStore = ReadableStore.empty
+      def serviceStore = () => ReadableStore.empty
     }
   }
 
-  def apply[K, V](mStore: () => Mergeable[(K, BatchID), V], b: Batcher, sStore: ReadableStore[K, V]) = {
+  def apply[K, V](mStore: () => Mergeable[(K, BatchID), V], b: Batcher, sStore: () => ReadableStore[K, V]) = {
     new CombinedServiceStoreFactory[K, V] {
       def mergeableStore = mStore
       def mergeableBatcher = b

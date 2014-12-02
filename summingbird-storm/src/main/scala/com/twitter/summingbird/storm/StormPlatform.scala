@@ -81,7 +81,7 @@ object Storm {
   def service[K, V](serv: => ReadableStore[K, V]): ReadableServiceFactory[K, V] = ReadableServiceFactory(() => serv)
 
   def storeService[K, V](mergStore: => Mergeable[(K, BatchID), V], serv: => ReadableStore[K, V])(implicit batcher: Batcher): CombinedServiceStoreFactory[K, V] =
-    CombinedServiceStoreFactory(() => mergStore, batcher, serv)
+    CombinedServiceStoreFactory(() => mergStore, batcher, () => serv)
 
   def toStormSource[T](spout: Spout[T],
     defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): StormSource[T] =
