@@ -115,7 +115,7 @@ object FlatMapOperation {
     storeSupplier: OnlineServiceFactory[K, JoinedV]): FlatMapOperation[T, (K, (V, Option[JoinedV]))] =
     new FlatMapOperation[T, (K, (V, Option[JoinedV]))] {
       lazy val fm = fmSupplier
-      lazy val store = storeSupplier.create
+      lazy val store = storeSupplier.serviceStore
       override def apply(t: T) =
         fm.apply(t).flatMap { trav: TraversableOnce[(K, V)] =>
           val resultList = trav.toSeq // Can't go through this twice
