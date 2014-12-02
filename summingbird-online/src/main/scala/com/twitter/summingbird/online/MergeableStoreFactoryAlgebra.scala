@@ -57,6 +57,6 @@ object MergeableStoreFactoryAlgebra {
       val mergeable: () => Mergeable[K, (Timestamp, V)] =
         () => { new WrappedTSInMergeable(supplier.mergeableStore()) }
 
-      MStoreFactory[K, (Timestamp, V)](mergeable, supplier.mergeableBatcher)
+      MergeableFactory[K, (Timestamp, V)](mergeable, supplier.mergeableBatcher)
     }
 }
