@@ -98,7 +98,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
-    val batcher = summerProducer.store.batcher
+    val batcher = summerProducer.store.mergeableBatcher
     implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
 
     // Query to get the summer paralellism of the summer down stream of us we are emitting to

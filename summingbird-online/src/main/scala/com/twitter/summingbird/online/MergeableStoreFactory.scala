@@ -27,7 +27,7 @@ import com.twitter.summingbird.batch.{ Batcher, BatchID }
 object MergeableStoreFactory {
 
   def from[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreFactory[(K, BatchID), V] =
-    MergeableStoreFactory({ () => store }, batcher)
+    MStoreFactory({ () => store }, batcher)
 
   def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreFactory[(K, BatchID), V] = {
     implicit val batcher = Batcher.unit
@@ -35,6 +35,14 @@ object MergeableStoreFactory {
   }
 }
 
-case class MergeableStoreFactory[-K, V](
-  store: () => Mergeable[K, V],
-  batcher: Batcher)
+trait MergeableStoreFactory[-K, V] {
+  def mergeableStore: () => Mergeable[K, V]
+  def mergeableBatcher: Batcher
+}
+
+case class MStoreFactory[-K, V](
+    store: () => Mergeable[K, V],
+    batcher: Batcher) extends MergeableStoreFactory[K, V] {
+  def mergeableStore = store
+  def mergeableBatcher = batcher
+}
