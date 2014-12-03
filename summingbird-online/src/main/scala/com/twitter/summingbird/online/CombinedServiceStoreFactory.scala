@@ -24,14 +24,6 @@ trait CombinedServiceStoreFactory[-K, V] extends MergeableStoreFactory[(K, Batch
 
 object CombinedServiceStoreFactory {
 
-  def apply[K, V](mStore: () => Mergeable[(K, BatchID), V], b: Batcher) = {
-    new CombinedServiceStoreFactory[K, V] {
-      def mergeableStore = mStore
-      def mergeableBatcher = b
-      def serviceStore = () => ReadableStore.empty
-    }
-  }
-
   def apply[K, V](mStore: () => Mergeable[(K, BatchID), V], b: Batcher, sStore: () => ReadableStore[K, V]) = {
     new CombinedServiceStoreFactory[K, V] {
       def mergeableStore = mStore

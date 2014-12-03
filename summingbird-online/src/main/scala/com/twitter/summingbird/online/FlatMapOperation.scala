@@ -115,7 +115,7 @@ object FlatMapOperation {
     storeSupplier: OnlineServiceFactory[K, JoinedV]): FlatMapOperation[T, (K, (V, Option[JoinedV]))] =
     new FlatMapOperation[T, (K, (V, Option[JoinedV]))] {
       lazy val fm = fmSupplier
-      lazy val store = storeSupplier.serviceStore
+      lazy val store = storeSupplier.serviceStore()
       override def apply(t: T) =
         fm.apply(t).flatMap { trav: TraversableOnce[(K, V)] =>
           val resultList = trav.toSeq // Can't go through this twice
@@ -125,7 +125,7 @@ object FlatMapOperation {
             Future.value(Map.empty)
           else {
             // Do the lookup
-            val mres: Map[K, Future[Option[JoinedV]]] = store().multiGet(keySet)
+            val mres: Map[K, Future[Option[JoinedV]]] = store.multiGet(keySet)
             val resultFutures = resultList.map { case (k, v) => mres(k).map { k -> (v, _) } }.toIndexedSeq
             Future.collect(resultFutures)
           }
@@ -133,7 +133,7 @@ object FlatMapOperation {
 
       override def close {
         fm.close
-        Await.result(store().close)
+        Await.result(store.close)
       }
     }
 
