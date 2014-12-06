@@ -10,30 +10,44 @@ import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform._
 
 object SummingbirdBuild extends Build {
-  def withCross(dep: ModuleID) =
-    dep cross CrossVersion.binaryMapped {
-      case "2.9.3" => "2.9.2" // TODO: hack because twitter hasn't built things against 2.9.3
-      case version if version startsWith "2.10" => "2.10" // TODO: hack because sbt is broken
-      case x => x
-    }
-
-  def specs2Import(scalaVersion: String) = scalaVersion match {
-      case version if version startsWith "2.9" => "org.specs2" %% "specs2" % "1.12.4.1" % "test"
-      case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test"
+  def scalaBinaryVersion(scalaVersion: String) = scalaVersion match {
+    case version if version startsWith "2.10" => "2.10"
+    case version if version startsWith "2.11" => "2.11"
+    case version if version startsWith "2.12" => "2.12"
+    case _ => sys.error("unknown error")
   }
+  def isScala210x(scalaVersion: String) = scalaBinaryVersion(scalaVersion) == "2.10"
 
-  def isScala210x(scalaVersion: String) = scalaVersion match {
-      case version if version startsWith "2.9" => false
-      case version if version startsWith "2.10" => true
-  }
+  val scalaTestVersion = "2.2.2"
+  val scalaCheckVersion = "1.11.5"
+  val hadoopVersion = "1.2.1"
+  val algebirdVersion = "0.8.2"
+  val bijectionVersion = "0.7.0"
+  val chillVersion = "0.5.1"
+  val slf4jVersion = "1.6.6"
+  val parquetVersion = "1.6.0rc4"
+
+  val dfsDatastoresVersion = "1.3.4"
+  val scaldingVersion = "0.13.0"
+  val storehausVersion = "0.10.0"
+  val utilVersion = "6.3.8"
+
+  val finagleVersion = "6.12.2"
+  val tormentaVersion = "0.7.0"
+  val junitVersion = "4.11"
+  val log4jVersion = "1.2.16"
+  val stormVersion = "0.9.0-wip15"
+  val commonsLangVersion = "2.6"
+  val novocodeJunitVersion = "0.10"
+  val specs2Version = "1.13"
 
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
     version := "0.5.1",
-    scalaVersion := "2.9.3",
-    crossScalaVersions := Seq("2.9.3", "2.10.4"),
+    scalaVersion := "2.10.4",
+    crossScalaVersions := Seq("2.10.4"),
     // To support hadoop 1.x
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
@@ -45,17 +59,15 @@ object SummingbirdBuild extends Build {
     },
 
     libraryDependencies ++= Seq(
-      "junit" % "junit" % "4.11" % "test",
+      "junit" % "junit" % junitVersion % "test",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
-      "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
+      "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
       // These satisify's scaldings log4j needs when in test mode
-      "log4j" % "log4j" % "1.2.16" % "test",
-      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
+      "log4j" % "log4j" % log4jVersion % "test",
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+      "com.novocode" % "junit-interface" % novocodeJunitVersion % "test",
+      "org.specs2" %% "specs2" % "1.13" % "test"
     ),
-
-    libraryDependencies <+= scalaVersion(specs2Import(_)),
-
-    libraryDependencies += "com.novocode" % "junit-interface" % "0.10" % "test",
 
     resolvers ++= Seq(
       Opts.resolver.sonatypeSnapshots,
@@ -157,16 +169,6 @@ object SummingbirdBuild extends Build {
     summingbirdExample
   )
 
-  val dfsDatastoresVersion = "1.3.4"
-  val bijectionVersion = "0.6.3"
-  val algebirdVersion = "0.7.0"
-  val scaldingVersion = "0.11.3rc1"
-  val storehausVersion = "0.9.1"
-  val utilVersion = "6.3.8"
-  val chillVersion = "0.4.0"
-  val tormentaVersion = "0.7.0"
-
-  lazy val slf4jVersion = "1.6.6"
 
   /**
     * This returns the youngest jar we released that is compatible with
@@ -177,7 +179,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.5.0" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.6.0" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
@@ -231,7 +233,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "chill" % chillVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
-      withCross("com.twitter" %% "util-core" % utilVersion)
+      "com.twitter" %% "util-core" % utilVersion
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -250,8 +252,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "scalding-args" % scaldingVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion,
-      withCross("com.twitter" %% "util-core" % utilVersion),
-      "storm" % "storm" % "0.9.0-wip15" % "provided"
+      "com.twitter" %% "util-core" % utilVersion,
+      "storm" % "storm" % stormVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -268,8 +270,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion,
-      withCross("com.twitter" %% "util-core" % utilVersion),
-      "storm" % "storm" % "0.9.0-wip15" % "provided"
+      "com.twitter" %% "util-core" % utilVersion,
+      "storm" % "storm" % stormVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -278,14 +280,13 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdStormJava = module("storm-java").settings(
     libraryDependencies ++= Seq(
-      "storm" % "storm" % "0.9.0-wip15" % "provided"
+      "storm" % "storm" % stormVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
     summingbirdCoreJava % "test->test;compile->compile",
     summingbirdStorm % "test->test;compile->compile"
   )
-
   lazy val summingbirdScalding = module("scalding").settings(
     libraryDependencies ++= Seq(
       "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
@@ -297,7 +298,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "chill" % chillVersion,
       "com.twitter" % "chill-hadoop" % chillVersion,
       "com.twitter" %% "chill-bijection" % chillVersion,
-      "commons-lang" % "commons-lang" % "2.6",
+      "commons-lang" % "commons-lang" % commonsLangVersion,
       "com.twitter" %% "scalding-core" % scaldingVersion,
       "com.twitter" %% "scalding-commons" % scaldingVersion
     )
@@ -310,7 +311,7 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdScaldingTest = module("scalding-test").settings(
     libraryDependencies ++= Seq(
-      "org.scalacheck" %% "scalacheck" % "1.10.0"
+      "org.scalacheck" %% "scalacheck" % scalaCheckVersion
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -333,7 +334,7 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdBuilder = module("builder").settings(
     libraryDependencies ++= Seq(
-      "storm" % "storm" % "0.9.0-wip15" % "provided"
+      "storm" % "storm" % stormVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore,
@@ -343,9 +344,9 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdExample = module("example").settings(
     libraryDependencies ++= Seq(
-      "log4j" % "log4j" % "1.2.16",
+      "log4j" % "log4j" % log4jVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-      "storm" % "storm" % "0.9.0-wip15" exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
+      "storm" % "storm" % stormVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "bijection-netty" % bijectionVersion,
       "com.twitter" %% "tormenta-twitter" % tormentaVersion,
       "com.twitter" %% "storehaus-memcache" % storehausVersion
