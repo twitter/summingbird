@@ -66,6 +66,31 @@ object ScaldingLaws extends Specification {
   "The ScaldingPlatform" should {
 
     //Set up the job:
+    "match scala for single step jobs, one batch" in {
+      val original = sample[List[Int]]
+      val fn = sample[(Int) => List[(Int, Int)]]
+      val initStore = sample[Map[Int, Int]]
+      val inMemory = TestGraphs.singleStepInScala(original)(fn)
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val batcher = TestUtil.singleBatchBatcher(inWithTime)
+      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
+      val (buffer, source) = TestSource(inWithTime)
+
+      val summer = TestGraphs.singleStepJob[Scalding, (Long, Int), Int, Int](source, testStore)(t =>
+        fn(t._2))
+
+      val scald = Scalding("scalaCheckJob")
+      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
+
+      scald.run(ws, mode, scald.plan(summer))
+      // Now check that the inMemory ==
+
+      TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must be_==(true)
+    }
+
     "match scala for single step jobs" in {
       val original = sample[List[Int]]
       val fn = sample[(Int) => List[(Int, Int)]]

@@ -75,6 +75,20 @@ object TestUtil {
     else randomBatcher(items.iterator.map(_._1).min, items.iterator.map(_._1).max)
   }
 
+  def singleBatchBatcher(items: Iterable[(Long, Any)]): Batcher = {
+    if (items.isEmpty) simpleBatcher
+    else singleBatchBatcher(items.iterator.map(_._1).min, items.iterator.map(_._1).max)
+  }
+
+  def singleBatchBatcher(mintimeInc: Long, maxtimeInc: Long): Batcher = { //simpleBatcher
+    // we can have between 1 and (maxtime - mintime + 1) batches.
+    val delta = (maxtimeInc - mintimeInc)
+    val MaxBatches = 5L min delta
+    val batches = 1L // have one batch
+    val timePerBatch = (delta + 1L) / batches
+    new MillisecondBatcher(timePerBatch)
+  }
+
   def randomBatcher(mintimeInc: Long, maxtimeInc: Long): Batcher = { //simpleBatcher
     // we can have between 1 and (maxtime - mintime + 1) batches.
     val delta = (maxtimeInc - mintimeInc)
