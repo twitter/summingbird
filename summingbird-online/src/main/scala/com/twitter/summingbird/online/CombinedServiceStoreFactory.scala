@@ -17,18 +17,33 @@
 package com.twitter.summingbird.online
 
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
+import com.twitter.summingbird.store.ClientStore
 import com.twitter.storehaus.ReadableStore
-import com.twitter.storehaus.algebra.Mergeable
+import com.twitter.storehaus.algebra.MergeableStore
 
 trait CombinedServiceStoreFactory[-K, V] extends MergeableStoreFactory[(K, BatchID), V] with OnlineServiceFactory[K, V]
 
 object CombinedServiceStoreFactory {
 
-  def apply[K, V](mStore: () => Mergeable[(K, BatchID), V], b: Batcher, sStore: () => ReadableStore[K, V]) = {
+  def apply[K, V](onlineStore: MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit b: Batcher) = {
+
+    val clientStore = ClientStore[K, V](onlineStore, batchesToKeep)(b, onlineStore.semigroup)
+
     new CombinedServiceStoreFactory[K, V] {
-      def mergeableStore = mStore
+      def mergeableStore = () => onlineStore
       def mergeableBatcher = b
-      def serviceStore = sStore
+      def serviceStore = () => clientStore
+    }
+  }
+
+  def apply[K, V](offlineStore: ReadableStore[K, (BatchID, V)], onlineStore: MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit b: Batcher) = {
+
+    val clientStore = ClientStore[K, V](offlineStore, onlineStore, batchesToKeep)(b, onlineStore.semigroup)
+
+    new CombinedServiceStoreFactory[K, V] {
+      def mergeableStore = () => onlineStore
+      def mergeableBatcher = b
+      def serviceStore = () => clientStore
     }
   }
 }
