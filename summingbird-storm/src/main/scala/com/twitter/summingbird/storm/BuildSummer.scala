@@ -68,7 +68,7 @@ object BuildSummer {
     if (cacheSize.lowerBound == 0) {
       new SummerBuilder {
         def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {
-          new com.twitter.algebird.util.summer.NullSummer[K, V](counter(jobID, Name(nodeName), Name("tuplesIn")), counter(jobID, Name(nodeName), Name("tuplesOut")))
+          new com.twitter.algebird.util.summer.NullSummer[K, V](tupleInCounter, tupleOutCounter)
         }
       }
     } else {
@@ -132,6 +132,6 @@ object BuildSummer {
     }
   }
 
-  def counter(jobID: JobId, nodeName: Name, counterName: Name) = new Counter(Group("summingbird-" + nodeName.getString), counterName)(jobID) with Incrementor
+  def counter(jobID: JobId, nodeName: Name, counterName: Name) = new Counter(Group("summingbird." + nodeName.getString), counterName)(jobID) with Incrementor
 
 }
