@@ -56,6 +56,15 @@ object BuildSummer {
     val cacheSize = storm.getOrElse(dag, node, DEFAULT_FM_CACHE)
     logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
 
+    val memoryCounter = counter(jobID, Name(nodeName), Name("memory"))
+    val timeoutCounter = counter(jobID, Name(nodeName), Name("timeout"))
+    val sizeCounter = counter(jobID, Name(nodeName), Name("size"))
+    val putCounter = counter(jobID, Name(nodeName), Name("puts"))
+    val tupleInCounter = counter(jobID, Name(nodeName), Name("tuplesIn"))
+    val tupleOutCounter = counter(jobID, Name(nodeName), Name("tuplesOut"))
+    val insertCounter = counter(jobID, Name(nodeName), Name("inserts"))
+    val insertFailCounter = counter(jobID, Name(nodeName), Name("insertFail"))
+
     if (cacheSize.lowerBound == 0) {
       new SummerBuilder {
         def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {
@@ -79,13 +88,12 @@ object BuildSummer {
               BufferSize(cacheSize.lowerBound),
               FlushFrequency(flushFrequency.get),
               MemoryFlushPercent(softMemoryFlush.get),
-              counter(jobID, Name(nodeName), Name("memory")),
-              counter(jobID, Name(nodeName), Name("timeout")),
-              counter(jobID, Name(nodeName), Name("size")),
-              counter(jobID, Name(nodeName), Name("puts")),
-              counter(jobID, Name(nodeName), Name("tuplesIn")),
-              counter(jobID, Name(nodeName), Name("tuplesOut"))
-            )
+              memoryCounter,
+              timeoutCounter,
+              sizeCounter,
+              putCounter,
+              tupleInCounter,
+              tupleOutCounter)
           }
         }
       } else {
@@ -102,13 +110,13 @@ object BuildSummer {
             val summer = new AsyncListSum[K, V](BufferSize(cacheSize.lowerBound),
               FlushFrequency(flushFrequency.get),
               MemoryFlushPercent(softMemoryFlush.get),
-              counter(jobID, Name(nodeName), Name("memory")),
-              counter(jobID, Name(nodeName), Name("timeout")),
-              counter(jobID, Name(nodeName), Name("inserts")),
-              counter(jobID, Name(nodeName), Name("insertFail")),
-              counter(jobID, Name(nodeName), Name("size")),
-              counter(jobID, Name(nodeName), Name("tuplesIn")),
-              counter(jobID, Name(nodeName), Name("tuplesOut")),
+              memoryCounter,
+              timeoutCounter,
+              insertCounter,
+              insertFailCounter,
+              sizeCounter,
+              tupleInCounter,
+              tupleOutCounter,
               futurePool,
               Compact(false),
               CompactionSize(0))
