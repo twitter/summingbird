@@ -50,8 +50,8 @@ object TestUtil {
 
   def batchedCover(batcher: Batcher, minTime: Long, maxTime: Long): Interval[Timestamp] =
     batcher.cover(
-      Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime + 1L))
-    ).mapNonDecreasing(b => batcher.earliestTimeOf(b.next))
+      Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime))
+    ).mapNonDecreasing(b => batcher.earliestTimeOf(b))
 
   val simpleBatcher = new Batcher {
     def batchOf(d: Timestamp) =
@@ -79,7 +79,7 @@ object TestUtil {
     // we can have between 1 and (maxtime - mintime + 1) batches.
     val delta = (maxtimeInc - mintimeInc)
     val MaxBatches = 5L min delta
-    val batches = 1L + Gen.choose(1L, MaxBatches).sample.get
+    val batches = 1L + Gen.choose(0L, MaxBatches).sample.get
     val timePerBatch = (delta + 1L) / batches
     new MillisecondBatcher(timePerBatch)
   }
