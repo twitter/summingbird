@@ -248,15 +248,14 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     } yield bfp
 
   /**
-   * This returns an Interval of BatchIDs we can read, the snapshot of the store just before this
-   * state, and data from this input covering all the time SINCE the last snapshot.
+   * This returns:
+   * - the BatchID of the last batch written
+   * - the snapshot of the store just before this state
+   * - an Interval of BatchIDs we can read from the source
+   * - an Interval of Timestams that are available downstream (i.e. the intersection of requested time and batches we can read)
+   * - the data from this input covering all the time SINCE the last snapshot
    * The Interval[Timestamp] in the state is updated to be the intersection with the
    * Interval[BatchID]
-   *
-   * Note: here we are working with two spaces of batchid/timestamps - for the data source (delta)
-   * and for the store. The delta batch ID = InclusiveLower(time), the store batch ID =
-   * ExclusiveUpper(time). Thus, the delta batch IDs are "shifted" by 1 from the store batch IDs.
-   * We need to be careful about what space we are in and when necessary, convert between the two.
    */
   final def readBatched[T](input: PipeFactory[T]): PlannerOutput[(BatchID, FlowProducer[TypedPipe[(K, V)]], Interval[BatchID], Interval[Timestamp], FlowToPipe[T])] = {
     // StateWithError lacks filter, so it can't unpack tuples (scala limitation)
@@ -272,23 +271,27 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       firstDeltaBatch = lastBatch.next
       deltaBatches = Interval.leftClosedRightOpen(firstDeltaBatch, batches.max.next)
       tsMode <- getState[FactoryInput]
-      timeSpan = tsMode._1
+      timeSpan = tsMode._1 // requested time span
       mode = tsMode._2
-      // Try to read the range covering the batches we want get the batches we can completely
+      // Try to read the range covering the batches we want; get the batches we can completely
       // cover and the data from input in that range
       batchOps = new BatchedOperations(batcher)
       readBatchesFlow <- fromEither(batchOps.readBatched(deltaBatches, mode, input))
-      readBatches = readBatchesFlow._1
+
+      // the batches we can read from the source
+      readDeltaBatches = readBatchesFlow._1
+
       // Make sure that the batches we can read includes the batch just after the last
       // snapshot. We can't roll the store forward without this.
-      _ <- fromEither[FactoryInput](if (readBatches.contains(firstDeltaBatch)) Right(()) else
-        Left(List("Cannot load an entire initial batch: " + firstDeltaBatch.toString
-          + " of deltas at: " + this.toString + " only: " + readBatches.toString)))
-      // The time we can read in the intersection of what was requested and the
-      // the batches we can get from the input
-      available = batchOps.intersect(readBatches, timeSpan)
+      _ <- fromEither[FactoryInput](if (readDeltaBatches.contains(firstDeltaBatch)) Right(()) else
+        Left(List(s"Cannot load an entire initial batch ${firstDeltaBatch.toString} of deltas " +
+          "at ${this.toString} only ${readDeltaBatches.toString}")))
+
+      // The time we can read is the intersection of what was requested and the
+      // the delta batches we can get from the input
+      available = batchOps.intersect(readDeltaBatches, timeSpan)
       _ <- putState((available, mode))
-    } yield (lastBatch, lastSnapshot, readBatches, available, readBatchesFlow._2)
+    } yield (lastBatch, lastSnapshot, readDeltaBatches, available, readBatchesFlow._2)
   }
 
   /**
