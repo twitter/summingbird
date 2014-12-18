@@ -137,6 +137,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     input: FlowProducer[TypedPipe[(K, V)]],
     batchIntr: Interval[BatchID],
     deltas: FlowToPipe[(K, V)],
+    availableTimeSpan: Interval[Timestamp],
     commutativity: Commutativity,
     reducers: Int)(implicit sg: Semigroup[V]): FlowToPipe[(K, (Option[V], V))] = {
 
@@ -214,7 +215,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     // Now in the flow-producer monad; do it:
     for {
       pipeInput <- input
-      pipeDeltas <- deltas
+      pipeDeltas <- Scalding.limitTimes(availableTimeSpan, deltas)
       // fork below so scalding can make sure not to do the operation twice
       merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas)).fork
       lastOut = toLastFormat(merged)
@@ -326,14 +327,13 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
         /*
          * Once we have read the last snapshot and the available batched blocks of delta, just merge
          */
-        val merged = mergeBatched(actualLast,
+        mergeBatched(actualLast,
           snapshot,
           batchesWeCanBuild,
           deltaFlow2Pipe,
+          available,
           commutativity,
           reducers)(sg)
-
-        Scalding.limitTimes(available, merged)
     }
   }
 }
