@@ -59,7 +59,6 @@ object BuildSummer {
     val memoryCounter = counter(jobID, Name(nodeName), Name("memory"))
     val timeoutCounter = counter(jobID, Name(nodeName), Name("timeout"))
     val sizeCounter = counter(jobID, Name(nodeName), Name("size"))
-    val putCounter = counter(jobID, Name(nodeName), Name("puts"))
     val tupleInCounter = counter(jobID, Name(nodeName), Name("tuplesIn"))
     val tupleOutCounter = counter(jobID, Name(nodeName), Name("tuplesOut"))
     val insertCounter = counter(jobID, Name(nodeName), Name("inserts"))
@@ -91,7 +90,7 @@ object BuildSummer {
               memoryCounter,
               timeoutCounter,
               sizeCounter,
-              putCounter,
+              insertCounter,
               tupleInCounter,
               tupleOutCounter)
           }
