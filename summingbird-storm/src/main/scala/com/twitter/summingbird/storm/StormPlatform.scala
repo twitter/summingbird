@@ -80,6 +80,22 @@ object Storm {
 
   def service[K, V](serv: => ReadableStore[K, V]): ReadableServiceFactory[K, V] = ReadableServiceFactory(() => serv)
 
+  /**
+   * Returns a store that is also a service, i.e. is a ReadableStore[K, V] and a Mergeable[(K, BatchID), V]
+   * The values used for the service are from the online store only.
+   * Uses ClientStore internally to create ReadableStore[K, V]
+   */
+  def storeServiceOnlineOnly[K, V](store: => MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher): CombinedServiceStoreFactory[K, V] =
+    CombinedServiceStoreFactory(store, batchesToKeep)(batcher)
+
+  /**
+   * Returns a store that is also a service, i.e. is a ReadableStore[K, V] and a Mergeable[(K, BatchID), V]
+   * The values used for the service are from the online *and* offline stores.
+   * Uses ClientStore internally to combine the offline and online stores to create ReadableStore[K, V]
+   */
+  def storeService[K, V](offlineStore: ReadableStore[K, (BatchID, V)], onlineStore: => MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher): CombinedServiceStoreFactory[K, V] =
+    CombinedServiceStoreFactory(offlineStore, onlineStore, batchesToKeep)(batcher)
+
   def toStormSource[T](spout: Spout[T],
     defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): StormSource[T] =
     SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)), defaultSourcePar.map(SourceParallelism(_)))
@@ -182,7 +198,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   private def scheduleSummerBolt[K, V](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val semigroup = summer.semigroup
-    implicit val batcher = summer.store.batcher
+    implicit val batcher = summer.store.mergeableBatcher
     val nodeName = stormDag.getNodeName(node)
 
     type ExecutorKeyType = (K, BatchID)

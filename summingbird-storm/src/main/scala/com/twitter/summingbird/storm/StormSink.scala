@@ -17,7 +17,7 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.util.Future
-import com.twitter.storehaus.{ Store, WritableStore }
+import com.twitter.storehaus.{ Store, ReadableStore, WritableStore }
 
 import com.twitter.summingbird.online._
 
@@ -40,5 +40,5 @@ class WritableStoreSink[K, V](writable: => WritableStore[K, V]) extends StormSin
 class StormBuffer[K, V](supplier: => Store[K, V]) extends StormSink[(K, V)] with OnlineServiceFactory[K, V] {
   private lazy val constructed = supplier // only construct it once
   def toFn = { (kv: (K, V)) => constructed.put((kv._1, Some(kv._2))) }
-  def create = constructed
+  def serviceStore: () => ReadableStore[K, V] = () => constructed
 }
