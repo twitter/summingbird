@@ -136,13 +136,12 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
   private def mergeBatched(inBatch: BatchID,
     input: FlowProducer[TypedPipe[(K, V)]],
     deltas: FlowToPipe[(K, V)],
-    requestedTimespan: Interval[Timestamp],
     readTimespan: Interval[Timestamp],
     commutativity: Commutativity,
     reducers: Int)(implicit sg: Semigroup[V]): FlowToPipe[(K, (Option[V], V))] = {
 
     // get the batches read from the readTimespan
-    val batchIntr = batcher.cover(readTimespan)
+    val batchIntr = batcher.batchesCoveredBy(readTimespan)
 
     val batches = BatchID.toIterable(batchIntr).toList
     val finalBatch = batches.last // batches won't be empty.
@@ -218,7 +217,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     // Now in the flow-producer monad; do it:
     for {
       pipeInput <- input
-      pipeDeltas <- Scalding.limitTimes(requestedTimespan && readTimespan, deltas)
+      pipeDeltas <- deltas
       // fork below so scalding can make sure not to do the operation twice
       merged = mergeAll(prepareOld(pipeInput) ++ prepareDeltas(pipeDeltas)).fork
       lastOut = toLastFormat(merged)
@@ -263,8 +262,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     for {
       // Get the BatchID and data for the last snapshot,
       bidFp <- planReadLast
-      lastBatch = bidFp._1
-      lastSnapshot = bidFp._2
+      (lastBatch, lastSnapshot) = bidFp
 
       // Get latest time for the last batch written to store
       lastTimeWrittenToStore = batcher.latestTimeOf(lastBatch)
@@ -347,9 +345,10 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       merged = mergeBatched(actualLast,
         snapshot,
         deltaFlow2Pipe,
-        tsRequested,
         tsRead,
         commutativity,
         reducers)(sg)
-    } yield (merged)
+
+      prunedFlow = Scalding.limitTimes(tsRequested && tsRead, merged)
+    } yield (prunedFlow)
 }
