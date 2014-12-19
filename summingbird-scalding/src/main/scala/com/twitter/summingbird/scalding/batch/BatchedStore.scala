@@ -292,8 +292,8 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // Make sure that the time we can read includes the time just after the last
       // snapshot. We can't roll the store forward without this.
       _ <- fromEither[FactoryInput](if (readDeltaTimestamps.contains(firstDeltaTimestamp)) Right(()) else
-        Left(List(s"Cannot load initial timestamp ${firstDeltaTimestamp.toString} of deltas " +
-          "at ${this.toString} only ${readDeltaTimestamps.toString}")))
+        Left(List("Cannot load initial timestamp " + firstDeltaTimestamp.toString + " of deltas " +
+          " at " + this.toString + " only " + readDeltaTimestamps.toString)))
 
       // Record the timespan we actually read.
       _ <- putState((readDeltaTimestamps, mode))
