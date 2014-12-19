@@ -48,10 +48,8 @@ object TestUtil {
     !wrong
   }
 
-  def batchedCover(batcher: Batcher, minTime: Long, maxTime: Long): Interval[Timestamp] =
-    batcher.cover(
-      Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime))
-    ).mapNonDecreasing(b => batcher.earliestTimeOf(b))
+  def toTimeInterval(minTime: Long, maxTime: Long): Interval[Timestamp] =
+    Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime))
 
   val simpleBatcher = new Batcher {
     def batchOf(d: Timestamp) =

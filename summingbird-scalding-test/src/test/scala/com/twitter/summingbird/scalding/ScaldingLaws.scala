@@ -81,7 +81,7 @@ object ScaldingLaws extends Specification {
         fn(t._2))
 
       val scald = Scalding("scalaCheckJob")
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
@@ -117,7 +117,7 @@ object ScaldingLaws extends Specification {
         fn(t._2))
 
       val scald = Scalding("scalaCheckJob")
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
@@ -143,7 +143,7 @@ object ScaldingLaws extends Specification {
       val summer = TestGraphs.singleStepMapKeysJob[Scalding, (Long, Int), Int, Int, Int](source, testStore)(t =>
         fnA(t._2), fnB)
 
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val scald = Scalding("scalaCheckJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
@@ -173,7 +173,7 @@ object ScaldingLaws extends Specification {
       val tail = TestGraphs.multipleSummerJob[Scalding, (Long, Int), Int, Int, Int, Int, Int](source, testStoreA, testStoreB)({ t => fnA(t._2) }, fnB, fnC)
 
       val scald = Scalding("scalaCheckMultipleSumJob")
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(t))
 
@@ -223,7 +223,7 @@ object ScaldingLaws extends Specification {
       val summer =
         TestGraphs.leftJoinJob[Scalding, (Long, Int), Int, Int, Int, Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
 
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val scald = Scalding("scalaCheckleftJoinJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
@@ -273,7 +273,7 @@ object ScaldingLaws extends Specification {
       val summer =
         TestGraphs.repeatedTupleLeftJoinJob[Scalding, (Long, Int), Int, Int, Int, Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
 
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val scald = Scalding("scalaCheckleftJoinJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
@@ -327,7 +327,7 @@ object ScaldingLaws extends Specification {
           storeAndService,
           finalStore)(tup => fnA(tup._2))(tup => fnB(tup._2))(postJoin)
 
-      val intr = TestUtil.batchedCover(batcher, 0L, original1.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original1.size.toLong)
       val scald = Scalding("scalaCheckleftJoinWithStoreJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode((storeAndService.sourceToBuffer ++ finalStore.sourceToBuffer ++ buffer1 ++ buffer2).get(_))
@@ -377,7 +377,7 @@ object ScaldingLaws extends Specification {
         TestGraphs.leftJoinWithDependentStoreJob[Scalding, (Long, Int), String, Int, Int, Int](source,
           storeAndService)(tup => fnA(tup._2))(valuesFlatMap1)(valuesFlatMap2)
 
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val scald = Scalding("scalaCheckleftJoinWithDependentJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode((storeAndService.sourceToBuffer ++ buffer).get(_))
@@ -426,7 +426,7 @@ object ScaldingLaws extends Specification {
         TestGraphs.leftJoinWithDependentStoreJoinFanoutJob[Scalding, (Long, Int), Int, Int, Int, Int](source,
           storeAndService, fmStore)(tup => fnA(tup._2))(valuesFlatMap)(flatMapFn)
 
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val scald = Scalding("scalaCheckleftJoinWithDependentJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode((storeAndService.sourceToBuffer ++ buffer ++ fmStore.sourceToBuffer).get(_))
@@ -457,7 +457,7 @@ object ScaldingLaws extends Specification {
           testStore)(t => fn1(t._2))(t => fn2(t._2))
 
       val scald = Scalding("scalding-diamond-Job")
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer).get(s))
 
@@ -491,7 +491,7 @@ object ScaldingLaws extends Specification {
         .twoSumByKey[Scalding, Int, Int, Int](source.map(_._2), testStoreA, keyExpand, testStoreB)
 
       val scald = Scalding("scalding-diamond-Job")
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode((testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(_))
 
@@ -518,7 +518,7 @@ object ScaldingLaws extends Specification {
       val scald = Scalding("scalaCheckJob").withConfigUpdater { sbconf =>
         sbconf.put("scalding.job.uniqueId", jobID.get)
       }
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
       val ws = new LoopState(intr)
       val conf: Configuration = new Configuration()
       val mode: Mode = HadoopTest(conf, t => (testStore.sourceToBuffer ++ buffer).get(t))
