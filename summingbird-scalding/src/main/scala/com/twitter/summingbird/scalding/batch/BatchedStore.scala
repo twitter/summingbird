@@ -251,6 +251,17 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     } yield bfp
 
   /**
+   * Adjist the Lower bound of the interval
+   */
+  private def setLower(lb: InclusiveLower[Timestamp], interv: Interval[Timestamp]): Interval[Timestamp] = interv match {
+    case u @ ExclusiveUpper(_) => lb && u
+    case u @ InclusiveUpper(_) => lb && u
+    case Intersection(_, u) => lb && u
+    case Empty() => Empty()
+    case _ => lb // Otherwise the upperbound is infinity.
+  }
+
+  /**
    * This returns:
    * - the BatchID of the last batch written
    * - the snapshot of the store just before this state
@@ -276,12 +287,10 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
       // Get the batches covering the requested timeSpan so we can get the last time stamp we need to request.
       batchOps = new BatchedOperations(batcher)
-      batches = batchOps.coverIt(timeSpan)
 
-      // Now get the total time we want to cover. It is the time interval starting with the
-      // firstDeltaTimeStamp and ending on last time of the last batch covering the timeSpan interval
-      // (since we work on batch boundaries). We add one millisecond since it is an exclusive upper bound.
-      deltaTimes = Interval.leftClosedRightOpen(firstDeltaTimestamp, batcher.latestTimeOf(batches.max).next)
+      // Get the total time we want to cover. If the lower bound of the requested timeSpan
+      // is not the firstDeltaTimestamp, adjust it to that.
+      deltaTimes = setLower(InclusiveLower(firstDeltaTimestamp), timeSpan)
 
       // Try to read the range covering the time we want; get the time we can completely
       // cover and the data from input in that range.
@@ -307,6 +316,8 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
    * TODO: This should not limit to batch boundaries, the batch store
    * should handle only writing the data for full batches, but we can materialize
    * more data if it is needed downstream.
+   * Note: the returned time interval NOT include the time of the snapshot data point
+   * (which is exactly 1 millisecond before the start of the interval).
    */
   def readDeltaLog(delta: PipeFactory[(K, V)]): PipeFactory[(K, V)] =
     readBatched(delta).map {
