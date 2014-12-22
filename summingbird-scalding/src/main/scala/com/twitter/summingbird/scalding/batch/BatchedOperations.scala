@@ -44,11 +44,17 @@ private class BatchedOperations(batcher: Batcher) {
   def intersect(batches: Interval[BatchID], ts: Interval[Timestamp]): Interval[Timestamp] =
     batchToTimestamp(batches) && ts
 
-  def intersectToBatch(batches1: Interval[BatchID], ts: Interval[Timestamp]): Interval[BatchID] =
-    batcher.batchesCoveredBy(batchToTimestamp(batches1) && ts)
-
   def intersect(batches: Iterable[BatchID], ts: Interval[Timestamp]): Option[Interval[Timestamp]] =
     BatchID.toInterval(batches).map { intersect(_, ts) }
+
+  def readAvailableTimes[T](inTimes: Interval[Timestamp], mode: Mode, in: PipeFactory[T]): Try[(Interval[Timestamp], FlowToPipe[T])] =
+    // Read the delta stream for the needed times
+    in((inTimes, mode))
+      .right
+      .map {
+        case ((availableInput, innerm), f2p) =>
+          (availableInput, f2p)
+      }
 
   def readBatched[T](inBatches: Interval[BatchID], mode: Mode, in: PipeFactory[T]): Try[(Interval[BatchID], FlowToPipe[T])] = {
     val inTimes = batchToTimestamp(inBatches)
