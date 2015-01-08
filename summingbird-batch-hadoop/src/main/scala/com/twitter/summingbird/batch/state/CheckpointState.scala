@@ -132,7 +132,7 @@ trait CheckpointState[T] extends WaitingState[Interval[Timestamp]] {
       succeedPart: Interval.GenIntersection[Timestamp],
       isRunning: AtomicBoolean,
       val batchToken: T) extends RunningState[Interval[Timestamp]] {
-    private def setStopped = require(
+    private def setStopped() = require(
       isRunning.compareAndSet(true, false),
       "Concurrent modification of HDFSState!"
     )

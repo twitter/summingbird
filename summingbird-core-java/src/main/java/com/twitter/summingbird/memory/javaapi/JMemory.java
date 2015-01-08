@@ -19,13 +19,26 @@ import com.twitter.summingbird.javaapi.Source;
 import com.twitter.summingbird.javaapi.Store;
 import com.twitter.summingbird.javaapi.impl.JProducerImpl;
 import com.twitter.summingbird.memory.Memory;
+import com.twitter.summingbird.option.JobId;
 
 /**
  * Wrapper of the Memory platform to use in Java
  * @author Julien Le Dem
  *
  */
+
 public class JMemory {
+
+  private final JobId jobId;
+  private final Memory platform;
+
+  /**
+   * @param jobId
+   */
+  public JMemory(JobId jId) {
+    jobId = jId;
+    platform = new Memory(jobId);
+  }
 
   private static <IN> Function1<IN, Void> toScala(final JSink<IN> f) {
     return new AbstractFunction1<IN, Void>() {
@@ -65,11 +78,10 @@ public class JMemory {
    * @param service
    * @return the corresponding Service to use in JProducer.lookup
    */
-  public static <K,V> Service<Memory, Function1<K, Option<V>>, K, V> service(Function<K, Option<V>> service) {
-    return new Service<Memory, Function1<K, Option<V>>, K, V>(JProducerImpl.toScala(service));
+  public static <K,V> Service<Memory, JMemoryService<K, V>, K, V> service(Map<K, V> service) {
+    return new Service<Memory, JMemoryService<K, V>, K, V>(new JMemoryService(service));
   }
 
-  private Memory platform = new Memory();
 
   /**
    * @param tail

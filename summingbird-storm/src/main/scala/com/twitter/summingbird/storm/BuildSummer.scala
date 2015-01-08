@@ -30,6 +30,11 @@ import org.slf4j.LoggerFactory
 
 import Constants._
 
+/*
+ * The BuildSummer class is responsible for decoding from the options what SummerBuilder to use when setting up bolts.
+ * It has two primary modes, reading a SummerConstructor setting directly and using its contents, or via the legacy route.
+ * Reading all the options internally.
+ */
 object BuildSummer {
   @transient private val logger = LoggerFactory.getLogger(BuildSummer.getClass)
 

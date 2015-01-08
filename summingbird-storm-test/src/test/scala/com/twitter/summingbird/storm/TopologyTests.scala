@@ -21,6 +21,8 @@ import com.twitter.algebird.{ MapAlgebra, Semigroup }
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
+import com.twitter.summingbird.online._
+import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.storm.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.storm.spout.TraversableSpout
@@ -145,7 +147,7 @@ object TopologyTests extends Specification {
       .flatMap(testFn).name(otherNodeName).name(nodeName)
       .sumByKey(TestStore.createStore[Int, Int]()._2)
 
-    val opts = Map(otherNodeName -> Options().set(SpoutParallelism(30)),
+    val opts = Map(otherNodeName -> Options().set(SourceParallelism(30)),
       nodeName -> Options().set(FlatMapParallelism(50)))
     val storm = Storm.local(opts)
     val stormTopo = storm.plan(p).topology
@@ -164,7 +166,7 @@ object TopologyTests extends Specification {
       .flatMap(testFn).name(nodeName).name("Throw away name")
       .sumByKey(TestStore.createStore[Int, Int]()._2)
 
-    val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)).set(SpoutParallelism(30)))
+    val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)).set(SourceParallelism(30)))
     val storm = Storm.local(opts)
     val stormTopo = storm.plan(p).topology
     // Source producer
@@ -182,7 +184,7 @@ object TopologyTests extends Specification {
       .flatMap(testFn).name(otherNodeName).name(nodeName)
       .sumByKey(TestStore.createStore[Int, Int]()._2)
 
-    val opts = Map(otherNodeName -> Options().set(SpoutParallelism(30)).set(SummerParallelism(50)),
+    val opts = Map(otherNodeName -> Options().set(SourceParallelism(30)).set(SummerParallelism(50)),
       nodeName -> Options().set(FlatMapParallelism(50)))
     val storm = Storm.local(opts)
     val stormTopo = storm.plan(p).topology

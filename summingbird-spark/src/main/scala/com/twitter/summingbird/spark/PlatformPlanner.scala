@@ -48,6 +48,8 @@ trait PlatformPlanner[P <: Platform[P]] {
 
       case FlatMappedProducer(prod, fn) => planFlatMappedProducer[Any, Any](prod, visited, fn)
 
+      case ValueFlatMappedProducer(prod, fn) => planValueFlatMappedProducer[Any, Any, Any](prod, visited, fn)
+
       case MergedProducer(l, r) => planMergedProducer(l, r, visited)
 
       case KeyFlatMappedProducer(prod, fn) => planKeyFlatMappedProducer(prod, visited, fn)
@@ -73,6 +75,8 @@ trait PlatformPlanner[P <: Platform[P]] {
   def planOptionMappedProducer[T, U: ClassTag](prod: Prod[T], visited: Visited, fn: (T) => Option[U]): PlanState[U]
 
   def planFlatMappedProducer[T, U: ClassTag](prod: Prod[T], visited: Visited, fn: (T) => TraversableOnce[U]): PlanState[U]
+
+  def planValueFlatMappedProducer[K, V, U: ClassTag](prod: Prod[(K, V)], visited: Visited, fn: (V) => TraversableOnce[U]): PlanState[(K, U)]
 
   def planMergedProducer[T](l: Prod[T], r: Prod[T], visited: Visited): PlanState[T]
 

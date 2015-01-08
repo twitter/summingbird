@@ -32,27 +32,27 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
    * cases that need to complete operations after or before doing a FlatMapOperation or
    * doing a store merge
    */
-  def apply(state: S, in: I): Future[TraversableOnce[(List[S], Future[TraversableOnce[O]])]]
-  def tick: Future[TraversableOnce[(List[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
+  def apply(state: S, in: I): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]
+  def tick: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
 
   private lazy val outstandingFutures = Queue.linkedNonBlocking[Future[Unit]]
-  private lazy val responses = Queue.linkedNonBlocking[(List[S], Try[TraversableOnce[O]])]
+  private lazy val responses = Queue.linkedNonBlocking[(Seq[S], Try[TraversableOnce[O]])]
 
   override def executeTick =
-    finishExecute(tick.onFailure { thr => responses.put(((List(), Failure(thr)))) })
+    finishExecute(tick.onFailure { thr => responses.put(((Seq(), Failure(thr)))) })
 
   override def execute(state: S, data: I) =
     finishExecute(apply(state, data).onFailure { thr => responses.put(((List(state), Failure(thr)))) })
 
-  private def finishExecute(fIn: Future[TraversableOnce[(List[S], Future[TraversableOnce[O]])]]) = {
+  private def finishExecute(fIn: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]) = {
     addOutstandingFuture(handleSuccess(fIn).unit)
 
     // always empty the responses
     emptyQueue
   }
 
-  private def handleSuccess(fut: Future[TraversableOnce[(List[S], Future[TraversableOnce[O]])]]) =
-    fut.onSuccess { iter: TraversableOnce[(List[S], Future[TraversableOnce[O]])] =>
+  private def handleSuccess(fut: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]) =
+    fut.onSuccess { iter: TraversableOnce[(Seq[S], Future[TraversableOnce[O]])] =>
 
       // Collect the result onto our responses
       val iterSize = iter.foldLeft(0) {

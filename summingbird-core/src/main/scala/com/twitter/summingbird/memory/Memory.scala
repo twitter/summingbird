@@ -18,6 +18,8 @@ package com.twitter.summingbird.memory
 
 import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
+import com.twitter.summingbird.option.JobId
+import com.twitter.summingbird.planner.DagOptimizer
 import collection.mutable.{ Map => MutableMap }
 
 object Memory {
@@ -25,15 +27,22 @@ object Memory {
     Producer.source[Memory, T](traversable)
 }
 
-class Memory extends Platform[Memory] {
+trait MemoryService[-K, +V] {
+  def get(k: K): Option[V]
+}
+
+class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]
   type Sink[-T] = (T => Unit)
-  type Service[-K, +V] = (K => Option[V])
+  type Service[-K, +V] = MemoryService[K, V]
   type Plan[T] = Stream[T]
 
   private type Prod[T] = Producer[Memory, T]
   private type JamfMap = Map[Prod[_], Stream[_]]
+
+  def counter(group: Group, name: Name): Option[Long] =
+    MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }
 
   def toStream[T, K, V](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
     jamfs.get(outerProducer) match {
@@ -79,7 +88,7 @@ class Memory extends Platform[Memory] {
           case LeftJoinedProducer(producer, service) =>
             val (s, m) = toStream(producer, jamfs)
             val joined = s.map {
-              case (k, v) => (k, (v, service(k)))
+              case (k, v) => (k, (v, service.get(k)))
             }
             (joined, m)
 
@@ -98,8 +107,22 @@ class Memory extends Platform[Memory] {
         (s.asInstanceOf[Stream[T]], m + (outerProducer -> s))
     }
 
-  def plan[T](prod: TailProducer[Memory, T]): Stream[T] =
-    toStream(prod, Map.empty)._1
+  def plan[T](prod: TailProducer[Memory, T]): Stream[T] = {
+
+    val registeredCounters: Seq[(Group, Name)] =
+      JobCounters.getCountersForJob(jobID).getOrElse(Nil)
+
+    if (!registeredCounters.isEmpty) {
+      MemoryStatProvider.registerCounters(jobID, registeredCounters)
+      SummingbirdRuntimeStats.addPlatformStatProvider(MemoryStatProvider)
+    }
+
+    val dagOptimizer = new DagOptimizer[Memory] {}
+    val memoryTail = dagOptimizer.optimize(prod, dagOptimizer.ValueFlatMapToFlatMap)
+    val memoryDag = memoryTail.asInstanceOf[TailProducer[Memory, T]]
+
+    toStream(memoryDag, Map.empty)._1
+  }
 
   def run(iter: Stream[_]) {
     // Force the entire stream, taking care not to hold on to the

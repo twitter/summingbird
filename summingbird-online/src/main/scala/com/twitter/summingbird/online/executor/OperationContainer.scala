@@ -22,10 +22,10 @@ import com.twitter.bijection.Injection
 trait OperationContainer[Input, Output, State, WireFmt, RuntimeContext] {
   def decoder: Injection[Input, WireFmt]
   def encoder: Injection[Output, WireFmt]
-  def executeTick: TraversableOnce[(List[State], Try[TraversableOnce[Output]])]
+  def executeTick: TraversableOnce[(Seq[State], Try[TraversableOnce[Output]])]
   def execute(state: State,
-    data: Input): TraversableOnce[(List[State], Try[TraversableOnce[Output]])]
+    data: Input): TraversableOnce[(Seq[State], Try[TraversableOnce[Output]])]
   def init(ctx: RuntimeContext) {}
   def cleanup {}
-  def notifyFailure(inputs: List[State], e: Throwable) {}
+  def notifyFailure(inputs: Seq[State], e: Throwable) {}
 }

@@ -22,9 +22,13 @@ import com.twitter.algebird.{ Semigroup, SummingQueue }
 import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.bijection.Injection
 
-import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer }
+import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer, MergeableStoreFactory }
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
+
+// These CMaps we generate in the FFM, we use it as an immutable wrapper around
+// a mutable map.
+import scala.collection.{ Map => CMap }
 
 /**
  * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
@@ -50,7 +54,7 @@ import com.twitter.summingbird.option.CacheSize
  */
 
 class Summer[Key, Value: Semigroup, Event, S, D, RC](
-  @transient storeSupplier: RC => Mergeable[Key, Value],
+  @transient storeSupplier: MergeableStoreFactory[Key, Value],
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
@@ -59,8 +63,8 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
   includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: Injection[(Int, Map[Key, Value]), D],
-  pEncoder: Injection[Event, D]) extends AsyncBase[(Int, Map[Key, Value]), Event, InputState[S], D, RC](
+  pDecoder: Injection[(Int, CMap[Key, Value]), D],
+  pEncoder: Injection[Event, D]) extends AsyncBase[(Int, CMap[Key, Value]), Event, InputState[S], D, RC](
   maxWaitingFutures,
   maxWaitingTime,
   maxEmitPerExec) {
@@ -73,7 +77,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
   lazy val storePromise = Promise[Mergeable[Key, Value]]
   lazy val store = Await.result(storePromise)
 
-  lazy val sSummer: AsyncSummer[(Key, (List[InputState[S]], Value)), Map[Key, (List[InputState[S]], Value)]] = summerBuilder.getSummer[Key, (List[InputState[S]], Value)](implicitly[Semigroup[(List[InputState[S]], Value)]])
+  lazy val sSummer: AsyncSummer[(Key, (Seq[InputState[S]], Value)), Map[Key, (Seq[InputState[S]], Value)]] = summerBuilder.getSummer[Key, (Seq[InputState[S]], Value)](implicitly[Semigroup[(Seq[InputState[S]], Value)]])
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
@@ -81,18 +85,18 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
 
   override def init(runtimeContext: RC) {
     super.init(runtimeContext)
-    storePromise.setValue(storeBox.get(runtimeContext))
+    storePromise.setValue(storeBox.get.mergeableStore())
     store.toString // Do the lazy evaluation now so we can connect before tuples arrive.
 
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  override def notifyFailure(inputs: List[InputState[S]], error: Throwable): Unit = {
+  override def notifyFailure(inputs: Seq[InputState[S]], error: Throwable): Unit = {
     super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
   }
 
-  private def handleResult(kvs: Map[Key, (List[InputState[S]], Value)]): TraversableOnce[(List[InputState[S]], Future[TraversableOnce[Event]])] =
+  private def handleResult(kvs: Map[Key, (Seq[InputState[S]], Value)]): TraversableOnce[(Seq[InputState[S]], Future[TraversableOnce[Event]])] =
     store.multiMerge(kvs.mapValues(_._2)).iterator.map {
       case (k, beforeF) =>
         val (tups, delta) = kvs(k)
@@ -104,7 +108,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
   override def tick = sSummer.tick.map(handleResult(_))
 
   override def apply(state: InputState[S],
-    tupList: (Int, Map[Key, Value])) = {
+    tupList: (Int, CMap[Key, Value])) = {
     try {
       val (_, innerTuples) = tupList
       assert(innerTuples.size > 0, "Maps coming in must not be empty")

@@ -22,6 +22,7 @@ import backtype.storm.tuple.Fields
 import backtype.storm.tuple.Tuple
 
 import com.twitter.algebird.{ Semigroup, Monoid }
+import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
@@ -35,6 +36,13 @@ import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
 import org.slf4j.LoggerFactory
 
+import scala.collection.{ Map => CMap }
+
+/**
+ * These are helper functions for building a bolt from a Node[Storm] element.
+ * There are two main codepaths here, for intermediate flat maps and final flat maps.
+ * The primary difference between those two being the the presents of map side aggreagtion in a final flatmap.
+ */
 object FlatMapBoltProvider {
   @transient private val logger = LoggerFactory.getLogger(FlatMapBoltProvider.getClass)
   private def wrapTimeBatchIDKV[T, K, V](existingOp: FlatMapOperation[T, (K, V)])(batcher: Batcher): FlatMapOperation[(Timestamp, T), ((K, BatchID), (Timestamp, V))] = {
@@ -59,33 +67,9 @@ object FlatMapBoltProvider {
 
 case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
   import FlatMapBoltProvider._
+  import Producer2FlatMapOperation._
 
   def getOrElse[T <: AnyRef: Manifest](default: T, queryNode: StormNode = node) = storm.getOrElse(stormDag, queryNode, default)
-  /**
-   * Keep the crazy casts localized in here
-   */
-  private def foldOperations[T, U](producers: List[Producer[Storm, _]]): FlatMapOperation[T, U] =
-    producers.foldLeft(FlatMapOperation.identity[Any]) {
-      case (acc, p) =>
-        p match {
-          case LeftJoinedProducer(_, wrapper) =>
-            val newService = wrapper.store
-            FlatMapOperation.combine(
-              acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-              newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
-          case OptionMappedProducer(_, op) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
-          case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
-          case WrittenProducer(_, sinkSupplier) =>
-            acc.andThen(FlatMapOperation.write(() => sinkSupplier.toFn))
-          case IdentityKeyedProducer(_) => acc
-          case MergedProducer(_, _) => acc
-          case NamedProducer(_, _) => acc
-          case AlsoProducer(_, _) => acc
-          case Source(_) => sys.error("Should not schedule a source inside a flat mapper")
-          case Summer(_, _, _) => sys.error("Should not schedule a Summer inside a flat mapper")
-          case KeyFlatMappedProducer(_, op) => acc.andThen(FlatMapOperation.keyFlatMap[Any, Any, Any](op).asInstanceOf[FlatMapOperation[Any, Any]])
-        }
-    }.asInstanceOf[FlatMapOperation[T, U]]
 
   // Boilerplate extracting of the options from the DAG
   private val nodeName = stormDag.getNodeName(node)
@@ -100,6 +84,9 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
   private val ackOnEntry = getOrElse(DEFAULT_ACK_ON_ENTRY)
   logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
 
+  val maxExecutePerSec = getOrElse(DEFAULT_MAX_EXECUTE_PER_SEC)
+  logger.info("[{}] maxExecutePerSec : {}", nodeName, maxExecutePerSec.toString)
+
   private val maxEmitPerExecute = getOrElse(DEFAULT_MAX_EMIT_PER_EXECUTE)
   logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
 
@@ -107,11 +94,11 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
     type ExecutorInput = (Timestamp, T)
     type ExecutorKey = Int
     type InnerValue = (Timestamp, V)
-    type ExecutorValue = Map[(K, BatchID), InnerValue]
+    type ExecutorValue = CMap[(K, BatchID), InnerValue]
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
-    val batcher = summerProducer.store.batcher
+    val batcher = summerProducer.store.mergeableBatcher
     implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
 
     // Query to get the summer paralellism of the summer down stream of us we are emitting to
@@ -135,6 +122,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       true,
       new Fields(AGG_KEY, AGG_VALUE),
       ackOnEntry,
+      maxExecutePerSec,
       new executor.FinalFlatMap(
         wrappedOperation,
         builder,
@@ -162,6 +150,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       stormDag.dependantsOf(node).size > 0,
       new Fields(VALUE_FIELD),
       ackOnEntry,
+      maxExecutePerSec,
       new executor.IntermediateFlatMap(
         wrappedOperation,
         maxWaiting,

@@ -28,6 +28,7 @@ import Conversion.asMethod
 /**
  * Services and Stores are very similar, but not exact.
  * This shares the logic for them.
+ * TODO: Much of this logic should be in summingbird.batch
  */
 private class BatchedOperations(batcher: Batcher) {
 
@@ -36,6 +37,7 @@ private class BatchedOperations(batcher: Batcher) {
     BatchID.toIterable(batchInterval)
   }
 
+  // This does not look correct. How does this work for closed intervals for instance?
   def batchToTimestamp(bint: Interval[BatchID]): Interval[Timestamp] =
     bint.mapNonDecreasing { batcher.earliestTimeOf(_) }
 
@@ -45,6 +47,15 @@ private class BatchedOperations(batcher: Batcher) {
   def intersect(batches: Iterable[BatchID], ts: Interval[Timestamp]): Option[Interval[Timestamp]] =
     BatchID.toInterval(batches).map { intersect(_, ts) }
 
+  def readAvailableTimes[T](inTimes: Interval[Timestamp], mode: Mode, in: PipeFactory[T]): Try[(Interval[Timestamp], FlowToPipe[T])] =
+    // Read the delta stream for the needed times
+    in((inTimes, mode))
+      .right
+      .map {
+        case ((availableInput, innerm), f2p) =>
+          (availableInput, f2p)
+      }
+
   def readBatched[T](inBatches: Interval[BatchID], mode: Mode, in: PipeFactory[T]): Try[(Interval[BatchID], FlowToPipe[T])] = {
     val inTimes = batchToTimestamp(inBatches)
     // Read the delta stream for the needed times
@@ -52,7 +63,7 @@ private class BatchedOperations(batcher: Batcher) {
       .right
       .map {
         case ((availableInput, innerm), f2p) =>
-          val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput.as[Interval[Timestamp]])
+          val batchesWeCanBuild = batcher.batchesCoveredBy(availableInput)
           (batchesWeCanBuild, f2p)
       }
   }

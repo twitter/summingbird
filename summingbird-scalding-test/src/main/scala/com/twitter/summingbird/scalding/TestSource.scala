@@ -27,10 +27,23 @@ import scala.collection.mutable.Buffer
 import cascading.tuple.Tuple
 import cascading.flow.FlowDef
 
+class LocalIterableSource[+T](src: Iterable[T], valid: Boolean) extends IterableSource[T](src) {
+  override def validateTaps(mode: Mode): Unit = {
+    assert(valid, "Cannot create valid source with the provided DateRange")
+  }
+}
 object TestSource {
-  def apply[T](iter: Iterable[T])(implicit mf: Manifest[T], te: TimeExtractor[T], tc: TupleConverter[T], tset: TupleSetter[T]): (Map[ScaldingSource, Buffer[Tuple]], Producer[Scalding, T]) = {
+  // limit the source date range to the given range
+  def apply[T](iter: Iterable[T], dateRangeOpt: Option[DateRange] = None)(implicit mf: Manifest[T], te: TimeExtractor[T], tc: TupleConverter[T], tset: TupleSetter[T]): (Map[ScaldingSource, Buffer[Tuple]], Producer[Scalding, T]) = {
     val src = IterableSource(iter)
-    val prod = Scalding.sourceFromMappable { _ => src }
+    val prod = Scalding.sourceFromMappable { dr =>
+      if (dateRangeOpt.isDefined) {
+        val valid = dateRangeOpt.get.contains(dr)
+        new LocalIterableSource(iter, valid)
+      } else {
+        src
+      }
+    }
     (Map(src -> iter.map { tset(_) }.toBuffer), prod)
   }
 }

@@ -80,6 +80,7 @@ object Producer {
       case OptionMappedProducer(producer, _) => List(producer)
       case FlatMappedProducer(producer, _) => List(producer)
       case KeyFlatMappedProducer(producer, _) => List(producer)
+      case ValueFlatMappedProducer(producer, _) => List(producer)
       case WrittenProducer(producer, _) => List(producer)
       case LeftJoinedProducer(producer, _) => List(producer)
       case Summer(producer, _, _) => List(producer)
@@ -99,6 +100,7 @@ object Producer {
     case OptionMappedProducer(_, _) => false
     case FlatMappedProducer(_, _) => false
     case KeyFlatMappedProducer(_, _) => false
+    case ValueFlatMappedProducer(_, _) => false
     case WrittenProducer(_, _) => false
     case LeftJoinedProducer(_, _) => false
     case Summer(_, _, _) => false
@@ -210,13 +212,13 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
   override def name(id: String): TailProducer[P, T] = new TPNamedProducer[P, T](this, id)
 }
 
-class AlsoTailProducer[P <: Platform[P], T, R](ensure: TailProducer[P, T], result: TailProducer[P, R]) extends AlsoProducer[P, T, R](ensure, result) with TailProducer[P, R]
+class AlsoTailProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], result: TailProducer[P, R]) extends AlsoProducer[P, T, R](ensure, result) with TailProducer[P, R]
 
 /**
  * This is a special node that ensures that the first argument is planned, but produces values
  * equivalent to the result.
  */
-case class AlsoProducer[P <: Platform[P], T, R](ensure: TailProducer[P, T], result: Producer[P, R]) extends Producer[P, R]
+case class AlsoProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], result: Producer[P, R]) extends Producer[P, R]
 
 case class NamedProducer[P <: Platform[P], +T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
@@ -226,18 +228,18 @@ class TPNamedProducer[P <: Platform[P], +T](producer: Producer[P, T], id: String
  * Represents filters and maps which may be optimized differently
  * Note that "option-mapping" is closed under composition and hence useful to call out
  */
-case class OptionMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => Option[U])
+case class OptionMappedProducer[P <: Platform[P], T, +U](producer: Producer[P, T], fn: T => Option[U])
   extends Producer[P, U]
 
-case class FlatMappedProducer[P <: Platform[P], T, U](producer: Producer[P, T], fn: T => TraversableOnce[U])
+case class FlatMappedProducer[P <: Platform[P], T, +U](producer: Producer[P, T], fn: T => TraversableOnce[U])
   extends Producer[P, U]
 
-case class MergedProducer[P <: Platform[P], T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
+case class MergedProducer[P <: Platform[P], +T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
 
 case class WrittenProducer[P <: Platform[P], T, U >: T](producer: Producer[P, T], sink: P#Sink[U]) extends TailProducer[P, T]
 
 case class Summer[P <: Platform[P], K, V](
-  producer: KeyedProducer[P, K, V],
+  producer: Producer[P, (K, V)],
   store: P#Store[K, V],
   semigroup: Semigroup[V]) extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))]
 
@@ -255,7 +257,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
 
   /** Builds a new KeyedProvider by applying a partial function to values of elements of this one on which the function is defined.*/
   def collectValues[V2](pf: PartialFunction[V, V2]): KeyedProducer[P, K, V2] =
-    IdentityKeyedProducer(collect { case (k, v) if pf.isDefinedAt(v) => (k, pf(v)) })
+    flatMapValues { v => if (pf.isDefinedAt(v)) Iterator(pf(v)) else Iterator.empty }
 
   /**
    * Prefer this to filter or flatMap/flatMapKeys if you are filtering.
@@ -273,7 +275,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
    * the partition.
    */
   def filterValues(pred: V => Boolean): KeyedProducer[P, K, V] =
-    IdentityKeyedProducer(filter { case (_, v) => pred(v) })
+    flatMapValues { v => if (pred(v)) Iterator(v) else Iterator.empty }
 
   /**
    * Prefer to call this method to flatMap if you are expanding only keys.
@@ -284,7 +286,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
 
   /** Prefer this to a raw map as this may be optimized to avoid a key reshuffle */
   def flatMapValues[U](fn: V => TraversableOnce[U]): KeyedProducer[P, K, U] =
-    IdentityKeyedProducer(flatMap { case (k, v) => fn(v).map((k, _)) })
+    ValueFlatMappedProducer(this, fn)
 
   /** Return just the keys */
   def keys: Producer[P, K] = map(_._1)
@@ -315,7 +317,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
 
   /** Prefer this to a raw map as this may be optimized to avoid a key reshuffle */
   def mapValues[U](fn: V => U): KeyedProducer[P, K, U] =
-    IdentityKeyedProducer(map { case (k, v) => (k, fn(v)) })
+    flatMapValues { v => Iterator(fn(v)) }
 
   /**
    * emits a KeyedProducer with a value that is the store value, just BEFORE a merge,
@@ -336,9 +338,12 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def values: Producer[P, V] = map(_._2)
 }
 
-case class KeyFlatMappedProducer[P <: Platform[P], K, V, K2](producer: KeyedProducer[P, K, V], fn: K => TraversableOnce[K2]) extends KeyedProducer[P, K2, V]
+case class KeyFlatMappedProducer[P <: Platform[P], K, V, K2](producer: Producer[P, (K, V)], fn: K => TraversableOnce[K2]) extends KeyedProducer[P, K2, V]
+
+case class ValueFlatMappedProducer[P <: Platform[P], K, V, V2](producer: Producer[P, (K, V)],
+  fn: V => TraversableOnce[V2]) extends KeyedProducer[P, K, V2]
 
 case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
 
-case class LeftJoinedProducer[P <: Platform[P], K, V, JoinedV](left: KeyedProducer[P, K, V], joined: P#Service[K, JoinedV])
+case class LeftJoinedProducer[P <: Platform[P], K, V, JoinedV](left: Producer[P, (K, V)], joined: P#Service[K, JoinedV])
   extends KeyedProducer[P, K, (V, Option[JoinedV])]

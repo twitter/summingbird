@@ -48,10 +48,26 @@ object TestUtil {
     !wrong
   }
 
-  def batchedCover(batcher: Batcher, minTime: Long, maxTime: Long): Interval[Timestamp] =
-    batcher.cover(
-      Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime + 1L))
-    ).mapNonDecreasing(b => batcher.earliestTimeOf(b.next))
+  /**
+   * Prunes the input to contain only values whose timestamps are covered completely
+   * by the batches. This is used for the scala part of the job tests.
+   * Keep both time and value.
+   */
+  def pruneToBatchCoveredWithTime[T](input: TraversableOnce[(Long, T)], inputRange: Interval[Timestamp], batcher: Batcher): TraversableOnce[(Long, T)] = {
+    val batchRange = batcher.toTimestamp(batcher.batchesCoveredBy(inputRange))
+    input.filter { case (ts, _) => batchRange.contains(Timestamp(ts)) }
+  }
+
+  /* keep just the values */
+  def pruneToBatchCovered[T](input: TraversableOnce[(Long, T)], inputRange: Interval[Timestamp], batcher: Batcher): TraversableOnce[T] = {
+    pruneToBatchCoveredWithTime(input, inputRange, batcher).map { case (ts, v) => v }
+  }
+
+  /**
+   * This converts the min and max times to a time interval
+   */
+  def toTimeInterval(minTime: Long, maxTime: Long): Interval[Timestamp] =
+    Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime))
 
   val simpleBatcher = new Batcher {
     def batchOf(d: Timestamp) =
@@ -80,10 +96,7 @@ object TestUtil {
     val delta = (maxtimeInc - mintimeInc)
     val MaxBatches = 5L min delta
     val batches = 1L + Gen.choose(0L, MaxBatches).sample.get
-    if (batches == 1L) simpleBatcher
-    else {
-      val timePerBatch = (delta + 1L) / batches
-      new MillisecondBatcher(timePerBatch)
-    }
+    val timePerBatch = (delta + 1L) / batches
+    new MillisecondBatcher(timePerBatch)
   }
 }

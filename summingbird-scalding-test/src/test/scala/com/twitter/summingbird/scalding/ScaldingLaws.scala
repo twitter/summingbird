@@ -69,11 +69,19 @@ object ScaldingLaws extends Specification {
     "match scala for single step jobs" in {
       val original = sample[List[Int]]
       val fn = sample[(Int) => List[(Int, Int)]]
-      val initStore = sample[Map[Int, Int]]
-      val inMemory = TestGraphs.singleStepInScala(original)(fn)
+
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
       val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
+
+      val inMemory = TestGraphs.singleStepInScala(batchCoveredInput)(fn)
+
+      val initStore = sample[Map[Int, Int]]
       val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
@@ -81,7 +89,6 @@ object ScaldingLaws extends Specification {
         fn(t._2))
 
       val scald = Scalding("scalaCheckJob")
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
@@ -96,8 +103,18 @@ object ScaldingLaws extends Specification {
       val fn = sample[(Int) => List[(Int, Int)]]
       val initStore = sample[Map[Int, Int]]
       val prunedList = sample[Set[Int]]
+
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
+      val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
+
       val inMemory = {
-        val computedMap = TestGraphs.singleStepInScala(original)(fn)
+        val computedMap = TestGraphs.singleStepInScala(batchCoveredInput)(fn)
         val totalMap = Monoid.plus(initStore, computedMap)
         totalMap.filter(kv => !prunedList.contains(kv._1)).toMap
       }
@@ -107,9 +124,7 @@ object ScaldingLaws extends Specification {
           prunedList.contains(item._1)
         }
       }
-      // Add a time:
-      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
-      val batcher = TestUtil.randomBatcher(inWithTime)
+
       val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size, pruner)
       val (buffer, source) = TestSource(inWithTime)
 
@@ -117,7 +132,6 @@ object ScaldingLaws extends Specification {
         fn(t._2))
 
       val scald = Scalding("scalaCheckJob")
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
 
@@ -132,18 +146,24 @@ object ScaldingLaws extends Specification {
       val initStore = sample[Map[Int, Int]]
       val fnA = sample[(Int) => List[(Int, Int)]]
       val fnB = sample[Int => List[Int]]
-      val inMemory = TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB)
+
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
-      val batcher = TestUtil.randomBatcher(inWithTime)
-      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
 
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
+      val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
+
+      val inMemory = TestGraphs.singleStepMapKeysInScala(batchCoveredInput)(fnA, fnB)
+
+      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
       val summer = TestGraphs.singleStepMapKeysJob[Scalding, (Long, Int), Int, Int, Int](source, testStore)(t =>
         fnA(t._2), fnB)
 
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val scald = Scalding("scalaCheckJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
@@ -161,11 +181,18 @@ object ScaldingLaws extends Specification {
       val fnA = sample[(Int) => List[(Int)]]
       val fnB = sample[(Int) => List[(Int, Int)]]
       val fnC = sample[(Int) => List[(Int, Int)]]
-      val (inMemoryA, inMemoryB) = TestGraphs.multipleSummerJobInScala(original)(fnA, fnB, fnC)
 
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
       val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher).toList
+
+      val (inMemoryA, inMemoryB) = TestGraphs.multipleSummerJobInScala(batchCoveredInput)(fnA, fnB, fnC)
+
       val testStoreA = TestStore[Int, Int]("testA", batcher, initStoreA, inWithTime.size)
       val testStoreB = TestStore[Int, Int]("testB", batcher, initStoreB, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
@@ -173,7 +200,6 @@ object ScaldingLaws extends Specification {
       val tail = TestGraphs.multipleSummerJob[Scalding, (Long, Int), Int, Int, Int, Int, Int](source, testStoreA, testStoreB)({ t => fnA(t._2) }, fnB, fnC)
 
       val scald = Scalding("scalaCheckMultipleSumJob")
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(t))
 
@@ -189,10 +215,20 @@ object ScaldingLaws extends Specification {
       val prejoinMap = sample[(Int) => List[(Int, Int)]]
       val service = sample[(Int, Int) => Option[Int]]
       val postJoin = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
+
+      //Add a time
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
+      val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher).toIterable
+
       // We need to keep track of time correctly to use the service
       var fakeTime = -1
       val timeIncIt = new Iterator[Int] {
-        val inner = original.iterator
+        val inner = batchCoveredInput.iterator
         def hasNext = inner.hasNext
         def next = {
           fakeTime += 1
@@ -200,6 +236,7 @@ object ScaldingLaws extends Specification {
         }
       }
       val srvWithTime = { (key: Int) => service(fakeTime, key) }
+
       val inMemory = TestGraphs.leftJoinInScala(timeIncIt)(srvWithTime)(prejoinMap)(postJoin)
 
       // Add a time:
@@ -207,8 +244,6 @@ object ScaldingLaws extends Specification {
       val allTimes = (0 until original.size)
       val stream = for { time <- allTimes; key <- allKeys; v = service(time, key) } yield (time.toLong, (key, v))
 
-      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
-      val batcher = TestUtil.randomBatcher(inWithTime)
       val initStore = sample[Map[Int, Int]]
       val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
 
@@ -223,7 +258,6 @@ object ScaldingLaws extends Specification {
       val summer =
         TestGraphs.leftJoinJob[Scalding, (Long, Int), Int, Int, Int, Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
 
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val scald = Scalding("scalaCheckleftJoinJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
@@ -239,10 +273,20 @@ object ScaldingLaws extends Specification {
       val prejoinMap = sample[(Int) => List[(Int, Int)]]
       val service = sample[(Int, Int) => Option[Int]]
       val postJoin = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
+
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
+      val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher).toIterable
+
       // We need to keep track of time correctly to use the service
       var fakeTime = -1
       val timeIncIt = new Iterator[Int] {
-        val inner = original.iterator
+        val inner = batchCoveredInput.iterator
         def hasNext = inner.hasNext
         def next = {
           fakeTime += 1
@@ -257,8 +301,6 @@ object ScaldingLaws extends Specification {
       val allTimes = (0 until original.size)
       val stream = for { time <- allTimes; key <- allKeys; v = service(time, key) } yield (time.toLong, (key, v))
 
-      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
-      val batcher = TestUtil.randomBatcher(inWithTime)
       val initStore = sample[Map[Int, Int]]
       val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
 
@@ -273,7 +315,6 @@ object ScaldingLaws extends Specification {
       val summer =
         TestGraphs.repeatedTupleLeftJoinJob[Scalding, (Long, Int), Int, Int, Int, Int](source, testService, testStore) { tup => prejoinMap(tup._2) }(postJoin)
 
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val scald = Scalding("scalaCheckleftJoinJob")
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer ++ testService.sourceToBuffer).get(s))
@@ -284,14 +325,189 @@ object ScaldingLaws extends Specification {
       TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
     }
 
+    "match scala for leftJoin with store (no dependency between the two) jobs" in {
+      // TODO: what if the two sources are of different sizes here?
+      val original1 = sample[List[Int]]
+      val original2Fn = sample[(Int) => Int]
+      val original2 = original1.map { v => original2Fn(v) }
+
+      val fnA = sample[(Int) => List[(Int, Int)]]
+      val fnB = sample[(Int) => List[(Int, Int)]]
+      val postJoin = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
+
+      // Add a time
+      val inWithTime1 = original1.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+      val inWithTime2 = original2.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original1.size.toLong)
+
+      val batcher = TestUtil.randomBatcher(inWithTime1)
+      val batchCoveredInput1 = TestUtil.pruneToBatchCoveredWithTime(inWithTime1, intr, batcher)
+      val batchCoveredInput2 = TestUtil.pruneToBatchCoveredWithTime(inWithTime2, intr, batcher)
+
+      def toTime[T, U](fn: T => TraversableOnce[U]): ((Long, T)) => TraversableOnce[(Long, U)] =
+        (x: (Long, T)) => fn(x._2).map((x._1, _))
+
+      val fnAWithTime = toTime(fnA)
+      val fnBWithTime = toTime(fnB)
+      val postJoinWithTime = toTime(postJoin)
+
+      val (inMemoryA, inMemoryB) =
+        TestGraphs.leftJoinWithStoreInScala(batchCoveredInput1, batchCoveredInput2)(fnAWithTime)(fnBWithTime)(postJoinWithTime)
+
+      val storeAndServiceInit = sample[Map[Int, Int]]
+      val storeAndServiceStore = TestStore[Int, Int]("storeAndService", batcher, storeAndServiceInit, inWithTime1.size)
+      val storeAndService = TestStoreService[Int, Int](storeAndServiceStore)
+
+      val finalStoreInit = sample[Map[Int, Int]]
+      val finalStore = TestStore[Int, Int]("finalStore", batcher, finalStoreInit, inWithTime1.size)
+
+      // the end range needs to be multiple of batchsize
+      val endTimeOfLastBatch1 = batcher.latestTimeOf(batcher.batchOf(Timestamp(inWithTime1.size))).milliSinceEpoch
+      val endTimeOfLastBatch2 = batcher.latestTimeOf(batcher.batchOf(Timestamp(inWithTime2.size))).milliSinceEpoch
+      val (buffer1, source1) = TestSource(inWithTime1, Some(DateRange(RichDate(0), RichDate(endTimeOfLastBatch1))))
+      val (buffer2, source2) = TestSource(inWithTime2, Some(DateRange(RichDate(0), RichDate(endTimeOfLastBatch2))))
+
+      val summer =
+        TestGraphs.leftJoinWithStoreJob[Scalding, (Long, Int), (Long, Int), Int, Int, Int, Int](source1, source2,
+          storeAndService,
+          finalStore)(tup => fnA(tup._2))(tup => fnB(tup._2))(postJoin)
+
+      val scald = Scalding("scalaCheckleftJoinWithStoreJob")
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode((storeAndService.sourceToBuffer ++ finalStore.sourceToBuffer ++ buffer1 ++ buffer2).get(_))
+
+      scald.run(ws, mode, summer)
+
+      // Now check that the inMemory ==
+      TestUtil.compareMaps(original1, Monoid.plus(storeAndServiceInit, inMemoryA), storeAndServiceStore) must beTrue
+      TestUtil.compareMaps(original2, Monoid.plus(finalStoreInit, inMemoryB), finalStore) must beTrue
+    }
+
+    "match scala for leftJoin with store (with dependency between store and join) jobs" in {
+      val original = sample[List[Int]]
+
+      val fnA = sample[(Int) => List[(Int, Int)]]
+
+      // compose multiple flatMapValues functions
+      val valuesFlatMap1 = sample[((Int, Option[Int])) => List[String]]
+      val valuesFlatMap2 = sample[(String) => List[Int]]
+
+      val valuesFlatMap =
+        (e: ((Int, Option[Int]))) =>
+          valuesFlatMap1(e).flatMap { x => { valuesFlatMap2(x) } }
+
+      def toTime[T, U](fn: T => TraversableOnce[U]): ((Long, T)) => TraversableOnce[(Long, U)] =
+        (x: (Long, T)) => fn(x._2).map((x._1, _))
+
+      val fnAWithTime = toTime(fnA)
+      val valuesFlatMapWithTime = toTime(valuesFlatMap)
+
+      // add a time
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
+      val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCoveredWithTime(inWithTime, intr, batcher)
+
+      val inMemoryStore =
+        TestGraphs.leftJoinWithDependentStoreInScala(batchCoveredInput)(fnAWithTime)(valuesFlatMapWithTime)
+
+      val storeAndServiceInit = sample[Map[Int, Int]]
+      val storeAndServiceStore = TestStore[Int, Int]("storeAndService", batcher, storeAndServiceInit, inWithTime.size)
+      val storeAndService = TestStoreService[Int, Int](storeAndServiceStore)
+
+      // the end range needs to be multiple of batchsize
+      val endTimeOfLastBatch = batcher.latestTimeOf(batcher.batchOf(Timestamp(inWithTime.size))).milliSinceEpoch
+      val (buffer, source) = TestSource(inWithTime, Some(DateRange(RichDate(0), RichDate(endTimeOfLastBatch))))
+
+      val summer =
+        TestGraphs.leftJoinWithDependentStoreJob[Scalding, (Long, Int), String, Int, Int, Int](source,
+          storeAndService)(tup => fnA(tup._2))(valuesFlatMap1)(valuesFlatMap2)
+
+      val scald = Scalding("scalaCheckleftJoinWithDependentJob")
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode((storeAndService.sourceToBuffer ++ buffer).get(_))
+
+      scald.run(ws, mode, summer)
+
+      // Now check that the inMemory ==
+      TestUtil.compareMaps(original, Monoid.plus(storeAndServiceInit, inMemoryStore), storeAndServiceStore) must beTrue
+    }
+
+    "match scala for leftJoin with store and join fanout (with dependency between store and join) jobs" in {
+      val original = sample[List[Int]]
+
+      val fnA = sample[(Int) => List[(Int, Int)]]
+
+      // compose multiple flatMapValues functions
+      val valuesFlatMap = sample[((Int, Option[Int])) => List[Int]]
+      val flatMapFn = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
+
+      def toTime[T, U](fn: T => TraversableOnce[U]): ((Long, T)) => TraversableOnce[(Long, U)] =
+        (x: (Long, T)) => fn(x._2).map((x._1, _))
+
+      val fnAWithTime = toTime(fnA)
+      val flatMapWithTime = toTime(flatMapFn)
+      val valuesFlatMapWithTime = toTime(valuesFlatMap)
+
+      // Add a time
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
+      val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCoveredWithTime(inWithTime, intr, batcher)
+
+      val (inMemoryStoreAfterJoin, inMemoryStoreAfterFlatMap) =
+        TestGraphs.leftJoinWithDependentStoreJoinFanoutInScala(batchCoveredInput)(fnAWithTime)(valuesFlatMapWithTime)(flatMapWithTime)
+
+      val storeAndServiceInit = sample[Map[Int, Int]]
+      val storeAndServiceStore = TestStore[Int, Int]("storeAndService", batcher, storeAndServiceInit, inWithTime.size)
+      val storeAndService = TestStoreService[Int, Int](storeAndServiceStore)
+
+      val fmStoreInit = sample[Map[Int, Int]]
+      val fmStore = TestStore[Int, Int]("store", batcher, fmStoreInit, inWithTime.size)
+
+      // the end range needs to be multiple of batchsize
+      val endTimeOfLastBatch = batcher.latestTimeOf(batcher.batchOf(Timestamp(inWithTime.size))).milliSinceEpoch
+      val (buffer, source) = TestSource(inWithTime, Some(DateRange(RichDate(0), RichDate(endTimeOfLastBatch))))
+
+      val summer =
+        TestGraphs.leftJoinWithDependentStoreJoinFanoutJob[Scalding, (Long, Int), Int, Int, Int, Int](source,
+          storeAndService, fmStore)(tup => fnA(tup._2))(valuesFlatMap)(flatMapFn)
+
+      val scald = Scalding("scalaCheckleftJoinWithDependentJob")
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode((storeAndService.sourceToBuffer ++ buffer ++ fmStore.sourceToBuffer).get(_))
+
+      scald.run(ws, mode, summer)
+
+      // Now check that the inMemory ==
+      TestUtil.compareMaps(original, Monoid.plus(storeAndServiceInit, inMemoryStoreAfterJoin), storeAndServiceStore) must beTrue
+      TestUtil.compareMaps(original, Monoid.plus(fmStoreInit, inMemoryStoreAfterFlatMap), fmStore) must beTrue
+    }
+
     "match scala for diamond jobs with write" in {
       val original = sample[List[Int]]
       val fn1 = sample[(Int) => List[(Int, Int)]]
       val fn2 = sample[(Int) => List[(Int, Int)]]
-      val inMemory = TestGraphs.diamondJobInScala(original)(fn1)(fn2)
+
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
       val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
+
+      val inMemory = TestGraphs.diamondJobInScala(batchCoveredInput)(fn1)(fn2)
+
       val initStore = sample[Map[Int, Int]]
       val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
       val testSink = new TestSink[(Long, Int)]
@@ -303,7 +519,6 @@ object ScaldingLaws extends Specification {
           testStore)(t => fn1(t._2))(t => fn2(t._2))
 
       val scald = Scalding("scalding-diamond-Job")
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode(s => (testStore.sourceToBuffer ++ buffer).get(s))
 
@@ -324,10 +539,18 @@ object ScaldingLaws extends Specification {
     "Correctly aggregate multiple sumByKeys" in {
       val original = sample[List[(Int, Int)]]
       val keyExpand = sample[(Int) => List[Int]]
-      val (inMemoryA, inMemoryB) = TestGraphs.twoSumByKeyInScala(original, keyExpand)
+
       // Add a time:
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
       val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher).toList
+
+      val (inMemoryA, inMemoryB) = TestGraphs.twoSumByKeyInScala(batchCoveredInput, keyExpand)
+
       val initStore = sample[Map[Int, Int]]
       val testStoreA = TestStore[Int, Int]("testA", batcher, initStore, inWithTime.size)
       val testStoreB = TestStore[Int, Int]("testB", batcher, initStore, inWithTime.size)
@@ -337,7 +560,6 @@ object ScaldingLaws extends Specification {
         .twoSumByKey[Scalding, Int, Int, Int](source.map(_._2), testStoreA, keyExpand, testStoreB)
 
       val scald = Scalding("scalding-diamond-Job")
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
       val mode: Mode = TestMode((testStoreA.sourceToBuffer ++ testStoreB.sourceToBuffer ++ buffer).get(_))
 
@@ -351,10 +573,19 @@ object ScaldingLaws extends Specification {
     "compute correct statistics" in {
       val original = sample[List[Int]]
       val fn = sample[(Int) => List[(Int, Int)]]
-      val initStore = sample[Map[Int, Int]]
-      val inMemory = TestGraphs.singleStepInScala(original)(fn)
+
+      // Add a time
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
       val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
+
+      val inMemory = TestGraphs.singleStepInScala(batchCoveredInput)(fn)
+
+      val initStore = sample[Map[Int, Int]]
       val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
       val (buffer, source) = TestSource(inWithTime)
 
@@ -364,7 +595,6 @@ object ScaldingLaws extends Specification {
       val scald = Scalding("scalaCheckJob").withConfigUpdater { sbconf =>
         sbconf.put("scalding.job.uniqueId", jobID.get)
       }
-      val intr = TestUtil.batchedCover(batcher, 0L, original.size.toLong)
       val ws = new LoopState(intr)
       val conf: Configuration = new Configuration()
       val mode: Mode = HadoopTest(conf, t => (testStore.sourceToBuffer ++ buffer).get(t))
@@ -373,9 +603,9 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, scald.plan(summer), { f: Flow[_] => flow = f })
 
       val flowStats: FlowStats = flow.getFlowStats()
-      val origCounter: Long = flowStats.getCounterValue("scalding.test", "orig_counter")
-      val fmCounter: Long = flowStats.getCounterValue("scalding.test", "fm_counter")
-      val fltrCounter: Long = flowStats.getCounterValue("scalding.test", "fltr_counter")
+      val origCounter: Long = flowStats.getCounterValue("counter.test", "orig_counter")
+      val fmCounter: Long = flowStats.getCounterValue("counter.test", "fm_counter")
+      val fltrCounter: Long = flowStats.getCounterValue("counter.test", "fltr_counter")
       // Now check that the stats are computed correctly
       origCounter must be_==(original.size)
       fmCounter must be_==(original.flatMap(fn).size * 2)

@@ -29,15 +29,6 @@ import com.twitter.util.Duration
  */
 
 /**
- * SinkParallelism controls the number of executors storm allocates to
- * the groupAndSum bolts. Each of these bolt executors is responsible
- * for storing and committing some subset of the keyspace to the
- * Sink's store, so higher parallelism will result in higher load on
- * the store. The default sink parallelism is 5.
- */
-case class SummerParallelism(parHint: Int)
-
-/**
  * See FlatMapOptions.scala for an explanation.
  */
 object SummerStormMetrics {
@@ -45,10 +36,3 @@ object SummerStormMetrics {
   def unapply(metrics: SummerStormMetrics) = Some(metrics.metrics)
 }
 class SummerStormMetrics(val metrics: () => TraversableOnce[StormMetric[_]])
-
-/**
- * This value is mulitplied by the summer parallelism to set the true value used to hash and shard the
- * key/value pairs. This allows for there to be more, smaller batches sent out to a number of threads
- * which are set by SummerParallelism.
- */
-case class SummerBatchMultiplier(get: Int)
