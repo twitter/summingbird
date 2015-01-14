@@ -338,18 +338,6 @@ object TestGraphs {
       .sumByKey(storeAndService)
   }
 
-  def leftJoinWithDependentStoreJobMap[P <: Platform[P], T, V1, U, K, V: Monoid](
-    source1: Producer[P, T],
-    storeAndService: P#Store[K, V] with P#Service[K, V])(simpleM1: T => (K, U))(valuesMap1: ((U, Option[V])) => V1)(valuesMap2: (V1) => V): TailProducer[P, (K, (Option[V], V))] = {
-
-    source1
-      .map(simpleM1)
-      .leftJoin(storeAndService)
-      .mapValues(valuesMap1)
-      .mapValues(valuesMap2)
-      .sumByKey(storeAndService)
-  }
-
   def leftJoinWithDependentStoreJoinFanoutInScala[T, U, K: Ordering, V: Monoid, V1: Monoid](source: TraversableOnce[T])(simpleFM: T => TraversableOnce[(Long, (K, U))])(flatMapValuesFn: ((Long, (U, Option[V]))) => TraversableOnce[(Long, V)])(flatMapFn: ((Long, (K, (U, Option[V])))) => TraversableOnce[(Long, (K, V1))]): (Map[K, V], Map[K, V1]) = {
 
     // zip the left and right streams
