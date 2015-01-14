@@ -127,12 +127,13 @@ private[scalding] object InternalService {
    */
   def doIndependentJoin[K: Ordering, U, V](input: FlowToPipe[(K, U)],
     toJoin: FlowToPipe[(K, V)],
-    sg: Semigroup[V]): FlowToPipe[(K, (U, Option[V]))] =
+    sg: Semigroup[V],
+    reducers: Option[Int]): FlowToPipe[(K, (U, Option[V]))] =
 
     Reader[FlowInput, KeyValuePipe[K, (U, Option[V])]] { (flowMode: (FlowDef, Mode)) =>
       val left = input(flowMode)
       val right = toJoin(flowMode)
-      LookupJoin.rightSumming(left, right)(implicitly, implicitly, sg)
+      LookupJoin.rightSumming(left, right, reducers)(implicitly, implicitly, sg)
     }
 
   /**
