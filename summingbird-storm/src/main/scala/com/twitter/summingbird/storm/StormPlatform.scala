@@ -93,7 +93,7 @@ object Storm {
    * The values used for the service are from the online *and* offline stores.
    * Uses ClientStore internally to combine the offline and online stores to create ReadableStore[K, V]
    */
-  def storeService[K, V](offlineStore: ReadableStore[K, (BatchID, V)], onlineStore: => MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher): CombinedServiceStoreFactory[K, V] =
+  def storeService[K, V](offlineStore: => ReadableStore[K, (BatchID, V)], onlineStore: => MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher): CombinedServiceStoreFactory[K, V] =
     CombinedServiceStoreFactory(offlineStore, onlineStore, batchesToKeep)(batcher)
 
   def toStormSource[T](spout: Spout[T],
