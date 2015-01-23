@@ -291,7 +291,7 @@ trait DagOptimizer[P <: Platform[P]] {
       // TODO: we need to case class here to not lose the irreducible which may be named
       case ValueFlatMappedProducer(in, fn) =>
         // we know that (K, V) <: T due to the case match, but scala can't see it
-        def cast[K, V](p: Prod[(K, V)]): Prod[T] = IdentityKeyedProducer[P, K, V](p).asInstanceOf[Prod[T]]
+        def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
         cast(in.flatMap { case (k, v) => fn(v).map((k, _)) })
     }
   }
