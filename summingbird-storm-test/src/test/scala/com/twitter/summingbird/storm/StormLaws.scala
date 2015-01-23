@@ -110,9 +110,13 @@ object StormLaws extends Specification {
     List((k -> joinedV.getOrElse(10)))
   }
 
+  val nextFn1 = { pair: ((Int, Option[Int])) =>
+    val (v, joinedV) = pair
+    List((joinedV.getOrElse(10)))
+  }
+
   val serviceFn = sample[Int => Option[Int]]
   val service = ReadableServiceFactory[Int, Int](() => ReadableStore.fromFn(serviceFn))
-
   // ALL TESTS START AFTER THIS LINE
 
   "StormPlatform matches Scala for single step jobs" in {
@@ -215,6 +219,21 @@ object StormLaws extends Specification {
 
     Equiv[Map[Int, Int]].equiv(
       TestGraphs.leftJoinInScala(original)(serviceFn)(staticFunc)(nextFn),
+      returnedState.toScala
+    ) must beTrue
+  }
+
+  "StormPlatform matches Scala for left join with flatMapValues jobs" in {
+    val original = sample[List[Int]]
+    val staticFunc = { i: Int => List((i -> i)) }
+
+    val returnedState =
+      StormTestRun.simpleRun[Int, Int, Int](original,
+        TestGraphs.leftJoinJobWithFlatMapValues[Storm, Int, Int, Int, Int, Int](_, service, _)(staticFunc)(nextFn1)
+      )
+
+    Equiv[Map[Int, Int]].equiv(
+      TestGraphs.leftJoinWithFlatMapValuesInScala(original)(serviceFn)(staticFunc)(nextFn1),
       returnedState.toScala
     ) must beTrue
   }
