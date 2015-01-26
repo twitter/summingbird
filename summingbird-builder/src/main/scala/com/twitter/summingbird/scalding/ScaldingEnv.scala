@@ -137,7 +137,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     Built(scald, toRun, stateFn)
   }
 
-  def run = run(build)
+  def run() = run(build)
 
   def run(b: Built) {
     val Built(scald, toRun, stateFn) = b
