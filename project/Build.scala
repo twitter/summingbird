@@ -235,7 +235,8 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
-    summingbirdBatch
+    summingbirdBatch,
+    summingbirdClient
   )
 
   lazy val summingbirdStorm = module("storm").settings(
