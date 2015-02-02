@@ -262,12 +262,14 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
   }
 
   /**
-   * This returns:
+   * Reads the input data after the last batch written.
+   *
+   * Returns:
    * - the BatchID of the last batch written
    * - the snapshot of the store just before this state
    * - the data from this input covering all the time SINCE the last snapshot
    */
-  final def readBatched[T](input: PipeFactory[T]): PlannerOutput[(BatchID, FlowProducer[TypedPipe[(K, V)]], FlowToPipe[T])] = {
+  final def readAfterLastBatch[T](input: PipeFactory[T]): PlannerOutput[(BatchID, FlowProducer[TypedPipe[(K, V)]], FlowToPipe[T])] = {
     // StateWithError lacks filter, so it can't unpack tuples (scala limitation)
     // so unfortunately, this code has a lot of manual tuple unpacking for that reason
     for {
@@ -320,7 +322,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
    * (which is exactly 1 millisecond before the start of the interval).
    */
   def readDeltaLog(delta: PipeFactory[(K, V)]): PipeFactory[(K, V)] =
-    readBatched(delta).map {
+    readAfterLastBatch(delta).map {
       case (actualLast, snapshot, deltaFlow2Pipe) =>
         val snapshotTs = batcher.latestTimeOf(actualLast)
         Scalding.merge(
@@ -339,14 +341,14 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     commutativity: Commutativity,
     reducers: Int): PipeFactory[(K, (Option[V], V))] =
     for {
-      // get requested timespan before readBatched
+      // get requested timespan before readAfterLastBatch
       tsModeRequested <- getState[FactoryInput]
       (tsRequested, _) = tsModeRequested
 
-      readBatchedResult <- readBatched(delta)
+      readBatchedResult <- readAfterLastBatch(delta)
       (actualLast, snapshot, deltaFlow2Pipe) = readBatchedResult
 
-      // get the actual timespan read by readBatched
+      // get the actual timespan read by readAfterLastBatch
       tsModeRead <- getState[FactoryInput]
       (tsRead, _) = tsModeRead
 

@@ -387,9 +387,10 @@ object Scalding {
               val (logPf, m2) = recurse(storeLog, built = m1, forceFanOut = true)
               // We have to combine the last snapshot on disk with the deltas:
               val allDeltas: PipeFactory[(K, V)] = bstore.readDeltaLog(logPf)
+              val reducers = getOrElse(options, names, ljp, Reducers.default).count
               val res = for {
                 leftAndDelta <- leftPf.join(allDeltas)
-                joined = InternalService.doIndependentJoin[K, U, V](leftAndDelta._1, leftAndDelta._2, sg)
+                joined = InternalService.doIndependentJoin[K, U, V](leftAndDelta._1, leftAndDelta._2, sg, Some(reducers))
                 // read the latest state, which is the (time interval, mode)
                 maxAvailable <- StateWithError.getState
               } yield Scalding.limitTimes(maxAvailable._1, joined)

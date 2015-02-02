@@ -64,7 +64,8 @@ object TestUtil {
   }
 
   /**
-   * This converts the min and max times to a time interval
+   * This converts the min and max times to a time interval.
+   * maxTime is an exclusive upper bound.
    */
   def toTimeInterval(minTime: Long, maxTime: Long): Interval[Timestamp] =
     Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime))

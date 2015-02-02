@@ -26,7 +26,6 @@ object StripNamedNode {
 
   def castTail[P <: Platform[P]](node: Producer[P, Any]): TailProducer[P, Any] = node.asInstanceOf[TailProducer[P, Any]]
   def castToPair[P <: Platform[P]](node: Producer[P, Any]): Producer[P, (Any, Any)] = node.asInstanceOf[Producer[P, (Any, Any)]]
-  def castToKeyed[P <: Platform[P]](node: Producer[P, Any]): KeyedProducer[P, Any, Any] = node.asInstanceOf[KeyedProducer[P, Any, Any]]
 
   def processLevel[P <: Platform[P]](optLast: Option[Producer[P, Any]],
     l: TraversableOnce[ProducerF[P]],
@@ -97,13 +96,13 @@ object StripNamedNode {
       case p @ ValueFlatMappedProducer(producer, _) => ProducerF(
         List(producer),
         p,
-        { producerL: List[Producer[P, Any]] => p.copy(producer = castToKeyed(producerL(0))) }
+        { producerL: List[Producer[P, Any]] => p.copy(producer = castToPair(producerL(0))) }
       )
 
       case p @ KeyFlatMappedProducer(producer, _) => ProducerF(
         List(producer),
         p,
-        { producerL: List[Producer[P, Any]] => p.copy(producer = castToKeyed(producerL(0))) }
+        { producerL: List[Producer[P, Any]] => p.copy(producer = castToPair(producerL(0))) }
       )
 
       case p @ MergedProducer(oL, oR) => ProducerF(
@@ -115,13 +114,13 @@ object StripNamedNode {
       case p @ LeftJoinedProducer(producer, _) => ProducerF(
         List(producer),
         p,
-        { producerL: List[Producer[P, Any]] => p.copy(left = castToKeyed(producerL(0))) }
+        { producerL: List[Producer[P, Any]] => p.copy(left = castToPair(producerL(0))) }
       )
 
       case p @ Summer(producer, _, _) => ProducerF(
         List(producer),
         p,
-        { producerL: List[Producer[P, Any]] => p.copy(producer = castToKeyed(producerL(0))) }
+        { producerL: List[Producer[P, Any]] => p.copy(producer = castToPair(producerL(0))) }
       )
 
       case p @ WrittenProducer(producer, _) => ProducerF(

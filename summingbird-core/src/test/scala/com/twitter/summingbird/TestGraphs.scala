@@ -193,6 +193,26 @@ object TestGraphs {
       .flatMap(postJoinFn)
       .sumByKey(store)
 
+  def leftJoinWithFlatMapValuesInScala[T, U, JoinedU, K, V: Monoid](source: TraversableOnce[T])(service: K => Option[JoinedU])(preJoinFn: T => TraversableOnce[(K, U)])(postJoinFn: ((U, Option[JoinedU])) => TraversableOnce[V]): Map[K, V] =
+    MapAlgebra.sumByKey(
+      source
+        .flatMap(preJoinFn)
+        .map { case (k, v) => (k, (v, service(k))) }
+        .flatMap { case (k, v) => postJoinFn(v).map { v => (k, v) } }
+    )
+
+  def leftJoinJobWithFlatMapValues[P <: Platform[P], T, U, JoinedU, K, V: Monoid](
+    source: Producer[P, T],
+    service: P#Service[K, JoinedU],
+    store: P#Store[K, V])(preJoinFn: T => TraversableOnce[(K, U)])(postJoinFn: ((U, Option[JoinedU])) => TraversableOnce[V]): TailProducer[P, (K, (Option[V], V))] =
+    source
+      .name("My named source")
+      .flatMap(preJoinFn)
+      .leftJoin(service)
+      .name("My named flatmap")
+      .flatMapValues(postJoinFn)
+      .sumByKey(store)
+
   def leftJoinWithStoreInScala[T1, T2, U, JoinedU: Monoid, K: Ordering, V: Monoid](source1: TraversableOnce[T1], source2: TraversableOnce[T2])(simpleFM1: T1 => TraversableOnce[(Long, (K, JoinedU))])(simpleFM2: T2 => TraversableOnce[(Long, (K, U))])(postJoinFn: ((Long, (K, (U, Option[JoinedU])))) => TraversableOnce[(Long, (K, V))]): (Map[K, JoinedU], Map[K, V]) = {
 
     val firstStore = MapAlgebra.sumByKey(

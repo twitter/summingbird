@@ -24,18 +24,18 @@ import scala.util.Try
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
 
-private[summingbird] trait CounterIncrementor {
+trait CounterIncrementor {
   def incrBy(by: Long): Unit
 }
 
-private[summingbird] trait PlatformStatProvider {
+trait PlatformStatProvider {
   // Incrementor for a Counter identified by group/name for the specific jobID
   // Returns an incrementor function for the Counter wrapped in an Option
   // to ensure we catch when the incrementor cannot be obtained for the specified jobID
   def counterIncrementor(jobId: JobId, group: Group, name: Name): Option[CounterIncrementor]
 }
 
-private[summingbird] object SummingbirdRuntimeStats {
+object SummingbirdRuntimeStats {
   private class MutableSetSynchronizedWrapper[T] {
     private[this] val innerContainer = scala.collection.mutable.Set[T]()
     def nonEmpty: Boolean = innerContainer.synchronized { innerContainer.nonEmpty }
@@ -78,7 +78,7 @@ private[summingbird] object SummingbirdRuntimeStats {
   }
 }
 
-private[summingbird] object JobCounters {
+object JobCounters {
   @annotation.tailrec
   private[this] final def getOrElseUpdate[K, V](map: ConcurrentHashMap[K, V], k: K, default: => V): V = {
     val v = map.get(k)
