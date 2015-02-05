@@ -17,9 +17,10 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
-import com.twitter.algebird.util.summer.{ SyncSummingQueue, AsyncListSum, BufferSize, FlushFrequency, MemoryFlushPercent }
+import com.twitter.algebird.util.summer._
+import com.twitter.summingbird.{ Name, Group, Counter }
 import com.twitter.summingbird.online.option.{ SummerBuilder, SummerConstructor }
-import com.twitter.summingbird.option.CacheSize
+import com.twitter.summingbird.option.{ JobId, CacheSize }
 import com.twitter.summingbird.planner.Dag
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.util.{ Future, FuturePool }
@@ -38,7 +39,7 @@ import Constants._
 object BuildSummer {
   @transient private val logger = LoggerFactory.getLogger(BuildSummer.getClass)
 
-  def apply(storm: Storm, dag: Dag[Storm], node: StormNode) = {
+  def apply(storm: Storm, dag: Dag[Storm], node: StormNode, jobID: JobId) = {
     val opSummerConstructor = storm.get[SummerConstructor](dag, node).map(_._2)
     logger.debug("Node ({}): Queried for SummerConstructor, got {}", dag.getNodeName(node), opSummerConstructor)
 
@@ -46,19 +47,27 @@ object BuildSummer {
       case Some(cons) =>
         logger.debug("Node ({}): Using user supplied SummerConstructor: {}", dag.getNodeName(node), cons)
         cons.get
-      case None => legacyBuilder(storm, dag, node)
+      case None => legacyBuilder(storm, dag, node, jobID)
     }
   }
 
-  private[this] final def legacyBuilder(storm: Storm, dag: Dag[Storm], node: StormNode) = {
+  private[this] final def legacyBuilder(storm: Storm, dag: Dag[Storm], node: StormNode, jobID: JobId) = {
     val nodeName = dag.getNodeName(node)
     val cacheSize = storm.getOrElse(dag, node, DEFAULT_FM_CACHE)
     logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
 
+    val memoryCounter = counter(jobID, Name(nodeName), Name("memory"))
+    val timeoutCounter = counter(jobID, Name(nodeName), Name("timeout"))
+    val sizeCounter = counter(jobID, Name(nodeName), Name("size"))
+    val tupleInCounter = counter(jobID, Name(nodeName), Name("tuplesIn"))
+    val tupleOutCounter = counter(jobID, Name(nodeName), Name("tuplesOut"))
+    val insertCounter = counter(jobID, Name(nodeName), Name("inserts"))
+    val insertFailCounter = counter(jobID, Name(nodeName), Name("insertFail"))
+
     if (cacheSize.lowerBound == 0) {
       new SummerBuilder {
         def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {
-          new com.twitter.algebird.util.summer.NullSummer[K, V]
+          new com.twitter.algebird.util.summer.NullSummer[K, V](tupleInCounter, tupleOutCounter)
         }
       }
     } else {
@@ -77,8 +86,13 @@ object BuildSummer {
             new SyncSummingQueue[K, V](
               BufferSize(cacheSize.lowerBound),
               FlushFrequency(flushFrequency.get),
-              MemoryFlushPercent(softMemoryFlush.get)
-            )
+              MemoryFlushPercent(softMemoryFlush.get),
+              memoryCounter,
+              timeoutCounter,
+              sizeCounter,
+              insertCounter,
+              tupleInCounter,
+              tupleOutCounter)
           }
         }
       } else {
@@ -95,8 +109,16 @@ object BuildSummer {
             val summer = new AsyncListSum[K, V](BufferSize(cacheSize.lowerBound),
               FlushFrequency(flushFrequency.get),
               MemoryFlushPercent(softMemoryFlush.get),
-              futurePool
-            )
+              memoryCounter,
+              timeoutCounter,
+              insertCounter,
+              insertFailCounter,
+              sizeCounter,
+              tupleInCounter,
+              tupleOutCounter,
+              futurePool,
+              Compact(false),
+              CompactionSize(0))
             summer.withCleanup(() => {
               Future {
                 executor.shutdown
@@ -108,4 +130,7 @@ object BuildSummer {
       }
     }
   }
+
+  def counter(jobID: JobId, nodeName: Name, counterName: Name) = new Counter(Group("summingbird." + nodeName.getString), counterName)(jobID) with Incrementor
+
 }

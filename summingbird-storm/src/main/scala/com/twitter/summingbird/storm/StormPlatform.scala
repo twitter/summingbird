@@ -217,7 +217,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
-    val builder = BuildSummer(this, stormDag, node)
+    val builder = BuildSummer(this, stormDag, node, jobID)
 
     val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
     logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)

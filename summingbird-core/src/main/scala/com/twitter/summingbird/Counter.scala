@@ -18,9 +18,9 @@ package com.twitter.summingbird
 
 import com.twitter.summingbird.option.JobId
 
-case class Group(getString: String)
+case class Group(getString: String) extends AnyVal
 
-case class Name(getString: String)
+case class Name(getString: String) extends AnyVal
 
 /*
  User-defined Counter
