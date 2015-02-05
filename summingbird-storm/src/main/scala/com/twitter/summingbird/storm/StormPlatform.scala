@@ -45,6 +45,8 @@ import org.slf4j.LoggerFactory
 import scala.collection.{ Map => CMap }
 
 import Constants._
+import com.twitter.summingbird.storm.StormMetric
+import backtype.storm.metric.api.IMetric
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
@@ -173,7 +175,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     }
   }
 
-  private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSpout[K](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val (spout, parOpt) = node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
     val nodeName = stormDag.getNodeName(node)
 
@@ -188,9 +190,23 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       }
     }
 
+    val countersForSpout: Seq[(Group, Name)] = JobCounters.getCountersForJob(jobID).getOrElse(Nil)
+
     val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
 
-    val stormSpout = tormentaSpout.registerMetrics(metrics.toSpoutMetrics).getSpout
+    val registerAllMetrics = new Function1[TopologyContext, Unit] {
+      def apply(context: TopologyContext) = {
+        // Register metrics passed in SpoutStormMetrics option.
+        metrics.metrics().map {
+          x: StormMetric[IMetric] =>
+            context.registerMetric(x.name, x.metric, x.interval.inSeconds)
+        }
+        // Register summingbird counter metrics.
+        StormStatProvider.registerMetrics(jobID, context, countersForSpout)
+        SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
+      }
+    }
+    val stormSpout = tormentaSpout.openHook(registerAllMetrics).getSpout
     val parallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SOURCE_PARALLELISM)).parHint
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
@@ -338,7 +354,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       node match {
         case _: SummerNode[_] => scheduleSummerBolt(jobID, stormDag, node)
         case _: FlatMapNode[_] => scheduleFlatMapper(jobID, stormDag, node)
-        case _: SourceNode[_] => scheduleSpout(stormDag, node)
+        case _: SourceNode[_] => scheduleSpout(jobID, stormDag, node)
       }
     }
     PlannedTopology(config, topologyBuilder.createTopology)
