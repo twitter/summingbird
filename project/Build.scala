@@ -14,26 +14,27 @@ object SummingbirdBuild extends Build {
     case version if version startsWith "2.10" => "2.10"
     case version if version startsWith "2.11" => "2.11"
     case version if version startsWith "2.12" => "2.12"
-    case _ => sys.error("unknown error")
+    case _ => sys.error("Unsupported scala version: " + scalaVersion)
   }
+
   def isScala210x(scalaVersion: String) = scalaBinaryVersion(scalaVersion) == "2.10"
 
   val scalaTestVersion = "2.2.2"
   val scalaCheckVersion = "1.11.5"
   val hadoopVersion = "1.2.1"
-  val algebirdVersion = "0.8.2"
-  val bijectionVersion = "0.7.0"
-  val chillVersion = "0.5.1"
+  val algebirdVersion = "0.9.0"
+  val bijectionVersion = "0.7.2"
+  val chillVersion = "0.5.2"
   val slf4jVersion = "1.6.6"
   val parquetVersion = "1.6.0rc4"
 
   val dfsDatastoresVersion = "1.3.4"
-  val scaldingVersion = "0.13.0"
-  val storehausVersion = "0.9.1"
+  val scaldingVersion = "0.13.1"
+  val storehausVersion = "0.10.0"
   val utilVersion = "6.3.8"
 
   val finagleVersion = "6.12.2"
-  val tormentaVersion = "0.7.0"
+  val tormentaVersion = "0.9.0"
   val junitVersion = "4.11"
   val log4jVersion = "1.2.16"
   val stormVersion = "0.9.0-wip15"
