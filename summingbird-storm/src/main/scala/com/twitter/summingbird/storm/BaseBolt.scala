@@ -54,7 +54,7 @@ case class BaseBolt[I, O](jobID: JobId,
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  val lockedCounters = Externalizer(JobCounters.getCountersForJob(jobID).getOrElse(Nil))
+  private[this] val lockedCounters = Externalizer(JobCounters.getCountersForJob(jobID).getOrElse(Nil))
 
   lazy val countersForBolt: Seq[(Group, Name)] = lockedCounters.get
 
