@@ -17,6 +17,7 @@
 package com.twitter.summingbird
 
 import com.twitter.algebird.Semigroup
+import com.twitter.summingbird.planner.FunctionContainer
 
 object Producer {
 
@@ -85,6 +86,28 @@ object Producer {
       case LeftJoinedProducer(producer, _) => List(producer)
       case Summer(producer, _, _) => List(producer)
       case MergedProducer(l, r) => List(l, r)
+    }
+
+  def irreduciblesOf[P <: Platform[P]](p: Producer[P, Any]): List[Irreducible[P]] =
+    p match {
+      case Source(s) => List(Irreducible.Source(s))
+      case AlsoProducer(_, _) => List()
+      case NamedProducer(_, _) => List()
+      case IdentityKeyedProducer(_) => List()
+      // All the function cases need to be flattened in case they have
+      // been composed by the DagOptimizer
+      case OptionMappedProducer(_, fn) =>
+        FunctionContainer.flatten(fn).map(Irreducible.Function[P](_)).toList
+      case FlatMappedProducer(_, fn) =>
+        FunctionContainer.flatten(fn).map(Irreducible.Function[P](_)).toList
+      case KeyFlatMappedProducer(_, fn) =>
+        FunctionContainer.flatten(fn).map(Irreducible.Function[P](_)).toList
+      case ValueFlatMappedProducer(_, fn) =>
+        FunctionContainer.flatten(fn).map(Irreducible.Function[P](_)).toList
+      case WrittenProducer(_, sink) => List(Irreducible.Sink(sink))
+      case LeftJoinedProducer(_, srv) => List(Irreducible.Service(srv))
+      case Summer(_, store, sg) => List(Irreducible.Store(store), Irreducible.Semigroup(sg))
+      case MergedProducer(_, _) => List()
     }
 
   /**
