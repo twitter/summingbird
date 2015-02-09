@@ -348,7 +348,16 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val stormDag = OnlinePlan(stormTail.asInstanceOf[TailProducer[Storm, T]])
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = genConfig(stormDag)
-    val jobID = JobId(config.get("storm.job.uniqueId").asInstanceOf[String])
+    val jobID = {
+      val stormJobId = config.get("storm.job.uniqueId").asInstanceOf[String]
+      if (stormJobId == null) {
+        //this should only execute in a in-memory test topology
+        logger.warn("storm.job.uniqueId is null, generating a new id")
+        JobId(java.util.UUID.randomUUID().toString)
+      } else {
+        JobId(stormJobId)
+      }
+    }
 
     stormDag.nodes.foreach { node =>
       node match {
