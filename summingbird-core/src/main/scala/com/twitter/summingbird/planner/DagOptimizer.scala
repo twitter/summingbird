@@ -276,11 +276,22 @@ trait DagOptimizer[P <: Platform[P]] {
   object KeyFlatMapToFlatMap extends PartialRule[Prod] {
     def applyWhere[T](on: ExpressionDag[Prod]) = {
       //Can't fuse flatMaps when on fanout
-      // TODO: we need to case class here to not lose the irreducible which may be named
       case KeyFlatMappedProducer(in, fn) =>
         // we know that (K, V) <: T due to the case match, but scala can't see it
         def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
-        cast(in.flatMap { case (k, v) => fn(k).map((_, v)) })
+        cast(in.flatMap(KeyFlatMapFunction(fn)))
+    }
+  }
+  /**
+   * a.flatMapKeys(fn).flatMapKeys(fn2) can be written as a.flatMapKeys(compose(fn, fn2))
+   */
+  object FlatMapKeyFusion extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
+      //Can't fuse flatMaps when on fanout
+      case KeyFlatMappedProducer(in1 @ KeyFlatMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
+        // we know that (K, V) <: T due to the case match, but scala can't see it
+        def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
+        cast(KeyFlatMappedProducer(in0, ComposedFlatMap(fn0, fn1)))
     }
   }
   /**
@@ -288,11 +299,22 @@ trait DagOptimizer[P <: Platform[P]] {
    */
   object ValueFlatMapToFlatMap extends PartialRule[Prod] {
     def applyWhere[T](on: ExpressionDag[Prod]) = {
-      // TODO: we need to case class here to not lose the irreducible which may be named
       case ValueFlatMappedProducer(in, fn) =>
         // we know that (K, V) <: T due to the case match, but scala can't see it
         def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
-        cast(in.flatMap { case (k, v) => fn(v).map((k, _)) })
+        cast(in.flatMap(ValueFlatMapFunction(fn)))
+    }
+  }
+  /**
+   * a.flatMapValues(fn).flatMapValues(fn2) can be written as a.flatMapValues(compose(fn, fn2))
+   */
+  object FlatMapValuesFusion extends PartialRule[Prod] {
+    def applyWhere[T](on: ExpressionDag[Prod]) = {
+      //Can't fuse flatMaps when on fanout
+      case ValueFlatMappedProducer(in1 @ ValueFlatMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
+        // we know that (K, V) <: T due to the case match, but scala can't see it
+        def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
+        cast(ValueFlatMappedProducer(in0, ComposedFlatMap(fn0, fn1)))
     }
   }
 
