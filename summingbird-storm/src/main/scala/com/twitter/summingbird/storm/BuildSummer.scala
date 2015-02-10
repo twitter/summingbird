@@ -54,15 +54,17 @@ object BuildSummer {
   private[this] final def legacyBuilder(storm: Storm, dag: Dag[Storm], node: StormNode, jobID: JobId) = {
     val nodeName = dag.getNodeName(node)
     val cacheSize = storm.getOrElse(dag, node, DEFAULT_FM_CACHE)
+    require(jobID.get != null, "Unable to register metrics with no job id present in the config updater")
     logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
 
-    val memoryCounter = counter(jobID, Name(nodeName), Name("memory"))
-    val timeoutCounter = counter(jobID, Name(nodeName), Name("timeout"))
-    val sizeCounter = counter(jobID, Name(nodeName), Name("size"))
-    val tupleInCounter = counter(jobID, Name(nodeName), Name("tuplesIn"))
-    val tupleOutCounter = counter(jobID, Name(nodeName), Name("tuplesOut"))
-    val insertCounter = counter(jobID, Name(nodeName), Name("inserts"))
-    val insertFailCounter = counter(jobID, Name(nodeName), Name("insertFail"))
+    println(s"NodeName: $nodeName")
+    val memoryCounter = counter(jobID, Group(nodeName), Name("memory"))
+    val timeoutCounter = counter(jobID, Group(nodeName), Name("timeout"))
+    val sizeCounter = counter(jobID, Group(nodeName), Name("size"))
+    val tupleInCounter = counter(jobID, Group(nodeName), Name("tuplesIn"))
+    val tupleOutCounter = counter(jobID, Group(nodeName), Name("tuplesOut"))
+    val insertCounter = counter(jobID, Group(nodeName), Name("inserts"))
+    val insertFailCounter = counter(jobID, Group(nodeName), Name("insertFail"))
 
     if (cacheSize.lowerBound == 0) {
       new SummerBuilder {
@@ -131,6 +133,6 @@ object BuildSummer {
     }
   }
 
-  def counter(jobID: JobId, nodeName: Name, counterName: Name) = new Counter(Group("summingbird." + nodeName.getString), counterName)(jobID) with Incrementor
+  def counter(jobID: JobId, nodeName: Group, counterName: Name) = new Counter(Group("summingbird." + nodeName.getString), counterName)(jobID) with Incrementor
 
 }

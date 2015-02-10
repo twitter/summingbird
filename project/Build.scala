@@ -65,7 +65,6 @@ object SummingbirdBuild extends Build {
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
       // These satisify's scaldings log4j needs when in test mode
       "log4j" % "log4j" % log4jVersion % "test",
-      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
       "com.novocode" % "junit-interface" % novocodeJunitVersion % "test",
       "org.specs2" %% "specs2" % "1.13" % "test"
     ),
@@ -194,14 +193,16 @@ object SummingbirdBuild extends Build {
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
-      "com.twitter" %% "scalding-date" % scaldingVersion
+      "com.twitter" %% "scalding-date" % scaldingVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   )
 
   lazy val summingbirdChill = module("chill").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "chill" % chillVersion,
-      "com.twitter" %% "chill-bijection" % chillVersion
+      "com.twitter" %% "chill-bijection" % chillVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(
       summingbirdCore,
@@ -214,7 +215,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-util" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
-      "com.twitter" %% "storehaus-algebra" % storehausVersion
+      "com.twitter" %% "storehaus-algebra" % storehausVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(summingbirdBatch)
 
@@ -234,7 +236,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "chill" % chillVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
-      "com.twitter" %% "util-core" % utilVersion
+      "com.twitter" %% "util-core" % utilVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -313,7 +316,8 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdScaldingTest = module("scalding-test").settings(
     libraryDependencies ++= Seq(
-      "org.scalacheck" %% "scalacheck" % scalaCheckVersion
+      "org.scalacheck" %% "scalacheck" % scalaCheckVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -327,7 +331,8 @@ object SummingbirdBuild extends Build {
       "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-json" % bijectionVersion,
-      "com.twitter" %% "scalding-date" % scaldingVersion
+      "com.twitter" %% "scalding-date" % scaldingVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -351,7 +356,8 @@ object SummingbirdBuild extends Build {
       "storm" % "storm" % stormVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "bijection-netty" % bijectionVersion,
       "com.twitter" %% "tormenta-twitter" % tormentaVersion,
-      "com.twitter" %% "storehaus-memcache" % storehausVersion
+      "com.twitter" %% "storehaus-memcache" % storehausVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(summingbirdCore, summingbirdCoreJava, summingbirdStorm, summingbirdStormJava)
 
