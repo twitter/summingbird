@@ -57,7 +57,7 @@ object BuildSummer {
     require(jobID.get != null, "Unable to register metrics with no job id present in the config updater")
     logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
 
-    println(s"NodeName: $nodeName")
+
     val memoryCounter = counter(jobID, Group(nodeName), Name("memory"))
     val timeoutCounter = counter(jobID, Group(nodeName), Name("timeout"))
     val sizeCounter = counter(jobID, Group(nodeName), Name("size"))
