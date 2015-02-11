@@ -82,6 +82,10 @@ public class JMemory {
     return new Service<Memory, JMemoryService<K, V>, K, V>(new JMemoryService(service));
   }
 
+<<<<<<< HEAD
+=======
+  private Memory platform = new Memory(new JobId("inMem"));
+>>>>>>> master
 
   /**
    * @param tail

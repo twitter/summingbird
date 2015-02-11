@@ -19,7 +19,10 @@ package com.twitter.summingbird.memory
 import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
+<<<<<<< HEAD
 import com.twitter.summingbird.planner.DagOptimizer
+=======
+>>>>>>> master
 import collection.mutable.{ Map => MutableMap }
 
 object Memory {
@@ -27,10 +30,13 @@ object Memory {
     Producer.source[Memory, T](traversable)
 }
 
+<<<<<<< HEAD
 trait MemoryService[-K, +V] {
   def get(k: K): Option[V]
 }
 
+=======
+>>>>>>> master
 class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Platform[Memory] {
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]
@@ -41,8 +47,15 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
   private type Prod[T] = Producer[Memory, T]
   private type JamfMap = Map[Prod[_], Stream[_]]
 
+<<<<<<< HEAD
   def counter(group: Group, name: Name): Option[Long] =
     MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }
+=======
+  def counter(group: String, name: String): Option[Long] =
+    MemoryStatProvider.getCountersForJob(jobID).flatMap { c =>
+      c.get(group + "/" + name).map { _.get }
+    }
+>>>>>>> master
 
   def toStream[T, K, V](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
     jamfs.get(outerProducer) match {
@@ -109,19 +122,28 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
 
   def plan[T](prod: TailProducer[Memory, T]): Stream[T] = {
 
+<<<<<<< HEAD
     val registeredCounters: Seq[(Group, Name)] =
       JobCounters.getCountersForJob(jobID).getOrElse(Nil)
+=======
+    val registeredCounters: Seq[(String, String)] =
+      Option(JobCounters.registeredCountersForJob.get(jobID)).map(_.toList).getOrElse(Nil)
+>>>>>>> master
 
     if (!registeredCounters.isEmpty) {
       MemoryStatProvider.registerCounters(jobID, registeredCounters)
       SummingbirdRuntimeStats.addPlatformStatProvider(MemoryStatProvider)
     }
+<<<<<<< HEAD
 
     val dagOptimizer = new DagOptimizer[Memory] {}
     val memoryTail = dagOptimizer.optimize(prod, dagOptimizer.ValueFlatMapToFlatMap)
     val memoryDag = memoryTail.asInstanceOf[TailProducer[Memory, T]]
 
     toStream(memoryDag, Map.empty)._1
+=======
+    toStream(prod, Map.empty)._1
+>>>>>>> master
   }
 
   def run(iter: Stream[_]) {

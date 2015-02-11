@@ -93,11 +93,16 @@ object JobCounters {
   private val registeredCountersForJob: ConcurrentHashMap[JobId, ParHashSet[(Group, Name)]] =
     new ConcurrentHashMap[JobId, ParHashSet[(Group, Name)]]()
 
+<<<<<<< HEAD
   def getCountersForJob(jobID: JobId): Option[Seq[(Group, Name)]] =
     Option(registeredCountersForJob.get(jobID)).map(_.toList)
 
   def registerCounter(jobID: JobId, group: Group, name: Name): Unit = {
     val set = getOrElseUpdate(registeredCountersForJob, jobID, ParHashSet[(Group, Name)]())
+=======
+  def registerCounter(jobID: JobId, group: String, name: String): Unit = {
+    val set = getOrElseUpdate(registeredCountersForJob, jobID, ParHashSet[(String, String)]())
+>>>>>>> master
     set += ((group, name))
   }
 }
