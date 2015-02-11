@@ -1,5 +1,25 @@
 # Summingbird #
 
+## 0.6.0
+* Use latest bijection, algebird, scalding, storehaus, chill, and tormenta https://github.com/twitter/summingbird/pull/565
+* Remove scala 2.9 support https://github.com/twitter/summingbird/pull/565
+* Add counters to default summers https://github.com/twitter/summingbird/pull/571
+* Registering summingbird counters with tormenta spouts https://github.com/twitter/summingbird/pull/553
+* Remove StripNameNodes: https://github.com/twitter/summingbird/pull/587
+* Revert unneeded wrapper in DagOptimizer: https://github.com/twitter/summingbird/pull/584
+* Make some classes public so we can make custom platforms: https://github.com/twitter/summingbird/pull/564
+* IdentityKeyedProducer in ValueFlatMapToFlatMap Dag Optimizer rule: https://github.com/twitter/summingbird/pull/580
+* Lazy store init for CombinedServiceStoreFactory: https://github.com/twitter/summingbird/pull/582
+* Pass the reducers option down to leftJoin: https://github.com/twitter/summingbird/pull/578
+* Rename readBatched to readAfterLastBatch: https://github.com/twitter/summingbird/pull/577
+* Fixes BatchedStore interval calculation: https://github.com/twitter/summingbird/pull/573
+* Support for creating a store-service for Storm platform: https://github.com/twitter/summingbird/pull/563
+* Support leftJoin against a store in offline platform: https://github.com/twitter/summingbird/pull/557
+* Counters for ConcurrentMemory platform: https://github.com/twitter/summingbird/pull/550
+* Summingbird Storm/Online refactor: https://github.com/twitter/summingbird/pull/544
+* Memory platform counters: https://github.com/twitter/summingbird/pull/548
+* Example of using DagOptimizer: https://github.com/twitter/summingbird/pull/538
+
 ## 0.5.1
 * Change the javac options for doc generation in java to be successful. (Blocks maven publishing)
 

@@ -46,9 +46,15 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.5.1",
+<<<<<<< HEAD
+    version := "0.6.0",
     scalaVersion := "2.10.4",
     crossScalaVersions := Seq("2.10.4"),
+=======
+    version := "0.5.2rc6",
+    scalaVersion := "2.9.3",
+    crossScalaVersions := Seq("2.9.3", "2.10.4"),
+>>>>>>> master
     // To support hadoop 1.x
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
@@ -169,6 +175,19 @@ object SummingbirdBuild extends Build {
     summingbirdExample
   )
 
+<<<<<<< HEAD
+=======
+  val dfsDatastoresVersion = "1.3.4"
+  val bijectionVersion = "0.6.3"
+  val algebirdVersion = "0.7.0"
+  val scaldingVersion = "0.12.0rc1"
+  val storehausVersion = "0.9.1"
+  val utilVersion = "6.3.8"
+  val chillVersion = "0.4.0"
+  val tormentaVersion = "0.7.0"
+
+  lazy val slf4jVersion = "1.6.6"
+>>>>>>> master
 
   /**
     * This returns the youngest jar we released that is compatible with

@@ -205,6 +205,31 @@ object MemoryLaws extends Specification {
       (fltrCounter == (original.flatMap(fn).size))
   }
 
+  /**
+   * Tests the in-memory planner against a job with a single flatMap
+   * operation and some test counters
+   */
+  def counterChecker[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv]: Boolean = {
+    implicit val jobID: JobId = new JobId("memory.job.testJobId")
+    val mem = new Memory
+    val fn = sample[(T) => List[(K, V)]]
+    val sourceMaker = Memory.toSource[T](_)
+    val original = sample[List[T]]
+    val source = sourceMaker(original)
+    val store: Memory#Store[K, V] = MutableMap.empty[K, V]
+
+    val prod = TestGraphs.jobWithStats[Memory, T, K, V](jobID, source, store)(t => fn(t))
+    mem.run(mem.plan(prod))
+
+    val origCounter = mem.counter("scalding.test", "orig_counter").get
+    val fmCounter = mem.counter("scalding.test", "fm_counter").get
+    val fltrCounter = mem.counter("scalding.test", "fltr_counter").get
+
+    (origCounter == original.size) &&
+      (fmCounter == (original.flatMap(fn).size * 2)) &&
+      (fltrCounter == (original.flatMap(fn).size))
+  }
+
   "The Memory Platform" should {
     //Set up the job:
     "singleStep w/ Int, Int, Set[Int]" in { singleStepLaw[Int, Int, Set[Int]] must beTrue }
