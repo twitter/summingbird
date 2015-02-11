@@ -29,6 +29,7 @@ import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{ InflightTuples, InputState }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
+import com.twitter.summingbird.online.Externalizer
 
 import scala.collection.JavaConverters._
 
@@ -53,8 +54,9 @@ case class BaseBolt[I, O](jobID: JobId,
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  val countersForBolt: Seq[(Group, Name)] =
-    JobCounters.getCountersForJob(jobID).getOrElse(Nil)
+  private[this] val lockedCounters = Externalizer(JobCounters.getCountersForJob(jobID).getOrElse(Nil))
+
+  lazy val countersForBolt: Seq[(Group, Name)] = lockedCounters.get
 
   private var collector: OutputCollector = null
 
