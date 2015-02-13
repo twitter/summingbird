@@ -13,7 +13,7 @@ matrix:
 
     - scala: 2.10.4
       env: BUILD="base" TEST_TARGET="summingbird-batch-hadoop"
-      script: "scripts/run_test.sh"    - scala: 2.10.4
+      script: "scripts/run_test.sh"
 
     -  env: BUILD="base" TEST_TARGET="summingbird-batch-builder"
       script: "scripts/run_test.sh"
