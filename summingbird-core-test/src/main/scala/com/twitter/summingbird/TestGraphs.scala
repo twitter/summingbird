@@ -16,11 +16,9 @@
 
 package com.twitter.summingbird
 
-import com.twitter.algebird.MapAlgebra
-import com.twitter.algebird.{ Monoid, Semigroup }
+import com.twitter.algebird.{ MapAlgebra, Monoid, Semigroup }
 import com.twitter.summingbird.option.JobId
 import org.scalacheck.Arbitrary
-import org.scalacheck.Prop._
 
 /**
  * Helpful functions and test graphs designed to flex Summingbird

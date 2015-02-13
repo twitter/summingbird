@@ -16,13 +16,12 @@ limitations under the License.
 
 package com.twitter.summingbird.memory
 
-import com.twitter.algebird.{ MapAlgebra, Monoid }
+import java.util.concurrent.{BlockingQueue, ConcurrentHashMap, LinkedBlockingQueue}
+
+import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
-import org.scalacheck.{ Arbitrary, Properties }
-import org.scalacheck.Prop._
-import java.util.concurrent.{ BlockingQueue, LinkedBlockingQueue, ConcurrentHashMap }
-
+import org.scalacheck.Arbitrary
 import org.specs2.mutable._
 
 import scala.concurrent.Await

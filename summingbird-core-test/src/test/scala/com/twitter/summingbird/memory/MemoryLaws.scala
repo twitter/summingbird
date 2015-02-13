@@ -16,37 +16,17 @@ limitations under the License.
 
 package com.twitter.summingbird.memory
 
-import com.twitter.algebird.{ MapAlgebra, Monoid }
+import com.twitter.algebird.{MapAlgebra, Monoid}
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
-import org.scalacheck.{ Arbitrary, Properties }
-import org.scalacheck.Prop._
-import collection.mutable.{ Map => MutableMap, ListBuffer, HashMap => MutableHashMap }
-
+import org.scalacheck.{Arbitrary, _}
 import org.specs2.mutable._
-import org.scalacheck._
-import Gen._
+
+import scala.collection.mutable.{HashMap => MutableHashMap, ListBuffer, Map => MutableMap}
 /**
  * Tests for Summingbird's in-memory planner.
  */
 
-object MemoryArbitraries {
-  implicit def arbSource1[K: Arbitrary]: Arbitrary[Producer[Memory, K]] =
-    Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[K]).map(Producer.source[Memory, K](_)))
-  implicit def arbSource2[K: Arbitrary, V: Arbitrary]: Arbitrary[KeyedProducer[Memory, K, V]] =
-    Arbitrary(Gen.listOfN(100, Arbitrary.arbitrary[(K, V)]).map(Producer.source[Memory, (K, V)](_)))
-  implicit def arbService[K: Arbitrary, V: Arbitrary]: Arbitrary[MemoryService[K, V]] =
-    Arbitrary(
-      for {
-        k <- Gen.listOfN(100, Arbitrary.arbitrary[K])
-        v <- Gen.listOfN(100, Arbitrary.arbitrary[V])
-      } yield {
-        val m = new MutableHashMap[K, V]() with MemoryService[K, V]
-        k.zip(v).foreach(p => m.put(p._1, p._2))
-        m
-      }
-    )
-}
 
 object MemoryLaws extends Specification {
   // This is dangerous, obviously. The Memory platform tested here
@@ -87,7 +67,7 @@ object MemoryLaws extends Specification {
    * service functions.
    */
   def leftJoinLaw[T: Manifest: Arbitrary, K: Arbitrary, U: Arbitrary, JoinedU: Arbitrary, V: Monoid: Arbitrary: Equiv] = {
-    import MemoryArbitraries._
+    import com.twitter.summingbird.memory.MemoryArbitraries._
     val serviceFn: MemoryService[K, JoinedU] = Arbitrary.arbitrary[MemoryService[K, JoinedU]].sample.get
     testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn,
       { svc => { (k: K) => svc.get(k) } },
@@ -168,7 +148,7 @@ object MemoryLaws extends Specification {
   }
 
   def lookupCollectChecker[T: Arbitrary: Equiv: Manifest, U: Arbitrary: Equiv]: Boolean = {
-    import MemoryArbitraries._
+    import com.twitter.summingbird.memory.MemoryArbitraries._
     val mem = new Memory
     val input = sample[List[T]]
     val srv = sample[MemoryService[T, U]]
