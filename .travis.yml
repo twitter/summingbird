@@ -1,6 +1,8 @@
 #test execution script.
 
 language: scala
+sudo: false
+before_install: umask 0022
 scala:
   - 2.10.4
 script:

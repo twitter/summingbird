@@ -1,9 +1,8 @@
 #!/bin/sh
-#!/bin/sh
 # Identify the bin dir in the distribution, and source the common include script
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
 cd $BASE_DIR
-
+echo "$BASE_DIRdebug"
 bash -c "while true; do echo -n .; sleep 5; done" &
 PROGRESS_REPORTER_PID=$!
 time ./sbt ++$TRAVIS_SCALA_VERSION $TEST_TARGET/compile $TEST_TARGET/test:compile &> /dev/null
