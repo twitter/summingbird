@@ -67,7 +67,7 @@ object MemoryLaws extends Specification {
    * service functions.
    */
   def leftJoinLaw[T: Manifest: Arbitrary, K: Arbitrary, U: Arbitrary, JoinedU: Arbitrary, V: Monoid: Arbitrary: Equiv] = {
-    import com.twitter.summingbird.memory.MemoryArbitraries._
+ import MemoryArbitraries._
     val serviceFn: MemoryService[K, JoinedU] = Arbitrary.arbitrary[MemoryService[K, JoinedU]].sample.get
     testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn,
       { svc => { (k: K) => svc.get(k) } },
@@ -148,7 +148,7 @@ object MemoryLaws extends Specification {
   }
 
   def lookupCollectChecker[T: Arbitrary: Equiv: Manifest, U: Arbitrary: Equiv]: Boolean = {
-    import com.twitter.summingbird.memory.MemoryArbitraries._
+ import MemoryArbitraries._
     val mem = new Memory
     val input = sample[List[T]]
     val srv = sample[MemoryService[T, U]]
