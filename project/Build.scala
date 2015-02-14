@@ -415,7 +415,7 @@ object SummingbirdBuild extends Build {
     parallelExecution in Test := false,
     libraryDependencies ++=Seq(
       "junit" % "junit" % junitVersion % "provided",
-      "org.slf4j" % "slf4j-api" % slf4jVersion,
+      "org.slf4j" % "slf4j-api" % slf4jVersion % "provided",
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "provided",
       "org.specs2" %% "specs2" % specs2Version % "provided")
 
