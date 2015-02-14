@@ -1,6 +1,73 @@
+#test execution script.
+
 language: scala
+sudo: false
+before_install: umask 0022
 scala:
   - 2.10.4
 script:
-  - "sbt -Dlog4j.configuration=file://$TRAVIS_BUILD_DIR/project/travis-log4j.properties ++$TRAVIS_SCALA_VERSION test"
-  - "sbt -Dlog4j.configuration=file://$TRAVIS_BUILD_DIR/project/travis-log4j.properties ++$TRAVIS_SCALA_VERSION publish-local"
+- "echo no op"
+
+matrix:
+  include:
+#BASE TESTS
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-batch"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-batch-hadoop"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-builder"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-chill"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-core"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-core-java"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-core-test"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-example"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-online"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-scalding"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-scalding-test"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-spark"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-storm"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-storm-java"
+      script: "scripts/run_tests.sh"
+
+    - scala: 2.10.4
+      env: BUILD="base" TEST_TARGET="summingbird-storm-test"
+      script: "scripts/run_tests.sh"
+

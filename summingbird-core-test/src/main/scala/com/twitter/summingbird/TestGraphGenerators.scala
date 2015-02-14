@@ -16,10 +16,9 @@
 
 package com.twitter.summingbird
 
+import org.scalacheck.Arbitrary.{ arbInt, arbitrary }
+import org.scalacheck.Gen._
 import org.scalacheck._
-import Gen._
-import Arbitrary.arbInt
-import Arbitrary.arbitrary
 
 object TestGraphGenerators {
   // Put the non-recursive calls first, otherwise you blow the stack
