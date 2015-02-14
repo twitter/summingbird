@@ -414,10 +414,10 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdCoreTest = module("core-test").settings(
     parallelExecution in Test := false,
     libraryDependencies ++=Seq(
-      "junit" % "junit" % "4.11" % "provided",
-      "org.slf4j" % "slf4j-api" % slf4jVersion,
-      "org.scalacheck" %% "scalacheck" % "1.10.0" % "provided",
-      "org.specs2" %% "specs2" % "1.13" % "provided")
+      "junit" % "junit" % junitVersion % "provided",
+      "org.slf4j" % "slf4j-api" % slf4jVersion % "provided",
+      "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "provided",
+      "org.specs2" %% "specs2" % specs2Version % "provided")
 
   ).dependsOn(
       summingbirdCore % "test->test;compile->compile"
