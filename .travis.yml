@@ -20,7 +20,7 @@ matrix:
       script: "scripts/run_tests.sh"
 
     - scala: 2.10.4
-      env: BUILD="base" TEST_TARGET="summingbird-batch-builder"
+      env: BUILD="base" TEST_TARGET="summingbird-builder"
       script: "scripts/run_tests.sh"
 
     - scala: 2.10.4
