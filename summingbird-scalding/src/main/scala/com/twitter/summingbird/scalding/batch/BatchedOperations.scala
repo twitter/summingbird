@@ -33,7 +33,7 @@ import Conversion.asMethod
 private class BatchedOperations(batcher: Batcher) {
 
   def coverIt[T](timeSpan: Interval[Timestamp]): Iterable[BatchID] = {
-    val batchInterval = batcher.cover(timeSpan.as[Interval[Timestamp]])
+    val batchInterval = batcher.cover(timeSpan)
     BatchID.toIterable(batchInterval)
   }
 
