@@ -42,6 +42,10 @@ object SummingbirdBuild extends Build {
   val novocodeJunitVersion = "0.10"
   val specs2Version = "1.13"
 
+  val sparkCoreVersion ="0.9.0-incubating";
+  val commonsHttpClientVersion = "3.1";
+  val commonsLangVersion ="2.6";
+
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
 
   val sharedSettings = extraSettings ++ Seq(
@@ -66,7 +70,8 @@ object SummingbirdBuild extends Build {
       // These satisify's scaldings log4j needs when in test mode
       "log4j" % "log4j" % log4jVersion % "test",
       "com.novocode" % "junit-interface" % novocodeJunitVersion % "test",
-      "org.specs2" %% "specs2" % "1.13" % "test"
+      "org.specs2" %% "specs2" % specs2Version % "test",
+      "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
     ),
 
     resolvers ++= Seq(
@@ -377,6 +382,7 @@ object SummingbirdBuild extends Build {
     }
   }
 
+
   val sparkDeps = Seq(
     "com.twitter" %% "algebird-core" % algebirdVersion,
     "com.twitter" %% "algebird-util" % algebirdVersion,
@@ -385,10 +391,13 @@ object SummingbirdBuild extends Build {
     "com.twitter" %% "chill" % chillVersion,
     "com.twitter" % "chill-hadoop" % chillVersion,
     "com.twitter" %% "chill-bijection" % chillVersion,
-    "commons-lang" % "commons-lang" % "2.6",
-    "commons-httpclient" % "commons-httpclient" % "3.1",
-    "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
+    "commons-lang" % "commons-lang" % commonsLangVersion,
+    "commons-httpclient" % "commons-httpclient" % commonsHttpClientVersion,
+    "org.apache.spark" %% "spark-core" % sparkCoreVersion % "provided"
   )
+  val SparkCoreVersion ="0.9.0-incubating";
+  val CommonsHttpClientVersion = "3.1";
+  val CommonsLangVersion ="2.6";
 
   def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()
 
