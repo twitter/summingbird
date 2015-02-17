@@ -49,6 +49,7 @@ import org.apache.hadoop.mapred.OutputCollector
 import org.specs2.mutable._
 
 object VersionBatchLaws extends Properties("VersionBatchLaws") {
+  //todo: fix it. this test is failing
   property("version -> BatchID -> version") = forAll { (l: Long) =>
     val vbs = new store.VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
       0, Batcher.ofHours(1))(null)(null)

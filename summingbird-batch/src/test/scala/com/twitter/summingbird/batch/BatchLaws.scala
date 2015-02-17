@@ -50,6 +50,7 @@ object BatchLaws extends Properties("BatchID") {
         BatchID(b).prev == BatchID(b - 1L)
     }
 
+  //todo: fix it: This test just hangs
   property("range, toInterval and toIterable should be equivalent") =
     forAll { (b1: BatchID, diff: SmallLong) =>
       val b2 = b1 + (diff.get)
