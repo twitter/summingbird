@@ -1,6 +1,6 @@
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
 cd $BASE_DIR
-echo "$BASE_DIR"
+
 bash -c "while true; do echo -n .; sleep 5; done" &
 PROGRESS_REPORTER_PID=$!
 time ./sbt ++$TRAVIS_SCALA_VERSION $TEST_TARGET/compile $TEST_TARGET/test:compile &> /dev/null
