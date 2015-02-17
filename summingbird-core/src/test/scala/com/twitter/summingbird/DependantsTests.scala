@@ -17,18 +17,13 @@
 package com.twitter.summingbird
 
 import com.twitter.summingbird.memory._
-
-import org.scalacheck._
-import Gen._
-import org.scalacheck.Arbitrary._
+import org.scalacheck.Gen._
 import org.scalacheck.Prop._
-import scala.util.Random
+import org.scalacheck._
 
-import scala.collection.mutable.{ Map => MMap, HashMap => MHashMap }
+import scala.collection.mutable.{HashMap => MHashMap, Map => MMap}
 
 object DependantsTest extends Properties("Dependants") {
-  import TestGraphGenerators._
-  import MemoryArbitraries._
   implicit def testStore: Memory#Store[Int, Int] = MMap[Int, Int]()
   implicit def testService: Memory#Service[Int, Int] = new MHashMap[Int, Int]() with MemoryService[Int, Int]
   implicit def sink1: Memory#Sink[Int] = ((_) => Unit)

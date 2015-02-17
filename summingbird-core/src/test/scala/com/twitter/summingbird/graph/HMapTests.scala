@@ -16,8 +16,8 @@
 
 package com.twitter.summingbird.graph
 
-import org.scalacheck.{ Arbitrary, Gen, Properties }
 import org.scalacheck.Prop._
+import org.scalacheck.{Arbitrary, Gen, Properties}
 
 /**
  * This tests the HMap. We use the type system to
