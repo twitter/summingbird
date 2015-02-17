@@ -35,9 +35,9 @@ matrix:
       env: BUILD="base" TEST_TARGET="summingbird-core-java"
       script: "scripts/run_tests.sh"
 
-    - scala: 2.10.4
-      env: BUILD="base" TEST_TARGET="summingbird-core-test"
-      script: "scripts/run_tests.sh"
+#    - scala: 2.10.4
+#      env: BUILD="base" TEST_TARGET="summingbird-core-test"
+#      script: "scripts/run_tests.sh"
 
     - scala: 2.10.4
       env: BUILD="base" TEST_TARGET="summingbird-example"
