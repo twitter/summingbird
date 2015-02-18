@@ -41,9 +41,8 @@ object SummingbirdBuild extends Build {
   val novocodeJunitVersion = "0.10"
   val specs2Version = "1.13"
 
-  val sparkCoreVersion ="0.9.0-incubating";
-  val commonsHttpClientVersion = "3.1";
-  val commonsLangVersion ="2.6";
+  val sparkCoreVersion ="0.9.0-incubating"
+  val commonsHttpClientVersion = "3.1"
 
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
 
