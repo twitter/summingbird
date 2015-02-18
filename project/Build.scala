@@ -19,7 +19,6 @@ object SummingbirdBuild extends Build {
 
   def isScala210x(scalaVersion: String) = scalaBinaryVersion(scalaVersion) == "2.10"
 
-  val scalaTestVersion = "2.2.2"
   val scalaCheckVersion = "1.11.5"
   val hadoopVersion = "1.2.1"
   val algebirdVersion = "0.9.0"
@@ -70,8 +69,7 @@ object SummingbirdBuild extends Build {
       // These satisify's scaldings log4j needs when in test mode
       "log4j" % "log4j" % log4jVersion % "test",
       "com.novocode" % "junit-interface" % novocodeJunitVersion % "test",
-      "org.specs2" %% "specs2" % specs2Version % "test",
-      "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
+      "org.specs2" %% "specs2" % specs2Version % "test"
     ),
 
     resolvers ++= Seq(
