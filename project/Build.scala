@@ -395,9 +395,7 @@ object SummingbirdBuild extends Build {
     "commons-httpclient" % "commons-httpclient" % commonsHttpClientVersion,
     "org.apache.spark" %% "spark-core" % sparkCoreVersion % "provided"
   )
-  val SparkCoreVersion ="0.9.0-incubating";
-  val CommonsHttpClientVersion = "3.1";
-  val CommonsLangVersion ="2.6";
+ 
 
   def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()
 
