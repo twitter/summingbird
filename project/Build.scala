@@ -171,7 +171,6 @@ object SummingbirdBuild extends Build {
     summingbirdExample
   )
 
-
   /**
     * This returns the youngest jar we released that is compatible with
     * the current.
@@ -393,7 +392,6 @@ object SummingbirdBuild extends Build {
     "org.apache.spark" %% "spark-core" % sparkCoreVersion % "provided"
   )
  
-
   def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()
 
   lazy val summingbirdSpark = module("spark").settings(
