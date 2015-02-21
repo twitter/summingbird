@@ -28,7 +28,7 @@ object SummingbirdBuild extends Build {
   val slf4jVersion = "1.6.6"
   val parquetVersion = "1.6.0rc4"
 
-  val dfsDatastoresVersion = "1.3.4"
+  val dfsDatastoresVersion = "1.3.6"
   val scaldingVersion = "0.13.1"
   val storehausVersion = "0.10.0"
   val utilVersion = "6.3.8"
@@ -305,7 +305,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "chill-bijection" % chillVersion,
       "commons-lang" % "commons-lang" % commonsLangVersion,
       "com.twitter" %% "scalding-core" % scaldingVersion,
-      "com.twitter" %% "scalding-commons" % scaldingVersion
+      "com.twitter" %% "scalding-commons" % scaldingVersion,
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -317,7 +318,8 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdScaldingTest = module("scalding-test").settings(
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion,
-      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -332,7 +334,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-json" % bijectionVersion,
       "com.twitter" %% "scalding-date" % scaldingVersion,
-      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -341,7 +344,8 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdBuilder = module("builder").settings(
     libraryDependencies ++= Seq(
-      "storm" % "storm" % stormVersion % "provided"
+      "storm" % "storm" % stormVersion % "provided",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore,
