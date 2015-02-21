@@ -79,7 +79,7 @@ case class BaseBolt[I, O](jobID: JobId,
     This does a linear ramp up from the lower bound to the upper bound over the time period.
   */
   @annotation.tailrec
-  private def rateLimit: Unit = {
+  private def rateLimit(): Unit = {
     val sleepTime = this.synchronized {
       val baseTime = System.currentTimeMillis
       val currentPeriod = baseTime / PERIOD_LENGTH_MS
@@ -105,7 +105,7 @@ case class BaseBolt[I, O](jobID: JobId,
     }
     if (sleepTime > 0) {
       Thread.sleep(sleepTime)
-      rateLimit
+      rateLimit()
     } else {
       ()
     }
@@ -126,7 +126,7 @@ case class BaseBolt[I, O](jobID: JobId,
   }
 
   override def execute(tuple: Tuple) = {
-    rateLimit
+    rateLimit()
     /**
      * System ticks come with a fixed stream id
      */

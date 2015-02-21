@@ -33,7 +33,7 @@ public class JMemory {
   private final Memory platform;
 
   /**
-   * @param jobId
+   * @param jId
    */
   public JMemory(JobId jId) {
     jobId = jId;
