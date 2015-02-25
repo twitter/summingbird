@@ -13,7 +13,6 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-
 package com.twitter.summingbird.scalding.batch
 
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
@@ -36,7 +35,7 @@ private class BatchedOperations(batcher: Batcher) {
     val batchInterval = batcher.cover(timeSpan)
     BatchID.toIterable(batchInterval)
   }
-
+  
   // This does not look correct. How does this work for closed intervals for instance?
   def batchToTimestamp(bint: Interval[BatchID]): Interval[Timestamp] =
     bint.mapNonDecreasing { batcher.earliestTimeOf(_) }
