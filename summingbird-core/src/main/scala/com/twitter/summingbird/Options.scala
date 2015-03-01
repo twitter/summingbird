@@ -16,8 +16,7 @@
 
 package com.twitter.summingbird
 
-import scala.reflect.ClassTag
-import scala.reflect.classTag
+import scala.reflect.{classTag,ClassTag}
 
 /**
  * intra-graph options.
