@@ -71,7 +71,8 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
         val grouped = keyedDeltas.groupByKey()
         grouped.map {
           case (k, vals) => {
-            val sortedVals = vals.sortBy(_._1) // sort by time
+            val valSeq = vals toSeq
+            val sortedVals = valSeq.sortBy(_._1) // sort by time
             val maxTs = sortedVals.last._1
             val projectedSortedVals = sortedVals.iterator.map(_._2) // just the values
             // projectedSortedVals should never be empty so .get is safe
