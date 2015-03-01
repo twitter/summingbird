@@ -42,6 +42,7 @@ object SummingbirdBuild extends Build {
   val specs2Version = "1.13"
 
   val sparkCoreVersion ="1.2.0"
+  val scalazVersion = "7.1.1"
   val commonsHttpClientVersion = "3.1"
 
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
@@ -393,9 +394,10 @@ object SummingbirdBuild extends Build {
     "com.twitter" %% "chill-bijection" % chillVersion,
     "commons-lang" % "commons-lang" % commonsLangVersion,
     "commons-httpclient" % "commons-httpclient" % commonsHttpClientVersion,
-    "org.apache.spark" %% "spark-core" % sparkCoreVersion % "provided"
+    "org.apache.spark" %% "spark-core" % sparkCoreVersion % "provided",
+    "org.scalaz" %% "scalaz-core" % scalazVersion
   )
- 
+
   def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()
 
   lazy val summingbirdSpark = module("spark").settings(

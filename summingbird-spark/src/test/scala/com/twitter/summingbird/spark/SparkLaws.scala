@@ -12,6 +12,7 @@ import org.scalacheck.Arbitrary
 import org.specs2.mutable.Specification
 import scala.reflect.ClassTag
 import scala.util.Random
+import scalaz.Reader
 
 // TODO: consider whether using mockito / easymock mocks here makes more sense
 object SparkLaws {
@@ -19,44 +20,40 @@ object SparkLaws {
   def untimedMemSource[T](s: Seq[T]) = timedMemSource(s.map { x => (Timestamp(1), x) })
 
   def timedMemSource[T](s: Seq[(Timestamp, T)]) = new SparkSource[T] {
-    override def rdd(sc: SparkContext, timeSpan: Interval[Timestamp]): RDD[(Timestamp, T)] = {
-      sc.makeRDD(s)
-    }
+    override def rdd(timeSpan: Interval[Timestamp]): Reader[SparkContext, RDD[(Timestamp, T)]] =
+      Reader((sc: SparkContext) => sc.makeRDD(s))
   }
 
   def memStore[K: ClassTag, V: ClassTag](m: Map[K, V]) = new SimpleSparkStore[K, V] {
     var result: Map[K, V] = _
     var commutativity: Commutativity = _
 
-    override def merge(sc: SparkContext,
-      timeSpan: Interval[Timestamp],
+    override def merge(timeSpan: Interval[Timestamp],
       deltas: RDD[(Timestamp, (K, V))],
       commutativity: Commutativity,
-      semigroup: Semigroup[V]): MergeResult[K, V] = {
+      semigroup: Semigroup[V]): Reader[SparkContext, MergeResult[K, V]] = Reader((sc: SparkContext) => {
 
       this.commutativity = commutativity
-      super.merge(sc, timeSpan, deltas, commutativity, semigroup)
-    }
+      super.merge(timeSpan, deltas, commutativity, semigroup)(sc)
+    })
 
-    override def snapshot(sc: SparkContext, timeSpan: Interval[Timestamp]): RDD[(K, V)] = sc.makeRDD(m.toSeq)
+    override def snapshot(timeSpan: Interval[Timestamp]): Reader[SparkContext, RDD[(K, V)]] =
+      Reader((sc: SparkContext) => sc.makeRDD(m.toSeq))
 
-    override def write(sc: SparkContext, updatedSnapshot: RDD[(K, V)]): Unit = {
-      result = updatedSnapshot.toArray().toMap
-    }
+    override def write(updatedSnapshot: RDD[(K, V)]): Reader[SparkContext, Unit] =
+      Reader((sc: SparkContext) => result = updatedSnapshot.collect().toMap)
   }
 
   def captureSink[T] = new SparkSink[T] {
     var result: Seq[(Timestamp, T)] = _
 
-    override def write(sc: SparkContext, rdd: RDD[(Timestamp, T)], timeSpan: Interval[Timestamp]): Unit = {
-      result = rdd.toArray().toSeq
-    }
+    override def write(rdd: RDD[(Timestamp, T)], timeSpan: Interval[Timestamp]): Reader[SparkContext, Unit] =
+      Reader((sc: SparkContext) => result = rdd.collect().toSeq)
   }
 
   def memService[K, LV](m: Map[K, LV]): SparkService[K, LV] = new SparkService[K, LV] {
-    override def lookup[V](sc: SparkContext, timeSpan: Interval[Timestamp], rdd: RDD[(Timestamp, (K, V))]): RDD[(Timestamp, (K, (V, Option[LV])))] = {
-      rdd.map { case (ts, (k, v)) => (ts, (k, (v, m.get(k)))) }
-    }
+    override def lookup[V](timeSpan: Interval[Timestamp], rdd: RDD[(Timestamp, (K, V))]): Reader[SparkContext, RDD[(Timestamp, (K, (V, Option[LV])))]] =
+      Reader((sc: SparkContext) => rdd.map { case (ts, (k, v)) => (ts, (k, (v, m.get(k)))) })
   }
 
   def memService[K, LV](f: K => Option[LV], keys: Set[K]): SparkService[K, LV] = {
