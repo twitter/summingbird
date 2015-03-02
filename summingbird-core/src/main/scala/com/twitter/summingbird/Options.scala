@@ -16,6 +16,8 @@
 
 package com.twitter.summingbird
 
+import scala.reflect.{classTag,ClassTag}
+
 /**
  * intra-graph options.
  * Rather than use string keys, the .getClass of the option is used.
@@ -34,10 +36,10 @@ class Options(val opts: Map[Class[_], Any]) {
   def getOrElse[T](klass: Class[T], default: T): T =
     opts.getOrElse(klass, default).asInstanceOf[T]
 
-  private def klass[T: ClassManifest] = classManifest[T].erasure.asInstanceOf[Class[T]]
+  private def klass[T: ClassTag] = classTag[T].runtimeClass.asInstanceOf[Class[T]]
 
-  def get[T: ClassManifest]: Option[T] = get(klass[T])
-  def getOrElse[T: ClassManifest](default: T): T = getOrElse(klass[T], default)
+  def get[T: ClassTag]: Option[T] = get(klass[T])
+  def getOrElse[T: ClassTag](default: T): T = getOrElse(klass[T], default)
 
   override def toString = "Options(%s)".format(opts.toString)
 }
