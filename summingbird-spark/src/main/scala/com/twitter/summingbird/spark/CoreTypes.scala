@@ -8,16 +8,17 @@ import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
 import scala.reflect.ClassTag
 import com.twitter.chill.Externalizer
+import com.twitter.algebird.monad.Reader
 
 // TODO: add the logic for seeing what timespans each source / store / service can cover
 
 // A source promises to never return values outside of timeSpan
 trait SparkSource[T] extends Serializable {
-  def rdd(sc: SparkContext, timeSpan: Interval[Timestamp]): RDD[(Timestamp, T)]
+  def rdd(timeSpan: Interval[Timestamp]): Reader[SparkContext, RDD[(Timestamp, T)]]
 }
 
 trait SparkSink[T] extends Serializable {
-  def write(sc: SparkContext, rdd: RDD[(Timestamp, T)], timeSpan: Interval[Timestamp]): Unit
+  def write(rdd: RDD[(Timestamp, T)], timeSpan: Interval[Timestamp]): Reader[SparkContext, Unit]
 }
 
 case class MergeResult[K, V](
@@ -26,11 +27,10 @@ case class MergeResult[K, V](
 
 trait SparkStore[K, V] extends Serializable {
 
-  def merge(sc: SparkContext,
-    timeSpan: Interval[Timestamp],
+  def merge(timeSpan: Interval[Timestamp],
     deltas: RDD[(Timestamp, (K, V))],
     commutativity: Commutativity,
-    semigroup: Semigroup[V]): MergeResult[K, V]
+    semigroup: Semigroup[V]): Reader[SparkContext, MergeResult[K, V]]
 }
 
 abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, V] {
@@ -39,17 +39,16 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
   // no duplicate keys
   // provides a view of the world as of exactly the last instant of timeSpan
   // TODO: replace with batched logic (combine snapshots with deltas etc)
-  def snapshot(sc: SparkContext, timeSpan: Interval[Timestamp]): RDD[(K, V)]
+  def snapshot(timeSpan: Interval[Timestamp]): Reader[SparkContext, RDD[(K, V)]]
 
-  def write(sc: SparkContext, updatedSnapshot: RDD[(K, V)]): Unit
+  def write(updatedSnapshot: RDD[(K, V)]): Reader[SparkContext, Unit]
 
-  override def merge(sc: SparkContext,
-    timeSpan: Interval[Timestamp],
+  override def merge(timeSpan: Interval[Timestamp],
     deltas: RDD[(Timestamp, (K, V))],
     commutativity: Commutativity,
-    @transient semigroup: Semigroup[V]): MergeResult[K, V] = {
+    @transient semigroup: Semigroup[V]): Reader[SparkContext, MergeResult[K, V]] = Reader((sc: SparkContext) => {
 
-    val snapshotRdd = snapshot(sc, timeSpan)
+    val snapshotRdd = snapshot(timeSpan)(sc)
     val extSemigroup = Externalizer(semigroup)
 
     val summedDeltas: RDD[(K, (Timestamp, V))] = commutativity match {
@@ -71,7 +70,8 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
         val grouped = keyedDeltas.groupByKey()
         grouped.map {
           case (k, vals) => {
-            val sortedVals = vals.sortBy(_._1) // sort by time
+            val valSeq = vals toSeq
+            val sortedVals = valSeq.sortBy(_._1) // sort by time
             val maxTs = sortedVals.last._1
             val projectedSortedVals = sortedVals.iterator.map(_._2) // just the values
             // projectedSortedVals should never be empty so .get is safe
@@ -103,15 +103,14 @@ abstract class SimpleSparkStore[K: ClassTag, V: ClassTag] extends SparkStore[K, 
         (k, v)
     }
 
-    val writeClosure = () => write(sc, updatedSnapshot)
+    val writeClosure = () => write(updatedSnapshot)(sc)
 
     MergeResult(sumBeforeMerge, writeClosure)
-  }
+  })
 }
 
 // TODO: Need to implement the logic for time based lookups (finding what a value was for a given key at a given time)
 trait SparkService[K, LV] extends Serializable {
-  def lookup[V](sc: SparkContext,
-    timeSpan: Interval[Timestamp],
-    rdd: RDD[(Timestamp, (K, V))]): RDD[(Timestamp, (K, (V, Option[LV])))]
+  def lookup[V](timeSpan: Interval[Timestamp],
+    rdd: RDD[(Timestamp, (K, V))]): Reader[SparkContext, RDD[(Timestamp, (K, (V, Option[LV])))]]
 }
