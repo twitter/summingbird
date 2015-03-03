@@ -10,7 +10,7 @@ import scala.reflect.ClassTag
 import com.twitter.summingbird.option.{ MonoidIsCommutative, Commutativity, NonCommutative, Commutative }
 import com.twitter.chill.Externalizer
 import scala.collection.mutable
-import scalaz.Reader
+import com.twitter.algebird.monad.Reader
 
 /**
  * This is a first pass at an offline [[Platform]] that executes on apache spark.

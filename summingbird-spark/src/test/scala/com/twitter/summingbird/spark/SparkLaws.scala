@@ -12,7 +12,7 @@ import org.scalacheck.Arbitrary
 import org.specs2.mutable.Specification
 import scala.reflect.ClassTag
 import scala.util.Random
-import scalaz.Reader
+import com.twitter.algebird.monad.Reader
 
 // TODO: consider whether using mockito / easymock mocks here makes more sense
 object SparkLaws {

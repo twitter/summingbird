@@ -8,7 +8,7 @@ import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
 import scala.reflect.ClassTag
 import com.twitter.chill.Externalizer
-import scalaz.Reader
+import com.twitter.algebird.monad.Reader
 
 // TODO: add the logic for seeing what timespans each source / store / service can cover
 
