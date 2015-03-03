@@ -140,7 +140,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   private[storm] def getOrElse[T <: AnyRef: Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
     get[T](dag, node) match {
       case None =>
-        logger.debug("Node ({}): Using default setting {}", dag.getNodeName(node), default)
+        logger.info("Node ({}): Using default setting {}", dag.getNodeName(node), default)
         default
       case Some((namedSource, option)) =>
         logger.info("Node {}: Using {} found via NamedProducer \"{}\"", Array[AnyRef](dag.getNodeName(node), option, namedSource))
