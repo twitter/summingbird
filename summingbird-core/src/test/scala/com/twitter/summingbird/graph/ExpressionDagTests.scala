@@ -17,7 +17,7 @@
 package com.twitter.summingbird.graph
 
 import org.scalacheck.Prop._
-import org.scalacheck.{Gen, Properties}
+import org.scalacheck.{ Gen, Properties }
 
 object ExpressionDagTests extends Properties("ExpressionDag") {
   /*
