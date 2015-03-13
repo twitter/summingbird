@@ -17,8 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.store
 
 import com.twitter.algebird.Semigroup
-import com.twitter.algebird.util.UtilAlgebras._
-import com.twitter.bijection.Pivot
 import com.twitter.storehaus.{ FutureCollector, FutureOps, ReadableStore }
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.util.Future

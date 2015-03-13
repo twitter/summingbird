@@ -10,6 +10,7 @@ import scala.reflect.ClassTag
 import com.twitter.summingbird.option.{ MonoidIsCommutative, Commutativity, NonCommutative, Commutative }
 import com.twitter.chill.Externalizer
 import scala.collection.mutable
+import com.twitter.algebird.monad.Reader
 
 /**
  * This is a first pass at an offline [[Platform]] that executes on apache spark.
@@ -51,7 +52,7 @@ class SparkPlatform(
   }
 
   override def planSource[T](source: Source[T], visited: Visited): PlanState[T] = {
-    PlanState(source.rdd(sc, timeSpan), visited)
+    PlanState(source.rdd(timeSpan)(sc), visited)
   }
 
   override def planOptionMappedProducer[T, U: ClassTag](
@@ -127,7 +128,7 @@ class SparkPlatform(
 
   override def planWrittenProducer[T: ClassTag](prod: Prod[T], visited: Visited, sink: Sink[T]): PlanState[T] = {
     val planState = toPlan(prod, visited)
-    writeClosures += { () => sink.write(sc, planState.plan, timeSpan) }
+    writeClosures += { () => sink.write(planState.plan, timeSpan)(sc) }
     planState
   }
 
@@ -135,7 +136,7 @@ class SparkPlatform(
 
     val planState = toPlan(prod, visited)
 
-    val joined = service.lookup(sc, timeSpan, planState.plan)
+    val joined = service.lookup(timeSpan, planState.plan)(sc)
 
     planState.copy(plan = joined)
   }
@@ -151,7 +152,7 @@ class SparkPlatform(
 
     val commutativity = getCommutativity(summer)
 
-    val mergeResult = store.merge(sc, timeSpan, planState.plan, commutativity, semigroup)
+    val mergeResult = store.merge(timeSpan, planState.plan, commutativity, semigroup)(sc)
 
     writeClosures += mergeResult.writeClosure
 

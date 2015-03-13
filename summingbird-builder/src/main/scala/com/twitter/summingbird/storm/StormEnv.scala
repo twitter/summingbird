@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 
 case class StormEnv(override val jobName: String, override val args: Args)
     extends Env(jobName) {
-  def run {
+  def run() {
     // Calling abstractJob's constructor and binding it to a variable
     // forces any side effects caused by that constructor (building up
     // of the environment and defining the builder).

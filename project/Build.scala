@@ -19,7 +19,6 @@ object SummingbirdBuild extends Build {
 
   def isScala210x(scalaVersion: String) = scalaBinaryVersion(scalaVersion) == "2.10"
 
-  val scalaTestVersion = "2.2.2"
   val scalaCheckVersion = "1.11.5"
   val hadoopVersion = "1.2.1"
   val algebirdVersion = "0.9.0"
@@ -28,7 +27,7 @@ object SummingbirdBuild extends Build {
   val slf4jVersion = "1.6.6"
   val parquetVersion = "1.6.0rc4"
 
-  val dfsDatastoresVersion = "1.3.4"
+  val dfsDatastoresVersion = "1.3.6"
   val scaldingVersion = "0.13.1"
   val storehausVersion = "0.10.0"
   val utilVersion = "6.3.8"
@@ -41,6 +40,9 @@ object SummingbirdBuild extends Build {
   val commonsLangVersion = "2.6"
   val novocodeJunitVersion = "0.10"
   val specs2Version = "1.13"
+
+  val sparkCoreVersion ="1.2.0"
+  val commonsHttpClientVersion = "3.1"
 
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
 
@@ -66,7 +68,7 @@ object SummingbirdBuild extends Build {
       // These satisify's scaldings log4j needs when in test mode
       "log4j" % "log4j" % log4jVersion % "test",
       "com.novocode" % "junit-interface" % novocodeJunitVersion % "test",
-      "org.specs2" %% "specs2" % "1.13" % "test"
+      "org.specs2" %% "specs2" % specs2Version % "test"
     ),
 
     resolvers ++= Seq(
@@ -169,7 +171,6 @@ object SummingbirdBuild extends Build {
     summingbirdExample,
     summingbirdCoreTest
   )
-
 
   /**
     * This returns the youngest jar we released that is compatible with
@@ -308,7 +309,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "chill-bijection" % chillVersion,
       "commons-lang" % "commons-lang" % commonsLangVersion,
       "com.twitter" %% "scalding-core" % scaldingVersion,
-      "com.twitter" %% "scalding-commons" % scaldingVersion
+      "com.twitter" %% "scalding-commons" % scaldingVersion,
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -320,7 +322,8 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdScaldingTest = module("scalding-test").settings(
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion,
-      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -336,7 +339,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-json" % bijectionVersion,
       "com.twitter" %% "scalding-date" % scaldingVersion,
-      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -345,7 +349,8 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdBuilder = module("builder").settings(
     libraryDependencies ++= Seq(
-      "storm" % "storm" % stormVersion % "provided"
+      "storm" % "storm" % stormVersion % "provided",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore,
@@ -381,6 +386,7 @@ object SummingbirdBuild extends Build {
     }
   }
 
+
   val sparkDeps = Seq(
     "com.twitter" %% "algebird-core" % algebirdVersion,
     "com.twitter" %% "algebird-util" % algebirdVersion,
@@ -389,9 +395,9 @@ object SummingbirdBuild extends Build {
     "com.twitter" %% "chill" % chillVersion,
     "com.twitter" % "chill-hadoop" % chillVersion,
     "com.twitter" %% "chill-bijection" % chillVersion,
-    "commons-lang" % "commons-lang" % "2.6",
-    "commons-httpclient" % "commons-httpclient" % "3.1",
-    "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
+    "commons-lang" % "commons-lang" % commonsLangVersion,
+    "commons-httpclient" % "commons-httpclient" % commonsHttpClientVersion,
+    "org.apache.spark" %% "spark-core" % sparkCoreVersion % "provided"
   )
 
   def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()

@@ -16,6 +16,7 @@ import scala.runtime.AbstractFunction0;
 import com.twitter.chill.IKryoRegistrar;
 import com.twitter.summingbird.Options;
 import com.twitter.summingbird.SummingbirdConfig;
+import com.twitter.summingbird.batch.BatchID;
 import com.twitter.summingbird.batch.Timestamp;
 import com.twitter.summingbird.javaapi.Buffer;
 import com.twitter.summingbird.javaapi.Function;
@@ -51,8 +52,8 @@ public class JStorm {
 	  return JProducers.<Storm, T>source(new Source<Storm, StormSource<T>, T>(source));
   }
 
-  public static <K,V> Store<Storm, MergeableStoreFactory<K, V>, K, V> store(MergeableStoreFactory<K, V> store) {
-    return new Store<Storm, MergeableStoreFactory<K, V>, K, V>(store);
+  public static <K,V> Store<Storm, MergeableStoreFactory<Tuple2<K, BatchID>, V>, K, V> store(MergeableStoreFactory<Tuple2<K, BatchID>, V> store) {
+    return new Store<Storm, MergeableStoreFactory<Tuple2<K, BatchID>, V>, K, V>(store);
   }
 
   public static <T> Sink<Storm, StormSink<T>, T> sink(final Callable<Function<T, com.twitter.util.Future<scala.runtime.BoxedUnit>>> sink) {

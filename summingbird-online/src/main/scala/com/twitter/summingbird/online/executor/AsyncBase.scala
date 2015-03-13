@@ -18,7 +18,7 @@ package com.twitter.summingbird.online.executor
 
 import com.twitter.summingbird.online.Queue
 import com.twitter.summingbird.online.option.{ MaxWaitingFutures, MaxFutureWaitTime, MaxEmitPerExecute }
-import com.twitter.util.{ Await, Duration, Future }
+import com.twitter.util.{ Await, Future }
 import scala.util.{ Try, Success, Failure }
 import java.util.concurrent.TimeoutException
 import org.slf4j.{ LoggerFactory, Logger }
@@ -85,10 +85,10 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
       false
     }
 
-  private def forceExtraFutures {
+  private def forceExtraFutures() {
     outstandingFutures.dequeueAll(_.isDefined)
     val toForce = outstandingFutures.trimTo(maxWaitingFutures.get).toIndexedSeq
-    if (!toForce.isEmpty) {
+    if (toForce.nonEmpty) {
       try {
         Await.ready(Future.collect(toForce), maxWaitingTime.get)
       } catch {
@@ -100,7 +100,7 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
 
   private def emptyQueue = {
     // don't let too many futures build up
-    forceExtraFutures
+    forceExtraFutures()
     // Take all results that have been placed for writing to the network
     responses.take(maxEmitPerExec.get)
   }
