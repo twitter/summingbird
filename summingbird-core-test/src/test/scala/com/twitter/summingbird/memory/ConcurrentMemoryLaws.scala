@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.memory
 
-import java.util.concurrent.{BlockingQueue, ConcurrentHashMap, LinkedBlockingQueue}
+import java.util.concurrent.{ BlockingQueue, ConcurrentHashMap, LinkedBlockingQueue }
 
 import com.twitter.algebird.Monoid
 import com.twitter.summingbird._

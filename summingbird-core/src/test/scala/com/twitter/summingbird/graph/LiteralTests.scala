@@ -17,7 +17,7 @@
 package com.twitter.summingbird.graph
 
 import org.scalacheck.Prop._
-import org.scalacheck.{Arbitrary, Gen, Properties}
+import org.scalacheck.{ Arbitrary, Gen, Properties }
 
 object LiteralTests extends Properties("Literal") {
   case class Box[T](get: T)
