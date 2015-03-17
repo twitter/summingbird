@@ -168,7 +168,8 @@ object SummingbirdBuild extends Build {
     summingbirdSpark,
     summingbirdBuilder,
     summingbirdChill,
-    summingbirdExample
+    summingbirdExample,
+    summingbirdCoreTest
   )
 
   /**
@@ -242,6 +243,7 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdBatch,
     summingbirdClient
   )
@@ -281,6 +283,7 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdStorm
   )
 
@@ -324,6 +327,7 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdChill,
     summingbirdBatchHadoop,
     summingbirdScalding
@@ -409,6 +413,19 @@ object SummingbirdBuild extends Build {
   .settings(sparkAssemblyMergeSettings:_*)
   .dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdChill
   )
+
+  lazy val summingbirdCoreTest = module("core-test").settings(
+    parallelExecution in Test := false,
+    libraryDependencies ++=Seq(
+      "junit" % "junit" % junitVersion % "provided",
+      "org.slf4j" % "slf4j-api" % slf4jVersion % "provided",
+      "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "provided",
+      "org.specs2" %% "specs2" % specs2Version % "provided")
+
+  ).dependsOn(
+      summingbirdCore % "test->test;compile->compile"
+    )
 }
