@@ -143,6 +143,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     // get the batches read from the readTimespan
     val batchIntr = batcher.batchesCoveredBy(readTimespan)
 
+    logger.info("readTimeSpan is {}", readTimespan)
     val batches = BatchID.toIterable(batchIntr).toList
     val finalBatch = batches.last // batches won't be empty.
     val filteredBatches = select(batches).sorted
@@ -281,7 +282,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       lastTimeWrittenToStore = batcher.latestTimeOf(lastBatch)
 
       // Now get the first timestamp that we need input data for.
-      firstDeltaTimestamp = lastTimeWrittenToStore.next
+      firstDeltaTimestamp: Timestamp = lastTimeWrittenToStore.next
 
       // Get the requested timeSpan.
       tsMode <- getState[FactoryInput]
@@ -292,7 +293,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
       // Get the total time we want to cover. If the lower bound of the requested timeSpan
       // is not the firstDeltaTimestamp, adjust it to that.
-      deltaTimes = setLower(InclusiveLower(firstDeltaTimestamp), timeSpan)
+      deltaTimes: Interval[Timestamp] = setLower(InclusiveLower(firstDeltaTimestamp), timeSpan)
 
       // Try to read the range covering the time we want; get the time we can completely
       // cover and the data from input in that range.
