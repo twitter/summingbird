@@ -284,6 +284,8 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // Now get the first timestamp that we need input data for.
       firstDeltaTimestamp: Timestamp = lastTimeWrittenToStore.next
 
+      firstDeltaBatch = lastBatch.next
+
       // Get the requested timeSpan.
       tsMode <- getState[FactoryInput]
       (timeSpan, mode) = tsMode
@@ -299,11 +301,12 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // cover and the data from input in that range.
       readTimeFlow <- fromEither(batchOps.readAvailableTimes(deltaTimes, mode, input))
 
-      (readDeltaTimestamps, readFlow) = readTimeFlow
+      (readDeltaTimestamps: Interval[Timestamp], readFlow) = readTimeFlow
 
       // Make sure that the time we can read includes the time just after the last
       // snapshot. We can't roll the store forward without this.
-      _ <- fromEither[FactoryInput](if (readDeltaTimestamps.contains(firstDeltaTimestamp)) {
+      firstBatchInterval: Interval[Timestamp] = batcher.toInterval(firstDeltaBatch)
+      _ <- fromEither[FactoryInput](if (readDeltaTimestamps.intersect(firstBatchInterval) == firstBatchInterval) {
         logger.info("[Right]readDeltaTimeStamps is {} firstDeltaTimestamp is {}", readDeltaTimestamps, firstDeltaTimestamp)
         Right(())
       } else {
