@@ -305,15 +305,19 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
       // Make sure that the time we can read includes the time just after the last
       // snapshot. We can't roll the store forward without this.
-      firstBatchInterval: Interval[Timestamp] = batcher.toInterval(firstDeltaBatch)
-      _ <- fromEither[FactoryInput](if (readDeltaTimestamps.intersect(firstBatchInterval) == firstBatchInterval) {
-        logger.info("[Right]readDeltaTimeStamps is {} firstDeltaTimestamp is {}", readDeltaTimestamps, firstDeltaTimestamp)
-        Right(())
-      } else {
-        logger.info("[Left]readDeltaTimeStamps is {} firstDeltaTimestamp is {}", readDeltaTimestamps, firstDeltaTimestamp)
-        Left(List("Cannot load initial timestamp " + firstDeltaTimestamp.toString + " of deltas " +
-          " at " + this.toString + " only " + readDeltaTimestamps.toString))
-      })
+      firstDeltaBatchInterval: Interval[Timestamp] = batcher.toInterval(firstDeltaBatch)
+
+      _ <- fromEither[FactoryInput] {
+        logger.info("firstBatchInterval is {}", firstDeltaBatchInterval)
+        if (readDeltaTimestamps.intersect(firstDeltaBatchInterval) == firstDeltaBatchInterval) {
+          logger.info("[Right]readDeltaTimeStamps is {} firstDeltaTimestamp is {}", readDeltaTimestamps, firstDeltaTimestamp)
+          Right(())
+        } else {
+          logger.info("[Left]readDeltaTimeStamps is {} firstDeltaTimestamp is {}", readDeltaTimestamps, firstDeltaTimestamp)
+          Left(List("Cannot load initial timestamp " + firstDeltaTimestamp.toString + " of deltas " +
+            " at " + this.toString + " only " + readDeltaTimestamps.toString))
+        }
+      }
 
       // Record the timespan we actually read.
       _ <- putState((readDeltaTimestamps, mode))
