@@ -311,7 +311,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
         if (readDeltaTimestamps.intersect(firstDeltaBatchInterval) == firstDeltaBatchInterval) //readDeltaTimestamps should include the firstDeltaBatchInterval
           Right(())
         else
-          Left(List("Cannot load initial timestamp " + firstDeltaTimestamp.toString + " of deltas " +
+          Left(List("Cannot load initial timestamp interval " + firstDeltaBatchInterval.toString + " of deltas " +
             " at " + this.toString + " only " + readDeltaTimestamps.toString))
       }
 
