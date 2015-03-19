@@ -143,7 +143,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     // get the batches read from the readTimespan
     val batchIntr = batcher.batchesCoveredBy(readTimespan)
 
-    logger.info("readTimeSpan is {}", readTimespan)
+    logger.info("readTimeSpan {}", readTimespan)
     val batches = BatchID.toIterable(batchIntr).toList
     val finalBatch = batches.last // batches won't be empty.
     val filteredBatches = select(batches).sorted
@@ -282,7 +282,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       lastTimeWrittenToStore = batcher.latestTimeOf(lastBatch)
 
       // Now get the first timestamp that we need input data for.
-      firstDeltaTimestamp: Timestamp = lastTimeWrittenToStore.next
+      firstDeltaTimestamp = lastTimeWrittenToStore.next
 
       firstDeltaBatch = lastBatch.next
 
@@ -301,22 +301,18 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // cover and the data from input in that range.
       readTimeFlow <- fromEither(batchOps.readAvailableTimes(deltaTimes, mode, input))
 
-      (readDeltaTimestamps: Interval[Timestamp], readFlow) = readTimeFlow
+      (readDeltaTimestamps, readFlow) = readTimeFlow
 
+      firstDeltaBatchInterval: Interval[Timestamp] = batcher.toInterval(firstDeltaBatch)
       // Make sure that the time we can read includes the time just after the last
       // snapshot. We can't roll the store forward without this.
-      firstDeltaBatchInterval: Interval[Timestamp] = batcher.toInterval(firstDeltaBatch)
-
       _ <- fromEither[FactoryInput] {
         logger.info("firstBatchInterval is {}", firstDeltaBatchInterval)
-        if (readDeltaTimestamps.intersect(firstDeltaBatchInterval) == firstDeltaBatchInterval) {
-          logger.info("[Right]readDeltaTimeStamps is {} firstDeltaTimestamp is {}", readDeltaTimestamps, firstDeltaTimestamp)
+        if (readDeltaTimestamps.intersect(firstDeltaBatchInterval) == firstDeltaBatchInterval) //readDeltaTimestamps should include the firstDeltaBatchInterval
           Right(())
-        } else {
-          logger.info("[Left]readDeltaTimeStamps is {} firstDeltaTimestamp is {}", readDeltaTimestamps, firstDeltaTimestamp)
+        else
           Left(List("Cannot load initial timestamp " + firstDeltaTimestamp.toString + " of deltas " +
             " at " + this.toString + " only " + readDeltaTimestamps.toString))
-        }
       }
 
       // Record the timespan we actually read.
