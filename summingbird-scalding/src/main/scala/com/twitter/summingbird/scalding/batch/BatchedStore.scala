@@ -143,9 +143,8 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     // get the batches read from the readTimespan
     val batchIntr = batcher.batchesCoveredBy(readTimespan)
 
-    logger.info("readTimeSpan {}", readTimespan)
     val batches = BatchID.toIterable(batchIntr).toList
-    val finalBatch = batches.last // batches won't be empty.
+    val finalBatch = batches.last // batches won't be empty, ensured by atLeastOneBatch method
     val filteredBatches = select(batches).sorted
 
     assert(filteredBatches.contains(finalBatch), "select must not remove the final batch.")
@@ -284,8 +283,6 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // Now get the first timestamp that we need input data for.
       firstDeltaTimestamp = lastTimeWrittenToStore.next
 
-      firstDeltaBatch = lastBatch.next
-
       // Get the requested timeSpan.
       tsMode <- getState[FactoryInput]
       (timeSpan, mode) = tsMode
@@ -295,7 +292,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
       // Get the total time we want to cover. If the lower bound of the requested timeSpan
       // is not the firstDeltaTimestamp, adjust it to that.
-      deltaTimes: Interval[Timestamp] = setLower(InclusiveLower(firstDeltaTimestamp), timeSpan)
+      deltaTimes = setLower(InclusiveLower(firstDeltaTimestamp), timeSpan)
 
       // Try to read the range covering the time we want; get the time we can completely
       // cover and the data from input in that range.
@@ -303,17 +300,11 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
       (readDeltaTimestamps, readFlow) = readTimeFlow
 
-      firstDeltaBatchInterval: Interval[Timestamp] = batcher.toInterval(firstDeltaBatch)
       // Make sure that the time we can read includes the time just after the last
       // snapshot. We can't roll the store forward without this.
-      _ <- fromEither[FactoryInput] {
-        logger.info("firstBatchInterval is {}", firstDeltaBatchInterval)
-        if (readDeltaTimestamps.intersect(firstDeltaBatchInterval) == firstDeltaBatchInterval) //readDeltaTimestamps should include the firstDeltaBatchInterval
-          Right(())
-        else
-          Left(List("Cannot load initial timestamp interval " + firstDeltaBatchInterval.toString + " of deltas " +
-            " at " + this.toString + " only " + readDeltaTimestamps.toString))
-      }
+      _ <- fromEither[FactoryInput](if (readDeltaTimestamps.contains(firstDeltaTimestamp)) Right(()) else
+        Left(List("Cannot load initial timestamp " + firstDeltaTimestamp.toString + " of deltas " +
+          " at " + this.toString + " only " + readDeltaTimestamps.toString)))
 
       // Record the timespan we actually read.
       _ <- putState((readDeltaTimestamps, mode))
@@ -340,6 +331,18 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     }
 
   /**
+   * This is for ensuring there is at least one batch coverd by readTimespan. This is
+   *  required by mergeBatched
+   */
+  private def atLeastOneBatch(readTimespan: Interval[Timestamp]): Either[List[FailureReason], Unit] = {
+    if (batcher.batchesCoveredBy(readTimespan) == Empty()) {
+      Left(List("readTimespan is not convering at least one batch: " + readTimespan.toString))
+    } else {
+      Right()
+    }
+  }
+
+  /**
    * instances of this trait MAY NOT change the logic here. This always follows the rule
    * that we look for existing data (avoiding reading deltas in that case), then we fall
    * back to the last checkpointed output by calling readLast. In that case, we compute the
@@ -360,6 +363,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // get the actual timespan read by readAfterLastBatch
       tsModeRead <- getState[FactoryInput]
       (tsRead, _) = tsModeRead
+      _ <- fromEither[FactoryInput](atLeastOneBatch(tsRead))
 
       /**
        * Once we have read the last snapshot and the available batched blocks of delta, just merge
