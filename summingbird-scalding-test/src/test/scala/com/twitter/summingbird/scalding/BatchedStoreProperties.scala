@@ -42,7 +42,6 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
     }
 
   implicit val arbTimestamp: Arbitrary[Timestamp] = Arbitrary {
-    // a relevant 200 or so year range
     Gen.choose(1L, 100000L)
       .map { Timestamp(_) }
   }
@@ -64,7 +63,7 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
     }
   }
 
-  implicit def timeExtractor[T <: (Long, _)] = TestUtil.simpleTimeExtractor[T]
+  implicit def timeExtractor[T <: (Long, Any)] = TestUtil.simpleTimeExtractor[T]
 
   implicit def arbitraryInputWithTimeStampAndBatcher: Arbitrary[(List[(Long, Int)], Batcher, TestStore[Int, Int])] = Arbitrary {
     Arbitrary.arbitrary[List[Int]]
