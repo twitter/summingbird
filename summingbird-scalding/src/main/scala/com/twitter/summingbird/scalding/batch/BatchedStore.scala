@@ -334,11 +334,13 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
    * This is for ensuring there is at least one batch coverd by readTimespan. This is
    *  required by mergeBatched
    */
-  private def atLeastOneBatch(readTimespan: Interval[Timestamp]): Either[List[FailureReason], Unit] = {
-    if (batcher.batchesCoveredBy(readTimespan) == Empty()) {
-      Left(List("readTimespan is not convering at least one batch: " + readTimespan.toString))
-    } else {
-      Right()
+  private def atLeastOneBatch(readTimespan: Interval[Timestamp]) = {
+    fromEither[FactoryInput] {
+      if (batcher.batchesCoveredBy(readTimespan) == Empty()) {
+        Left(List("readTimespan is not convering at least one batch: " + readTimespan.toString))
+      } else {
+        Right()
+      }
     }
   }
 
@@ -363,7 +365,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // get the actual timespan read by readAfterLastBatch
       tsModeRead <- getState[FactoryInput]
       (tsRead, _) = tsModeRead
-      _ <- fromEither[FactoryInput](atLeastOneBatch(tsRead))
+      _ <- atLeastOneBatch(tsRead)
 
       /**
        * Once we have read the last snapshot and the available batched blocks of delta, just merge
