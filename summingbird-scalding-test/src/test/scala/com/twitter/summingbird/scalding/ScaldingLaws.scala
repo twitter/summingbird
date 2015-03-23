@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{ MapAlgebra, Monoid, Group, Interval, Last }
+import com.twitter.algebird.{ MapAlgebra, Monoid, Group, Interval, Last, Intersection, InclusiveLower, ExclusiveUpper, Empty }
 import com.twitter.algebird.monad._
 import com.twitter.summingbird.{ Producer, TimeExtractor, TestGraphs }
 import com.twitter.summingbird.batch._
@@ -42,7 +42,7 @@ import scala.util.{ Try => ScalaTry }
 
 import cascading.scheme.local.{ TextDelimited => CLTextDelimited }
 import cascading.tuple.{ Tuple, Fields, TupleEntry }
-import cascading.flow.Flow
+import cascading.flow.{ Flow, FlowDef }
 import cascading.stats.FlowStats
 import cascading.tap.Tap
 import cascading.scheme.NullScheme
@@ -51,10 +51,6 @@ import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
 
 import org.specs2.mutable._
-
-/**
- * Tests for Summingbird's Scalding planner.
- */
 
 object ScaldingLaws extends Specification {
   import MapAlgebra.sparseEquiv
