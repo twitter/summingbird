@@ -98,6 +98,26 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
     }
   }
 
+  property("readAfterLastBatch should not extend the end of interval requested") = {
+    forAll {
+      (diskPipeFactory: PipeFactory[(Int, Int)],
+      interval: Intersection[InclusiveLower, ExclusiveUpper, Timestamp],
+      inputWithTimeStampAndBatcherAndStore: (List[(Long, Int)], Batcher, TestStore[Int, Int]),
+      mode: Mode) =>
+        val (inputWithTimeStamp, batcher, testStore) = inputWithTimeStampAndBatcherAndStore
+        val result = testStore.readAfterLastBatch(diskPipeFactory)((interval, mode))
+
+        result match {
+          case Right(((Intersection(InclusiveLower(_), ExclusiveUpper(readIntervalUpper)), _), _)) => {
+            //readInterval should start from the last written interval in the store
+            implicitly[Ordering[Timestamp]].lteq(readIntervalUpper, interval.upper.upper)
+          }
+          case Right(_) => false
+          case Left(_) => interval == Empty()
+        }
+    }
+  }
+
   property("the end of merged interval is never extended") = {
     forAll {
       (diskPipeFactory: PipeFactory[(Int, Int)],

@@ -151,7 +151,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
     import IteratorSums._ // get the groupedSum, partials function
 
-    //    logger.info("Previous written batch: {}, computing: {}", inBatch.asInstanceOf[Any], batches)
+    logger.debug("Previous written batch: {}, computing: {}", inBatch.asInstanceOf[Any], batches)
 
     def prepareOld(old: TypedPipe[(K, V)]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
       old.map { case (k, v) => (k, (inBatch, (Timestamp.Min, v))) }
@@ -336,7 +336,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
    * This is for ensuring there is at least one batch coverd by readTimespan. This is
    *  required by mergeBatched
    */
-  private def atLeastOneBatch(readTimespan: Interval[Timestamp]) = {
+  private def atLeastOneBatch(readTimespan: Interval[Timestamp]) =
     fromEither[FactoryInput] {
       if (batcher.batchesCoveredBy(readTimespan) == Empty()) {
         Left(List("readTimespan is not convering at least one batch: " + readTimespan.toString))
@@ -344,7 +344,6 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
         Right()
       }
     }
-  }
 
   /**
    * instances of this trait MAY NOT change the logic here. This always follows the rule
