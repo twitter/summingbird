@@ -151,7 +151,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
     import IteratorSums._ // get the groupedSum, partials function
 
-    //    logger.info("Previous written batch: {}, computing: {}", inBatch.asInstanceOf[Any], batches)
+    logger.info("Previous written batch: {}, computing: {}", inBatch.asInstanceOf[Any], batches)
 
     def prepareOld(old: TypedPipe[(K, V)]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
       old.map { case (k, v) => (k, (inBatch, (Timestamp.Min, v))) }
@@ -292,7 +292,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
       // Get the total time we want to cover. If the lower bound of the requested timeSpan
       // is not the firstDeltaTimestamp, adjust it to that.
-      deltaTimes = setLower(InclusiveLower(firstDeltaTimestamp), timeSpan)
+      deltaTimes: Interval[Timestamp] = setLower(InclusiveLower(firstDeltaTimestamp), timeSpan)
 
       // Try to read the range covering the time we want; get the time we can completely
       // cover and the data from input in that range.
@@ -302,7 +302,9 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
       // Make sure that the time we can read includes the time just after the last
       // snapshot. We can't roll the store forward without this.
-      _ <- fromEither[FactoryInput](if (readDeltaTimestamps.contains(firstDeltaTimestamp)) Right(()) else
+      _ <- fromEither[FactoryInput](if (readDeltaTimestamps.contains(firstDeltaTimestamp))
+        Right(())
+      else
         Left(List("Cannot load initial timestamp " + firstDeltaTimestamp.toString + " of deltas " +
           " at " + this.toString + " only " + readDeltaTimestamps.toString)))
 
