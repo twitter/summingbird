@@ -47,14 +47,14 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
       .map { Timestamp(_) }
   }
 
-  implicit val arbitraryPipeFactory: Arbitrary[PipeFactory[(Int, Int)]] = {
+  implicit val arbitraryPipeFactory: Arbitrary[PipeFactory[Nothing]] = {
     Arbitrary {
       Gen.const {
-        StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[(Int, Int)]] {
+        StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[Nothing]] {
           (timeMode: (Interval[Timestamp], Mode)) =>
             {
               val (time: Interval[Timestamp], mode: Mode) = timeMode
-              val a: FlowToPipe[(Int, Int)] = Reader { (fdM: (FlowDef, Mode)) => TypedPipe.from[(Timestamp, (Int, Int))](Seq((Timestamp(10), (2, 3)))) }
+              val a: FlowToPipe[Nothing] = Reader { (fdM: (FlowDef, Mode)) => TypedPipe.empty }
               Right((timeMode, a))
             }
         }
@@ -82,7 +82,7 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
 
   property("readAfterLastBatch should return interval starting from the last batch written") = {
     forAll {
-      (diskPipeFactory: PipeFactory[(Int, Int)],
+      (diskPipeFactory: PipeFactory[Nothing],
       interval: Intersection[InclusiveLower, ExclusiveUpper, Timestamp],
       inputWithTimeStampAndBatcherAndStore: (List[(Long, Int)], Batcher, TestStore[Int, Int]),
       mode: Mode) =>
@@ -103,7 +103,7 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
 
   property("readAfterLastBatch should not extend the end of interval requested") = {
     forAll {
-      (diskPipeFactory: PipeFactory[(Int, Int)],
+      (diskPipeFactory: PipeFactory[Nothing],
       interval: Intersection[InclusiveLower, ExclusiveUpper, Timestamp],
       inputWithTimeStampAndBatcherAndStore: (List[(Long, Int)], Batcher, TestStore[Int, Int]),
       mode: Mode) =>
@@ -123,7 +123,7 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
 
   property("the end of merged interval is never extended") = {
     forAll {
-      (diskPipeFactory: PipeFactory[(Int, Int)],
+      (diskPipeFactory: PipeFactory[Nothing],
       interval: Intersection[InclusiveLower, ExclusiveUpper, Timestamp],
       inputWithTimeStampAndBatcherAndStore: (List[(Long, Int)], Batcher, TestStore[Int, Int]),
       commutativity: Commutativity,
@@ -151,6 +151,7 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
     forAll {
       (interval: Intersection[InclusiveLower, ExclusiveUpper, Timestamp],
       inputWithTimeStampAndBatcherAndStore: (List[(Long, Int)], Batcher, TestStore[Int, Int]),
+      commutativity: Commutativity,
       mode: Mode) =>
         val (inputWithTimeStamp, batcher, testStore) = inputWithTimeStampAndBatcherAndStore
         (atLeast2MsBatcher(batcher)) ==> {
@@ -176,7 +177,7 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
               }
           }
 
-          val mergeResult = testStore.merge(diskPipeFactory, implicitly[Semigroup[Int]], Commutative, 10)((interval, mode))
+          val mergeResult = testStore.merge(diskPipeFactory, implicitly[Semigroup[Int]], commutativity, 10)((interval, mode))
 
           mergeResult match {
             case Left(l) => {
