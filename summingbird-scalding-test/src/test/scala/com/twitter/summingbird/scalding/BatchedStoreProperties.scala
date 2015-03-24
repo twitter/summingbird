@@ -47,8 +47,6 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
       .map { Timestamp(_) }
   }
 
-  def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
-
   implicit val arbitraryPipeFactory: Arbitrary[PipeFactory[(Int, Int)]] = {
     Arbitrary {
       Gen.const {
@@ -67,14 +65,14 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
   implicit def timeExtractor[T <: (Long, Any)] = TestUtil.simpleTimeExtractor[T]
 
   implicit val arbitraryInputWithTimeStampAndBatcher: Arbitrary[(List[(Long, Int)], Batcher, TestStore[Int, Int])] = Arbitrary {
-    Arbitrary.arbitrary[List[Int]]
-      .map { in => in.zipWithIndex.map { case (item: Int, time: Int) => (time.toLong, item) } }
-      .map { in =>
-        val batcher: Batcher = TestUtil.randomBatcher(in)
-        val lastTimeStamp = in.size
-        val testStore = TestStore[Int, Int]("test", batcher, sample[Map[Int, Int]], lastTimeStamp)
-        (in, batcher, testStore)
-      }
+    for {
+      arbInt <- Arbitrary.arbitrary[List[Int]]
+      in = arbInt.zipWithIndex.map { case (item: Int, time: Int) => (time.toLong, item) }
+      arbMap <- Arbitrary.arbitrary[Map[Int, Int]]
+      batcher = TestUtil.randomBatcher(in)
+      lastTimeStamp = in.size
+      testStore = TestStore[Int, Int]("test", batcher, arbMap, lastTimeStamp)
+    } yield (in, batcher, testStore)
   }
 
   implicit def arbitraryLocalMode: Arbitrary[Mode] = Arbitrary { Gen.const(Local(true)) }
@@ -89,11 +87,12 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
         val result = testStore.readAfterLastBatch(diskPipeFactory)((interval, mode))
 
         result match {
-          case Right(((readInterval: Intersection[InclusiveLower, ExclusiveUpper, Timestamp], _), _)) => {
+          case Right(((Intersection(InclusiveLower(readIntervalLower), ExclusiveUpper(_)), _), _)) => {
             //readInterval should start from the last written interval in the store
-            val start: InclusiveLower[Timestamp] = InclusiveLower(batcher.earliestTimeOf(testStore.initBatch.next))
-            readInterval.lower == start
+            val start: Timestamp = batcher.earliestTimeOf(testStore.initBatch.next)
+            implicitly[Ordering[Timestamp]].equiv(readIntervalLower, start)
           }
+          case Right(_) => false
           case Left(_) => interval == Empty()
         }
     }
@@ -108,9 +107,9 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
         val (inputWithTimeStamp, batcher, testStore) = inputWithTimeStampAndBatcherAndStore
         val mergeResult = testStore.merge(diskPipeFactory, implicitly[Semigroup[Int]], com.twitter.summingbird.option.Commutative, 10)((interval, mode))
         mergeResult.isRight ==> {
-          val Right(((readInterval: Intersection[InclusiveLower, ExclusiveUpper, Timestamp], _), _)) = mergeResult
+          val Right(((Intersection(InclusiveLower(_), ExclusiveUpper(readIntervalUpper)), _), _)) = mergeResult
           val requestedEndingTimestamp: Timestamp = interval.upper.upper
-          val readIntervalEndingTimestamp: Timestamp = readInterval.upper.upper
+          val readIntervalEndingTimestamp: Timestamp = readIntervalUpper
           implicitly[Ordering[Timestamp]].lteq(readIntervalEndingTimestamp, requestedEndingTimestamp)
         }
     }
