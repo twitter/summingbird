@@ -136,37 +136,52 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
   }
 
   property("should not merge if the time interval on disk(from diskPipeFactory) is smaller than one batch") = {
+    //To test this property, it requires the length of the batcher is at least 2 millis, since we want
+    //to create data that fits a batch partially
+    def atLeast2MsBatcher(batcher: Batcher): Boolean = {
+      batcher match {
+        case b: MillisecondBatcher => b.durationMillis >= 2
+        case _ => true
+      }
+    }
     forAll {
       (interval: Intersection[InclusiveLower, ExclusiveUpper, Timestamp],
       inputWithTimeStampAndBatcherAndStore: (List[(Long, Int)], Batcher, TestStore[Int, Int]),
       mode: Mode) =>
         val (inputWithTimeStamp, batcher, testStore) = inputWithTimeStampAndBatcherAndStore
-        val nextBatchEnding = batcher.latestTimeOf(testStore.initBatch.next)
+        (atLeast2MsBatcher(batcher)) ==> {
+          val nextBatchEnding = batcher.latestTimeOf(testStore.initBatch.next)
 
-        //this diskPipeFactory returns a timeinterval that ends before the ending of next batch, meaning there is not enough data for a new batch
-        val diskPipeFactory = StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[(Int, Int)]] {
-          (timeMode: (Interval[Timestamp], Mode)) =>
-            {
-              val (time: Interval[Timestamp], mode: Mode) = timeMode
-              val Intersection(InclusiveLower(startRequestedTime), ExclusiveUpper(_)) = time
+          //this diskPipeFactory returns a time interval that ends before the ending of next batch, meaning there is not enough data for a new batch
+          val diskPipeFactory = StateWithError[(Interval[Timestamp], Mode), List[FailureReason], FlowToPipe[(Int, Int)]] {
+            (timeMode: (Interval[Timestamp], Mode)) =>
+              {
+                val (time: Interval[Timestamp], mode: Mode) = timeMode
+                val Intersection(InclusiveLower(startRequestedTime), ExclusiveUpper(_)) = time
 
-              //shrink the endTime so it does not cover a whole batch
-              val onDiskEndTime: Long = Gen.choose(startRequestedTime.milliSinceEpoch, nextBatchEnding.milliSinceEpoch).sample.get
+                //shrink the endTime so it does not cover a whole batch
+                val onDiskEndTime: Long = Gen.choose(startRequestedTime.milliSinceEpoch, nextBatchEnding.milliSinceEpoch).sample.get
 
-              val readTime: Interval[Timestamp] = if (startRequestedTime == nextBatchEnding)
-                Empty()
-              else
-                Intersection(InclusiveLower(startRequestedTime), ExclusiveUpper(nextBatchEnding))
+                val readTime: Interval[Timestamp] = if (startRequestedTime == nextBatchEnding)
+                  Empty()
+                else
+                  Intersection(InclusiveLower(startRequestedTime), ExclusiveUpper(nextBatchEnding))
 
-              val flowToPipe: FlowToPipe[(Int, Int)] = Reader { (fdM: (FlowDef, Mode)) => TypedPipe.from[(Timestamp, (Int, Int))](Seq((Timestamp(10), (2, 3)))) }
-              Right(((readTime, mode), flowToPipe))
+                val flowToPipe: FlowToPipe[(Int, Int)] = Reader { (fdM: (FlowDef, Mode)) => TypedPipe.from[(Timestamp, (Int, Int))](Seq((Timestamp(10), (2, 3)))) }
+                Right(((readTime, mode), flowToPipe))
+              }
+          }
+
+          val mergeResult = testStore.merge(diskPipeFactory, implicitly[Semigroup[Int]], Commutative, 10)((interval, mode))
+
+          mergeResult match {
+            case Left(l) => {
+              println(l)
+              l.mkString.contains("readTimespan is not convering at least one batch").label("fail with right reason")
             }
+            case Right(_) => false.label("should fail when readTimespan is not covering at least one batch")
+          }
         }
-
-        val mergeResult = testStore.merge(diskPipeFactory, implicitly[Semigroup[Int]], Commutative, 10)((interval, mode))
-
-        mergeResult.left.get.mkString.contains("readTimespan is not convering at least one batch").label("fail with right reason")
-        mergeResult.isInstanceOf[Left[_, _]].label("returns Left when data is smaller than one batch")
     }
   }
 }
