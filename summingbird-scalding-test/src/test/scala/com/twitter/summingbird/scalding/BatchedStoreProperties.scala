@@ -21,7 +21,7 @@ import cascading.flow.{ Flow, FlowDef }
 import com.twitter.algebird._
 import com.twitter.algebird.monad._
 import com.twitter.summingbird.batch._
-import com.twitter.summingbird.option.Commutative
+import com.twitter.summingbird.option.{ Commutative, NonCommutative, Commutativity }
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
 
 import org.scalacheck._
@@ -76,6 +76,9 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
   }
 
   implicit def arbitraryLocalMode: Arbitrary[Mode] = Arbitrary { Gen.const(Local(true)) }
+  implicit def arbitraryCommutativity: Arbitrary[Commutativity] = Arbitrary {
+    Gen.oneOf(Seq(Commutative, NonCommutative))
+  }
 
   property("readAfterLastBatch should return interval starting from the last batch written") = {
     forAll {
@@ -123,9 +126,10 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
       (diskPipeFactory: PipeFactory[(Int, Int)],
       interval: Intersection[InclusiveLower, ExclusiveUpper, Timestamp],
       inputWithTimeStampAndBatcherAndStore: (List[(Long, Int)], Batcher, TestStore[Int, Int]),
+      commutativity: Commutativity,
       mode: Mode) =>
         val (inputWithTimeStamp, batcher, testStore) = inputWithTimeStampAndBatcherAndStore
-        val mergeResult = testStore.merge(diskPipeFactory, implicitly[Semigroup[Int]], com.twitter.summingbird.option.Commutative, 10)((interval, mode))
+        val mergeResult = testStore.merge(diskPipeFactory, implicitly[Semigroup[Int]], commutativity, 10)((interval, mode))
         mergeResult.isRight ==> {
           val Right(((Intersection(InclusiveLower(_), ExclusiveUpper(readIntervalUpper)), _), _)) = mergeResult
           val requestedEndingTimestamp: Timestamp = interval.upper.upper
@@ -176,7 +180,6 @@ object BatchedStoreProperties extends Properties("BatchedStore's Properties") {
 
           mergeResult match {
             case Left(l) => {
-              println(l)
               l.mkString.contains("readTimespan is not convering at least one batch").label("fail with right reason")
             }
             case Right(_) => false.label("should fail when readTimespan is not covering at least one batch")
