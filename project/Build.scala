@@ -19,30 +19,27 @@ object SummingbirdBuild extends Build {
 
   def isScala210x(scalaVersion: String) = scalaBinaryVersion(scalaVersion) == "2.10"
 
-  val scalaCheckVersion = "1.11.5"
-  val hadoopVersion = "1.2.1"
   val algebirdVersion = "0.9.0"
   val bijectionVersion = "0.7.2"
   val chillVersion = "0.5.2"
-  val slf4jVersion = "1.6.6"
-  val parquetVersion = "1.6.0rc4"
-
+  val commonsHttpClientVersion = "3.1"
+  val commonsLangVersion = "2.6"
   val dfsDatastoresVersion = "1.3.6"
-  val scaldingVersion = "0.13.1"
-  val storehausVersion = "0.10.0"
-  val utilVersion = "6.3.8"
-
   val finagleVersion = "6.12.2"
-  val tormentaVersion = "0.9.0"
+  val hadoopVersion = "1.2.1"
   val junitVersion = "4.11"
   val log4jVersion = "1.2.16"
-  val stormVersion = "0.9.0-wip15"
-  val commonsLangVersion = "2.6"
   val novocodeJunitVersion = "0.10"
-  val specs2Version = "1.13"
-
+  val parquetVersion = "1.6.0rc4"
+  val scalaCheckVersion = "1.11.5"
+  val scaldingVersion = "0.13.1"
+  val slf4jVersion = "1.6.6"
   val sparkCoreVersion ="1.2.0"
-  val commonsHttpClientVersion = "3.1"
+  val specs2Version = "1.13"
+  val storehausVersion = "0.10.0"
+  val stormVersion = "0.9.0-wip15"
+  val tormentaVersion = "0.9.0"
+  val utilVersion = "6.3.8"
 
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
 
@@ -154,22 +151,23 @@ object SummingbirdBuild extends Build {
     publish := { }, // skip publishing for this root project.
     publishLocal := { }
   ).aggregate(
-    summingbirdCore,
-    summingbirdCoreJava,
     summingbirdBatch,
     summingbirdBatchHadoop,
-    summingbirdOnline,
+    summingbirdBuilder,
+    summingbirdChill,
     summingbirdClient,
-    summingbirdStorm,
-    summingbirdStormTest,
-    summingbirdStormJava,
+    summingbirdCore,
+    summingbirdCoreJava,
+    summingbirdCoreTest,
+    summingbirdExample,
+    summingbirdGraph,
+    summingbirdOnline,
     summingbirdScalding,
     summingbirdScaldingTest,
     summingbirdSpark,
-    summingbirdBuilder,
-    summingbirdChill,
-    summingbirdExample,
-    summingbirdCoreTest
+    summingbirdStorm,
+    summingbirdStormJava,
+    summingbirdStormTest
   )
 
   /**
@@ -224,11 +222,13 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdCore = module("core").settings(
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
-  )
+  ).dependsOn(summingbirdGraph)
 
   lazy val summingbirdCoreJava = module("core-java").dependsOn(
     summingbirdCore % "test->test;compile->compile"
   )
+
+  lazy val summingbirdGraph = module("graph")
 
   lazy val summingbirdOnline = module("online").settings(
     libraryDependencies ++= Seq(
