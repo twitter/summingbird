@@ -42,7 +42,7 @@ object MergeableStoreFactory {
   }
 }
 
-trait MergeableStoreFactory[-K, V] {
+trait MergeableStoreFactory[-K, V] extends java.io.Serializable {
   def mergeableStore: () => Mergeable[K, V]
   def mergeableBatcher: Batcher
 }

@@ -365,7 +365,7 @@ object SummingbirdBuild extends Build {
       "storm" % "storm" % stormVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "bijection-netty" % bijectionVersion,
       "com.twitter" %% "tormenta-twitter" % tormentaVersion,
-      "com.twitter" %% "storehaus-memcache" % storehausVersion,
+      "com.twitter" %% "storehaus-memcache" % storehausVersion exclude("com.twitter.common", "dynamic-host-set") exclude("com.twitter.common", "service-thrift"),
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(summingbirdCore, summingbirdCoreJava, summingbirdStorm, summingbirdStormJava)
