@@ -19,22 +19,21 @@ object SummingbirdBuild extends Build {
 
   def isScala210x(scalaVersion: String) = scalaBinaryVersion(scalaVersion) == "2.10"
 
-  val scalaTestVersion = "2.2.2"
-  val scalaCheckVersion = "1.11.5"
+  val scalaCheckVersion = "1.12.2"
   val hadoopVersion = "1.2.1"
-  val algebirdVersion = "0.9.0"
-  val bijectionVersion = "0.7.2"
-  val chillVersion = "0.5.2"
+  val algebirdVersion = "0.10.0"
+  val bijectionVersion = "0.8.0"
+  val chillVersion = "0.6.0"
   val slf4jVersion = "1.6.6"
   val parquetVersion = "1.6.0rc4"
 
-  val dfsDatastoresVersion = "1.3.4"
-  val scaldingVersion = "0.13.1"
-  val storehausVersion = "0.10.0"
+  val dfsDatastoresVersion = "1.3.6"
+  val scaldingVersion = "0.14.0"
+  val storehausVersion = "0.11.0"
   val utilVersion = "6.3.8"
 
   val finagleVersion = "6.12.2"
-  val tormentaVersion = "0.9.0"
+  val tormentaVersion = "0.10.0"
   val junitVersion = "4.11"
   val log4jVersion = "1.2.16"
   val stormVersion = "0.9.0-wip15"
@@ -42,13 +41,16 @@ object SummingbirdBuild extends Build {
   val novocodeJunitVersion = "0.10"
   val specs2Version = "1.13"
 
+  val sparkCoreVersion ="1.2.0"
+  val commonsHttpClientVersion = "3.1"
+
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.6.0",
-    scalaVersion := "2.10.4",
-    crossScalaVersions := Seq("2.10.4"),
+    version := "0.7.0",
+    scalaVersion := "2.10.5",
+    crossScalaVersions := Seq("2.10.5"),
     // To support hadoop 1.x
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
@@ -66,7 +68,7 @@ object SummingbirdBuild extends Build {
       // These satisify's scaldings log4j needs when in test mode
       "log4j" % "log4j" % log4jVersion % "test",
       "com.novocode" % "junit-interface" % novocodeJunitVersion % "test",
-      "org.specs2" %% "specs2" % "1.13" % "test"
+      "org.specs2" %% "specs2" % specs2Version % "test"
     ),
 
     resolvers ++= Seq(
@@ -166,9 +168,9 @@ object SummingbirdBuild extends Build {
     summingbirdSpark,
     summingbirdBuilder,
     summingbirdChill,
-    summingbirdExample
+    summingbirdExample,
+    summingbirdCoreTest
   )
-
 
   /**
     * This returns the youngest jar we released that is compatible with
@@ -179,7 +181,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.6.0" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.7.0" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
@@ -241,6 +243,7 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdBatch,
     summingbirdClient
   )
@@ -280,6 +283,7 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdStorm
   )
 
@@ -305,7 +309,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "chill-bijection" % chillVersion,
       "commons-lang" % "commons-lang" % commonsLangVersion,
       "com.twitter" %% "scalding-core" % scaldingVersion,
-      "com.twitter" %% "scalding-commons" % scaldingVersion
+      "com.twitter" %% "scalding-commons" % scaldingVersion,
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -317,10 +322,12 @@ object SummingbirdBuild extends Build {
   lazy val summingbirdScaldingTest = module("scalding-test").settings(
     libraryDependencies ++= Seq(
       "org.scalacheck" %% "scalacheck" % scalaCheckVersion,
-      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdChill,
     summingbirdBatchHadoop,
     summingbirdScalding
@@ -332,7 +339,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-json" % bijectionVersion,
       "com.twitter" %% "scalding-date" % scaldingVersion,
-      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -341,7 +349,8 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdBuilder = module("builder").settings(
     libraryDependencies ++= Seq(
-      "storm" % "storm" % stormVersion % "provided"
+      "storm" % "storm" % stormVersion % "provided",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore,
@@ -356,7 +365,7 @@ object SummingbirdBuild extends Build {
       "storm" % "storm" % stormVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "bijection-netty" % bijectionVersion,
       "com.twitter" %% "tormenta-twitter" % tormentaVersion,
-      "com.twitter" %% "storehaus-memcache" % storehausVersion,
+      "com.twitter" %% "storehaus-memcache" % storehausVersion exclude("com.twitter.common", "dynamic-host-set") exclude("com.twitter.common", "service-thrift"),
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(summingbirdCore, summingbirdCoreJava, summingbirdStorm, summingbirdStormJava)
@@ -377,6 +386,7 @@ object SummingbirdBuild extends Build {
     }
   }
 
+
   val sparkDeps = Seq(
     "com.twitter" %% "algebird-core" % algebirdVersion,
     "com.twitter" %% "algebird-util" % algebirdVersion,
@@ -385,9 +395,9 @@ object SummingbirdBuild extends Build {
     "com.twitter" %% "chill" % chillVersion,
     "com.twitter" % "chill-hadoop" % chillVersion,
     "com.twitter" %% "chill-bijection" % chillVersion,
-    "commons-lang" % "commons-lang" % "2.6",
-    "commons-httpclient" % "commons-httpclient" % "3.1",
-    "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
+    "commons-lang" % "commons-lang" % commonsLangVersion,
+    "commons-httpclient" % "commons-httpclient" % commonsHttpClientVersion,
+    "org.apache.spark" %% "spark-core" % sparkCoreVersion % "provided"
   )
 
   def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()
@@ -403,6 +413,19 @@ object SummingbirdBuild extends Build {
   .settings(sparkAssemblyMergeSettings:_*)
   .dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdChill
   )
+
+  lazy val summingbirdCoreTest = module("core-test").settings(
+    parallelExecution in Test := false,
+    libraryDependencies ++=Seq(
+      "junit" % "junit" % junitVersion % "provided",
+      "org.slf4j" % "slf4j-api" % slf4jVersion % "provided",
+      "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "provided",
+      "org.specs2" %% "specs2" % specs2Version % "provided")
+
+  ).dependsOn(
+      summingbirdCore % "test->test;compile->compile"
+    )
 }

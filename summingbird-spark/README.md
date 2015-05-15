@@ -17,4 +17,3 @@ Outstanding issues:
    behavior of all platforms.
  - There are currently no optimizations in the planning stage (except for commutativity not imposing a sort and using reduceByKey)
  - SparkPlatform is currently stateful but should be refactored to not be
- - The core spark types that need access to a SparkContext should be refactored in terms of a Reader monad

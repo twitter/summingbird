@@ -1,5 +1,22 @@
 # Summingbird #
 
+## 0.7.0
+* Registering summingbird counters with tormenta spouts #553
+* Add counters to default summers #571
+* Fixes the types off the summingbird java storm api #601
+* Adding explicit hadoop deps; dfs-datastores to 1.3.6 #592
+* Replace deprecated ClassManifest and erasure #608
+* Spark monad #607
+* replace deprecated erasure by runtimeClass #609
+* Revert "Remove StripNameNodes" #610
+* refactored core-tests into separate sub-project #593
+* Fix checking delta batch in readDeltaTimestamps in batched store when merging #612
+* ensure at least one batch before merging #613
+* MergeableStoreFactory extends java.io.Serializable #616
+* Spout storm metrics foreach #617
+* upgrade scalacheck #615
+* Use latest bijection, algebird, scalding, storehaus, chill, and tormenta
+
 ## 0.6.0
 * Use latest bijection, algebird, scalding, storehaus, chill, and tormenta https://github.com/twitter/summingbird/pull/565
 * Remove scala 2.9 support https://github.com/twitter/summingbird/pull/565

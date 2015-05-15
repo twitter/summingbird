@@ -60,7 +60,7 @@ object StormTestRun {
     //Before running the external Command
     val oldSecManager = System.getSecurityManager()
     System.setSecurityManager(new MySecurityManager());
-    InflightTuples.reset
+    InflightTuples.reset()
     try {
       val cluster = new LocalCluster()
       cluster.submitTopology("test topology", plannedTopology.config, plannedTopology.topology)
