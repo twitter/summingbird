@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>StormStore - com.twitter.summingbird.storm.StormStore</title>
-          <meta name="description" content="StormStore - com.twitter.summingbird.storm.StormStore" />
-          <meta name="keywords" content="StormStore com.twitter.summingbird.storm.StormStore" />
+          <title>HMap - com.twitter.summingbird.graph.HMap</title>
+          <meta name="description" content="HMap - com.twitter.summingbird.graph.HMap" />
+          <meta name="keywords" content="HMap com.twitter.summingbird.graph.HMap" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -12,7 +12,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../index.html';
-            var hash = 'com.twitter.summingbird.storm.StormStore';
+            var hash = 'com.twitter.summingbird.graph.HMap';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -24,27 +24,28 @@
         </head>
         <body class="type">
       <div id="definition">
-        <img src="../../../../lib/trait_big.png" />
-        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.storm">storm</a></p>
-        <h1>StormStore</h1>
+        <a href="HMap$.html" title="Go to companion"><img src="../../../../lib/class_to_object_big.png" /></a>
+        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.graph">graph</a></p>
+        <h1><a href="HMap$.html" title="Go to companion">HMap</a></h1>
       </div>
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier">sealed </span>
-        <span class="kind">trait</span>
+        <span class="modifier">sealed abstract </span>
+        <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">StormStore</span><span class="tparams">[<span name="K">-K</span>, <span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">HMap</span><span class="tparams">[<span name="K">K<span class="tparams">[<span name="_">_</span>]</span></span>, <span name="V">V<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala" target="_blank">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>This is a weak heterogenous map. It uses equals on the keys,
+so it is your responsibilty that if k: K[_] == k2: K[_] then
+the types are actually equal (either be careful or store a
+type identifier).
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-core/src/main/scala/com/twitter/summingbird/graph/HMap.scala" target="_blank">HMap.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
-        </div><div class="toggleContainer block">
-          <span class="toggle">Known Subclasses</span>
-          <div class="subClasses hiddenContent"><a href="MergeableStoreSupplier.html" class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier">MergeableStoreSupplier</a></div>
         </div></div>
         
 
@@ -62,7 +63,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="com.twitter.summingbird.storm.StormStore"><span>StormStore</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="com.twitter.summingbird.graph.HMap"><span>HMap</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -80,25 +81,57 @@
 
       <div id="template">
         <div id="allMembers">
-        
-
-        
-
-        <div id="values" class="values members">
-              <h3>Abstract Value Members</h3>
-              <ol><li name="com.twitter.summingbird.storm.StormStore#batcher" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="batcher:com.twitter.summingbird.batch.Batcher"></a>
-      <a id="batcher:Batcher"></a>
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="com.twitter.summingbird.graph.HMap#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;():com.twitter.summingbird.graph.HMap[K,V]"></a>
+      <a id="&lt;init&gt;:HMap[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
+        <span class="modifier"></span>
+        <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">batcher</span><span class="result">: <a href="../batch/Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>
+        <span class="name">HMap</span><span class="params">()</span>
       </span>
       </h4>
       
+    </li></ol>
+            </div>
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="com.twitter.summingbird.graph.HMap.Pair" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Pair[t]=(K[t],V[t])"></a>
+      <a id="Pair[t]:(K[t],V[t])"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Pair</span><span class="tparams">[<span name="t">t</span>]</span><span class="result"> = (<span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.Pair.t">t</span>], <span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.Pair.t">t</span>])</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        <div id="values" class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol><li name="com.twitter.summingbird.graph.HMap#map" visbl="prt" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="map:Map[K[_],V[_]]"></a>
+      <a id="map:Map[K[_],V[_]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">map</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>[_], <span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>[_]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li></ol>
             </div>
 
@@ -143,6 +176,32 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.HMap#+" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="+[T](kv:(K[T],V[T])):com.twitter.summingbird.graph.HMap[K,V]"></a>
+      <a id="+[T]((K[T],V[T])):HMap[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus" class="name">+</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="kv">kv: (<span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.+.T">T</span>], <span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.+.T">T</span>])</span>)</span><span class="result">: <a href="" class="extype" name="com.twitter.summingbird.graph.HMap">HMap</a>[<span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>, <span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.HMap#-" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="-(k:K[_]):com.twitter.summingbird.graph.HMap[K,V]"></a>
+      <a id="-(K[_]):HMap[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $minus" class="name">-</span><span class="params">(<span name="k">k: <span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>[_]</span>)</span><span class="result">: <a href="" class="extype" name="com.twitter.summingbird.graph.HMap">HMap</a>[<span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>, <span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:AnyRef):Boolean"></a>
       <a id="==(AnyRef):Boolean"></a>
@@ -169,6 +228,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.HMap#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="apply[T](id:K[T]):V[T]"></a>
+      <a id="apply[T](K[T]):V[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="id">id: <span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.apply.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.apply.T">T</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -201,6 +273,45 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.HMap#collect" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="collect[R[_]](p:com.twitter.summingbird.graph.GenPartial[HMap.this.Pair,R]):Stream[R[_]]"></a>
+      <a id="collect[R[_]](GenPartial[Pair,R]):Stream[R[_]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collect</span><span class="tparams">[<span name="R">R<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="p">p: <a href="GenPartial.html" class="extype" name="com.twitter.summingbird.graph.GenPartial">GenPartial</a>[<a href="#Pair[t]=(K[t],V[t])" class="extmbr" name="com.twitter.summingbird.graph.HMap.Pair">Pair</a>, <span class="extype" name="com.twitter.summingbird.graph.HMap.collect.R">R</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Stream">Stream</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.collect.R">R</span>[_]]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.HMap#collectValues" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="collectValues[R[_]](p:com.twitter.summingbird.graph.GenPartial[V,R]):Stream[R[_]]"></a>
+      <a id="collectValues[R[_]](GenPartial[V,R]):Stream[R[_]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">collectValues</span><span class="tparams">[<span name="R">R<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="p">p: <a href="GenPartial.html" class="extype" name="com.twitter.summingbird.graph.GenPartial">GenPartial</a>[<span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>, <span class="extype" name="com.twitter.summingbird.graph.HMap.collectValues.R">R</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Stream">Stream</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.collectValues.R">R</span>[_]]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.HMap#contains" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="contains[T](id:K[T]):Boolean"></a>
+      <a id="contains[T](K[T]):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">contains</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="id">id: <span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.contains.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -214,8 +325,8 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="equals(x$1:Any):Boolean"></a>
+    </li><li name="com.twitter.summingbird.graph.HMap#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(that:Any):Boolean"></a>
       <a id="equals(Any):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -223,10 +334,23 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">equals</span><span class="params">(<span name="that">that: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.graph.HMap">HMap</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.HMap#filter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="filter(pred:com.twitter.summingbird.graph.GenFunction[HMap.this.Pair,[T]Boolean]):com.twitter.summingbird.graph.HMap[K,V]"></a>
+      <a id="filter(GenFunction[Pair,[T]Boolean]):HMap[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">filter</span><span class="params">(<span name="pred">pred: <a href="GenFunction.html" class="extype" name="com.twitter.summingbird.graph.GenFunction">GenFunction</a>[<a href="#Pair[t]=(K[t],V[t])" class="extmbr" name="com.twitter.summingbird.graph.HMap.Pair">Pair</a>, [T]<span class="extype" name="scala.Boolean">Boolean</span>]</span>)</span><span class="result">: <a href="" class="extype" name="com.twitter.summingbird.graph.HMap">HMap</a>[<span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>, <span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -246,6 +370,19 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.HMap#get" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="get[T](id:K[T]):Option[V[T]]"></a>
+      <a id="get[T](K[T]):Option[V[T]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">get</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="id">id: <span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.get.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.get.T">T</span>]]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -259,7 +396,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.twitter.summingbird.graph.HMap#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
       <h4 class="signature">
@@ -271,7 +408,7 @@
         <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.graph.HMap">HMap</a> → AnyRef → Any</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -285,6 +422,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.HMap#keysOf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="keysOf[T](v:V[T]):Set[K[T]]"></a>
+      <a id="keysOf[T](V[T]):Set[K[T]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">keysOf</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="v">v: <span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.keysOf.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>[<span class="extype" name="com.twitter.summingbird.graph.HMap.keysOf.T">T</span>]]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -337,7 +487,7 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.twitter.summingbird.graph.HMap#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>
       <h4 class="signature">
@@ -346,10 +496,23 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.graph.HMap">HMap</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.HMap#updateFirst" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="updateFirst(p:com.twitter.summingbird.graph.GenPartial[K,V]):Option[(com.twitter.summingbird.graph.HMap[K,V],K[_])]"></a>
+      <a id="updateFirst(GenPartial[K,V]):Option[(HMap[K,V],K[_])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">updateFirst</span><span class="params">(<span name="p">p: <a href="GenPartial.html" class="extype" name="com.twitter.summingbird.graph.GenPartial">GenPartial</a>[<span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>, <span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[(<a href="" class="extype" name="com.twitter.summingbird.graph.HMap">HMap</a>[<span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>, <span class="extype" name="com.twitter.summingbird.graph.HMap.V">V</span>], <span class="extype" name="com.twitter.summingbird.graph.HMap.K">K</span>[_])]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>

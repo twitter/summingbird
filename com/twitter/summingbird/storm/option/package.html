@@ -86,19 +86,6 @@ otherwise, the tuple will be acked when the bolt completes.</p>
       </h4>
       <p class="comment cmt">If true, the topology will anchor tuples in all flatMap bolts and
 ack in the final sink bolt.</p>
-    </li><li name="com.twitter.summingbird.storm.option.FlatMapParallelism" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="FlatMapParallelismextendsProductwithSerializable"></a>
-      <a id="FlatMapParallelism:FlatMapParallelism"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="FlatMapParallelism.html"><span class="name">FlatMapParallelism</span></a><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4>
-      
     </li><li name="com.twitter.summingbird.storm.option.FlatMapStormMetrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FlatMapStormMetricsextendsAnyRef"></a>
       <a id="FlatMapStormMetrics:FlatMapStormMetrics"></a>
@@ -113,6 +100,20 @@ ack in the final sink bolt.</p>
       </h4>
       <p class="comment cmt">When a bolt is prepared, these metrics will be use by being called with the TopologyContext for the storm
 bolt.</p>
+    </li><li name="com.twitter.summingbird.storm.option.MaxExecutePerSecond" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MaxExecutePerSecondextendsProductwithSerializable"></a>
+      <a id="MaxExecutePerSecond:MaxExecutePerSecond"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MaxExecutePerSecond.html"><span class="name">MaxExecutePerSecond</span></a><span class="params">(<span name="lowerBound">lowerBound: <span class="extype" name="scala.Long">Long</span></span>, <span name="upperBound">upperBound: <span class="extype" name="scala.Long">Long</span></span>, <span name="rampUptimeMS">rampUptimeMS: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Maximum number of elements to execute in a given second per task
+</p>
     </li><li name="com.twitter.summingbird.storm.option.PreferLocalDependency" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PreferLocalDependencyextendsProductwithSerializable"></a>
       <a id="PreferLocalDependency:PreferLocalDependency"></a>
@@ -127,19 +128,6 @@ bolt.</p>
       </h4>
       <p class="comment cmt">This signals that the storm bolts should use localOrShuffleGrouping, which means that if the downstream bolt
 has a task on the same local worker, the output will only go to those tasks.</p>
-    </li><li name="com.twitter.summingbird.storm.option.SpoutParallelism" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SpoutParallelismextendsProductwithSerializable"></a>
-      <a id="SpoutParallelism:SpoutParallelism"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="SpoutParallelism.html"><span class="name">SpoutParallelism</span></a><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4>
-      <p class="comment cmt">Options used by the flatMapping stage of a storm topology.</p>
     </li><li name="com.twitter.summingbird.storm.option.SpoutStormMetrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SpoutStormMetricsextendsSerializable"></a>
       <a id="SpoutStormMetrics:SpoutStormMetrics"></a>
@@ -153,34 +141,6 @@ has a task on the same local worker, the output will only go to those tasks.</p>
       </span>
       </h4>
       
-    </li><li name="com.twitter.summingbird.storm.option.SummerBatchMultiplier" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SummerBatchMultiplierextendsProductwithSerializable"></a>
-      <a id="SummerBatchMultiplier:SummerBatchMultiplier"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="SummerBatchMultiplier.html"><span class="name">SummerBatchMultiplier</span></a><span class="params">(<span name="get">get: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4>
-      <p class="comment cmt">This value is mulitplied by the summer parallelism to set the true value used to hash and shard the
-key/value pairs.</p>
-    </li><li name="com.twitter.summingbird.storm.option.SummerParallelism" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SummerParallelismextendsProductwithSerializable"></a>
-      <a id="SummerParallelism:SummerParallelism"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="SummerParallelism.html"><span class="name">SummerParallelism</span></a><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4>
-      <p class="comment cmt">SinkParallelism controls the number of executors storm allocates to
-the groupAndSum bolts.</p>
     </li><li name="com.twitter.summingbird.storm.option.SummerStormMetrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SummerStormMetricsextendsAnyRef"></a>
       <a id="SummerStormMetrics:SummerStormMetrics"></a>

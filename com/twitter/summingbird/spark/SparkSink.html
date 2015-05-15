@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-spark/src/main/scala/com/twitter/summingbird/spark/CoreTypes.scala" target="_blank">CoreTypes.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-spark/src/main/scala/com/twitter/summingbird/spark/CoreTypes.scala" target="_blank">CoreTypes.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -84,15 +84,15 @@
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="com.twitter.summingbird.spark.SparkSink#write" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="write(sc:org.apache.spark.SparkContext,rdd:org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,T)],timeSpan:com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp]):Unit"></a>
-      <a id="write(SparkContext,RDD[(Timestamp,T)],Interval[Timestamp]):Unit"></a>
+      <a id="write(rdd:org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,T)],timeSpan:com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp]):com.twitter.algebird.monad.Reader[org.apache.spark.SparkContext,Unit]"></a>
+      <a id="write(RDD[(Timestamp,T)],Interval[Timestamp]):Reader[SparkContext,Unit]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">write</span><span class="params">(<span name="sc">sc: <span class="extype" name="org.apache.spark.SparkContext">SparkContext</span></span>, <span name="rdd">rdd: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, <span class="extype" name="com.twitter.summingbird.spark.SparkSink.T">T</span>)]</span>, <span name="timeSpan">timeSpan: <span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">write</span><span class="params">(<span name="rdd">rdd: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, <span class="extype" name="com.twitter.summingbird.spark.SparkSink.T">T</span>)]</span>, <span name="timeSpan">timeSpan: <span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>)</span><span class="result">: <span class="extype" name="com.twitter.algebird.monad.Reader">Reader</span>[<span class="extype" name="org.apache.spark.SparkContext">SparkContext</span>, <span class="extype" name="scala.Unit">Unit</span>]</span>
       </span>
       </h4>
       

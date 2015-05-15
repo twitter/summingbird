@@ -35,11 +35,11 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">Counter</span><span class="params">(<span name="group">group: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="jobID">jobID: <a href="option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">Counter</span><span class="params">(<span name="group">group: <a href="Group.html" class="extype" name="com.twitter.summingbird.Group">Group</a></span>, <span name="name">name: <a href="Name.html" class="extype" name="com.twitter.summingbird.Name">Name</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="jobID">jobID: <a href="option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-core/src/main/scala/com/twitter/summingbird/Counter.scala" target="_blank">Counter.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-core/src/main/scala/com/twitter/summingbird/Counter.scala" target="_blank">Counter.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -80,7 +80,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="com.twitter.summingbird.Counter#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(group:String,name:String)(implicitjobID:com.twitter.summingbird.option.JobId):com.twitter.summingbird.Counter"></a>
+      <a id="&lt;init&gt;(group:com.twitter.summingbird.Group,name:com.twitter.summingbird.Name)(implicitjobID:com.twitter.summingbird.option.JobId):com.twitter.summingbird.Counter"></a>
       <a id="&lt;init&gt;:Counter"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -88,7 +88,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">Counter</span><span class="params">(<span name="group">group: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="jobID">jobID: <a href="option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>)</span>
+        <span class="name">Counter</span><span class="params">(<span name="group">group: <a href="Group.html" class="extype" name="com.twitter.summingbird.Group">Group</a></span>, <span name="name">name: <a href="Name.html" class="extype" name="com.twitter.summingbird.Name">Name</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="jobID">jobID: <a href="option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>)</span>
       </span>
       </h4>
       
@@ -244,28 +244,28 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="com.twitter.summingbird.Counter#group" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="group:String"></a>
-      <a id="group:String"></a>
+      <a id="group:com.twitter.summingbird.Group"></a>
+      <a id="group:Group"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">group</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">group</span><span class="result">: <a href="Group.html" class="extype" name="com.twitter.summingbird.Group">Group</a></span>
       </span>
       </h4>
       
     </li><li name="com.twitter.summingbird.Counter#incr" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="incr:Unit"></a>
-      <a id="incr:Unit"></a>
+      <a id="incr():Unit"></a>
+      <a id="incr():Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">incr</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">incr</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
       
@@ -296,15 +296,15 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="com.twitter.summingbird.Counter#name" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="name:String"></a>
-      <a id="name:String"></a>
+      <a id="name:com.twitter.summingbird.Name"></a>
+      <a id="name:Name"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">name</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+        <span class="name">name</span><span class="result">: <a href="Name.html" class="extype" name="com.twitter.summingbird.Name">Name</a></span>
       </span>
       </h4>
       

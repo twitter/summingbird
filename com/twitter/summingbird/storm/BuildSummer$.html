@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/BuildSummer.scala" target="_blank">BuildSummer.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/BuildSummer.scala" target="_blank">BuildSummer.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -151,15 +151,15 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="com.twitter.summingbird.storm.BuildSummer#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apply(storm:com.twitter.summingbird.storm.Storm,dag:com.twitter.summingbird.planner.Dag[com.twitter.summingbird.storm.Storm],node:com.twitter.summingbird.storm.planner.StormNode):com.twitter.summingbird.online.option.SummerBuilder"></a>
-      <a id="apply(Storm,Dag[Storm],StormNode):SummerBuilder"></a>
+      <a id="apply(storm:com.twitter.summingbird.storm.Storm,dag:com.twitter.summingbird.planner.Dag[com.twitter.summingbird.storm.Storm],node:com.twitter.summingbird.storm.planner.StormNode,jobID:com.twitter.summingbird.option.JobId):com.twitter.summingbird.online.option.SummerBuilder"></a>
+      <a id="apply(Storm,Dag[Storm],StormNode,JobId):SummerBuilder"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="params">(<span name="storm">storm: <a href="Storm.html" class="extype" name="com.twitter.summingbird.storm.Storm">Storm</a></span>, <span name="dag">dag: <a href="../planner/Dag.html" class="extype" name="com.twitter.summingbird.planner.Dag">Dag</a>[<a href="Storm.html" class="extype" name="com.twitter.summingbird.storm.Storm">Storm</a>]</span>, <span name="node">node: <span class="extype" name="com.twitter.summingbird.storm.planner.StormNode">StormNode</span></span>)</span><span class="result">: <a href="../online/option/SummerBuilder.html" class="extype" name="com.twitter.summingbird.online.option.SummerBuilder">SummerBuilder</a></span>
+        <span class="name">apply</span><span class="params">(<span name="storm">storm: <a href="Storm.html" class="extype" name="com.twitter.summingbird.storm.Storm">Storm</a></span>, <span name="dag">dag: <a href="../planner/Dag.html" class="extype" name="com.twitter.summingbird.planner.Dag">Dag</a>[<a href="Storm.html" class="extype" name="com.twitter.summingbird.storm.Storm">Storm</a>]</span>, <span name="node">node: <span class="extype" name="com.twitter.summingbird.storm.planner.StormNode">StormNode</span></span>, <span name="jobID">jobID: <a href="../option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>)</span><span class="result">: <a href="../online/option/SummerBuilder.html" class="extype" name="com.twitter.summingbird.online.option.SummerBuilder">SummerBuilder</a></span>
       </span>
       </h4>
       
@@ -195,6 +195,19 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.twitter.summingbird.storm.BuildSummer#counter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="counter(jobID:com.twitter.summingbird.option.JobId,nodeName:com.twitter.summingbird.Group,counterName:com.twitter.summingbird.Name):com.twitter.summingbird.Counterwithcom.twitter.algebird.util.summer.Incrementor"></a>
+      <a id="counter(JobId,Group,Name):CounterwithIncrementor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">counter</span><span class="params">(<span name="jobID">jobID: <a href="../option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>, <span name="nodeName">nodeName: <a href="../Group.html" class="extype" name="com.twitter.summingbird.Group">Group</a></span>, <span name="counterName">counterName: <a href="../Name.html" class="extype" name="com.twitter.summingbird.Name">Name</a></span>)</span><span class="result">: <a href="../Counter.html" class="extype" name="com.twitter.summingbird.Counter">Counter</a> with <span class="extype" name="com.twitter.algebird.util.summer.Incrementor">Incrementor</span></span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>

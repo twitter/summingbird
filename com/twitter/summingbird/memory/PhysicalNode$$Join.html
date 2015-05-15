@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>StoreWrapper - com.twitter.summingbird.storm.StoreWrapper</title>
-          <meta name="description" content="StoreWrapper - com.twitter.summingbird.storm.StoreWrapper" />
-          <meta name="keywords" content="StoreWrapper com.twitter.summingbird.storm.StoreWrapper" />
+          <title>Join - com.twitter.summingbird.memory.PhysicalNode.Join</title>
+          <meta name="description" content="Join - com.twitter.summingbird.memory.PhysicalNode.Join" />
+          <meta name="keywords" content="Join com.twitter.summingbird.memory.PhysicalNode.Join" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -12,7 +12,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../index.html';
-            var hash = 'com.twitter.summingbird.storm.StoreWrapper';
+            var hash = 'com.twitter.summingbird.memory.PhysicalNode$$Join';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -25,8 +25,8 @@
         <body class="type">
       <div id="definition">
         <img src="../../../../lib/class_big.png" />
-        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.storm">storm</a></p>
-        <h1>StoreWrapper</h1>
+        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.memory">memory</a>.<a href="PhysicalNode$.html" class="extype" name="com.twitter.summingbird.memory.PhysicalNode">PhysicalNode</a></p>
+        <h1>Join</h1>
       </div>
 
       <h4 id="signature" class="signature">
@@ -35,13 +35,13 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">StoreWrapper</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: () ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.V">V</span>]</span>)</span><span class="result"> extends <a href="StormService.html" class="extype" name="com.twitter.summingbird.storm.StormService">StormService</a>[<span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.V">V</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">Join</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>, <span name="W">W</span>]</span><span class="params">(<span name="service">service: (<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.K">K</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.W">W</span>]</span>, <span name="target">target: <a href="PhysicalNode.html" class="extype" name="com.twitter.summingbird.memory.PhysicalNode">PhysicalNode</a>[(<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.K">K</span>, (<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.V">V</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.W">W</span>]))]</span>)</span><span class="result"> extends <a href="PhysicalNode.html" class="extype" name="com.twitter.summingbird.memory.PhysicalNode">PhysicalNode</a>[(<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.K">K</span>, <span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.V">V</span>)] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala" target="_blank">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-core/src/main/scala/com/twitter/summingbird/memory/ConcurrentMemory.scala" target="_blank">ConcurrentMemory.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="StormService.html" class="extype" name="com.twitter.summingbird.storm.StormService">StormService</a>[<span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.V">V</span>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="PhysicalNode.html" class="extype" name="com.twitter.summingbird.memory.PhysicalNode">PhysicalNode</a>[(<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.K">K</span>, <span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.V">V</span>)], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -59,7 +59,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="com.twitter.summingbird.storm.StoreWrapper"><span>StoreWrapper</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="com.twitter.summingbird.storm.StormService"><span>StormService</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="com.twitter.summingbird.memory.PhysicalNode.Join"><span>Join</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="com.twitter.summingbird.memory.PhysicalNode"><span>PhysicalNode</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -79,16 +79,16 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="com.twitter.summingbird.storm.StoreWrapper#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(store:()=&gt;com.twitter.storehaus.ReadableStore[K,V]):com.twitter.summingbird.storm.StoreWrapper[K,V]"></a>
-      <a id="&lt;init&gt;:StoreWrapper[K,V]"></a>
+              <ol><li name="com.twitter.summingbird.memory.PhysicalNode.Join#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(service:K=&gt;Option[W],target:com.twitter.summingbird.memory.PhysicalNode[(K,(V,Option[W]))]):com.twitter.summingbird.memory.PhysicalNode.Join[K,V,W]"></a>
+      <a id="&lt;init&gt;:Join[K,V,W]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">StoreWrapper</span><span class="params">(<span name="store">store: () ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.V">V</span>]</span>)</span>
+        <span class="name">Join</span><span class="params">(<span name="service">service: (<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.K">K</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.W">W</span>]</span>, <span name="target">target: <a href="PhysicalNode.html" class="extype" name="com.twitter.summingbird.memory.PhysicalNode">PhysicalNode</a>[(<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.K">K</span>, (<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.V">V</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.W">W</span>]))]</span>)</span>
       </span>
       </h4>
       
@@ -295,19 +295,32 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="com.twitter.summingbird.storm.StoreWrapper#store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="store:()=&gt;com.twitter.storehaus.ReadableStore[K,V]"></a>
-      <a id="store:()⇒ReadableStore[K,V]"></a>
+    </li><li name="com.twitter.summingbird.memory.PhysicalNode.Join#push" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="push(item:(K,V))(implicitec:scala.concurrent.ExecutionContext):scala.concurrent.Future[Unit]"></a>
+      <a id="push((K,V))(ExecutionContext):Future[Unit]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">push</span><span class="params">(<span name="item">item: (<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.K">K</span>, <span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.V">V</span>)</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="ec">ec: <span class="extype" name="scala.concurrent.ExecutionContext">ExecutionContext</span></span>)</span><span class="result">: <span class="extype" name="scala.concurrent.Future">Future</span>[<span class="extype" name="scala.Unit">Unit</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join">Join</a> → <a href="PhysicalNode.html" class="extype" name="com.twitter.summingbird.memory.PhysicalNode">PhysicalNode</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.memory.PhysicalNode.Join#service" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="service:K=&gt;Option[W]"></a>
+      <a id="service:(K)⇒Option[W]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">store</span><span class="result">: () ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.V">V</span>]</span>
+        <span class="name">service</span><span class="result">: (<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.K">K</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.W">W</span>]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.storm.StoreWrapper">StoreWrapper</a> → <a href="StormService.html" class="extype" name="com.twitter.summingbird.storm.StormService">StormService</a></dd></dl></div>
+      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -321,6 +334,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="com.twitter.summingbird.memory.PhysicalNode.Join#target" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="target:com.twitter.summingbird.memory.PhysicalNode[(K,(V,Option[W]))]"></a>
+      <a id="target:PhysicalNode[(K,(V,Option[W]))]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">target</span><span class="result">: <a href="PhysicalNode.html" class="extype" name="com.twitter.summingbird.memory.PhysicalNode">PhysicalNode</a>[(<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.K">K</span>, (<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.V">V</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.W">W</span>]))]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -395,8 +421,8 @@
               <h3>Inherited from <span class="extype" name="scala.Product">Product</span></h3>
             </div><div class="parent" name="scala.Equals">
               <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
-            </div><div class="parent" name="com.twitter.summingbird.storm.StormService">
-              <h3>Inherited from <a href="StormService.html" class="extype" name="com.twitter.summingbird.storm.StormService">StormService</a>[<span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.V">V</span>]</h3>
+            </div><div class="parent" name="com.twitter.summingbird.memory.PhysicalNode">
+              <h3>Inherited from <a href="PhysicalNode.html" class="extype" name="com.twitter.summingbird.memory.PhysicalNode">PhysicalNode</a>[(<span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.K">K</span>, <span class="extype" name="com.twitter.summingbird.memory.PhysicalNode.Join.V">V</span>)]</h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">

@@ -42,7 +42,7 @@
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The DAG handed to a platform by summingbird is a little hard to work with
 given that all the generic types have been erased. This helper gives you
 type safe methods to implement, and casts / coerces things for you.</p><p>TODO: Is this useful outside of the spark platform? Is it useful at all?
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-spark/src/main/scala/com/twitter/summingbird/spark/PlatformPlanner.scala" target="_blank">PlatformPlanner.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-spark/src/main/scala/com/twitter/summingbird/spark/PlatformPlanner.scala" target="_blank">PlatformPlanner.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
@@ -145,7 +145,7 @@ type safe methods to implement, and casts / coerces things for you.</p><p>TODO: 
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="com.twitter.summingbird.spark.PlatformPlanner#planAlsoProducer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="planAlsoProducer[E,R](ensure:PlatformPlanner.this.TailProd[E],result:PlatformPlanner.this.Prod[R],visited:PlatformPlanner.this.Visited)(implicitevidence$3:scala.reflect.ClassTag[R]):PlatformPlanner.this.PlanState[R]"></a>
+      <a id="planAlsoProducer[E,R](ensure:PlatformPlanner.this.TailProd[E],result:PlatformPlanner.this.Prod[R],visited:PlatformPlanner.this.Visited)(implicitevidence$4:scala.reflect.ClassTag[R]):PlatformPlanner.this.PlanState[R]"></a>
       <a id="planAlsoProducer[E,R](TailProd[E],Prod[R],Visited)(ClassTag[R]):PlanState[R]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -197,7 +197,7 @@ type safe methods to implement, and casts / coerces things for you.</p><p>TODO: 
       </h4>
       
     </li><li name="com.twitter.summingbird.spark.PlatformPlanner#planLeftJoinedProducer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="planLeftJoinedProducer[K,V,JoinedV](prod:PlatformPlanner.this.Prod[(K,V)],visited:PlatformPlanner.this.Visited,service:P#Service[K,JoinedV])(implicitevidence$5:scala.reflect.ClassTag[K],implicitevidence$6:scala.reflect.ClassTag[V]):PlatformPlanner.this.PlanState[(K,(V,Option[JoinedV]))]"></a>
+      <a id="planLeftJoinedProducer[K,V,JoinedV](prod:PlatformPlanner.this.Prod[(K,V)],visited:PlatformPlanner.this.Visited,service:P#Service[K,JoinedV])(implicitevidence$6:scala.reflect.ClassTag[K],implicitevidence$7:scala.reflect.ClassTag[V]):PlatformPlanner.this.PlanState[(K,(V,Option[JoinedV]))]"></a>
       <a id="planLeftJoinedProducer[K,V,JoinedV](Prod[(K,V)],Visited,P.Service[K,JoinedV])(ClassTag[K],ClassTag[V]):PlanState[(K,(V,Option[JoinedV]))]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -262,7 +262,7 @@ type safe methods to implement, and casts / coerces things for you.</p><p>TODO: 
       </h4>
       
     </li><li name="com.twitter.summingbird.spark.PlatformPlanner#planSummer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="planSummer[K,V](summer:com.twitter.summingbird.Summer[P,K,V],prod:PlatformPlanner.this.Prod[(K,V)],visited:PlatformPlanner.this.Visited,store:P#Store[K,V],semigroup:com.twitter.algebird.Semigroup[V])(implicitevidence$7:scala.reflect.ClassTag[K],implicitevidence$8:scala.reflect.ClassTag[V]):PlatformPlanner.this.PlanState[(K,(Option[V],V))]"></a>
+      <a id="planSummer[K,V](summer:com.twitter.summingbird.Summer[P,K,V],prod:PlatformPlanner.this.Prod[(K,V)],visited:PlatformPlanner.this.Visited,store:P#Store[K,V],semigroup:com.twitter.algebird.Semigroup[V])(implicitevidence$8:scala.reflect.ClassTag[K],implicitevidence$9:scala.reflect.ClassTag[V]):PlatformPlanner.this.PlanState[(K,(Option[V],V))]"></a>
       <a id="planSummer[K,V](Summer[P,K,V],Prod[(K,V)],Visited,P.Store[K,V],Semigroup[V])(ClassTag[K],ClassTag[V]):PlanState[(K,(Option[V],V))]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -274,8 +274,21 @@ type safe methods to implement, and casts / coerces things for you.</p><p>TODO: 
       </span>
       </h4>
       
+    </li><li name="com.twitter.summingbird.spark.PlatformPlanner#planValueFlatMappedProducer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="planValueFlatMappedProducer[K,V,U](prod:PlatformPlanner.this.Prod[(K,V)],visited:PlatformPlanner.this.Visited,fn:V=&gt;TraversableOnce[U])(implicitevidence$3:scala.reflect.ClassTag[U]):PlatformPlanner.this.PlanState[(K,U)]"></a>
+      <a id="planValueFlatMappedProducer[K,V,U](Prod[(K,V)],Visited,(V)⇒TraversableOnce[U])(ClassTag[U]):PlanState[(K,U)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planValueFlatMappedProducer</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>, <span name="U">U</span>]</span><span class="params">(<span name="prod">prod: <a href="#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.Prod">Prod</a>[(<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.planValueFlatMappedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.planValueFlatMappedProducer.V">V</span>)]</span>, <span name="visited">visited: <a href="#Visited=Map[PlatformPlanner.this.Prod[_],P#Plan[_]]" class="extmbr" name="com.twitter.summingbird.spark.PlatformPlanner.Visited">Visited</a></span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.planValueFlatMappedProducer.V">V</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.planValueFlatMappedProducer.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.planValueFlatMappedProducer.U">U</span>]</span>)</span><span class="result">: <a href="PlatformPlanner$PlanState.html" class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.PlanState">PlanState</a>[(<span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.planValueFlatMappedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.PlatformPlanner.planValueFlatMappedProducer.U">U</span>)]</span>
+      </span>
+      </h4>
+      
     </li><li name="com.twitter.summingbird.spark.PlatformPlanner#planWrittenProducer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="planWrittenProducer[T](prod:PlatformPlanner.this.Prod[T],visited:PlatformPlanner.this.Visited,sink:P#Sink[T])(implicitevidence$4:scala.reflect.ClassTag[T]):PlatformPlanner.this.PlanState[T]"></a>
+      <a id="planWrittenProducer[T](prod:PlatformPlanner.this.Prod[T],visited:PlatformPlanner.this.Visited,sink:P#Sink[T])(implicitevidence$5:scala.reflect.ClassTag[T]):PlatformPlanner.this.PlanState[T]"></a>
       <a id="planWrittenProducer[T](Prod[T],Visited,P.Sink[T])(ClassTag[T]):PlanState[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">

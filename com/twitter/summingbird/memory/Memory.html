@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-core/src/main/scala/com/twitter/summingbird/memory/Memory.scala" target="_blank">Memory.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-core/src/main/scala/com/twitter/summingbird/memory/Memory.scala" target="_blank">Memory.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<a href="" class="extype" name="com.twitter.summingbird.memory.Memory">Memory</a>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -80,7 +80,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="com.twitter.summingbird.memory.Memory#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;():com.twitter.summingbird.memory.Memory"></a>
+      <a id="&lt;init&gt;()(implicitjobID:com.twitter.summingbird.option.JobId):com.twitter.summingbird.memory.Memory"></a>
       <a id="&lt;init&gt;:Memory"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -88,7 +88,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">Memory</span><span class="params">()</span>
+        <span class="name">Memory</span><span class="params">()</span><span class="params">(<span class="implicit">implicit </span><span name="jobID">jobID: <a href="../option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a> = <span class="defval" name="com.twitter.summingbird.option.JobId.apply(&quot;default.memory.jobId&quot;)">...</span></span>)</span>
       </span>
       </h4>
       
@@ -106,7 +106,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = (<span class="extype" name="com.twitter.summingbird.Platform.Buffer.k">k</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.Platform.Buffer.v">v</span>] with ((<span class="extype" name="com.twitter.summingbird.Platform.Buffer.k">k</span>, <span class="extype" name="com.twitter.summingbird.Platform.Buffer.v">v</span>)) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = <a href="#Service[-K,+V]=com.twitter.summingbird.memory.MemoryService[K,V]" class="extmbr" name="com.twitter.summingbird.memory.Memory.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.Platform.Buffer.k">k</span>, <span class="extype" name="com.twitter.summingbird.Platform.Buffer.v">v</span>] with ((<span class="extype" name="com.twitter.summingbird.Platform.Buffer.k">k</span>, <span class="extype" name="com.twitter.summingbird.Platform.Buffer.v">v</span>)) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
@@ -124,15 +124,15 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.memory.Memory">Memory</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
     </li><li name="com.twitter.summingbird.memory.Memory.Service" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="Service[-K,+V]=K=&gt;Option[V]"></a>
-      <a id="Service[-K,+V]:(K)⇒Option[V]"></a>
+      <a id="Service[-K,+V]=com.twitter.summingbird.memory.MemoryService[K,V]"></a>
+      <a id="Service[-K,+V]:Service[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">Service</span><span class="tparams">[<span name="K">-K</span>, <span name="V">+V</span>]</span><span class="result"> = (<span class="extype" name="com.twitter.summingbird.memory.Memory.Service.K">K</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.memory.Memory.Service.V">V</span>]</span>
+        <span class="name">Service</span><span class="tparams">[<span name="K">-K</span>, <span name="V">+V</span>]</span><span class="result"> = <a href="MemoryService.html" class="extype" name="com.twitter.summingbird.memory.MemoryService">MemoryService</a>[<span class="extype" name="com.twitter.summingbird.memory.Memory.Service.K">K</span>, <span class="extype" name="com.twitter.summingbird.memory.Memory.Service.V">V</span>]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.memory.Memory">Memory</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
@@ -279,6 +279,19 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.twitter.summingbird.memory.Memory#counter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="counter(group:com.twitter.summingbird.Group,name:com.twitter.summingbird.Name):Option[Long]"></a>
+      <a id="counter(Group,Name):Option[Long]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">counter</span><span class="params">(<span name="group">group: <a href="../Group.html" class="extype" name="com.twitter.summingbird.Group">Group</a></span>, <span name="name">name: <a href="../Name.html" class="extype" name="com.twitter.summingbird.Name">Name</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Long">Long</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>

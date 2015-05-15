@@ -35,7 +35,7 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">SimpleService</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <a href="../Service.html" class="extype" name="com.twitter.summingbird.scalding.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.V">V</span>]</span>
+        <span class="name">SimpleService</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <a href="../ExternalService.html" class="extype" name="com.twitter.summingbird.scalding.ExternalService">ExternalService</a>[<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.V">V</span>]</span>
       </span>
       </h4>
       
@@ -43,9 +43,9 @@
 unique and either are not present or have one value.
 Examples could be Keys which are Unique IDs, such as UserIDs,
 content IDs, cryptographic hashes, etc...
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/service/SimpleService.scala" target="_blank">SimpleService.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/service/SimpleService.scala" target="_blank">SimpleService.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../Service.html" class="extype" name="com.twitter.summingbird.scalding.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.V">V</span>], <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../ExternalService.html" class="extype" name="com.twitter.summingbird.scalding.ExternalService">ExternalService</a>[<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.V">V</span>], <a href="../Service.html" class="extype" name="com.twitter.summingbird.scalding.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.V">V</span>], <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
           <span class="toggle">Known Subclasses</span>
           <div class="subClasses hiddenContent"><a href="SourceUniqueKeyedService.html" class="extype" name="com.twitter.summingbird.scalding.service.SourceUniqueKeyedService">SourceUniqueKeyedService</a>, <a href="UniqueKeyedService.html" class="extype" name="com.twitter.summingbird.scalding.service.UniqueKeyedService">UniqueKeyedService</a></div>
@@ -66,7 +66,7 @@ content IDs, cryptographic hashes, etc...
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="com.twitter.summingbird.scalding.service.SimpleService"><span>SimpleService</span></li><li class="in" name="com.twitter.summingbird.scalding.Service"><span>Service</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="com.twitter.summingbird.scalding.service.SimpleService"><span>SimpleService</span></li><li class="in" name="com.twitter.summingbird.scalding.ExternalService"><span>ExternalService</span></li><li class="in" name="com.twitter.summingbird.scalding.Service"><span>Service</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -314,7 +314,7 @@ content IDs, cryptographic hashes, etc...
         <span class="name">lookup</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="getKeys">getKeys: <a href="../package.html#PipeFactory[+T]=com.twitter.summingbird.scalding.package.PlannerOutput[com.twitter.summingbird.scalding.package.FlowToPipe[T]]" class="extmbr" name="com.twitter.summingbird.scalding.PipeFactory">PipeFactory</a>[(<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.lookup.W">W</span>)]</span>)</span><span class="result">: <a href="../package.html#PipeFactory[+T]=com.twitter.summingbird.scalding.package.PlannerOutput[com.twitter.summingbird.scalding.package.FlowToPipe[T]]" class="extmbr" name="com.twitter.summingbird.scalding.PipeFactory">PipeFactory</a>[(<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.K">K</span>, (<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.lookup.W">W</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.V">V</span>]))]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.scalding.service.SimpleService">SimpleService</a> → <a href="../Service.html" class="extype" name="com.twitter.summingbird.scalding.Service">Service</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.scalding.service.SimpleService">SimpleService</a> → <a href="../ExternalService.html" class="extype" name="com.twitter.summingbird.scalding.ExternalService">ExternalService</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -446,7 +446,9 @@ content IDs, cryptographic hashes, etc...
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="com.twitter.summingbird.scalding.Service">
+        <div class="parent" name="com.twitter.summingbird.scalding.ExternalService">
+              <h3>Inherited from <a href="../ExternalService.html" class="extype" name="com.twitter.summingbird.scalding.ExternalService">ExternalService</a>[<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.V">V</span>]</h3>
+            </div><div class="parent" name="com.twitter.summingbird.scalding.Service">
               <h3>Inherited from <a href="../Service.html" class="extype" name="com.twitter.summingbird.scalding.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.service.SimpleService.V">V</span>]</h3>
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>

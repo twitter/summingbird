@@ -41,7 +41,7 @@
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>State implementation that uses an HDFS folder as a crude key-value
 store that tracks the batches currently processed.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-batch-hadoop/src/main/scala/com/twitter/summingbird/batch/state/HDFSState.scala" target="_blank">HDFSState.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-batch-hadoop/src/main/scala/com/twitter/summingbird/batch/state/HDFSState.scala" target="_blank">HDFSState.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -168,20 +168,6 @@ store that tracks the batches currently processed.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="com.twitter.summingbird.batch.state.HDFSState#alignedToBatchBoundaries" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="alignedToBatchBoundaries(low:com.twitter.algebird.Lower[com.twitter.summingbird.batch.Timestamp],high:com.twitter.algebird.Upper[com.twitter.summingbird.batch.Timestamp])(implicitb:com.twitter.summingbird.batch.Batcher):Boolean"></a>
-      <a id="alignedToBatchBoundaries(Lower[Timestamp],Upper[Timestamp])(Batcher):Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">alignedToBatchBoundaries</span><span class="params">(<span name="low">low: <span class="extype" name="com.twitter.algebird.Lower">Lower</span>[<a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>, <span name="high">high: <span class="extype" name="com.twitter.algebird.Upper">Upper</span>[<a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="b">b: <a href="../Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4>
-      <p class="shortcomment cmt">Returns true if each timestamp represents the first
-millisecond of a batch.</p>
     </li><li name="com.twitter.summingbird.batch.state.HDFSState#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="apply(config:com.twitter.summingbird.batch.state.HDFSState.Config)(implicitbatcher:com.twitter.summingbird.batch.Batcher):com.twitter.summingbird.batch.state.HDFSState"></a>
       <a id="apply(Config)(Batcher):HDFSState"></a>
@@ -379,32 +365,6 @@ time.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="com.twitter.summingbird.batch.state.HDFSState#toExclusiveUpper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="toExclusiveUpper(high:com.twitter.algebird.Upper[com.twitter.summingbird.batch.Timestamp]):com.twitter.summingbird.batch.Timestamp"></a>
-      <a id="toExclusiveUpper(Upper[Timestamp]):Timestamp"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toExclusiveUpper</span><span class="params">(<span name="high">high: <span class="extype" name="com.twitter.algebird.Upper">Upper</span>[<a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>)</span><span class="result">: <a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a></span>
-      </span>
-      </h4>
-      
-    </li><li name="com.twitter.summingbird.batch.state.HDFSState#toInclusiveLower" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="toInclusiveLower(low:com.twitter.algebird.Lower[com.twitter.summingbird.batch.Timestamp]):com.twitter.summingbird.batch.Timestamp"></a>
-      <a id="toInclusiveLower(Lower[Timestamp]):Timestamp"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">toInclusiveLower</span><span class="params">(<span name="low">low: <span class="extype" name="com.twitter.algebird.Lower">Lower</span>[<a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>)</span><span class="result">: <a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a></span>
-      </span>
-      </h4>
-      
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

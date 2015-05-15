@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>StormService - com.twitter.summingbird.storm.StormService</title>
-          <meta name="description" content="StormService - com.twitter.summingbird.storm.StormService" />
-          <meta name="keywords" content="StormService com.twitter.summingbird.storm.StormService" />
+          <title>RemoveIdentityKeyed - com.twitter.summingbird.planner.DagOptimizer.RemoveIdentityKeyed</title>
+          <meta name="description" content="RemoveIdentityKeyed - com.twitter.summingbird.planner.DagOptimizer.RemoveIdentityKeyed" />
+          <meta name="keywords" content="RemoveIdentityKeyed com.twitter.summingbird.planner.DagOptimizer.RemoveIdentityKeyed" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -12,7 +12,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../index.html';
-            var hash = 'com.twitter.summingbird.storm.StormService';
+            var hash = 'com.twitter.summingbird.planner.DagOptimizer$RemoveIdentityKeyed$';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -22,29 +22,28 @@
    	  </script>
     
         </head>
-        <body class="type">
+        <body class="value">
       <div id="definition">
-        <img src="../../../../lib/trait_big.png" />
-        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.storm">storm</a></p>
-        <h1>StormService</h1>
+        <img src="../../../../lib/object_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.planner">planner</a>.<a href="DagOptimizer.html" class="extype" name="com.twitter.summingbird.planner.DagOptimizer">DagOptimizer</a></p>
+        <h1>RemoveIdentityKeyed</h1>
       </div>
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">trait</span>
+        <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">StormService</span><span class="tparams">[<span name="K">-K</span>, <span name="V">+V</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <span class="name">RemoveIdentityKeyed</span><span class="result"> extends <a href="../graph/PartialRule.html" class="extype" name="com.twitter.summingbird.graph.PartialRule">PartialRule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala" target="_blank">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Identity keyed producer is just a trick to make scala see methods on keyed
+types, they have no meaning at runtime.
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-core/src/main/scala/com/twitter/summingbird/planner/DagOptimizer.scala" target="_blank">DagOptimizer.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
-        </div><div class="toggleContainer block">
-          <span class="toggle">Known Subclasses</span>
-          <div class="subClasses hiddenContent"><a href="StoreWrapper.html" class="extype" name="com.twitter.summingbird.storm.StoreWrapper">StoreWrapper</a>, <a href="StormBuffer.html" class="extype" name="com.twitter.summingbird.storm.StormBuffer">StormBuffer</a></div>
+          <div class="superTypes hiddenContent"><a href="../graph/PartialRule.html" class="extype" name="com.twitter.summingbird.graph.PartialRule">PartialRule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>], <a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -62,7 +61,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="com.twitter.summingbird.storm.StormService"><span>StormService</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="com.twitter.summingbird.planner.DagOptimizer.RemoveIdentityKeyed"><span>RemoveIdentityKeyed</span></li><li class="in" name="com.twitter.summingbird.graph.PartialRule"><span>PartialRule</span></li><li class="in" name="com.twitter.summingbird.graph.Rule"><span>Rule</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -84,26 +83,10 @@
 
         
 
-        <div id="values" class="values members">
-              <h3>Abstract Value Members</h3>
-              <ol><li name="com.twitter.summingbird.storm.StormService#store" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="store:()=&gt;com.twitter.storehaus.ReadableStore[K,V]"></a>
-      <a id="store:()⇒ReadableStore[K,V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">store</span><span class="result">: () ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.StormService.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StormService.V">V</span>]</span>
-      </span>
-      </h4>
-      
-    </li></ol>
-            </div>
+        
 
         <div id="values" class="values members">
-              <h3>Concrete Value Members</h3>
+              <h3>Value Members</h3>
               <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:AnyRef):Boolean"></a>
       <a id="!=(AnyRef):Boolean"></a>
@@ -169,6 +152,36 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.PartialRule#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="apply[T](on:com.twitter.summingbird.graph.ExpressionDag[N]):N[T]=&gt;Option[N[T]]"></a>
+      <a id="apply[T](ExpressionDag[Prod]):(Prod[T])⇒Option[Prod[T]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="on">on: <a href="../graph/ExpressionDag.html" class="extype" name="com.twitter.summingbird.graph.ExpressionDag">ExpressionDag</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</span>)</span><span class="result">: (<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.graph.PartialRule.apply.T">T</span>]) ⇒ <span class="extype" name="scala.Option">Option</span>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.graph.PartialRule.apply.T">T</span>]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">If the given Id can be replaced with a simpler expression,
+return Some(expr) else None.</p><div class="fullcomment"><div class="comment cmt"><p>If the given Id can be replaced with a simpler expression,
+return Some(expr) else None.</p><p>If it is convenient, you might write a partial function
+and then call .lift to get the correct Function type
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../graph/PartialRule.html" class="extype" name="com.twitter.summingbird.graph.PartialRule">PartialRule</a> → <a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.planner.DagOptimizer.RemoveIdentityKeyed#applyWhere" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="applyWhere[T](on:com.twitter.summingbird.graph.ExpressionDag[DagOptimizer.this.Prod]):PartialFunction[DagOptimizer.this.Prod[T],DagOptimizer.this.Prod[T]]"></a>
+      <a id="applyWhere[T](ExpressionDag[Prod]):PartialFunction[Prod[T],Prod[T]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">applyWhere</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="on">on: <a href="../graph/ExpressionDag.html" class="extype" name="com.twitter.summingbird.graph.ExpressionDag">ExpressionDag</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</span>)</span><span class="result">: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.planner.DagOptimizer.RemoveIdentityKeyed.applyWhere.T">T</span>], <a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.planner.DagOptimizer.RemoveIdentityKeyed.applyWhere.T">T</span>]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.planner.DagOptimizer.RemoveIdentityKeyed">RemoveIdentityKeyed</a> → <a href="../graph/PartialRule.html" class="extype" name="com.twitter.summingbird.graph.PartialRule">PartialRule</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -324,6 +337,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.Rule#orElse" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="orElse(that:com.twitter.summingbird.graph.Rule[N]):com.twitter.summingbird.graph.Rule[N]"></a>
+      <a id="orElse(Rule[Prod]):Rule[Prod]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">orElse</span><span class="params">(<span name="that">that: <a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</span>)</span><span class="result">: <a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -416,7 +442,11 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
+        <div class="parent" name="com.twitter.summingbird.graph.PartialRule">
+              <h3>Inherited from <a href="../graph/PartialRule.html" class="extype" name="com.twitter.summingbird.graph.PartialRule">PartialRule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</h3>
+            </div><div class="parent" name="com.twitter.summingbird.graph.Rule">
+              <h3>Inherited from <a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</h3>
+            </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">
               <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>

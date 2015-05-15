@@ -31,7 +31,7 @@
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">sealed </span>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
@@ -39,12 +39,12 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/Service.scala" target="_blank">Service.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/Service.scala" target="_blank">Service.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
           <span class="toggle">Known Subclasses</span>
-          <div class="subClasses hiddenContent"><a href="service/BatchedDeltaService.html" class="extype" name="com.twitter.summingbird.scalding.service.BatchedDeltaService">BatchedDeltaService</a>, <a href="batch/BatchedService.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedService">BatchedService</a>, <a href="service/BatchedWindowService.html" class="extype" name="com.twitter.summingbird.scalding.service.BatchedWindowService">BatchedWindowService</a>, <a href="service/EmptyService.html" class="extype" name="com.twitter.summingbird.scalding.service.EmptyService">EmptyService</a>, <a href="service/SimpleService.html" class="extype" name="com.twitter.summingbird.scalding.service.SimpleService">SimpleService</a>, <a href="service/SimpleWindowedService.html" class="extype" name="com.twitter.summingbird.scalding.service.SimpleWindowedService">SimpleWindowedService</a>, <a href="service/SourceUniqueKeyedService.html" class="extype" name="com.twitter.summingbird.scalding.service.SourceUniqueKeyedService">SourceUniqueKeyedService</a>, <a href="TestService.html" class="extype" name="com.twitter.summingbird.scalding.TestService">TestService</a>, <a href="service/UniqueKeyedService.html" class="extype" name="com.twitter.summingbird.scalding.service.UniqueKeyedService">UniqueKeyedService</a></div>
+          <div class="subClasses hiddenContent"><a href="service/BatchedDeltaService.html" class="extype" name="com.twitter.summingbird.scalding.service.BatchedDeltaService">BatchedDeltaService</a>, <a href="batch/BatchedService.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedService">BatchedService</a>, <a href="service/BatchedWindowService.html" class="extype" name="com.twitter.summingbird.scalding.service.BatchedWindowService">BatchedWindowService</a>, <a href="service/EmptyService.html" class="extype" name="com.twitter.summingbird.scalding.service.EmptyService">EmptyService</a>, <a href="ExternalService.html" class="extype" name="com.twitter.summingbird.scalding.ExternalService">ExternalService</a>, <a href="InternalService.html" class="extype" name="com.twitter.summingbird.scalding.InternalService">InternalService</a>, <a href="service/SimpleService.html" class="extype" name="com.twitter.summingbird.scalding.service.SimpleService">SimpleService</a>, <a href="service/SimpleWindowedService.html" class="extype" name="com.twitter.summingbird.scalding.service.SimpleWindowedService">SimpleWindowedService</a>, <a href="service/SourceUniqueKeyedService.html" class="extype" name="com.twitter.summingbird.scalding.service.SourceUniqueKeyedService">SourceUniqueKeyedService</a>, <a href="StoreService.html" class="extype" name="com.twitter.summingbird.scalding.StoreService">StoreService</a>, <a href="TestService.html" class="extype" name="com.twitter.summingbird.scalding.TestService">TestService</a>, <a href="TestStoreService.html" class="extype" name="com.twitter.summingbird.scalding.TestStoreService">TestStoreService</a>, <a href="service/UniqueKeyedService.html" class="extype" name="com.twitter.summingbird.scalding.service.UniqueKeyedService">UniqueKeyedService</a></div>
         </div></div>
         
 
@@ -84,26 +84,10 @@
 
         
 
-        <div id="values" class="values members">
-              <h3>Abstract Value Members</h3>
-              <ol><li name="com.twitter.summingbird.scalding.Service#lookup" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="lookup[W](getKeys:com.twitter.summingbird.scalding.PipeFactory[(K,W)]):com.twitter.summingbird.scalding.PipeFactory[(K,(W,Option[V]))]"></a>
-      <a id="lookup[W](PipeFactory[(K,W)]):PipeFactory[(K,(W,Option[V]))]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">abstract </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">lookup</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="getKeys">getKeys: <a href="package.html#PipeFactory[+T]=com.twitter.summingbird.scalding.package.PlannerOutput[com.twitter.summingbird.scalding.package.FlowToPipe[T]]" class="extmbr" name="com.twitter.summingbird.scalding.PipeFactory">PipeFactory</a>[(<span class="extype" name="com.twitter.summingbird.scalding.Service.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.Service.lookup.W">W</span>)]</span>)</span><span class="result">: <a href="package.html#PipeFactory[+T]=com.twitter.summingbird.scalding.package.PlannerOutput[com.twitter.summingbird.scalding.package.FlowToPipe[T]]" class="extmbr" name="com.twitter.summingbird.scalding.PipeFactory">PipeFactory</a>[(<span class="extype" name="com.twitter.summingbird.scalding.Service.K">K</span>, (<span class="extype" name="com.twitter.summingbird.scalding.Service.lookup.W">W</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.scalding.Service.V">V</span>]))]</span>
-      </span>
-      </h4>
-      
-    </li></ol>
-            </div>
+        
 
         <div id="values" class="values members">
-              <h3>Concrete Value Members</h3>
+              <h3>Value Members</h3>
               <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:AnyRef):Boolean"></a>
       <a id="!=(AnyRef):Boolean"></a>

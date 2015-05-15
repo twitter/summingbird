@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-builder/src/main/scala/com/twitter/summingbird/store/CompoundStore.scala" target="_blank">CompoundStore.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-builder/src/main/scala/com/twitter/summingbird/store/CompoundStore.scala" target="_blank">CompoundStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -151,15 +151,15 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
     </li><li name="com.twitter.summingbird.store.CompoundStore#apply" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="apply[K,V](offlineStore:com.twitter.summingbird.scalding.batch.BatchedStore[K,V],onlineSupplier:=&gt;com.twitter.storehaus.algebra.MergeableStore[(K,com.twitter.summingbird.batch.BatchID),V]):com.twitter.summingbird.store.CompoundStore[K,V]"></a>
-      <a id="apply[K,V](BatchedStore[K,V],⇒MergeableStore[(K,BatchID),V]):CompoundStore[K,V]"></a>
+      <a id="apply[K,V](offlineStore:com.twitter.summingbird.scalding.batch.BatchedStore[K,V],onlineSupplier:=&gt;com.twitter.storehaus.algebra.Mergeable[(K,com.twitter.summingbird.batch.BatchID),V]):com.twitter.summingbird.store.CompoundStore[K,V]"></a>
+      <a id="apply[K,V](BatchedStore[K,V],⇒Mergeable[(K,BatchID),V]):CompoundStore[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">apply</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="offlineStore">offlineStore: <a href="../scalding/batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a>[<span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.K">K</span>, <span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.V">V</span>]</span>, <span name="onlineSupplier">onlineSupplier: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.MergeableStore">MergeableStore</span>[(<span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.V">V</span>]</span>)</span><span class="result">: <a href="CompoundStore.html" class="extype" name="com.twitter.summingbird.store.CompoundStore">CompoundStore</a>[<span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.K">K</span>, <span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.V">V</span>]</span>
+        <span class="name">apply</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="offlineStore">offlineStore: <a href="../scalding/batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a>[<span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.K">K</span>, <span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.V">V</span>]</span>, <span name="onlineSupplier">onlineSupplier: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.Mergeable">Mergeable</span>[(<span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.V">V</span>]</span>)</span><span class="result">: <a href="CompoundStore.html" class="extype" name="com.twitter.summingbird.store.CompoundStore">CompoundStore</a>[<span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.K">K</span>, <span class="extype" name="com.twitter.summingbird.store.CompoundStore.apply.V">V</span>]</span>
       </span>
       </h4>
       
@@ -254,15 +254,15 @@
       </h4>
       
     </li><li name="com.twitter.summingbird.store.CompoundStore#fromOnline" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="fromOnline[K,V](onlineSupplier:=&gt;com.twitter.storehaus.algebra.MergeableStore[(K,com.twitter.summingbird.batch.BatchID),V]):com.twitter.summingbird.store.CompoundStore[K,V]"></a>
-      <a id="fromOnline[K,V](⇒MergeableStore[(K,BatchID),V]):CompoundStore[K,V]"></a>
+      <a id="fromOnline[K,V](onlineSupplier:=&gt;com.twitter.storehaus.algebra.Mergeable[(K,com.twitter.summingbird.batch.BatchID),V]):com.twitter.summingbird.store.CompoundStore[K,V]"></a>
+      <a id="fromOnline[K,V](⇒Mergeable[(K,BatchID),V]):CompoundStore[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">fromOnline</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="onlineSupplier">onlineSupplier: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.MergeableStore">MergeableStore</span>[(<span class="extype" name="com.twitter.summingbird.store.CompoundStore.fromOnline.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.store.CompoundStore.fromOnline.V">V</span>]</span>)</span><span class="result">: <a href="CompoundStore.html" class="extype" name="com.twitter.summingbird.store.CompoundStore">CompoundStore</a>[<span class="extype" name="com.twitter.summingbird.store.CompoundStore.fromOnline.K">K</span>, <span class="extype" name="com.twitter.summingbird.store.CompoundStore.fromOnline.V">V</span>]</span>
+        <span class="name">fromOnline</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="onlineSupplier">onlineSupplier: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.Mergeable">Mergeable</span>[(<span class="extype" name="com.twitter.summingbird.store.CompoundStore.fromOnline.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.store.CompoundStore.fromOnline.V">V</span>]</span>)</span><span class="result">: <a href="CompoundStore.html" class="extype" name="com.twitter.summingbird.store.CompoundStore">CompoundStore</a>[<span class="extype" name="com.twitter.summingbird.store.CompoundStore.fromOnline.K">K</span>, <span class="extype" name="com.twitter.summingbird.store.CompoundStore.fromOnline.V">V</span>]</span>
       </span>
       </h4>
       

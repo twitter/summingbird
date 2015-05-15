@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>SummerParallelism - com.twitter.summingbird.storm.option.SummerParallelism</title>
-          <meta name="description" content="SummerParallelism - com.twitter.summingbird.storm.option.SummerParallelism" />
-          <meta name="keywords" content="SummerParallelism com.twitter.summingbird.storm.option.SummerParallelism" />
+          <title>SummerParallelism - com.twitter.summingbird.online.option.SummerParallelism</title>
+          <meta name="description" content="SummerParallelism - com.twitter.summingbird.online.option.SummerParallelism" />
+          <meta name="keywords" content="SummerParallelism com.twitter.summingbird.online.option.SummerParallelism" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -12,7 +12,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../../index.html';
-            var hash = 'com.twitter.summingbird.storm.option.SummerParallelism';
+            var hash = 'com.twitter.summingbird.online.option.SummerParallelism';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -25,7 +25,7 @@
         <body class="type">
       <div id="definition">
         <img src="../../../../../lib/class_big.png" />
-        <p id="owner"><a href="../../../../package.html" class="extype" name="com">com</a>.<a href="../../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird.storm">storm</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.storm.option">option</a></p>
+        <p id="owner"><a href="../../../../package.html" class="extype" name="com">com</a>.<a href="../../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird.online">online</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.online.option">option</a></p>
         <h1>SummerParallelism</h1>
       </div>
 
@@ -39,12 +39,8 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>SinkParallelism controls the number of executors storm allocates to
-the groupAndSum bolts. Each of these bolt executors is responsible
-for storing and committing some subset of the keyspace to the
-Sink's store, so higher parallelism will result in higher load on
-the store. The default sink parallelism is 5.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/option/SummerOptions.scala" target="_blank">SummerOptions.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>How many instances/tasks of this summer task should be spawned in the environment
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-online/src/main/scala/com/twitter/summingbird/online/option/AllOpts.scala" target="_blank">AllOpts.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -64,7 +60,7 @@ the store. The default sink parallelism is 5.
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="com.twitter.summingbird.storm.option.SummerParallelism"><span>SummerParallelism</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="com.twitter.summingbird.online.option.SummerParallelism"><span>SummerParallelism</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -84,8 +80,8 @@ the store. The default sink parallelism is 5.
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="com.twitter.summingbird.storm.option.SummerParallelism#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(parHint:Int):com.twitter.summingbird.storm.option.SummerParallelism"></a>
+              <ol><li name="com.twitter.summingbird.online.option.SummerParallelism#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(parHint:Int):com.twitter.summingbird.online.option.SummerParallelism"></a>
       <a id="&lt;init&gt;:SummerParallelism"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -300,7 +296,7 @@ the store. The default sink parallelism is 5.
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="com.twitter.summingbird.storm.option.SummerParallelism#parHint" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+    </li><li name="com.twitter.summingbird.online.option.SummerParallelism#parHint" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="parHint:Int"></a>
       <a id="parHint:Int"></a>
       <h4 class="signature">

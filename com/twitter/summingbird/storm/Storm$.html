@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala" target="_blank">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala" target="_blank">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -253,19 +253,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="com.twitter.summingbird.storm.Storm#instrumentedStore" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="instrumentedStore[K,V](store:=&gt;com.twitter.storehaus.algebra.MergeableStore[(K,com.twitter.summingbird.batch.BatchID),V])(implicitbatcher:com.twitter.summingbird.batch.Batcher,implicitsg:com.twitter.algebird.Monoid[V]):com.twitter.summingbird.storm.StormStore[K,V]"></a>
-      <a id="instrumentedStore[K,V](⇒MergeableStore[(K,BatchID),V])(Batcher,Monoid[V]):StormStore[K,V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">instrumentedStore</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.MergeableStore">MergeableStore</span>[(<span class="extype" name="com.twitter.summingbird.storm.Storm.instrumentedStore.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.storm.Storm.instrumentedStore.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a href="../batch/Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>, <span name="sg">sg: <span class="extype" name="com.twitter.algebird.Monoid">Monoid</span>[<span class="extype" name="com.twitter.summingbird.storm.Storm.instrumentedStore.V">V</span>]</span>)</span><span class="result">: <a href="StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.instrumentedStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.instrumentedStore.V">V</span>]</span>
-      </span>
-      </h4>
-      
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -332,15 +319,15 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="com.twitter.summingbird.storm.Storm#onlineOnlyStore" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="onlineOnlyStore[K,V](store:=&gt;com.twitter.storehaus.algebra.MergeableStore[K,V]):com.twitter.summingbird.storm.StormStore[K,V]"></a>
-      <a id="onlineOnlyStore[K,V](⇒MergeableStore[K,V]):StormStore[K,V]"></a>
+      <a id="onlineOnlyStore[K,V](store:=&gt;com.twitter.storehaus.algebra.MergeableStore[K,V]):com.twitter.summingbird.online.MergeableStoreFactory[(K,com.twitter.summingbird.batch.BatchID),V]"></a>
+      <a id="onlineOnlyStore[K,V](⇒MergeableStore[K,V]):MergeableStoreFactory[(K,BatchID),V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">onlineOnlyStore</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.MergeableStore">MergeableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.Storm.onlineOnlyStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.onlineOnlyStore.V">V</span>]</span>)</span><span class="result">: <a href="StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.onlineOnlyStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.onlineOnlyStore.V">V</span>]</span>
+        <span class="name">onlineOnlyStore</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.MergeableStore">MergeableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.Storm.onlineOnlyStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.onlineOnlyStore.V">V</span>]</span>)</span><span class="result">: <a href="../online/MergeableStoreFactory.html" class="extype" name="com.twitter.summingbird.online.MergeableStoreFactory">MergeableStoreFactory</a>[(<span class="extype" name="com.twitter.summingbird.storm.Storm.onlineOnlyStore.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.storm.Storm.onlineOnlyStore.V">V</span>]</span>
       </span>
       </h4>
       
@@ -358,15 +345,15 @@
       </h4>
       
     </li><li name="com.twitter.summingbird.storm.Storm#service" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="service[K,V](serv:=&gt;com.twitter.storehaus.ReadableStore[K,V]):com.twitter.summingbird.storm.StormService[K,V]"></a>
-      <a id="service[K,V](⇒ReadableStore[K,V]):StormService[K,V]"></a>
+      <a id="service[K,V](serv:=&gt;com.twitter.storehaus.ReadableStore[K,V]):com.twitter.summingbird.online.ReadableServiceFactory[K,V]"></a>
+      <a id="service[K,V](⇒ReadableStore[K,V]):ReadableServiceFactory[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">service</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="serv">serv: ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.Storm.service.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.service.V">V</span>]</span>)</span><span class="result">: <a href="StormService.html" class="extype" name="com.twitter.summingbird.storm.StormService">StormService</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.service.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.service.V">V</span>]</span>
+        <span class="name">service</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="serv">serv: ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.Storm.service.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.service.V">V</span>]</span>)</span><span class="result">: <a href="../online/ReadableServiceFactory.html" class="extype" name="com.twitter.summingbird.online.ReadableServiceFactory">ReadableServiceFactory</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.service.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.service.V">V</span>]</span>
       </span>
       </h4>
       
@@ -437,31 +424,50 @@
       </h4>
       
     </li><li name="com.twitter.summingbird.storm.Storm#store" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="store[K,V](store:backtype.storm.task.TopologyContext=&gt;com.twitter.storehaus.algebra.Mergeable[(K,com.twitter.summingbird.batch.BatchID),V])(implicitbatcher:com.twitter.summingbird.batch.Batcher):com.twitter.summingbird.storm.StormStore[K,V]"></a>
-      <a id="store[K,V]((TopologyContext)⇒Mergeable[(K,BatchID),V])(Batcher):StormStore[K,V]"></a>
+      <a id="store[K,V](store:=&gt;com.twitter.storehaus.algebra.Mergeable[(K,com.twitter.summingbird.batch.BatchID),V])(implicitbatcher:com.twitter.summingbird.batch.Batcher):com.twitter.summingbird.online.MergeableStoreFactory[(K,com.twitter.summingbird.batch.BatchID),V]"></a>
+      <a id="store[K,V](⇒Mergeable[(K,BatchID),V])(Batcher):MergeableStoreFactory[(K,BatchID),V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">store</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: (<span class="extype" name="backtype.storm.task.TopologyContext">TopologyContext</span>) ⇒ <span class="extype" name="com.twitter.storehaus.algebra.Mergeable">Mergeable</span>[(<span class="extype" name="com.twitter.summingbird.storm.Storm.store.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.storm.Storm.store.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a href="../batch/Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>)</span><span class="result">: <a href="StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.store.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.store.V">V</span>]</span>
+        <span class="name">store</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.Mergeable">Mergeable</span>[(<span class="extype" name="com.twitter.summingbird.storm.Storm.store.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.storm.Storm.store.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a href="../batch/Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>)</span><span class="result">: <a href="../online/MergeableStoreFactory.html" class="extype" name="com.twitter.summingbird.online.MergeableStoreFactory">MergeableStoreFactory</a>[(<span class="extype" name="com.twitter.summingbird.storm.Storm.store.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.storm.Storm.store.V">V</span>]</span>
       </span>
       </h4>
       
-    </li><li name="com.twitter.summingbird.storm.Storm#store" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="store[K,V](store:=&gt;com.twitter.storehaus.algebra.Mergeable[(K,com.twitter.summingbird.batch.BatchID),V])(implicitbatcher:com.twitter.summingbird.batch.Batcher):com.twitter.summingbird.storm.StormStore[K,V]"></a>
-      <a id="store[K,V](⇒Mergeable[(K,BatchID),V])(Batcher):StormStore[K,V]"></a>
+    </li><li name="com.twitter.summingbird.storm.Storm#storeService" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="storeService[K,V](offlineStore:=&gt;com.twitter.storehaus.ReadableStore[K,(com.twitter.summingbird.batch.BatchID,V)],onlineStore:=&gt;com.twitter.storehaus.algebra.MergeableStore[(K,com.twitter.summingbird.batch.BatchID),V],batchesToKeep:Int)(implicitbatcher:com.twitter.summingbird.batch.Batcher):com.twitter.summingbird.online.CombinedServiceStoreFactory[K,V]"></a>
+      <a id="storeService[K,V](⇒ReadableStore[K,(BatchID,V)],⇒MergeableStore[(K,BatchID),V],Int)(Batcher):CombinedServiceStoreFactory[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">store</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.Mergeable">Mergeable</span>[(<span class="extype" name="com.twitter.summingbird.storm.Storm.store.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.storm.Storm.store.V">V</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a href="../batch/Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>)</span><span class="result">: <a href="StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.store.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.store.V">V</span>]</span>
+        <span class="name">storeService</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="offlineStore">offlineStore: ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.Storm.storeService.K">K</span>, (<a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>, <span class="extype" name="com.twitter.summingbird.storm.Storm.storeService.V">V</span>)]</span>, <span name="onlineStore">onlineStore: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.MergeableStore">MergeableStore</span>[(<span class="extype" name="com.twitter.summingbird.storm.Storm.storeService.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.storm.Storm.storeService.V">V</span>]</span>, <span name="batchesToKeep">batchesToKeep: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a href="../batch/Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>)</span><span class="result">: <a href="../online/CombinedServiceStoreFactory.html" class="extype" name="com.twitter.summingbird.online.CombinedServiceStoreFactory">CombinedServiceStoreFactory</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.storeService.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.storeService.V">V</span>]</span>
       </span>
       </h4>
-      
+      <p class="shortcomment cmt">Returns a store that is also a service, i.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a store that is also a service, i.e. is a ReadableStore[K, V] and a Mergeable[(K, BatchID), V]
+The values used for the service are from the online *and* offline stores.
+Uses ClientStore internally to combine the offline and online stores to create ReadableStore[K, V]
+</p></div></div>
+    </li><li name="com.twitter.summingbird.storm.Storm#storeServiceOnlineOnly" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="storeServiceOnlineOnly[K,V](store:=&gt;com.twitter.storehaus.algebra.MergeableStore[(K,com.twitter.summingbird.batch.BatchID),V],batchesToKeep:Int)(implicitbatcher:com.twitter.summingbird.batch.Batcher):com.twitter.summingbird.online.CombinedServiceStoreFactory[K,V]"></a>
+      <a id="storeServiceOnlineOnly[K,V](⇒MergeableStore[(K,BatchID),V],Int)(Batcher):CombinedServiceStoreFactory[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">storeServiceOnlineOnly</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: ⇒ <span class="extype" name="com.twitter.storehaus.algebra.MergeableStore">MergeableStore</span>[(<span class="extype" name="com.twitter.summingbird.storm.Storm.storeServiceOnlineOnly.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.storm.Storm.storeServiceOnlineOnly.V">V</span>]</span>, <span name="batchesToKeep">batchesToKeep: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="batcher">batcher: <a href="../batch/Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>)</span><span class="result">: <a href="../online/CombinedServiceStoreFactory.html" class="extype" name="com.twitter.summingbird.online.CombinedServiceStoreFactory">CombinedServiceStoreFactory</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.storeServiceOnlineOnly.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.storeServiceOnlineOnly.V">V</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns a store that is also a service, i.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a store that is also a service, i.e. is a ReadableStore[K, V] and a Mergeable[(K, BatchID), V]
+The values used for the service are from the online store only.
+Uses ClientStore internally to create ReadableStore[K, V]
+</p></div></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>

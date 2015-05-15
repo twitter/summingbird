@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Collection of graph algorithms</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-core/src/main/scala/com/twitter/summingbird/graph/package.scala" target="_blank">package.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Collection of graph algorithms</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-core/src/main/scala/com/twitter/summingbird/graph/package.scala" target="_blank">package.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -81,7 +81,59 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="com.twitter.summingbird.graph.DependantGraph" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+              <ol><li name="com.twitter.summingbird.graph.Binary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Binary[T1,T2,T3,N[_]]extendsExpr[T3,N]withProductwithSerializable"></a>
+      <a id="Binary[T1,T2,T3,N[_]]:Binary[T1,T2,T3,N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Binary.html"><span class="name">Binary</span></a><span class="tparams">[<span name="T1">T1</span>, <span name="T2">T2</span>, <span name="T3">T3</span>, <span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="arg1">arg1: <a href="Id.html" class="extype" name="com.twitter.summingbird.graph.Id">Id</a>[<span class="extype" name="com.twitter.summingbird.graph.Binary.T1">T1</span>]</span>, <span name="arg2">arg2: <a href="Id.html" class="extype" name="com.twitter.summingbird.graph.Id">Id</a>[<span class="extype" name="com.twitter.summingbird.graph.Binary.T2">T2</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.graph.Binary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Binary.T1">T1</span>], <span class="extype" name="com.twitter.summingbird.graph.Binary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Binary.T2">T2</span>]) ⇒ <span class="extype" name="com.twitter.summingbird.graph.Binary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Binary.T3">T3</span>]</span>)</span><span class="result"> extends <a href="Expr.html" class="extype" name="com.twitter.summingbird.graph.Expr">Expr</a>[<span class="extype" name="com.twitter.summingbird.graph.Binary.T3">T3</span>, <span class="extype" name="com.twitter.summingbird.graph.Binary.N">N</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.BinaryLit" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BinaryLit[T1,T2,T3,N[_]]extendsLiteral[T3,N]withProductwithSerializable"></a>
+      <a id="BinaryLit[T1,T2,T3,N[_]]:BinaryLit[T1,T2,T3,N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="BinaryLit.html"><span class="name">BinaryLit</span></a><span class="tparams">[<span name="T1">T1</span>, <span name="T2">T2</span>, <span name="T3">T3</span>, <span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="arg1">arg1: <a href="Literal.html" class="extype" name="com.twitter.summingbird.graph.Literal">Literal</a>[<span class="extype" name="com.twitter.summingbird.graph.BinaryLit.T1">T1</span>, <span class="extype" name="com.twitter.summingbird.graph.BinaryLit.N">N</span>]</span>, <span name="arg2">arg2: <a href="Literal.html" class="extype" name="com.twitter.summingbird.graph.Literal">Literal</a>[<span class="extype" name="com.twitter.summingbird.graph.BinaryLit.T2">T2</span>, <span class="extype" name="com.twitter.summingbird.graph.BinaryLit.N">N</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.graph.BinaryLit.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.BinaryLit.T1">T1</span>], <span class="extype" name="com.twitter.summingbird.graph.BinaryLit.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.BinaryLit.T2">T2</span>]) ⇒ <span class="extype" name="com.twitter.summingbird.graph.BinaryLit.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.BinaryLit.T3">T3</span>]</span>)</span><span class="result"> extends <a href="Literal.html" class="extype" name="com.twitter.summingbird.graph.Literal">Literal</a>[<span class="extype" name="com.twitter.summingbird.graph.BinaryLit.T3">T3</span>, <span class="extype" name="com.twitter.summingbird.graph.BinaryLit.N">N</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.Const" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Const[T,N[_]]extendsExpr[T,N]withProductwithSerializable"></a>
+      <a id="Const[T,N[_]]:Const[T,N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Const.html"><span class="name">Const</span></a><span class="tparams">[<span name="T">T</span>, <span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="value">value: <span class="extype" name="com.twitter.summingbird.graph.Const.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Const.T">T</span>]</span>)</span><span class="result"> extends <a href="Expr.html" class="extype" name="com.twitter.summingbird.graph.Expr">Expr</a>[<span class="extype" name="com.twitter.summingbird.graph.Const.T">T</span>, <span class="extype" name="com.twitter.summingbird.graph.Const.N">N</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.ConstLit" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ConstLit[T,N[_]]extendsLiteral[T,N]withProductwithSerializable"></a>
+      <a id="ConstLit[T,N[_]]:ConstLit[T,N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ConstLit.html"><span class="name">ConstLit</span></a><span class="tparams">[<span name="T">T</span>, <span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="evaluate">evaluate: <span class="extype" name="com.twitter.summingbird.graph.ConstLit.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.ConstLit.T">T</span>]</span>)</span><span class="result"> extends <a href="Literal.html" class="extype" name="com.twitter.summingbird.graph.Literal">Literal</a>[<span class="extype" name="com.twitter.summingbird.graph.ConstLit.T">T</span>, <span class="extype" name="com.twitter.summingbird.graph.ConstLit.N">N</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.DependantGraph" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="DependantGraph[T]extendsAnyRef"></a>
       <a id="DependantGraph[T]:DependantGraph[T]"></a>
       <h4 class="signature">
@@ -96,6 +148,114 @@
       <p class="comment cmt">Given Dag and a List of immutable nodes, and a function to get
 dependencies, compute the dependants (reverse the graph)
 </p>
+    </li><li name="com.twitter.summingbird.graph.Expr" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Expr[T,N[_]]extendsAnyRef"></a>
+      <a id="Expr[T,N[_]]:Expr[T,N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Expr.html"><span class="name">Expr</span></a><span class="tparams">[<span name="T">T</span>, <span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Expr[T, N] is an expression of a graph of container nodes N[_] with
+result type N[T].</p>
+    </li><li name="com.twitter.summingbird.graph.ExpressionDag" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ExpressionDag[N[_]]extendsAnyRef"></a>
+      <a id="ExpressionDag[N[_]]:ExpressionDag[N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ExpressionDag.html"><span class="name">ExpressionDag</span></a><span class="tparams">[<span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.GenFunction" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="GenFunction[T[_],R[_]]extendsAnyRef"></a>
+      <a id="GenFunction[T[_],R[_]]:GenFunction[T,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="GenFunction.html"><span class="name">GenFunction</span></a><span class="tparams">[<span name="T">T<span class="tparams">[<span name="_">_</span>]</span></span>, <span name="R">R<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.GenPartial" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="GenPartial[T[_],R[_]]extendsAnyRef"></a>
+      <a id="GenPartial[T[_],R[_]]:GenPartial[T,R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="GenPartial.html"><span class="name">GenPartial</span></a><span class="tparams">[<span name="T">T<span class="tparams">[<span name="_">_</span>]</span></span>, <span name="R">R<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.HCache" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HCache[K[_],V[_]]extendsAnyRef"></a>
+      <a id="HCache[K[_],V[_]]:HCache[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HCache.html"><span class="name">HCache</span></a><span class="tparams">[<span name="K">K<span class="tparams">[<span name="_">_</span>]</span></span>, <span name="V">V<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This is a useful cache for memoizing heterogenously types functions
+</p>
+    </li><li name="com.twitter.summingbird.graph.HMap" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="HMap[K[_],V[_]]extendsAnyRef"></a>
+      <a id="HMap[K[_],V[_]]:HMap[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HMap.html"><span class="name">HMap</span></a><span class="tparams">[<span name="K">K<span class="tparams">[<span name="_">_</span>]</span></span>, <span name="V">V<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This is a weak heterogenous map.</p>
+    </li><li name="com.twitter.summingbird.graph.Id" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Id[T]extendsProductwithSerializable"></a>
+      <a id="Id[T]:Id[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Id.html"><span class="name">Id</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The Expressions are assigned Ids.</p>
+    </li><li name="com.twitter.summingbird.graph.Literal" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Literal[T,N[_]]extendsAnyRef"></a>
+      <a id="Literal[T,N[_]]:Literal[T,N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Literal.html"><span class="name">Literal</span></a><span class="tparams">[<span name="T">T</span>, <span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This represents literal expressions (no variable redirection)
+of container nodes of type N[T]
+</p>
     </li><li name="com.twitter.summingbird.graph.NeighborFn" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="NeighborFn[T]=T=&gt;Iterable[T]"></a>
       <a id="NeighborFn[T]:(T)⇒Iterable[T]"></a>
@@ -109,6 +269,73 @@ dependencies, compute the dependants (reverse the graph)
       </span>
       </h4>
       
+    </li><li name="com.twitter.summingbird.graph.PartialRule" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PartialRule[N[_]]extendsRule[N]"></a>
+      <a id="PartialRule[N[_]]:PartialRule[N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="PartialRule.html"><span class="name">PartialRule</span></a><span class="tparams">[<span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <a href="Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a>[<span class="extype" name="com.twitter.summingbird.graph.PartialRule.N">N</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Often a partial function is an easier way to express rules
+</p>
+    </li><li name="com.twitter.summingbird.graph.Rule" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="Rule[N[_]]extendsAnyRef"></a>
+      <a id="Rule[N[_]]:Rule[N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Rule.html"><span class="name">Rule</span></a><span class="tparams">[<span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This implements a simplification rule on ExpressionDags
+</p>
+    </li><li name="com.twitter.summingbird.graph.Unary" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Unary[T1,T2,N[_]]extendsExpr[T2,N]withProductwithSerializable"></a>
+      <a id="Unary[T1,T2,N[_]]:Unary[T1,T2,N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Unary.html"><span class="name">Unary</span></a><span class="tparams">[<span name="T1">T1</span>, <span name="T2">T2</span>, <span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="arg">arg: <a href="Id.html" class="extype" name="com.twitter.summingbird.graph.Id">Id</a>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T1">T1</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T1">T1</span>]) ⇒ <span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T2">T2</span>]</span>)</span><span class="result"> extends <a href="Expr.html" class="extype" name="com.twitter.summingbird.graph.Expr">Expr</a>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T2">T2</span>, <span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.UnaryLit" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnaryLit[T1,T2,N[_]]extendsLiteral[T2,N]withProductwithSerializable"></a>
+      <a id="UnaryLit[T1,T2,N[_]]:UnaryLit[T1,T2,N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnaryLit.html"><span class="name">UnaryLit</span></a><span class="tparams">[<span name="T1">T1</span>, <span name="T2">T2</span>, <span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="arg">arg: <a href="Literal.html" class="extype" name="com.twitter.summingbird.graph.Literal">Literal</a>[<span class="extype" name="com.twitter.summingbird.graph.UnaryLit.T1">T1</span>, <span class="extype" name="com.twitter.summingbird.graph.UnaryLit.N">N</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.graph.UnaryLit.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.UnaryLit.T1">T1</span>]) ⇒ <span class="extype" name="com.twitter.summingbird.graph.UnaryLit.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.UnaryLit.T2">T2</span>]</span>)</span><span class="result"> extends <a href="Literal.html" class="extype" name="com.twitter.summingbird.graph.Literal">Literal</a>[<span class="extype" name="com.twitter.summingbird.graph.UnaryLit.T2">T2</span>, <span class="extype" name="com.twitter.summingbird.graph.UnaryLit.N">N</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.Var" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Var[T,N[_]]extendsExpr[T,N]withProductwithSerializable"></a>
+      <a id="Var[T,N[_]]:Var[T,N]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Var.html"><span class="name">Var</span></a><span class="tparams">[<span name="T">T</span>, <span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="name">name: <a href="Id.html" class="extype" name="com.twitter.summingbird.graph.Id">Id</a>[<span class="extype" name="com.twitter.summingbird.graph.Var.T">T</span>]</span>)</span><span class="result"> extends <a href="Expr.html" class="extype" name="com.twitter.summingbird.graph.Expr">Expr</a>[<span class="extype" name="com.twitter.summingbird.graph.Var.T">T</span>, <span class="extype" name="com.twitter.summingbird.graph.Var.N">N</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
     </li></ol>
             </div>
 
@@ -116,7 +343,59 @@ dependencies, compute the dependants (reverse the graph)
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="com.twitter.summingbird.graph.package#dagDepth" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+              <ol><li name="com.twitter.summingbird.graph.Expr" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Expr"></a>
+      <a id="Expr:Expr"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Expr$.html"><span class="name">Expr</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.ExpressionDag" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExpressionDag"></a>
+      <a id="ExpressionDag:ExpressionDag"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ExpressionDag$.html"><span class="name">ExpressionDag</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.HMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HMap"></a>
+      <a id="HMap:HMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HMap$.html"><span class="name">HMap</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.Literal" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Literal"></a>
+      <a id="Literal:Literal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Literal$.html"><span class="name">Literal</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.graph.package#dagDepth" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="dagDepth[T](nodes:Iterable[T])(nf:T=&gt;Iterable[T]):Map[T,Int]"></a>
       <a id="dagDepth[T](Iterable[T])((T)⇒Iterable[T]):Map[T,Int]"></a>
       <h4 class="signature">

@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala" target="_blank">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala" target="_blank">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="Storm.html" class="extype" name="com.twitter.summingbird.storm.Storm">Storm</a>, <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<a href="Storm.html" class="extype" name="com.twitter.summingbird.storm.Storm">Storm</a>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -106,7 +106,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = <a href="#Service[-K,+V]=com.twitter.summingbird.storm.StormService[K,V]" class="extmbr" name="com.twitter.summingbird.storm.RemoteStorm.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.Platform.Buffer.k">k</span>, <span class="extype" name="com.twitter.summingbird.Platform.Buffer.v">v</span>] with <a href="#Sink[-T]=com.twitter.summingbird.storm.StormSink[T]" class="extmbr" name="com.twitter.summingbird.storm.RemoteStorm.Sink">Sink</a>[(<span class="extype" name="com.twitter.summingbird.Platform.Buffer.k">k</span>, <span class="extype" name="com.twitter.summingbird.Platform.Buffer.v">v</span>)]</span>
+        <span class="name">Buffer</span><span class="tparams">[<span name="k">k</span>, <span name="v">v</span>]</span><span class="result"> = <a href="#Service[-K,+V]=com.twitter.summingbird.online.OnlineServiceFactory[K,V]" class="extmbr" name="com.twitter.summingbird.storm.RemoteStorm.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.Platform.Buffer.k">k</span>, <span class="extype" name="com.twitter.summingbird.Platform.Buffer.v">v</span>] with <a href="#Sink[-T]=com.twitter.summingbird.storm.StormSink[T]" class="extmbr" name="com.twitter.summingbird.storm.RemoteStorm.Sink">Sink</a>[(<span class="extype" name="com.twitter.summingbird.Platform.Buffer.k">k</span>, <span class="extype" name="com.twitter.summingbird.Platform.Buffer.v">v</span>)]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
@@ -124,7 +124,7 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Storm.html" class="extype" name="com.twitter.summingbird.storm.Storm">Storm</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
     </li><li name="com.twitter.summingbird.storm.Storm.Service" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="Service[-K,+V]=com.twitter.summingbird.storm.StormService[K,V]"></a>
+      <a id="Service[-K,+V]=com.twitter.summingbird.online.OnlineServiceFactory[K,V]"></a>
       <a id="Service[-K,+V]:Service[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -132,7 +132,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">Service</span><span class="tparams">[<span name="K">-K</span>, <span name="V">+V</span>]</span><span class="result"> = <a href="StormService.html" class="extype" name="com.twitter.summingbird.storm.StormService">StormService</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.Service.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.Service.V">V</span>]</span>
+        <span class="name">Service</span><span class="tparams">[<span name="K">-K</span>, <span name="V">+V</span>]</span><span class="result"> = <a href="../online/OnlineServiceFactory.html" class="extype" name="com.twitter.summingbird.online.OnlineServiceFactory">OnlineServiceFactory</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.Service.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.Service.V">V</span>]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Storm.html" class="extype" name="com.twitter.summingbird.storm.Storm">Storm</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
@@ -163,7 +163,7 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Storm.html" class="extype" name="com.twitter.summingbird.storm.Storm">Storm</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>
     </li><li name="com.twitter.summingbird.storm.Storm.Store" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="Store[-K,V]=com.twitter.summingbird.storm.StormStore[K,V]"></a>
+      <a id="Store[-K,V]=com.twitter.summingbird.online.MergeableStoreFactory[(K,com.twitter.summingbird.batch.BatchID),V]"></a>
       <a id="Store[-K,V]:Store[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -171,7 +171,7 @@
         <span class="kind">type</span>
       </span>
       <span class="symbol">
-        <span class="name">Store</span><span class="tparams">[<span name="K">-K</span>, <span name="V">V</span>]</span><span class="result"> = <a href="StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a>[<span class="extype" name="com.twitter.summingbird.storm.Storm.Store.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.Storm.Store.V">V</span>]</span>
+        <span class="name">Store</span><span class="tparams">[<span name="K">-K</span>, <span name="V">V</span>]</span><span class="result"> = <a href="../online/MergeableStoreFactory.html" class="extype" name="com.twitter.summingbird.online.MergeableStoreFactory">MergeableStoreFactory</a>[(<span class="extype" name="com.twitter.summingbird.storm.Storm.Store.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.storm.Storm.Store.V">V</span>]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Storm.html" class="extype" name="com.twitter.summingbird.storm.Storm">Storm</a> → <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a></dd></dl></div>

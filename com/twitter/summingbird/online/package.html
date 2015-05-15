@@ -39,37 +39,13 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Package containing the Summingbird Online platform.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-online/src/main/scala/com/twitter/summingbird/online/package.scala" target="_blank">package.scala</a></dd></dl><div class="toggleContainer block">
-          <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
-        </div></div>
+          <div id="comment" class="fullcommenttop"></div>
         
 
       <div id="mbrsel">
         <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
-        <div id="order">
-              <span class="filtertype">Ordering</span>
-              <ol>
-                
-                <li class="alpha in"><span>Alphabetic</span></li>
-                <li class="inherit out"><span>By inheritance</span></li>
-              </ol>
-            </div>
-        <div id="ancestors">
-                <span class="filtertype">Inherited<br />
-                </span>
-                <ol id="linearization">
-                  <li class="in" name="com.twitter.summingbird.online"><span>online</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
-                </ol>
-              </div><div id="ancestors">
-            <span class="filtertype"></span>
-            <ol>
-              <li class="hideall out"><span>Hide All</span></li>
-              <li class="showall in"><span>Show all</span></li>
-            </ol>
-            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
-          </div>
+        
+        
         <div id="visbl">
             <span class="filtertype">Visibility</span>
             <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
@@ -82,7 +58,20 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="com.twitter.summingbird.online.Externalizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="com.twitter.summingbird.online.CombinedServiceStoreFactory" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="CombinedServiceStoreFactory[-K,V]extendsMergeableStoreFactory[(K,com.twitter.summingbird.batch.BatchID),V]withOnlineServiceFactory[K,V]"></a>
+      <a id="CombinedServiceStoreFactory[-K,V]:CombinedServiceStoreFactory[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="CombinedServiceStoreFactory.html"><span class="name">CombinedServiceStoreFactory</span></a><span class="tparams">[<span name="K">-K</span>, <span name="V">V</span>]</span><span class="result"> extends <a href="MergeableStoreFactory.html" class="extype" name="com.twitter.summingbird.online.MergeableStoreFactory">MergeableStoreFactory</a>[(<span class="extype" name="com.twitter.summingbird.online.CombinedServiceStoreFactory.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.online.CombinedServiceStoreFactory.V">V</span>] with <a href="OnlineServiceFactory.html" class="extype" name="com.twitter.summingbird.online.OnlineServiceFactory">OnlineServiceFactory</a>[<span class="extype" name="com.twitter.summingbird.online.CombinedServiceStoreFactory.K">K</span>, <span class="extype" name="com.twitter.summingbird.online.CombinedServiceStoreFactory.V">V</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.Externalizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Externalizer[T]extendsExternalizer[T]"></a>
       <a id="Externalizer[T]:Externalizer[T]"></a>
       <h4 class="signature">
@@ -160,6 +149,32 @@
       </span>
       </h4>
       
+    </li><li name="com.twitter.summingbird.online.MergeableStoreFactory" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="MergeableStoreFactory[-K,V]extendsSerializable"></a>
+      <a id="MergeableStoreFactory[-K,V]:MergeableStoreFactory[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MergeableStoreFactory.html"><span class="name">MergeableStoreFactory</span></a><span class="tparams">[<span name="K">-K</span>, <span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.OnlineServiceFactory" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="OnlineServiceFactory[-K,+V]extendsSerializable"></a>
+      <a id="OnlineServiceFactory[-K,+V]:OnlineServiceFactory[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="OnlineServiceFactory.html"><span class="name">OnlineServiceFactory</span></a><span class="tparams">[<span name="K">-K</span>, <span name="V">+V</span>]</span><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
     </li><li name="com.twitter.summingbird.online.Queue" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="Queue[T]extendsAnyRef"></a>
       <a id="Queue[T]:Queue[T]"></a>
@@ -174,16 +189,29 @@
       </h4>
       <p class="comment cmt">Use this class with a thread-safe queue to receive
 results from futures in one thread.</p>
-    </li><li name="com.twitter.summingbird.online.StoreFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="StoreFactory[K,V]=()=&gt;com.twitter.storehaus.ReadableStore[K,V]"></a>
-      <a id="StoreFactory[K,V]:()⇒ReadableStore[K,V]"></a>
+    </li><li name="com.twitter.summingbird.online.ReadableServiceFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ReadableServiceFactory[-K,+V]extendsOnlineServiceFactory[K,V]withProductwithSerializable"></a>
+      <a id="ReadableServiceFactory[-K,+V]:ReadableServiceFactory[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">type</span>
+        <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">StoreFactory</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> = () ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.online.StoreFactory.K">K</span>, <span class="extype" name="com.twitter.summingbird.online.StoreFactory.V">V</span>]</span>
+        <a href="ReadableServiceFactory.html"><span class="name">ReadableServiceFactory</span></a><span class="tparams">[<span name="K">-K</span>, <span name="V">+V</span>]</span><span class="params">(<span name="serviceStore">serviceStore: () ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.online.ReadableServiceFactory.K">K</span>, <span class="extype" name="com.twitter.summingbird.online.ReadableServiceFactory.V">V</span>]</span>)</span><span class="result"> extends <a href="OnlineServiceFactory.html" class="extype" name="com.twitter.summingbird.online.OnlineServiceFactory">OnlineServiceFactory</a>[<span class="extype" name="com.twitter.summingbird.online.ReadableServiceFactory.K">K</span>, <span class="extype" name="com.twitter.summingbird.online.ReadableServiceFactory.V">V</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.WrappedTSInMergeable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WrappedTSInMergeable[K,V]extendsMergeable[K,(com.twitter.summingbird.batch.Timestamp,V)]"></a>
+      <a id="WrappedTSInMergeable[K,V]:WrappedTSInMergeable[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="WrappedTSInMergeable.html"><span class="name">WrappedTSInMergeable</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="com.twitter.storehaus.algebra.Mergeable">Mergeable</span>[<span class="extype" name="com.twitter.summingbird.online.WrappedTSInMergeable.K">K</span>, (<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, <span class="extype" name="com.twitter.summingbird.online.WrappedTSInMergeable.V">V</span>)]</span>
       </span>
       </h4>
       
@@ -207,7 +235,20 @@ results from futures in one thread.</p>
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="com.twitter.summingbird.online.Externalizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="com.twitter.summingbird.online.CombinedServiceStoreFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CombinedServiceStoreFactory"></a>
+      <a id="CombinedServiceStoreFactory:CombinedServiceStoreFactory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CombinedServiceStoreFactory$.html"><span class="name">CombinedServiceStoreFactory</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.Externalizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Externalizer"></a>
       <a id="Externalizer:Externalizer"></a>
       <h4 class="signature">
@@ -230,6 +271,32 @@ results from futures in one thread.</p>
       </span>
       <span class="symbol">
         <a href="FlatMapOperation$.html"><span class="name">FlatMapOperation</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.MergeableStoreFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MergeableStoreFactory"></a>
+      <a id="MergeableStoreFactory:MergeableStoreFactory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MergeableStoreFactory$.html"><span class="name">MergeableStoreFactory</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.online.MergeableStoreFactoryAlgebra" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MergeableStoreFactoryAlgebra"></a>
+      <a id="MergeableStoreFactoryAlgebra:MergeableStoreFactoryAlgebra"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MergeableStoreFactoryAlgebra$.html"><span class="name">MergeableStoreFactoryAlgebra</span></a>
       </span>
       </h4>
       
@@ -281,11 +348,7 @@ results from futures in one thread.</p>
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.AnyRef">
-              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
-            </div><div class="parent" name="scala.Any">
-              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
-            </div>
+        
         
         </div>
 

@@ -72,29 +72,29 @@
       </h4>
       
     </li><li name="com.twitter.summingbird.AlsoProducer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="AlsoProducer[P&lt;:com.twitter.summingbird.Platform[P],T,R]extendsProducer[P,R]withProductwithSerializable"></a>
-      <a id="AlsoProducer[P&lt;:Platform[P],T,R]:AlsoProducer[P,T,R]"></a>
+      <a id="AlsoProducer[P&lt;:com.twitter.summingbird.Platform[P],+T,+R]extendsProducer[P,R]withProductwithSerializable"></a>
+      <a id="AlsoProducer[P&lt;:Platform[P],+T,+R]:AlsoProducer[P,T,R]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="AlsoProducer.html"><span class="name">AlsoProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.AlsoProducer.P">P</span>]</span>, <span name="T">T</span>, <span name="R">R</span>]</span><span class="params">(<span name="ensure">ensure: <a href="TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<span class="extype" name="com.twitter.summingbird.AlsoProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.AlsoProducer.T">T</span>]</span>, <span name="result">result: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.AlsoProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.AlsoProducer.R">R</span>]</span>)</span><span class="result"> extends <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.AlsoProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.AlsoProducer.R">R</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="AlsoProducer.html"><span class="name">AlsoProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.AlsoProducer.P">P</span>]</span>, <span name="T">+T</span>, <span name="R">+R</span>]</span><span class="params">(<span name="ensure">ensure: <a href="TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<span class="extype" name="com.twitter.summingbird.AlsoProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.AlsoProducer.T">T</span>]</span>, <span name="result">result: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.AlsoProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.AlsoProducer.R">R</span>]</span>)</span><span class="result"> extends <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.AlsoProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.AlsoProducer.R">R</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       <p class="comment cmt">This is a special node that ensures that the first argument is planned, but produces values
 equivalent to the result.</p>
     </li><li name="com.twitter.summingbird.AlsoTailProducer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="AlsoTailProducer[P&lt;:com.twitter.summingbird.Platform[P],T,R]extendsAlsoProducer[P,T,R]withTailProducer[P,R]"></a>
-      <a id="AlsoTailProducer[P&lt;:Platform[P],T,R]:AlsoTailProducer[P,T,R]"></a>
+      <a id="AlsoTailProducer[P&lt;:com.twitter.summingbird.Platform[P],+T,+R]extendsAlsoProducer[P,T,R]withTailProducer[P,R]"></a>
+      <a id="AlsoTailProducer[P&lt;:Platform[P],+T,+R]:AlsoTailProducer[P,T,R]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="AlsoTailProducer.html"><span class="name">AlsoTailProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.AlsoTailProducer.P">P</span>]</span>, <span name="T">T</span>, <span name="R">R</span>]</span><span class="result"> extends <a href="AlsoProducer.html" class="extype" name="com.twitter.summingbird.AlsoProducer">AlsoProducer</a>[<span class="extype" name="com.twitter.summingbird.AlsoTailProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.AlsoTailProducer.T">T</span>, <span class="extype" name="com.twitter.summingbird.AlsoTailProducer.R">R</span>] with <a href="TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<span class="extype" name="com.twitter.summingbird.AlsoTailProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.AlsoTailProducer.R">R</span>]</span>
+        <a href="AlsoTailProducer.html"><span class="name">AlsoTailProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.AlsoTailProducer.P">P</span>]</span>, <span name="T">+T</span>, <span name="R">+R</span>]</span><span class="result"> extends <a href="AlsoProducer.html" class="extype" name="com.twitter.summingbird.AlsoProducer">AlsoProducer</a>[<span class="extype" name="com.twitter.summingbird.AlsoTailProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.AlsoTailProducer.T">T</span>, <span class="extype" name="com.twitter.summingbird.AlsoTailProducer.R">R</span>] with <a href="TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<span class="extype" name="com.twitter.summingbird.AlsoTailProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.AlsoTailProducer.R">R</span>]</span>
       </span>
       </h4>
       
@@ -107,7 +107,20 @@ equivalent to the result.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="Counter.html"><span class="name">Counter</span></a><span class="params">(<span name="group">group: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="jobID">jobID: <a href="option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="Counter.html"><span class="name">Counter</span></a><span class="params">(<span name="group">group: <a href="Group.html" class="extype" name="com.twitter.summingbird.Group">Group</a></span>, <span name="name">name: <a href="Name.html" class="extype" name="com.twitter.summingbird.Name">Name</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="jobID">jobID: <a href="option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.CounterIncrementor" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="CounterIncrementorextendsAnyRef"></a>
+      <a id="CounterIncrementor:CounterIncrementor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="CounterIncrementor.html"><span class="name">CounterIncrementor</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4>
       
@@ -152,15 +165,15 @@ by the fact that they are immutable.</p>
       </h4>
       <p class="comment cmt"></p>
     </li><li name="com.twitter.summingbird.FlatMappedProducer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="FlatMappedProducer[P&lt;:com.twitter.summingbird.Platform[P],T,U]extendsProducer[P,U]withProductwithSerializable"></a>
-      <a id="FlatMappedProducer[P&lt;:Platform[P],T,U]:FlatMappedProducer[P,T,U]"></a>
+      <a id="FlatMappedProducer[P&lt;:com.twitter.summingbird.Platform[P],T,+U]extendsProducer[P,U]withProductwithSerializable"></a>
+      <a id="FlatMappedProducer[P&lt;:Platform[P],T,+U]:FlatMappedProducer[P,T,U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="FlatMappedProducer.html"><span class="name">FlatMappedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.FlatMappedProducer.P">P</span>]</span>, <span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="producer">producer: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.FlatMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.FlatMappedProducer.T">T</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.FlatMappedProducer.T">T</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.FlatMappedProducer.U">U</span>]</span>)</span><span class="result"> extends <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.FlatMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.FlatMappedProducer.U">U</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="FlatMappedProducer.html"><span class="name">FlatMappedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.FlatMappedProducer.P">P</span>]</span>, <span name="T">T</span>, <span name="U">+U</span>]</span><span class="params">(<span name="producer">producer: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.FlatMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.FlatMappedProducer.T">T</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.FlatMappedProducer.T">T</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.FlatMappedProducer.U">U</span>]</span>)</span><span class="result"> extends <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.FlatMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.FlatMappedProducer.U">U</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -190,6 +203,19 @@ by the fact that they are immutable.</p>
       </span>
       </h4>
       
+    </li><li name="com.twitter.summingbird.Group" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GroupextendsAnyValwithProductwithSerializable"></a>
+      <a id="Group:Group"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Group.html"><span class="name">Group</span></a><span class="params">(<span name="getString">getString: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.AnyVal">AnyVal</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
     </li><li name="com.twitter.summingbird.IdentityKeyedProducer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="IdentityKeyedProducer[P&lt;:com.twitter.summingbird.Platform[P],K,V]extendsKeyedProducer[P,K,V]withProductwithSerializable"></a>
       <a id="IdentityKeyedProducer[P&lt;:Platform[P],K,V]:IdentityKeyedProducer[P,K,V]"></a>
@@ -212,7 +238,7 @@ by the fact that they are immutable.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="KeyFlatMappedProducer.html"><span class="name">KeyFlatMappedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.P">P</span>]</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="K2">K2</span>]</span><span class="params">(<span name="producer">producer: <a href="KeyedProducer.html" class="extype" name="com.twitter.summingbird.KeyedProducer">KeyedProducer</a>[<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.V">V</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.K">K</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.K2">K2</span>]</span>)</span><span class="result"> extends <a href="KeyedProducer.html" class="extype" name="com.twitter.summingbird.KeyedProducer">KeyedProducer</a>[<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.K2">K2</span>, <span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.V">V</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="KeyFlatMappedProducer.html"><span class="name">KeyFlatMappedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.P">P</span>]</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="K2">K2</span>]</span><span class="params">(<span name="producer">producer: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.P">P</span>, (<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.V">V</span>)]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.K">K</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.K2">K2</span>]</span>)</span><span class="result"> extends <a href="KeyedProducer.html" class="extype" name="com.twitter.summingbird.KeyedProducer">KeyedProducer</a>[<span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.K2">K2</span>, <span class="extype" name="com.twitter.summingbird.KeyFlatMappedProducer.V">V</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -238,20 +264,20 @@ by the fact that they are immutable.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="LeftJoinedProducer.html"><span class="name">LeftJoinedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.P">P</span>]</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="JoinedV">JoinedV</span>]</span><span class="params">(<span name="left">left: <a href="KeyedProducer.html" class="extype" name="com.twitter.summingbird.KeyedProducer">KeyedProducer</a>[<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.V">V</span>]</span>, <span name="joined">joined: <span class="extype" name="com.twitter.summingbird.Platform.Service">P.Service</span>[<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.JoinedV">JoinedV</span>]</span>)</span><span class="result"> extends <a href="KeyedProducer.html" class="extype" name="com.twitter.summingbird.KeyedProducer">KeyedProducer</a>[<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.K">K</span>, (<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.V">V</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.JoinedV">JoinedV</span>])] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="LeftJoinedProducer.html"><span class="name">LeftJoinedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.P">P</span>]</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="JoinedV">JoinedV</span>]</span><span class="params">(<span name="left">left: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.P">P</span>, (<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.V">V</span>)]</span>, <span name="joined">joined: <span class="extype" name="com.twitter.summingbird.Platform.Service">P.Service</span>[<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.JoinedV">JoinedV</span>]</span>)</span><span class="result"> extends <a href="KeyedProducer.html" class="extype" name="com.twitter.summingbird.KeyedProducer">KeyedProducer</a>[<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.K">K</span>, (<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.V">V</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.LeftJoinedProducer.JoinedV">JoinedV</span>])] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
     </li><li name="com.twitter.summingbird.MergedProducer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="MergedProducer[P&lt;:com.twitter.summingbird.Platform[P],T]extendsProducer[P,T]withProductwithSerializable"></a>
-      <a id="MergedProducer[P&lt;:Platform[P],T]:MergedProducer[P,T]"></a>
+      <a id="MergedProducer[P&lt;:com.twitter.summingbird.Platform[P],+T]extendsProducer[P,T]withProductwithSerializable"></a>
+      <a id="MergedProducer[P&lt;:Platform[P],+T]:MergedProducer[P,T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="MergedProducer.html"><span class="name">MergedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.MergedProducer.P">P</span>]</span>, <span name="T">T</span>]</span><span class="params">(<span name="left">left: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.MergedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.MergedProducer.T">T</span>]</span>, <span name="right">right: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.MergedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.MergedProducer.T">T</span>]</span>)</span><span class="result"> extends <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.MergedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.MergedProducer.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="MergedProducer.html"><span class="name">MergedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.MergedProducer.P">P</span>]</span>, <span name="T">+T</span>]</span><span class="params">(<span name="left">left: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.MergedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.MergedProducer.T">T</span>]</span>, <span name="right">right: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.MergedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.MergedProducer.T">T</span>]</span>)</span><span class="result"> extends <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.MergedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.MergedProducer.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -265,6 +291,19 @@ by the fact that they are immutable.</p>
       </span>
       <span class="symbol">
         <a href="MutableStringConfig.html"><span class="name">MutableStringConfig</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.Name" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NameextendsAnyValwithProductwithSerializable"></a>
+      <a id="Name:Name"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Name.html"><span class="name">Name</span></a><span class="params">(<span name="getString">getString: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.AnyVal">AnyVal</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -282,15 +321,15 @@ by the fact that they are immutable.</p>
       </h4>
       
     </li><li name="com.twitter.summingbird.OptionMappedProducer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="OptionMappedProducer[P&lt;:com.twitter.summingbird.Platform[P],T,U]extendsProducer[P,U]withProductwithSerializable"></a>
-      <a id="OptionMappedProducer[P&lt;:Platform[P],T,U]:OptionMappedProducer[P,T,U]"></a>
+      <a id="OptionMappedProducer[P&lt;:com.twitter.summingbird.Platform[P],T,+U]extendsProducer[P,U]withProductwithSerializable"></a>
+      <a id="OptionMappedProducer[P&lt;:Platform[P],T,+U]:OptionMappedProducer[P,T,U]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="OptionMappedProducer.html"><span class="name">OptionMappedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.OptionMappedProducer.P">P</span>]</span>, <span name="T">T</span>, <span name="U">U</span>]</span><span class="params">(<span name="producer">producer: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.OptionMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.OptionMappedProducer.T">T</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.OptionMappedProducer.T">T</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.OptionMappedProducer.U">U</span>]</span>)</span><span class="result"> extends <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.OptionMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.OptionMappedProducer.U">U</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="OptionMappedProducer.html"><span class="name">OptionMappedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.OptionMappedProducer.P">P</span>]</span>, <span name="T">T</span>, <span name="U">+U</span>]</span><span class="params">(<span name="producer">producer: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.OptionMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.OptionMappedProducer.T">T</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.OptionMappedProducer.T">T</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.OptionMappedProducer.U">U</span>]</span>)</span><span class="result"> extends <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.OptionMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.OptionMappedProducer.U">U</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       <p class="comment cmt">Represents filters and maps which may be optimized differently
@@ -363,6 +402,19 @@ platforms in parallel.</p>
       </h4>
       <p class="comment cmt">Platform capable of planning and executing two underlying
 platforms in parallel.</p>
+    </li><li name="com.twitter.summingbird.PlatformStatProvider" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PlatformStatProviderextendsAnyRef"></a>
+      <a id="PlatformStatProvider:PlatformStatProvider"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="PlatformStatProvider.html"><span class="name">PlatformStatProvider</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
     </li><li name="com.twitter.summingbird.Producer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="Producer[P&lt;:com.twitter.summingbird.Platform[P],+T]extendsAnyRef"></a>
       <a id="Producer[P&lt;:Platform[P],+T]:Producer[P,T]"></a>
@@ -412,7 +464,7 @@ have operations applied to it.</p>
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="Summer.html"><span class="name">Summer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.Summer.P">P</span>]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="producer">producer: <a href="KeyedProducer.html" class="extype" name="com.twitter.summingbird.KeyedProducer">KeyedProducer</a>[<span class="extype" name="com.twitter.summingbird.Summer.P">P</span>, <span class="extype" name="com.twitter.summingbird.Summer.K">K</span>, <span class="extype" name="com.twitter.summingbird.Summer.V">V</span>]</span>, <span name="store">store: <span class="extype" name="com.twitter.summingbird.Platform.Store">P.Store</span>[<span class="extype" name="com.twitter.summingbird.Summer.K">K</span>, <span class="extype" name="com.twitter.summingbird.Summer.V">V</span>]</span>, <span name="semigroup">semigroup: <span class="extype" name="com.twitter.algebird.Semigroup">Semigroup</span>[<span class="extype" name="com.twitter.summingbird.Summer.V">V</span>]</span>)</span><span class="result"> extends <a href="KeyedProducer.html" class="extype" name="com.twitter.summingbird.KeyedProducer">KeyedProducer</a>[<span class="extype" name="com.twitter.summingbird.Summer.P">P</span>, <span class="extype" name="com.twitter.summingbird.Summer.K">K</span>, (<span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.Summer.V">V</span>], <span class="extype" name="com.twitter.summingbird.Summer.V">V</span>)] with <a href="TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<span class="extype" name="com.twitter.summingbird.Summer.P">P</span>, (<span class="extype" name="com.twitter.summingbird.Summer.K">K</span>, (<span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.Summer.V">V</span>], <span class="extype" name="com.twitter.summingbird.Summer.V">V</span>))] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="Summer.html"><span class="name">Summer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.Summer.P">P</span>]</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="producer">producer: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.Summer.P">P</span>, (<span class="extype" name="com.twitter.summingbird.Summer.K">K</span>, <span class="extype" name="com.twitter.summingbird.Summer.V">V</span>)]</span>, <span name="store">store: <span class="extype" name="com.twitter.summingbird.Platform.Store">P.Store</span>[<span class="extype" name="com.twitter.summingbird.Summer.K">K</span>, <span class="extype" name="com.twitter.summingbird.Summer.V">V</span>]</span>, <span name="semigroup">semigroup: <span class="extype" name="com.twitter.algebird.Semigroup">Semigroup</span>[<span class="extype" name="com.twitter.summingbird.Summer.V">V</span>]</span>)</span><span class="result"> extends <a href="KeyedProducer.html" class="extype" name="com.twitter.summingbird.KeyedProducer">KeyedProducer</a>[<span class="extype" name="com.twitter.summingbird.Summer.P">P</span>, <span class="extype" name="com.twitter.summingbird.Summer.K">K</span>, (<span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.Summer.V">V</span>], <span class="extype" name="com.twitter.summingbird.Summer.V">V</span>)] with <a href="TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<span class="extype" name="com.twitter.summingbird.Summer.P">P</span>, (<span class="extype" name="com.twitter.summingbird.Summer.K">K</span>, (<span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.Summer.V">V</span>], <span class="extype" name="com.twitter.summingbird.Summer.V">V</span>))] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -455,6 +507,19 @@ have operations applied to it.</p>
       </span>
       </h4>
       <p class="comment cmt">Only TailProducers can be planned.</p>
+    </li><li name="com.twitter.summingbird.TestGraphs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TestGraphs[P&lt;:com.twitter.summingbird.Platform[P],T,K,V]extendsAnyRef"></a>
+      <a id="TestGraphs[P&lt;:Platform[P],T,K,V]:TestGraphs[P,T,K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TestGraphs.html"><span class="name">TestGraphs</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.TestGraphs.P">P</span>]</span>, <span name="T">T</span>, <span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
     </li><li name="com.twitter.summingbird.TimeExtractor" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="TimeExtractor[T]extendsSerializable"></a>
       <a id="TimeExtractor[T]:TimeExtractor[T]"></a>
@@ -483,6 +548,19 @@ of implicit dependencies, since then you get an implicit function.</p>
       </h4>
       <p class="comment cmt">I tried to make Unzip2 an object with an apply method that took
 all three type parameters, but ran into issues:</p>
+    </li><li name="com.twitter.summingbird.ValueFlatMappedProducer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ValueFlatMappedProducer[P&lt;:com.twitter.summingbird.Platform[P],K,V,V2]extendsKeyedProducer[P,K,V2]withProductwithSerializable"></a>
+      <a id="ValueFlatMappedProducer[P&lt;:Platform[P],K,V,V2]:ValueFlatMappedProducer[P,K,V,V2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ValueFlatMappedProducer.html"><span class="name">ValueFlatMappedProducer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.ValueFlatMappedProducer.P">P</span>]</span>, <span name="K">K</span>, <span name="V">V</span>, <span name="V2">V2</span>]</span><span class="params">(<span name="producer">producer: <a href="Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.ValueFlatMappedProducer.P">P</span>, (<span class="extype" name="com.twitter.summingbird.ValueFlatMappedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.ValueFlatMappedProducer.V">V</span>)]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.ValueFlatMappedProducer.V">V</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.ValueFlatMappedProducer.V2">V2</span>]</span>)</span><span class="result"> extends <a href="KeyedProducer.html" class="extype" name="com.twitter.summingbird.KeyedProducer">KeyedProducer</a>[<span class="extype" name="com.twitter.summingbird.ValueFlatMappedProducer.P">P</span>, <span class="extype" name="com.twitter.summingbird.ValueFlatMappedProducer.K">K</span>, <span class="extype" name="com.twitter.summingbird.ValueFlatMappedProducer.V2">V2</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
     </li><li name="com.twitter.summingbird.WrappingConfig" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="WrappingConfigextendsSummingbirdConfigwithProductwithSerializable"></a>
       <a id="WrappingConfig:WrappingConfig"></a>
@@ -556,6 +634,32 @@ should extend AbstractJob.</p>
       </span>
       </h4>
       
+    </li><li name="com.twitter.summingbird.JobCounters" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JobCounters"></a>
+      <a id="JobCounters:JobCounters"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JobCounters$.html"><span class="name">JobCounters</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.MemoryArbitraries" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MemoryArbitraries"></a>
+      <a id="MemoryArbitraries:MemoryArbitraries"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MemoryArbitraries$.html"><span class="name">MemoryArbitraries</span></a>
+      </span>
+      </h4>
+      
     </li><li name="com.twitter.summingbird.Options" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Options"></a>
       <a id="Options:Options"></a>
@@ -596,6 +700,46 @@ jobs.</p>
       </span>
       </h4>
       
+    </li><li name="com.twitter.summingbird.SummingbirdRuntimeStats" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SummingbirdRuntimeStats"></a>
+      <a id="SummingbirdRuntimeStats:SummingbirdRuntimeStats"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SummingbirdRuntimeStats$.html"><span class="name">SummingbirdRuntimeStats</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.TestGraphGenerators" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TestGraphGenerators"></a>
+      <a id="TestGraphGenerators:TestGraphGenerators"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TestGraphGenerators$.html"><span class="name">TestGraphGenerators</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.TestGraphs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TestGraphs"></a>
+      <a id="TestGraphs:TestGraphs"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TestGraphs$.html"><span class="name">TestGraphs</span></a>
+      </span>
+      </h4>
+      <p class="comment cmt">Helpful functions and test graphs designed to flex Summingbird
+planners.</p>
     </li><li name="com.twitter.summingbird.TimeExtractor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TimeExtractor"></a>
       <a id="TimeExtractor:TimeExtractor"></a>
@@ -729,7 +873,7 @@ number of times each word appears per tweet.</p>
         <a href="online/package.html"><span class="name">online</span></a>
       </span>
       </h4>
-      <p class="comment cmt">Package containing the Summingbird Online platform.</p>
+      
     </li><li name="com.twitter.summingbird.option" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="option"></a>
       <a id="option:option"></a>

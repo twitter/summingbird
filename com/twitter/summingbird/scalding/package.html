@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/package.scala" target="_blank">package.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/package.scala" target="_blank">package.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -81,7 +81,20 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="com.twitter.summingbird.scalding.FactoryInput" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="com.twitter.summingbird.scalding.ExternalService" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ExternalService[K,+V]extendsService[K,V]"></a>
+      <a id="ExternalService[K,+V]:ExternalService[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ExternalService.html"><span class="name">ExternalService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">+V</span>]</span><span class="result"> extends <a href="Service.html" class="extype" name="com.twitter.summingbird.scalding.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.scalding.ExternalService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.ExternalService.V">V</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">This represents a service that is *external* to the current job.</p>
+    </li><li name="com.twitter.summingbird.scalding.FactoryInput" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FactoryInput=(com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp],com.twitter.scalding.Mode)"></a>
       <a id="FactoryInput:(Interval[Timestamp],Mode)"></a>
       <h4 class="signature">
@@ -167,6 +180,21 @@ generally T will be some kind of TypedPipe
       </h4>
       <p class="shortcomment cmt">We so commonly talk about producing TimedPipe we define this
 </p>
+    </li><li name="com.twitter.summingbird.scalding.InternalService" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="InternalService[K,+V]extendsService[K,V]"></a>
+      <a id="InternalService[K,+V]:InternalService[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="InternalService.html"><span class="name">InternalService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">+V</span>]</span><span class="result"> extends <a href="Service.html" class="extype" name="com.twitter.summingbird.scalding.Service">Service</a>[<span class="extype" name="com.twitter.summingbird.scalding.InternalService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.InternalService.V">V</span>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">This represents a join against data that is materialized by a store
+in the current job
+</p>
     </li><li name="com.twitter.summingbird.scalding.KeyValuePipe" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="KeyValuePipe[+K,+V]=com.twitter.summingbird.scalding.package.TimedPipe[(K,V)]"></a>
       <a id="KeyValuePipe[+K,+V]:KeyValuePipe[K,V]"></a>
@@ -177,6 +205,19 @@ generally T will be some kind of TypedPipe
       </span>
       <span class="symbol">
         <span class="name">KeyValuePipe</span><span class="tparams">[<span name="K">+K</span>, <span name="V">+V</span>]</span><span class="result"> = <span class="extype" name="com.twitter.scalding.typed.TypedPipe">TypedPipe</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, (<span class="extype" name="com.twitter.summingbird.scalding.KeyValuePipe.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.KeyValuePipe.V">V</span>))]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.scalding.LocalIterableSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LocalIterableSource[+T]extendsIterableSource[T]"></a>
+      <a id="LocalIterableSource[+T]:LocalIterableSource[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LocalIterableSource.html"><span class="name">LocalIterableSource</span></a><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> extends <span class="extype" name="com.twitter.scalding.IterableSource">IterableSource</span>[<span class="extype" name="com.twitter.summingbird.scalding.LocalIterableSource.T">T</span>]</span>
       </span>
       </h4>
       
@@ -302,7 +343,7 @@ generally T will be some kind of TypedPipe
       <a id="Service[K,+V]:Service[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">sealed </span>
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
@@ -349,6 +390,19 @@ generally T will be some kind of TypedPipe
       </span>
       </h4>
       <p class="comment cmt"></p>
+    </li><li name="com.twitter.summingbird.scalding.StoreService" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StoreService[K,V]extendsInternalService[K,V]withStore[K,V]withProductwithSerializable"></a>
+      <a id="StoreService[K,V]:StoreService[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StoreService.html"><span class="name">StoreService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: <a href="batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a>[<span class="extype" name="com.twitter.summingbird.scalding.StoreService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.StoreService.V">V</span>]</span>)</span><span class="result"> extends <a href="InternalService.html" class="extype" name="com.twitter.summingbird.scalding.InternalService">InternalService</a>[<span class="extype" name="com.twitter.summingbird.scalding.StoreService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.StoreService.V">V</span>] with <a href="Store.html" class="extype" name="com.twitter.summingbird.scalding.Store">Store</a>[<span class="extype" name="com.twitter.summingbird.scalding.StoreService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.StoreService.V">V</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
     </li><li name="com.twitter.summingbird.scalding.TestService" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TestService[K,V]extendsBatchedService[K,V]"></a>
       <a id="TestService[K,V]:TestService[K,V]"></a>
@@ -387,6 +441,19 @@ cascading local mode
       </span>
       <span class="symbol">
         <a href="TestStore.html"><span class="name">TestStore</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <a href="batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a>[<span class="extype" name="com.twitter.summingbird.scalding.TestStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.TestStore.V">V</span>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.scalding.TestStoreService" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TestStoreService[K,V]extendsStoreService[K,V]"></a>
+      <a id="TestStoreService[K,V]:TestStoreService[K,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TestStoreService.html"><span class="name">TestStoreService</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <a href="StoreService.html" class="extype" name="com.twitter.summingbird.scalding.StoreService">StoreService</a>[<span class="extype" name="com.twitter.summingbird.scalding.TestStoreService.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.TestStoreService.V">V</span>]</span>
       </span>
       </h4>
       
@@ -507,19 +574,6 @@ by performing realtime lookups on a key-value Store.</p>
       </span>
       </h4>
       
-    </li><li name="com.twitter.summingbird.scalding.Store" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="Store"></a>
-      <a id="Store:Store"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">object</span>
-      </span>
-      <span class="symbol">
-        <a href="Store$.html"><span class="name">Store</span></a><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
-      </span>
-      </h4>
-      
     </li><li name="com.twitter.summingbird.scalding.TestSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TestSource"></a>
       <a id="TestSource:TestSource"></a>
@@ -543,6 +597,19 @@ by performing realtime lookups on a key-value Store.</p>
       </span>
       <span class="symbol">
         <a href="TestStore$.html"><span class="name">TestStore</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.scalding.TestStoreService" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TestStoreService"></a>
+      <a id="TestStoreService:TestStoreService"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TestStoreService$.html"><span class="name">TestStoreService</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       

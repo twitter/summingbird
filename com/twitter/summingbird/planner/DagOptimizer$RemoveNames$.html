@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>MergeableStoreSupplier - com.twitter.summingbird.storm.MergeableStoreSupplier</title>
-          <meta name="description" content="MergeableStoreSupplier - com.twitter.summingbird.storm.MergeableStoreSupplier" />
-          <meta name="keywords" content="MergeableStoreSupplier com.twitter.summingbird.storm.MergeableStoreSupplier" />
+          <title>RemoveNames - com.twitter.summingbird.planner.DagOptimizer.RemoveNames</title>
+          <meta name="description" content="RemoveNames - com.twitter.summingbird.planner.DagOptimizer.RemoveNames" />
+          <meta name="keywords" content="RemoveNames com.twitter.summingbird.planner.DagOptimizer.RemoveNames" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -12,7 +12,7 @@
       <script type="text/javascript">
          if(top === self) {
             var url = '../../../../index.html';
-            var hash = 'com.twitter.summingbird.storm.MergeableStoreSupplier';
+            var hash = 'com.twitter.summingbird.planner.DagOptimizer$RemoveNames$';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -22,26 +22,29 @@
    	  </script>
     
         </head>
-        <body class="type">
+        <body class="value">
       <div id="definition">
-        <a href="MergeableStoreSupplier$.html" title="Go to companion"><img src="../../../../lib/class_to_object_big.png" /></a>
-        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.storm">storm</a></p>
-        <h1><a href="MergeableStoreSupplier$.html" title="Go to companion">MergeableStoreSupplier</a></h1>
+        <img src="../../../../lib/object_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.planner">planner</a>.<a href="DagOptimizer.html" class="extype" name="com.twitter.summingbird.planner.DagOptimizer">DagOptimizer</a></p>
+        <h1>RemoveNames</h1>
       </div>
 
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">case class</span>
+        <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <span class="name">MergeableStoreSupplier</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <a href="StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a>[<span class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier.V">V</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">RemoveNames</span><span class="result"> extends <a href="../graph/PartialRule.html" class="extype" name="com.twitter.summingbird.graph.PartialRule">PartialRule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/StormPlatform.scala" target="_blank">StormPlatform.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Strip all the names. Names are rightly considered as names on the irreducible
+parts of the input graph (functions, stores, sinks, sources, etc...) and not
+the AST that we generate and optimize along the way
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-core/src/main/scala/com/twitter/summingbird/planner/DagOptimizer.scala" target="_blank">DagOptimizer.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a>[<span class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier.V">V</span>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../graph/PartialRule.html" class="extype" name="com.twitter.summingbird.graph.PartialRule">PartialRule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>], <a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -59,7 +62,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="com.twitter.summingbird.storm.MergeableStoreSupplier"><span>MergeableStoreSupplier</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="com.twitter.summingbird.storm.StormStore"><span>StormStore</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="com.twitter.summingbird.planner.DagOptimizer.RemoveNames"><span>RemoveNames</span></li><li class="in" name="com.twitter.summingbird.graph.PartialRule"><span>PartialRule</span></li><li class="in" name="com.twitter.summingbird.graph.Rule"><span>Rule</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -150,6 +153,36 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.PartialRule#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="apply[T](on:com.twitter.summingbird.graph.ExpressionDag[N]):N[T]=&gt;Option[N[T]]"></a>
+      <a id="apply[T](ExpressionDag[Prod]):(Prod[T])⇒Option[Prod[T]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="on">on: <a href="../graph/ExpressionDag.html" class="extype" name="com.twitter.summingbird.graph.ExpressionDag">ExpressionDag</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</span>)</span><span class="result">: (<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.graph.PartialRule.apply.T">T</span>]) ⇒ <span class="extype" name="scala.Option">Option</span>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.graph.PartialRule.apply.T">T</span>]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">If the given Id can be replaced with a simpler expression,
+return Some(expr) else None.</p><div class="fullcomment"><div class="comment cmt"><p>If the given Id can be replaced with a simpler expression,
+return Some(expr) else None.</p><p>If it is convenient, you might write a partial function
+and then call .lift to get the correct Function type
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../graph/PartialRule.html" class="extype" name="com.twitter.summingbird.graph.PartialRule">PartialRule</a> → <a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.planner.DagOptimizer.RemoveNames#applyWhere" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="applyWhere[T](on:com.twitter.summingbird.graph.ExpressionDag[DagOptimizer.this.Prod]):PartialFunction[DagOptimizer.this.Prod[T],DagOptimizer.this.Prod[T]]"></a>
+      <a id="applyWhere[T](ExpressionDag[Prod]):PartialFunction[Prod[T],Prod[T]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">applyWhere</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="on">on: <a href="../graph/ExpressionDag.html" class="extype" name="com.twitter.summingbird.graph.ExpressionDag">ExpressionDag</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</span>)</span><span class="result">: <span class="extype" name="scala.PartialFunction">PartialFunction</span>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.planner.DagOptimizer.RemoveNames.applyWhere.T">T</span>], <a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>[<span class="extype" name="com.twitter.summingbird.planner.DagOptimizer.RemoveNames.applyWhere.T">T</span>]]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.planner.DagOptimizer.RemoveNames">RemoveNames</a> → <a href="../graph/PartialRule.html" class="extype" name="com.twitter.summingbird.graph.PartialRule">PartialRule</a></dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -163,19 +196,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="com.twitter.summingbird.storm.MergeableStoreSupplier#batcher" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="batcher:com.twitter.summingbird.batch.Batcher"></a>
-      <a id="batcher:Batcher"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">batcher</span><span class="result">: <a href="../batch/Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier">MergeableStoreSupplier</a> → <a href="StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -208,6 +228,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -237,6 +270,19 @@
       </span>
       <span class="symbol">
         <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
@@ -292,19 +338,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="com.twitter.summingbird.storm.MergeableStoreSupplier#store" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="store:backtype.storm.task.TopologyContext=&gt;com.twitter.storehaus.algebra.Mergeable[(K,com.twitter.summingbird.batch.BatchID),V]"></a>
-      <a id="store:(TopologyContext)⇒Mergeable[(K,BatchID),V]"></a>
+    </li><li name="com.twitter.summingbird.graph.Rule#orElse" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="orElse(that:com.twitter.summingbird.graph.Rule[N]):com.twitter.summingbird.graph.Rule[N]"></a>
+      <a id="orElse(Rule[Prod]):Rule[Prod]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">store</span><span class="result">: (<span class="extype" name="backtype.storm.task.TopologyContext">TopologyContext</span>) ⇒ <span class="extype" name="com.twitter.storehaus.algebra.Mergeable">Mergeable</span>[(<span class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier.K">K</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier.V">V</span>]</span>
+        <span class="name">orElse</span><span class="params">(<span name="that">that: <a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</span>)</span><span class="result">: <a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</span>
       </span>
       </h4>
-      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -318,6 +364,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -384,16 +443,10 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.Serializable">
-              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
-            </div><div class="parent" name="java.io.Serializable">
-              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
-            </div><div class="parent" name="scala.Product">
-              <h3>Inherited from <span class="extype" name="scala.Product">Product</span></h3>
-            </div><div class="parent" name="scala.Equals">
-              <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
-            </div><div class="parent" name="com.twitter.summingbird.storm.StormStore">
-              <h3>Inherited from <a href="StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a>[<span class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier.V">V</span>]</h3>
+        <div class="parent" name="com.twitter.summingbird.graph.PartialRule">
+              <h3>Inherited from <a href="../graph/PartialRule.html" class="extype" name="com.twitter.summingbird.graph.PartialRule">PartialRule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</h3>
+            </div><div class="parent" name="com.twitter.summingbird.graph.Rule">
+              <h3>Inherited from <a href="../graph/Rule.html" class="extype" name="com.twitter.summingbird.graph.Rule">Rule</a>[<a href="DagOptimizer.html#Prod[T]=com.twitter.summingbird.Producer[P,T]" class="extmbr" name="com.twitter.summingbird.planner.DagOptimizer.Prod">Prod</a>]</h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">

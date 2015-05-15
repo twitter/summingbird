@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-online/src/main/scala/com/twitter/summingbird/online/executor/OperationContainer.scala" target="_blank">OperationContainer.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-online/src/main/scala/com/twitter/summingbird/online/executor/OperationContainer.scala" target="_blank">OperationContainer.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
@@ -113,28 +113,28 @@
       </h4>
       
     </li><li name="com.twitter.summingbird.online.executor.OperationContainer#execute" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="execute(state:State,data:Input):TraversableOnce[(List[State],scala.util.Try[TraversableOnce[Output]])]"></a>
-      <a id="execute(State,Input):TraversableOnce[(List[State],Try[TraversableOnce[Output]])]"></a>
+      <a id="execute(state:State,data:Input):TraversableOnce[(Seq[State],scala.util.Try[TraversableOnce[Output]])]"></a>
+      <a id="execute(State,Input):TraversableOnce[(Seq[State],Try[TraversableOnce[Output]])]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">execute</span><span class="params">(<span name="state">state: <span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.State">State</span></span>, <span name="data">data: <span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.Input">Input</span></span>)</span><span class="result">: <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[(<span class="extype" name="scala.List">List</span>[<span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.State">State</span>], <span class="extype" name="scala.util.Try">Try</span>[<span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.Output">Output</span>]])]</span>
+        <span class="name">execute</span><span class="params">(<span name="state">state: <span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.State">State</span></span>, <span name="data">data: <span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.Input">Input</span></span>)</span><span class="result">: <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[(<span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.State">State</span>], <span class="extype" name="scala.util.Try">Try</span>[<span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.Output">Output</span>]])]</span>
       </span>
       </h4>
       
     </li><li name="com.twitter.summingbird.online.executor.OperationContainer#executeTick" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="executeTick:TraversableOnce[(List[State],scala.util.Try[TraversableOnce[Output]])]"></a>
-      <a id="executeTick:TraversableOnce[(List[State],Try[TraversableOnce[Output]])]"></a>
+      <a id="executeTick:TraversableOnce[(Seq[State],scala.util.Try[TraversableOnce[Output]])]"></a>
+      <a id="executeTick:TraversableOnce[(Seq[State],Try[TraversableOnce[Output]])]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">executeTick</span><span class="result">: <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[(<span class="extype" name="scala.List">List</span>[<span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.State">State</span>], <span class="extype" name="scala.util.Try">Try</span>[<span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.Output">Output</span>]])]</span>
+        <span class="name">executeTick</span><span class="result">: <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[(<span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.State">State</span>], <span class="extype" name="scala.util.Try">Try</span>[<span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.Output">Output</span>]])]</span>
       </span>
       </h4>
       
@@ -390,15 +390,15 @@
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="com.twitter.summingbird.online.executor.OperationContainer#notifyFailure" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="notifyFailure(inputs:List[State],e:Throwable):Unit"></a>
-      <a id="notifyFailure(List[State],Throwable):Unit"></a>
+      <a id="notifyFailure(inputs:Seq[State],e:Throwable):Unit"></a>
+      <a id="notifyFailure(Seq[State],Throwable):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">notifyFailure</span><span class="params">(<span name="inputs">inputs: <span class="extype" name="scala.List">List</span>[<span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.State">State</span>]</span>, <span name="e">e: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">notifyFailure</span><span class="params">(<span name="inputs">inputs: <span class="extype" name="scala.Seq">Seq</span>[<span class="extype" name="com.twitter.summingbird.online.executor.OperationContainer.State">State</span>]</span>, <span name="e">e: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
       

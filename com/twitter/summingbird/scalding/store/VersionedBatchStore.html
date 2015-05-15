@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/store/VersionedBatchStore.scala" target="_blank">VersionedBatchStore.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-scalding/src/main/scala/com/twitter/summingbird/scalding/store/VersionedBatchStore.scala" target="_blank">VersionedBatchStore.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><a href="VersionedBatchStoreBase.html" class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase">VersionedBatchStoreBase</a>[<span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.V">V</span>], <a href="../batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a>[<span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.V">V</span>], <a href="../Store.html" class="extype" name="com.twitter.summingbird.scalding.Store">Store</a>[<span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.V">V</span>], <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -412,6 +412,21 @@ results by rolling forward
 before the keys are expanded.</p><div class="fullcomment"><div class="comment cmt"><p>For each batch, collect up values with the same key on mapside
 before the keys are expanded.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a> → <a href="../Store.html" class="extype" name="com.twitter.summingbird.scalding.Store">Store</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.scalding.batch.BatchedStore#planReadLast" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="planReadLast:com.twitter.summingbird.scalding.PlannerOutput[(com.twitter.summingbird.batch.BatchID,com.twitter.summingbird.scalding.FlowProducer[com.twitter.scalding.TypedPipe[(K,V)]])]"></a>
+      <a id="planReadLast:PlannerOutput[(BatchID,FlowProducer[TypedPipe[(K,V)]])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planReadLast</span><span class="result">: <a href="../package.html#PlannerOutput[+T]=com.twitter.algebird.monad.StateWithError[(com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp],com.twitter.scalding.Mode),List[com.twitter.summingbird.scalding.package.FailureReason],T]" class="extmbr" name="com.twitter.summingbird.scalding.PlannerOutput">PlannerOutput</a>[(<a href="../../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>, <a href="../package.html#FlowProducer[+T]=com.twitter.algebird.monad.Reader[(cascading.flow.FlowDef,com.twitter.scalding.Mode),T]" class="extmbr" name="com.twitter.summingbird.scalding.FlowProducer">FlowProducer</a>[<span class="extype" name="com.twitter.scalding.TypedPipe">TypedPipe</span>[(<span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.V">V</span>)]])]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">This is the monadic version of readLast, returns the BatchID actually on disk
+</p><div class="fullcomment"><div class="comment cmt"><p>This is the monadic version of readLast, returns the BatchID actually on disk
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a></dd></dl></div>
     </li><li name="com.twitter.summingbird.scalding.batch.BatchedStore#pruning" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="pruning:com.twitter.summingbird.batch.PrunedSpace[(K,V)]"></a>
       <a id="pruning:PrunedSpace[(K,V)]"></a>
@@ -428,6 +443,46 @@ before the keys are expanded.
 are pruned.</p><div class="fullcomment"><div class="comment cmt"><p>Override this to set up store pruning, by default, no (key,value) pairs
 are pruned. This is a house keeping function to permanently remove entries
 matching a criteria.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.scalding.batch.BatchedStore#readAfterLastBatch" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="readAfterLastBatch[T](input:com.twitter.summingbird.scalding.PipeFactory[T]):com.twitter.summingbird.scalding.PlannerOutput[(com.twitter.summingbird.batch.BatchID,com.twitter.summingbird.scalding.FlowProducer[com.twitter.scalding.TypedPipe[(K,V)]],com.twitter.summingbird.scalding.FlowToPipe[T])]"></a>
+      <a id="readAfterLastBatch[T](PipeFactory[T]):PlannerOutput[(BatchID,FlowProducer[TypedPipe[(K,V)]],FlowToPipe[T])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">readAfterLastBatch</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="input">input: <a href="../package.html#PipeFactory[+T]=com.twitter.summingbird.scalding.package.PlannerOutput[com.twitter.summingbird.scalding.package.FlowToPipe[T]]" class="extmbr" name="com.twitter.summingbird.scalding.PipeFactory">PipeFactory</a>[<span class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore.readAfterLastBatch.T">T</span>]</span>)</span><span class="result">: <a href="../package.html#PlannerOutput[+T]=com.twitter.algebird.monad.StateWithError[(com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp],com.twitter.scalding.Mode),List[com.twitter.summingbird.scalding.package.FailureReason],T]" class="extmbr" name="com.twitter.summingbird.scalding.PlannerOutput">PlannerOutput</a>[(<a href="../../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>, <a href="../package.html#FlowProducer[+T]=com.twitter.algebird.monad.Reader[(cascading.flow.FlowDef,com.twitter.scalding.Mode),T]" class="extmbr" name="com.twitter.summingbird.scalding.FlowProducer">FlowProducer</a>[<span class="extype" name="com.twitter.scalding.TypedPipe">TypedPipe</span>[(<span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.V">V</span>)]], <a href="../package.html#FlowToPipe[+T]=com.twitter.summingbird.scalding.package.FlowProducer[com.twitter.summingbird.scalding.package.TimedPipe[T]]" class="extmbr" name="com.twitter.summingbird.scalding.FlowToPipe">FlowToPipe</a>[<span class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore.readAfterLastBatch.T">T</span>])]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Reads the input data after the last batch written.</p><div class="fullcomment"><div class="comment cmt"><p>Reads the input data after the last batch written.</p><p>Returns:
+- the BatchID of the last batch written
+- the snapshot of the store just before this state
+- the data from this input covering all the time SINCE the last snapshot
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.scalding.batch.BatchedStore#readDeltaLog" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="readDeltaLog(delta:com.twitter.summingbird.scalding.PipeFactory[(K,V)]):com.twitter.summingbird.scalding.PipeFactory[(K,V)]"></a>
+      <a id="readDeltaLog(PipeFactory[(K,V)]):PipeFactory[(K,V)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">readDeltaLog</span><span class="params">(<span name="delta">delta: <a href="../package.html#PipeFactory[+T]=com.twitter.summingbird.scalding.package.PlannerOutput[com.twitter.summingbird.scalding.package.FlowToPipe[T]]" class="extmbr" name="com.twitter.summingbird.scalding.PipeFactory">PipeFactory</a>[(<span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.V">V</span>)]</span>)</span><span class="result">: <a href="../package.html#PipeFactory[+T]=com.twitter.summingbird.scalding.package.PlannerOutput[com.twitter.summingbird.scalding.package.FlowToPipe[T]]" class="extmbr" name="com.twitter.summingbird.scalding.PipeFactory">PipeFactory</a>[(<span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.scalding.store.VersionedBatchStore.V">V</span>)]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">This combines the current inputs along with the last checkpoint on disk to get a log
+of all deltas with a timestamp
+This is useful to leftJoin against a store.</p><div class="fullcomment"><div class="comment cmt"><p>This combines the current inputs along with the last checkpoint on disk to get a log
+of all deltas with a timestamp
+This is useful to leftJoin against a store.
+TODO: This should not limit to batch boundaries, the batch store
+should handle only writing the data for full batches, but we can materialize
+more data if it is needed downstream.
+Note: the returned time interval NOT include the time of the snapshot data point
+(which is exactly 1 millisecond before the start of the interval).
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a></dd></dl></div>
     </li><li name="com.twitter.summingbird.scalding.store.VersionedBatchStoreBase#readLast" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readLast(exclusiveUB:com.twitter.summingbird.batch.BatchID,mode:com.twitter.scalding.Mode):com.twitter.summingbird.scalding.Try[(com.twitter.summingbird.batch.BatchID,com.twitter.summingbird.scalding.FlowProducer[com.twitter.scalding.TypedPipe[(K,V)]])]"></a>
@@ -505,6 +560,23 @@ If this is out of sync with VersionedKeyValSource we can have issues
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="com.twitter.summingbird.scalding.batch.BatchedStore#timeSpanToBatches" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="timeSpanToBatches:com.twitter.summingbird.scalding.PlannerOutput[List[com.twitter.summingbird.batch.BatchID]]"></a>
+      <a id="timeSpanToBatches:PlannerOutput[List[BatchID]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">timeSpanToBatches</span><span class="result">: <a href="../package.html#PlannerOutput[+T]=com.twitter.algebird.monad.StateWithError[(com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp],com.twitter.scalding.Mode),List[com.twitter.summingbird.scalding.package.FailureReason],T]" class="extmbr" name="com.twitter.summingbird.scalding.PlannerOutput">PlannerOutput</a>[<span class="extype" name="scala.List">List</span>[<a href="../../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">This gives the batches needed to cover the requested input
+This will always be non-empty
+</p><div class="fullcomment"><div class="comment cmt"><p>This gives the batches needed to cover the requested input
+This will always be non-empty
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../batch/BatchedStore.html" class="extype" name="com.twitter.summingbird.scalding.batch.BatchedStore">BatchedStore</a></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <a id="toString():String"></a>

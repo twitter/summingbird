@@ -35,11 +35,11 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">BaseBolt</span><span class="tparams">[<span name="I">I</span>, <span name="O">O</span>]</span><span class="params">(<span name="jobID">jobID: <a href="../option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>, <span name="metrics">metrics: () ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<a href="StormMetric.html" class="extype" name="com.twitter.summingbird.storm.StormMetric">StormMetric</a>[_]]</span>, <span name="anchorTuples">anchorTuples: <a href="option/AnchorTuples.html" class="extype" name="com.twitter.summingbird.storm.option.AnchorTuples">AnchorTuples</a></span>, <span name="hasDependants">hasDependants: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="outputFields">outputFields: <span class="extype" name="backtype.storm.tuple.Fields">Fields</span></span>, <span name="ackOnEntry">ackOnEntry: <a href="option/AckOnEntry.html" class="extype" name="com.twitter.summingbird.storm.option.AckOnEntry">AckOnEntry</a></span>, <span name="executor">executor: <a href="../online/executor/OperationContainer.html" class="extype" name="com.twitter.summingbird.online.executor.OperationContainer">OperationContainer</a>[<span class="extype" name="com.twitter.summingbird.storm.BaseBolt.I">I</span>, <span class="extype" name="com.twitter.summingbird.storm.BaseBolt.O">O</span>, <a href="../online/executor/InputState.html" class="extype" name="com.twitter.summingbird.online.executor.InputState">InputState</a>[<span class="extype" name="backtype.storm.tuple.Tuple">Tuple</span>], <span class="extype" name="java.util.List">List</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>], <span class="extype" name="backtype.storm.task.TopologyContext">TopologyContext</span>]</span>)</span><span class="result"> extends <span class="extype" name="backtype.storm.topology.IRichBolt">IRichBolt</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">BaseBolt</span><span class="tparams">[<span name="I">I</span>, <span name="O">O</span>]</span><span class="params">(<span name="jobID">jobID: <a href="../option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>, <span name="metrics">metrics: () ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<a href="StormMetric.html" class="extype" name="com.twitter.summingbird.storm.StormMetric">StormMetric</a>[_]]</span>, <span name="anchorTuples">anchorTuples: <a href="option/AnchorTuples.html" class="extype" name="com.twitter.summingbird.storm.option.AnchorTuples">AnchorTuples</a></span>, <span name="hasDependants">hasDependants: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="outputFields">outputFields: <span class="extype" name="backtype.storm.tuple.Fields">Fields</span></span>, <span name="ackOnEntry">ackOnEntry: <a href="option/AckOnEntry.html" class="extype" name="com.twitter.summingbird.storm.option.AckOnEntry">AckOnEntry</a></span>, <span name="maxExecutePerSec">maxExecutePerSec: <a href="option/MaxExecutePerSecond.html" class="extype" name="com.twitter.summingbird.storm.option.MaxExecutePerSecond">MaxExecutePerSecond</a></span>, <span name="executor">executor: <a href="../online/executor/OperationContainer.html" class="extype" name="com.twitter.summingbird.online.executor.OperationContainer">OperationContainer</a>[<span class="extype" name="com.twitter.summingbird.storm.BaseBolt.I">I</span>, <span class="extype" name="com.twitter.summingbird.storm.BaseBolt.O">O</span>, <a href="../online/executor/InputState.html" class="extype" name="com.twitter.summingbird.online.executor.InputState">InputState</a>[<span class="extype" name="backtype.storm.tuple.Tuple">Tuple</span>], <span class="extype" name="java.util.List">List</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>], <span class="extype" name="backtype.storm.task.TopologyContext">TopologyContext</span>]</span>)</span><span class="result"> extends <span class="extype" name="backtype.storm.topology.IRichBolt">IRichBolt</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/BaseBolt.scala" target="_blank">BaseBolt.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/BaseBolt.scala" target="_blank">BaseBolt.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="backtype.storm.topology.IRichBolt">IRichBolt</span>, <span class="extype" name="backtype.storm.topology.IComponent">IComponent</span>, <span class="extype" name="backtype.storm.task.IBolt">IBolt</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -80,7 +80,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="com.twitter.summingbird.storm.BaseBolt#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(jobID:com.twitter.summingbird.option.JobId,metrics:()=&gt;TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]],anchorTuples:com.twitter.summingbird.storm.option.AnchorTuples,hasDependants:Boolean,outputFields:backtype.storm.tuple.Fields,ackOnEntry:com.twitter.summingbird.storm.option.AckOnEntry,executor:com.twitter.summingbird.online.executor.OperationContainer[I,O,com.twitter.summingbird.online.executor.InputState[backtype.storm.tuple.Tuple],java.util.List[AnyRef],backtype.storm.task.TopologyContext]):com.twitter.summingbird.storm.BaseBolt[I,O]"></a>
+      <a id="&lt;init&gt;(jobID:com.twitter.summingbird.option.JobId,metrics:()=&gt;TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]],anchorTuples:com.twitter.summingbird.storm.option.AnchorTuples,hasDependants:Boolean,outputFields:backtype.storm.tuple.Fields,ackOnEntry:com.twitter.summingbird.storm.option.AckOnEntry,maxExecutePerSec:com.twitter.summingbird.storm.option.MaxExecutePerSecond,executor:com.twitter.summingbird.online.executor.OperationContainer[I,O,com.twitter.summingbird.online.executor.InputState[backtype.storm.tuple.Tuple],java.util.List[AnyRef],backtype.storm.task.TopologyContext]):com.twitter.summingbird.storm.BaseBolt[I,O]"></a>
       <a id="&lt;init&gt;:BaseBolt[I,O]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -88,7 +88,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">BaseBolt</span><span class="params">(<span name="jobID">jobID: <a href="../option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>, <span name="metrics">metrics: () ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<a href="StormMetric.html" class="extype" name="com.twitter.summingbird.storm.StormMetric">StormMetric</a>[_]]</span>, <span name="anchorTuples">anchorTuples: <a href="option/AnchorTuples.html" class="extype" name="com.twitter.summingbird.storm.option.AnchorTuples">AnchorTuples</a></span>, <span name="hasDependants">hasDependants: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="outputFields">outputFields: <span class="extype" name="backtype.storm.tuple.Fields">Fields</span></span>, <span name="ackOnEntry">ackOnEntry: <a href="option/AckOnEntry.html" class="extype" name="com.twitter.summingbird.storm.option.AckOnEntry">AckOnEntry</a></span>, <span name="executor">executor: <a href="../online/executor/OperationContainer.html" class="extype" name="com.twitter.summingbird.online.executor.OperationContainer">OperationContainer</a>[<span class="extype" name="com.twitter.summingbird.storm.BaseBolt.I">I</span>, <span class="extype" name="com.twitter.summingbird.storm.BaseBolt.O">O</span>, <a href="../online/executor/InputState.html" class="extype" name="com.twitter.summingbird.online.executor.InputState">InputState</a>[<span class="extype" name="backtype.storm.tuple.Tuple">Tuple</span>], <span class="extype" name="java.util.List">List</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>], <span class="extype" name="backtype.storm.task.TopologyContext">TopologyContext</span>]</span>)</span>
+        <span class="name">BaseBolt</span><span class="params">(<span name="jobID">jobID: <a href="../option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>, <span name="metrics">metrics: () ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<a href="StormMetric.html" class="extype" name="com.twitter.summingbird.storm.StormMetric">StormMetric</a>[_]]</span>, <span name="anchorTuples">anchorTuples: <a href="option/AnchorTuples.html" class="extype" name="com.twitter.summingbird.storm.option.AnchorTuples">AnchorTuples</a></span>, <span name="hasDependants">hasDependants: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="outputFields">outputFields: <span class="extype" name="backtype.storm.tuple.Fields">Fields</span></span>, <span name="ackOnEntry">ackOnEntry: <a href="option/AckOnEntry.html" class="extype" name="com.twitter.summingbird.storm.option.AckOnEntry">AckOnEntry</a></span>, <span name="maxExecutePerSec">maxExecutePerSec: <a href="option/MaxExecutePerSecond.html" class="extype" name="com.twitter.summingbird.storm.option.MaxExecutePerSecond">MaxExecutePerSecond</a></span>, <span name="executor">executor: <a href="../online/executor/OperationContainer.html" class="extype" name="com.twitter.summingbird.online.executor.OperationContainer">OperationContainer</a>[<span class="extype" name="com.twitter.summingbird.storm.BaseBolt.I">I</span>, <span class="extype" name="com.twitter.summingbird.storm.BaseBolt.O">O</span>, <a href="../online/executor/InputState.html" class="extype" name="com.twitter.summingbird.online.executor.InputState">InputState</a>[<span class="extype" name="backtype.storm.tuple.Tuple">Tuple</span>], <span class="extype" name="java.util.List">List</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>], <span class="extype" name="backtype.storm.task.TopologyContext">TopologyContext</span>]</span>)</span>
       </span>
       </h4>
       
@@ -238,15 +238,15 @@
               
         </dd></dl></div>
     </li><li name="com.twitter.summingbird.storm.BaseBolt#countersForBolt" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="countersForBolt:List[(String,String)]"></a>
-      <a id="countersForBolt:List[(String,String)]"></a>
+      <a id="countersForBolt:Seq[(com.twitter.summingbird.Group,com.twitter.summingbird.Name)]"></a>
+      <a id="countersForBolt:Seq[(Group,Name)]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">val</span>
+        <span class="kind">lazy val</span>
       </span>
       <span class="symbol">
-        <span class="name">countersForBolt</span><span class="result">: <span class="extype" name="scala.List">List</span>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+        <span class="name">countersForBolt</span><span class="result">: <span class="extype" name="scala.Seq">Seq</span>[(<a href="../Group.html" class="extype" name="com.twitter.summingbird.Group">Group</a>, <a href="../Name.html" class="extype" name="com.twitter.summingbird.Name">Name</a>)]</span>
       </span>
       </h4>
       
@@ -412,6 +412,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="com.twitter.summingbird.storm.BaseBolt#maxExecutePerSec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="maxExecutePerSec:com.twitter.summingbird.storm.option.MaxExecutePerSecond"></a>
+      <a id="maxExecutePerSec:MaxExecutePerSecond"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">maxExecutePerSec</span><span class="result">: <a href="option/MaxExecutePerSecond.html" class="extype" name="com.twitter.summingbird.storm.option.MaxExecutePerSecond">MaxExecutePerSecond</a></span>
+      </span>
+      </h4>
+      
     </li><li name="com.twitter.summingbird.storm.BaseBolt#metrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="metrics:()=&gt;TraversableOnce[com.twitter.summingbird.storm.StormMetric[_]]"></a>
       <a id="metrics:()⇒TraversableOnce[StormMetric[_]]"></a>

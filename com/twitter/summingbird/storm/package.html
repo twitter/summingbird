@@ -40,7 +40,7 @@
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Package containing the Summingbird Storm platform.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/package.scala" target="_blank">package.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/package.scala" target="_blank">package.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -91,7 +91,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="BaseBolt.html"><span class="name">BaseBolt</span></a><span class="tparams">[<span name="I">I</span>, <span name="O">O</span>]</span><span class="params">(<span name="jobID">jobID: <a href="../option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>, <span name="metrics">metrics: () ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<a href="StormMetric.html" class="extype" name="com.twitter.summingbird.storm.StormMetric">StormMetric</a>[_]]</span>, <span name="anchorTuples">anchorTuples: <a href="option/AnchorTuples.html" class="extype" name="com.twitter.summingbird.storm.option.AnchorTuples">AnchorTuples</a></span>, <span name="hasDependants">hasDependants: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="outputFields">outputFields: <span class="extype" name="backtype.storm.tuple.Fields">Fields</span></span>, <span name="ackOnEntry">ackOnEntry: <a href="option/AckOnEntry.html" class="extype" name="com.twitter.summingbird.storm.option.AckOnEntry">AckOnEntry</a></span>, <span name="executor">executor: <a href="../online/executor/OperationContainer.html" class="extype" name="com.twitter.summingbird.online.executor.OperationContainer">OperationContainer</a>[<span class="extype" name="com.twitter.summingbird.storm.BaseBolt.I">I</span>, <span class="extype" name="com.twitter.summingbird.storm.BaseBolt.O">O</span>, <a href="../online/executor/InputState.html" class="extype" name="com.twitter.summingbird.online.executor.InputState">InputState</a>[<span class="extype" name="backtype.storm.tuple.Tuple">Tuple</span>], <span class="extype" name="java.util.List">List</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>], <span class="extype" name="backtype.storm.task.TopologyContext">TopologyContext</span>]</span>)</span><span class="result"> extends <span class="extype" name="backtype.storm.topology.IRichBolt">IRichBolt</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="BaseBolt.html"><span class="name">BaseBolt</span></a><span class="tparams">[<span name="I">I</span>, <span name="O">O</span>]</span><span class="params">(<span name="jobID">jobID: <a href="../option/JobId.html" class="extype" name="com.twitter.summingbird.option.JobId">JobId</a></span>, <span name="metrics">metrics: () ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<a href="StormMetric.html" class="extype" name="com.twitter.summingbird.storm.StormMetric">StormMetric</a>[_]]</span>, <span name="anchorTuples">anchorTuples: <a href="option/AnchorTuples.html" class="extype" name="com.twitter.summingbird.storm.option.AnchorTuples">AnchorTuples</a></span>, <span name="hasDependants">hasDependants: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="outputFields">outputFields: <span class="extype" name="backtype.storm.tuple.Fields">Fields</span></span>, <span name="ackOnEntry">ackOnEntry: <a href="option/AckOnEntry.html" class="extype" name="com.twitter.summingbird.storm.option.AckOnEntry">AckOnEntry</a></span>, <span name="maxExecutePerSec">maxExecutePerSec: <a href="option/MaxExecutePerSecond.html" class="extype" name="com.twitter.summingbird.storm.option.MaxExecutePerSecond">MaxExecutePerSecond</a></span>, <span name="executor">executor: <a href="../online/executor/OperationContainer.html" class="extype" name="com.twitter.summingbird.online.executor.OperationContainer">OperationContainer</a>[<span class="extype" name="com.twitter.summingbird.storm.BaseBolt.I">I</span>, <span class="extype" name="com.twitter.summingbird.storm.BaseBolt.O">O</span>, <a href="../online/executor/InputState.html" class="extype" name="com.twitter.summingbird.online.executor.InputState">InputState</a>[<span class="extype" name="backtype.storm.tuple.Tuple">Tuple</span>], <span class="extype" name="java.util.List">List</span>[<span class="extype" name="scala.AnyRef">AnyRef</span>], <span class="extype" name="backtype.storm.task.TopologyContext">TopologyContext</span>]</span>)</span><span class="result"> extends <span class="extype" name="backtype.storm.topology.IRichBolt">IRichBolt</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       <p class="comment cmt"></p>
@@ -147,19 +147,6 @@
       </span>
       </h4>
       <p class="comment cmt"></p>
-    </li><li name="com.twitter.summingbird.storm.MergeableStoreSupplier" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="MergeableStoreSupplier[K,V]extendsStormStore[K,V]withProductwithSerializable"></a>
-      <a id="MergeableStoreSupplier[K,V]:MergeableStoreSupplier[K,V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="MergeableStoreSupplier.html"><span class="name">MergeableStoreSupplier</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <a href="StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a>[<span class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.MergeableStoreSupplier.V">V</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4>
-      
     </li><li name="com.twitter.summingbird.storm.PlannedTopology" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PlannedTopologyextendsProductwithSerializable"></a>
       <a id="PlannedTopology:PlannedTopology"></a>
@@ -221,20 +208,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SpoutSource.html"><span class="name">SpoutSource</span></a><span class="tparams">[<span name="T">+T</span>]</span><span class="params">(<span name="spout">spout: <span class="extype" name="com.twitter.tormenta.spout.Spout">Spout</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, <span class="extype" name="com.twitter.summingbird.storm.SpoutSource.T">T</span>)]</span>, <span name="parallelism">parallelism: <span class="extype" name="scala.Option">Option</span>[<a href="option/SpoutParallelism.html" class="extype" name="com.twitter.summingbird.storm.option.SpoutParallelism">SpoutParallelism</a>]</span>)</span><span class="result"> extends <a href="StormSource.html" class="extype" name="com.twitter.summingbird.storm.StormSource">StormSource</a>[<span class="extype" name="com.twitter.summingbird.storm.SpoutSource.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
-      </span>
-      </h4>
-      
-    </li><li name="com.twitter.summingbird.storm.StoreFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="StoreFactory[-K,+V]=()=&gt;com.twitter.storehaus.ReadableStore[K,V]"></a>
-      <a id="StoreFactory[-K,+V]:()⇒ReadableStore[K,V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">type</span>
-      </span>
-      <span class="symbol">
-        <span class="name">StoreFactory</span><span class="tparams">[<span name="K">-K</span>, <span name="V">+V</span>]</span><span class="result"> = () ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.StoreFactory.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreFactory.V">V</span>]</span>
+        <a href="SpoutSource.html"><span class="name">SpoutSource</span></a><span class="tparams">[<span name="T">+T</span>]</span><span class="params">(<span name="spout">spout: <span class="extype" name="com.twitter.tormenta.spout.Spout">Spout</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, <span class="extype" name="com.twitter.summingbird.storm.SpoutSource.T">T</span>)]</span>, <span name="parallelism">parallelism: <span class="extype" name="scala.Option">Option</span>[<a href="../online/option/SourceParallelism.html" class="extype" name="com.twitter.summingbird.online.option.SourceParallelism">SourceParallelism</a>]</span>)</span><span class="result"> extends <a href="StormSource.html" class="extype" name="com.twitter.summingbird.storm.StormSource">StormSource</a>[<span class="extype" name="com.twitter.summingbird.storm.SpoutSource.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -248,19 +222,6 @@
       </span>
       <span class="symbol">
         <a href="StoreStatReporter.html"><span class="name">StoreStatReporter</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="com.twitter.storehaus.StoreProxy">StoreProxy</span>[<span class="extype" name="com.twitter.summingbird.storm.StoreStatReporter.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreStatReporter.V">V</span>] with <span class="extype" name="com.twitter.storehaus.algebra.reporting.StoreReporter">StoreReporter</span>[<span class="extype" name="com.twitter.storehaus.Store">Store</span>[<span class="extype" name="com.twitter.summingbird.storm.StoreStatReporter.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreStatReporter.V">V</span>], <span class="extype" name="com.twitter.summingbird.storm.StoreStatReporter.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreStatReporter.V">V</span>]</span>
-      </span>
-      </h4>
-      
-    </li><li name="com.twitter.summingbird.storm.StoreWrapper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="StoreWrapper[K,V]extendsStormService[K,V]withProductwithSerializable"></a>
-      <a id="StoreWrapper[K,V]:StoreWrapper[K,V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">case class</span>
-      </span>
-      <span class="symbol">
-        <a href="StoreWrapper.html"><span class="name">StoreWrapper</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="store">store: () ⇒ <span class="extype" name="com.twitter.storehaus.ReadableStore">ReadableStore</span>[<span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.V">V</span>]</span>)</span><span class="result"> extends <a href="StormService.html" class="extype" name="com.twitter.summingbird.storm.StormService">StormService</a>[<span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StoreWrapper.V">V</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -278,7 +239,7 @@
       </h4>
       
     </li><li name="com.twitter.summingbird.storm.StormBuffer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="StormBuffer[K,V]extendsStormSink[(K,V)]withStormService[K,V]"></a>
+      <a id="StormBuffer[K,V]extendsStormSink[(K,V)]withOnlineServiceFactory[K,V]"></a>
       <a id="StormBuffer[K,V]:StormBuffer[K,V]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -286,7 +247,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="StormBuffer.html"><span class="name">StormBuffer</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <a href="StormSink.html" class="extype" name="com.twitter.summingbird.storm.StormSink">StormSink</a>[(<span class="extype" name="com.twitter.summingbird.storm.StormBuffer.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StormBuffer.V">V</span>)] with <a href="StormService.html" class="extype" name="com.twitter.summingbird.storm.StormService">StormService</a>[<span class="extype" name="com.twitter.summingbird.storm.StormBuffer.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StormBuffer.V">V</span>]</span>
+        <a href="StormBuffer.html"><span class="name">StormBuffer</span></a><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <a href="StormSink.html" class="extype" name="com.twitter.summingbird.storm.StormSink">StormSink</a>[(<span class="extype" name="com.twitter.summingbird.storm.StormBuffer.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StormBuffer.V">V</span>)] with <a href="../online/OnlineServiceFactory.html" class="extype" name="com.twitter.summingbird.online.OnlineServiceFactory">OnlineServiceFactory</a>[<span class="extype" name="com.twitter.summingbird.storm.StormBuffer.K">K</span>, <span class="extype" name="com.twitter.summingbird.storm.StormBuffer.V">V</span>]</span>
       </span>
       </h4>
       <p class="comment cmt">Used to do leftJoins of streams against other streams
@@ -332,21 +293,8 @@
       <p class="comment cmt">Necessary info for registering a metric in storm
 &quot;interval&quot; is period over which the metric will be aggregated
 </p>
-    </li><li name="com.twitter.summingbird.storm.StormService" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="StormService[-K,+V]extendsAnyRef"></a>
-      <a id="StormService[-K,+V]:StormService[K,V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="StormService.html"><span class="name">StormService</span></a><span class="tparams">[<span name="K">-K</span>, <span name="V">+V</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
-      </span>
-      </h4>
-      
     </li><li name="com.twitter.summingbird.storm.StormSink" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="StormSink[-T]extendsAnyRef"></a>
+      <a id="StormSink[-T]extendsSerializable"></a>
       <a id="StormSink[-T]:StormSink[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -354,7 +302,7 @@
         <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <a href="StormSink.html"><span class="name">StormSink</span></a><span class="tparams">[<span name="T">-T</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+        <a href="StormSink.html"><span class="name">StormSink</span></a><span class="tparams">[<span name="T">-T</span>]</span><span class="result"> extends <span class="extype" name="java.io.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -368,19 +316,6 @@
       </span>
       <span class="symbol">
         <a href="StormSource.html"><span class="name">StormSource</span></a><span class="tparams">[<span name="T">+T</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
-      </span>
-      </h4>
-      
-    </li><li name="com.twitter.summingbird.storm.StormStore" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="StormStore[-K,V]extendsAnyRef"></a>
-      <a id="StormStore[-K,V]:StormStore[K,V]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">sealed </span>
-        <span class="kind">trait</span>
-      </span>
-      <span class="symbol">
-        <a href="StormStore.html"><span class="name">StormStore</span></a><span class="tparams">[<span name="K">-K</span>, <span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4>
       
@@ -452,10 +387,10 @@
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="Constants$.html"><span class="name">Constants</span></a>
+        <a href="Constants$.html"><span class="name">Constants</span></a><span class="result"> extends <span class="extype" name="com.twitter.summingbird.online.OnlineDefaultConstants">OnlineDefaultConstants</span></span>
       </span>
       </h4>
-      
+      <p class="comment cmt">These are the storm specific constants.</p>
     </li><li name="com.twitter.summingbird.storm.Executor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Executor"></a>
       <a id="Executor:Executor"></a>
@@ -481,20 +416,21 @@
         <a href="FlatMapBoltProvider$.html"><span class="name">FlatMapBoltProvider</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
-      
-    </li><li name="com.twitter.summingbird.storm.MergeableStoreSupplier" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="MergeableStoreSupplier"></a>
-      <a id="MergeableStoreSupplier:MergeableStoreSupplier"></a>
+      <p class="comment cmt">These are helper functions for building a bolt from a Node[Storm] element.</p>
+    </li><li name="com.twitter.summingbird.storm.Producer2FlatMapOperation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Producer2FlatMapOperation"></a>
+      <a id="Producer2FlatMapOperation:Producer2FlatMapOperation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="MergeableStoreSupplier$.html"><span class="name">MergeableStoreSupplier</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="Producer2FlatMapOperation$.html"><span class="name">Producer2FlatMapOperation</span></a>
       </span>
       </h4>
-      
+      <p class="comment cmt">A utility for converting a series of producers into a single FlatMapOperation
+This simply folds through a list of producers converting them into an operation from T =&gt; Future[TraversableOnce[U]].</p>
     </li><li name="com.twitter.summingbird.storm.Storm" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Storm"></a>
       <a id="Storm:Storm"></a>

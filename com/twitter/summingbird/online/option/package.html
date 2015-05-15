@@ -71,6 +71,20 @@
       </span>
       </h4>
       <p class="comment cmt">AsyncPoolSize controls the size of the fixed thread pool used to back an asynchronous cache.</p>
+    </li><li name="com.twitter.summingbird.online.option.FlatMapParallelism" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FlatMapParallelismextendsProductwithSerializable"></a>
+      <a id="FlatMapParallelism:FlatMapParallelism"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatMapParallelism.html"><span class="name">FlatMapParallelism</span></a><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">How many instances/tasks of this flatmap task should be spawned in the environment
+</p>
     </li><li name="com.twitter.summingbird.online.option.FlushFrequency" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="FlushFrequencyextendsProductwithSerializable"></a>
       <a id="FlushFrequency:FlushFrequency"></a>
@@ -179,6 +193,34 @@ futures.</p>
       </span>
       </h4>
       <p class="comment cmt">SoftMemoryFlushPercent is the percentage of memory used in the JVM at which a flush will be triggered of the cache.</p>
+    </li><li name="com.twitter.summingbird.online.option.SourceParallelism" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SourceParallelismextendsProductwithSerializable"></a>
+      <a id="SourceParallelism:SourceParallelism"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SourceParallelism.html"><span class="name">SourceParallelism</span></a><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Parallelism in the number of instances/tasks to attempt to achieve for a given source
+</p>
+    </li><li name="com.twitter.summingbird.online.option.SummerBatchMultiplier" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SummerBatchMultiplierextendsProductwithSerializable"></a>
+      <a id="SummerBatchMultiplier:SummerBatchMultiplier"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SummerBatchMultiplier.html"><span class="name">SummerBatchMultiplier</span></a><span class="params">(<span name="get">get: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This value is mulitplied by the summer parallelism to set the true value used to hash and shard the
+key/value pairs.</p>
     </li><li name="com.twitter.summingbird.online.option.SummerBuilder" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="SummerBuilderextendsSerializable"></a>
       <a id="SummerBuilder:SummerBuilder"></a>
@@ -191,7 +233,7 @@ futures.</p>
         <a href="SummerBuilder.html"><span class="name">SummerBuilder</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
-      
+      <p class="comment cmt">A SummerBuilder is a generic trait that should be implemented to build a totally custom aggregator.</p>
     </li><li name="com.twitter.summingbird.online.option.SummerConstructor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SummerConstructorextendsProductwithSerializable"></a>
       <a id="SummerConstructor:SummerConstructor"></a>
@@ -204,7 +246,21 @@ futures.</p>
         <a href="SummerConstructor.html"><span class="name">SummerConstructor</span></a><span class="params">(<span name="get">get: <a href="SummerBuilder.html" class="extype" name="com.twitter.summingbird.online.option.SummerBuilder">SummerBuilder</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
-      
+      <p class="comment cmt">The SummerConstructor option, set this instead of CacheSize, AsyncPoolSize, etc.</p>
+    </li><li name="com.twitter.summingbird.online.option.SummerParallelism" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SummerParallelismextendsProductwithSerializable"></a>
+      <a id="SummerParallelism:SummerParallelism"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SummerParallelism.html"><span class="name">SummerParallelism</span></a><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">How many instances/tasks of this summer task should be spawned in the environment
+</p>
     </li><li name="com.twitter.summingbird.online.option.UseAsyncCache" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="UseAsyncCacheextendsProductwithSerializable"></a>
       <a id="UseAsyncCache:UseAsyncCache"></a>

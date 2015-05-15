@@ -2,17 +2,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>SpoutParallelism - com.twitter.summingbird.storm.option.SpoutParallelism</title>
-          <meta name="description" content="SpoutParallelism - com.twitter.summingbird.storm.option.SpoutParallelism" />
-          <meta name="keywords" content="SpoutParallelism com.twitter.summingbird.storm.option.SpoutParallelism" />
+          <title>Unary - com.twitter.summingbird.graph.Unary</title>
+          <meta name="description" content="Unary - com.twitter.summingbird.graph.Unary" />
+          <meta name="keywords" content="Unary com.twitter.summingbird.graph.Unary" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
-      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
-      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
       <script type="text/javascript">
          if(top === self) {
-            var url = '../../../../../index.html';
-            var hash = 'com.twitter.summingbird.storm.option.SpoutParallelism';
+            var url = '../../../../index.html';
+            var hash = 'com.twitter.summingbird.graph.Unary';
             var anchor = window.location.hash;
             var anchor_opt = '';
             if (anchor.length >= 1)
@@ -24,9 +24,9 @@
         </head>
         <body class="type">
       <div id="definition">
-        <img src="../../../../../lib/class_big.png" />
-        <p id="owner"><a href="../../../../package.html" class="extype" name="com">com</a>.<a href="../../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird.storm">storm</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.storm.option">option</a></p>
-        <h1>SpoutParallelism</h1>
+        <img src="../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="com">com</a>.<a href="../../package.html" class="extype" name="com.twitter">twitter</a>.<a href="../package.html" class="extype" name="com.twitter.summingbird">summingbird</a>.<a href="package.html" class="extype" name="com.twitter.summingbird.graph">graph</a></p>
+        <h1>Unary</h1>
       </div>
 
       <h4 id="signature" class="signature">
@@ -35,14 +35,13 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">SpoutParallelism</span><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">Unary</span><span class="tparams">[<span name="T1">T1</span>, <span name="T2">T2</span>, <span name="N">N<span class="tparams">[<span name="_">_</span>]</span></span>]</span><span class="params">(<span name="arg">arg: <a href="Id.html" class="extype" name="com.twitter.summingbird.graph.Id">Id</a>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T1">T1</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T1">T1</span>]) ⇒ <span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T2">T2</span>]</span>)</span><span class="result"> extends <a href="Expr.html" class="extype" name="com.twitter.summingbird.graph.Expr">Expr</a>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T2">T2</span>, <span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Options used by the flatMapping stage of a storm topology.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/option/FlatMapOptions.scala" target="_blank">FlatMapOptions.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-core/src/main/scala/com/twitter/summingbird/graph/Expr.scala" target="_blank">Expr.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.Product">Product</span>, <span class="extype" name="scala.Equals">Equals</span>, <a href="Expr.html" class="extype" name="com.twitter.summingbird.graph.Expr">Expr</a>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T2">T2</span>, <span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -60,7 +59,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="com.twitter.summingbird.storm.option.SpoutParallelism"><span>SpoutParallelism</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="com.twitter.summingbird.graph.Unary"><span>Unary</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="com.twitter.summingbird.graph.Expr"><span>Expr</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -80,16 +79,16 @@
         <div id="allMembers">
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
-              <ol><li name="com.twitter.summingbird.storm.option.SpoutParallelism#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(parHint:Int):com.twitter.summingbird.storm.option.SpoutParallelism"></a>
-      <a id="&lt;init&gt;:SpoutParallelism"></a>
+              <ol><li name="com.twitter.summingbird.graph.Unary#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(arg:com.twitter.summingbird.graph.Id[T1],fn:N[T1]=&gt;N[T2]):com.twitter.summingbird.graph.Unary[T1,T2,N]"></a>
+      <a id="&lt;init&gt;:Unary[T1,T2,N]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SpoutParallelism</span><span class="params">(<span name="parHint">parHint: <span class="extype" name="scala.Int">Int</span></span>)</span>
+        <span class="name">Unary</span><span class="params">(<span name="arg">arg: <a href="Id.html" class="extype" name="com.twitter.summingbird.graph.Id">Id</a>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T1">T1</span>]</span>, <span name="fn">fn: (<span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T1">T1</span>]) ⇒ <span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T2">T2</span>]</span>)</span>
       </span>
       </h4>
       
@@ -167,6 +166,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.Unary#arg" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="arg:com.twitter.summingbird.graph.Id[T1]"></a>
+      <a id="arg:Id[T1]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">arg</span><span class="result">: <a href="Id.html" class="extype" name="com.twitter.summingbird.graph.Id">Id</a>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T1">T1</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>
@@ -192,7 +204,7 @@
         <span class="name">clone</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.AnyRef">AnyRef</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">(<span>
       
       <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
@@ -212,6 +224,19 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.Expr#evaluate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="evaluate(idToExp:com.twitter.summingbird.graph.HMap[com.twitter.summingbird.graph.Id,[t]com.twitter.summingbird.graph.Expr[t,N]]):N[T]"></a>
+      <a id="evaluate(HMap[Id,[t]Expr[t,N]]):N[T2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">evaluate</span><span class="params">(<span name="idToExp">idToExp: <a href="HMap.html" class="extype" name="com.twitter.summingbird.graph.HMap">HMap</a>[<a href="Id.html" class="extype" name="com.twitter.summingbird.graph.Id">Id</a>, [t]<a href="Expr.html" class="extype" name="com.twitter.summingbird.graph.Expr">Expr</a>[<span class="extype" name="com.twitter.summingbird.graph.Expr.&lt;refinement&gt;.E.t">t</span>, <span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>]]</span>)</span><span class="result">: <span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T2">T2</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="Expr.html" class="extype" name="com.twitter.summingbird.graph.Expr">Expr</a></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <a id="finalize():Unit"></a>
@@ -224,13 +249,26 @@
         <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
                 <span class="name">@throws</span><span class="args">(<span>
       
       <span class="symbol">classOf[java.lang.Throwable]</span>
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.twitter.summingbird.graph.Unary#fn" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fn:N[T1]=&gt;N[T2]"></a>
+      <a id="fn:(N[T1])⇒N[T2]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fn</span><span class="result">: (<span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T1">T1</span>]) ⇒ <span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T2">T2</span>]</span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -296,19 +334,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="com.twitter.summingbird.storm.option.SpoutParallelism#parHint" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="parHint:Int"></a>
-      <a id="parHint:Int"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">parHint</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
-      </span>
-      </h4>
-      
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -396,6 +421,8 @@
               <h3>Inherited from <span class="extype" name="scala.Product">Product</span></h3>
             </div><div class="parent" name="scala.Equals">
               <h3>Inherited from <span class="extype" name="scala.Equals">Equals</span></h3>
+            </div><div class="parent" name="com.twitter.summingbird.graph.Expr">
+              <h3>Inherited from <a href="Expr.html" class="extype" name="com.twitter.summingbird.graph.Expr">Expr</a>[<span class="extype" name="com.twitter.summingbird.graph.Unary.T2">T2</span>, <span class="extype" name="com.twitter.summingbird.graph.Unary.N">N</span>]</h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
             </div><div class="parent" name="scala.Any">
@@ -416,6 +443,6 @@
       <div id="tooltip"></div>
 
       <div id="footer">  </div>
-      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../../lib/template.js"></script>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../lib/template.js"></script>
     </body>
       </html>

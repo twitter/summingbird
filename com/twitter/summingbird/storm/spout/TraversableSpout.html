@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/spout/TraversableSpout.scala" target="_blank">TraversableSpout.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-storm/src/main/scala/com/twitter/summingbird/storm/spout/TraversableSpout.scala" target="_blank">TraversableSpout.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="com.twitter.tormenta.spout.Spout">Spout</span>[<span class="extype" name="com.twitter.summingbird.storm.spout.TraversableSpout.T">T</span>], <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -386,16 +386,16 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="com.twitter.tormenta.spout.Spout#registerMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="registerMetrics(metrics:()=&gt;TraversableOnce[com.twitter.tormenta.spout.Metric[_]]):com.twitter.tormenta.spout.Spout[T]"></a>
-      <a id="registerMetrics(()⇒TraversableOnce[Metric[_]]):Spout[T]"></a>
+    </li><li name="com.twitter.tormenta.spout.Spout#openHook" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="openHook(fn:=&gt;backtype.storm.task.TopologyContext=&gt;Unit):com.twitter.tormenta.spout.Spout[T]"></a>
+      <a id="openHook(⇒(TopologyContext)⇒Unit):Spout[T]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">registerMetrics</span><span class="params">(<span name="metrics">metrics: () ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.tormenta.spout.Metric">Metric</span>[_]]</span>)</span><span class="result">: <span class="extype" name="com.twitter.tormenta.spout.Spout">Spout</span>[<span class="extype" name="com.twitter.summingbird.storm.spout.TraversableSpout.T">T</span>]</span>
+        <span class="name">openHook</span><span class="params">(<span name="fn">fn: ⇒ (<span class="extype" name="backtype.storm.task.TopologyContext">TopologyContext</span>) ⇒ <span class="extype" name="scala.Unit">Unit</span></span>)</span><span class="result">: <span class="extype" name="com.twitter.tormenta.spout.Spout">Spout</span>[<span class="extype" name="com.twitter.summingbird.storm.spout.TraversableSpout.T">T</span>]</span>
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Spout</dd></dl></div>

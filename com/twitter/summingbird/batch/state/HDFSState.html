@@ -35,13 +35,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">HDFSState</span><span class="result"> extends <a href="../WaitingState.html" class="extype" name="com.twitter.summingbird.batch.WaitingState">WaitingState</a>[<span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]]</span>
+        <span class="name">HDFSState</span><span class="result"> extends <a href="CheckpointState.html" class="extype" name="com.twitter.summingbird.batch.state.CheckpointState">CheckpointState</a>[<span class="extype" name="scala.Iterable">Iterable</span>[<a href="../BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>]]</span>
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-batch-hadoop/src/main/scala/com/twitter/summingbird/batch/state/HDFSState.scala" target="_blank">HDFSState.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-batch-hadoop/src/main/scala/com/twitter/summingbird/batch/state/HDFSState.scala" target="_blank">HDFSState.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../WaitingState.html" class="extype" name="com.twitter.summingbird.batch.WaitingState">WaitingState</a>[<span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="CheckpointState.html" class="extype" name="com.twitter.summingbird.batch.state.CheckpointState">CheckpointState</a>[<span class="extype" name="scala.Iterable">Iterable</span>[<a href="../BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>]], <a href="../WaitingState.html" class="extype" name="com.twitter.summingbird.batch.WaitingState">WaitingState</a>[<span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]], <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -59,7 +59,7 @@
                 <span class="filtertype">Inherited<br />
                 </span>
                 <ol id="linearization">
-                  <li class="in" name="com.twitter.summingbird.batch.state.HDFSState"><span>HDFSState</span></li><li class="in" name="com.twitter.summingbird.batch.WaitingState"><span>WaitingState</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                  <li class="in" name="com.twitter.summingbird.batch.state.HDFSState"><span>HDFSState</span></li><li class="in" name="com.twitter.summingbird.batch.state.CheckpointState"><span>CheckpointState</span></li><li class="in" name="com.twitter.summingbird.batch.WaitingState"><span>WaitingState</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                 </ol>
               </div><div id="ancestors">
             <span class="filtertype"></span>
@@ -179,7 +179,20 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="com.twitter.summingbird.batch.state.HDFSState#begin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.twitter.summingbird.batch.state.HDFSState#batcher" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="batcher:com.twitter.summingbird.batch.Batcher"></a>
+      <a id="batcher:Batcher"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">batcher</span><span class="result">: <a href="../Batcher.html" class="extype" name="com.twitter.summingbird.batch.Batcher">Batcher</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.batch.state.CheckpointState#begin" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="begin:com.twitter.summingbird.batch.PrepareState[com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp]]"></a>
       <a id="begin:PrepareState[Interval[Timestamp]]"></a>
       <h4 class="signature">
@@ -191,7 +204,20 @@
         <span class="name">begin</span><span class="result">: <a href="../PrepareState.html" class="extype" name="com.twitter.summingbird.batch.PrepareState">PrepareState</a>[<span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]]</span>
       </span>
       </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.batch.state.HDFSState">HDFSState</a> → <a href="../WaitingState.html" class="extype" name="com.twitter.summingbird.batch.WaitingState">WaitingState</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="CheckpointState.html" class="extype" name="com.twitter.summingbird.batch.state.CheckpointState">CheckpointState</a> → <a href="../WaitingState.html" class="extype" name="com.twitter.summingbird.batch.WaitingState">WaitingState</a></dd></dl></div>
+    </li><li name="com.twitter.summingbird.batch.state.HDFSState#checkpointStore" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="checkpointStore:com.twitter.summingbird.batch.state.HDFSCheckpointStore"></a>
+      <a id="checkpointStore:HDFSCheckpointStore"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">checkpointStore</span><span class="result">: <a href="HDFSCheckpointStore.html" class="extype" name="com.twitter.summingbird.batch.state.HDFSCheckpointStore">HDFSCheckpointStore</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.twitter.summingbird.batch.state.HDFSState">HDFSState</a> → <a href="CheckpointState.html" class="extype" name="com.twitter.summingbird.batch.state.CheckpointState">CheckpointState</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -211,6 +237,19 @@
     </span>)</span>
               
         </dd></dl></div>
+    </li><li name="com.twitter.summingbird.batch.state.HDFSState#config" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="config:com.twitter.summingbird.batch.state.HDFSState.Config"></a>
+      <a id="config:Config"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">config</span><span class="result">: <a href="HDFSState$$Config.html" class="extype" name="com.twitter.summingbird.batch.state.HDFSState.Config">Config</a></span>
+      </span>
+      </h4>
+      
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -360,19 +399,6 @@
       </span>
       </h4>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="com.twitter.summingbird.batch.state.HDFSState#versionedStore" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="versionedStore:com.twitter.summingbird.batch.state.FileVersionTracking"></a>
-      <a id="versionedStore:FileVersionTracking"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">lazy val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">versionedStore</span><span class="result">: <span class="extype" name="com.twitter.summingbird.batch.state.FileVersionTracking">FileVersionTracking</span></span>
-      </span>
-      </h4>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -439,7 +465,9 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="com.twitter.summingbird.batch.WaitingState">
+        <div class="parent" name="com.twitter.summingbird.batch.state.CheckpointState">
+              <h3>Inherited from <a href="CheckpointState.html" class="extype" name="com.twitter.summingbird.batch.state.CheckpointState">CheckpointState</a>[<span class="extype" name="scala.Iterable">Iterable</span>[<a href="../BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>]]</h3>
+            </div><div class="parent" name="com.twitter.summingbird.batch.WaitingState">
               <h3>Inherited from <a href="../WaitingState.html" class="extype" name="com.twitter.summingbird.batch.WaitingState">WaitingState</a>[<span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]]</h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>

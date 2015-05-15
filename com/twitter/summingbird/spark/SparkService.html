@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-spark/src/main/scala/com/twitter/summingbird/spark/CoreTypes.scala" target="_blank">CoreTypes.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-spark/src/main/scala/com/twitter/summingbird/spark/CoreTypes.scala" target="_blank">CoreTypes.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -84,15 +84,15 @@
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="com.twitter.summingbird.spark.SparkService#lookup" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="lookup[V](sc:org.apache.spark.SparkContext,timeSpan:com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp],rdd:org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,(K,V))]):org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,(K,(V,Option[LV])))]"></a>
-      <a id="lookup[V](SparkContext,Interval[Timestamp],RDD[(Timestamp,(K,V))]):RDD[(Timestamp,(K,(V,Option[LV])))]"></a>
+      <a id="lookup[V](timeSpan:com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp],rdd:org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,(K,V))]):com.twitter.algebird.monad.Reader[org.apache.spark.SparkContext,org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,(K,(V,Option[LV])))]]"></a>
+      <a id="lookup[V](Interval[Timestamp],RDD[(Timestamp,(K,V))]):Reader[SparkContext,RDD[(Timestamp,(K,(V,Option[LV])))]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">lookup</span><span class="tparams">[<span name="V">V</span>]</span><span class="params">(<span name="sc">sc: <span class="extype" name="org.apache.spark.SparkContext">SparkContext</span></span>, <span name="timeSpan">timeSpan: <span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>, <span name="rdd">rdd: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, (<span class="extype" name="com.twitter.summingbird.spark.SparkService.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkService.lookup.V">V</span>))]</span>)</span><span class="result">: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, (<span class="extype" name="com.twitter.summingbird.spark.SparkService.K">K</span>, (<span class="extype" name="com.twitter.summingbird.spark.SparkService.lookup.V">V</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkService.LV">LV</span>])))]</span>
+        <span class="name">lookup</span><span class="tparams">[<span name="V">V</span>]</span><span class="params">(<span name="timeSpan">timeSpan: <span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>, <span name="rdd">rdd: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, (<span class="extype" name="com.twitter.summingbird.spark.SparkService.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkService.lookup.V">V</span>))]</span>)</span><span class="result">: <span class="extype" name="com.twitter.algebird.monad.Reader">Reader</span>[<span class="extype" name="org.apache.spark.SparkContext">SparkContext</span>, <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, (<span class="extype" name="com.twitter.summingbird.spark.SparkService.K">K</span>, (<span class="extype" name="com.twitter.summingbird.spark.SparkService.lookup.V">V</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkService.LV">LV</span>])))]]</span>
       </span>
       </h4>
       

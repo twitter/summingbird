@@ -39,7 +39,7 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-spark/src/main/scala/com/twitter/summingbird/spark/CoreTypes.scala" target="_blank">CoreTypes.scala</a></dd></dl><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-spark/src/main/scala/com/twitter/summingbird/spark/CoreTypes.scala" target="_blank">CoreTypes.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div><div class="toggleContainer block">
@@ -87,15 +87,15 @@
         <div id="values" class="values members">
               <h3>Abstract Value Members</h3>
               <ol><li name="com.twitter.summingbird.spark.SparkStore#merge" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
-      <a id="merge(sc:org.apache.spark.SparkContext,timeSpan:com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp],deltas:org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,(K,V))],commutativity:com.twitter.summingbird.option.Commutativity,semigroup:com.twitter.algebird.Semigroup[V]):com.twitter.summingbird.spark.MergeResult[K,V]"></a>
-      <a id="merge(SparkContext,Interval[Timestamp],RDD[(Timestamp,(K,V))],Commutativity,Semigroup[V]):MergeResult[K,V]"></a>
+      <a id="merge(timeSpan:com.twitter.algebird.Interval[com.twitter.summingbird.batch.Timestamp],deltas:org.apache.spark.rdd.RDD[(com.twitter.summingbird.batch.Timestamp,(K,V))],commutativity:com.twitter.summingbird.option.Commutativity,semigroup:com.twitter.algebird.Semigroup[V]):com.twitter.algebird.monad.Reader[org.apache.spark.SparkContext,com.twitter.summingbird.spark.MergeResult[K,V]]"></a>
+      <a id="merge(Interval[Timestamp],RDD[(Timestamp,(K,V))],Commutativity,Semigroup[V]):Reader[SparkContext,MergeResult[K,V]]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">abstract </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">merge</span><span class="params">(<span name="sc">sc: <span class="extype" name="org.apache.spark.SparkContext">SparkContext</span></span>, <span name="timeSpan">timeSpan: <span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>, <span name="deltas">deltas: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, (<span class="extype" name="com.twitter.summingbird.spark.SparkStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkStore.V">V</span>))]</span>, <span name="commutativity">commutativity: <a href="../option/Commutativity.html" class="extype" name="com.twitter.summingbird.option.Commutativity">Commutativity</a></span>, <span name="semigroup">semigroup: <span class="extype" name="com.twitter.algebird.Semigroup">Semigroup</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkStore.V">V</span>]</span>)</span><span class="result">: <a href="MergeResult.html" class="extype" name="com.twitter.summingbird.spark.MergeResult">MergeResult</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkStore.V">V</span>]</span>
+        <span class="name">merge</span><span class="params">(<span name="timeSpan">timeSpan: <span class="extype" name="com.twitter.algebird.Interval">Interval</span>[<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>]</span>, <span name="deltas">deltas: <span class="extype" name="org.apache.spark.rdd.RDD">RDD</span>[(<a href="../batch/Timestamp.html" class="extype" name="com.twitter.summingbird.batch.Timestamp">Timestamp</a>, (<span class="extype" name="com.twitter.summingbird.spark.SparkStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkStore.V">V</span>))]</span>, <span name="commutativity">commutativity: <a href="../option/Commutativity.html" class="extype" name="com.twitter.summingbird.option.Commutativity">Commutativity</a></span>, <span name="semigroup">semigroup: <span class="extype" name="com.twitter.algebird.Semigroup">Semigroup</span>[<span class="extype" name="com.twitter.summingbird.spark.SparkStore.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="com.twitter.algebird.monad.Reader">Reader</span>[<span class="extype" name="org.apache.spark.SparkContext">SparkContext</span>, <a href="MergeResult.html" class="extype" name="com.twitter.summingbird.spark.MergeResult">MergeResult</a>[<span class="extype" name="com.twitter.summingbird.spark.SparkStore.K">K</span>, <span class="extype" name="com.twitter.summingbird.spark.SparkStore.V">V</span>]]</span>
       </span>
       </h4>
       

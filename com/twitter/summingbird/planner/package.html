@@ -58,7 +58,48 @@
 
         <div id="types" class="types members">
               <h3>Type Members</h3>
-              <ol><li name="com.twitter.summingbird.planner.Dag" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="com.twitter.summingbird.planner.ComposedFlatMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ComposedFlatMap[A,B,C]extendsA=&gt;TraversableOnce[C]withIrreducibleContainerwithProductwithSerializable"></a>
+      <a id="ComposedFlatMap[A,B,C]:ComposedFlatMap[A,B,C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ComposedFlatMap.html"><span class="name">ComposedFlatMap</span></a><span class="tparams">[<span name="A">A</span>, <span name="B">B</span>, <span name="C">C</span>]</span><span class="params">(<span name="first">first: (<span class="extype" name="com.twitter.summingbird.planner.ComposedFlatMap.A">A</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.planner.ComposedFlatMap.B">B</span>]</span>, <span name="second">second: (<span class="extype" name="com.twitter.summingbird.planner.ComposedFlatMap.B">B</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.planner.ComposedFlatMap.C">C</span>]</span>)</span><span class="result"> extends (<span class="extype" name="com.twitter.summingbird.planner.ComposedFlatMap.A">A</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.planner.ComposedFlatMap.C">C</span>] with <a href="IrreducibleContainer.html" class="extype" name="com.twitter.summingbird.planner.IrreducibleContainer">IrreducibleContainer</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">When optimizing and composing flatMaps, this class can be used
+so that we can recover the parts if needed.</p>
+    </li><li name="com.twitter.summingbird.planner.ComposedOptionFlat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ComposedOptionFlat[A,B,C]extendsA=&gt;TraversableOnce[C]withIrreducibleContainerwithProductwithSerializable"></a>
+      <a id="ComposedOptionFlat[A,B,C]:ComposedOptionFlat[A,B,C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ComposedOptionFlat.html"><span class="name">ComposedOptionFlat</span></a><span class="tparams">[<span name="A">A</span>, <span name="B">B</span>, <span name="C">C</span>]</span><span class="params">(<span name="first">first: (<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionFlat.A">A</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionFlat.B">B</span>]</span>, <span name="second">second: (<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionFlat.B">B</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionFlat.C">C</span>]</span>)</span><span class="result"> extends (<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionFlat.A">A</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionFlat.C">C</span>] with <a href="IrreducibleContainer.html" class="extype" name="com.twitter.summingbird.planner.IrreducibleContainer">IrreducibleContainer</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.planner.ComposedOptionMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ComposedOptionMap[A,B,C]extendsA=&gt;Option[C]withIrreducibleContainerwithProductwithSerializable"></a>
+      <a id="ComposedOptionMap[A,B,C]:ComposedOptionMap[A,B,C]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ComposedOptionMap.html"><span class="name">ComposedOptionMap</span></a><span class="tparams">[<span name="A">A</span>, <span name="B">B</span>, <span name="C">C</span>]</span><span class="params">(<span name="first">first: (<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionMap.A">A</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionMap.B">B</span>]</span>, <span name="second">second: (<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionMap.B">B</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionMap.C">C</span>]</span>)</span><span class="result"> extends (<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionMap.A">A</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.planner.ComposedOptionMap.C">C</span>] with <a href="IrreducibleContainer.html" class="extype" name="com.twitter.summingbird.planner.IrreducibleContainer">IrreducibleContainer</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Composing optionMaps
+</p>
+    </li><li name="com.twitter.summingbird.planner.Dag" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="Dag[P&lt;:com.twitter.summingbird.Platform[P]]extendsProductwithSerializable"></a>
       <a id="Dag[P&lt;:Platform[P]]:Dag[P]"></a>
       <h4 class="signature">
@@ -68,6 +109,32 @@
       </span>
       <span class="symbol">
         <a href="Dag.html"><span class="name">Dag</span></a><span class="tparams">[<span name="P">P &lt;: <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>]</span>]</span><span class="params">(<span name="originalTail">originalTail: <a href="../TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>, _]</span>, <span name="producerToPriorityNames">producerToPriorityNames: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="../Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>, <span class="extype" name="scala.Any">Any</span>], <span class="extype" name="scala.List">List</span>[<span class="extype" name="scala.Predef.String">String</span>]]</span>, <span name="tail">tail: <a href="../TailProducer.html" class="extype" name="com.twitter.summingbird.TailProducer">TailProducer</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>, _]</span>, <span name="producerToNode">producerToNode: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="../Producer.html" class="extype" name="com.twitter.summingbird.Producer">Producer</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>, _], <a href="Node.html" class="extype" name="com.twitter.summingbird.planner.Node">Node</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>]]</span>, <span name="nodes">nodes: <span class="extype" name="scala.List">List</span>[<a href="Node.html" class="extype" name="com.twitter.summingbird.planner.Node">Node</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>]]</span>, <span name="nodeToName">nodeToName: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="Node.html" class="extype" name="com.twitter.summingbird.planner.Node">Node</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>], <span class="extype" name="scala.Predef.String">String</span>] = <span class="defval" name="scala.this.Predef.Map.apply[com.twitter.summingbird.planner.Node[P], String]()">...</span></span>, <span name="nameToNode">nameToNode: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="Node.html" class="extype" name="com.twitter.summingbird.planner.Node">Node</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>]] = <span class="defval" name="scala.this.Predef.Map.apply[String, com.twitter.summingbird.planner.Node[P]]()">...</span></span>, <span name="dependenciesOfM">dependenciesOfM: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="Node.html" class="extype" name="com.twitter.summingbird.planner.Node">Node</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>], <span class="extype" name="scala.List">List</span>[<a href="Node.html" class="extype" name="com.twitter.summingbird.planner.Node">Node</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>]]] = <span class="defval" name="scala.this.Predef.Map.apply[com.twitter.summingbird.planner.Node[P], List[com.twitter.summingbird.planner.Node[P]]]()">...</span></span>, <span name="dependantsOfM">dependantsOfM: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="Node.html" class="extype" name="com.twitter.summingbird.planner.Node">Node</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>], <span class="extype" name="scala.List">List</span>[<a href="Node.html" class="extype" name="com.twitter.summingbird.planner.Node">Node</a>[<span class="extype" name="com.twitter.summingbird.planner.Dag.P">P</span>]]] = <span class="defval" name="scala.this.Predef.Map.apply[com.twitter.summingbird.planner.Node[P], List[com.twitter.summingbird.planner.Node[P]]]()">...</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.planner.DagOptimizer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="DagOptimizer[P&lt;:com.twitter.summingbird.Platform[P]]extendsAnyRef"></a>
+      <a id="DagOptimizer[P&lt;:Platform[P]]:DagOptimizer[P]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="DagOptimizer.html"><span class="name">DagOptimizer</span></a><span class="tparams">[<span name="P">P &lt;: <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.planner.DagOptimizer.P">P</span>]</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.planner.FlatAsFilter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FlatAsFilter[A]extendsA=&gt;Option[A]withIrreducibleContainerwithProductwithSerializable"></a>
+      <a id="FlatAsFilter[A]:FlatAsFilter[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="FlatAsFilter.html"><span class="name">FlatAsFilter</span></a><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="useAsFilter">useAsFilter: (<span class="extype" name="com.twitter.summingbird.planner.FlatAsFilter.A">A</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="scala.Nothing">Nothing</span>]</span>)</span><span class="result"> extends (<span class="extype" name="com.twitter.summingbird.planner.FlatAsFilter.A">A</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.planner.FlatAsFilter.A">A</span>] with <a href="IrreducibleContainer.html" class="extype" name="com.twitter.summingbird.planner.IrreducibleContainer">IrreducibleContainer</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -84,6 +151,34 @@
       </span>
       </h4>
       
+    </li><li name="com.twitter.summingbird.planner.IrreducibleContainer" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="IrreducibleContainerextendsAnyRef"></a>
+      <a id="IrreducibleContainer:IrreducibleContainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="IrreducibleContainer.html"><span class="name">IrreducibleContainer</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">This is a marker trait that indicates that
+the subclass holds one or more irreducible
+items passed by the user.</p>
+    </li><li name="com.twitter.summingbird.planner.MergeResults" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MergeResults[A,B]extendsA=&gt;TraversableOnce[B]withIrreducibleContainerwithProductwithSerializable"></a>
+      <a id="MergeResults[A,B]:MergeResults[A,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MergeResults.html"><span class="name">MergeResults</span></a><span class="tparams">[<span name="A">A</span>, <span name="B">B</span>]</span><span class="params">(<span name="left">left: (<span class="extype" name="com.twitter.summingbird.planner.MergeResults.A">A</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.planner.MergeResults.B">B</span>]</span>, <span name="right">right: (<span class="extype" name="com.twitter.summingbird.planner.MergeResults.A">A</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.planner.MergeResults.B">B</span>]</span>)</span><span class="result"> extends (<span class="extype" name="com.twitter.summingbird.planner.MergeResults.A">A</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.planner.MergeResults.B">B</span>] with <a href="IrreducibleContainer.html" class="extype" name="com.twitter.summingbird.planner.IrreducibleContainer">IrreducibleContainer</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">(a.</p>
     </li><li name="com.twitter.summingbird.planner.Node" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="Node[P&lt;:com.twitter.summingbird.Platform[P]]extendsAnyRef"></a>
       <a id="Node[P&lt;:Platform[P]]:Node[P]"></a>
@@ -120,6 +215,19 @@
       </span>
       <span class="symbol">
         <a href="OnlinePlan.html"><span class="name">OnlinePlan</span></a><span class="tparams">[<span name="P">P &lt;: <a href="../Platform.html" class="extype" name="com.twitter.summingbird.Platform">Platform</a>[<span class="extype" name="com.twitter.summingbird.planner.OnlinePlan.P">P</span>]</span>, <span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.planner.OptionToFlat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OptionToFlat[A,B]extendsA=&gt;TraversableOnce[B]withIrreducibleContainerwithProductwithSerializable"></a>
+      <a id="OptionToFlat[A,B]:OptionToFlat[A,B]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="OptionToFlat.html"><span class="name">OptionToFlat</span></a><span class="tparams">[<span name="A">A</span>, <span name="B">B</span>]</span><span class="params">(<span name="optionMap">optionMap: (<span class="extype" name="com.twitter.summingbird.planner.OptionToFlat.A">A</span>) ⇒ <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="com.twitter.summingbird.planner.OptionToFlat.B">B</span>]</span>)</span><span class="result"> extends (<span class="extype" name="com.twitter.summingbird.planner.OptionToFlat.A">A</span>) ⇒ <span class="extype" name="scala.TraversableOnce">TraversableOnce</span>[<span class="extype" name="com.twitter.summingbird.planner.OptionToFlat.B">B</span>] with <a href="IrreducibleContainer.html" class="extype" name="com.twitter.summingbird.planner.IrreducibleContainer">IrreducibleContainer</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -179,6 +287,19 @@
       </span>
       <span class="symbol">
         <a href="Dag$.html"><span class="name">Dag</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="com.twitter.summingbird.planner.IrreducibleContainer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IrreducibleContainer"></a>
+      <a id="IrreducibleContainer:IrreducibleContainer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="IrreducibleContainer$.html"><span class="name">IrreducibleContainer</span></a>
       </span>
       </h4>
       

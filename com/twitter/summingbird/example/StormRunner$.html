@@ -42,7 +42,7 @@
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>The following object contains code to execute the Summingbird
 WordCount job defined in ExampleJob.scala on a storm
 cluster.
-</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.5.1/summingbird-example/src/main/scala/com/twitter/summingbird/example/StormRunner.scala" target="_blank">StormRunner.scala</a></dd></dl><div class="toggleContainer block">
+</p></div><dl class="attributes block"> <dt>Source</dt><dd><a href="https://github.com/twitter/summingbird/tree/0.7.0/summingbird-example/src/main/scala/com/twitter/summingbird/example/StormRunner.scala" target="_blank">StormRunner.scala</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
@@ -382,15 +382,15 @@ act as the initial producer of Status instances in the
 Summingbird word count job.
 </p></div></div>
     </li><li name="com.twitter.summingbird.example.StormRunner#storeSupplier" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="storeSupplier:com.twitter.summingbird.storm.StormStore[String,Long]"></a>
-      <a id="storeSupplier:StormStore[String,Long]"></a>
+      <a id="storeSupplier:com.twitter.summingbird.online.MergeableStoreFactory[(String,com.twitter.summingbird.batch.BatchID),Long]"></a>
+      <a id="storeSupplier:MergeableStoreFactory[(String,BatchID),Long]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">storeSupplier</span><span class="result">: <a href="../storm/StormStore.html" class="extype" name="com.twitter.summingbird.storm.StormStore">StormStore</a>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Long">Long</span>]</span>
+        <span class="name">storeSupplier</span><span class="result">: <a href="../online/MergeableStoreFactory.html" class="extype" name="com.twitter.summingbird.online.MergeableStoreFactory">MergeableStoreFactory</a>[(<span class="extype" name="scala.Predef.String">String</span>, <a href="../batch/BatchID.html" class="extype" name="com.twitter.summingbird.batch.BatchID">BatchID</a>), <span class="extype" name="scala.Long">Long</span>]</span>
       </span>
       </h4>
       <p class="shortcomment cmt">the param to store is by name, so this is still not created created
