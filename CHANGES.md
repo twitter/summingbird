@@ -1,5 +1,8 @@
 # Summingbird #
 
+## 0.8.0
+* bumping Scalding to 0.15.0, algebird to 0.10.1
+
 ## 0.7.0
 * Registering summingbird counters with tormenta spouts #553
 * Add counters to default summers #571
