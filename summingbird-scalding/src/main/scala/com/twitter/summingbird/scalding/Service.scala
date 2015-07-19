@@ -18,6 +18,7 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.Semigroup
 import com.twitter.scalding.TypedPipe
+import com.twitter.scalding.typed.LookupJoin
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.scalding.batch.BatchedStore
