@@ -6,8 +6,10 @@ before_install: umask 0022
 scala:
   - 2.10.5
 script:
-- "echo no op"
-
+  - "echo no op"
+cache:
+  directories:
+    - $HOME/.m2
 matrix:
   include:
 #BASE TESTS
@@ -70,4 +72,3 @@ matrix:
     - scala: 2.10.5
       env: BUILD="base" TEST_TARGET="summingbird-storm-test"
       script: "scripts/run_tests.sh"
-
