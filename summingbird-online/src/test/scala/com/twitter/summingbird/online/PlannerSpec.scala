@@ -23,7 +23,7 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.memory._
 import com.twitter.summingbird.planner._
 import com.twitter.util.Future
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{ Map => MMap }
 import org.scalacheck._
@@ -36,7 +36,7 @@ import scala.util.{ Try, Success, Failure }
  * Tests for Summingbird's Storm planner.
  */
 
-object PlannerSpec extends Specification {
+object PlannerSpec extends WordSpec {
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
   private type MemoryDag = Dag[Memory]
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
@@ -97,12 +97,12 @@ object PlannerSpec extends Specification {
     val path = TopologyPlannerLaws.dumpGraph(tail)
 
     planned match {
-      case Success(graph) => true must beTrue
+      case Success(graph) => assert(true == true)
       case Failure(error) =>
         val path = TopologyPlannerLaws.dumpGraph(tail)
         error.printStackTrace
         println("Dumped failing graph to: " + path)
-        true must beFalse
+        assert(false)
     }
   }
 
@@ -147,12 +147,12 @@ object PlannerSpec extends Specification {
 
     val planned = Try(OnlinePlan(tail))
     planned match {
-      case Success(graph) => true must beTrue
+      case Success(graph) => assert(true == true)
       case Failure(error) =>
         val path = TopologyPlannerLaws.dumpGraph(tail)
         error.printStackTrace
         println("Dumped failing graph to: " + path)
-        true must beFalse
+        assert(false)
     }
   }
 
@@ -172,12 +172,12 @@ object PlannerSpec extends Specification {
 
     val planned = Try(OnlinePlan(tail))
     planned match {
-      case Success(graph) => true must beTrue
+      case Success(graph) => assert(true == true)
       case Failure(error) =>
         val path = TopologyPlannerLaws.dumpGraph(tail)
         error.printStackTrace
         println("Dumped failing graph to: " + path)
-        true must beFalse
+        assert(false)
     }
   }
   "Chained SumByKey with extra Also is okay" in {
@@ -191,12 +191,12 @@ object PlannerSpec extends Specification {
       case Success(graph) =>
         TopologyPlannerLaws.dumpGraph(graph)
         TopologyPlannerLaws.dumpGraph(part2)
-        TopologyPlannerLaws.summersOnlyShareNoOps(graph) must beTrue
+        assert(TopologyPlannerLaws.summersOnlyShareNoOps(graph) == true)
       case Failure(error) =>
         val path = TopologyPlannerLaws.dumpGraph(part2)
         error.printStackTrace
         println("Dumped failing graph to: " + path)
-        true must beFalse
+        assert(false)
     }
   }
 }

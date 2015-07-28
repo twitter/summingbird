@@ -18,7 +18,7 @@ package com.twitter.summingbird.chill
 
 import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Prop._
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 import com.twitter.chill._
 
 import com.twitter.summingbird.batch._

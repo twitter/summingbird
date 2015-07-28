@@ -1,6 +1,6 @@
 package com.twitter.summingbird.store
 
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird.batch._
@@ -18,7 +18,7 @@ case class TestStore[K, +V](m: Map[K, Option[V]]) extends ReadableStore[K, V] {
       .getOrElse(Future.exception(new RuntimeException("fail!")))
 }
 
-class ClientStoreLaws extends Specification {
+class ClientStoreLaws extends WordSpec {
   /** Batcher that always returns a batch of 10. */
   implicit val batcher = new AbstractBatcher {
     def batchOf(t: Timestamp) = BatchID(10)

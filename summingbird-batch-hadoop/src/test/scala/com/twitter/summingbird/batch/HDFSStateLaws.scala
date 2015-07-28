@@ -25,9 +25,9 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
 
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
-object HDFSStateLaws extends Specification {
+object HDFSStateLaws extends WordSpec {
 
   val batchLength: Long = 30
   implicit val batcher = Batcher.ofMinutes(batchLength)
@@ -53,9 +53,9 @@ object HDFSStateLaws extends Specification {
         case intersection @ Intersection(low, high) => {
           val startBatchTime: Timestamp = batcher.earliestTimeOf(batcher.batchOf(startDate))
           val expectedNextRunStartMillis: Long = startBatchTime.incrementMinutes(numBatches * batchLength).milliSinceEpoch
-          low.least.get.milliSinceEpoch mustEqual expectedNextRunStartMillis
+          assert(low.least.get.milliSinceEpoch == expectedNextRunStartMillis)
         }
-        case _ => failure("requested interval should be an interseciton")
+        case _ => fail("requested interval should be an interseciton")
       }
       shouldCheckpointInterval(batcher, nextState, nextPrepareState.requested, path)
     }
@@ -101,7 +101,11 @@ object HDFSStateLaws extends Specification {
     completeState(state.begin.willAccept(interval))
     interval match {
       case intersection @ Intersection(low, high) => {
-        BatchID.range(batcher.batchOf(low.least.get), batcher.batchOf(high.greatest.get)).foreach(t => (path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version") must beAnExistingPath)
+        BatchID.range(batcher.batchOf(low.least.get), batcher.batchOf(high.greatest.get))
+          .foreach { t =>
+            val totPath = (path + "/" + batcher.earliestTimeOf(t).milliSinceEpoch + ".version")
+            assert(new java.io.File(totPath).exists)
+          }
       }
       case _ => sys.error("interval should be an intersection")
     }
