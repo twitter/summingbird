@@ -53,10 +53,6 @@ matrix:
       script: "scripts/run_tests.sh"
 
     - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-spark"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.10.5
       env: BUILD="base" TEST_TARGET="summingbird-storm"
       script: "scripts/run_tests.sh"
 
@@ -102,10 +98,6 @@ matrix:
 
     - scala: 2.11.7
       env: BUILD="base" TEST_TARGET="summingbird-scalding-test"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-spark"
       script: "scripts/run_tests.sh"
 
     - scala: 2.11.7
