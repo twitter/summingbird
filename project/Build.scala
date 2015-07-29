@@ -23,7 +23,7 @@ object SummingbirdBuild extends Build {
   val hadoopVersion = "1.2.1"
   val algebirdVersion = "0.11.0"
   val bijectionVersion = "0.8.1"
-  val chillVersion = "0.7.1-SNAPSHOT"
+  val chillVersion = "0.7.0"
   val slf4jVersion = "1.6.6"
 
   val dfsDatastoresVersion = "1.3.6"
