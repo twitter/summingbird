@@ -31,10 +31,6 @@ matrix:
       env: BUILD="base" TEST_TARGET="summingbird-core"
       script: "scripts/run_tests.sh"
 
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-core-java"
-      script: "scripts/run_tests.sh"
-
 #    - scala: 2.10.5
 #      env: BUILD="base" TEST_TARGET="summingbird-core-test"
 #      script: "scripts/run_tests.sh"
@@ -57,10 +53,6 @@ matrix:
 
     - scala: 2.10.5
       env: BUILD="base" TEST_TARGET="summingbird-storm"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-storm-java"
       script: "scripts/run_tests.sh"
 
     - scala: 2.10.5
