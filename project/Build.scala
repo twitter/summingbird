@@ -154,14 +154,12 @@ object SummingbirdBuild extends Build {
     publishLocal := { }
   ).aggregate(
     summingbirdCore,
-    summingbirdCoreJava,
     summingbirdBatch,
     summingbirdBatchHadoop,
     summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
     summingbirdStormTest,
-    summingbirdStormJava,
     summingbirdScalding,
     summingbirdScaldingTest,
     summingbirdBuilder,
@@ -224,10 +222,6 @@ object SummingbirdBuild extends Build {
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
   )
 
-  lazy val summingbirdCoreJava = module("core-java").dependsOn(
-    summingbirdCore % "test->test;compile->compile"
-  )
-
   lazy val summingbirdOnline = module("online").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
@@ -285,15 +279,6 @@ object SummingbirdBuild extends Build {
     summingbirdStorm
   )
 
-  lazy val summingbirdStormJava = module("storm-java").settings(
-    libraryDependencies ++= Seq(
-      "storm" % "storm" % stormVersion % "provided"
-    )
-  ).dependsOn(
-    summingbirdCore % "test->test;compile->compile",
-    summingbirdCoreJava % "test->test;compile->compile",
-    summingbirdStorm % "test->test;compile->compile"
-  )
   lazy val summingbirdScalding = module("scalding").settings(
     libraryDependencies ++= Seq(
       "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
@@ -366,7 +351,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-memcache" % storehausVersion exclude("com.twitter.common", "dynamic-host-set") exclude("com.twitter.common", "service-thrift"),
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
-  ).dependsOn(summingbirdCore, summingbirdCoreJava, summingbirdStorm, summingbirdStormJava)
+  ).dependsOn(summingbirdCore, summingbirdStorm)
 
 
   lazy val summingbirdCoreTest = module("core-test").settings(
