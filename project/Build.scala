@@ -41,7 +41,6 @@ object SummingbirdBuild extends Build {
   val novocodeJunitVersion = "0.10"
   val specs2Version = "1.13"
 
-  val sparkCoreVersion ="1.2.0"
   val commonsHttpClientVersion = "3.1"
 
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
@@ -163,7 +162,6 @@ object SummingbirdBuild extends Build {
     summingbirdStormTest,
     summingbirdScalding,
     summingbirdScaldingTest,
-    summingbirdSpark,
     summingbirdBuilder,
     summingbirdChill,
     summingbirdExample,
@@ -355,52 +353,6 @@ object SummingbirdBuild extends Build {
     )
   ).dependsOn(summingbirdCore, summingbirdStorm)
 
-  lazy val sparkAssemblyMergeSettings = assemblySettings :+ {
-    mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
-      {
-        //case PathList("org", "w3c", xs @ _*) => MergeStrategy.first
-        //case "about.html"     => MergeStrategy.discard
-        case PathList("com", "esotericsoftware", "minlog", xs @ _*) => MergeStrategy.first
-        case PathList("org", "apache", "commons", "beanutils", xs @ _*) => MergeStrategy.first
-        case PathList("org", "apache", "commons", "collections", xs @ _*) => MergeStrategy.first
-        case PathList("org", "apache", "jasper", xs @ _*) => MergeStrategy.first
-        case "log4j.properties"     => MergeStrategy.concat
-        case x if x.endsWith(".xsd") || x.endsWith(".dtd") => MergeStrategy.first
-        case x => old(x)
-      }
-    }
-  }
-
-
-  val sparkDeps = Seq(
-    "com.twitter" %% "algebird-core" % algebirdVersion,
-    "com.twitter" %% "algebird-util" % algebirdVersion,
-    "com.twitter" %% "algebird-bijection" % algebirdVersion,
-    "com.twitter" %% "bijection-json" % bijectionVersion,
-    "com.twitter" %% "chill" % chillVersion,
-    "com.twitter" % "chill-hadoop" % chillVersion,
-    "com.twitter" %% "chill-bijection" % chillVersion,
-    "commons-lang" % "commons-lang" % commonsLangVersion,
-    "commons-httpclient" % "commons-httpclient" % commonsHttpClientVersion,
-    "org.apache.spark" %% "spark-core" % sparkCoreVersion % "provided"
-  )
-
-  def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()
-
-  lazy val summingbirdSpark = module("spark").settings(
-    resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-    skip in compile := !isScala210x(scalaVersion.value),
-    skip in doc := !isScala210x(scalaVersion.value),
-    skip in test := !isScala210x(scalaVersion.value),
-    publishArtifact := isScala210x(scalaVersion.value),
-    libraryDependencies ++= buildSparkDeps(scalaVersion.value)
-  )
-  .settings(sparkAssemblyMergeSettings:_*)
-  .dependsOn(
-    summingbirdCore % "test->test;compile->compile",
-    summingbirdCoreTest % "test->test",
-    summingbirdChill
-  )
 
   lazy val summingbirdCoreTest = module("core-test").settings(
     parallelExecution in Test := false,
