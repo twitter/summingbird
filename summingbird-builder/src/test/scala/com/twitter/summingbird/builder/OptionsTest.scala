@@ -24,7 +24,7 @@ import com.twitter.summingbird.batch.{ Batcher, BatchID }
 import com.twitter.summingbird.option.{ MonoidIsCommutative => BMonoidIsCommutative, _ }
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
 import org.apache.hadoop.conf.Configuration
 
@@ -46,28 +46,28 @@ class TestJob1(env: Env) extends AbstractJob(env) {
   }
 }
 
-class OptionsTest extends Specification {
+class OptionsTest extends WordSpec {
   "Commutative Options should not be lost" in {
     val scalding = ScaldingEnv("com.twitter.summingbird.builder.TestJob1",
       Array("-Dcascading.aggregateby.threshold=100000", "--test", "arg"))
 
-    scalding.build.platform.jobName must be_==("com.twitter.summingbird.builder.TestJob1")
+    assert(scalding.build.platform.jobName == "com.twitter.summingbird.builder.TestJob1")
 
     val conf = new Configuration
     scalding.build.platform.updateConfig(conf)
-    conf.get("com.twitter.chill.config.configuredinstantiator") must not beNull;
-    conf.get("summingbird.options") must be_==(scalding.build.platform.options.toString)
-    conf.get("cascading.aggregateby.threshold") must be_==("100000")
+    assert(conf.get("com.twitter.chill.config.configuredinstantiator") != null)
+    assert(conf.get("summingbird.options") == scalding.build.platform.options.toString)
+    assert(conf.get("cascading.aggregateby.threshold") == "100000")
 
     val opts = scalding.build.platform.options
     val dependants = Dependants(scalding.build.toRun)
     val summers = dependants.nodes.collect { case s: Summer[_, _, _] => s }
 
-    summers.size must be_==(1)
+    assert(summers.size == 1)
     val names = dependants.namesOf(summers.head).map(_.id)
-    Scalding
+    assert(Scalding
       .getCommutativity(names,
         opts,
-        summers.head.asInstanceOf[Summer[Scalding, _, _]]) must be_==(Commutative)
+        summers.head.asInstanceOf[Summer[Scalding, _, _]]) == Commutative)
   }
 }

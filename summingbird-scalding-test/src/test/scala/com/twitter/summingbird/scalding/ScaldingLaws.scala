@@ -50,13 +50,13 @@ import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
 
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
 /**
  * Tests for Summingbird's Scalding planner.
  */
 
-object ScaldingLaws extends Specification {
+object ScaldingLaws extends WordSpec {
   import MapAlgebra.sparseEquiv
 
   implicit def timeExtractor[T <: (Long, _)] = TestUtil.simpleTimeExtractor[T]
@@ -95,7 +95,7 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
 
-      TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must be_==(true)
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) == true)
     }
 
     "match scala single step pruned jobs" in {
@@ -138,7 +138,7 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
 
-      TestUtil.compareMaps(original, inMemory, testStore) must be_==(true)
+      assert(TestUtil.compareMaps(original, inMemory, testStore) == true)
     }
 
     "match scala for flatMapKeys jobs" in {
@@ -171,7 +171,7 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
 
-      TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) == true)
     }
 
     "match scala for multiple summer jobs" in {
@@ -206,8 +206,8 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, scald.plan(tail))
       // Now check that the inMemory ==
 
-      TestUtil.compareMaps(original, Monoid.plus(initStoreA, inMemoryA), testStoreA) must beTrue
-      TestUtil.compareMaps(original, Monoid.plus(initStoreB, inMemoryB), testStoreB) must beTrue
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStoreA, inMemoryA), testStoreA) == true)
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStoreB, inMemoryB), testStoreB) == true)
     }
 
     "match scala for leftJoin jobs" in {
@@ -265,7 +265,7 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
 
-      TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) == true)
     }
 
     "match scala for leftJoin  repeated tuple leftJoin jobs" in {
@@ -322,7 +322,7 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
 
-      TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) == true)
     }
 
     "match scala for leftJoin with store (no dependency between the two) jobs" in {
@@ -381,8 +381,8 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, summer)
 
       // Now check that the inMemory ==
-      TestUtil.compareMaps(original1, Monoid.plus(storeAndServiceInit, inMemoryA), storeAndServiceStore) must beTrue
-      TestUtil.compareMaps(original2, Monoid.plus(finalStoreInit, inMemoryB), finalStore) must beTrue
+      assert(TestUtil.compareMaps(original1, Monoid.plus(storeAndServiceInit, inMemoryA), storeAndServiceStore) == true)
+      assert(TestUtil.compareMaps(original2, Monoid.plus(finalStoreInit, inMemoryB), finalStore) == true)
     }
 
     "match scala for leftJoin with store (with dependency between store and join) jobs" in {
@@ -435,7 +435,7 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, summer)
 
       // Now check that the inMemory ==
-      TestUtil.compareMaps(original, Monoid.plus(storeAndServiceInit, inMemoryStore), storeAndServiceStore) must beTrue
+      assert(TestUtil.compareMaps(original, Monoid.plus(storeAndServiceInit, inMemoryStore), storeAndServiceStore) == true)
     }
 
     "match scala for leftJoin with store and join fanout (with dependency between store and join) jobs" in {
@@ -488,8 +488,8 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, summer)
 
       // Now check that the inMemory ==
-      TestUtil.compareMaps(original, Monoid.plus(storeAndServiceInit, inMemoryStoreAfterJoin), storeAndServiceStore) must beTrue
-      TestUtil.compareMaps(original, Monoid.plus(fmStoreInit, inMemoryStoreAfterFlatMap), fmStore) must beTrue
+      assert(TestUtil.compareMaps(original, Monoid.plus(storeAndServiceInit, inMemoryStoreAfterJoin), storeAndServiceStore) == true)
+      assert(TestUtil.compareMaps(original, Monoid.plus(fmStoreInit, inMemoryStoreAfterFlatMap), fmStore) == true)
     }
 
     "match scala for diamond jobs with write" in {
@@ -526,9 +526,9 @@ object ScaldingLaws extends Specification {
       // Now check that the inMemory ==
 
       val sinkOut = testSink.reset
-      TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) must beTrue
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) == true)
       val wrongSink = sinkOut.map { _._2 }.toList != inWithTime
-      wrongSink must be_==(false)
+      assert(wrongSink == false)
       if (wrongSink) {
         println("input: " + inWithTime)
         println("SinkExtra: " + (sinkOut.map(_._2).toSet -- inWithTime.toSet))
@@ -566,8 +566,8 @@ object ScaldingLaws extends Specification {
       scald.run(ws, mode, summer)
       // Now check that the inMemory ==
 
-      TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") must beTrue
-      TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") must beTrue
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryA), testStoreA, "A") == true)
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemoryB), testStoreB, "B") == true)
     }
 
     "compute correct statistics" in {
@@ -607,14 +607,14 @@ object ScaldingLaws extends Specification {
       val fmCounter: Long = flowStats.getCounterValue("counter.test", "fm_counter")
       val fltrCounter: Long = flowStats.getCounterValue("counter.test", "fltr_counter")
       // Now check that the stats are computed correctly
-      origCounter must be_==(original.size)
-      fmCounter must be_==(original.flatMap(fn).size * 2)
-      fltrCounter must be_==(original.flatMap(fn).size)
+      assert(origCounter == original.size)
+      assert(fmCounter == original.flatMap(fn).size * 2)
+      assert(fltrCounter == original.flatMap(fn).size)
     }
 
     "contain and be able to init a ScaldingRuntimeStatsProvider object" in {
       val s = SummingbirdRuntimeStats.SCALDING_STATS_MODULE
-      ScalaTry[Unit] { Class.forName(s) }.toOption must beSome
+      assert(ScalaTry[Unit] { Class.forName(s) }.toOption.isDefined)
     }
   }
 }

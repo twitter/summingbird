@@ -22,7 +22,7 @@ import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
 import org.scalacheck.Arbitrary
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -31,7 +31,7 @@ import scala.concurrent.duration.Duration
  * Tests for Summingbird's in-memory planner.
  */
 
-object ConcurrentMemoryLaws extends Specification {
+object ConcurrentMemoryLaws extends WordSpec {
   // This is dangerous, obviously. The Memory platform tested here
   // doesn't perform any batching, so the actual time extraction isn't
   // needed.
@@ -146,22 +146,22 @@ object ConcurrentMemoryLaws extends Specification {
 
   "The ConcurrentMemory Platform" should {
     //Set up the job:
-    "singleStep w/ Int, Int, Set[Int]" in { singleStepLaw[Int, Int, Set[Int]] must beTrue }
-    "singleStep w/ Int, String, List[Int]" in { singleStepLaw[Int, String, List[Int]] must beTrue }
-    "singleStep w/ String, Short, Map[Set[Int], Long]" in { singleStepLaw[String, Short, Map[Set[Int], Long]] must beTrue }
+    "singleStep w/ Int, Int, Set[Int]" in { assert(singleStepLaw[Int, Int, Set[Int]] == true) }
+    "singleStep w/ Int, String, List[Int]" in { assert(singleStepLaw[Int, String, List[Int]] == true) }
+    "singleStep w/ String, Short, Map[Set[Int], Long]" in { assert(singleStepLaw[String, Short, Map[Set[Int], Long]] == true) }
 
     // Note the stored values only make sense if you have a commutative monoid
     // since, due to concurrency, we might put things in a different order with this platform
-    "diamond w/ Int, Int, Set[Int]" in { diamondLaw[Int, Int, Set[Int]] must beTrue }
-    "diamond w/ String, Short, Map[Set[Int], Long]" in { diamondLaw[String, Short, Map[Set[Int], Long]] must beTrue }
+    "diamond w/ Int, Int, Set[Int]" in { assert(diamondLaw[Int, Int, Set[Int]] == true) }
+    "diamond w/ String, Short, Map[Set[Int], Long]" in { assert(diamondLaw[String, Short, Map[Set[Int], Long]] == true) }
 
-    "leftJoin w/ Int, Int, String, Long, Set[Int]" in { leftJoinLaw[Int, Int, String, Long, Set[Int]] must beTrue }
+    "leftJoin w/ Int, Int, String, Long, Set[Int]" in { assert(leftJoinLaw[Int, Int, String, Long, Set[Int]] == true) }
 
-    "flatMapKeys w/ Int, Int, Int, Set[Int]" in { mapKeysChecker[Int, Int, Int, Set[Int]] must beTrue }
+    "flatMapKeys w/ Int, Int, Int, Set[Int]" in { assert(mapKeysChecker[Int, Int, Int, Set[Int]] == true) }
 
-    "lookupCollect w/ Int, Int" in { lookupCollectChecker[Int, Int] must beTrue }
+    "lookupCollect w/ Int, Int" in { assert(lookupCollectChecker[Int, Int] == true) }
 
-    "counters w/ Int, Int, Int" in { counterChecker[Int, Int, Int] must beTrue }
+    "counters w/ Int, Int, Int" in { assert(counterChecker[Int, Int, Int] == true) }
   }
 
 }
