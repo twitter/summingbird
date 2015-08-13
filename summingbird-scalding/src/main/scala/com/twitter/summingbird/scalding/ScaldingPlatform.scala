@@ -712,7 +712,7 @@ class Scalding(
     }
 
   // This is a side-effect-free computation that is called by run
-  def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Flow[_])] = {
+  def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Option[Flow[_]])] = {
     val flowDef = new FlowDef
     flowDef.setName(jobName)
     Scalding.toPipe(timeSpan, flowDef, mode, pf)
@@ -726,7 +726,11 @@ class Scalding(
               case HadoopTest(conf, _) => Config.fromHadoop(conf)
               case _ => Config.empty
             }
-            Right((ts, mode.newFlowConnector(config).connect(flowDef)))
+            if (flowDef.getSinks.isEmpty) {
+              Right((ts, None))
+            } else {
+              Right((ts, Some(mode.newFlowConnector(config).connect(flowDef))))
+            }
           } catch {
             case (e: Throwable) => toTry(e)
           }
@@ -765,20 +769,26 @@ class Scalding(
     toFlow(prepareState.requested, mode, pf) match {
       case Left(errs) =>
         prepareState.fail(FlowPlanException(errs))
-      case Right((ts, flow)) =>
-        mutate(flow)
+      case Right((ts, flowOpt)) =>
+        flowOpt.foreach(flow => mutate(flow))
         prepareState.willAccept(ts) match {
           case Right(runningState) =>
             try {
-              options.get(jobName).foreach { jopt =>
-                jopt.get[WriteDot].foreach { o => flow.writeDOT(o.filename) }
-                jopt.get[WriteStepsDot].foreach { o => flow.writeStepsDOT(o.filename) }
+              flowOpt match {
+                case None =>
+                  Scalding.logger.warn("No Sinks were planned into flows. Waiting state is probably out of sync with stores. Proceeding with NO-OP.")
+                  runningState.succeed
+                case Some(flow) =>
+                  options.get(jobName).foreach { jopt =>
+                    jopt.get[WriteDot].foreach { o => flow.writeDOT(o.filename) }
+                    jopt.get[WriteStepsDot].foreach { o => flow.writeStepsDOT(o.filename) }
+                  }
+                  flow.complete
+                  if (flow.getFlowStats.isSuccessful)
+                    runningState.succeed
+                  else
+                    throw new Exception("Flow did not complete.")
               }
-              flow.complete
-              if (flow.getFlowStats.isSuccessful)
-                runningState.succeed
-              else
-                throw new Exception("Flow did not complete.")
             } catch {
               case (e: Throwable) => {
                 runningState.fail(e)

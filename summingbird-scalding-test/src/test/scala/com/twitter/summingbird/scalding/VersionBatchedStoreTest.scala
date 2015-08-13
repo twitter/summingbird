@@ -136,6 +136,7 @@ class VersionedBatchedStoreTest extends WordSpec {
         val scald = Scalding("scalaCheckMultipleSumJob")
         val ws = new LoopState(intr)
         scald.run(ws, mode, scald.plan(tail))
+        assert(!ws.failed, "Job failed")
       }
 
       // Now Stores C & B
@@ -144,6 +145,17 @@ class VersionedBatchedStoreTest extends WordSpec {
         val scald = Scalding("scalaCheckMultipleSumJob")
         val ws = new LoopState(intr)
         scald.run(ws, mode, scald.plan(tail))
+        assert(!ws.failed, "Job failed")
+      }
+
+      // Run stores C & B again, now there should be no operations to do
+      // This should warning but succeed
+      {
+        val tail = TestGraphs.multipleSummerJob[Scalding, (Long, Int), Int, Int, Int, Int, Int](source, testStoreC, testStoreB)({ t => fnA(t._2) }, fnB, fnC)
+        val scald = Scalding("scalaCheckMultipleSumJob")
+        val ws = new LoopState(intr)
+        scald.run(ws, mode, scald.plan(tail))
+        assert(!ws.failed, "Job failed")
       }
 
       // Now check that the inMemory == matches the hadoop job we ran
@@ -155,6 +167,7 @@ class VersionedBatchedStoreTest extends WordSpec {
       // Now for total sanity just compare store's A and C's output. it should be identical
       assert(TestUtil.compareMaps(original, testStoreAReader(lastExpectedWriteBatch),
         testStoreCReader(lastExpectedWriteBatch), "StoreC vs StoreA") == true)
+
     }
 
   }
