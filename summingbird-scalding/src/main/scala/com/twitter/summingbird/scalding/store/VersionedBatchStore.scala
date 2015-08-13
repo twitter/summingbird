@@ -211,8 +211,7 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
       lastVals.map(pack(batchID, _))
         .write(target)
     } else {
-      logger.warn(s"""Versioned batched store version for $this @ $newVersion already exists! Will skip adding to plan.
-        | Note you must have at least one store that requires writing out or the job will fail.""".stripMargin('|'))
+      logger.warn(s"Versioned batched store version for $this @ $newVersion already exists! Will skip adding to plan.")
     }
   }
 
