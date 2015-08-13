@@ -30,6 +30,21 @@ import org.scalacheck.Properties
 object TestUtil {
   def simpleTimeExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor(_._1)
 
+  def compareMaps[K, V: Group](original: Iterable[Any], inMemory: Map[K, V], produced: Map[K, V], name: String)(implicit batcher: Batcher): Boolean = {
+    val diffMap = Group.minus(inMemory, produced)
+    val wrong = Monoid.isNonZero(diffMap)
+    if (wrong) {
+      if (!name.isEmpty) println("%s is wrong".format(name))
+      println("input: " + original)
+      println("input size: " + original.size)
+      println("input batches: " + batcher.batchOf(Timestamp(original.size)))
+      println("producer extra keys: " + (produced.keySet -- inMemory.keySet))
+      println("producer missing keys: " + (inMemory.keySet -- produced.keySet))
+      println("Difference: " + diffMap)
+    }
+    !wrong
+  }
+
   def compareMaps[K, V: Group](original: Iterable[Any], inMemory: Map[K, V], testStore: TestStore[K, V], name: String = ""): Boolean = {
     val produced = testStore.lastToIterable.toMap
     val diffMap = Group.minus(inMemory, produced)
