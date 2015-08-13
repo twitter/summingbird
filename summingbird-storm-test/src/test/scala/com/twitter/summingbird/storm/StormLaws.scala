@@ -50,7 +50,7 @@ import java.security.Permission
 /**
  * Tests for Summingbird's Storm planner.
  */
-object StormLaws extends WordSpec {
+class StormLaws extends WordSpec {
   import MapAlgebra.sparseEquiv
 
   // This is dangerous, obviously. The Storm platform graphs tested

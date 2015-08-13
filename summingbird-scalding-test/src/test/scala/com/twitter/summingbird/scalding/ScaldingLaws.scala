@@ -56,7 +56,7 @@ import org.scalatest.WordSpec
  * Tests for Summingbird's Scalding planner.
  */
 
-object ScaldingLaws extends WordSpec {
+class ScaldingLaws extends WordSpec {
   import MapAlgebra.sparseEquiv
 
   implicit def timeExtractor[T <: (Long, _)] = TestUtil.simpleTimeExtractor[T]

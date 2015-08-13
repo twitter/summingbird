@@ -27,7 +27,7 @@ import org.apache.hadoop.fs.Path
 
 import org.scalatest.WordSpec
 
-object HDFSStateLaws extends WordSpec {
+class HDFSStateLaws extends WordSpec {
 
   val batchLength: Long = 30
   implicit val batcher = Batcher.ofMinutes(batchLength)
