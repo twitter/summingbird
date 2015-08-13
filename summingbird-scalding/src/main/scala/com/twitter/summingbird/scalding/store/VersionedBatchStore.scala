@@ -16,17 +16,18 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding.store
 
-import com.twitter.summingbird.batch.store.HDFSMetadata
 import cascading.flow.FlowDef
+import cascading.flow.FlowDef
+import com.twitter.algebird.monad.Reader
 import com.twitter.bijection.Injection
-import cascading.flow.FlowDef
-import com.twitter.scalding.{ Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, TupleSetter }
 import com.twitter.scalding.commons.source.VersionedKeyValSource
+import com.twitter.scalding.{ Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, TupleSetter }
+import com.twitter.summingbird.batch.store.HDFSMetadata
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.scalding.{ Try, FlowProducer, Scalding }
-import com.twitter.algebird.monad.Reader
-import com.twitter.summingbird.scalding._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import org.slf4j.LoggerFactory
 import scala.util.{ Try => ScalaTry }
 
 /**
@@ -51,6 +52,7 @@ object VersionedBatchStore {
  * plug in methods to actually read or write the data.
  */
 abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends BatchedStore[K, V] {
+
   /**
    * Returns a snapshot of the store's (K, V) pairs aggregated up to
    * (but not including!) the time covered by the supplied batchID.
@@ -146,6 +148,7 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
 class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)(pack: (BatchID, (K, V)) => (K2, V2))(unpack: ((K2, V2)) => (K, V))(
   implicit @transient injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])
     extends VersionedBatchStoreBase[K, V](rootPath) {
+  @transient private val logger = LoggerFactory.getLogger(classOf[VersionedBatchStore[_, _, _, _]])
 
   /**
    * Make sure not to keep more than versionsToKeep when we write out.
@@ -200,13 +203,20 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
       case _ => Some(batchVersion)
     }
 
-    lastVals.map(pack(batchID, _))
-      .toPipe((0, 1))
-      .write(VersionedKeyValSource[K2, V2](rootPath,
-        sourceVersion = None,
-        sinkVersion = newVersion,
-        maxFailures = 0,
-        versionsToKeep = versionsToKeep))
+    val target = VersionedKeyValSource[K2, V2](rootPath,
+      sourceVersion = None,
+      sinkVersion = newVersion,
+      maxFailures = 0,
+      versionsToKeep = versionsToKeep)
+    if (!target.sinkExists(mode)) {
+      logger.info(s"Versioned batched store version for $this @ $newVersion doesn't exist. Will write out.")
+      lastVals.map(pack(batchID, _))
+        .toPipe((0, 1))
+        .write(target)
+    } else {
+      logger.warn(s"""Versioned batched store version for $this @ $newVersion already exists! Will skip adding to plan.
+        | Note you must have at least one store that requires writing out or the job will fail.""".stripMargin('|'))
+    }
   }
 
   /**
