@@ -48,7 +48,7 @@ import scala.collection.mutable.{
  * Tests for Summingbird's Storm planner.
  */
 
-object TopologyTests extends WordSpec {
+class TopologyTests extends WordSpec {
   import MapAlgebra.sparseEquiv
 
   // This is dangerous, obviously. The Storm platform graphs tested

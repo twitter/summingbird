@@ -50,8 +50,8 @@ import java.security.Permission
 /**
  * Tests for Summingbird's Storm planner.
  */
-object StormLaws extends WordSpec {
-  import MapAlgebra.sparseEquiv
+object StormLaws {
+  val outputList = new ArrayBuffer[Int] with SynchronizedBuffer[Int]
 
   // This is dangerous, obviously. The Storm platform graphs tested
   // here use the UnitBatcher, so the actual time extraction isn't
@@ -86,8 +86,6 @@ object StormLaws extends WordSpec {
     outputList.toList
   }
 
-  val outputList = new ArrayBuffer[Int] with SynchronizedBuffer[Int]
-
   def append(x: Int): Unit = {
     StormLaws.outputList += x
   }
@@ -116,7 +114,14 @@ object StormLaws extends WordSpec {
 
   val serviceFn = sample[Int => Option[Int]]
   val service = ReadableServiceFactory[Int, Int](() => ReadableStore.fromFn(serviceFn))
-  // ALL TESTS START AFTER THIS LINE
+
+}
+
+// ALL TESTS START GO IN THE CLASS NOT OBJECT
+
+class StormLaws extends WordSpec {
+  import StormLaws._
+  import MapAlgebra.sparseEquiv
 
   "StormPlatform matches Scala for single step jobs" in {
     val original = sample[List[Int]]

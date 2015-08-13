@@ -27,7 +27,7 @@ import scala.collection.mutable.{ HashMap => MutableHashMap, ListBuffer, Map => 
  * Tests for Summingbird's in-memory planner.
  */
 
-object MemoryLaws extends WordSpec {
+class MemoryLaws extends WordSpec {
   // This is dangerous, obviously. The Memory platform tested here
   // doesn't perform any batching, so the actual time extraction isn't
   // needed.
