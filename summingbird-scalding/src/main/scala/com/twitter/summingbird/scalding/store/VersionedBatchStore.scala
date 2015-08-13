@@ -17,11 +17,10 @@ limitations under the License.
 package com.twitter.summingbird.scalding.store
 
 import cascading.flow.FlowDef
-import cascading.flow.FlowDef
 import com.twitter.algebird.monad.Reader
 import com.twitter.bijection.Injection
 import com.twitter.scalding.commons.source.VersionedKeyValSource
-import com.twitter.scalding.{ Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, TupleSetter }
+import com.twitter.scalding.{ Mode, TypedPipe, Hdfs => HdfsMode, TupleSetter }
 import com.twitter.summingbird.batch.store.HDFSMetadata
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.scalding._
@@ -167,7 +166,6 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
    * EXCLUSIVE upper bound on batchID, or "batchID.next".
    */
   override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
-    import Dsl._
     val batchVersion = batchIDToVersion(batchID)
     /**
      * The Builder API used to not specify a sinkVersion, leading to
@@ -211,7 +209,6 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
     if (!target.sinkExists(mode)) {
       logger.info(s"Versioned batched store version for $this @ $newVersion doesn't exist. Will write out.")
       lastVals.map(pack(batchID, _))
-        .toPipe((0, 1))
         .write(target)
     } else {
       logger.warn(s"""Versioned batched store version for $this @ $newVersion already exists! Will skip adding to plan.
