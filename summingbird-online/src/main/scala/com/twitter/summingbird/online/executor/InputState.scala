@@ -46,7 +46,7 @@ object InflightTuples {
   def get = data.get
 
   // WARNING, only use this in testing!!
-  def reset = data.set(0)
+  def reset() = data.set(0)
 
 }
 

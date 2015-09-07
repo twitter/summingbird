@@ -15,7 +15,7 @@ limitations under the License.
 */
 package com.twitter.summingbird.scalding
 
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 import java.lang.{ Integer => JInt }
 import com.twitter.scalding._
 
@@ -59,7 +59,7 @@ class LookupJoinerJob(args: Args) extends Job(args) {
     .write(TypedTsv[(String, String, String, String)]("output2"))
 }
 
-class LookupJoinedTest extends Specification {
+class LookupJoinedTest extends WordSpec {
 
   import Dsl._
   import LookupJoinedTest.genList
@@ -111,13 +111,13 @@ class LookupJoinedTest extends Specification {
         .source(TypedTsv[(Int, Int, Int)]("input1"), in1)
         .sink[(String, String, String, String)](
           TypedTsv[(String, String, String, String)]("output")) { outBuf =>
-            outBuf.toSet must be_==(lookupJoin(in0, in1).toSet)
-            in0.size must be_==(outBuf.size)
+            assert(outBuf.toSet == lookupJoin(in0, in1).toSet)
+            assert(in0.size == outBuf.size)
           }
         .sink[(String, String, String, String)](
           TypedTsv[(String, String, String, String)]("output2")) { outBuf =>
-            outBuf.toSet must be_==(lookupSumJoin(in0, in1).toSet)
-            in0.size must be_==(outBuf.size)
+            assert(outBuf.toSet == lookupSumJoin(in0, in1).toSet)
+            assert(in0.size == outBuf.size)
           }
         .run
         //.runHadoop
@@ -145,7 +145,7 @@ class WindowLookupJoinerJob(args: Args) extends Job(args) {
     .write(TypedTsv[(String, String, String, String)]("output"))
 }
 
-class WindowLookupJoinedTest extends Specification {
+class WindowLookupJoinedTest extends WordSpec {
 
   import Dsl._
   import LookupJoinedTest.genList
@@ -186,9 +186,9 @@ class WindowLookupJoinedTest extends Specification {
             def none(it: List[(String, String, String, String)]) =
               it.filter(_._4.startsWith("None"))
 
-            some(results) must be_==(some(correct))
-            none(results) must be_==(none(correct))
-            in0.size must be_==(outBuf.size)
+            assert(some(results) == some(correct))
+            assert(none(results) == none(correct))
+            assert(in0.size == outBuf.size)
           }
         .run
         //.runHadoop

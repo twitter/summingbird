@@ -1,14 +1,14 @@
 package com.twitter.summingbird.example
 
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
-class Smoketest extends Specification {
+class Smoketest extends WordSpec {
 
   "The memcache storage" should {
     "be able to be created" in {
       val stringLongStore =
         Memcache.mergeable[String, Long]("urlCount")
-      1 must beEqualTo(1)
+      assert(1 == 1)
     }
   }
 }

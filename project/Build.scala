@@ -10,30 +10,45 @@ import scalariform.formatter.preferences._
 import com.typesafe.sbt.SbtScalariform._
 
 object SummingbirdBuild extends Build {
-  def withCross(dep: ModuleID) =
-    dep cross CrossVersion.binaryMapped {
-      case "2.9.3" => "2.9.2" // TODO: hack because twitter hasn't built things against 2.9.3
-      case version if version startsWith "2.10" => "2.10" // TODO: hack because sbt is broken
-      case x => x
-    }
-
-  def specs2Import(scalaVersion: String) = scalaVersion match {
-      case version if version startsWith "2.9" => "org.specs2" %% "specs2" % "1.12.4.1" % "test"
-      case version if version startsWith "2.10" => "org.specs2" %% "specs2" % "1.13" % "test"
+  def scalaBinaryVersion(scalaVersion: String) = scalaVersion match {
+    case version if version startsWith "2.10" => "2.10"
+    case version if version startsWith "2.11" => "2.11"
+    case version if version startsWith "2.12" => "2.12"
+    case _ => sys.error("Unsupported scala version: " + scalaVersion)
   }
 
-  def isScala210x(scalaVersion: String) = scalaVersion match {
-      case version if version startsWith "2.9" => false
-      case version if version startsWith "2.10" => true
-  }
+  def isScala210x(scalaVersion: String) = scalaBinaryVersion(scalaVersion) == "2.10"
+
+  val scalaCheckVersion = "1.12.2"
+  val hadoopVersion = "1.2.1"
+  val algebirdVersion = "0.11.0"
+  val bijectionVersion = "0.8.1"
+  val chillVersion = "0.7.0"
+  val slf4jVersion = "1.6.6"
+
+  val dfsDatastoresVersion = "1.3.6"
+  val scaldingVersion = "0.15.1-RC13"
+  val storehausVersion = "0.12.0"
+  val utilVersion = "6.26.0"
+
+  val finagleVersion = "6.27.0"
+  val tormentaVersion = "0.11.0"
+  val junitVersion = "4.11"
+  val log4jVersion = "1.2.16"
+  val stormVersion = "0.9.0-wip15"
+  val commonsLangVersion = "2.6"
+  val novocodeJunitVersion = "0.10"
+  val scalatestVersion = "2.2.4"
+
+  val commonsHttpClientVersion = "3.1"
 
   val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    version := "0.5.1",
-    scalaVersion := "2.9.3",
-    crossScalaVersions := Seq("2.9.3", "2.10.4"),
+    version := "0.8.0",
+    scalaVersion := "2.10.5",
+    crossScalaVersions := Seq("2.10.5", "2.11.7"),
     // To support hadoop 1.x
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
@@ -45,17 +60,14 @@ object SummingbirdBuild extends Build {
     },
 
     libraryDependencies ++= Seq(
-      "junit" % "junit" % "4.11" % "test",
+      "junit" % "junit" % junitVersion % "test",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
-      "org.scalacheck" %% "scalacheck" % "1.10.0" % "test",
+      "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test",
       // These satisify's scaldings log4j needs when in test mode
-      "log4j" % "log4j" % "1.2.16" % "test",
-      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
+      "log4j" % "log4j" % log4jVersion % "test",
+      "com.novocode" % "junit-interface" % novocodeJunitVersion % "test",
+      "org.scalatest" %% "scalatest" % scalatestVersion % "test"
     ),
-
-    libraryDependencies <+= scalaVersion(specs2Import(_)),
-
-    libraryDependencies += "com.novocode" % "junit-interface" % "0.10" % "test",
 
     resolvers ++= Seq(
       Opts.resolver.sonatypeSnapshots,
@@ -141,32 +153,19 @@ object SummingbirdBuild extends Build {
     publishLocal := { }
   ).aggregate(
     summingbirdCore,
-    summingbirdCoreJava,
     summingbirdBatch,
     summingbirdBatchHadoop,
     summingbirdOnline,
     summingbirdClient,
     summingbirdStorm,
     summingbirdStormTest,
-    summingbirdStormJava,
     summingbirdScalding,
     summingbirdScaldingTest,
-    summingbirdSpark,
     summingbirdBuilder,
     summingbirdChill,
-    summingbirdExample
+    summingbirdExample,
+    summingbirdCoreTest
   )
-
-  val dfsDatastoresVersion = "1.3.4"
-  val bijectionVersion = "0.6.3"
-  val algebirdVersion = "0.7.0"
-  val scaldingVersion = "0.11.3rc1"
-  val storehausVersion = "0.9.1"
-  val utilVersion = "6.3.8"
-  val chillVersion = "0.4.0"
-  val tormentaVersion = "0.7.0"
-
-  lazy val slf4jVersion = "1.6.6"
 
   /**
     * This returns the youngest jar we released that is compatible with
@@ -177,7 +176,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.9.3") % "0.5.0" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.8.0" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
@@ -191,14 +190,16 @@ object SummingbirdBuild extends Build {
     libraryDependencies ++= Seq(
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
-      "com.twitter" %% "scalding-date" % scaldingVersion
+      "com.twitter" %% "scalding-date" % scaldingVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   )
 
   lazy val summingbirdChill = module("chill").settings(
     libraryDependencies ++= Seq(
       "com.twitter" %% "chill" % chillVersion,
-      "com.twitter" %% "chill-bijection" % chillVersion
+      "com.twitter" %% "chill-bijection" % chillVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(
       summingbirdCore,
@@ -211,16 +212,13 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "algebird-util" % algebirdVersion,
       "com.twitter" %% "bijection-core" % bijectionVersion,
       "com.twitter" %% "storehaus-core" % storehausVersion,
-      "com.twitter" %% "storehaus-algebra" % storehausVersion
+      "com.twitter" %% "storehaus-algebra" % storehausVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(summingbirdBatch)
 
   lazy val summingbirdCore = module("core").settings(
     libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
-  )
-
-  lazy val summingbirdCoreJava = module("core-java").dependsOn(
-    summingbirdCore % "test->test;compile->compile"
   )
 
   lazy val summingbirdOnline = module("online").settings(
@@ -231,10 +229,12 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "chill" % chillVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
-      withCross("com.twitter" %% "util-core" % utilVersion)
+      "com.twitter" %% "util-core" % utilVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdBatch,
     summingbirdClient
   )
@@ -251,8 +251,8 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "scalding-args" % scaldingVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion,
-      withCross("com.twitter" %% "util-core" % utilVersion),
-      "storm" % "storm" % "0.9.0-wip15" % "provided"
+      "com.twitter" %% "util-core" % utilVersion,
+      "storm" % "storm" % stormVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -269,22 +269,13 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-core" % storehausVersion,
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion,
-      withCross("com.twitter" %% "util-core" % utilVersion),
-      "storm" % "storm" % "0.9.0-wip15" % "provided"
+      "com.twitter" %% "util-core" % utilVersion,
+      "storm" % "storm" % stormVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdStorm
-  )
-
-  lazy val summingbirdStormJava = module("storm-java").settings(
-    libraryDependencies ++= Seq(
-      "storm" % "storm" % "0.9.0-wip15" % "provided"
-    )
-  ).dependsOn(
-    summingbirdCore % "test->test;compile->compile",
-    summingbirdCoreJava % "test->test;compile->compile",
-    summingbirdStorm % "test->test;compile->compile"
   )
 
   lazy val summingbirdScalding = module("scalding").settings(
@@ -298,9 +289,10 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "chill" % chillVersion,
       "com.twitter" % "chill-hadoop" % chillVersion,
       "com.twitter" %% "chill-bijection" % chillVersion,
-      "commons-lang" % "commons-lang" % "2.6",
+      "commons-lang" % "commons-lang" % commonsLangVersion,
       "com.twitter" %% "scalding-core" % scaldingVersion,
-      "com.twitter" %% "scalding-commons" % scaldingVersion
+      "com.twitter" %% "scalding-commons" % scaldingVersion,
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -311,10 +303,13 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdScaldingTest = module("scalding-test").settings(
     libraryDependencies ++= Seq(
-      "org.scalacheck" %% "scalacheck" % "1.10.0"
+      "org.scalacheck" %% "scalacheck" % scalaCheckVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
+    summingbirdCoreTest % "test->test",
     summingbirdChill,
     summingbirdBatchHadoop,
     summingbirdScalding
@@ -325,7 +320,9 @@ object SummingbirdBuild extends Build {
       "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-json" % bijectionVersion,
-      "com.twitter" %% "scalding-date" % scaldingVersion
+      "com.twitter" %% "scalding-date" % scaldingVersion,
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -334,7 +331,8 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdBuilder = module("builder").settings(
     libraryDependencies ++= Seq(
-      "storm" % "storm" % "0.9.0-wip15" % "provided"
+      "storm" % "storm" % stormVersion % "provided",
+      "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
     summingbirdCore,
@@ -344,57 +342,25 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdExample = module("example").settings(
     libraryDependencies ++= Seq(
-      "log4j" % "log4j" % "1.2.16",
+      "log4j" % "log4j" % log4jVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-      "storm" % "storm" % "0.9.0-wip15" exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
+      "storm" % "storm" % stormVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "bijection-netty" % bijectionVersion,
       "com.twitter" %% "tormenta-twitter" % tormentaVersion,
-      "com.twitter" %% "storehaus-memcache" % storehausVersion
+      "com.twitter" %% "storehaus-memcache" % storehausVersion exclude("com.twitter.common", "dynamic-host-set") exclude("com.twitter.common", "service-thrift"),
+      "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
     )
-  ).dependsOn(summingbirdCore, summingbirdCoreJava, summingbirdStorm, summingbirdStormJava)
+  ).dependsOn(summingbirdCore, summingbirdStorm)
 
-  lazy val sparkAssemblyMergeSettings = assemblySettings :+ {
-    mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) =>
-      {
-        //case PathList("org", "w3c", xs @ _*) => MergeStrategy.first
-        //case "about.html"     => MergeStrategy.discard
-        case PathList("com", "esotericsoftware", "minlog", xs @ _*) => MergeStrategy.first
-        case PathList("org", "apache", "commons", "beanutils", xs @ _*) => MergeStrategy.first
-        case PathList("org", "apache", "commons", "collections", xs @ _*) => MergeStrategy.first
-        case PathList("org", "apache", "jasper", xs @ _*) => MergeStrategy.first
-        case "log4j.properties"     => MergeStrategy.concat
-        case x if x.endsWith(".xsd") || x.endsWith(".dtd") => MergeStrategy.first
-        case x => old(x)
-      }
-    }
-  }
+  lazy val summingbirdCoreTest = module("core-test").settings(
+    parallelExecution in Test := false,
+    libraryDependencies ++=Seq(
+      "junit" % "junit" % junitVersion % "provided",
+      "org.slf4j" % "slf4j-api" % slf4jVersion % "provided",
+      "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "provided",
+      "org.scalatest" %% "scalatest" % scalatestVersion % "provided")
 
-  val sparkDeps = Seq(
-    "com.twitter" %% "algebird-core" % algebirdVersion,
-    "com.twitter" %% "algebird-util" % algebirdVersion,
-    "com.twitter" %% "algebird-bijection" % algebirdVersion,
-    "com.twitter" %% "bijection-json" % bijectionVersion,
-    "com.twitter" %% "chill" % chillVersion,
-    "com.twitter" % "chill-hadoop" % chillVersion,
-    "com.twitter" %% "chill-bijection" % chillVersion,
-    "commons-lang" % "commons-lang" % "2.6",
-    "commons-httpclient" % "commons-httpclient" % "3.1",
-    "org.apache.spark" %% "spark-core" % "0.9.0-incubating" % "provided"
-  )
-
-  def buildSparkDeps(scalaVersion: String) = if (isScala210x(scalaVersion)) sparkDeps else Seq()
-
-  lazy val summingbirdSpark = module("spark").settings(
-    resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-    skip in compile := !isScala210x(scalaVersion.value),
-    skip in doc := !isScala210x(scalaVersion.value),
-    skip in test := !isScala210x(scalaVersion.value),
-    publishArtifact := isScala210x(scalaVersion.value),
-    libraryDependencies ++= buildSparkDeps(scalaVersion.value)
-  )
-  .settings(sparkAssemblyMergeSettings:_*)
-  .dependsOn(
-    summingbirdCore % "test->test;compile->compile",
-    summingbirdChill
-  )
+  ).dependsOn(
+      summingbirdCore % "test->test;compile->compile"
+    )
 }

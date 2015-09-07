@@ -113,7 +113,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
     val operation = foldOperations[T, (K, V)](node.members.reverse)
     val wrappedOperation = wrapTimeBatchIDKV(operation)(batcher)
 
-    val builder = BuildSummer(storm, stormDag, node)
+    val builder = BuildSummer(storm, stormDag, node, jobID)
 
     BaseBolt(
       jobID,
