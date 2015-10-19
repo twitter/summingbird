@@ -33,6 +33,8 @@ import cascading.flow.FlowDef
 import org.slf4j.LoggerFactory
 
 import StateWithError.{ getState, putState, fromEither }
+import com.twitter.scalding.serialization.macros.impl.BinaryOrdering
+
 private[batch] case class LTuple2[T, U](_1: T, _2: U) {
   override lazy val hashCode: Int = super.hashCode
   override def equals(other: Any): Boolean = other match {
@@ -184,8 +186,8 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // monoid is not commutative. Although sorting by time is adequate for both, sorting
       // by batch is more efficient because the reducers' input is almost sorted.
       val sorted = commutativity match {
-        case NonCommutative => grouped.sortBy { case (_, (t, _)) => t }
-        case Commutative => grouped.sortBy { case (b, (_, _)) => b }
+        case NonCommutative => grouped.sortBy { case (_, (t, _)) => t }(BinaryOrdering.ordSer[com.twitter.summingbird.batch.Timestamp])
+        case Commutative => grouped.sortBy { case (b, (_, _)) => b }(BinaryOrdering.ordSer[BatchID])
       }
 
       sorted
