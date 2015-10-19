@@ -149,6 +149,8 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
     extends VersionedBatchStoreBase[K, V](rootPath) {
   @transient private val logger = LoggerFactory.getLogger(classOf[VersionedBatchStore[_, _, _, _]])
 
+  override def toString: String = s"${this.getClass.getSimpleName}(rootPath=$rootPath, versionesToKeep=$versionsToKeep, batcher=$batcher)"
+
   /**
    * Make sure not to keep more than versionsToKeep when we write out.
    * If this is out of sync with VersionedKeyValSource we can have issues
