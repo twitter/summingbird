@@ -36,13 +36,13 @@ import StateWithError.{ getState, putState, fromEither }
 import com.twitter.scalding.serialization.macros.impl.BinaryOrdering
 
 /**
-  * This is the same as scala's Tuple2, except the hashCode is a lazy val.
+  * This is the same as scala's Tuple2, except the hashCode is a val.
   * We do this so when the tuple2 is placed in the map we won't caculate the hash code
   * unnecessarily several times as the map grows or is transformed.
   */
 case class LTuple2[T, U](_1: T, _2: U) {
 
-  override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
+  override val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
 
   override def equals(other: Any): Boolean = other match {
     case LTuple2(oT1, oT2) => hashCode == other.hashCode && _1 == oT2 && _2 == oT2
