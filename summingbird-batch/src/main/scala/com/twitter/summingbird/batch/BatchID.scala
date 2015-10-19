@@ -139,5 +139,5 @@ case class BatchID(id: Long) extends Ordered[BatchID] with java.io.Serializable 
   def min(b: BatchID) = if (this < b) this else b
 
   override lazy val toString = "BatchID." + id.toString
-  override lazy val hashCode: Int = super.hashCode
+  override lazy val hashCode: Int = id.hashCode
 }
