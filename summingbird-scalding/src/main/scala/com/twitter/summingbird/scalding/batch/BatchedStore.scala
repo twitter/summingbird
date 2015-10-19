@@ -35,7 +35,12 @@ import org.slf4j.LoggerFactory
 import StateWithError.{ getState, putState, fromEither }
 import com.twitter.scalding.serialization.macros.impl.BinaryOrdering
 
-private[batch] case class LTuple2[T, U](_1: T, _2: U) {
+/**
+  * This is the same as scala's Tuple2, except the hashCode is a lazy val.
+  * We do this so when the tuple2 is placed in the map we won't caculate the hash code
+  * unnecessarily several times as the map grows or is transformed.
+  */
+case class LTuple2[T, U](_1: T, _2: U) {
 
   override lazy val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
 
