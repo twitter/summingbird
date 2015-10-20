@@ -681,8 +681,6 @@ class Scalding(
     // Store the options used:
     val postConfig = config.+("summingbird.options" -> options.toString)
       .+("summingbird.jobname" -> jobName)
-      // legacy name to match scalding
-      .+("scalding.flow.submitted.timestamp" -> System.currentTimeMillis.toString)
       .+("summingbird.submitted.timestamp" -> System.currentTimeMillis.toString)
 
     postConfig.toMap.foreach { case (k, v) => hConf.set(k, v) }

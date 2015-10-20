@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.scalding.{ Args, Hdfs, RichDate, DateParser }
+import com.twitter.scalding.{ Args, Config, Hdfs, RichDate, DateParser }
 import com.twitter.summingbird.batch.store.HDFSMetadata
 import com.twitter.summingbird.{ Env, Summer, TailProducer, AbstractJob }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
@@ -116,7 +116,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     val scald = Scalding(name, opts)
       .withRegistrars(ajob.registrars ++ builder.registrar.getRegistrars.asScala)
       .withConfigUpdater { c =>
-        com.twitter.scalding.Config.tryFrom(ajob.transformConfig(c.toMap).toMap).get
+        Config.tryFrom(ajob.transformConfig(c.toMap).toMap).get
       }
 
     def getStatePath(ss: Store[_, _]): Option[String] =
