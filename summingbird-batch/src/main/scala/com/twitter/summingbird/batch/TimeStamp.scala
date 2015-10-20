@@ -36,6 +36,7 @@ case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
   def incrementMinutes(minutes: Long) = Timestamp(milliSinceEpoch + (minutes * 1000 * 60))
   def incrementHours(hours: Long) = Timestamp(milliSinceEpoch + (hours * 1000 * 60 * 60))
   def incrementDays(days: Long) = Timestamp(milliSinceEpoch + (days * 1000 * 60 * 60 * 24))
+  override def hashCode: Int = milliSinceEpoch.hashCode
 }
 
 object Timestamp {

@@ -33,6 +33,23 @@ import cascading.flow.FlowDef
 import org.slf4j.LoggerFactory
 
 import StateWithError.{ getState, putState, fromEither }
+import com.twitter.scalding.serialization.macros.impl.BinaryOrdering
+
+/**
+ * This is the same as scala's Tuple2, except the hashCode is a val.
+ * We do this so when the tuple2 is placed in the map we won't caculate the hash code
+ * unnecessarily several times as the map grows or is transformed.
+ */
+case class LTuple2[T, U](_1: T, _2: U) {
+
+  override val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
+
+  override def equals(other: Any): Boolean = other match {
+    case LTuple2(oT1, oT2) => hashCode == other.hashCode && _1 == oT2 && _2 == oT2
+    case _ => false
+  }
+
+}
 
 trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
   /** The batcher for this store */
@@ -93,14 +110,14 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
   protected def sumByBatches[K1, V: Semigroup](ins: TypedPipe[(Timestamp, (K1, V))],
     capturedBatcher: Batcher,
-    commutativity: Commutativity): TypedPipe[((K1, BatchID), (Timestamp, V))] = {
+    commutativity: Commutativity): TypedPipe[(LTuple2[K1, BatchID], (Timestamp, V))] = {
     implicit val timeValueSemigroup: Semigroup[(Timestamp, V)] =
       IteratorSums.optimizedPairSemigroup[Timestamp, V](1000)
 
     val inits = ins.map {
       case (t, (k, v)) =>
         val batch = capturedBatcher.batchOf(t)
-        ((k, batch), (t, v))
+        (LTuple2(k, batch), (t, v))
     }
     (commutativity match {
       case Commutative => inits.sumByLocalKeys
@@ -122,7 +139,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       case Commutative => delta.map { flow =>
         flow.map { typedP =>
           sumByBatches(typedP, capturedBatcher, Commutative)
-            .map { case ((k, _), (ts, v)) => (ts, (k, v)) }
+            .map { case (LTuple2(k, _), (ts, v)) => (ts, (k, v)) }
         }
       }
       case NonCommutative => delta
@@ -160,7 +177,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
     def prepareDeltas(ins: TypedPipe[(Timestamp, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
       sumByBatches(ins, capturedBatcher, commutativity)
-        .map { case ((k, batch), (ts, v)) => (k, (batch, (ts, v))) }
+        .map { case (LTuple2(k, batch), (ts, v)) => (k, (batch, (ts, v))) }
 
     /**
      * Produce a merged stream such that each BatchID, Key pair appears only one time.
@@ -177,8 +194,8 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // monoid is not commutative. Although sorting by time is adequate for both, sorting
       // by batch is more efficient because the reducers' input is almost sorted.
       val sorted = commutativity match {
-        case NonCommutative => grouped.sortBy { case (_, (t, _)) => t }
-        case Commutative => grouped.sortBy { case (b, (_, _)) => b }
+        case NonCommutative => grouped.sortBy { case (_, (t, _)) => t }(BinaryOrdering.ordSer[com.twitter.summingbird.batch.Timestamp])
+        case Commutative => grouped.sortBy { case (b, (_, _)) => b }(BinaryOrdering.ordSer[BatchID])
       }
 
       sorted
@@ -341,7 +358,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       if (batcher.batchesCoveredBy(readTimespan) == Empty()) {
         Left(List("readTimespan is not convering at least one batch: " + readTimespan.toString))
       } else {
-        Right()
+        Right(())
       }
     }
 
