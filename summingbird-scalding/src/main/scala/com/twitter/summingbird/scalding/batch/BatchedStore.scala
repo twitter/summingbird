@@ -36,10 +36,10 @@ import StateWithError.{ getState, putState, fromEither }
 import com.twitter.scalding.serialization.macros.impl.BinaryOrdering
 
 /**
-  * This is the same as scala's Tuple2, except the hashCode is a val.
-  * We do this so when the tuple2 is placed in the map we won't caculate the hash code
-  * unnecessarily several times as the map grows or is transformed.
-  */
+ * This is the same as scala's Tuple2, except the hashCode is a val.
+ * We do this so when the tuple2 is placed in the map we won't caculate the hash code
+ * unnecessarily several times as the map grows or is transformed.
+ */
 case class LTuple2[T, U](_1: T, _2: U) {
 
   override val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
