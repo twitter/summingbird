@@ -55,9 +55,9 @@ class OptionsTest extends WordSpec {
 
     val conf = new Configuration
     val cfg = scalding.build.platform.buildConfig(conf)
-    assert(cfg.get("com.twitter.chill.config.configuredinstantiator") != null)
-    assert(cfg.get("summingbird.options") == scalding.build.platform.options.toString)
-    assert(cfg.get("cascading.aggregateby.threshold") == "100000")
+    assert(cfg.get("com.twitter.chill.config.configuredinstantiator") != None)
+    assert(cfg.get("summingbird.options") == Some(scalding.build.platform.options.toString))
+    assert(cfg.get("cascading.aggregateby.threshold") == Some("100000"))
 
     val opts = scalding.build.platform.options
     val dependants = Dependants(scalding.build.toRun)
