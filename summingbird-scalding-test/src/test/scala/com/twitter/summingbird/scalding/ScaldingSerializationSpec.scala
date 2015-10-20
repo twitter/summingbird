@@ -47,6 +47,7 @@ import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
 
 import org.scalatest.WordSpec
+import com.twitter.scalding.Config
 
 class ScaldingSerializationSpecs extends WordSpec {
   implicit def tupleExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor(_._1)
@@ -67,7 +68,7 @@ class ScaldingSerializationSpecs extends WordSpec {
       val intr = Interval.leftClosedRightOpen(Timestamp(0L), Timestamp(inWithTime.size.toLong))
       val scald = Scalding("scalaCheckJob")
 
-      assert((try { scald.toFlow(intr, mode, scald.plan(summer)); true }
+      assert((try { scald.toFlow(Config.default, intr, mode, scald.plan(summer)); true }
       catch { case t: Throwable => println(toTry(t)); false }) == true)
     }
   }

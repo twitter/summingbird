@@ -22,7 +22,7 @@ import com.twitter.bijection.Injection
 import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.scalding.{ Mode, TypedPipe, Hdfs => HdfsMode, TupleSetter }
 import com.twitter.summingbird.batch.store.HDFSMetadata
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, OrderedFromOrderingExt }
 import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.scalding.{ Try, FlowProducer, Scalding }
@@ -51,7 +51,7 @@ object VersionedBatchStore {
  * plug in methods to actually read or write the data.
  */
 abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends BatchedStore[K, V] {
-
+  import OrderedFromOrderingExt._
   /**
    * Returns a snapshot of the store's (K, V) pairs aggregated up to
    * (but not including!) the time covered by the supplied batchID.

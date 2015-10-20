@@ -29,7 +29,7 @@ import com.twitter.scalding.{ Dsl, Mode, Hdfs, TypedPipe, IterableSource, Writab
 import com.twitter.scalding.typed.TypedSink
 
 import com.twitter.summingbird.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, OrderedFromOrderingExt }
 import com.twitter.summingbird.scalding._
 
 /**
@@ -42,7 +42,7 @@ import com.twitter.summingbird.scalding._
 class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)(implicit inBatcher: Batcher, ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
     extends batch.BatchedStore[K, V] {
   import Dsl._
-
+  import OrderedFromOrderingExt._
   val batcher = inBatcher
   val ordering = ord
 
@@ -81,7 +81,7 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)(
 
         val lastBatchStatus =
           hdfsPaths.map(getFileStatus(_, conf))
-            .filter { input => input._1 && (BatchID(input._2) < exclusiveUB) }
+            .filter { input => input._1 && (BatchID(input._2.milliSinceEpoch) < exclusiveUB) }
             .reduceOption { (a, b) => if (a._2 > b._2) a else b }
             .getOrElse((false, 0, "0"))
 

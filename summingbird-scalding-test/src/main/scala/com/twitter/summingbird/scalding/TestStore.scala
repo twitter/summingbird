@@ -42,7 +42,7 @@ object TestStore {
 
 class TestStore[K, V](store: String, inBatcher: Batcher, val initBatch: BatchID, initStore: Iterable[(K, V)], lastBatch: BatchID, override val pruning: PrunedSpace[(K, V)])(implicit ord: Ordering[K], tset: TupleSetter[(K, V)], tconv: TupleConverter[(K, V)])
     extends batch.BatchedStore[K, V] {
-
+  import OrderedFromOrderingExt._
   var writtenBatches = Set[BatchID](initBatch)
   val batches: Map[BatchID, Mappable[(K, V)]] =
     BatchID.range(initBatch, lastBatch).map { b => (b, mockFor(b)) }.toMap

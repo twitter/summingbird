@@ -116,7 +116,7 @@ case class ScaldingEnv(override val jobName: String, inargs: Array[String])
     val scald = Scalding(name, opts)
       .withRegistrars(ajob.registrars ++ builder.registrar.getRegistrars.asScala)
       .withConfigUpdater { c =>
-        c.updated(ajob.transformConfig(c.toMap))
+        com.twitter.scalding.Config.tryFrom(ajob.transformConfig(c.toMap).toMap).get
       }
 
     def getStatePath(ss: Store[_, _]): Option[String] =
