@@ -81,7 +81,7 @@ class DirectoryBatchedStore[K <: Writable, V <: Writable](val rootPath: String)(
 
         val lastBatchStatus =
           hdfsPaths.map(getFileStatus(_, conf))
-            .filter { input => input._1 && (BatchID(input._2.milliSinceEpoch) < exclusiveUB) }
+            .filter { case (isGood, timestamp, _) => isGood && (batcher.batchOf(timestamp) < exclusiveUB) }
             .reduceOption { (a, b) => if (a._2 > b._2) a else b }
             .getOrElse((false, 0, "0"))
 
