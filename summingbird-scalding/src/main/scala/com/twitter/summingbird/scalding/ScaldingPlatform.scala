@@ -641,7 +641,7 @@ class Scalding(
   @transient val options: Map[String, Options],
   @transient transformConfig: Config => Config,
   @transient passedRegistrars: List[IKryoRegistrar])
-    extends Platform[Scalding] with java.io.Serializable {
+  extends Platform[Scalding] with java.io.Serializable {
 
   type Source[T] = PipeFactory[T]
   type Store[K, V] = scalding.Store[K, V]
@@ -663,16 +663,20 @@ class Scalding(
     import com.twitter.chill.config.ScalaMapConfig
     val conf = Config.hadoopWithDefaults(hConf)
 
-    val kryoReg = new IterableRegistrar(passedRegistrars)
+    if (passedRegistrars.isEmpty) {
+      conf.setSerialization(Right(classOf[serialization.KryoHadoop]))
+    } else {
+      val kryoReg = new IterableRegistrar(passedRegistrars)
+      val initKryo = conf.getKryo match {
+        case None =>
+          new serialization.KryoHadoop(ScalaMapConfig(conf.toMap))
+        case Some(kryo) => kryo
+      }
 
-    val initKryo = conf.getKryo match {
-      case None =>
-        new serialization.KryoHadoop(ScalaMapConfig(conf.toMap))
-      case Some(kryo) => kryo
+      conf
+        .setSerialization(
+          Left((classOf[serialization.KryoHadoop], initKryo.withRegistrar(kryoReg))), Nil)
     }
-    conf
-      .setSerialization(
-        Left((classOf[serialization.KryoHadoop], initKryo.withRegistrar(kryoReg))), Nil)
   }
 
   final def buildConfig(hConf: Configuration): Config = {
