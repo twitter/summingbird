@@ -20,7 +20,7 @@ import com.twitter.scalding.{ Mode, TypedPipe }
 import com.twitter.summingbird._
 import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.scalding.{ Try, FlowProducer, Scalding }
-import com.twitter.summingbird.batch.BatchID
+import com.twitter.summingbird.batch.{ BatchID, OrderedFromOrderingExt }
 import cascading.flow.FlowDef
 import com.twitter.summingbird.scalding._
 
@@ -30,7 +30,7 @@ import com.twitter.summingbird.scalding._
  */
 class InitialBatchedStore[K, V](val firstNonZero: BatchID, override val proxy: BatchedStore[K, V])
     extends ProxyBatchedStore[K, V] {
-
+  import OrderedFromOrderingExt._
   override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode) =
     if (batchID >= firstNonZero) proxy.writeLast(batchID, lastVals)
     else sys.error("Earliest batch set at :" + firstNonZero + " but tried to write: " + batchID)

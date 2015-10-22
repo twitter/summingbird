@@ -46,7 +46,7 @@ import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
 
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
 object VersionBatchLaws extends Properties("VersionBatchLaws") {
   property("version -> BatchID -> version") = forAll { (l: Long) =>

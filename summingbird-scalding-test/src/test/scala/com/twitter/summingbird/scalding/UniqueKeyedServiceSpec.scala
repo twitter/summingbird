@@ -5,7 +5,7 @@ import com.twitter.scalding.commons.source.VersionedKeyValSource
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.scalding.service._
 
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
 /**
  * Test Job for UniqueKeyedService
@@ -34,7 +34,7 @@ class UniqueKeyJoinJob(args: Args) extends Job(args) {
 /**
  * Test for UniqueKeyedService using UniqueKeyJoinJob
  */
-class UniqueKeyedServiceSpec extends Specification {
+class UniqueKeyedServiceSpec extends WordSpec {
 
   val input = List(
     (Timestamp(1001), (1001, 300L)),
@@ -63,9 +63,9 @@ class UniqueKeyedServiceSpec extends Specification {
         .source(VersionedKeyValSource[Int, String]("input2"), typedSource)
         .sink[(Timestamp, (Int, (Long, Option[String])))](TypedTsv[(Timestamp, (Int, (Long, Option[String])))]("output")) { outBuf =>
           // Make sure the doJoin outputs exact number of records for the inputs.
-          input.size must be_==(outBuf.size)
+          assert(input.size == outBuf.size)
           // Make sure the result is exact as expected.
-          outBuf.toSet must be_==(expectedResult)
+          assert(outBuf.toSet == expectedResult)
         }
         .run
         .finish

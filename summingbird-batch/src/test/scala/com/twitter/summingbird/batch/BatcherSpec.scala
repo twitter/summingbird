@@ -16,15 +16,15 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
-class BatcherSpec extends Specification {
+class BatcherSpec extends WordSpec {
   val hourlyBatcher = Batcher.ofHours(1)
-
+  import OrderedFromOrderingExt._
   def assertRelation(other: Batcher, m: Map[Long, Iterable[Long]]) =
     m.foreach {
       case (input, expected) =>
-        other.enclosedBy(BatchID(input), hourlyBatcher).toList must be_==(
+        assert(other.enclosedBy(BatchID(input), hourlyBatcher).toList ==
           expected.map(BatchID(_)).toList)
     }
 
@@ -44,13 +44,13 @@ class BatcherSpec extends Specification {
     val longBatch: BatchID = batcher.currentBatch
     val curBatch: BatchID = batcher.batchOf(Timestamp.now)
     // For a 10min window, longBatch <= curBatch <= longBatch + 1
-    (longBatch.compare(curBatch - 1) >= 0) must beTrue
-    (longBatch.compare(curBatch) <= 0) must beTrue
+    assert((longBatch.compare(curBatch - 1) >= 0) == true)
+    assert((longBatch.compare(curBatch) <= 0) == true)
   }
 
   "DurationBatcher should always require n batches to fit into a batcher of n hours" in {
     (10 to 100).foreach { n =>
-      Batcher.ofHours(n).enclosedBy(BatchID(100), hourlyBatcher).size must be_==(n)
+      assert(Batcher.ofHours(n).enclosedBy(BatchID(100), hourlyBatcher).size == n)
     }
   }
 }

@@ -1,5 +1,18 @@
 # Summingbird #
 
+## 0.9.0
+* Removing internal config setup from scalding platform: https://github.com/twitter/summingbird/pull/629
+* Remove store that no one seems to use and has no tests: https://github.com/twitter/summingbird/pull/630
+* Ianoc/optimization changes: https://github.com/twitter/summingbird/pull/628
+* Fixes tests: https://github.com/twitter/summingbird/pull/626
+* resilient to all stores being complete: https://github.com/twitter/summingbird/pull/627
+* Resilient to a store being ahead: https://github.com/twitter/summingbird/pull/625
+* move to scala test: https://github.com/twitter/summingbird/pull/621
+* Killing off Summingbird Java: https://github.com/twitter/summingbird/pull/624
+* Kill summingbird spark: https://github.com/twitter/summingbird/pull/622
+* Bumping sbt versions: https://github.com/twitter/summingbird/pull/623
+* Fixed erroneous comment in ClientStore&#39;s merge description: https://github.com/twitter/summingbird/pull/620
+
 ## 0.8.0
 * bumping Scalding to 0.15.0, algebird to 0.10.1
 

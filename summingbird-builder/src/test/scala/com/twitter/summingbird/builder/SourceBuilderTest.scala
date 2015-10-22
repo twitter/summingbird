@@ -17,26 +17,26 @@ limitations under the License.
 package com.twitter.summingbird.builder
 
 import com.twitter.summingbird._
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
 case class One()
 case class Two()
 
-class SourceBuilderTest extends Specification {
+class SourceBuilderTest extends WordSpec {
   "SourceBuilder.adjust should properly update a map" in {
     val empty = Map[String, Options]()
 
-    empty.get("a") must be_==(None)
-    empty.get("b") must be_==(None)
+    assert(empty.get("a") == None)
+    assert(empty.get("b") == None)
 
     val withA = SourceBuilder.adjust(empty, "a")(_.set(One()))
 
-    withA.get("a").flatMap(_.get[One]).exists(Set(One())) must beTrue
-    withA.get("b") must be_==(None)
+    assert(withA.get("a").flatMap(_.get[One]).exists(Set(One())) == true)
+    assert(withA.get("b") == None)
 
     val withB = SourceBuilder.adjust(withA, "b")(_.set(Two()))
 
-    withB.get("a").flatMap(_.get[One]).exists(Set(One())) must beTrue
-    withB.get("b").flatMap(_.get[Two]).exists(Set(Two())) must beTrue
+    assert(withB.get("a").flatMap(_.get[One]).exists(Set(One())) == true)
+    assert(withB.get("b").flatMap(_.get[Two]).exists(Set(Two())) == true)
   }
 }

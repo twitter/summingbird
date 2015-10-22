@@ -90,8 +90,9 @@ object ClientStore {
  * - Finally, reduce this list by monoid-merging together all
  *   (BatchID, V) pairs. If any BatchID is missing from the sequence
  *   (if there are any holes, for example), that particular merged
- *   value's computation in the result will be a Future.exception vs
- *   a defined future.
+ *   value's computation in the result will miss the contributions
+ *   due to those BatchID's.
+ *
  * - Drop the final BatchID off of all successfully aggregated
  *   values (since this BatchID will be the current batch in all
  *   successful cases).
