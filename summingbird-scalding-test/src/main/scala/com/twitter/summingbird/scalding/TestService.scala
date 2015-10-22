@@ -44,7 +44,7 @@ class TestService[K, V](service: String,
     tconv: TupleConverter[(Timestamp, (K, Option[V]))],
     tconv2: TupleConverter[(Timestamp, (K, V))])
     extends BBatchedService[K, V] {
-
+  import OrderedFromOrderingExt._
   val batcher = inBatcher
   val ordering = ord
   val reducers = None

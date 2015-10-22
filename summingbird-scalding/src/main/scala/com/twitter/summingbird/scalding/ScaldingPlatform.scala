@@ -33,21 +33,23 @@ import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.{ AbstractInjection, Injection }
 import com.twitter.chill.IKryoRegistrar
+import com.twitter.chill.java.IterableRegistrar
+import com.twitter.scalding.Config
 import com.twitter.scalding.Mode
 import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _ }
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.batch._
-import com.twitter.summingbird.scalding.source.{ TimePathedSource => BTimePathedSource }
-import com.twitter.summingbird.scalding.batch.BatchedStore
+import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.option._
+import com.twitter.summingbird.scalding.batch.BatchedStore
+import com.twitter.summingbird.scalding.source.{ TimePathedSource => BTimePathedSource }
 import java.util.{ HashMap => JHashMap, Map => JMap, TimeZone }
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.serializer.{ Serialization => HSerialization }
-import org.apache.hadoop.util.ToolRunner
 import org.apache.hadoop.util.GenericOptionsParser
+import org.apache.hadoop.util.ToolRunner
 import org.slf4j.LoggerFactory
 import scala.util.control.Exception.allCatch
 import scala.util.{ Success, Failure }
@@ -379,8 +381,7 @@ object Scalding {
               implicit val keyOrdering = bstore.ordering
               val Summer(storeLog, _, sg) = InternalService.getSummer[K, V](dependants, bstore)
                 .getOrElse(
-                  sys.error("join %s is against store not in the entire job's Dag".format(ljp))
-                )
+                  sys.error("join %s is against store not in the entire job's Dag".format(ljp)))
               val (leftPf, m1) = recurse(left)
               // We have to force the fanOut on the storeLog because this kind of fanout
               // due to joining is not visible in the Dependants dag
@@ -414,8 +415,7 @@ object Scalding {
               implicit val keyOrdering = bs.ordering
               val Summer(storeLog, _, sg) = InternalService.getSummer[K, U](dependants, bs)
                 .getOrElse(
-                  sys.error("join %s is against store not in the entire job's Dag".format(ljp))
-                )
+                  sys.error("join %s is against store not in the entire job's Dag".format(ljp)))
               implicit val semigroup: Semigroup[U] = sg
               logger.info("Service {} using {} reducers (-1 means unset)", ljp, reducers)
 
@@ -639,7 +639,7 @@ case class WriteStepsDot(filename: String)
 class Scalding(
   val jobName: String,
   @transient val options: Map[String, Options],
-  @transient transformConfig: SummingbirdConfig => SummingbirdConfig,
+  @transient transformConfig: Config => Config,
   @transient passedRegistrars: List[IKryoRegistrar])
     extends Platform[Scalding] with java.io.Serializable {
 
@@ -652,67 +652,47 @@ class Scalding(
   def plan[T](prod: TailProducer[Scalding, T]): PipeFactory[T] =
     Scalding.plan(options, prod)
 
-  protected def ioSerializations: List[Class[_ <: HSerialization[_]]] = List(
-    classOf[org.apache.hadoop.io.serializer.WritableSerialization],
-    classOf[cascading.tuple.hadoop.TupleSerialization],
-    classOf[com.twitter.chill.hadoop.KryoSerialization]
-  )
-
   def withRegistrars(newRegs: List[IKryoRegistrar]) =
     new Scalding(jobName, options, transformConfig, newRegs ++ passedRegistrars)
 
-  def withConfigUpdater(fn: SummingbirdConfig => SummingbirdConfig) =
+  def withConfigUpdater(fn: Config => Config) =
     new Scalding(jobName, options, transformConfig.andThen(fn), passedRegistrars)
 
-  def updateConfig(conf: Configuration) {
-    val scaldingConfig = SBChillRegistrar(ScaldingConfig(conf), passedRegistrars)
-    Scalding.logger.debug("Serialization config changes:")
-    Scalding.logger.debug("Removes: {}", scaldingConfig.removes)
-    Scalding.logger.debug("Updates: {}", scaldingConfig.updates)
+  def configProvider(hConf: Configuration): Config = {
+    import com.twitter.scalding._
+    import com.twitter.chill.config.ScalaMapConfig
+    val conf = Config.hadoopWithDefaults(hConf)
 
-    // now let the user do her thing:
-    val transformedConfig = transformConfig(scaldingConfig)
+    if (passedRegistrars.isEmpty) {
+      conf.setSerialization(Right(classOf[serialization.KryoHadoop]))
+    } else {
+      val kryoReg = new IterableRegistrar(passedRegistrars)
+      val initKryo = conf.getKryo match {
+        case None =>
+          new serialization.KryoHadoop(ScalaMapConfig(conf.toMap))
+        case Some(kryo) => kryo
+      }
 
-    Scalding.logger.debug("User+Serialization config changes:")
-    Scalding.logger.debug("Removes: {}", transformedConfig.removes)
-    Scalding.logger.debug("Updates: {}", transformedConfig.updates)
-
-    transformedConfig.removes.foreach(conf.set(_, null))
-    transformedConfig.updates.foreach(kv => conf.set(kv._1, kv._2.toString))
-    // Store the options used:
-    conf.set("summingbird.options", options.toString)
-    conf.set("summingbird.jobname", jobName)
-    // legacy name to match scalding
-    conf.set("scalding.flow.submitted.timestamp",
-      System.currentTimeMillis.toString)
-    conf.set("summingbird.submitted.timestamp",
-      System.currentTimeMillis.toString)
-
-    def ifUnset(k: String, v: String) { if (null == conf.get(k)) { conf.set(k, v) } }
-    // Set the mapside cache size, this is important to not be too small
-    ifUnset("cascading.aggregateby.threshold", "100000")
+      conf
+        .setSerialization(
+          Left((classOf[serialization.KryoHadoop], initKryo.withRegistrar(kryoReg))), Nil)
+    }
   }
 
-  private def setIoSerializations(c: Configuration): Unit =
-    c.set("io.serializations", ioSerializations.map { _.getName }.mkString(","))
+  final def buildConfig(hConf: Configuration): Config = {
+    val config = transformConfig(configProvider(hConf))
 
-  private val HADOOP_DEFAULTS = Map(
-    ("mapred.output.compression.type", "BLOCK"),
-    ("io.compression.codec.lzo.compression.level", "3"),
-    ("mapred.output.compress", "true"),
-    ("mapred.compress.map.output", "true"),
-    ("mapreduce.output.fileoutputformat.compress", "true"),
-    ("mapreduce.output.fileoutputformat.compress.codec", "com.hadoop.compression.lzo.LzoCodec")
-  )
+    // Store the options used:
+    val postConfig = config.+("summingbird.options" -> options.toString)
+      .+("summingbird.jobname" -> jobName)
+      .+("summingbird.submitted.timestamp" -> System.currentTimeMillis.toString)
 
-  private def setHadoopConfigDefaults(c: Configuration): Unit =
-    HADOOP_DEFAULTS.foreach {
-      case (k, v) =>
-        c.set(k, v)
-    }
+    postConfig.toMap.foreach { case (k, v) => hConf.set(k, v) }
+    postConfig
+  }
 
   // This is a side-effect-free computation that is called by run
-  def toFlow(timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Option[Flow[_]])] = {
+  def toFlow(config: Config, timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Option[Flow[_]])] = {
     val flowDef = new FlowDef
     flowDef.setName(jobName)
     Scalding.toPipe(timeSpan, flowDef, mode, pf)
@@ -721,11 +701,6 @@ class Scalding(
         case (ts, pipe) =>
           // Now we have a populated flowDef, time to let Cascading do it's thing:
           try {
-            val config: Config = mode match {
-              case Hdfs(_, conf) => Config.fromHadoop(conf)
-              case HadoopTest(conf, _) => Config.fromHadoop(conf)
-              case _ => Config.empty
-            }
             if (flowDef.getSinks.isEmpty) {
               Right((ts, None))
             } else {
@@ -751,22 +726,17 @@ class Scalding(
     pf: PipeFactory[Any],
     mutate: Flow[_] => Unit): WaitingState[Interval[Timestamp]] = {
 
-    mode match {
+    val config = mode match {
       case Hdfs(_, conf) =>
-        // Set these before the user settings, so that the user
-        // can change them if needed
-        setHadoopConfigDefaults(conf)
-        updateConfig(conf)
-        setIoSerializations(conf)
+        buildConfig(conf)
       case HadoopTest(conf, _) =>
-        setHadoopConfigDefaults(conf)
-        updateConfig(conf)
-        setIoSerializations(conf)
-      case _ =>
+        buildConfig(conf)
+
+      case _ => Config.empty
     }
 
     val prepareState = state.begin
-    toFlow(prepareState.requested, mode, pf) match {
+    toFlow(config, prepareState.requested, mode, pf) match {
       case Left(errs) =>
         prepareState.fail(FlowPlanException(errs))
       case Right((ts, flowOpt)) =>

@@ -26,19 +26,23 @@ import java.util.concurrent.TimeUnit
 
 object BatcherLaws extends Properties("Batcher") {
   import Generators._
+  import OrderedFromOrderingExt._
 
   def batchIdIdentity(batcher: Batcher) = { (b: BatchID) =>
     batcher.batchOf(batcher.earliestTimeOf(b))
   }
 
   def earliestIs_<=(batcher: Batcher) = forAll { (d: Timestamp) =>
-    (batcher.earliestTimeOf(batcher.batchOf(d)).compareTo(d) <= 0)
+    val ord = implicitly[Ordering[Timestamp]]
+    ord.compare(batcher.earliestTimeOf(batcher.batchOf(d)), d) <= 0
   }
 
   def batchesAreWeakOrderings(batcher: Batcher) = forAll { (d1: Timestamp, d2: Timestamp) =>
-    batcher.batchOf(d1).compare(batcher.batchOf(d2)) match {
+    val ord = implicitly[Ordering[BatchID]]
+    val ordT = implicitly[Ordering[Timestamp]]
+    ord.compare(batcher.batchOf(d1), batcher.batchOf(d2)) match {
       case 0 => true // can't say much
-      case x => d1.compareTo(d2) == x
+      case x => ordT.compare(d1, d2) == x
     }
   }
 

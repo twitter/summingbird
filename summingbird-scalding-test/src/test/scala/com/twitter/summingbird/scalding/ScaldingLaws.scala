@@ -593,7 +593,7 @@ class ScaldingLaws extends WordSpec {
       val summer = TestGraphs.jobWithStats[Scalding, (Long, Int), Int, Int](jobID, source, testStore)(t =>
         fn(t._2))
       val scald = Scalding("scalaCheckJob").withConfigUpdater { sbconf =>
-        sbconf.put("scalding.job.uniqueId", jobID.get)
+        sbconf.+("scalding.job.uniqueId", jobID.get)
       }
       val ws = new LoopState(intr)
       val conf: Configuration = new Configuration()

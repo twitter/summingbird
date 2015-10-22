@@ -20,7 +20,7 @@ import org.scalatest.WordSpec
 
 class BatcherSpec extends WordSpec {
   val hourlyBatcher = Batcher.ofHours(1)
-
+  import OrderedFromOrderingExt._
   def assertRelation(other: Batcher, m: Map[Long, Iterable[Long]]) =
     m.foreach {
       case (input, expected) =>

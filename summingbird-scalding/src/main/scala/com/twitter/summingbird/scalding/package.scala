@@ -72,7 +72,5 @@ package object scalding {
     printWriter.flush
     Left(List(msg + writer.toString))
   }
-
-  val ScaldingConfig = summingbird.batch.BatchConfig
 }
 

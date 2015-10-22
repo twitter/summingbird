@@ -46,9 +46,8 @@ import scala.collection.Iterator.iterate
  */
 
 object BatchID {
+  import OrderedFromOrderingExt._
   implicit val equiv: Equiv[BatchID] = Equiv.by(_.id)
-
-  def apply(ts: Timestamp) = new BatchID(ts.milliSinceEpoch)
 
   // Enables BatchID(someBatchID.toString) roundtripping
   def apply(str: String) = new BatchID(str.split("\\.")(1).toLong)
@@ -124,20 +123,18 @@ object BatchID {
   implicit val batchID2Bytes: Injection[BatchID, Array[Byte]] =
     Injection.connect[BatchID, Long, Array[Byte]]
 
-  implicit val ord: Ordering[BatchID] = Ordering.by(_.id)
+  implicit val batchIdOrdering: Ordering[BatchID] = Ordering.by(_.id)
 }
 
-case class BatchID(id: Long) extends Ordered[BatchID] with java.io.Serializable {
+case class BatchID(id: Long) extends AnyVal {
+  import OrderedFromOrderingExt._
   def next: BatchID = new BatchID(id + 1)
   def prev: BatchID = new BatchID(id - 1)
   def +(cnt: Long) = new BatchID(id + cnt)
+
   def -(cnt: Long) = new BatchID(id - cnt)
-
-  def compare(b: BatchID) = id.compareTo(b.id)
-
   def max(b: BatchID) = if (this >= b) this else b
   def min(b: BatchID) = if (this < b) this else b
 
-  override lazy val toString = "BatchID." + id.toString
-  override def hashCode: Int = id.hashCode
+  override def toString = "BatchID." + id.toString
 }

@@ -21,7 +21,7 @@ import com.twitter.bijection.Bijection
 import java.util.Date
 import com.twitter.scalding.RichDate
 
-case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
+case class Timestamp(milliSinceEpoch: Long) extends AnyVal {
   def compare(that: Timestamp) = milliSinceEpoch.compare(that.milliSinceEpoch)
   def prev = copy(milliSinceEpoch = milliSinceEpoch - 1)
   def next = copy(milliSinceEpoch = milliSinceEpoch + 1)
@@ -36,7 +36,6 @@ case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
   def incrementMinutes(minutes: Long) = Timestamp(milliSinceEpoch + (minutes * 1000 * 60))
   def incrementHours(hours: Long) = Timestamp(milliSinceEpoch + (hours * 1000 * 60 * 60))
   def incrementDays(days: Long) = Timestamp(milliSinceEpoch + (days * 1000 * 60 * 60 * 24))
-  override def hashCode: Int = milliSinceEpoch.hashCode
 }
 
 object Timestamp {
@@ -74,8 +73,11 @@ object Timestamp {
     override def sumOption(ti: TraversableOnce[Timestamp]) =
       if (ti.isEmpty) None
       else {
-        var last: Timestamp = null
-        ti.foreach { last = _ }
+        val iter = ti.toIterator
+        var last: Timestamp = iter.next
+        while (iter.hasNext) {
+          last = iter.next
+        }
         Some(last)
       }
   }
