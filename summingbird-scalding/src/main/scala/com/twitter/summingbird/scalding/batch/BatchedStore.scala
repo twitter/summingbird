@@ -45,7 +45,7 @@ case class LTuple2[T, U](_1: T, _2: U) {
   override val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
 
   override def equals(other: Any): Boolean = other match {
-    case LTuple2(oT1, oT2) => hashCode == other.hashCode && _1 == oT2 && _2 == oT2
+    case LTuple2(oT1, oT2) => hashCode == other.hashCode && _1 == oT1 && _2 == oT2
     case _ => false
   }
 
