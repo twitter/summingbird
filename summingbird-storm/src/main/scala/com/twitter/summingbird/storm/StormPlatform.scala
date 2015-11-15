@@ -43,6 +43,7 @@ import com.twitter.util.{ Future, Time }
 import org.slf4j.LoggerFactory
 
 import scala.collection.{ Map => CMap }
+import scala.reflect.ClassTag
 
 import Constants._
 import com.twitter.summingbird.storm.StormMetric
@@ -98,15 +99,19 @@ object Storm {
   def storeService[K, V](offlineStore: => ReadableStore[K, (BatchID, V)], onlineStore: => MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher): CombinedServiceStoreFactory[K, V] =
     CombinedServiceStoreFactory(offlineStore, onlineStore, batchesToKeep)(batcher)
 
-  def toStormSource[T](spout: Spout[T],
-    defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): StormSource[T] =
+  def toStormSource[T](
+    spout: Spout[T],
+    defaultSourcePar: Option[Int] = None
+  )(implicit timeOf: TimeExtractor[T]): StormSource[T] =
     SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)), defaultSourcePar.map(SourceParallelism(_)))
 
   implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] =
     toStormSource(spout, None)(timeOf)
 
-  def source[T](spout: Spout[T],
-    defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
+  def source[T](
+    spout: Spout[T],
+    defaultSourcePar: Option[Int] = None
+  )(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
     Producer.source[Storm, T](toStormSource(spout, defaultSourcePar))
 
   implicit def spoutAsSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
@@ -126,27 +131,20 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   private type Prod[T] = Producer[Storm, T]
 
-  private[storm] def get[T <: AnyRef: Manifest](dag: Dag[Storm], node: StormNode): Option[(String, T)] = {
+  private[storm] def get[T <: AnyRef: ClassTag](dag: Dag[Storm], node: StormNode): Option[(String, T)] = {
     val producer = node.members.last
-
-    val namedNodes = dag.producerToPriorityNames(producer)
-    (for {
-      id <- namedNodes :+ "DEFAULT"
-      stormOpts <- options.get(id)
-      option <- stormOpts.get[T]
-    } yield (id, option)).headOption
+    Options.getFirst[T](options, dag.producerToPriorityNames(producer))
   }
 
-  private[storm] def getOrElse[T <: AnyRef: Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
+  private[storm] def getOrElse[T <: AnyRef: ClassTag](dag: Dag[Storm], node: StormNode, default: T): T =
     get[T](dag, node) match {
       case None =>
-        logger.debug("Node ({}): Using default setting {}", dag.getNodeName(node), default)
+        logger.debug(s"Node (${dag.getNodeName(node)}): Using default setting $default")
         default
       case Some((namedSource, option)) =>
-        logger.info("Node {}: Using {} found via NamedProducer \"{}\"", Array[AnyRef](dag.getNodeName(node), option, namedSource))
+        logger.info(s"Node ${dag.getNodeName(node)}: Using $option found via NamedProducer ${'"'}$namedSource${'"'}")
         option
     }
-  }
 
   /**
    * Set storm to tick our nodes every second to clean up finished futures
@@ -272,7 +270,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         maxEmitPerExecute,
         getOrElse(stormDag, node, IncludeSuccessHandler.default),
         new KeyValueInjection[Int, CMap[ExecutorKeyType, ExecutorValueType]],
-        new SingleItemInjection[ExecutorOutputType])
+        new SingleItemInjection[ExecutorOutputType]
+      )
     )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint

@@ -26,6 +26,15 @@ import scala.reflect.{ classTag, ClassTag }
 
 object Options {
   def apply(opts: Map[Class[_], Any] = Map.empty): Options = new Options(opts)
+  /**
+   * Given a list of names, return the first option, if it exists, from the given options
+   */
+  def getFirst[T <: AnyRef: ClassTag](options: Map[String, Options], names: List[String]): Option[(String, T)] =
+    (for {
+      id <- names :+ "DEFAULT"
+      innerOpts <- options.get(id)
+      option <- innerOpts.get[T]
+    } yield (id, option)).headOption
 }
 class Options(val opts: Map[Class[_], Any]) {
   def set(opt: Any) = Options(opts + (opt.getClass -> opt))
