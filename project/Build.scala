@@ -175,7 +175,7 @@ object SummingbirdBuild extends Build {
   def youngestForwardCompatible(subProj: String) =
     Some(subProj)
       .filterNot(unreleasedModules.contains(_))
-      .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.8.0" }
+      .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.9.0" }
 
   def module(name: String) = {
     val id = "summingbird-%s".format(name)
