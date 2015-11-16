@@ -1,5 +1,8 @@
 # Summingbird #
 
+## 0.9.1
+* Fixes a bug in the LTuple2 class. Add a test for it: https://github.com/twitter/summingbird/pull/632
+
 ## 0.9.0
 * Removing internal config setup from scalding platform: https://github.com/twitter/summingbird/pull/629
 * Remove store that no one seems to use and has no tests: https://github.com/twitter/summingbird/pull/630
