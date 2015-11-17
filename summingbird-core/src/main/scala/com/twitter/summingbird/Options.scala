@@ -35,6 +35,9 @@ object Options {
       innerOpts <- options.get(id)
       option <- innerOpts.get[T]
     } yield (id, option)).headOption
+
+  def get[T <: AnyRef: ClassTag](options: Map[String, Options], name: String): Option[T] =
+    options.get(name).flatMap(_.get[T])
 }
 class Options(val opts: Map[Class[_], Any]) {
   def set(opt: Any) = Options(opts + (opt.getClass -> opt))

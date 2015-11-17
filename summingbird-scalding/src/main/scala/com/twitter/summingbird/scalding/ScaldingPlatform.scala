@@ -89,8 +89,7 @@ object Scalding {
   def getCommutativity(
     names: List[String],
     options: Map[String, Options],
-    s: Summer[Scalding, _, _]
-  ): Commutativity = {
+    s: Summer[Scalding, _, _]): Commutativity = {
 
     val commutativity = getOrElse(options, names, s, {
       val default = MonoidIsCommutative.default
@@ -226,8 +225,7 @@ object Scalding {
     }
 
   def sourceFromMappable[T: TimeExtractor: Manifest](
-    factory: (DateRange) => Mappable[T]
-  ): Producer[Scalding, T] =
+    factory: (DateRange) => Mappable[T]): Producer[Scalding, T] =
     Producer.source[Scalding, T](pipeFactory(factory))
 
   def toDateRange(timeSpan: Interval[Timestamp]): Try[DateRange] =
@@ -278,8 +276,7 @@ object Scalding {
   private def getOrElse[T <: AnyRef: ClassTag](
     options: Map[String, Options],
     names: List[String],
-    producer: Producer[Scalding, _], default: => T
-  ): T =
+    producer: Producer[Scalding, _], default: => T): T =
     Options.getFirst[T](options, names) match {
       case None =>
         logger.debug(
@@ -303,16 +300,14 @@ object Scalding {
     fanOuts: Set[Producer[Scalding, _]],
     dependants: Dependants[Scalding],
     built: Map[Producer[Scalding, _], PipeFactory[_]],
-    forceFanOut: Boolean = false
-  ): (PipeFactory[T], Map[Producer[Scalding, _], PipeFactory[_]]) = {
+    forceFanOut: Boolean = false): (PipeFactory[T], Map[Producer[Scalding, _], PipeFactory[_]]) = {
 
     val names = dependants.namesOf(producer).map(_.id)
 
     def recurse[U](
       p: Producer[Scalding, U],
       built: Map[Producer[Scalding, _], PipeFactory[_]] = built,
-      forceFanOut: Boolean = forceFanOut
-    ): (PipeFactory[U], Map[Producer[Scalding, _], PipeFactory[_]]) = {
+      forceFanOut: Boolean = forceFanOut): (PipeFactory[U], Map[Producer[Scalding, _], PipeFactory[_]]) = {
       buildFlow(options, p, fanOuts, dependants, built, forceFanOut)
     }
 
@@ -581,8 +576,7 @@ object Scalding {
   def toPipe[T](
     dr: DateRange,
     prod: Producer[Scalding, T],
-    opts: Map[String, Options] = Map.empty
-  )(implicit fd: FlowDef, mode: Mode): Try[(DateRange, TypedPipe[(Timestamp, T)])] = {
+    opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[(DateRange, TypedPipe[(Timestamp, T)])] = {
     val ts = dr.as[Interval[Timestamp]]
     val pf = planProducer(opts, prod)
     toPipe(ts, fd, mode, pf).right.map {
@@ -598,8 +592,7 @@ object Scalding {
   def toPipeExact[T](
     dr: DateRange,
     prod: Producer[Scalding, T],
-    opts: Map[String, Options] = Map.empty
-  )(implicit fd: FlowDef, mode: Mode): Try[TypedPipe[(Timestamp, T)]] = {
+    opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[TypedPipe[(Timestamp, T)]] = {
     val ts = dr.as[Interval[Timestamp]]
     val pf = planProducer(opts, prod)
     toPipeExact(ts, fd, mode, pf)
@@ -609,8 +602,7 @@ object Scalding {
     timeSpan: Interval[Timestamp],
     flowDef: FlowDef,
     mode: Mode,
-    pf: PipeFactory[T]
-  ): Try[(Interval[Timestamp], TimedPipe[T])] = {
+    pf: PipeFactory[T]): Try[(Interval[Timestamp], TimedPipe[T])] = {
     logger.info("topipe Planning on interval: {}", timeSpan)
     pf((timeSpan, mode))
       .right
@@ -621,8 +613,7 @@ object Scalding {
     timeSpan: Interval[Timestamp],
     flowDef: FlowDef,
     mode: Mode,
-    pf: PipeFactory[T]
-  ): Try[TimedPipe[T]] = {
+    pf: PipeFactory[T]): Try[TimedPipe[T]] = {
     logger.info("Planning on interval: {}", timeSpan.as[Option[DateRange]])
     pf((timeSpan, mode))
       .right
@@ -659,8 +650,7 @@ class Scalding(
   val jobName: String,
   @transient val options: Map[String, Options],
   @transient transformConfig: Config => Config,
-  @transient passedRegistrars: List[IKryoRegistrar]
-)
+  @transient passedRegistrars: List[IKryoRegistrar])
     extends Platform[Scalding] with java.io.Serializable {
 
   type Source[T] = PipeFactory[T]
@@ -736,22 +726,19 @@ class Scalding(
   def run(
     state: WaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: TailProducer[Scalding, Any]
-  ): WaitingState[Interval[Timestamp]] =
+    pf: TailProducer[Scalding, Any]): WaitingState[Interval[Timestamp]] =
     run(state, mode, plan(pf))
 
   def run(
     state: WaitingState[Interval[Timestamp]],
     mode: Mode,
-    pf: PipeFactory[Any]
-  ): WaitingState[Interval[Timestamp]] = run(state, mode, pf, (f: Flow[_]) => Unit)
+    pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = run(state, mode, pf, (f: Flow[_]) => Unit)
 
   def run(
     state: WaitingState[Interval[Timestamp]],
     mode: Mode,
     pf: PipeFactory[Any],
-    mutate: Flow[_] => Unit
-  ): WaitingState[Interval[Timestamp]] = {
+    mutate: Flow[_] => Unit): WaitingState[Interval[Timestamp]] = {
 
     val config = mode match {
       case Hdfs(_, conf) =>

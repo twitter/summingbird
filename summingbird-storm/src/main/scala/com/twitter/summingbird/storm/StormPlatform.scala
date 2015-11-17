@@ -101,8 +101,7 @@ object Storm {
 
   def toStormSource[T](
     spout: Spout[T],
-    defaultSourcePar: Option[Int] = None
-  )(implicit timeOf: TimeExtractor[T]): StormSource[T] =
+    defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): StormSource[T] =
     SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)), defaultSourcePar.map(SourceParallelism(_)))
 
   implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] =
@@ -110,8 +109,7 @@ object Storm {
 
   def source[T](
     spout: Spout[T],
-    defaultSourcePar: Option[Int] = None
-  )(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
+    defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
     Producer.source[Storm, T](toStormSource(spout, defaultSourcePar))
 
   implicit def spoutAsSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
