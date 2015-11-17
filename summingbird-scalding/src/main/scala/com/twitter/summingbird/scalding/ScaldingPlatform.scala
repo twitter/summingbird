@@ -53,6 +53,7 @@ import org.apache.hadoop.util.ToolRunner
 import org.slf4j.LoggerFactory
 import scala.util.control.Exception.allCatch
 import scala.util.{ Success, Failure }
+import scala.reflect.ClassTag
 
 object Scalding {
   @transient private val logger = LoggerFactory.getLogger(classOf[Scalding])
@@ -271,22 +272,19 @@ object Scalding {
     }
   }
 
-  private def getOrElse[T <: AnyRef: Manifest](options: Map[String, Options], names: List[String], producer: Producer[Scalding, _], default: => T): T = {
-    val maybePair = (for {
-      id <- names :+ "DEFAULT"
-      innerOpts <- options.get(id)
-      option <- innerOpts.get[T]
-    } yield (id, option)).headOption
-
-    maybePair match {
+  private def getOrElse[T <: AnyRef: ClassTag](options: Map[String, Options],
+    names: List[String],
+    producer: Producer[Scalding, _], default: => T): T =
+    Options.getFirst[T](options, names) match {
       case None =>
-        logger.debug("Producer (%s): Using default setting %s".format(producer.getClass.getName, default))
+        logger.debug(
+          s"Producer (${producer.getClass.getName}): Using default setting $default")
         default
       case Some((id, opt)) =>
-        logger.info("Producer ({}) Using {} found via NamedProducer \"{}\"", Array[AnyRef](producer.getClass.getName, opt, id))
+        logger.info(
+          s"Producer (${producer.getClass.getName}) Using $opt found via NamedProducer ${'"'}$id${'"'}")
         opt
     }
-  }
 
   /**
    * Return a PipeFactory that can cover as much as possible of the time range requested,

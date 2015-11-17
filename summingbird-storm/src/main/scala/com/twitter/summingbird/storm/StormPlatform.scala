@@ -16,12 +16,13 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, StormSubmitter }
+import Constants._
 import backtype.storm.generated.StormTopology
+import backtype.storm.metric.api.IMetric
 import backtype.storm.task.TopologyContext
 import backtype.storm.topology.{ BoltDeclarer, TopologyBuilder }
 import backtype.storm.tuple.Fields
-
+import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, StormSubmitter }
 import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.bijection.{ Base64String, Injection }
 import com.twitter.chill.IKryoRegistrar
@@ -34,19 +35,15 @@ import com.twitter.summingbird.online._
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, DagOptimizer, OnlinePlan, SummerNode, FlatMapNode, SourceNode }
+import com.twitter.summingbird.storm.StormMetric
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.tormenta.spout.Spout
 import com.twitter.util.{ Future, Time }
-
 import org.slf4j.LoggerFactory
-
 import scala.collection.{ Map => CMap }
-
-import Constants._
-import com.twitter.summingbird.storm.StormMetric
-import backtype.storm.metric.api.IMetric
+import scala.reflect.ClassTag
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
@@ -126,27 +123,20 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   private type Prod[T] = Producer[Storm, T]
 
-  private[storm] def get[T <: AnyRef: Manifest](dag: Dag[Storm], node: StormNode): Option[(String, T)] = {
+  private[storm] def get[T <: AnyRef: ClassTag](dag: Dag[Storm], node: StormNode): Option[(String, T)] = {
     val producer = node.members.last
-
-    val namedNodes = dag.producerToPriorityNames(producer)
-    (for {
-      id <- namedNodes :+ "DEFAULT"
-      stormOpts <- options.get(id)
-      option <- stormOpts.get[T]
-    } yield (id, option)).headOption
+    Options.getFirst[T](options, dag.producerToPriorityNames(producer))
   }
 
-  private[storm] def getOrElse[T <: AnyRef: Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
+  private[storm] def getOrElse[T <: AnyRef: ClassTag](dag: Dag[Storm], node: StormNode, default: T): T =
     get[T](dag, node) match {
       case None =>
-        logger.debug("Node ({}): Using default setting {}", dag.getNodeName(node), default)
+        logger.debug(s"Node (${dag.getNodeName(node)}): Using default setting $default")
         default
       case Some((namedSource, option)) =>
-        logger.info("Node {}: Using {} found via NamedProducer \"{}\"", Array[AnyRef](dag.getNodeName(node), option, namedSource))
+        logger.info(s"Node ${dag.getNodeName(node)}: Using $option found via NamedProducer ${'"'}$namedSource${'"'}")
         option
     }
-  }
 
   /**
    * Set storm to tick our nodes every second to clean up finished futures
