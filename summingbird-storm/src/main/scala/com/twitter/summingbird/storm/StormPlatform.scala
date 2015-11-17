@@ -16,12 +16,13 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, StormSubmitter }
+import Constants._
 import backtype.storm.generated.StormTopology
+import backtype.storm.metric.api.IMetric
 import backtype.storm.task.TopologyContext
 import backtype.storm.topology.{ BoltDeclarer, TopologyBuilder }
 import backtype.storm.tuple.Fields
-
+import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, StormSubmitter }
 import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.bijection.{ Base64String, Injection }
 import com.twitter.chill.IKryoRegistrar
@@ -34,20 +35,15 @@ import com.twitter.summingbird.online._
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, DagOptimizer, OnlinePlan, SummerNode, FlatMapNode, SourceNode }
+import com.twitter.summingbird.storm.StormMetric
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.tormenta.spout.Spout
 import com.twitter.util.{ Future, Time }
-
 import org.slf4j.LoggerFactory
-
 import scala.collection.{ Map => CMap }
 import scala.reflect.ClassTag
-
-import Constants._
-import com.twitter.summingbird.storm.StormMetric
-import backtype.storm.metric.api.IMetric
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
@@ -99,16 +95,14 @@ object Storm {
   def storeService[K, V](offlineStore: => ReadableStore[K, (BatchID, V)], onlineStore: => MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher): CombinedServiceStoreFactory[K, V] =
     CombinedServiceStoreFactory(offlineStore, onlineStore, batchesToKeep)(batcher)
 
-  def toStormSource[T](
-    spout: Spout[T],
+  def toStormSource[T](spout: Spout[T],
     defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): StormSource[T] =
     SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)), defaultSourcePar.map(SourceParallelism(_)))
 
   implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] =
     toStormSource(spout, None)(timeOf)
 
-  def source[T](
-    spout: Spout[T],
+  def source[T](spout: Spout[T],
     defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): Producer[Storm, T] =
     Producer.source[Storm, T](toStormSource(spout, defaultSourcePar))
 
@@ -268,8 +262,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         maxEmitPerExecute,
         getOrElse(stormDag, node, IncludeSuccessHandler.default),
         new KeyValueInjection[Int, CMap[ExecutorKeyType, ExecutorValueType]],
-        new SingleItemInjection[ExecutorOutputType]
-      )
+        new SingleItemInjection[ExecutorOutputType])
     )
 
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint

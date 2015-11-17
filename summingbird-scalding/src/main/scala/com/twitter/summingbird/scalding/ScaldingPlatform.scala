@@ -86,8 +86,7 @@ object Scalding {
   def emptyFlowProducer[T]: FlowProducer[TypedPipe[T]] =
     Reader({ implicit fdm: (FlowDef, Mode) => TypedPipe.empty })
 
-  def getCommutativity(
-    names: List[String],
+  def getCommutativity(names: List[String],
     options: Map[String, Options],
     s: Summer[Scalding, _, _]): Commutativity = {
 
@@ -273,20 +272,17 @@ object Scalding {
     }
   }
 
-  private def getOrElse[T <: AnyRef: ClassTag](
-    options: Map[String, Options],
+  private def getOrElse[T <: AnyRef: ClassTag](options: Map[String, Options],
     names: List[String],
     producer: Producer[Scalding, _], default: => T): T =
     Options.getFirst[T](options, names) match {
       case None =>
         logger.debug(
-          s"Producer (${producer.getClass.getName}): Using default setting $default"
-        )
+          s"Producer (${producer.getClass.getName}): Using default setting $default")
         default
       case Some((id, opt)) =>
         logger.info(
-          s"Producer (${producer.getClass.getName}) Using $opt found via NamedProducer ${'"'}$id${'"'}"
-        )
+          s"Producer (${producer.getClass.getName}) Using $opt found via NamedProducer ${'"'}$id${'"'}")
         opt
     }
 
@@ -294,8 +290,7 @@ object Scalding {
    * Return a PipeFactory that can cover as much as possible of the time range requested,
    * but the output state gives the actual, non-empty, interval that can be produced
    */
-  private def buildFlow[T](
-    options: Map[String, Options],
+  private def buildFlow[T](options: Map[String, Options],
     producer: Producer[Scalding, T],
     fanOuts: Set[Producer[Scalding, _]],
     dependants: Dependants[Scalding],
@@ -304,8 +299,7 @@ object Scalding {
 
     val names = dependants.namesOf(producer).map(_.id)
 
-    def recurse[U](
-      p: Producer[Scalding, U],
+    def recurse[U](p: Producer[Scalding, U],
       built: Map[Producer[Scalding, _], PipeFactory[_]] = built,
       forceFanOut: Boolean = forceFanOut): (PipeFactory[U], Map[Producer[Scalding, _], PipeFactory[_]]) = {
       buildFlow(options, p, fanOuts, dependants, built, forceFanOut)
@@ -385,8 +379,7 @@ object Scalding {
               implicit val keyOrdering = bstore.ordering
               val Summer(storeLog, _, sg) = InternalService.getSummer[K, V](dependants, bstore)
                 .getOrElse(
-                  sys.error("join %s is against store not in the entire job's Dag".format(ljp))
-                )
+                  sys.error("join %s is against store not in the entire job's Dag".format(ljp)))
               val (leftPf, m1) = recurse(left)
               // We have to force the fanOut on the storeLog because this kind of fanout
               // due to joining is not visible in the Dependants dag
@@ -420,8 +413,7 @@ object Scalding {
               implicit val keyOrdering = bs.ordering
               val Summer(storeLog, _, sg) = InternalService.getSummer[K, U](dependants, bs)
                 .getOrElse(
-                  sys.error("join %s is against store not in the entire job's Dag".format(ljp))
-                )
+                  sys.error("join %s is against store not in the entire job's Dag".format(ljp)))
               implicit val semigroup: Semigroup[U] = sg
               logger.info("Service {} using {} reducers (-1 means unset)", ljp, reducers)
 
@@ -573,8 +565,7 @@ object Scalding {
    * Note this may return a smaller DateRange than you ask for
    * If you need an exact DateRange see toPipeExact.
    */
-  def toPipe[T](
-    dr: DateRange,
+  def toPipe[T](dr: DateRange,
     prod: Producer[Scalding, T],
     opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[(DateRange, TypedPipe[(Timestamp, T)])] = {
     val ts = dr.as[Interval[Timestamp]]
@@ -589,8 +580,7 @@ object Scalding {
    * Use this method to interop with existing scalding code that expects
    * to schedule an exact DateRange or fail.
    */
-  def toPipeExact[T](
-    dr: DateRange,
+  def toPipeExact[T](dr: DateRange,
     prod: Producer[Scalding, T],
     opts: Map[String, Options] = Map.empty)(implicit fd: FlowDef, mode: Mode): Try[TypedPipe[(Timestamp, T)]] = {
     val ts = dr.as[Interval[Timestamp]]
@@ -598,8 +588,7 @@ object Scalding {
     toPipeExact(ts, fd, mode, pf)
   }
 
-  def toPipe[T](
-    timeSpan: Interval[Timestamp],
+  def toPipe[T](timeSpan: Interval[Timestamp],
     flowDef: FlowDef,
     mode: Mode,
     pf: PipeFactory[T]): Try[(Interval[Timestamp], TimedPipe[T])] = {
@@ -609,8 +598,7 @@ object Scalding {
       .map { case (((ts, m), flowDefMutator)) => (ts, flowDefMutator((flowDef, m))) }
   }
 
-  def toPipeExact[T](
-    timeSpan: Interval[Timestamp],
+  def toPipeExact[T](timeSpan: Interval[Timestamp],
     flowDef: FlowDef,
     mode: Mode,
     pf: PipeFactory[T]): Try[TimedPipe[T]] = {
@@ -685,8 +673,7 @@ class Scalding(
 
       conf
         .setSerialization(
-          Left((classOf[serialization.KryoHadoop], initKryo.withRegistrar(kryoReg))), Nil
-        )
+          Left((classOf[serialization.KryoHadoop], initKryo.withRegistrar(kryoReg))), Nil)
     }
   }
 
@@ -723,19 +710,16 @@ class Scalding(
       }
   }
 
-  def run(
-    state: WaitingState[Interval[Timestamp]],
+  def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
     pf: TailProducer[Scalding, Any]): WaitingState[Interval[Timestamp]] =
     run(state, mode, plan(pf))
 
-  def run(
-    state: WaitingState[Interval[Timestamp]],
+  def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
     pf: PipeFactory[Any]): WaitingState[Interval[Timestamp]] = run(state, mode, pf, (f: Flow[_]) => Unit)
 
-  def run(
-    state: WaitingState[Interval[Timestamp]],
+  def run(state: WaitingState[Interval[Timestamp]],
     mode: Mode,
     pf: PipeFactory[Any],
     mutate: Flow[_] => Unit): WaitingState[Interval[Timestamp]] = {
