@@ -72,6 +72,13 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
                 fn(k).map((_, v))
             }, m)
 
+          case ValueFlatMappedProducer(producer, fn) =>
+            val (s, m) = toStream(producer, jamfs)
+            (s.flatMap {
+              case (k, v) =>
+                fn(v).map((k, _))
+            }, m)
+
           case AlsoProducer(l, r) =>
             //Plan the first one, but ignore it
             val (left, leftM) = toStream(l, jamfs)
