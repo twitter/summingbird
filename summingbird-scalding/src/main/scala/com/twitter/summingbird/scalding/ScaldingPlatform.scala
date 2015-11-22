@@ -51,8 +51,7 @@ import org.apache.hadoop.io.serializer.{ Serialization => HSerialization }
 import org.apache.hadoop.util.GenericOptionsParser
 import org.apache.hadoop.util.ToolRunner
 import org.slf4j.LoggerFactory
-import scala.util.control.Exception.allCatch
-import scala.util.{ Success, Failure }
+import scala.util.{ Success, Try => STry, Failure }
 import scala.reflect.ClassTag
 
 object Scalding {
@@ -120,7 +119,11 @@ object Scalding {
     try {
       val available = (mode, factory(desired)) match {
         case (hdfs: Hdfs, ts: STPS) =>
+          // This class has structure we can directly query
           BTimePathedSource.satisfiableHdfs(hdfs, desired, factory.asInstanceOf[DateRange => STPS])
+        case (_, source) if STry(source.validateTaps(mode)).isSuccess =>
+          // If we can validate, there is no need in doing any bisection
+          Some(desired)
         case _ => bisectingMinify(mode, desired)(factory)
       }
       available.flatMap { intersect(desired, _) }
@@ -130,7 +133,7 @@ object Scalding {
   }
 
   private def bisectingMinify(mode: Mode, desired: DateRange)(factory: (DateRange) => SSource): Option[DateRange] = {
-    def isGood(end: Long): Boolean = allCatch.opt(factory(DateRange(desired.start, RichDate(end))).validateTaps(mode)).isDefined
+    def isGood(end: Long): Boolean = STry(factory(DateRange(desired.start, RichDate(end))).validateTaps(mode)).isSuccess
     val DateRange(start, end) = desired
     if (isGood(start.timestamp)) {
       // The invariant is that low isGood, low < upper, and upper isGood == false
