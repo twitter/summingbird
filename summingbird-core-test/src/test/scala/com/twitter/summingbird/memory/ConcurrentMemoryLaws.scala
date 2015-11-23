@@ -158,7 +158,15 @@ class ConcurrentMemoryLaws extends WordSpec {
     // Note the stored values only make sense if you have a commutative monoid
     // since, due to concurrency, we might put things in a different order with this platform
     "diamond w/ Int, Int, Set[Int]" in { assert(diamondLaw[Int, Int, Set[Int]] == true) }
-    "diamond w/ String, Short, Map[Set[Int], Long]" in { assert(diamondLaw[String, Short, Map[Set[Int], Long]] == true) }
+    "diamond w/ String, Short, Map[Set[Int], Long]" in {
+      /*
+       * It is important to use an Equiv on Maps that treats empty like 0s, since our scala
+       * implementation uses MapAlgebra.sumByKey, which for better or worse, removes zeros of
+       * monoids, since that is what the MapMonoid does. :/
+       */
+      import com.twitter.algebird.MapAlgebra.sparseEquiv
+      assert(diamondLaw[String, Short, Map[Set[Int], Long]] == true)
+    }
 
     "leftJoin w/ Int, Int, String, Long, Set[Int]" in { assert(leftJoinLaw[Int, Int, String, Long, Set[Int]] == true) }
 
