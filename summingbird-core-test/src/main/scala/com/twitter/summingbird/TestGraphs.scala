@@ -516,7 +516,11 @@ class TestGraphs[P <: Platform[P], T: Manifest: Arbitrary, K: Arbitrary, V: Arbi
     TestGraphs.diamondJobInScala(items)(fnA)(fnB).forall {
       case (k, v) =>
         val lv = lookupFn(k).getOrElse(Monoid.zero)
-        Equiv[V].equiv(v, lv)
+        val eqv = Equiv[V].equiv(v, lv)
+        if (!eqv) {
+          println(s"in diamondChecker: $k, $v is scala result, but platform gave $lv")
+        }
+        eqv
     } && toSinkChecker(currentSink, items)
   }
 
