@@ -5,6 +5,7 @@ import com.twitter.scalding.{ RuntimeStats => ScaldingRuntimeStats, UniqueID }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird._
 import scala.util.{ Try => ScalaTry, Failure }
+import scala.util.control.NonFatal
 import org.slf4j.LoggerFactory
 
 // Incrementor for Scalding Counter (Stat)
@@ -19,7 +20,7 @@ private[summingbird] object ScaldingStatProvider extends PlatformStatProvider {
   private def pullInScaldingRuntimeForJobID(jobID: JobId): Option[FlowProcess[_]] =
     ScalaTry[FlowProcess[_]] { ScaldingRuntimeStats.getFlowProcessForUniqueId(UniqueID(jobID.get)) }
       .recoverWith {
-        case e: Throwable =>
+        case NonFatal(e) =>
           logger.debug(s"Unable to get Scalding FlowProcess for jobID $jobID, error $e")
           Failure(e)
       }.toOption

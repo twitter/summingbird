@@ -34,6 +34,7 @@ import scala.collection.mutable.{ Map => MMap, ListBuffer }
 // These CMaps we generate in the FFM, we use it as an immutable wrapper around
 // a mutable map.
 import scala.collection.{ Map => CMap }
+import scala.util.control.NonFatal
 
 /**
  * @author Oscar Boykin
@@ -105,7 +106,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
     sCache.tick.map(formatResult(_))
 
   def cache(state: S,
-    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] = {
+    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] =
     try {
       val itemL = items.toList
       if (itemL.size > 0) {
@@ -122,9 +123,8 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
         )
       }
     } catch {
-      case t: Throwable => Future.exception(t)
+      case NonFatal(e) => Future.exception(e)
     }
-  }
 
   override def apply(state: S,
     tup: Event) =

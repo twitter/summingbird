@@ -53,6 +53,7 @@ import org.apache.hadoop.util.ToolRunner
 import org.slf4j.LoggerFactory
 import scala.util.{ Success, Try => STry, Failure }
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 
 object Scalding {
   @transient private val logger = LoggerFactory.getLogger(classOf[Scalding])
@@ -115,7 +116,7 @@ object Scalding {
    * Works by calling validateTaps on the Mappable, so if that does not work correctly
    * this will be incorrect.
    */
-  def minify(mode: Mode, desired: DateRange)(factory: (DateRange) => SSource): Either[List[FailureReason], DateRange] = {
+  def minify(mode: Mode, desired: DateRange)(factory: (DateRange) => SSource): Either[List[FailureReason], DateRange] =
     try {
       val available = (mode, factory(desired)) match {
         case (hdfs: Hdfs, ts: STPS) =>
@@ -129,8 +130,7 @@ object Scalding {
       available.flatMap { intersect(desired, _) }
         .map(Right(_))
         .getOrElse(Left(List("available: " + available + ", desired: " + desired)))
-    } catch { case t: Throwable => toTry(t) }
-  }
+    } catch { case NonFatal(e) => toTry(e) }
 
   private def bisectingMinify(mode: Mode, desired: DateRange)(factory: (DateRange) => SSource): Option[DateRange] = {
     def isGood(end: Long): Boolean = STry(factory(DateRange(desired.start, RichDate(end))).validateTaps(mode)).isSuccess
@@ -708,7 +708,7 @@ class Scalding(
               Right((ts, Some(mode.newFlowConnector(config).connect(flowDef))))
             }
           } catch {
-            case (e: Throwable) => toTry(e)
+            case NonFatal(e) => toTry(e)
           }
       }
   }
@@ -761,9 +761,7 @@ class Scalding(
                     throw new Exception("Flow did not complete.")
               }
             } catch {
-              case (e: Throwable) => {
-                runningState.fail(e)
-              }
+              case NonFatal(e) => runningState.fail(e)
             }
           case Left(waitingState) => waitingState
         }
