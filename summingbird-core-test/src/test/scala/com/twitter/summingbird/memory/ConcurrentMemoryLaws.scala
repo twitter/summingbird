@@ -49,8 +49,13 @@ class ConcurrentMemoryLaws extends WordSpec {
     go(Nil)
   }
 
-  def unorderedEq[T](left: List[T], right: List[T]): Boolean =
-    left.groupBy(identity).mapValues(_.size) == right.groupBy(identity).mapValues(_.size)
+  def unorderedEq[T](left: List[T], right: List[T]): Boolean = {
+    val leftMap = left.groupBy(identity).mapValues(_.size)
+    val rightMap = right.groupBy(identity).mapValues(_.size)
+    val eqv = leftMap == rightMap
+    if (!eqv) { println(s"from Queue: $leftMap\nfrom scala: $rightMap") }
+    eqv
+  }
 
   def testGraph[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
     new TestGraphs[ConcurrentMemory, T, K, V](new ConcurrentMemory)(
