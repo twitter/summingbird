@@ -29,6 +29,7 @@ import com.twitter.summingbird.option.CacheSize
 // These CMaps we generate in the FFM, we use it as an immutable wrapper around
 // a mutable map.
 import scala.collection.{ Map => CMap }
+import scala.util.control.NonFatal
 
 /**
  * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
@@ -120,7 +121,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
 
       sSummer.addAll(cacheEntries).map(handleResult(_))
     } catch {
-      case t: Throwable => Future.exception(t)
+      case NonFatal(e) => Future.exception(e)
     }
   }
 
