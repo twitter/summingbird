@@ -25,7 +25,7 @@ case class ProducerF[P <: Platform[P]](oldSources: List[Producer[P, Any]],
 
 object StripNamedNode {
 
-  private def castTail[P <: Platform[P], T](node: Producer[P, T]): TailProducer[P, T] =
+  private[this] def castTail[P <: Platform[P], T](node: Producer[P, T]): TailProducer[P, T] =
     node.asInstanceOf[TailProducer[P, T]]
 
   /**
@@ -42,7 +42,12 @@ object StripNamedNode {
       case LeftJoinedProducer(_, serv) => Some(serv)
       case Summer(_, store, semi) => Some((store, semi))
       case WrittenProducer(_, sink) => Some(sink)
-      case _ => None
+      // The following have nothing to put options on:
+      case AlsoProducer(_, producer) => None
+      case NamedProducer(producer, _) => None
+      case IdentityKeyedProducer(producer) => None
+      case MergedProducer(l, r) => None
+      case _ => sys.error("Unreachable. Here to warn us if we add Producer subclasses but forget to update this")
     }
 
   def apply[P <: Platform[P], T](tail: TailProducer[P, T]): (Map[Producer[P, Any], List[String]], TailProducer[P, T]) = {
