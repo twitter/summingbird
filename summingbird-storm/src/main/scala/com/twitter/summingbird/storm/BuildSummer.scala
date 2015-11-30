@@ -41,11 +41,11 @@ object BuildSummer {
 
   def apply(storm: Storm, dag: Dag[Storm], node: StormNode, jobID: JobId) = {
     val opSummerConstructor = storm.get[SummerConstructor](dag, node).map(_._2)
-    logger.debug("Node ({}): Queried for SummerConstructor, got {}", dag.getNodeName(node), opSummerConstructor)
+    logger.debug(s"Node (${dag.getNodeName(node)}): Queried for SummerConstructor, got $opSummerConstructor")
 
     opSummerConstructor match {
       case Some(cons) =>
-        logger.debug("Node ({}): Using user supplied SummerConstructor: {}", dag.getNodeName(node), cons)
+        logger.debug(s"Node (${dag.getNodeName(node)}): Using user supplied SummerConstructor: $cons")
         cons.get
       case None => legacyBuilder(storm, dag, node, jobID)
     }
@@ -55,7 +55,7 @@ object BuildSummer {
     val nodeName = dag.getNodeName(node)
     val cacheSize = storm.getOrElse(dag, node, DEFAULT_FM_CACHE)
     require(jobID.get != null, "Unable to register metrics with no job id present in the config updater")
-    logger.info("[{}] cacheSize lowerbound: {}", nodeName, cacheSize.lowerBound)
+    logger.info(s"[$nodeName] cacheSize lowerbound: ${cacheSize.lowerBound}")
 
     val memoryCounter = counter(jobID, Group(nodeName), Name("memory"))
     val timeoutCounter = counter(jobID, Group(nodeName), Name("timeout"))
@@ -73,13 +73,13 @@ object BuildSummer {
       }
     } else {
       val softMemoryFlush = storm.getOrElse(dag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
-      logger.info("[{}] softMemoryFlush : {}", nodeName, softMemoryFlush.get)
+      logger.info(s"[$nodeName] softMemoryFlush : ${softMemoryFlush.get}")
 
       val flushFrequency = storm.getOrElse(dag, node, DEFAULT_FLUSH_FREQUENCY)
-      logger.info("[{}] maxWaiting: {}", nodeName, flushFrequency.get)
+      logger.info(s"[$nodeName] maxWaiting: ${flushFrequency.get}")
 
       val useAsyncCache = storm.getOrElse(dag, node, DEFAULT_USE_ASYNC_CACHE)
-      logger.info("[{}] useAsyncCache : {}", nodeName, useAsyncCache.get)
+      logger.info(s"[$nodeName] useAsyncCache : ${useAsyncCache.get}")
 
       if (!useAsyncCache.get) {
         new SummerBuilder {
@@ -98,10 +98,10 @@ object BuildSummer {
         }
       } else {
         val asyncPoolSize = storm.getOrElse(dag, node, DEFAULT_ASYNC_POOL_SIZE)
-        logger.info("[{}] asyncPoolSize : {}", nodeName, asyncPoolSize.get)
+        logger.info(s"[$nodeName] asyncPoolSize : ${asyncPoolSize.get}")
 
         val valueCombinerCrushSize = storm.getOrElse(dag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
-        logger.info("[{}] valueCombinerCrushSize : {}", nodeName, valueCombinerCrushSize.get)
+        logger.info(s"[$nodeName] valueCombinerCrushSize : ${valueCombinerCrushSize.get}")
 
         new SummerBuilder {
           def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {

@@ -150,7 +150,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   private def scheduleFlatMapper(jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val nodeName = stormDag.getNodeName(node)
     val usePreferLocalDependency = getOrElse(stormDag, node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
-    logger.info("[{}] usePreferLocalDependency: {}", nodeName, usePreferLocalDependency.get)
+    logger.info(s"[$nodeName] usePreferLocalDependency: ${usePreferLocalDependency.get}")
 
     val bolt: BaseBolt[Any, Any] = FlatMapBoltProvider(this, jobID, stormDag, node).apply
 
@@ -226,13 +226,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val builder = BuildSummer(this, stormDag, node, jobID)
 
     val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
-    logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
+    logger.info(s"[$nodeName] ackOnEntry : ${ackOnEntry.get}")
 
     val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
-    logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
+    logger.info(s"[$nodeName] maxEmitPerExecute : ${maxEmitPerExecute.get}")
 
     val maxExecutePerSec = getOrElse(stormDag, node, DEFAULT_MAX_EXECUTE_PER_SEC)
-    logger.info("[{}] maxExecutePerSec : {}", nodeName, maxExecutePerSec.toString)
+    logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
 
     val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
       val ((k, batchID), (optiVWithTS, (ts, v))) = op
