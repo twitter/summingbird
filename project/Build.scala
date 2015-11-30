@@ -35,7 +35,10 @@ object SummingbirdBuild extends Build {
   val tormentaVersion = "0.11.0"
   val junitVersion = "4.11"
   val log4jVersion = "1.2.16"
-  val stormVersion = "0.9.0-wip15"
+  val stormDep = "storm" % "storm" % "0.9.0-wip15"
+  //This project also compiles with the latest storm, which is in fact required to run the example
+  //now. :/
+  //val stormDep = "org.apache.storm" % "storm-core" % "0.10.0"
   val commonsLangVersion = "2.6"
   val novocodeJunitVersion = "0.10"
   val scalatestVersion = "2.2.4"
@@ -251,7 +254,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "scalding-args" % scaldingVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion,
       "com.twitter" %% "util-core" % utilVersion,
-      "storm" % "storm" % stormVersion % "provided"
+      stormDep % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -269,7 +272,7 @@ object SummingbirdBuild extends Build {
       "com.twitter" %% "storehaus-algebra" % storehausVersion,
       "com.twitter" %% "tormenta-core" % tormentaVersion,
       "com.twitter" %% "util-core" % utilVersion,
-      "storm" % "storm" % stormVersion % "provided"
+      stormDep % "provided"
     )
   ).dependsOn(
     summingbirdCore % "test->test;compile->compile",
@@ -330,7 +333,7 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdBuilder = module("builder").settings(
     libraryDependencies ++= Seq(
-      "storm" % "storm" % stormVersion % "provided",
+      stormDep % "provided",
       "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
@@ -343,7 +346,7 @@ object SummingbirdBuild extends Build {
     libraryDependencies ++= Seq(
       "log4j" % "log4j" % log4jVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-      "storm" % "storm" % stormVersion exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
+      stormDep exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
       "com.twitter" %% "bijection-netty" % bijectionVersion,
       "com.twitter" %% "tormenta-twitter" % tormentaVersion,
       "com.twitter" %% "storehaus-memcache" % storehausVersion exclude("com.twitter.common", "dynamic-host-set") exclude("com.twitter.common", "service-thrift"),
