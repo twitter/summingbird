@@ -16,8 +16,8 @@
 
 package com.twitter.summingbird.memory
 
-import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
+import com.twitter.summingbird.graph.HMap
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.DagOptimizer
 import collection.mutable.{ Map => MutableMap }
@@ -39,14 +39,14 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
   type Plan[T] = Stream[T]
 
   private type Prod[T] = Producer[Memory, T]
-  private type JamfMap = Map[Prod[_], Stream[_]]
+  private type JamfMap = HMap[Prod, Stream]
 
   def counter(group: Group, name: Name): Option[Long] =
     MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }
 
-  def toStream[T, K, V](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
+  private def toStream[T](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
     jamfs.get(outerProducer) match {
-      case Some(s) => (s.asInstanceOf[Stream[T]], jamfs)
+      case Some(s) => (s, jamfs)
       case None =>
         val (s, m) = outerProducer match {
           case NamedProducer(producer, _) => toStream(producer, jamfs)
@@ -82,11 +82,11 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
           case AlsoProducer(l, r) =>
             //Plan the first one, but ignore it
             val (left, leftM) = toStream(l, jamfs)
+            val (right, rightM) = toStream(r, leftM)
             // We need to force all of left to make sure any
             // side effects in write happen
-            val lforcedEmpty = left.filter(_ => false)
-            val (right, rightM) = toStream(r, leftM)
-            (right ++ lforcedEmpty, rightM)
+            lazy val lforcedEmpty = left.filter(_ => false)
+            (right.append(lforcedEmpty), rightM)
 
           case WrittenProducer(producer, fn) =>
             val (s, m) = toStream(producer, jamfs)
@@ -99,19 +99,21 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
             }
             (joined, m)
 
-          case Summer(producer, store, monoid) =>
+          case Summer(producer, store, semigroup) =>
             val (s, m) = toStream(producer, jamfs)
             val summed = s.map {
-              case pair @ (k, deltaV) =>
+              case (k, deltaV) =>
                 val oldV = store.get(k)
-                val newV = oldV.map { monoid.plus(_, deltaV) }
+                val newV = oldV.map { semigroup.plus(_, deltaV) }
                   .getOrElse(deltaV)
                 store.update(k, newV)
                 (k, (oldV, deltaV))
             }
             (summed, m)
         }
-        (s.asInstanceOf[Stream[T]], m + (outerProducer -> s))
+        // scala can't infer that s is the right type through case statements above
+        val st = s.asInstanceOf[Stream[T]]
+        (st, m + (outerProducer -> st))
     }
 
   def plan[T](prod: TailProducer[Memory, T]): Stream[T] = {
@@ -128,7 +130,7 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
     val memoryTail = dagOptimizer.optimize(prod, dagOptimizer.ValueFlatMapToFlatMap)
     val memoryDag = memoryTail.asInstanceOf[TailProducer[Memory, T]]
 
-    toStream(memoryDag, Map.empty)._1
+    toStream(memoryDag, HMap.empty)._1
   }
 
   def run(iter: Stream[_]) {

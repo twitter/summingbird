@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.memory
 
-import com.twitter.algebird.{ MapAlgebra, Monoid }
+import com.twitter.algebird.{ MapAlgebra, Monoid, Semigroup }
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
 import org.scalacheck.{ Arbitrary, _ }
@@ -214,6 +214,30 @@ class MemoryLaws extends WordSpec {
       assert(store1.toMap == ((0 to 100).groupBy(_ % 3).mapValues(_.sum)))
       assert(store2.toMap == ((0 to 100).groupBy(_ % 3).mapValues(_.sum)))
     }
-  }
 
+    "self also shouldn't duplicate work" in {
+      val platform = new Memory
+      val source = Memory.toSource(List(1, 2))
+      val store: Memory#Store[Int, Int] = collection.mutable.Map.empty[Int, Int]
+      val sink: Memory#Sink[Int] = _ => ()
+
+      val summed = source
+        .map { v => (v, v) }
+        .sumByKey(store)
+        .map {
+          case (_, (existingEventOpt, currentEvent)) =>
+            existingEventOpt.map { existingEvent =>
+              Semigroup.plus(existingEvent, currentEvent)
+            }.getOrElse(currentEvent)
+        }
+
+      val write1 = summed.write(sink)
+      val write2 = summed.write(sink)
+      val job = write1.also(write2)
+
+      platform.run(platform.plan(job))
+      assert(1 == store(1))
+      assert(2 == store(2))
+    }
+  }
 }
