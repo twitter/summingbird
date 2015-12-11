@@ -217,9 +217,12 @@ class MemoryLaws extends WordSpec {
 
     "self also shouldn't duplicate work" in {
       val platform = new Memory
+      val sinkBuffer = collection.mutable.Buffer[Int]()
       val source = Memory.toSource(List(1, 2))
       val store: Memory#Store[Int, Int] = collection.mutable.Map.empty[Int, Int]
-      val sink: Memory#Sink[Int] = _ => ()
+      val sink: Memory#Sink[Int] = { x: Int =>
+        sinkBuffer += x
+      }
 
       val summed = source
         .map { v => (v, v) }
@@ -238,6 +241,7 @@ class MemoryLaws extends WordSpec {
       platform.run(platform.plan(job))
       assert(1 == store(1))
       assert(2 == store(2))
+      assert(List(1, 2) == sinkBuffer.toList)
     }
   }
 }

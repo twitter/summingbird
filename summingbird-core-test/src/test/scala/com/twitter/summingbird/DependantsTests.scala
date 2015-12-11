@@ -105,25 +105,17 @@ object DependantsTest extends Properties("Dependants") {
     }
 
   property("finding all nodes and tails works") = forAll { (prod: Producer[Memory, _]) =>
-    // Only also breaks the normal dependency rules to find all nodes
-    // sorry for the cast, remove when the Producer variance is fixed
-    def allParents(n: Producer[Memory, Any]): Set[Producer[Memory, Any]] = {
-      n match {
-        case AlsoProducer(l, r) =>
-          Set(n, l, r).asInstanceOf[Set[Producer[Memory, Any]]]
-        case _ =>
-          (n :: Producer.dependenciesOf(n))
-            .toSet
-            .asInstanceOf[Set[Producer[Memory, Any]]]
-      }
-    }
+
+    def allParents(n: Producer[Memory, Any]): Set[Producer[Memory, Any]] =
+      (n :: Producer.parentsOf(n)).toSet
+
     @annotation.tailrec
     def fix[T](acc: Set[T])(fn: T => Set[T]): Set[T] = {
       val newSet = acc.flatMap(fn)
       if (newSet == acc) acc
       else fix(newSet)(fn)
     }
-    val alln = fix(Set(prod.asInstanceOf[Producer[Memory, Any]]))(allParents _)
+    val alln = fix[Producer[Memory, Any]](Set(prod))(allParents _)
     val deps = Dependants(prod)
     val tails = alln.filter(deps.fanOut(_).get == 0)
     (tails == deps.allTails.toSet) &&
@@ -186,4 +178,45 @@ object DependantsTest extends Properties("Dependants") {
     }
   }
 
+  property("dependantsAfterMerge never returns MergedProducer or AlsoProducer") = forAll { (prod: Producer[Memory, _]) =>
+    val dependants = Dependants(prod)
+    dependants.nodes.forall { n =>
+      dependants.dependantsAfterMerge(n)
+        .collectFirst {
+          case m @ MergedProducer(_, _) => m
+          case a @ AlsoProducer(_, _) => a
+        }
+        .isEmpty
+    }
+  }
+  /*
+   * It is easy to look up the graph, so we look up to all non-MergedProducer dependencies.
+   * Then, the dependantsAfterMerge of those nodes should be a superset of the original node
+   */
+  property("dependantsAfterMerge not inconsistent with nonMergeDependencies") = forAll { (prod: Producer[Memory, _]) =>
+    val dependants = Dependants(prod)
+    def nonMergeDependencies(n: Producer[Memory, Any]): Set[Producer[Memory, Any]] =
+      Producer.dependenciesOf(n).toSet[Producer[Memory, Any]].flatMap {
+        case m @ MergedProducer(_, _) => nonMergeDependencies(m)
+        case a @ AlsoProducer(_, _) => nonMergeDependencies(a)
+        case other => Set(other)
+      }
+
+    val cache = collection.mutable.Map[Producer[Memory, Any], Set[Producer[Memory, Any]]]()
+
+    dependants.nodes
+      .filterNot {
+        case MergedProducer(_, _) => true
+        case AlsoProducer(_, _) => true
+        case _ => false
+      } // for all non-merged/also nodes
+      .forall { n =>
+        val nonMergeDeps = nonMergeDependencies(n)
+        nonMergeDeps.forall { parent =>
+          val parentTargets = cache.getOrElseUpdate(parent,
+            dependants.dependantsAfterMerge(parent).toSet)
+          parentTargets(n)
+        }
+      }
+  }
 }
