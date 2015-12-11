@@ -175,6 +175,30 @@ class ConcurrentMemoryLaws extends WordSpec {
     "lookupCollect w/ Int, Int" in { assert(lookupCollectChecker[Int, Int] == true) }
 
     "counters w/ Int, Int, Int" in { assert(counterChecker[Int, Int, Int] == true) }
-  }
 
+    "self also shouldn't duplicate work" in {
+      val platform = new ConcurrentMemory
+      val source = ConcurrentMemory.toSource(List(1, 2))
+      val store: ConcurrentMemory#Store[Int, Int] = new ConcurrentHashMap[Int, Int]()
+      val sink: ConcurrentMemory#Sink[Int] = new LinkedBlockingQueue[Int]()
+
+      val summed = source
+        .map { v => (v, v) }
+        .sumByKey(store)
+        .map {
+          case (_, (None, currentEvent)) => currentEvent
+          case (_, (Some(old), currentEvent)) => old + currentEvent
+        }
+
+      val write1 = summed.write(sink)
+      val write2 = summed.write(sink)
+      val job = write1.also(write2)
+
+      Await.result(platform.plan(job).run, Duration.Inf)
+      assert(1 == store.get(1))
+      assert(2 == store.get(2))
+      assert(2 == store.size)
+      assert(List(1, 2) == empty(sink).sorted)
+    }
+  }
 }

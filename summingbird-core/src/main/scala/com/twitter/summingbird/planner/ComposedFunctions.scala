@@ -85,6 +85,7 @@ case class OptionToFlat[A, B](optionMap: A => Option[B])
   // we reuse the instances above.
   def apply(a: A) = optionMap(a).toIterator
   def irreducibles = IrreducibleContainer.flatten(optionMap)
+  override def hashCode = optionMap.hashCode
 }
 
 /*
