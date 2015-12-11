@@ -219,4 +219,23 @@ object DependantsTest extends Properties("Dependants") {
         }
       }
   }
+  /*
+   * dependencies of the results of dependantsAfterMerge are MergedProducer, AlsoProducer or the
+   * argument.
+   */
+  property("dependantsAfterMerge(x).flatMap(dependenciesOf) is x, Also or Merged") = forAll { (prod: Producer[Memory, _]) =>
+    val dependants = Dependants(prod)
+    import dependants._
+
+    nodes.forall { n =>
+      dependantsAfterMerge(n)
+        .flatMap(Producer.dependenciesOf)
+        .forall {
+          case node if node == n => true
+          case AlsoProducer(_, _) => true
+          case MergedProducer(_, _) => true
+          case _ => false
+        }
+    }
+  }
 }
