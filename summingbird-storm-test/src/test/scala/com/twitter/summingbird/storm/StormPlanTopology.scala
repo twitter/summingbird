@@ -19,6 +19,7 @@ package com.twitter.summingbird.storm
 import com.twitter.storehaus.JMapStore
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
+import com.twitter.summingbird.online._
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.storm.planner._
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
@@ -41,12 +42,12 @@ object StormPlanTopology extends Properties("StormDag") {
   implicit def sink1: Storm#Sink[Int] = Storm.sink((_) => Future.Unit)
   implicit def sink2: Storm#Sink[(Int, Int)] = Storm.sink((_) => Future.Unit)
 
-  implicit def testStore: Storm#Store[Int, Int] = MergeableStoreSupplier.from { MergeableStore.fromStore[(Int, BatchID), Int](new JMapStore[(Int, BatchID), Int]()) }
+  implicit def testStore: Storm#Store[Int, Int] = MergeableStoreFactory.from { MergeableStore.fromStore[(Int, BatchID), Int](new JMapStore[(Int, BatchID), Int]()) }
 
   implicit def arbSource1: Arbitrary[Producer[Storm, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[Int]).map { x: List[Int] => Storm.source(TraversableSpout(x)) })
   implicit def arbSource2: Arbitrary[KeyedProducer[Storm, Int, Int]] = Arbitrary(Gen.listOfN(5000, Arbitrary.arbitrary[(Int, Int)]).map { x: List[(Int, Int)] => IdentityKeyedProducer(Storm.source(TraversableSpout(x))) })
 
-  implicit def arbService2: Arbitrary[Storm#Service[Int, Int]] = Arbitrary(Arbitrary.arbitrary[Int => Option[Int]].map { fn => StoreWrapper[Int, Int](() => ReadableStore.fromFn(fn)) })
+  implicit def arbService2: Arbitrary[Storm#Service[Int, Int]] = Arbitrary(Arbitrary.arbitrary[Int => Option[Int]].map { fn => ReadableServiceFactory[Int, Int](() => ReadableStore.fromFn(fn)) })
 
   lazy val genDag: Gen[TailProducer[Storm, Any]] = for {
     tail <- oneOf(summed, written)

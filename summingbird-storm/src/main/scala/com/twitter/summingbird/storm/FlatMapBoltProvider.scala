@@ -22,6 +22,7 @@ import backtype.storm.tuple.Fields
 import backtype.storm.tuple.Tuple
 
 import com.twitter.algebird.{ Semigroup, Monoid }
+import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
@@ -37,18 +38,23 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.{ Map => CMap }
 
+/**
+ * These are helper functions for building a bolt from a Node[Storm] element.
+ * There are two main codepaths here, for intermediate flat maps and final flat maps.
+ * The primary difference between those two being the the presents of map side aggreagtion in a final flatmap.
+ */
 object FlatMapBoltProvider {
   @transient private val logger = LoggerFactory.getLogger(FlatMapBoltProvider.getClass)
-  private def wrapTimeBatchIDKV[T, K, V](existingOp: FlatMapOperation[T, (K, V)])(batcher: Batcher): FlatMapOperation[(Timestamp, T), ((K, BatchID), (Timestamp, V))] = {
-    FlatMapOperation.generic({
-      case (ts: Timestamp, data: T) =>
+  private def wrapTimeBatchIDKV[T, K, V](existingOp: FlatMapOperation[T, (K, V)])(batcher: Batcher): FlatMapOperation[(Timestamp, T), ((K, BatchID), (Timestamp, V))] =
+    FlatMapOperation.generic[(Timestamp, T), ((K, BatchID), (Timestamp, V))]({
+      case (ts, data) =>
         existingOp.apply(data).map { vals =>
-          vals.map { tup =>
-            ((tup._1, batcher.batchOf(ts)), (ts, tup._2))
+          vals.map {
+            case (k, v) =>
+              ((k, batcher.batchOf(ts)), (ts, v))
           }
         }
     })
-  }
 
   def wrapTime[T, U](existingOp: FlatMapOperation[T, U]): FlatMapOperation[(Timestamp, T), (Timestamp, U)] = {
     FlatMapOperation.generic({ x: (Timestamp, T) =>
@@ -61,52 +67,28 @@ object FlatMapBoltProvider {
 
 case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
   import FlatMapBoltProvider._
+  import Producer2FlatMapOperation._
 
   def getOrElse[T <: AnyRef: Manifest](default: T, queryNode: StormNode = node) = storm.getOrElse(stormDag, queryNode, default)
-  /**
-   * Keep the crazy casts localized in here
-   */
-  private def foldOperations[T, U](producers: List[Producer[Storm, _]]): FlatMapOperation[T, U] =
-    producers.foldLeft(FlatMapOperation.identity[Any]) {
-      case (acc, p) =>
-        p match {
-          case LeftJoinedProducer(_, wrapper) =>
-            val newService = wrapper.store
-            FlatMapOperation.combine(
-              acc.asInstanceOf[FlatMapOperation[Any, (Any, Any)]],
-              newService.asInstanceOf[StoreFactory[Any, Any]]).asInstanceOf[FlatMapOperation[Any, Any]]
-          case OptionMappedProducer(_, op) => acc.andThen(FlatMapOperation[Any, Any](op.andThen(_.iterator).asInstanceOf[Any => TraversableOnce[Any]]))
-          case FlatMappedProducer(_, op) => acc.andThen(FlatMapOperation(op).asInstanceOf[FlatMapOperation[Any, Any]])
-          case WrittenProducer(_, sinkSupplier) =>
-            acc.andThen(FlatMapOperation.write(() => sinkSupplier.toFn))
-          case IdentityKeyedProducer(_) => acc
-          case MergedProducer(_, _) => acc
-          case NamedProducer(_, _) => acc
-          case AlsoProducer(_, _) => acc
-          case Source(_) => sys.error("Should not schedule a source inside a flat mapper")
-          case Summer(_, _, _) => sys.error("Should not schedule a Summer inside a flat mapper")
-          case KeyFlatMappedProducer(_, op) => acc.andThen(FlatMapOperation.keyFlatMap[Any, Any, Any](op).asInstanceOf[FlatMapOperation[Any, Any]])
-        }
-    }.asInstanceOf[FlatMapOperation[T, U]]
 
   // Boilerplate extracting of the options from the DAG
   private val nodeName = stormDag.getNodeName(node)
   private val metrics = getOrElse(DEFAULT_FM_STORM_METRICS)
   private val anchorTuples = getOrElse(AnchorTuples.default)
-  logger.info("[{}] Anchoring: {}", nodeName, anchorTuples.anchor)
+  logger.info(s"[$nodeName] Anchoring: ${anchorTuples.anchor}")
 
   private val maxWaiting = getOrElse(DEFAULT_MAX_WAITING_FUTURES)
   private val maxWaitTime = getOrElse(DEFAULT_MAX_FUTURE_WAIT_TIME)
-  logger.info("[{}] maxWaiting: {}", nodeName, maxWaiting.get)
+  logger.info(s"[$nodeName] maxWaiting: ${maxWaiting.get}")
 
   private val ackOnEntry = getOrElse(DEFAULT_ACK_ON_ENTRY)
-  logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
+  logger.info(s"[$nodeName] ackOnEntry : ${ackOnEntry.get}")
 
   val maxExecutePerSec = getOrElse(DEFAULT_MAX_EXECUTE_PER_SEC)
-  logger.info("[{}] maxExecutePerSec : {}", nodeName, maxExecutePerSec.toString)
+  logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
 
   private val maxEmitPerExecute = getOrElse(DEFAULT_MAX_EMIT_PER_EXECUTE)
-  logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
+  logger.info(s"[$nodeName] maxEmitPerExecute : ${maxEmitPerExecute.get}")
 
   private def getFFMBolt[T, K, V](summer: SummerNode[Storm]) = {
     type ExecutorInput = (Timestamp, T)
@@ -116,7 +98,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
-    val batcher = summerProducer.store.batcher
+    val batcher = summerProducer.store.mergeableBatcher
     implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
 
     // Query to get the summer paralellism of the summer down stream of us we are emitting to
@@ -126,12 +108,12 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
 
     // This option we report its value here, but its not user settable.
     val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
-    logger.info("[{}] keyValueShards : {}", nodeName, keyValueShards.get)
+    logger.info(s"[$nodeName] keyValueShards : ${keyValueShards.get}")
 
     val operation = foldOperations[T, (K, V)](node.members.reverse)
     val wrappedOperation = wrapTimeBatchIDKV(operation)(batcher)
 
-    val builder = BuildSummer(storm, stormDag, node)
+    val builder = BuildSummer(storm, stormDag, node, jobID)
 
     BaseBolt(
       jobID,

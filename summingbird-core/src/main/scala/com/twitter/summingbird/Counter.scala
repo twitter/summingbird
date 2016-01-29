@@ -18,10 +18,14 @@ package com.twitter.summingbird
 
 import com.twitter.summingbird.option.JobId
 
+case class Group(getString: String) extends AnyVal
+
+case class Name(getString: String) extends AnyVal
+
 /*
  User-defined Counter
 */
-case class Counter(group: String, name: String)(implicit jobID: JobId) {
+case class Counter(group: Group, name: Name)(implicit jobID: JobId) {
   // Need to register the counter for this job,
   // this is used to pass counter info to the Storm platform during initialization
   JobCounters.registerCounter(jobID, group, name)

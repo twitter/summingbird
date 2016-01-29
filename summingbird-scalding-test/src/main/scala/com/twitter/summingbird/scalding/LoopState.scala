@@ -21,16 +21,19 @@ import com.twitter.summingbird.batch._
 
 // This is not really usable, just a mock that does the same state over and over
 class LoopState[T](init: T) extends WaitingState[T] { self =>
+  var failed: Boolean = false
   def begin = new PrepareState[T] {
     def requested = self.init
     def fail(err: Throwable) = {
       println(err)
+      failed = true
       self
     }
     def willAccept(intr: T) = Right(new RunningState[T] {
       def succeed = self
       def fail(err: Throwable) = {
         println(err)
+        failed = true
         self
       }
     })

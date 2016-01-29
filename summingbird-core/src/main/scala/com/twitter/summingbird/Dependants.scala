@@ -41,6 +41,20 @@ case class Dependants[P <: Platform[P]](tail: Producer[P, Any]) extends Dependan
     depthFirstOf(inp)(neighborFn).toList
   }
 
+  /**
+   * Return the first dependants of this node AFTER merges and skipping Alsos.
+   * This will include no MergedProducer or AlsoProducer nodes, but all dependencies
+   * of the returned nodes will be Merged, Alsos or the argument.
+   * The purpose of this method is for source-down platforms
+   * that plan from sources to all their dependants recursively.
+   */
+  def dependantsAfterMerge(inp: Producer[P, Any]): List[Producer[P, Any]] =
+    dependantsOf(inp).getOrElse(Nil).flatMap {
+      case m @ MergedProducer(_, _) => dependantsAfterMerge(m)
+      case a @ AlsoProducer(_, _) => dependantsAfterMerge(a)
+      case prod => List(prod)
+    }
+
   def namesOf(inp: Producer[P, Any]): List[NamedProducer[P, Any]] =
     transitiveDependantsOf(inp).collect { case n @ NamedProducer(_, _) => n }
 }

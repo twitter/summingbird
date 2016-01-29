@@ -25,6 +25,16 @@ import scala.collection.mutable.Buffer
 import cascading.tuple.Tuple
 import cascading.flow.FlowDef
 
+object TestStoreService {
+  def apply[K, V](store: TestStore[K, V]): TestStoreService[K, V] = {
+    new TestStoreService(store)
+  }
+}
+
+class TestStoreService[K, V](store: TestStore[K, V]) extends StoreService[K, V](store) {
+  val sourceToBuffer: Map[ScaldingSource, Buffer[Tuple]] = store.sourceToBuffer
+}
+
 class TestService[K, V](service: String,
   inBatcher: Batcher,
   minBatch: BatchID,
@@ -34,7 +44,7 @@ class TestService[K, V](service: String,
     tconv: TupleConverter[(Timestamp, (K, Option[V]))],
     tconv2: TupleConverter[(Timestamp, (K, V))])
     extends BBatchedService[K, V] {
-
+  import OrderedFromOrderingExt._
   val batcher = inBatcher
   val ordering = ord
   val reducers = None

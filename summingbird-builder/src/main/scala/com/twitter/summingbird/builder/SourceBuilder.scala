@@ -21,6 +21,7 @@ import com.twitter.bijection.{ Codec, Injection }
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.chill.java.IterableRegistrar
 import com.twitter.storehaus.algebra.MergeableStore
+import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.option.CacheSize
@@ -30,9 +31,8 @@ import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.{ CompoundSink, BatchedSinkFromOffline }
 import com.twitter.summingbird.source.EventSource
 import com.twitter.summingbird.store.CompoundStore
+import com.twitter.summingbird.online._
 import com.twitter.summingbird.storm.{
-  MergeableStoreSupplier,
-  StoreWrapper,
   Storm,
   StormEnv,
   StormSource,
@@ -132,7 +132,9 @@ case class SourceBuilder[T: Manifest] private (
     copy(
       node = node.asInstanceOf[Node[(K, V)]].leftJoin((
         service.offline,
-        service.online.map(StoreWrapper[K, JoinedValue](_))
+        service.online.map { fn: Function0[ReadableStore[K, JoinedValue]] =>
+          ReadableServiceFactory(fn)
+        }
       ))
     )
 
@@ -200,7 +202,7 @@ case class SourceBuilder[T: Manifest] private (
 
       case storm: StormEnv =>
         val supplier = store.onlineSupplier.getOrElse(sys.error("No online store given in Storm mode"))
-        val givenStore = MergeableStoreSupplier.from(supplier())
+        val givenStore = MergeableStoreFactory.from(supplier())
 
         val newNode = OptionalUnzip2[Scalding, Storm]()(node)._2.map { p =>
           Producer.evToKeyed(p.name(id))

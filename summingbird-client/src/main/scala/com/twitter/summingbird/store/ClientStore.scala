@@ -16,9 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.store
 
-import com.twitter.algebird.{ Monoid, Semigroup }
-import com.twitter.algebird.util.UtilAlgebras._
-import com.twitter.bijection.Pivot
+import com.twitter.algebird.Semigroup
 import com.twitter.storehaus.{ FutureCollector, FutureOps, ReadableStore }
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.util.Future
@@ -32,12 +30,12 @@ import com.twitter.util.Future
  */
 
 object ClientStore {
-  def apply[K, V](onlineStore: ReadableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher, monoid: Semigroup[V]): ClientStore[K, V] =
+  def apply[K, V](onlineStore: ReadableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher, semigroup: Semigroup[V]): ClientStore[K, V] =
     apply(ReadableStore.empty, onlineStore, batchesToKeep)
 
   // If no online store exists, supply an empty store and instruct the
   // client to keep a single batch.
-  def apply[K, V](offlineStore: ReadableStore[K, (BatchID, V)])(implicit batcher: Batcher, monoid: Semigroup[V]): ClientStore[K, V] =
+  def apply[K, V](offlineStore: ReadableStore[K, (BatchID, V)])(implicit batcher: Batcher, semigroup: Semigroup[V]): ClientStore[K, V] =
     apply(offlineStore, ReadableStore.empty, 1)
 
   def defaultOnlineKeyFilter[K] = (k: K) => true
@@ -45,7 +43,7 @@ object ClientStore {
   def apply[K, V](
     offlineStore: ReadableStore[K, (BatchID, V)],
     onlineStore: ReadableStore[(K, BatchID), V],
-    batchesToKeep: Int)(implicit batcher: Batcher, monoid: Semigroup[V]): ClientStore[K, V] =
+    batchesToKeep: Int)(implicit batcher: Batcher, semigroup: Semigroup[V]): ClientStore[K, V] =
     new ClientStore[K, V](offlineStore, onlineStore,
       batcher, batchesToKeep, defaultOnlineKeyFilter[K], FutureCollector.bestEffort)
 
@@ -53,7 +51,7 @@ object ClientStore {
     offlineStore: ReadableStore[K, (BatchID, V)],
     onlineStore: ReadableStore[(K, BatchID), V],
     batchesToKeep: Int,
-    onlineKeyFilter: K => Boolean)(implicit batcher: Batcher, monoid: Semigroup[V]): ClientStore[K, V] =
+    onlineKeyFilter: K => Boolean)(implicit batcher: Batcher, semigroup: Semigroup[V]): ClientStore[K, V] =
     new ClientStore[K, V](offlineStore, onlineStore,
       batcher, batchesToKeep, onlineKeyFilter, FutureCollector.bestEffort)
 
@@ -62,7 +60,7 @@ object ClientStore {
     onlineStore: ReadableStore[(K, BatchID), V],
     batchesToKeep: Int,
     onlineKeyFilter: K => Boolean,
-    collector: FutureCollector[(K, Iterable[BatchID])])(implicit batcher: Batcher, monoid: Semigroup[V]): ClientStore[K, V] =
+    collector: FutureCollector[(K, Iterable[BatchID])])(implicit batcher: Batcher, semigroup: Semigroup[V]): ClientStore[K, V] =
     new ClientStore[K, V](offlineStore, onlineStore, batcher, batchesToKeep, onlineKeyFilter, collector)
 }
 
@@ -92,8 +90,9 @@ object ClientStore {
  * - Finally, reduce this list by monoid-merging together all
  *   (BatchID, V) pairs. If any BatchID is missing from the sequence
  *   (if there are any holes, for example), that particular merged
- *   value's computation in the result will be a Future.exception vs
- *   a defined future.
+ *   value's computation in the result will miss the contributions
+ *   due to those BatchID's.
+ *
  * - Drop the final BatchID off of all successfully aggregated
  *   values (since this BatchID will be the current batch in all
  *   successful cases).
@@ -128,6 +127,8 @@ class ClientStore[K, V: Semigroup](
    */
   def multiGetBatch[K1 <: K](batch: BatchID, ks: Set[K1]): Map[K1, FOpt[V]] = {
     val offlineResult: Map[K1, FOpt[(BatchID, V)]] = offlineStore.multiGet(ks)
+    // For combining later we move the offline result batch id from being the exclusive upper bound
+    // to the inclusive upper bound.
     val liftedOffline = decrementOfflineBatch(offlineResult)
     val possibleOnlineKeys = ks.filter(onlineKeyFilter)
     val m: Future[Map[K1, FOpt[V]]] = for {

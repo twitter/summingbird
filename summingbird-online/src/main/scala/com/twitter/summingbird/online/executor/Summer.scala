@@ -22,13 +22,14 @@ import com.twitter.algebird.{ Semigroup, SummingQueue }
 import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.bijection.Injection
 
-import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer }
+import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer, MergeableStoreFactory }
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.CacheSize
 
 // These CMaps we generate in the FFM, we use it as an immutable wrapper around
 // a mutable map.
 import scala.collection.{ Map => CMap }
+import scala.util.control.NonFatal
 
 /**
  * The SummerBolt takes two related options: CacheSize and MaxWaitingFutures.
@@ -54,7 +55,7 @@ import scala.collection.{ Map => CMap }
  */
 
 class Summer[Key, Value: Semigroup, Event, S, D, RC](
-  @transient storeSupplier: RC => Mergeable[Key, Value],
+  @transient storeSupplier: MergeableStoreFactory[Key, Value],
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
   @transient exceptionHandler: OnlineExceptionHandler,
@@ -85,7 +86,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
 
   override def init(runtimeContext: RC) {
     super.init(runtimeContext)
-    storePromise.setValue(storeBox.get(runtimeContext))
+    storePromise.setValue(storeBox.get.mergeableStore())
     store.toString // Do the lazy evaluation now so we can connect before tuples arrive.
 
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
@@ -120,7 +121,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
 
       sSummer.addAll(cacheEntries).map(handleResult(_))
     } catch {
-      case t: Throwable => Future.exception(t)
+      case NonFatal(e) => Future.exception(e)
     }
   }
 

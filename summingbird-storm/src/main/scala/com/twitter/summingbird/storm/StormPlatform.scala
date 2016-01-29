@@ -16,12 +16,13 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, StormSubmitter }
+import Constants._
 import backtype.storm.generated.StormTopology
+import backtype.storm.metric.api.IMetric
 import backtype.storm.task.TopologyContext
 import backtype.storm.topology.{ BoltDeclarer, TopologyBuilder }
 import backtype.storm.tuple.Fields
-
+import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, StormSubmitter }
 import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.bijection.{ Base64String, Injection }
 import com.twitter.chill.IKryoRegistrar
@@ -30,69 +31,28 @@ import com.twitter.storehaus.{ ReadableStore, WritableStore, Store }
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.chill.SBChillRegistrar
-import com.twitter.summingbird.online.FlatMapOperation
-import com.twitter.summingbird.online.executor
-import com.twitter.summingbird.online.option.IncludeSuccessHandler
+import com.twitter.summingbird.online._
+import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.JobId
-import com.twitter.summingbird.planner.{ Dag, OnlinePlan, SummerNode, FlatMapNode, SourceNode }
+import com.twitter.summingbird.planner.{ Dag, DagOptimizer, OnlinePlan, SummerNode, FlatMapNode, SourceNode }
+import com.twitter.summingbird.storm.StormMetric
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.tormenta.spout.Spout
 import com.twitter.util.{ Future, Time }
-
 import org.slf4j.LoggerFactory
-
 import scala.collection.{ Map => CMap }
-
-import Constants._
+import scala.reflect.ClassTag
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
  * This is needed/used everywhere we partially aggregate, summer's into stores, map side partial aggregation before summers, etc..
  */
 
-sealed trait StormStore[-K, V] {
-  def batcher: Batcher
-}
-
-object MergeableStoreSupplier {
-  def from[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
-    MergeableStoreSupplier((TopologyContext) => store, batcher)
-
-  def from[K, V](store: TopologyContext => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] =
-    MergeableStoreSupplier(store, batcher)
-
-  def instrumentedStoreFrom[K, V](store: => Store[(K, BatchID), V])(implicit batcher: Batcher, sg: Monoid[V]): MergeableStoreSupplier[K, V] = {
-    import StoreAlgebra.enrich
-    val supplier = { (context: TopologyContext) =>
-      val instrumentedStore = new StoreStatReporter(context, store)
-      new MergeableStatReporter(context, instrumentedStore.toMergeable)
-    }
-    MergeableStoreSupplier(supplier, batcher)
-  }
-
-  def instrumentedMergeableFrom[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreSupplier[K, V] = {
-    val supplier = { (context: TopologyContext) => new MergeableStatReporter(context, store) }
-    MergeableStoreSupplier(supplier, batcher)
-  }
-
-  def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreSupplier[K, V] = {
-    implicit val batcher = Batcher.unit
-    from(store.convert { k: (K, BatchID) => k._1 })
-  }
-}
-
-case class MergeableStoreSupplier[K, V] private[summingbird] (store: TopologyContext => Mergeable[(K, BatchID), V], batcher: Batcher) extends StormStore[K, V]
-
-trait StormService[-K, +V] {
-  def store: StoreFactory[K, V]
-}
-
-case class StoreWrapper[K, V](store: StoreFactory[K, V]) extends StormService[K, V]
-
 sealed trait StormSource[+T]
-case class SpoutSource[+T](spout: Spout[(Timestamp, T)], parallelism: Option[option.SpoutParallelism]) extends StormSource[T]
+
+case class SpoutSource[+T](spout: Spout[(Timestamp, T)], parallelism: Option[SourceParallelism]) extends StormSource[T]
 
 object Storm {
   def local(options: Map[String, Options] = Map.empty): LocalStorm =
@@ -111,23 +71,33 @@ object Storm {
     new WritableStoreSink[K, V](store)
 
   // This can be used in jobs that do not have a batch component
-  def onlineOnlyStore[K, V](store: => MergeableStore[K, V]): StormStore[K, V] =
-    MergeableStoreSupplier.fromOnlineOnly(store)
+  def onlineOnlyStore[K, V](store: => MergeableStore[K, V]): MergeableStoreFactory[(K, BatchID), V] =
+    MergeableStoreFactory.fromOnlineOnly(store)
 
-  def store[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
-    MergeableStoreSupplier.from(store)
+  def store[K, V](store: => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): MergeableStoreFactory[(K, BatchID), V] =
+    MergeableStoreFactory.from(store)
 
-  def instrumentedStore[K, V](store: => MergeableStore[(K, BatchID), V])(implicit batcher: Batcher, sg: Monoid[V]): StormStore[K, V] =
-    MergeableStoreSupplier.instrumentedStoreFrom(store)
+  def service[K, V](serv: => ReadableStore[K, V]): ReadableServiceFactory[K, V] = ReadableServiceFactory(() => serv)
 
-  def store[K, V](store: (TopologyContext) => Mergeable[(K, BatchID), V])(implicit batcher: Batcher): StormStore[K, V] =
-    MergeableStoreSupplier.from(store)
+  /**
+   * Returns a store that is also a service, i.e. is a ReadableStore[K, V] and a Mergeable[(K, BatchID), V]
+   * The values used for the service are from the online store only.
+   * Uses ClientStore internally to create ReadableStore[K, V]
+   */
+  def storeServiceOnlineOnly[K, V](store: => MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher): CombinedServiceStoreFactory[K, V] =
+    CombinedServiceStoreFactory(store, batchesToKeep)(batcher)
 
-  def service[K, V](serv: => ReadableStore[K, V]): StormService[K, V] = StoreWrapper(() => serv)
+  /**
+   * Returns a store that is also a service, i.e. is a ReadableStore[K, V] and a Mergeable[(K, BatchID), V]
+   * The values used for the service are from the online *and* offline stores.
+   * Uses ClientStore internally to combine the offline and online stores to create ReadableStore[K, V]
+   */
+  def storeService[K, V](offlineStore: => ReadableStore[K, (BatchID, V)], onlineStore: => MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit batcher: Batcher): CombinedServiceStoreFactory[K, V] =
+    CombinedServiceStoreFactory(offlineStore, onlineStore, batchesToKeep)(batcher)
 
   def toStormSource[T](spout: Spout[T],
     defaultSourcePar: Option[Int] = None)(implicit timeOf: TimeExtractor[T]): StormSource[T] =
-    SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)), defaultSourcePar.map(option.SpoutParallelism(_)))
+    SpoutSource(spout.map(t => (Timestamp(timeOf(t)), t)), defaultSourcePar.map(SourceParallelism(_)))
 
   implicit def spoutAsStormSource[T](spout: Spout[T])(implicit timeOf: TimeExtractor[T]): StormSource[T] =
     toStormSource(spout, None)(timeOf)
@@ -146,34 +116,27 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   @transient private val logger = LoggerFactory.getLogger(classOf[Storm])
 
   type Source[+T] = StormSource[T]
-  type Store[-K, V] = StormStore[K, V]
+  type Store[-K, V] = MergeableStoreFactory[(K, BatchID), V]
   type Sink[-T] = StormSink[T]
-  type Service[-K, +V] = StormService[K, V]
+  type Service[-K, +V] = OnlineServiceFactory[K, V]
   type Plan[T] = PlannedTopology
 
   private type Prod[T] = Producer[Storm, T]
 
-  private[storm] def get[T <: AnyRef: Manifest](dag: Dag[Storm], node: StormNode): Option[(String, T)] = {
+  private[storm] def get[T <: AnyRef: ClassTag](dag: Dag[Storm], node: StormNode): Option[(String, T)] = {
     val producer = node.members.last
-
-    val namedNodes = dag.producerToPriorityNames(producer)
-    (for {
-      id <- namedNodes :+ "DEFAULT"
-      stormOpts <- options.get(id)
-      option <- stormOpts.get[T]
-    } yield (id, option)).headOption
+    Options.getFirst[T](options, dag.producerToPriorityNames(producer))
   }
 
-  private[storm] def getOrElse[T <: AnyRef: Manifest](dag: Dag[Storm], node: StormNode, default: T): T = {
+  private[storm] def getOrElse[T <: AnyRef: ClassTag](dag: Dag[Storm], node: StormNode, default: T): T =
     get[T](dag, node) match {
       case None =>
-        logger.debug("Node ({}): Using default setting {}", dag.getNodeName(node), default)
+        logger.debug(s"Node (${dag.getNodeName(node)}): Using default setting $default")
         default
       case Some((namedSource, option)) =>
-        logger.info("Node {}: Using {} found via NamedProducer \"{}\"", Array[AnyRef](dag.getNodeName(node), option, namedSource))
+        logger.info(s"Node ${dag.getNodeName(node)}: Using $option found via NamedProducer ${'"'}$namedSource${'"'}")
         option
     }
-  }
 
   /**
    * Set storm to tick our nodes every second to clean up finished futures
@@ -187,7 +150,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   private def scheduleFlatMapper(jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val nodeName = stormDag.getNodeName(node)
     val usePreferLocalDependency = getOrElse(stormDag, node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
-    logger.info("[{}] usePreferLocalDependency: {}", nodeName, usePreferLocalDependency.get)
+    logger.info(s"[$nodeName] usePreferLocalDependency: ${usePreferLocalDependency.get}")
 
     val bolt: BaseBolt[Any, Any] = FlatMapBoltProvider(this, jobID, stormDag, node).apply
 
@@ -202,7 +165,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     }
   }
 
-  private def scheduleSpout[K](stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSpout[K](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val (spout, parOpt) = node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
     val nodeName = stormDag.getNodeName(node)
 
@@ -217,80 +180,59 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       }
     }
 
+    val countersForSpout: Seq[(Group, Name)] = JobCounters.getCountersForJob(jobID).getOrElse(Nil)
+
     val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
 
-    val stormSpout = tormentaSpout.registerMetrics(metrics.toSpoutMetrics).getSpout
-    val parallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SPOUT_PARALLELISM)).parHint
+    val registerAllMetrics = new Function1[TopologyContext, Unit] {
+      def apply(context: TopologyContext) = {
+        // Register metrics passed in SpoutStormMetrics option.
+        metrics.metrics().foreach {
+          x: StormMetric[IMetric] =>
+            context.registerMetric(x.name, x.metric, x.interval.inSeconds)
+        }
+        // Register summingbird counter metrics.
+        StormStatProvider.registerMetrics(jobID, context, countersForSpout)
+        SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
+      }
+    }
+    val stormSpout = tormentaSpout.openHook(registerAllMetrics).getSpout
+    val parallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SOURCE_PARALLELISM)).parHint
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
 
   private def scheduleSummerBolt[K, V](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
     implicit val semigroup = summer.semigroup
-    implicit val batcher = summer.store.batcher
+    implicit val batcher = summer.store.mergeableBatcher
     val nodeName = stormDag.getNodeName(node)
 
     type ExecutorKeyType = (K, BatchID)
     type ExecutorValueType = (Timestamp, V)
     type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
 
-    val supplier = summer.store match {
-      case MergeableStoreSupplier(contained, _) => contained
+    val supplier: MergeableStoreFactory[ExecutorKeyType, V] = summer.store match {
+      case m: MergeableStoreFactory[ExecutorKeyType, V] => m
+      case _ => sys.error("Should never be able to get here, looking for a MergeableStoreFactory from %s".format(summer.store))
     }
 
-    def wrapMergable(supplier: TopologyContext => Mergeable[ExecutorKeyType, V]) =
-      (context: TopologyContext) => {
-        new Mergeable[ExecutorKeyType, ExecutorValueType] {
-          val innerMergable: Mergeable[ExecutorKeyType, V] = supplier(context)
-          implicit val innerSG = innerMergable.semigroup
-
-          // Since we don't keep a timestamp in the store
-          // this makes it clear that the 'right' or newest timestamp from the stream
-          // will always be the timestamp outputted
-          val semigroup = {
-            implicit val tsSg = new Semigroup[Timestamp] {
-              def plus(a: Timestamp, b: Timestamp) = b
-              override def sumOption(ti: TraversableOnce[Timestamp]) =
-                if (ti.isEmpty) None
-                else {
-                  var last: Timestamp = null
-                  ti.foreach { last = _ }
-                  Some(last)
-                }
-            }
-            implicitly[Semigroup[ExecutorValueType]]
-          }
-
-          override def close(time: Time) = innerMergable.close(time)
-
-          override def multiMerge[K1 <: ExecutorKeyType](kvs: Map[K1, ExecutorValueType]): Map[K1, Future[Option[ExecutorValueType]]] =
-            innerMergable.multiMerge(kvs.mapValues(_._2)).map {
-              case (k, futOpt) =>
-                (k, futOpt.map { opt =>
-                  opt.map { v =>
-                    (kvs(k)._1, v)
-                  }
-                })
-            }
-        }
-      }
-
-    val wrappedStore = wrapMergable(supplier)
+    val wrappedStore: MergeableStoreFactory[ExecutorKeyType, ExecutorValueType] =
+      MergeableStoreFactoryAlgebra.wrapOnlineFactory(supplier)
 
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
 
-    val builder = BuildSummer(this, stormDag, node)
+    val builder = BuildSummer(this, stormDag, node, jobID)
 
     val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
-    logger.info("[{}] ackOnEntry : {}", nodeName, ackOnEntry.get)
+    logger.info(s"[$nodeName] ackOnEntry : ${ackOnEntry.get}")
 
     val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
-    logger.info("[{}] maxEmitPerExecute : {}", nodeName, maxEmitPerExecute.get)
+    logger.info(s"[$nodeName] maxEmitPerExecute : ${maxEmitPerExecute.get}")
 
     val maxExecutePerSec = getOrElse(stormDag, node, DEFAULT_MAX_EXECUTE_PER_SEC)
-    logger.info("[{}] maxExecutePerSec : {}", nodeName, maxExecutePerSec.toString)
+    logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
 
     val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
       val ((k, batchID), (optiVWithTS, (ts, v))) = op
@@ -387,16 +329,29 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   def withConfigUpdater(fn: SummingbirdConfig => SummingbirdConfig): Storm
 
   def plan[T](tail: TailProducer[Storm, T]): PlannedTopology = {
-    val stormDag = OnlinePlan(tail)
+    /*
+     * TODO: storm does not yet know about ValueFlatMapped, so remove it before
+     * planning
+     */
+    val dagOptimizer = new DagOptimizer[Storm] {}
+    val stormTail = dagOptimizer.optimize(tail, dagOptimizer.ValueFlatMapToFlatMap)
+    val stormDag = OnlinePlan(stormTail.asInstanceOf[TailProducer[Storm, T]])
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = genConfig(stormDag)
-    val jobID = JobId(config.get("storm.job.uniqueId").asInstanceOf[String])
+    val jobID = {
+      val stormJobId = config.get("storm.job.uniqueId").asInstanceOf[String]
+      if (stormJobId == null) {
+        JobId(java.util.UUID.randomUUID().toString + "-AutoGenerated-ForInbuiltStats-UserStatsWillFail.")
+      } else {
+        JobId(stormJobId)
+      }
+    }
 
     stormDag.nodes.foreach { node =>
       node match {
         case _: SummerNode[_] => scheduleSummerBolt(jobID, stormDag, node)
         case _: FlatMapNode[_] => scheduleFlatMapper(jobID, stormDag, node)
-        case _: SourceNode[_] => scheduleSpout(stormDag, node)
+        case _: SourceNode[_] => scheduleSpout(jobID, stormDag, node)
       }
     }
     PlannedTopology(config, topologyBuilder.createTopology)

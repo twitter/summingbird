@@ -16,12 +16,12 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import com.twitter.algebird.{ Monoid, Predecessible, Successible }
+import com.twitter.algebird.{ Monoid, Semigroup, Predecessible, Successible }
 import com.twitter.bijection.Bijection
 import java.util.Date
 import com.twitter.scalding.RichDate
 
-case class Timestamp(milliSinceEpoch: Long) extends Ordered[Timestamp] {
+case class Timestamp(milliSinceEpoch: Long) extends AnyVal {
   def compare(that: Timestamp) = milliSinceEpoch.compare(that.milliSinceEpoch)
   def prev = copy(milliSinceEpoch = milliSinceEpoch - 1)
   def next = copy(milliSinceEpoch = milliSinceEpoch + 1)
@@ -56,10 +56,30 @@ object Timestamp {
   implicit val timestampSuccessible: Successible[Timestamp] = new Successible[Timestamp] {
     def next(old: Timestamp) = if (old.milliSinceEpoch != Long.MaxValue) Some(old.next) else None
     def ordering: Ordering[Timestamp] = Timestamp.orderingOnTimestamp
+    def partialOrdering = Timestamp.orderingOnTimestamp
   }
 
   implicit val timestampPredecessible: Predecessible[Timestamp] = new Predecessible[Timestamp] {
     def prev(old: Timestamp) = if (old.milliSinceEpoch != Long.MinValue) Some(old.prev) else None
     def ordering: Ordering[Timestamp] = Timestamp.orderingOnTimestamp
+    def partialOrdering = Timestamp.orderingOnTimestamp
   }
+
+  // This is a right semigroup, that given any two Timestamps just take the one on the right.
+  // The reason we did this is because we don't want to give a stronger contract to the semigroup
+  // than the store actually respects
+  val rightSemigroup = new Semigroup[Timestamp] {
+    def plus(a: Timestamp, b: Timestamp) = b
+    override def sumOption(ti: TraversableOnce[Timestamp]) =
+      if (ti.isEmpty) None
+      else {
+        val iter = ti.toIterator
+        var last: Timestamp = iter.next
+        while (iter.hasNext) {
+          last = iter.next
+        }
+        Some(last)
+      }
+  }
+
 }

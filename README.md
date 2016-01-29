@@ -92,6 +92,8 @@ See the [wiki page](https://github.com/twitter/summingbird/wiki/Getting-started-
 
 ## Community and Documentation
 
+This, and all [github.com/twitter](https://github.com/twitter) projects, are under the [Twitter Open Source Code of Conduct](https://engineering.twitter.com/opensource/code-of-conduct). Additionally, see the [Typelevel Code of Conduct](http://typelevel.org/conduct) for specific examples of harassing behavior that are not tolerated.
+
 To learn more and find links to tutorials and information around the web, check out the [Summingbird Wiki](https://github.com/twitter/summingbird/wiki).
 
 The latest ScalaDocs are hosted on Summingbird's [Github Project Page](http://twitter.github.io/summingbird).
@@ -106,21 +108,21 @@ Please feel free to use the beautiful [Summingbird logo](https://drive.google.co
 
 ## Maven
 
-Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.4.2`.
+Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.9.1`.
 
 Current published artifacts are
 
-* `summingbird-core_2.9.3`
+* `summingbird-core_2.11`
 * `summingbird-core_2.10`
-* `summingbird-batch_2.9.3`
+* `summingbird-batch_2.11`
 * `summingbird-batch_2.10`
-* `summingbird-client_2.9.3`
+* `summingbird-client_2.11`
 * `summingbird-client_2.10`
-* `summingbird-storm_2.9.3`
+* `summingbird-storm_2.11`
 * `summingbird-storm_2.10`
-* `summingbird-scalding_2.9.3`
+* `summingbird-scalding_2.11`
 * `summingbird-scalding_2.10`
-* `summingbird-builder_2.9.3`
+* `summingbird-builder_2.11`
 * `summingbird-builder_2.10`
 
 The suffix denotes the scala version.

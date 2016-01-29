@@ -21,6 +21,8 @@ import com.twitter.algebird.{ MapAlgebra, Semigroup }
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
+import com.twitter.summingbird.online._
+import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.storm.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.storm.spout.TraversableSpout
@@ -28,7 +30,7 @@ import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
 import java.util.{ Collections, HashMap, Map => JMap, UUID }
 import java.util.concurrent.atomic.AtomicInteger
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
@@ -46,7 +48,7 @@ import scala.collection.mutable.{
  * Tests for Summingbird's Storm planner.
  */
 
-object TopologyTests extends Specification {
+class TopologyTests extends WordSpec {
   import MapAlgebra.sparseEquiv
 
   // This is dangerous, obviously. The Storm platform graphs tested
@@ -87,7 +89,7 @@ object TopologyTests extends Specification {
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_, _)(testFn)
       )
     // Final Flatmap + summer
-    stormTopo.get_bolts_size() must_== 2
+    assert(stormTopo.get_bolts_size() == 2)
   }
 
   "Number of spouts in simple task should be 1" in {
@@ -96,7 +98,7 @@ object TopologyTests extends Specification {
         TestGraphs.singleStepJob[Storm, Int, Int, Int](_, _)(testFn)
       )
     // Source producer
-    stormTopo.get_spouts_size() must_== 1
+    assert(stormTopo.get_spouts_size() == 1)
   }
 
   "A named node after a flat map should imply its options" in {
@@ -114,7 +116,7 @@ object TopologyTests extends Specification {
     // Tail will have 1 -, distance from there should be onwards
     val TDistMap = bolts.map { case (k, v) => (k.split("-").size - 1, v) }
 
-    TDistMap(1).get_common.get_parallelism_hint must_== 50
+    assert(TDistMap(1).get_common.get_parallelism_hint == 50)
   }
 
   "With 2 names in a row we take the closest name" in {
@@ -135,7 +137,7 @@ object TopologyTests extends Specification {
     // Tail will have 1 -, distance from there should be onwards
     val TDistMap = bolts.map { case (k, v) => (k.split("-").size - 1, v) }
 
-    TDistMap(1).get_common.get_parallelism_hint must_== 50
+    assert(TDistMap(1).get_common.get_parallelism_hint == 50)
   }
 
   "If the closes doesnt contain the option we keep going" in {
@@ -145,7 +147,7 @@ object TopologyTests extends Specification {
       .flatMap(testFn).name(otherNodeName).name(nodeName)
       .sumByKey(TestStore.createStore[Int, Int]()._2)
 
-    val opts = Map(otherNodeName -> Options().set(SpoutParallelism(30)),
+    val opts = Map(otherNodeName -> Options().set(SourceParallelism(30)),
       nodeName -> Options().set(FlatMapParallelism(50)))
     val storm = Storm.local(opts)
     val stormTopo = storm.plan(p).topology
@@ -155,7 +157,7 @@ object TopologyTests extends Specification {
     // Tail will have 1 -, distance from there should be onwards
     val TDistMap = bolts.map { case (k, v) => (k.split("-").size - 1, v) }
 
-    TDistMap(1).get_common.get_parallelism_hint must_== 50
+    assert(TDistMap(1).get_common.get_parallelism_hint == 50)
   }
 
   "Options propagate backwards" in {
@@ -164,7 +166,7 @@ object TopologyTests extends Specification {
       .flatMap(testFn).name(nodeName).name("Throw away name")
       .sumByKey(TestStore.createStore[Int, Int]()._2)
 
-    val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)).set(SpoutParallelism(30)))
+    val opts = Map(nodeName -> Options().set(FlatMapParallelism(50)).set(SourceParallelism(30)))
     val storm = Storm.local(opts)
     val stormTopo = storm.plan(p).topology
     // Source producer
@@ -172,7 +174,7 @@ object TopologyTests extends Specification {
     val spouts = stormTopo.get_spouts
     val spout = spouts.head._2
 
-    spout.get_common.get_parallelism_hint must_== 30
+    assert(spout.get_common.get_parallelism_hint == 30)
   }
 
   "Options don't propagate forwards" in {
@@ -182,7 +184,7 @@ object TopologyTests extends Specification {
       .flatMap(testFn).name(otherNodeName).name(nodeName)
       .sumByKey(TestStore.createStore[Int, Int]()._2)
 
-    val opts = Map(otherNodeName -> Options().set(SpoutParallelism(30)).set(SummerParallelism(50)),
+    val opts = Map(otherNodeName -> Options().set(SourceParallelism(30)).set(SummerParallelism(50)),
       nodeName -> Options().set(FlatMapParallelism(50)))
     val storm = Storm.local(opts)
     val stormTopo = storm.plan(p).topology
@@ -192,6 +194,6 @@ object TopologyTests extends Specification {
     // Tail will have 1 -, distance from there should be onwards
     val TDistMap = bolts.map { case (k, v) => (k.split("-").size - 1, v) }
 
-    TDistMap(0).get_common.get_parallelism_hint must_== 5
+    assert(TDistMap(0).get_common.get_parallelism_hint == 5)
   }
 }

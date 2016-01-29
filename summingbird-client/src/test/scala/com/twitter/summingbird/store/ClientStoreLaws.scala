@@ -1,6 +1,6 @@
 package com.twitter.summingbird.store
 
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird.batch._
@@ -18,7 +18,7 @@ case class TestStore[K, +V](m: Map[K, Option[V]]) extends ReadableStore[K, V] {
       .getOrElse(Future.exception(new RuntimeException("fail!")))
 }
 
-class ClientStoreLaws extends Specification {
+class ClientStoreLaws extends WordSpec {
   /** Batcher that always returns a batch of 10. */
   implicit val batcher = new AbstractBatcher {
     def batchOf(t: Timestamp) = BatchID(10)
@@ -48,7 +48,7 @@ class ClientStoreLaws extends Specification {
   val retMap = clientStore.multiGet(keys)
 
   def assertPresent[T](f: Future[T], comparison: T) {
-    assert(f.isReturn && Await.result(f) == comparison)
+    assert(Await.result(f.liftToTry).isReturn && Await.result(f) == comparison)
   }
 
   "ClientStore should return a map from multiGet of the same size as the input request" in {
@@ -63,9 +63,9 @@ class ClientStoreLaws extends Specification {
     assertPresent(retMap("d"), None)
   }
   "ClientStore should fail a key when offline succeeds and online fails" in {
-    assert(retMap("e").isThrow)
+    assert(Await.result(retMap("e").liftToTry).isThrow)
   }
   "ClientStore should fail a key when offline fails and online succeeds" in {
-    assert(retMap("f").isThrow)
+    assert(Await.result(retMap("f").liftToTry).isThrow)
   }
 }

@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import scala.util.{ Try, Success, Failure }
+import scala.util.{ Success, Failure }
 
 import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.IRichBolt
@@ -28,7 +28,8 @@ import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecu
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.{ InflightTuples, InputState }
 import com.twitter.summingbird.option.JobId
-import com.twitter.summingbird.{ JobCounters, SummingbirdRuntimeStats }
+import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
+import com.twitter.summingbird.online.Externalizer
 
 import scala.collection.JavaConverters._
 
@@ -38,6 +39,7 @@ import org.slf4j.{ LoggerFactory, Logger }
 /**
  *
  * @author Oscar Boykin
+ * @author Ian O Connell
  * @author Sam Ritchie
  * @author Ashu Singhal
  */
@@ -50,11 +52,11 @@ case class BaseBolt[I, O](jobID: JobId,
     maxExecutePerSec: MaxExecutePerSecond,
     executor: OperationContainer[I, O, InputState[Tuple], JList[AnyRef], TopologyContext]) extends IRichBolt {
 
-  @transient protected lazy val logger: Logger =
-    LoggerFactory.getLogger(getClass)
+  @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  val countersForBolt: List[(String, String)] =
-    Try { JobCounters.registeredCountersForJob.get(jobID).toList }.toOption.getOrElse(Nil)
+  private[this] val lockedCounters = Externalizer(JobCounters.getCountersForJob(jobID).getOrElse(Nil))
+
+  lazy val countersForBolt: Seq[(Group, Name)] = lockedCounters.get
 
   private var collector: OutputCollector = null
 
@@ -77,7 +79,7 @@ case class BaseBolt[I, O](jobID: JobId,
     This does a linear ramp up from the lower bound to the upper bound over the time period.
   */
   @annotation.tailrec
-  private def rateLimit: Unit = {
+  private def rateLimit(): Unit = {
     val sleepTime = this.synchronized {
       val baseTime = System.currentTimeMillis
       val currentPeriod = baseTime / PERIOD_LENGTH_MS
@@ -103,7 +105,7 @@ case class BaseBolt[I, O](jobID: JobId,
     }
     if (sleepTime > 0) {
       Thread.sleep(sleepTime)
-      rateLimit
+      rateLimit()
     } else {
       ()
     }
@@ -124,7 +126,7 @@ case class BaseBolt[I, O](jobID: JobId,
   }
 
   override def execute(tuple: Tuple) = {
-    rateLimit
+    rateLimit()
     /**
      * System ticks come with a fixed stream id
      */
