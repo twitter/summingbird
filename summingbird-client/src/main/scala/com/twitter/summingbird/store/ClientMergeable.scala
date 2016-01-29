@@ -61,6 +61,13 @@ class ClientMergeable[K, V: Semigroup](
   // This should not be needed, but somehow this FOpt breaks the implicit resolution
   private val mm = new MapMonoid[K, FOpt[V]]()(fsg)
 
+  override def merge(kbv: ((K, BatchID), V)): FOpt[V] = {
+    val ((key, batch), delta) = kbv
+    val existing: FOpt[V] = readable.multiGetBatch[K](batch.prev, Set(key))(key)
+    // Now we merge into the current store:
+    val preMerge: FOpt[V] = onlineStore.merge(kbv)
+    fsg.plus(existing, preMerge)
+  }
   override def multiMerge[K1 <: (K, BatchID)](ks: Map[K1, V]): Map[K1, FOpt[V]] = {
     /*
      * We start by finding the min BatchId for each K, and merge those ((K, BatchID), V) into the
