@@ -63,12 +63,14 @@ class ClientMergeable[K, V: Semigroup](
 
   override def multiMerge[K1 <: (K, BatchID)](ks: Map[K1, V]): Map[K1, FOpt[V]] = {
     /*
-     * We merge the smallest batch for each key first, since subsequent
-     * batches are total sums. This could be optimized more, but since
+     * We start by finding the min BatchId for each K, and merge those ((K, BatchID), V) into the
+     * store first as they make up the basis of any (K, BatchID') where BatchID' > BatchID.
+     *
+     * This could be optimized more, but since
      * mergeing two different batches for the same key is presumably rare,
      * it is probably not worth it.
      */
-    val batchForKey: Map[K1, V] = ks.groupBy { case (k, _) => k }
+    val batchForKey: Map[K1, V] = ks.groupBy { case ((k, batchId), v) => k }
       .iterator
       .map { case (k, kvs) => kvs.minBy { case ((_, batchId), _) => batchId } }
       .toMap
@@ -84,7 +86,7 @@ class ClientMergeable[K, V: Semigroup](
       val fmap = previousIsDone.map { _ =>
         multiMerge(nextCall)
       }
-      firstRes ++ FutureOps.liftFutureValues(ks.keySet, fmap)
+      firstRes ++ FutureOps.liftFutureValues(nextCall.keySet, fmap)
     } else firstRes
   }
 
@@ -93,14 +95,14 @@ class ClientMergeable[K, V: Semigroup](
     val result = ks.groupBy { case ((_, batchId), _) => batchId }
       .iterator
       .map {
-        case (b, kvs) =>
-          val batch = kvs.head._1._2 // kvs can't be empty in mapValues
-          val existing: Map[K, FOpt[V]] = readable.multiGetBatch[K](batch.prev, kvs.map { case ((k, _), v) => k }(breakOut))
+        case (batch, kvs) =>
+          val batchKeys: Set[K] = kvs.map { case ((k, _), _) => k }(breakOut)
+          val existing: Map[K, FOpt[V]] = readable.multiGetBatch[K](batch.prev, batchKeys)
           // Now we merge into the current store:
           val preMerge: Map[K, FOpt[V]] = onlineStore.multiMerge(kvs)
             .map { case ((k, _), v) => (k, v) }(breakOut)
 
-          (b, mm.plus(existing, preMerge))
+          (batch, mm.plus(existing, preMerge))
       }
       .flatMap {
         case (b, kvs) =>

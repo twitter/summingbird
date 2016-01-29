@@ -1,7 +1,5 @@
 package com.twitter.summingbird.store
 
-import org.specs2.mutable._
-
 import com.twitter.storehaus.ReadableStore
 import com.twitter.storehaus.Store
 import com.twitter.storehaus.algebra._
@@ -25,6 +23,9 @@ object ClientMergeableLaws extends Properties("ClientMergeable") {
       online: Store[(K, BatchID), V])(implicit val batcher: Batcher, semi: Semigroup[V]) {
     val mergeable = ClientMergeable(offline, MergeableStore.fromStoreNoMulti(online), 10)
   }
+
+  def jstore[K, V]: Store[K, V] =
+    Store.fromJMap(new java.util.HashMap[K, Option[V]]())
 
   /**
    * This test prepares an initial offline store, and has a list of key, value1, value2 to merge.
@@ -64,8 +65,25 @@ object ClientMergeableLaws extends Properties("ClientMergeable") {
     }
   }
 
-  def jstore[K, V]: Store[K, V] =
-    Store.fromJMap(new java.util.HashMap[K, Option[V]]())
+  property("sequential merges include prior") = Prop.forAll { (init: Map[Int, Int], toMerge: Map[Int, (Int, Int)]) =>
+    implicit val batcher = Batcher.ofHours(2)
+    val machine = Machine.empty[Int, Int]
+    init.foreach {
+      case (k, v) =>
+        machine.offline.put((k, Some((BatchID(0), v))))
+    }
+    val keys: Map[(Int, BatchID), Int] = toMerge.flatMap {
+      case (k, (v1, v2)) =>
+        Map((k, BatchID(1)) -> v1, (k, BatchID(2)) -> v2)
+    }
+
+    Await.result(Future.collect(machine.mergeable.multiMerge(keys)
+      .collect {
+        case ((k, BatchID(2)), fopt) => fopt.map(_ == Some(toMerge(k)._1 + init.getOrElse(k, 0)))
+      }
+      .toSeq)
+      .map(_.forall(identity)))
+  }
 
   property("simple check") = {
     implicit val b = Batcher.ofHours(23)
