@@ -118,14 +118,21 @@ class ClientStore[K, V: Semigroup](
     collector: FutureCollector[(K, Iterable[BatchID])]) extends ReadableStore[K, V] {
   import MergeOperations._
 
-  override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, FOpt[V]] = {
+  override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, FOpt[V]] =
+    multiGetBatch(batcher.currentBatch, ks)
+
+  /*
+   * This is a big hint that in fact this store should be a
+   * ReadableStore[(K, BatchID), V]
+   */
+  def multiGetBatch[K1 <: K](batch: BatchID, ks: Set[K1]): Map[K1, FOpt[V]] = {
     val offlineResult: Map[K1, FOpt[(BatchID, V)]] = offlineStore.multiGet(ks)
     // For combining later we move the offline result batch id from being the exclusive upper bound
     // to the inclusive upper bound.
     val liftedOffline = decrementOfflineBatch(offlineResult)
     val possibleOnlineKeys = ks.filter(onlineKeyFilter)
     val m: Future[Map[K1, FOpt[V]]] = for {
-      onlineKeys <- generateOnlineKeys(possibleOnlineKeys.toSeq, batcher.currentBatch, batchesToKeep)(
+      onlineKeys <- generateOnlineKeys(possibleOnlineKeys.toSeq, batch, batchesToKeep)(
         offlineResult.andThen(_.map { _.map { _._1 } })
       )(collector.asInstanceOf[FutureCollector[(K1, Iterable[BatchID])]])
       onlineResult: Map[(K1, BatchID), FOpt[V]] = onlineStore.multiGet(onlineKeys)
