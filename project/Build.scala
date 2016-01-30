@@ -26,8 +26,7 @@ object SummingbirdBuild extends Build {
   val chillVersion = "0.7.0"
   val slf4jVersion = "1.6.6"
 
-  val dfsDatastoresVersion = "1.3.6"
-  val scaldingVersion = "0.15.1-RC13"
+  val scaldingVersion = "0.15.1-SNAPSHOT"
   val storehausVersion = "0.12.0"
   val utilVersion = "6.26.0"
 
@@ -49,7 +48,7 @@ object SummingbirdBuild extends Build {
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.twitter",
-    scalaVersion := "2.10.5",
+    scalaVersion := "2.11.7",
     crossScalaVersions := Seq("2.10.5", "2.11.7"),
     // To support hadoop 1.x
     javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
@@ -282,8 +281,6 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdScalding = module("scalding").settings(
     libraryDependencies ++= Seq(
-      "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
-      "com.backtype" % "dfs-datastores-cascading" % dfsDatastoresVersion,
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "algebird-util" % algebirdVersion,
       "com.twitter" %% "algebird-bijection" % algebirdVersion,
@@ -319,11 +316,11 @@ object SummingbirdBuild extends Build {
 
   lazy val summingbirdBatchHadoop = module("batch-hadoop").settings(
     libraryDependencies ++= Seq(
-      "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
       "com.twitter" %% "algebird-core" % algebirdVersion,
       "com.twitter" %% "bijection-json" % bijectionVersion,
       "com.twitter" %% "scalding-date" % scaldingVersion,
       "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+      "com.twitter" %% "scalding-commons" % scaldingVersion,
       "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
     )
   ).dependsOn(
