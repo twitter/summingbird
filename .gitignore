@@ -14,4 +14,5 @@ project/plugins/src_managed/
 */.settings
 */.cache
 */.classpath
+sonatype.sbt
 vagrant/
