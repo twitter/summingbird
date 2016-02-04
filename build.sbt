@@ -16,12 +16,11 @@ def scalaBinaryVersion(scalaVersion: String) = scalaVersion match {
 
 def isScala210x(scalaVersion: String) = scalaBinaryVersion(scalaVersion) == "2.10"
 
-val algebirdVersion = "0.11.0"
-val bijectionVersion = "0.8.1"
-val chillVersion = "0.7.0"
+val algebirdVersion = "0.12.0"
+val bijectionVersion = "0.9.1"
+val chillVersion = "0.7.3"
 val commonsHttpClientVersion = "3.1"
 val commonsLangVersion = "2.6"
-val dfsDatastoresVersion = "1.3.6"
 val finagleVersion = "6.27.0"
 val hadoopVersion = "1.2.1"
 val junitVersion = "4.11"
@@ -29,11 +28,11 @@ val log4jVersion = "1.2.16"
 val novocodeJunitVersion = "0.10"
 val scalaCheckVersion = "1.12.2"
 val scalatestVersion = "2.2.4"
-val scaldingVersion = "0.15.1-RC13"
+val scaldingVersion = "0.16.0-RC1"
 val slf4jVersion = "1.6.6"
-val storehausVersion = "0.12.0"
+val storehausVersion = "0.13.0"
 val stormDep = "storm" % "storm" % "0.9.0-wip15" //This project also compiles with the latest storm, which is in fact required to run the example
-val tormentaVersion = "0.11.0"
+val tormentaVersion = "0.11.1"
 val utilVersion = "6.26.0"
 
 val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
@@ -288,8 +287,6 @@ lazy val summingbirdStormTest = module("storm-test").settings(
 
 lazy val summingbirdScalding = module("scalding").settings(
   libraryDependencies ++= Seq(
-    "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
-    "com.backtype" % "dfs-datastores-cascading" % dfsDatastoresVersion,
     "com.twitter" %% "algebird-core" % algebirdVersion,
     "com.twitter" %% "algebird-util" % algebirdVersion,
     "com.twitter" %% "algebird-bijection" % algebirdVersion,
@@ -325,9 +322,9 @@ lazy val summingbirdScaldingTest = module("scalding-test").settings(
 
 lazy val summingbirdBatchHadoop = module("batch-hadoop").settings(
   libraryDependencies ++= Seq(
-    "com.backtype" % "dfs-datastores" % dfsDatastoresVersion,
     "com.twitter" %% "algebird-core" % algebirdVersion,
     "com.twitter" %% "bijection-json" % bijectionVersion,
+    "com.twitter" %% "scalding-commons" % scaldingVersion,
     "com.twitter" %% "scalding-date" % scaldingVersion,
     "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
     "org.apache.hadoop" % "hadoop-core" % hadoopVersion % "provided"
