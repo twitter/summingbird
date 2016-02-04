@@ -20,6 +20,7 @@ import com.twitter.algebird.Semigroup
 import com.twitter.storehaus.{ FutureCollector, FutureOps, ReadableStore }
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.util.Future
+import scala.collection.breakOut
 
 /**
  * Summingbird ClientStore -- merges offline and online.
@@ -62,6 +63,16 @@ object ClientStore {
     onlineKeyFilter: K => Boolean,
     collector: FutureCollector[(K, Iterable[BatchID])])(implicit batcher: Batcher, semigroup: Semigroup[V]): ClientStore[K, V] =
     new ClientStore[K, V](offlineStore, onlineStore, batcher, batchesToKeep, onlineKeyFilter, collector)
+
+  /**
+   * You can't read the batch counts before what offline has counted up to
+   */
+  def offlineLTEQBatch[K, V](k: K, b: BatchID, v: Future[Option[(BatchID, V)]]): Future[Option[(BatchID, V)]] =
+    v.flatMap {
+      case s @ Some((bOld, v)) if (bOld.id <= b.id) => Future.value(s)
+      case Some((bOld, v)) => Future.exception(OfflinePassedBatch(k, bOld, b))
+      case None => Future.None
+    }
 }
 
 /**
@@ -126,7 +137,10 @@ class ClientStore[K, V: Semigroup](
    * ReadableStore[(K, BatchID), V]
    */
   def multiGetBatch[K1 <: K](batch: BatchID, ks: Set[K1]): Map[K1, FOpt[V]] = {
-    val offlineResult: Map[K1, FOpt[(BatchID, V)]] = offlineStore.multiGet(ks)
+    val offlineResult: Map[K1, FOpt[(BatchID, V)]] =
+      offlineStore.multiGet(ks)
+        .map { case (k, bv) => (k, ClientStore.offlineLTEQBatch(k, batch, bv)) }(breakOut)
+
     // For combining later we move the offline result batch id from being the exclusive upper bound
     // to the inclusive upper bound.
     val liftedOffline = decrementOfflineBatch(offlineResult)
@@ -141,3 +155,5 @@ class ClientStore[K, V: Semigroup](
     FutureOps.liftFutureValues(ks, m)
   }
 }
+
+case class OfflinePassedBatch(key: Any, offlineBatch: BatchID, requested: BatchID) extends Exception(s"key: $key offline is at batch $offlineBatch, can't query for $requested")
