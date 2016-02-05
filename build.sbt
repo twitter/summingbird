@@ -90,7 +90,7 @@ val sharedSettings = extraSettings ++ Seq(
     checkSnapshotDependencies,
     inquireVersions,
     runClean,
-    runTest,
+//    runTest, // these tests are monsters and a bit flakey. Make sure to publish only green builds!
     setReleaseVersion,
     commitReleaseVersion,
     tagRelease,
