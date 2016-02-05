@@ -81,8 +81,7 @@ class ClientStoreProps extends Properties("ClientStore") {
     val nextB = BatchID(b.id + offset)
     if (offset >= 0) {
       Await.result(ClientStore.offlineLTEQBatch(0, nextB, offline)) == offline.get
-    }
-    else {
+    } else {
       Await.ready(ClientStore.offlineLTEQBatch(0, nextB, offline)).isThrow
     }
   }
