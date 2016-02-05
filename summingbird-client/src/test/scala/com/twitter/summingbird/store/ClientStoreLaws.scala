@@ -5,6 +5,7 @@ import org.scalatest.WordSpec
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird.batch._
 import com.twitter.util.{ Await, Future }
+import org.scalacheck._
 
 /**
  * The backing map of a TestStore holds an Option[V] -- keys that are
@@ -67,5 +68,21 @@ class ClientStoreLaws extends WordSpec {
   }
   "ClientStore should fail a key when offline fails and online succeeds" in {
     assert(Await.result(retMap("f").liftToTry).isThrow)
+  }
+}
+
+class ClientStoreProps extends Properties("ClientStore") {
+
+  implicit def batchArb: Arbitrary[BatchID] = Arbitrary(Gen.choose(0L, 100L).map(BatchID(_)))
+
+  property("OfflineLTEQ Batch works") = Prop.forAll { (b: BatchID, offset: Int) =>
+
+    val offline = Future.value(Some((b, 0)))
+    val nextB = BatchID(b.id + offset)
+    if (offset >= 0) {
+      Await.result(ClientStore.offlineLTEQBatch(0, nextB, offline)) == offline.get
+    } else {
+      Await.ready(ClientStore.offlineLTEQBatch(0, nextB, offline)).isThrow
+    }
   }
 }
