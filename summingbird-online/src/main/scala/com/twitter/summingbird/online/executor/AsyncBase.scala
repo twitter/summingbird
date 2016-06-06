@@ -49,7 +49,7 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
   def tick: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
 
   private lazy val outstandingFutures = Queue.linkedNonBlocking[Future[Unit]]
-  private lazy val pendingOutstandingFuturesSize = new AtomicInteger(0)
+  private lazy val numPendingOutstandingFutures = new AtomicInteger(0)
   private lazy val responses = Queue.linkedNonBlocking[(Seq[S], Try[TraversableOnce[O]])]
 
   override def executeTick =
@@ -94,8 +94,8 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
   private def addOutstandingFuture(fut: Future[Unit]): Boolean =
     if (!fut.isDefined) {
       outstandingFutures.put(fut)
-      pendingOutstandingFuturesSize.addAndGet(1)
-      fut.respond { _ => pendingOutstandingFuturesSize.addAndGet(-1) }
+      numPendingOutstandingFutures.addAndGet(1)
+      fut.respond { _ => numPendingOutstandingFutures.addAndGet(-1) }
       true
     } else {
       false
@@ -103,7 +103,7 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
 
   private def forceExtraFutures() {
     val maxWaitingFuturesCount = maxWaitingFutures.get
-    val pendingFuturesCount = pendingOutstandingFuturesSize.get
+    val pendingFuturesCount = numPendingOutstandingFutures.get
     if (pendingFuturesCount > maxWaitingFuturesCount) {
       // Too many futures waiting, let's clear.
       outstandingFutures.dequeueAll(_.isDefined)
