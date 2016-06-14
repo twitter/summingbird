@@ -61,14 +61,15 @@ object ClientStore {
     onlineStore: ReadableStore[(K, BatchID), V],
     batchesToKeep: Int,
     onlineKeyFilter: K => Boolean,
-    collector: FutureCollector[(K, Iterable[BatchID])])(implicit batcher: Batcher, semigroup: Semigroup[V]): ClientStore[K, V] =
+    collector: FutureCollector)(implicit batcher: Batcher, semigroup: Semigroup[V]): ClientStore[K, V] =
     new ClientStore[K, V](offlineStore, onlineStore, batcher, batchesToKeep, onlineKeyFilter, collector)
 
-  /** You can't read the batch counts before what offline has counted up to
+  /**
+   * You can't read the batch counts before what offline has counted up to
    */
   def offlineLTEQBatch[K, V](k: K, b: BatchID, v: Future[Option[(BatchID, V)]]): Future[Option[(BatchID, V)]] =
     v.flatMap {
-      case s@Some((bOld, v)) if (bOld.id <= b.id) => Future.value(s)
+      case s @ Some((bOld, v)) if (bOld.id <= b.id) => Future.value(s)
       case Some((bOld, v)) => Future.exception(OfflinePassedBatch(k, bOld, b))
       case None => Future.None
     }
@@ -125,7 +126,7 @@ class ClientStore[K, V: Semigroup](
     batcher: Batcher,
     batchesToKeep: Int,
     onlineKeyFilter: K => Boolean,
-    collector: FutureCollector[(K, Iterable[BatchID])]) extends ReadableStore[K, V] {
+    collector: FutureCollector) extends ReadableStore[K, V] {
   import MergeOperations._
 
   override def multiGet[K1 <: K](ks: Set[K1]): Map[K1, FOpt[V]] =
@@ -158,7 +159,7 @@ class ClientStore[K, V: Semigroup](
 
     val fOnlineKeys: Future[Set[(K1, BatchID)]] =
       generateOnlineKeys(possibleOnlineKeys.toSeq, batch, batchesToKeep)(
-        keyToBatch)(collector.asInstanceOf[FutureCollector[(K1, Iterable[BatchID])]])
+        keyToBatch)(collector.asInstanceOf[FutureCollector])
 
     val m: Future[Map[K1, FOpt[V]]] = fOnlineKeys.map { onlineKeys =>
       val onlineResult: Map[(K1, BatchID), FOpt[V]] = onlineStore.multiGet(onlineKeys)
@@ -172,5 +173,4 @@ class ClientStore[K, V: Semigroup](
   }
 }
 
-case class OfflinePassedBatch(key: Any, offlineBatch: BatchID, requested: BatchID) extends
-  Exception(s"key: $key offline is at batch $offlineBatch, can't query for $requested")
+case class OfflinePassedBatch(key: Any, offlineBatch: BatchID, requested: BatchID) extends Exception(s"key: $key offline is at batch $offlineBatch, can't query for $requested")
