@@ -21,7 +21,7 @@ val bijectionVersion = "0.9.1"
 val chillVersion = "0.7.3"
 val commonsHttpClientVersion = "3.1"
 val commonsLangVersion = "2.6"
-val finagleVersion = "6.27.0"
+val finagleVersion = "6.35.0"
 val hadoopVersion = "1.2.1"
 val junitVersion = "4.11"
 val log4jVersion = "1.2.16"
@@ -33,7 +33,7 @@ val slf4jVersion = "1.6.6"
 val storehausVersion = "0.15.0-RC1"
 val stormDep = "storm" % "storm" % "0.9.0-wip15" //This project also compiles with the latest storm, which is in fact required to run the example
 val tormentaVersion = "0.11.1"
-val utilVersion = "6.26.0"
+val utilVersion = "6.34.0"
 
 val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
 
@@ -352,7 +352,7 @@ lazy val summingbirdExample = module("example").settings(
     stormDep exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
     "com.twitter" %% "bijection-netty" % bijectionVersion,
     "com.twitter" %% "tormenta-twitter" % tormentaVersion,
-    "com.twitter" %% "storehaus-memcache" % storehausVersion exclude("com.twitter.common", "dynamic-host-set") exclude("com.twitter.common", "service-thrift"),
+    "com.twitter" %% "storehaus-memcache" % storehausVersion,
     "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
   )
 ).dependsOn(summingbirdCore, summingbirdStorm)
