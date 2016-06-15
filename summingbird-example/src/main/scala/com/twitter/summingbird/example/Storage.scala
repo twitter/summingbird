@@ -21,8 +21,8 @@ import com.twitter.bijection.{ Base64String, Bijection, Codec, Injection }
 import com.twitter.bijection.netty.Implicits._
 import com.twitter.conversions.time._
 import com.twitter.finagle.builder.ClientBuilder
-import com.twitter.finagle.memcachedx.KetamaClientBuilder
-import com.twitter.finagle.memcachedx.protocol.text.Memcached
+import com.twitter.finagle.memcached.KetamaClientBuilder
+import com.twitter.finagle.memcached.protocol.text.Memcached
 import com.twitter.storehaus.Store
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.memcache.{ HashEncoder, MemcacheStore }

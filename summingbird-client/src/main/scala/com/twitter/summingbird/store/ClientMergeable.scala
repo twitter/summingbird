@@ -45,7 +45,7 @@ class ClientMergeable[K, V: Semigroup](
     batcher: Batcher,
     batchesToKeep: Int,
     onlineKeyFilter: K => Boolean,
-    collector: FutureCollector[(K, Iterable[BatchID])]) extends Mergeable[(K, BatchID), V] {
+    collector: FutureCollector) extends Mergeable[(K, BatchID), V] {
 
   def readable: ClientStore[K, V] =
     new ClientStore(offlineStore, onlineStore, batcher, batchesToKeep, onlineKeyFilter, collector)

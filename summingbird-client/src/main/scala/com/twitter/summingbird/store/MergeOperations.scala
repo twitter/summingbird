@@ -39,7 +39,7 @@ object MergeOperations {
    */
   def pivot[K] = Pivot.of[(K, BatchID), K, BatchID]
 
-  def collect[T, U](seq: Seq[(T, Future[U])])(implicit collect: FutureCollector[(T, U)]): Future[Seq[(T, U)]] =
+  def collect[T, U](seq: Seq[(T, Future[U])])(implicit collect: FutureCollector): Future[Seq[(T, U)]] =
     collect {
       seq.map { case (t, futureU) => futureU.map(t -> _) }
     }
@@ -85,7 +85,7 @@ object MergeOperations {
     BatchID.range(initBatch, nowBatch)
   }
 
-  def generateOnlineKeys[K](ks: Seq[K], nowBatch: BatchID, batchesToKeep: Int)(lookup: K => FOpt[BatchID])(implicit collect: FutureCollector[(K, Iterable[BatchID])]): Future[Set[(K, BatchID)]] =
+  def generateOnlineKeys[K](ks: Seq[K], nowBatch: BatchID, batchesToKeep: Int)(lookup: K => FOpt[BatchID])(implicit collect: FutureCollector): Future[Set[(K, BatchID)]] =
     for {
       collected <- collect(
         ks.map { k => lookup(k).map { k -> expand(_, nowBatch, batchesToKeep) } }
