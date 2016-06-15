@@ -94,8 +94,8 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
   private def addOutstandingFuture(fut: Future[Unit]): Boolean =
     if (!fut.isDefined) {
       outstandingFutures.put(fut)
-      numPendingOutstandingFutures.addAndGet(1)
-      fut.respond { _ => numPendingOutstandingFutures.addAndGet(-1) }
+      numPendingOutstandingFutures.incrementAndGet
+      fut.ensure(numPendingOutstandingFutures.decrementAndGet)
       true
     } else {
       false
