@@ -39,80 +39,73 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
   type Plan[T] = Stream[T]
 
   private type Prod[T] = Producer[Memory, T]
-  private type JamfMap = HMap[Prod, Stream]
+  private type JamfMap = Map[Prod[_], Seq[Stream[_]]]
 
   def counter(group: Group, name: Name): Option[Long] =
     MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }
 
-  private def toStream[T](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
+  private def toStream[T](outerProducer: Prod[T], jamfs: JamfMap): (Seq[Stream[T]], JamfMap) =
     jamfs.get(outerProducer) match {
-      case Some(s) => (s, jamfs)
+      case Some(s) => (s.asInstanceOf[Seq[Stream[T]]], jamfs)
       case None =>
-        val (s, m) = outerProducer match {
+        val (ss, m) = outerProducer match {
           case NamedProducer(producer, _) => toStream(producer, jamfs)
           case IdentityKeyedProducer(producer) => toStream(producer, jamfs)
-          case Source(source) => (source.toStream, jamfs)
+          case Source(source) => (List(source.toStream), jamfs)
           case OptionMappedProducer(producer, fn) =>
-            val (s, m) = toStream(producer, jamfs)
-            (s.flatMap(fn(_)), m)
+            val (ss, m) = toStream(producer, jamfs)
+            val ssTransformed = ss.map(_.flatMap(fn(_)))
+            (ssTransformed, m)
 
           case FlatMappedProducer(producer, fn) =>
-            val (s, m) = toStream(producer, jamfs)
-            (s.flatMap(fn(_)), m)
+            val (ss, m) = toStream(producer, jamfs)
+            val ssTransformed = ss.map(_.flatMap(fn(_)))
+            (ssTransformed, m)
 
           case MergedProducer(l, r) =>
-            val (leftS, leftM) = toStream(l, jamfs)
-            val (rightS, rightM) = toStream(r, leftM)
-            (leftS ++ rightS, rightM)
+            val (leftSS, leftM) = toStream(l, jamfs)
+            val (rightSS, rightM) = toStream(r, leftM)
+            (leftSS ++ rightSS, rightM)
 
           case KeyFlatMappedProducer(producer, fn) =>
-            val (s, m) = toStream(producer, jamfs)
-            (s.flatMap {
-              case (k, v) =>
-                fn(k).map((_, v))
-            }, m)
+            val (ss, m) = toStream(producer, jamfs)
+            val ssTransformed = ss.map(_.flatMap { case (k, v) => fn(k).map((_, v)) })
+            (ssTransformed, m)
 
           case ValueFlatMappedProducer(producer, fn) =>
-            val (s, m) = toStream(producer, jamfs)
-            (s.flatMap {
-              case (k, v) =>
-                fn(v).map((k, _))
-            }, m)
+            val (ss, m) = toStream(producer, jamfs)
+            val ssTransformed = ss.map(_.flatMap { case (k, v) => fn(v).map((k, _)) })
+            (ssTransformed, m)
 
           case AlsoProducer(l, r) =>
-            //Plan the first one, but ignore it
-            val (left, leftM) = toStream(l, jamfs)
-            val (right, rightM) = toStream(r, leftM)
-            // We need to force all of left to make sure any
-            // side effects in write happen
-            lazy val lforcedEmpty = left.filter(_ => false)
-            (right.append(lforcedEmpty), rightM)
+            val (leftSS, leftM) = toStream(l, jamfs)
+            val (rightSS, rightM) = toStream(r, leftM)
+            (leftSS ++ rightSS, rightM)
 
           case WrittenProducer(producer, fn) =>
-            val (s, m) = toStream(producer, jamfs)
-            (s.map { i => fn(i); i }, m)
+            val (ss, m) = toStream(producer, jamfs)
+            val ssTransformed = ss.map(_.map { i => fn(i); i })
+            (ssTransformed, m)
 
           case LeftJoinedProducer(producer, service) =>
-            val (s, m) = toStream(producer, jamfs)
-            val joined = s.map {
-              case (k, v) => (k, (v, service.get(k)))
-            }
+            val (ss, m) = toStream(producer, jamfs)
+            val joined = ss.map(_.map { case (k, v) => (k, (v, service.get(k))) })
             (joined, m)
 
           case Summer(producer, store, semigroup) =>
-            val (s, m) = toStream(producer, jamfs)
-            val summed = s.map {
+            val (ss, m) = toStream(producer, jamfs)
+            val summed = ss.map(_.map {
               case (k, deltaV) =>
                 val oldV = store.get(k)
                 val newV = oldV.map { semigroup.plus(_, deltaV) }
                   .getOrElse(deltaV)
                 store.update(k, newV)
                 (k, (oldV, deltaV))
-            }
+            })
             (summed, m)
         }
         // scala can't infer that s is the right type through case statements above
-        val st = s.asInstanceOf[Stream[T]]
+        val st = ss.asInstanceOf[Seq[Stream[T]]]
         (st, m + (outerProducer -> st))
     }
 
@@ -130,7 +123,7 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
     val memoryTail = dagOptimizer.optimize(prod, dagOptimizer.ValueFlatMapToFlatMap)
     val memoryDag = memoryTail.asInstanceOf[TailProducer[Memory, T]]
 
-    toStream(memoryDag, HMap.empty)._1
+    toStream(memoryDag, Map.empty)._1.reduceLeft(_ ++ _)
   }
 
   def run(iter: Stream[_]) {
