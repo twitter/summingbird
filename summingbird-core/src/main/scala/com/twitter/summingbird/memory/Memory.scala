@@ -20,6 +20,7 @@ import java.util
 
 import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
+import com.twitter.summingbird.graph.HMap
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.DagOptimizer
 import collection.mutable.{ Map => MutableMap }
@@ -27,6 +28,15 @@ import collection.mutable.{ Map => MutableMap }
 object Memory {
   implicit def toSource[T](traversable: TraversableOnce[T])(implicit mf: Manifest[T]): Producer[Memory, T] =
     Producer.source[Memory, T](traversable)
+
+  case class Identity[T <: AnyRef](val unwrap: T) {
+    override def equals(that: Any) = that match {
+      case i: Identity[_] => unwrap.eq(i.unwrap)
+      case _ => false
+    }
+    override def hashCode = System.identityHashCode(unwrap)
+  }
+
 }
 
 trait MemoryService[-K, +V] {
@@ -34,6 +44,8 @@ trait MemoryService[-K, +V] {
 }
 
 class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Platform[Memory] {
+  import Memory.Identity
+
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]
   type Sink[-T] = (T => Unit)
@@ -41,14 +53,34 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
   type Plan[T] = Stream[T]
 
   private type Prod[T] = Producer[Memory, T]
-  private type JamfMap = util.IdentityHashMap[Prod[_], Stream[_]]
+  private type IProd[T] = Identity[Producer[Memory, T]]
+
+  // Key is wrapped in Identity to get reference equality semantics
+  private type JamfMap = HMap[IProd, Stream]
 
   def counter(group: Group, name: Name): Option[Long] =
     MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }
 
-  def toStream[T](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
-    Option(jamfs.get(outerProducer)) match {
-      case Some(s) => (s.asInstanceOf[Stream[T]], jamfs)
+  /**
+   * On the memory platform the notion of summingbird stream literally
+   * translates to scala streams. We plan the topology by creating
+   * streams from sources and transforming them using other components
+   * of the topology. Execution is then just a matter of forcing this stream.
+   *
+   * Since the topology is a DAG, some parts of the graph can be shared
+   * between multiple roots(TailProducers combined with AlsoProducer). To
+   * avoid duplicating the shared parts of the graph we keep track of
+   * planned portions in a map. This map uses reference equality because
+   * we care about the root components themselves and not their content.
+   * e.g. summer uses a mutable map for store. If the content of this
+   * mutable map changes it doesn't mean that we have a different summer.
+   *
+   * Note that some forcing of streams happens here: Left portions of
+   * AlsoProducers are forced immediately.
+   */
+  private def toStream[T](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
+    jamfs.get(Identity(outerProducer)) match {
+      case Some(s) => (s, jamfs)
       case None =>
         val (s, m) = outerProducer match {
           case NamedProducer(producer, _) => toStream(producer, jamfs)
@@ -106,17 +138,16 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
             val summed = s.map {
               case (k, deltaV) =>
                 val oldV = store.get(k)
-                val newV = oldV.map {
-                  semigroup.plus(_, deltaV)
-                }
+                val newV = oldV.map { semigroup.plus(_, deltaV) }
                   .getOrElse(deltaV)
                 store.update(k, newV)
                 (k, (oldV, deltaV))
             }
             (summed, m)
         }
-        m.put(outerProducer, s)
-        (s.asInstanceOf[Stream[T]], m)
+        // scala can't infer that s is the right type through case statements above
+        val st = s.asInstanceOf[Stream[T]]
+        (st, m + (Identity(outerProducer) -> st))
     }
 
   def plan[T](prod: TailProducer[Memory, T]): Stream[T] = {
@@ -133,7 +164,12 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
     val memoryTail = dagOptimizer.optimize(prod, dagOptimizer.ValueFlatMapToFlatMap)
     val memoryDag = memoryTail.asInstanceOf[TailProducer[Memory, T]]
 
-    toStream(memoryDag, new JamfMap)._1
+    // Planning actually produces multiple streams, only one of
+    // which is representative and that is the one we return.
+    // Remaining are the left portions of all the AlsoProducers
+    // in the topology and the streams they generate are executed
+    // during planning itself.
+    toStream(memoryDag, HMap.empty)._1
   }
 
   def run(iter: Stream[_]) {
