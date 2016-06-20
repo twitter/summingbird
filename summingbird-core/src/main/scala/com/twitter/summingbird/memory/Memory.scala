@@ -46,7 +46,7 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
   def counter(group: Group, name: Name): Option[Long] =
     MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }
 
-  def toStream[T, K, V](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
+  def toStream[T](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
     Option(jamfs.get(outerProducer)) match {
       case Some(s) => (s.asInstanceOf[Stream[T]], jamfs)
       case None =>
