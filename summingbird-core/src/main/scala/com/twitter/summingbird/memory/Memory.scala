@@ -74,9 +74,6 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
    * we care about the root components themselves and not their content.
    * e.g. summer uses a mutable map for store. If the content of this
    * mutable map changes it doesn't mean that we have a different summer.
-   *
-   * Note that some forcing of streams happens here: Left portions of
-   * AlsoProducers are forced immediately.
    */
   private def toStream[T](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
     jamfs.get(Identity(outerProducer)) match {
@@ -116,11 +113,12 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
           case AlsoProducer(l, r) =>
             //Plan the first one, but ignore it
             val (left, leftM) = toStream(l, jamfs)
+            val (right, rightM) = toStream(r, leftM)
+
             // We need to force all of left to make sure any
             // side effects in write happen
-            val lforcedEmpty = left.filter(_ => false)
-            val (right, rightM) = toStream(r, leftM)
-            (right ++ lforcedEmpty, rightM)
+            lazy val lforcedEmpty = left.filter(_ => false)
+            (right.append(lforcedEmpty), rightM)
 
           case WrittenProducer(producer, fn) =>
             val (s, m) = toStream(producer, jamfs)
@@ -164,11 +162,6 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
     val memoryTail = dagOptimizer.optimize(prod, dagOptimizer.ValueFlatMapToFlatMap)
     val memoryDag = memoryTail.asInstanceOf[TailProducer[Memory, T]]
 
-    // Planning actually produces multiple streams, only one of
-    // which is representative and that is the one we return.
-    // Remaining are the left portions of all the AlsoProducers
-    // in the topology and the streams they generate are executed
-    // during planning itself.
     toStream(memoryDag, HMap.empty)._1
   }
 
