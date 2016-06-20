@@ -101,13 +101,13 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
             }
             (joined, m)
 
-          case Summer(producer, store, monoid) =>
+          case Summer(producer, store, semigroup) =>
             val (s, m) = toStream(producer, jamfs)
             val summed = s.map {
-              case pair @ (k, deltaV) =>
+              case (k, deltaV) =>
                 val oldV = store.get(k)
                 val newV = oldV.map {
-                  monoid.plus(_, deltaV)
+                  semigroup.plus(_, deltaV)
                 }
                   .getOrElse(deltaV)
                 store.update(k, newV)
