@@ -16,9 +16,6 @@
 
 package com.twitter.summingbird.memory
 
-import java.util
-
-import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
 import com.twitter.summingbird.graph.HMap
 import com.twitter.summingbird.option.JobId
