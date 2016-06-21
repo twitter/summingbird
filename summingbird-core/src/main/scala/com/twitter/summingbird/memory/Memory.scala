@@ -25,6 +25,15 @@ import collection.mutable.{ Map => MutableMap }
 object Memory {
   implicit def toSource[T](traversable: TraversableOnce[T])(implicit mf: Manifest[T]): Producer[Memory, T] =
     Producer.source[Memory, T](traversable)
+
+  case class Identity[T <: AnyRef](val unwrap: T) {
+    override def equals(that: Any) = that match {
+      case i: Identity[_] => unwrap.eq(i.unwrap)
+      case _ => false
+    }
+    override def hashCode = System.identityHashCode(unwrap)
+  }
+
 }
 
 trait MemoryService[-K, +V] {
@@ -32,6 +41,8 @@ trait MemoryService[-K, +V] {
 }
 
 class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Platform[Memory] {
+  import Memory.Identity
+
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = MutableMap[K, V]
   type Sink[-T] = (T => Unit)
@@ -39,13 +50,30 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
   type Plan[T] = Stream[T]
 
   private type Prod[T] = Producer[Memory, T]
-  private type JamfMap = HMap[Prod, Stream]
+  private type IProd[T] = Identity[Producer[Memory, T]]
+
+  // Key is wrapped in Identity to get reference equality semantics
+  private type JamfMap = HMap[IProd, Stream]
 
   def counter(group: Group, name: Name): Option[Long] =
     MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }
 
+  /**
+   * On the memory platform the notion of summingbird stream literally
+   * translates to scala streams. We plan the topology by creating
+   * streams from sources and transforming them using other components
+   * of the topology. Execution is then just a matter of forcing this stream.
+   *
+   * Since the topology is a DAG, some parts of the graph can be shared
+   * between multiple roots(TailProducers combined with AlsoProducer). To
+   * avoid duplicating the shared parts of the graph we keep track of
+   * planned portions in a map. This map uses reference equality because
+   * we care about the root components themselves and not their content.
+   * e.g. summer uses a mutable map for store. If the content of this
+   * mutable map changes it doesn't mean that we have a different summer.
+   */
   private def toStream[T](outerProducer: Prod[T], jamfs: JamfMap): (Stream[T], JamfMap) =
-    jamfs.get(outerProducer) match {
+    jamfs.get(Identity(outerProducer)) match {
       case Some(s) => (s, jamfs)
       case None =>
         val (s, m) = outerProducer match {
@@ -83,6 +111,7 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
             //Plan the first one, but ignore it
             val (left, leftM) = toStream(l, jamfs)
             val (right, rightM) = toStream(r, leftM)
+
             // We need to force all of left to make sure any
             // side effects in write happen
             lazy val lforcedEmpty = left.filter(_ => false)
@@ -113,7 +142,7 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
         }
         // scala can't infer that s is the right type through case statements above
         val st = s.asInstanceOf[Stream[T]]
-        (st, m + (outerProducer -> st))
+        (st, m + (Identity(outerProducer) -> st))
     }
 
   def plan[T](prod: TailProducer[Memory, T]): Stream[T] = {
