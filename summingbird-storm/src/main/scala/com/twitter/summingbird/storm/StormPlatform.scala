@@ -172,7 +172,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val tormentaSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
       p match {
         case Source(_) => spout // The source is still in the members list so drop it
-        case OptionMappedProducer(_, op) => spout.flatMap { case (time, t) => op.apply(t).map { x => (time, x) } }
+        case OptionMappedProducer(_, op) =>
+          val boxed = Externalizer(op)
+          spout.flatMap { case (time, t) => boxed.get(t).map { x => (time, x) } }
         case NamedProducer(_, _) => spout
         case IdentityKeyedProducer(_) => spout
         case AlsoProducer(_, _) => spout
@@ -184,19 +186,17 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
     val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
 
-    val registerAllMetrics = new Function1[TopologyContext, Unit] {
-      def apply(context: TopologyContext) = {
-        // Register metrics passed in SpoutStormMetrics option.
-        metrics.metrics().foreach {
-          x: StormMetric[IMetric] =>
-            context.registerMetric(x.name, x.metric, x.interval.inSeconds)
-        }
-        // Register summingbird counter metrics.
-        StormStatProvider.registerMetrics(jobID, context, countersForSpout)
-        SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
+    val registerAllMetrics = Externalizer({ context: TopologyContext =>
+      // Register metrics passed in SpoutStormMetrics option.
+      metrics.metrics().foreach {
+        x: StormMetric[IMetric] =>
+          context.registerMetric(x.name, x.metric, x.interval.inSeconds)
       }
-    }
-    val stormSpout = tormentaSpout.openHook(registerAllMetrics).getSpout
+      // Register summingbird counter metrics.
+      StormStatProvider.registerMetrics(jobID, context, countersForSpout)
+      SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
+    })
+    val stormSpout = tormentaSpout.openHook(registerAllMetrics.get).getSpout
     val parallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SOURCE_PARALLELISM)).parHint
     topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
   }
