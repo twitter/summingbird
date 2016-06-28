@@ -41,16 +41,17 @@ object AsyncBase {
    * once n futures have finished either successfully or unsuccessfully.
    * If n is greater than number of futures in queue then we wait on all of them.
    */
-  def waitN[A](fs: Queue[Future[A]], n: Int): Future[Unit] = {
-    require(n >= 0)
+  def waitN[A](fs: Iterable[Future[A]], n: Int): Future[Unit] = {
     val waitOnCount = Math.min(fs.size, n)
-    if (waitOnCount == 0) {
+    if (waitOnCount <= 0) {
       Future.Unit
     } else {
       val count = new AtomicInteger(waitOnCount)
       val p = Promise[Unit]()
-      for (f <- fs) {
-        f ensure {
+      fs.foreach { f =>
+        f.ensure {
+          // Note that since we are only decrementing we can cross 0 only
+          // once (unless we decrement more than 2^32 times).
           if (count.decrementAndGet() == 0) {
             p.setValue(())
           }
@@ -135,10 +136,12 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
       val toClear = outstandingFutures.size - maxWaitingFuturesCount
       if (toClear > 0) {
         try {
-          Await.ready(AsyncBase.waitN(outstandingFutures, toClear), maxWaitingTime.get)
+          val dequeuedFutures = outstandingFutures.toSeq
+          Await.ready(AsyncBase.waitN(dequeuedFutures, toClear), maxWaitingTime.get)
+          outstandingFutures.putAll(dequeuedFutures.filter(_.isDefined))
         } catch {
           case te: TimeoutException =>
-            logger.error("forceExtra failed on %d Futures".format(toClear), te)
+            logger.error(s"forceExtra failed on $toClear Futures", te)
         }
       }
     } else {
