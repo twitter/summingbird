@@ -50,7 +50,7 @@ object AsyncBase {
       val count = new AtomicInteger(waitOnCount)
       val p = Promise[Unit]()
       for (f <- fs) {
-        f respond { _ =>
+        f ensure {
           if (count.decrementAndGet() == 0) {
             p.setValue(())
           }
