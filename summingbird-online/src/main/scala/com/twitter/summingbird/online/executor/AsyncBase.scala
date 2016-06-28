@@ -16,14 +16,15 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.twitter.summingbird.online.Queue
-import com.twitter.summingbird.online.option.{ MaxWaitingFutures, MaxFutureWaitTime, MaxEmitPerExecute }
-import com.twitter.util.{ Await, Future }
-import scala.util.{ Try, Success, Failure }
-import java.util.concurrent.TimeoutException
-import org.slf4j.{ LoggerFactory, Logger }
+import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
+import com.twitter.util._
+import org.slf4j.{ Logger, LoggerFactory }
+
+import scala.util.{ Failure, Success, Try }
 
 object AsyncBase {
   /**
@@ -34,6 +35,30 @@ object AsyncBase {
    * finished.
    */
   val OutstandingFuturesDequeueRatio = 2
+
+  /**
+   * Wait for n futures to finish. Doesn't block, the returned future is satisfied
+   * once n futures have finished either successfully or unsuccessfully.
+   * If n is greater than number of futures in queue then we wait on all of them.
+   */
+  def waitN[A](fs: Queue[Future[A]], n: Int): Future[Unit] = {
+    require(n >= 0)
+    val waitOnCount = Math.min(fs.size, n)
+    if (waitOnCount == 0) {
+      Future.Unit
+    } else {
+      val count = new AtomicInteger(waitOnCount)
+      val p = Promise[Unit]()
+      for (f <- fs) {
+        f respond { _ =>
+          if (count.decrementAndGet() == 0) {
+            p.setValue(())
+          }
+        }
+      }
+      p
+    }
+  }
 }
 
 abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I, O, S, D, RC] {
@@ -107,13 +132,13 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
     if (pendingFuturesCount > maxWaitingFuturesCount) {
       // Too many futures waiting, let's clear.
       outstandingFutures.dequeueAll(_.isDefined)
-      val toForce = outstandingFutures.trimTo(maxWaitingFuturesCount).toIndexedSeq
-      if (toForce.nonEmpty) {
+      val toClear = outstandingFutures.size - maxWaitingFuturesCount
+      if (toClear > 0) {
         try {
-          Await.ready(Future.collect(toForce), maxWaitingTime.get)
+          Await.ready(AsyncBase.waitN(outstandingFutures, toClear), maxWaitingTime.get)
         } catch {
           case te: TimeoutException =>
-            logger.error("forceExtra failed on %d Futures".format(toForce.size), te)
+            logger.error("forceExtra failed on %d Futures".format(toClear), te)
         }
       }
     } else {
