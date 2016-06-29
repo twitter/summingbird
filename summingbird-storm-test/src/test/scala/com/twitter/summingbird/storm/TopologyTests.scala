@@ -16,9 +16,10 @@
 
 package com.twitter.summingbird.storm
 
-import java.util.{Map => JMap}
+import java.util.{ Map => JMap }
 
 import backtype.storm.generated.StormTopology
+import com.twitter.algebird.MapAlgebra
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
 import com.twitter.summingbird.online.option._
@@ -27,13 +28,14 @@ import org.scalacheck._
 import org.scalatest.WordSpec
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
+import scala.collection.mutable.{ HashMap => MutableHashMap, Map => MutableMap }
 
 /**
  * Tests for Summingbird's Storm planner.
  */
 
 class TopologyTests extends WordSpec {
+  import MapAlgebra.sparseEquiv
 
   // This is dangerous, obviously. The Storm platform graphs tested
   // here use the UnitBatcher, so the actual time extraction isn't
