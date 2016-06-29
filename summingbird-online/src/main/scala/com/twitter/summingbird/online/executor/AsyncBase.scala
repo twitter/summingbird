@@ -78,6 +78,9 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
   private lazy val numPendingOutstandingFutures = new AtomicInteger(0)
   private lazy val responses = Queue.linkedNonBlocking[(Seq[S], Try[TraversableOnce[O]])]
 
+  // For testing only
+  private[executor] def outstandingFuturesQueue = outstandingFutures
+
   override def executeTick =
     finishExecute(tick.onFailure { thr => responses.put(((Seq(), Failure(thr)))) })
 
@@ -108,9 +111,9 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
       }
       if (outstandingFutures.size > maxWaitingFutures.get) {
         /*
-           * This can happen on large key expansion.
-           * May indicate maxWaitingFutures is too low.
-           */
+         * This can happen on large key expansion.
+         * May indicate maxWaitingFutures is too low.
+         */
         logger.debug(
           "Exceeded maxWaitingFutures({}), put {} futures", maxWaitingFutures.get, iterSize
         )
@@ -138,7 +141,7 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
         try {
           val dequeuedFutures = outstandingFutures.toSeq
           Await.ready(AsyncBase.waitN(dequeuedFutures, toClear), maxWaitingTime.get)
-          outstandingFutures.putAll(dequeuedFutures.filter(_.isDefined))
+          outstandingFutures.putAll(dequeuedFutures.filterNot(_.isDefined))
         } catch {
           case te: TimeoutException =>
             logger.error(s"forceExtra failed on $toClear Futures", te)
