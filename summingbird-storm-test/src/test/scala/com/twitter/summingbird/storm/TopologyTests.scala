@@ -126,23 +126,6 @@ class TopologyTests extends WordSpec {
     assert(TDistMap(1).get_common.get_parallelism_hint == 50)
   }
 
-  "With same setting on multiple names we use the one for the node" in {
-    val fmNodeName = "flatMapper"
-    val smNodeName = "summer"
-    val p = Storm.source(TraversableSpout(sample[List[Int]]))
-      .flatMap(testFn).name(fmNodeName)
-      .sumByKey(TestStore.createStore[Int, Int]()._2).name(smNodeName)
-
-    val opts = Map(fmNodeName -> Options().set(SummerParallelism(10)),
-      smNodeName -> Options().set(SummerParallelism(20)))
-    val storm = Storm.local(opts)
-    val stormTopo = storm.plan(p).topology
-    val bolts = stormTopo.get_bolts
-
-    // Tail should use parallelism specified for the summer node
-    assert(bolts("Tail").get_common.get_parallelism_hint == 20)
-  }
-
   "If the closes doesnt contain the option we keep going" in {
     val nodeName = "super dooper node"
     val otherNodeName = "super dooper node"
@@ -199,4 +182,22 @@ class TopologyTests extends WordSpec {
 
     assert(TDistMap(0).get_common.get_parallelism_hint == 5)
   }
+
+  "With same setting on multiple names we use the one for the node" in {
+    val fmNodeName = "flatMapper"
+    val smNodeName = "summer"
+    val p = Storm.source(TraversableSpout(sample[List[Int]]))
+      .flatMap(testFn).name(fmNodeName)
+      .sumByKey(TestStore.createStore[Int, Int]()._2).name(smNodeName)
+
+    val opts = Map(fmNodeName -> Options().set(SummerParallelism(10)),
+      smNodeName -> Options().set(SummerParallelism(20)))
+    val storm = Storm.local(opts)
+    val stormTopo = storm.plan(p).topology
+    val bolts = stormTopo.get_bolts
+
+    // Tail should use parallelism specified for the summer node
+    assert(bolts("Tail").get_common.get_parallelism_hint == 20)
+  }
+
 }
