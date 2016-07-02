@@ -21,9 +21,10 @@ import cascading.pipe.Pipe
 import cascading.property.ConfigDef
 import cascading.property.ConfigDef.Setter
 import cascading.tuple.Fields
-import com.twitter.scalding.{ Test => TestMode, _ }
+import com.twitter.scalding.{Test => TestMode, _}
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.option.Reducers
+import com.twitter.summingbird.option.MonoidIsCommutative
 import org.scalatest.WordSpec
 
 /**
@@ -46,10 +47,17 @@ class NamedOptionsSpec extends WordSpec {
       override def apply(t: T) = t._1.toLong
     }
 
-  def pipeConfig(pipe: Pipe): Map[String, String] = {
+  def pipeConfig(pipe: Pipe): Map[String, List[String]] = {
     val configCollector = new Setter {
-      var config = Map.empty[String, String]
-      override def set(key: String, value: String): String = { config += key -> value; "" }
+      var config = Map.empty[String, List[String]]
+      override def set(key: String, value: String): String = {
+        if (config.contains(key)) {
+          config = config.updated(key, value :: config(key))
+        } else {
+          config += key -> List(value)
+        }
+        ""
+      }
       override def get(key: String): String = ???
       override def update(key: String, value: String): String = ???
     }
@@ -97,13 +105,12 @@ class NamedOptionsSpec extends WordSpec {
       override def arity = 1
     }
     val pipe = typedPipe.toPipe(new Fields("0"))(fd, mode, tupleSetter)
-    println(pipeConfig(pipe))
-    val numReducers = pipeConfig(pipe)(ReducerKey).toInt
+    val numReducers = pipeConfig(pipe)(ReducerKey).head.toInt
     assert(numReducers === expectedReducers)
   }
 
   "The ScaldingPlatform" should {
-    "use named option for the correct node even if same option defined for previous node" in {
+    "with same setting on multiple names use the one for the node" in {
       val fmReducers = 50
       val smReducers = 100
 
@@ -133,7 +140,7 @@ class NamedOptionsSpec extends WordSpec {
       }
     }
 
-    "use named option from the closest upstream node if option not defined on current node" in {
+    "use named option from the upstream node if option not defined on current node" in {
       val fmReducers1 = 50
       val fmReducers2 = 100
 
@@ -146,6 +153,63 @@ class NamedOptionsSpec extends WordSpec {
           .flatMap(Some(_)).name(FlatMapNodeName1)
           .sumByKey(store).name(SummerNodeName1)
           .map { case (k, (optV, v)) => k }.name(FlatMapNodeName2)
+          .write(IdentitySink)
+      }
+    }
+
+    "use named option from the upstream node if option not defined on current node, even if upstream node is more than a node apart" in {
+      val fmReducers1 = 50
+      val fmReducers2 = 100
+
+      val options = Map(
+        FlatMapNodeName1 -> Options().set(Reducers(fmReducers1)),
+        FlatMapNodeName2 -> Options().set(Reducers(fmReducers2)))
+
+      verify(options, fmReducers2) { (source, store) =>
+        source
+          .flatMap(Some(_)).name(FlatMapNodeName1)
+          .sumByKey(store).name(SummerNodeName1)
+          .flatMap { case (k, (optV, v)) => Some(k) }
+          .flatMap { k => List(k, k) }.name(FlatMapNodeName2)
+          .write(IdentitySink)
+      }
+    }
+
+    "use named option from the closest upstream node if same option defined on two upstream nodes" in {
+      val fmReducers1 = 50
+      val fmReducers2 = 100
+
+      val options = Map(
+        FlatMapNodeName1 -> Options().set(Reducers(fmReducers1)),
+        FlatMapNodeName2 -> Options().set(Reducers(fmReducers2)))
+
+      verify(options, fmReducers1) { (source, store) =>
+        source
+          .flatMap(Some(_))
+          .sumByKey(store).name(SummerNodeName1)
+          .flatMap { case (k, (optV, v)) => Some(k) }.name(FlatMapNodeName1)
+          .flatMap { k => List(k, k) }.name(FlatMapNodeName2)
+          .write(IdentitySink)
+      }
+    }
+
+    "options propagate backwards" in {
+      val fmReducers2 = 1000
+
+      /**
+       * Here FlatMapNodeName1 is closer to the summer node but doesn't have Reducers property
+       * defined so it is picked from FlatMapNodeName2.
+       */
+      val options = Map(
+        FlatMapNodeName1 -> Options().set(MonoidIsCommutative),
+        FlatMapNodeName2 -> Options().set(Reducers(fmReducers2)))
+
+      verify(options, fmReducers2) { (source, store) =>
+        source
+          .flatMap(Some(_))
+          .sumByKey(store).name(SummerNodeName1)
+          .flatMap { case (k, (optV, v)) => Some(k) }.name(FlatMapNodeName1)
+          .flatMap { k => List(k, k) }.name(FlatMapNodeName2)
           .write(IdentitySink)
       }
     }
