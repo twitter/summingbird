@@ -21,7 +21,7 @@ import cascading.pipe.Pipe
 import cascading.property.ConfigDef
 import cascading.property.ConfigDef.Setter
 import cascading.tuple.Fields
-import com.twitter.scalding.{Test => TestMode, _}
+import com.twitter.scalding.{ Test => TestMode, _ }
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.option.Reducers
 import org.scalatest.WordSpec
@@ -139,7 +139,7 @@ class NamedOptionsSpec extends WordSpec {
 
       val options = Map(
         FlatMapNodeName1 -> Options().set(Reducers(fmReducers1)),
-        FlatMapNodeName1 -> Options().set(Reducers(fmReducers2)))
+        FlatMapNodeName2 -> Options().set(Reducers(fmReducers2)))
 
       verify(options, fmReducers2) { (source, store) =>
         source
