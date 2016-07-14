@@ -16,14 +16,15 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.twitter.summingbird.online.Queue
-import com.twitter.summingbird.online.option.{ MaxWaitingFutures, MaxFutureWaitTime, MaxEmitPerExecute }
-import com.twitter.util.{ Await, Future }
-import scala.util.{ Try, Success, Failure }
-import java.util.concurrent.TimeoutException
-import org.slf4j.{ LoggerFactory, Logger }
+import com.twitter.summingbird.online.option.{MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures}
+import com.twitter.util._
+import org.slf4j.{Logger, LoggerFactory}
+
+import scala.util.{Failure, Success, Try}
 
 object AsyncBase {
   /**
@@ -34,6 +35,31 @@ object AsyncBase {
    * finished.
    */
   val OutstandingFuturesDequeueRatio = 2
+
+  /**
+   * Wait for n futures to finish. Doesn't block, the returned future is satisfied
+   * once n futures have finished either successfully or unsuccessfully.
+   * If n is greater than number of futures in queue then we wait on all of them.
+   */
+  def waitN[A](fs: Iterable[Future[A]], n: Int): Future[Unit] = {
+    val waitOnCount = Math.min(fs.size, n)
+    if (waitOnCount <= 0) {
+      Future.Unit
+    } else {
+      val count = new AtomicInteger(waitOnCount)
+      val p = Promise[Unit]()
+      fs.foreach { f =>
+        f.ensure {
+          // Note that since we are only decrementing we can cross 0 only
+          // once (unless we decrement more than 2^32 times).
+          if (count.decrementAndGet() == 0) {
+            p.setValue(())
+          }
+        }
+      }
+      p
+    }
+  }
 }
 
 abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I, O, S, D, RC] {
@@ -51,6 +77,9 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
   private lazy val outstandingFutures = Queue.linkedNonBlocking[Future[Unit]]
   private lazy val numPendingOutstandingFutures = new AtomicInteger(0)
   private lazy val responses = Queue.linkedNonBlocking[(Seq[S], Try[TraversableOnce[O]])]
+
+  // For testing only
+  private[executor] def outstandingFuturesQueue = outstandingFutures
 
   override def executeTick =
     finishExecute(tick.onFailure { thr => responses.put(((Seq(), Failure(thr)))) })
@@ -82,9 +111,9 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
       }
       if (outstandingFutures.size > maxWaitingFutures.get) {
         /*
-           * This can happen on large key expansion.
-           * May indicate maxWaitingFutures is too low.
-           */
+         * This can happen on large key expansion.
+         * May indicate maxWaitingFutures is too low.
+         */
         logger.debug(
           "Exceeded maxWaitingFutures({}), put {} futures", maxWaitingFutures.get, iterSize
         )
@@ -106,15 +135,18 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
     val pendingFuturesCount = numPendingOutstandingFutures.get
     if (pendingFuturesCount > maxWaitingFuturesCount) {
       // Too many futures waiting, let's clear.
-      outstandingFutures.dequeueAll(_.isDefined)
-      val toForce = outstandingFutures.trimTo(maxWaitingFuturesCount).toIndexedSeq
-      if (toForce.nonEmpty) {
+      val pending = outstandingFutures.toSeq.filterNot(_.isDefined)
+      val toClear = pending.size - maxWaitingFuturesCount
+      if (toClear > 0) {
         try {
-          Await.ready(Future.collect(toForce), maxWaitingTime.get)
+          Await.ready(AsyncBase.waitN(pending, toClear), maxWaitingTime.get)
         } catch {
           case te: TimeoutException =>
-            logger.error("forceExtra failed on %d Futures".format(toForce.size), te)
+            logger.error(s"forceExtra failed on $toClear Futures", te)
         }
+        outstandingFutures.putAll(pending.filterNot(_.isDefined))
+      } else {
+        outstandingFutures.putAll(pending)
       }
     } else {
       // only dequeueAll if there's bang for the buck
