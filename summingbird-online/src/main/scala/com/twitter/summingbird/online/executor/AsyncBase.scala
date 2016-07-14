@@ -20,11 +20,11 @@ import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.twitter.summingbird.online.Queue
-import com.twitter.summingbird.online.option.{MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures}
+import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util._
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 object AsyncBase {
   /**
@@ -140,11 +140,11 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
       if (toClear > 0) {
         try {
           Await.ready(AsyncBase.waitN(pending, toClear), maxWaitingTime.get)
-          outstandingFutures.putAll(pending.filterNot(_.isDefined))
         } catch {
           case te: TimeoutException =>
             logger.error(s"forceExtra failed on $toClear Futures", te)
         }
+        outstandingFutures.putAll(pending.filterNot(_.isDefined))
       } else {
         outstandingFutures.putAll(pending)
       }
