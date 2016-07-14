@@ -20,11 +20,11 @@ import java.util.concurrent.CyclicBarrier
 
 import com.twitter.bijection.Injection
 import com.twitter.conversions.time._
-import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
+import com.twitter.summingbird.online.option.{MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures}
 import com.twitter.util._
 import org.scalatest.WordSpec
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{ Seconds, Span }
+import org.scalatest.time.{Seconds, Span}
 
 class AsyncBaseSpec extends WordSpec with Eventually {
 
