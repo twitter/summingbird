@@ -37,13 +37,6 @@ object AsyncBase {
   val OutstandingFuturesDequeueRatio = 2
 
   /**
-   * We treat MaxWaitingFutures setting as the high watermark and when we hit it
-   * we bring down the total number to a low watermark. This setting defines the
-   * percentage of total value lower watermark is at.
-   */
-  val MaxWaitingFuturesLowWatermarkPercentage = 95
-
-  /**
    * Wait for n futures to finish. Doesn't block, the returned future is satisfied
    * once n futures have finished either successfully or unsuccessfully.
    * If n is greater than number of futures in queue then we wait on all of them.
@@ -137,17 +130,14 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
       false
     }
 
-  private[executor] def maxWaitingFuturesLowerWaterMark =
-    (maxWaitingFutures.get * AsyncBase.MaxWaitingFuturesLowWatermarkPercentage) / 100
-
   private def forceExtraFutures() {
     val maxWaitingFuturesCount = maxWaitingFutures.get
     val pendingFuturesCount = numPendingOutstandingFutures.get
     if (pendingFuturesCount > maxWaitingFuturesCount) {
       // Too many futures waiting, let's clear.
       val pending = outstandingFutures.toSeq.filterNot(_.isDefined)
-      if (pending.size > maxWaitingFuturesCount) {
-        val toClear = pending.size - maxWaitingFuturesLowerWaterMark
+      val toClear = pending.size - maxWaitingFuturesCount
+      if (toClear > 0) {
         try {
           Await.ready(AsyncBase.waitN(pending, toClear), maxWaitingTime.get)
           outstandingFutures.putAll(pending.filterNot(_.isDefined))

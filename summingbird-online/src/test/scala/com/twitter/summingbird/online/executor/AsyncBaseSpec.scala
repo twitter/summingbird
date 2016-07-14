@@ -20,11 +20,11 @@ import java.util.concurrent.CyclicBarrier
 
 import com.twitter.bijection.Injection
 import com.twitter.conversions.time._
-import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
+import com.twitter.summingbird.online.option.{MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures}
 import com.twitter.util._
 import org.scalatest.WordSpec
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{ Seconds, Span }
+import org.scalatest.time.{Seconds, Span}
 
 class AsyncBaseSpec extends WordSpec with Eventually {
 
@@ -62,7 +62,7 @@ class AsyncBaseSpec extends WordSpec with Eventually {
   }
 
   "AsyncBase should force only the needed number of extra futures " in {
-    val totalPromisesCount = 5
+    val totalPromisesCount = 4
     val maxWaitingFutures = 2
 
     /**
@@ -119,23 +119,19 @@ class AsyncBaseSpec extends WordSpec with Eventually {
 
     beforeExecute.await()
     Thread.sleep(1000)
-    // t should block now, unblock it by clearing two
+    // t should block now, unblock it by clearing one
     promises(0).setValue(Seq(0))
-    promises(2).setValue(Seq(0))
     afterExecute.await()
-    assert(ab.outstandingFuturesQueue.size == ab.maxWaitingFuturesLowerWaterMark)
+    assert(ab.outstandingFuturesQueue.size == 2)
 
     beforeExecute.await()
-    afterExecute.await()
-    beforeExecute.await()
     Thread.sleep(1000)
-    // t should block now, unblock it by clearing two
-    promises(1).setValue(Seq(0))
-    promises(3).setValue(Seq(0))
+    // t should block now, unblock it by clearing one
+    promises(2).setValue(Seq(0))
     afterExecute.await()
 
     // t should get unblocked now and stay unblocked
-    assert(ab.outstandingFuturesQueue.size == ab.maxWaitingFuturesLowerWaterMark)
+    assert(ab.outstandingFuturesQueue.size == 2)
     ab.outstandingFuturesQueue.foreach { f => assert(!f.isDefined) }
   }
 }
