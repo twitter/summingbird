@@ -64,11 +64,12 @@ object ClientStore {
     collector: FutureCollector[(K, Iterable[BatchID])])(implicit batcher: Batcher, semigroup: Semigroup[V]): ClientStore[K, V] =
     new ClientStore[K, V](offlineStore, onlineStore, batcher, batchesToKeep, onlineKeyFilter, collector)
 
-  /** You can't read the batch counts before what offline has counted up to
+  /**
+   * You can't read the batch counts before what offline has counted up to
    */
   def offlineLTEQBatch[K, V](k: K, b: BatchID, v: Future[Option[(BatchID, V)]]): Future[Option[(BatchID, V)]] =
     v.flatMap {
-      case s@Some((bOld, v)) if (bOld.id <= b.id) => Future.value(s)
+      case s @ Some((bOld, v)) if (bOld.id <= b.id) => Future.value(s)
       case Some((bOld, v)) => Future.exception(OfflinePassedBatch(k, bOld, b))
       case None => Future.None
     }
@@ -172,5 +173,4 @@ class ClientStore[K, V: Semigroup](
   }
 }
 
-case class OfflinePassedBatch(key: Any, offlineBatch: BatchID, requested: BatchID) extends
-  Exception(s"key: $key offline is at batch $offlineBatch, can't query for $requested")
+case class OfflinePassedBatch(key: Any, offlineBatch: BatchID, requested: BatchID) extends Exception(s"key: $key offline is at batch $offlineBatch, can't query for $requested")

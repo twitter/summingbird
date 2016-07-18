@@ -58,6 +58,8 @@ import scala.util.control.NonFatal
 object Scalding {
   @transient private val logger = LoggerFactory.getLogger(classOf[Scalding])
 
+  case class PlanningException(errorMessages: List[String]) extends Exception(errorMessages.toString)
+
   def apply(jobName: String, options: Map[String, Options] = Map.empty) = {
     new Scalding(jobName, options, identity, List())
   }
@@ -285,7 +287,7 @@ object Scalding {
         default
       case Some((id, opt)) =>
         logger.info(
-          s"Producer (${producer.getClass.getName}) Using $opt found via NamedProducer ${'"'}$id${'"'}")
+          s"""Producer (${producer.getClass.getName}) Using $opt found via NamedProducer "$id" """)
         opt
     }
 
@@ -564,6 +566,44 @@ object Scalding {
   }
 
   /**
+   * like toPipeExact, but using Execution
+   */
+  def toExecutionExact[T](
+    dr: DateRange,
+    prod: Producer[Scalding, T],
+    options: Map[String, Options] = Map.empty): Execution[TypedPipe[(Timestamp, T)]] =
+
+    Execution.getMode.flatMap { mode =>
+      val fd = new FlowDef
+      toPipeExact(dr, prod, options)(fd, mode) match {
+        case Right(pipe) =>
+          /**
+           * We plan twice. The first time we plan to see what new
+           * writes we do, the second time we only read, we do not
+           * do any new writes.
+           */
+          Execution.fromFn { (_, _) => fd }
+            .flatMap { _ =>
+              // Now plan again and use summingbird's built in support
+              // to minimize work by reading existing on-disk data:
+              val reads = new FlowDef
+              toPipeExact(dr, prod, options)(reads, mode) match {
+                case Right(pipe) =>
+                  /*
+                   * Note that we discard "reads", any writes there
+                   * will not be performed
+                   */
+                  Execution.from(pipe)
+                case Left(msgs) =>
+                  //Left should never happen, since we planned before.
+                  Execution.failed(PlanningException(msgs))
+              }
+            }
+        case Left(msgs) => Execution.failed(PlanningException(msgs))
+      }
+    }
+
+  /**
    * Use this method to interop with existing scalding code
    * Note this may return a smaller DateRange than you ask for
    * If you need an exact DateRange see toPipeExact.
@@ -659,10 +699,12 @@ class Scalding(
   def withConfigUpdater(fn: Config => Config) =
     new Scalding(jobName, options, transformConfig.andThen(fn), passedRegistrars)
 
-  def configProvider(hConf: Configuration): Config = {
+  def configProvider(hConf: Configuration): Config =
+    withKryo(Config.hadoopWithDefaults(hConf))
+
+  private def withKryo(conf: Config): Config = {
     import com.twitter.scalding._
     import com.twitter.chill.config.ScalaMapConfig
-    val conf = Config.hadoopWithDefaults(hConf)
 
     if (passedRegistrars.isEmpty) {
       conf.setSerialization(Right(classOf[serialization.KryoHadoop]))
@@ -681,16 +723,17 @@ class Scalding(
   }
 
   final def buildConfig(hConf: Configuration): Config = {
-    val config = transformConfig(configProvider(hConf))
-
-    // Store the options used:
-    val postConfig = config.+("summingbird.options" -> options.toString)
-      .+("summingbird.jobname" -> jobName)
-      .+("summingbird.submitted.timestamp" -> System.currentTimeMillis.toString)
-
+    val postConfig = finalTransform(Config.hadoopWithDefaults(hConf))
     postConfig.toMap.foreach { case (k, v) => hConf.set(k, v) }
     postConfig
   }
+
+  private def finalTransform(c: Config): Config =
+    transformConfig(withKryo(c))
+      // Store the options used:
+      .+("summingbird.options" -> options.toString)
+      .+("summingbird.jobname" -> jobName)
+      .+("summingbird.submitted.timestamp" -> System.currentTimeMillis.toString)
 
   // This is a side-effect-free computation that is called by run
   def toFlow(config: Config, timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Option[Flow[_]])] = {

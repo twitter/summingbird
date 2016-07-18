@@ -97,6 +97,37 @@ class ScaldingLaws extends WordSpec {
 
       assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) == true)
     }
+    "match scala for single step jobs using Execution" in {
+      val original = sample[List[Int]]
+      val fn = sample[(Int) => List[(Int, Int)]]
+
+      // Add a time:
+      val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
+
+      // get time interval for the input
+      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+
+      val batcher = TestUtil.randomBatcher(inWithTime)
+      val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
+
+      val inMemory = TestGraphs.singleStepInScala(batchCoveredInput)(fn)
+
+      val initStore = sample[Map[Int, Int]]
+      val testStore = TestStore[Int, Int]("test", batcher, initStore, inWithTime.size)
+      val (buffer, source) = TestSource(inWithTime)
+
+      val summer = TestGraphs.singleStepJob[Scalding, (Long, Int), Int, Int](source, testStore)(t =>
+        fn(t._2))
+
+      val scald = Scalding("scalaCheckJob")
+      val ws = new LoopState(intr)
+      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
+
+      scald.run(ws, mode, scald.plan(summer))
+      // Now check that the inMemory ==
+
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) == true)
+    }
 
     "match scala single step pruned jobs" in {
       val original = sample[List[Int]]
@@ -131,11 +162,13 @@ class ScaldingLaws extends WordSpec {
       val summer = TestGraphs.singleStepJob[Scalding, (Long, Int), Int, Int](source, testStore)(t =>
         fn(t._2))
 
-      val scald = Scalding("scalaCheckJob")
-      val ws = new LoopState(intr)
-      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
+      val ex = Scalding.toExecutionExact(
+        Scalding.dateRangeInjection.invert(intr).get,
+        summer).unit
 
-      scald.run(ws, mode, scald.plan(summer))
+      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
+      ex.waitFor(Config.default, mode)
+
       // Now check that the inMemory ==
 
       assert(TestUtil.compareMaps(original, inMemory, testStore) == true)
