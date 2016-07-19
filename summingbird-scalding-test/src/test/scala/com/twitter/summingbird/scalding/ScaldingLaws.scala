@@ -119,14 +119,16 @@ class ScaldingLaws extends WordSpec {
       val summer = TestGraphs.singleStepJob[Scalding, (Long, Int), Int, Int](source, testStore)(t =>
         fn(t._2))
 
-      val scald = Scalding("scalaCheckJob")
-      val ws = new LoopState(intr)
-      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
+      val ex = Scalding.toExecutionExact(
+        Scalding.dateRangeInjection.invert(intr).get,
+        summer).unit
 
-      scald.run(ws, mode, scald.plan(summer))
+      val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
+      ex.waitFor(Config.default, mode).get
+
       // Now check that the inMemory ==
 
-      assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore) == true)
+      assert(TestUtil.compareMaps(original, Monoid.plus(initStore, inMemory), testStore, "execution") == true)
     }
 
     "match scala single step pruned jobs" in {
@@ -162,13 +164,11 @@ class ScaldingLaws extends WordSpec {
       val summer = TestGraphs.singleStepJob[Scalding, (Long, Int), Int, Int](source, testStore)(t =>
         fn(t._2))
 
-      val ex = Scalding.toExecutionExact(
-        Scalding.dateRangeInjection.invert(intr).get,
-        summer).unit
-
+      val scald = Scalding("scalaCheckJob")
+      val ws = new LoopState(intr)
       val mode: Mode = TestMode(t => (testStore.sourceToBuffer ++ buffer).get(t))
-      ex.waitFor(Config.default, mode)
 
+      scald.run(ws, mode, scald.plan(summer))
       // Now check that the inMemory ==
 
       assert(TestUtil.compareMaps(original, inMemory, testStore) == true)
