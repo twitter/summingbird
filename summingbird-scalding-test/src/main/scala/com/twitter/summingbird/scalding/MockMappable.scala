@@ -16,14 +16,14 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
-
-import cascading.tuple.{ Tuple, Fields, TupleEntry }
-import cascading.tap.Tap
 import cascading.scheme.NullScheme
+import cascading.tap.Tap
+import cascading.tuple.{ Tuple, Fields, TupleEntry }
+import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
+import java.io.{ InputStream, OutputStream }
 import org.apache.hadoop.mapred.JobConf
-import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
+import org.apache.hadoop.mapred.RecordReader
 
 class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
     extends ScaldingSource with Mappable[T] {
@@ -36,5 +36,22 @@ class MockMappable[T](val id: String)(implicit tconv: TupleConverter[T])
   override def hashCode = id.hashCode
 
   override def createTap(readOrWrite: AccessMode)(implicit mode: Mode): Tap[_, _, _] =
-    TestTapFactory(this, new NullScheme[JobConf, RecordReader[_, _], OutputCollector[_, _], T, T](Fields.ALL, Fields.ALL)).createTap(readOrWrite)
+    (readOrWrite, mode) match {
+      case (Write, TestMode(buffers)) =>
+        /*
+         * We copy this code from scalding because scalding ALWAYS erases the target
+         * whether or not a job is run. This is not what HDFS would do, and it violates
+         * the assumption that planning is a pure function (running of course is not)
+        */
+        require(
+          buffers(this).isDefined,
+          TestTapFactory.sourceNotFoundError.format(this))
+
+        new MemoryTap[InputStream, OutputStream](
+          new NullScheme(Fields.ALL, Fields.ALL),
+          buffers(this).get)
+
+      case _ =>
+        TestTapFactory(this, new NullScheme[JobConf, RecordReader[_, _], OutputCollector[_, _], T, T](Fields.ALL, Fields.ALL)).createTap(readOrWrite)
+    }
 }
