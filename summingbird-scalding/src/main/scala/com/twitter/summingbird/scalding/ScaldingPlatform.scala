@@ -576,7 +576,7 @@ object Scalding {
     Execution.getMode.flatMap { mode =>
       val fd = new FlowDef
       toPipeExact(dr, prod, options)(fd, mode) match {
-        case Right(pipe) =>
+        case Right(_) =>
           /**
            * We plan twice. The first time we plan to see what new
            * writes we do, the second time we only read, we do not
