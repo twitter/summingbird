@@ -39,7 +39,7 @@ val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalarifor
 
 val sharedSettings = extraSettings ++ Seq(
   organization := "com.twitter",
-  scalaVersion := "2.10.5",
+  scalaVersion := "2.11.7",
   crossScalaVersions := Seq("2.10.5", "2.11.7"),
   // To support hadoop 1.x
   javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
@@ -368,3 +368,4 @@ lazy val summingbirdCoreTest = module("core-test").settings(
 ).dependsOn(
     summingbirdCore % "test->test;compile->compile"
   )
+

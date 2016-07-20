@@ -101,6 +101,87 @@ class TopologyTests extends WordSpec {
     assert(stormTopo.get_spouts_size() == 1)
   }
 
+  /*
+  *  Test Case to check the opt-in mechanism on the FlatMapperProducer.
+  *  Asserts : the parallelism of the source node
+  *            asserts it is a one spout and one bolt topology
+  *            assert the summer parallelism too.
+  */
+  "Opt-in for the flatmap to merge in source." in {
+    val fmNodeName = "flatMapper"
+    val smNodeName = "summer"
+    val sourceNodeName = "source"
+    val p = Storm.source(TraversableSpout(sample[List[Int]])).name(sourceNodeName)
+      .flatMap(testFn).name(fmNodeName)
+      .sumByKey(TestStore.createStore[Int, Int]()._2).name(smNodeName)
+
+    val opts = Map(fmNodeName -> Options().set(FMMergeableWithSource(true)).set(FlatMapParallelism(5)),
+      sourceNodeName -> Options().set(SourceParallelism(10)),
+      smNodeName -> Options().set(SummerParallelism(7)))
+    val storm = Storm.local(opts)
+    val stormTopo = storm.plan(p).topology
+    val bolts = stormTopo.get_bolts
+    val spouts = stormTopo.get_spouts()
+    assert(bolts.size()==1 && spouts.size()==1)
+    assert(bolts("Tail").get_common().get_parallelism_hint()==7)
+
+    val spout = spouts.head._2
+    assert(spout.get_common().get_parallelism_hint()==10)
+  }
+
+  /*
+    Test Case to check the opt-in mechanism on the OptionMappedProducer
+    Asserts : There is only one spout and one bolt
+              Asserts the summer parallelism
+              Asserts the source parallelism
+ */
+  "Remove FlatMapNode where TailProducer does not have FlatMapProducer" in {
+    val optNodeName = "optionMapper"
+    val smNodeName = "summer"
+    val sourceNodeName = "source"
+    val p = Storm.source(TraversableSpout(sample[List[Int]])).name(sourceNodeName)
+      .map(x => (x,1)).name(optNodeName)
+      .sumByKey(TestStore.createStore[Int, Int]()._2).name(smNodeName)
+
+    val opts = Map(optNodeName -> Options().set(FMMergeableWithSource(true)).set(FlatMapParallelism(5)),
+      sourceNodeName -> Options().set(SourceParallelism(10)),
+      smNodeName -> Options().set(SummerParallelism(7)))
+    val storm = Storm.local(opts)
+    val stormTopo = storm.plan(p).topology
+    val bolts = stormTopo.get_bolts
+    val spouts = stormTopo.get_spouts
+
+    assert(stormTopo.get_bolts_size()==1 && stormTopo.get_spouts_size()==1)
+    assert(spouts.head._2.get_common().get_parallelism_hint()==10)
+    assert(bolts("Tail").get_common().get_parallelism_hint()==7)
+  }
+
+  /*
+ *  Test Case to check if it errors out with a RuntimeException when the FMMergeableWithSource is opted-in and sourceParallelism is smaller than FMParallelism
+ *  Asserts : RuntimeException has occurred when sourceParallelism is smaller than FM Parallelism
+ */
+  "While FMMergeableWithSource Option is set to true, error out when SourceParallelism is less that FMParallelism" in {
+    val fmNodeName = "flatMapper"
+    val smNodeName = "summer"
+    val sourceNodeName = "source"
+    val p = Storm.source(TraversableSpout(sample[List[Int]])).name(sourceNodeName)
+      .flatMap(testFn).name(fmNodeName)
+      .sumByKey(TestStore.createStore[Int, Int]()._2).name(smNodeName)
+
+    val opts = Map(fmNodeName -> Options().set(FMMergeableWithSource(true)).set(FlatMapParallelism(15)),
+      sourceNodeName -> Options().set(SourceParallelism(10)),
+      smNodeName -> Options().set(SummerParallelism(7)))
+    val storm = Storm.local(opts)
+    try{
+      val stormTopo = storm.plan(p).topology
+      assert(false)
+    }
+    catch{
+      case _ : RuntimeException => assert(true)
+    }
+  }
+
+
   "A named node after a flat map should imply its options" in {
     val nodeName = "super dooper node"
     val p = Storm.source(TraversableSpout(sample[List[Int]]))

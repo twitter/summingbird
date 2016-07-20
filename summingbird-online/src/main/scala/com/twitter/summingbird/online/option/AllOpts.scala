@@ -113,3 +113,9 @@ case class SummerParallelism(parHint: Int)
  * which are set by SummerParallelism.
  */
 case class SummerBatchMultiplier(get: Int)
+
+/**
+ * This option configures the flatMap to be merged into spout when set to true.
+ */
+case class FMMergeableWithSource(get: Boolean)
+

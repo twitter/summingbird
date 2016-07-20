@@ -44,6 +44,8 @@ private[summingbird] trait OnlineDefaultConstants {
   val DEFAULT_VALUE_COMBINER_CACHE_SIZE = ValueCombinerCacheSize(100)
   val DEFAULT_MAX_EMIT_PER_EXECUTE = MaxEmitPerExecute(Int.MaxValue)
   val DEFAULT_SUMMER_BATCH_MULTIPLIER = SummerBatchMultiplier(1)
+  val DEFAULT_FM_MERGEABLE_WITH_SOURCE = FMMergeableWithSource(false)
+
 }
 
 private[summingbird] object OnlineDefaultConstants extends OnlineDefaultConstants
