@@ -258,8 +258,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
    * and is not meaningful in the general case.
    */
   def aggregate[V1, V2](store: P#Store[K, V1], agg: Aggregator[V, V1, V2]): KeyedProducer[P, K, (Option[V2], V2)] = {
-    // When the next version of algebird is added, use agg.semigroup
-    val sg = Semigroup.from[V1](agg.reduce)
+    val sg = agg.semigroup
     mapValues(agg.prepare)
       .sumByKey(store)(sg)
       .mapValues {
