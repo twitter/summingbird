@@ -108,21 +108,21 @@ Please feel free to use the beautiful [Summingbird logo](https://drive.google.co
 
 ## Maven
 
-Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.6.0`.
+Summingbird modules are published on maven central. The current groupid and version for all modules is, respectively, `"com.twitter"` and  `0.9.1`.
 
 Current published artifacts are
 
-* `summingbird-core_2.9.3`
+* `summingbird-core_2.11`
 * `summingbird-core_2.10`
-* `summingbird-batch_2.9.3`
+* `summingbird-batch_2.11`
 * `summingbird-batch_2.10`
-* `summingbird-client_2.9.3`
+* `summingbird-client_2.11`
 * `summingbird-client_2.10`
-* `summingbird-storm_2.9.3`
+* `summingbird-storm_2.11`
 * `summingbird-storm_2.10`
-* `summingbird-scalding_2.9.3`
+* `summingbird-scalding_2.11`
 * `summingbird-scalding_2.10`
-* `summingbird-builder_2.9.3`
+* `summingbird-builder_2.11`
 * `summingbird-builder_2.10`
 
 The suffix denotes the scala version.

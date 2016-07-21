@@ -33,6 +33,23 @@ import cascading.flow.FlowDef
 import org.slf4j.LoggerFactory
 
 import StateWithError.{ getState, putState, fromEither }
+import com.twitter.scalding.serialization.macros.impl.BinaryOrdering
+
+/**
+ * This is the same as scala's Tuple2, except the hashCode is a val.
+ * We do this so when the tuple2 is placed in the map we won't caculate the hash code
+ * unnecessarily several times as the map grows or is transformed.
+ */
+case class LTuple2[T, U](_1: T, _2: U) {
+
+  override val hashCode: Int = scala.runtime.ScalaRunTime._hashCode(this)
+
+  override def equals(other: Any): Boolean = other match {
+    case LTuple2(oT1, oT2) => hashCode == other.hashCode && _1 == oT1 && _2 == oT2
+    case _ => false
+  }
+
+}
 
 trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
   /** The batcher for this store */
@@ -93,14 +110,14 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
   protected def sumByBatches[K1, V: Semigroup](ins: TypedPipe[(Timestamp, (K1, V))],
     capturedBatcher: Batcher,
-    commutativity: Commutativity): TypedPipe[((K1, BatchID), (Timestamp, V))] = {
+    commutativity: Commutativity): TypedPipe[(LTuple2[K1, BatchID], (Timestamp, V))] = {
     implicit val timeValueSemigroup: Semigroup[(Timestamp, V)] =
       IteratorSums.optimizedPairSemigroup[Timestamp, V](1000)
 
     val inits = ins.map {
       case (t, (k, v)) =>
         val batch = capturedBatcher.batchOf(t)
-        ((k, batch), (t, v))
+        (LTuple2(k, batch), (t, v))
     }
     (commutativity match {
       case Commutative => inits.sumByLocalKeys
@@ -122,7 +139,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       case Commutative => delta.map { flow =>
         flow.map { typedP =>
           sumByBatches(typedP, capturedBatcher, Commutative)
-            .map { case ((k, _), (ts, v)) => (ts, (k, v)) }
+            .map { case (LTuple2(k, _), (ts, v)) => (ts, (k, v)) }
         }
       }
       case NonCommutative => delta
@@ -144,14 +161,14 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     val batchIntr = batcher.batchesCoveredBy(readTimespan)
 
     val batches = BatchID.toIterable(batchIntr).toList
-    val finalBatch = batches.last // batches won't be empty.
+    val finalBatch = batches.last // batches won't be empty, ensured by atLeastOneBatch method
     val filteredBatches = select(batches).sorted
 
     assert(filteredBatches.contains(finalBatch), "select must not remove the final batch.")
 
     import IteratorSums._ // get the groupedSum, partials function
 
-    logger.info("Previous written batch: {}, computing: {}", inBatch.asInstanceOf[Any], batches)
+    logger.debug("Previous written batch: {}, computing: {}", inBatch.asInstanceOf[Any], batches)
 
     def prepareOld(old: TypedPipe[(K, V)]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
       old.map { case (k, v) => (k, (inBatch, (Timestamp.Min, v))) }
@@ -160,7 +177,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
     def prepareDeltas(ins: TypedPipe[(Timestamp, (K, V))]): TypedPipe[(K, (BatchID, (Timestamp, V)))] =
       sumByBatches(ins, capturedBatcher, commutativity)
-        .map { case ((k, batch), (ts, v)) => (k, (batch, (ts, v))) }
+        .map { case (LTuple2(k, batch), (ts, v)) => (k, (batch, (ts, v))) }
 
     /**
      * Produce a merged stream such that each BatchID, Key pair appears only one time.
@@ -177,8 +194,8 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // monoid is not commutative. Although sorting by time is adequate for both, sorting
       // by batch is more efficient because the reducers' input is almost sorted.
       val sorted = commutativity match {
-        case NonCommutative => grouped.sortBy { case (_, (t, _)) => t }
-        case Commutative => grouped.sortBy { case (b, (_, _)) => b }
+        case NonCommutative => grouped.sortBy { case (_, (t, _)) => t }(BinaryOrdering.ordSer[com.twitter.summingbird.batch.Timestamp])
+        case Commutative => grouped.sortBy { case (b, (_, _)) => b }(BinaryOrdering.ordSer[BatchID])
       }
 
       sorted
@@ -292,7 +309,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
       // Get the total time we want to cover. If the lower bound of the requested timeSpan
       // is not the firstDeltaTimestamp, adjust it to that.
-      deltaTimes = setLower(InclusiveLower(firstDeltaTimestamp), timeSpan)
+      deltaTimes: Interval[Timestamp] = setLower(InclusiveLower(firstDeltaTimestamp), timeSpan)
 
       // Try to read the range covering the time we want; get the time we can completely
       // cover and the data from input in that range.
@@ -302,7 +319,9 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
 
       // Make sure that the time we can read includes the time just after the last
       // snapshot. We can't roll the store forward without this.
-      _ <- fromEither[FactoryInput](if (readDeltaTimestamps.contains(firstDeltaTimestamp)) Right(()) else
+      _ <- fromEither[FactoryInput](if (readDeltaTimestamps.contains(firstDeltaTimestamp))
+        Right(())
+      else
         Left(List("Cannot load initial timestamp " + firstDeltaTimestamp.toString + " of deltas " +
           " at " + this.toString + " only " + readDeltaTimestamps.toString)))
 
@@ -331,6 +350,19 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     }
 
   /**
+   * This is for ensuring there is at least one batch coverd by readTimespan. This is
+   *  required by mergeBatched
+   */
+  private def atLeastOneBatch(readTimespan: Interval[Timestamp]) =
+    fromEither[FactoryInput] {
+      if (batcher.batchesCoveredBy(readTimespan) == Empty()) {
+        Left(List("readTimespan is not convering at least one batch: " + readTimespan.toString))
+      } else {
+        Right(())
+      }
+    }
+
+  /**
    * instances of this trait MAY NOT change the logic here. This always follows the rule
    * that we look for existing data (avoiding reading deltas in that case), then we fall
    * back to the last checkpointed output by calling readLast. In that case, we compute the
@@ -351,6 +383,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
       // get the actual timespan read by readAfterLastBatch
       tsModeRead <- getState[FactoryInput]
       (tsRead, _) = tsModeRead
+      _ <- atLeastOneBatch(tsRead)
 
       /**
        * Once we have read the last snapshot and the available batched blocks of delta, just merge

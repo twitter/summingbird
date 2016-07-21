@@ -17,6 +17,7 @@ package com.twitter.summingbird.batch.state
 
 import com.twitter.algebird.{ ExclusiveUpper, InclusiveLower, Intersection }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import java.net.URI
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.slf4j.LoggerFactory
@@ -63,7 +64,7 @@ class HDFSCheckpointStore(val config: HDFSState.Config)(implicit val batcher: Ba
   @transient private val logger = LoggerFactory.getLogger(classOf[HDFSState])
 
   protected lazy val versionedStore =
-    new FileVersionTracking(config.rootPath, FileSystem.get(config.conf))
+    new FileVersionTracking(config.rootPath, FileSystem.get(new URI(config.rootPath), config.conf))
 
   private def version(b: BatchID) =
     batcher.earliestTimeOf(b).milliSinceEpoch

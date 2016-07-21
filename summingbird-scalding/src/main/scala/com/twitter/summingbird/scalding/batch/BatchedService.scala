@@ -19,6 +19,7 @@ package com.twitter.summingbird.scalding.batch
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.{ Interval, Semigroup }
 import com.twitter.scalding.{ Mode, TypedPipe }
+import com.twitter.scalding.typed.LookupJoin
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding

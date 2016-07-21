@@ -16,9 +16,10 @@ limitations under the License.
 
 package com.twitter.summingbird.batch.store
 
-import com.backtype.hadoop.datastores.{ VersionedStore => BacktypeVersionedStore }
+import com.twitter.scalding.commons.datastores.{ VersionedStore => BacktypeVersionedStore }
 import com.twitter.bijection.json.{ JsonInjection, JsonNodeInjection }
 import java.io.{ DataOutputStream, DataInputStream }
+import java.net.URI
 import org.apache.hadoop.io.WritableUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{ FileSystem, Path }
@@ -79,7 +80,7 @@ private[summingbird] object HDFSMetadata {
  */
 class HDFSMetadata(conf: Configuration, rootPath: String) {
   protected val versionedStore: BacktypeVersionedStore = {
-    val fs = FileSystem.get(conf)
+    val fs = FileSystem.get(new URI(rootPath), conf)
     new BacktypeVersionedStore(fs, rootPath)
   }
 
@@ -138,10 +139,10 @@ class HDFSMetadata(conf: Configuration, rootPath: String) {
  * Refers to a specific version on disk. Allows reading and writing metadata to specific locations
  */
 private[summingbird] class HDFSVersionMetadata private[store] (val version: Long, conf: Configuration, val path: Path) {
+  private def getFS = path.getFileSystem(conf)
   private def getString: Try[String] =
     Try {
-      val fs = FileSystem.get(conf)
-      val is = new DataInputStream(fs.open(path))
+      val is = new DataInputStream(getFS.open(path))
       val str = WritableUtils.readString(is)
       is.close
       str
@@ -153,8 +154,7 @@ private[summingbird] class HDFSVersionMetadata private[store] (val version: Long
     getString.flatMap { JsonInjection.fromString[T](_) }
 
   private def putString(str: String) {
-    val fs = FileSystem.get(conf)
-    val os = new DataOutputStream(fs.create(path))
+    val os = new DataOutputStream(getFS.create(path))
     WritableUtils.writeString(os, str)
     os.close
   }

@@ -51,7 +51,7 @@ object Env {
   }
 
   def main(inargs: Array[String]) {
-    Env(inargs).run
+    Env(inargs).run()
   }
 }
 
@@ -64,5 +64,5 @@ abstract class Env(val jobName: String) extends java.io.Serializable {
 
   // This is where the builder is actually populated.
   protected def abstractJob: AbstractJob = AbstractJob(jobName, this)
-  def run: Unit
+  def run(): Unit
 }
