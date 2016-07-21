@@ -27,7 +27,7 @@ import com.twitter.summingbird.scalding.store.VersionedStore
 import com.twitter.tormenta.spout.Spout
 import com.twitter.storehaus.JMapStore
 import com.twitter.storehaus.algebra.StoreAlgebra
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 import java.util.Date
 import scala.util.Try
 
@@ -76,18 +76,20 @@ class TestJobWithOnline(env: Env) extends AbstractJob(env) {
     .groupAndSumTo(onlineStore)
 }
 
-class BuilderJobTest extends Specification {
+class BuilderJobTest extends WordSpec {
   "Builder API should NOT throw when building a storm job w/ onlineStore" in {
     AbstractJob(
       "com.twitter.summingbird.builder.TestJobWithOnline",
       StormEnv("name", Args(Array.empty[String]))
-    ) must not(throwA[Exception])
+    )
   }
 
   "Builder API should throw when building a storm job w/ missing onlineStore" in {
-    AbstractJob(
-      "com.twitter.summingbird.builder.TestJobWithOffline",
-      StormEnv("name", Args(Array.empty[String]))
-    ) must throwA[Exception]
+    intercept[Exception] {
+      AbstractJob(
+        "com.twitter.summingbird.builder.TestJobWithOffline",
+        StormEnv("name", Args(Array.empty[String]))
+      )
+    }
   }
 }

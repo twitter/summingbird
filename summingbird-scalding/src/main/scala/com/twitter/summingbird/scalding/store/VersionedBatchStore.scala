@@ -16,17 +16,17 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding.store
 
-import com.twitter.summingbird.batch.store.HDFSMetadata
 import cascading.flow.FlowDef
+import com.twitter.algebird.monad.Reader
 import com.twitter.bijection.Injection
-import cascading.flow.FlowDef
-import com.twitter.scalding.{ Dsl, Mode, TDsl, TypedPipe, Hdfs => HdfsMode, TupleSetter }
 import com.twitter.scalding.commons.source.VersionedKeyValSource
+import com.twitter.scalding.{ Mode, TypedPipe, Hdfs => HdfsMode, TupleSetter }
+import com.twitter.summingbird.batch.store.HDFSMetadata
+import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, OrderedFromOrderingExt }
+import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.scalding.{ Try, FlowProducer, Scalding }
-import com.twitter.algebird.monad.Reader
-import com.twitter.summingbird.scalding._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import org.slf4j.LoggerFactory
 import scala.util.{ Try => ScalaTry }
 
 /**
@@ -51,6 +51,7 @@ object VersionedBatchStore {
  * plug in methods to actually read or write the data.
  */
 abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends BatchedStore[K, V] {
+  import OrderedFromOrderingExt._
   /**
    * Returns a snapshot of the store's (K, V) pairs aggregated up to
    * (but not including!) the time covered by the supplied batchID.
@@ -86,48 +87,8 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
 
   protected def lastBatch(exclusiveUB: BatchID, mode: HdfsMode): Option[(BatchID, FlowProducer[TypedPipe[(K, V)]])] = {
     val meta = HDFSMetadata(mode.conf, rootPath)
-    /*
-     * The deprecated Summingbird builder API coordinated versioning
-     * through a _summingbird.json dropped into each version of this
-     * store's VersionedStore.
-     *
-     * The new API (as of 0.1.0) coordinates this state via the actual
-     * version numbers within the VersionedStore. This function
-     * resolves the BatchID out of a version by first checking the
-     * metadata inside of the version; if the metadata exists, it
-     * takes preference over the version number (which was garbage,
-     * just wall clock time, in the deprecated API). If the metadata
-     * does NOT exist we know that the version is meaningful and
-     * convert it to a batchID.
-     *
-     * TODO (https://github.com/twitter/summingbird/issues/95): remove
-     * this when all internal Twitter jobs have run for a while with
-     * the new version format.
-     */
-    def versionToBatchIDCompat(ver: Long): BatchID = {
-      /**
-       * Old style writes the UPPER BOUND batchID, so all times
-       * are in a batch LESS than the value in the file.
-       */
-      meta(ver)
-        .get[String]
-        .flatMap { str => ScalaTry(BatchID(str).prev) }
-        .map { oldbatch =>
-          val newBatch = versionToBatchID(ver)
-          if (newBatch > oldbatch) {
-            println("## WARNING ##")
-            println("in BatchStore(%s)".format(rootPath))
-            println("Old-style version number is ahead of what the new-style would be.")
-            println("Until batchID: %s (%s) you will see this warning"
-              .format(newBatch, batcher.earliestTimeOf(newBatch)))
-            println("##---------##")
-          }
-          oldbatch
-        }
-        .getOrElse(versionToBatchID(ver))
-    }
     meta
-      .versions.map { ver => (versionToBatchIDCompat(ver), readVersion(ver)) }
+      .versions.map { ver => (versionToBatchID(ver), readVersion(ver)) }
       .filter { _._1 < exclusiveUB }
       .reduceOption { (a, b) => if (a._1 > b._1) a else b }
   }
@@ -146,6 +107,9 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
 class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, override val batcher: Batcher)(pack: (BatchID, (K, V)) => (K2, V2))(unpack: ((K2, V2)) => (K, V))(
   implicit @transient injection: Injection[(K2, V2), (Array[Byte], Array[Byte])], override val ordering: Ordering[K])
     extends VersionedBatchStoreBase[K, V](rootPath) {
+  @transient private val logger = LoggerFactory.getLogger(classOf[VersionedBatchStore[_, _, _, _]])
+
+  override def toString: String = s"${this.getClass.getSimpleName}(rootPath=$rootPath, versionesToKeep=$versionsToKeep, batcher=$batcher)"
 
   /**
    * Make sure not to keep more than versionsToKeep when we write out.
@@ -164,49 +128,20 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
    * EXCLUSIVE upper bound on batchID, or "batchID.next".
    */
   override def writeLast(batchID: BatchID, lastVals: TypedPipe[(K, V)])(implicit flowDef: FlowDef, mode: Mode): Unit = {
-    import Dsl._
-    val batchVersion = batchIDToVersion(batchID)
-    /**
-     * The Builder API used to not specify a sinkVersion, leading to
-     * versions tagged with the wall clock time. When builder API
-     * users migrate over to the new code, they can run into a
-     * situation where the new version created has a lower version
-     * than the current maximum version in the directory.
-     *
-     * This behavior clashes with the current VersionedState
-     * implementation, which decides what data to source by querying
-     * meta.mostRecentVersion. If mostRecentVersion doesn't change
-     * from run to run, the job will process the same data over and
-     * over.
-     *
-     * To solve this issue and assist with migrations, if the
-     * existing max version in the directory has a timestamp that's
-     * greater than that of the batchID being committed, we add a
-     * single millisecond to the current version, guaranteeing that
-     * we're writing a new max version (but only bumping a tiny bit
-     * forward).
-     *
-     * After a couple of job runs the batchID version should start
-     * winning.
-     */
-    val newVersion: Option[Long] = mode match {
-      case m: HdfsMode => {
-        val meta = HDFSMetadata(m.conf, rootPath)
-        meta.mostRecentVersion.map(_.version)
-          .filter(_ > batchVersion)
-          .map(_ + 1L)
-          .orElse(Some(batchVersion))
-      }
-      case _ => Some(batchVersion)
-    }
+    val newVersion = batchIDToVersion(batchID)
+    val target = VersionedKeyValSource[K2, V2](rootPath,
+      sourceVersion = None,
+      sinkVersion = Some(newVersion),
+      maxFailures = 0,
+      versionsToKeep = versionsToKeep)
 
-    lastVals.map(pack(batchID, _))
-      .toPipe((0, 1))
-      .write(VersionedKeyValSource[K2, V2](rootPath,
-        sourceVersion = None,
-        sinkVersion = newVersion,
-        maxFailures = 0,
-        versionsToKeep = versionsToKeep))
+    if (!target.sinkExists(mode)) {
+      logger.info(s"Versioned batched store version for $this @ $newVersion doesn't exist. Will write out.")
+      lastVals.map(pack(batchID, _))
+        .write(target)
+    } else {
+      logger.warn(s"Versioned batched store version for $this @ $newVersion already exists! Will skip adding to plan.")
+    }
   }
 
   /**

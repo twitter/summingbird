@@ -30,6 +30,27 @@ import org.scalacheck.Properties
 object TestUtil {
   def simpleTimeExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor(_._1)
 
+  def compareMaps[K, V: Group](original: Iterable[Any], inMemory: Map[K, V], produced: Map[K, V], name: String)(implicit batcher: Batcher): Boolean = {
+    val diffMap = Group.minus(inMemory, produced)
+    val wrong = Monoid.isNonZero(diffMap)
+    if (wrong) {
+      if (!name.isEmpty) println("%s is wrong".format(name))
+      println("input: " + original)
+      println("input size: " + original.size)
+      println("input batches: " + batcher.batchOf(Timestamp(original.size)))
+      println("producer extra keys: " + (produced.keySet -- inMemory.keySet))
+      println("producer missing keys: " + (inMemory.keySet -- produced.keySet))
+      println("Difference: " + diffMap)
+      if (produced.isEmpty) println("produced isEmpty")
+      val correct = (inMemory.keySet ++ produced.keySet).foldLeft(produced) { (m, k) =>
+        if (inMemory.get(k) == produced.get(k)) m - k
+        else m
+      }
+      println("correct keys: " + correct)
+    }
+    !wrong
+  }
+
   def compareMaps[K, V: Group](original: Iterable[Any], inMemory: Map[K, V], testStore: TestStore[K, V], name: String = ""): Boolean = {
     val produced = testStore.lastToIterable.toMap
     val diffMap = Group.minus(inMemory, produced)
@@ -44,14 +65,37 @@ object TestUtil {
       println("written batches: " + testStore.writtenBatches)
       println("earliest unwritten time: " + testStore.batcher.earliestTimeOf(testStore.writtenBatches.max.next))
       println("Difference: " + diffMap)
+      if (produced.isEmpty) println("produced isEmpty")
+      val correct = (inMemory.keySet ++ produced.keySet).foldLeft(produced) { (m, k) =>
+        if (inMemory.get(k) == produced.get(k)) m - k
+        else m
+      }
+      println("correct keys: " + correct)
     }
     !wrong
   }
 
-  def batchedCover(batcher: Batcher, minTime: Long, maxTime: Long): Interval[Timestamp] =
-    batcher.cover(
-      Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime + 1L))
-    ).mapNonDecreasing(b => batcher.earliestTimeOf(b.next))
+  /**
+   * Prunes the input to contain only values whose timestamps are covered completely
+   * by the batches. This is used for the scala part of the job tests.
+   * Keep both time and value.
+   */
+  def pruneToBatchCoveredWithTime[T](input: TraversableOnce[(Long, T)], inputRange: Interval[Timestamp], batcher: Batcher): TraversableOnce[(Long, T)] = {
+    val batchRange = batcher.toTimestamp(batcher.batchesCoveredBy(inputRange))
+    input.filter { case (ts, _) => batchRange.contains(Timestamp(ts)) }
+  }
+
+  /* keep just the values */
+  def pruneToBatchCovered[T](input: TraversableOnce[(Long, T)], inputRange: Interval[Timestamp], batcher: Batcher): TraversableOnce[T] = {
+    pruneToBatchCoveredWithTime(input, inputRange, batcher).map { case (ts, v) => v }
+  }
+
+  /**
+   * This converts the min and max times to a time interval.
+   * maxTime is an exclusive upper bound.
+   */
+  def toTimeInterval(minTime: Long, maxTime: Long): Interval[Timestamp] =
+    Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime))
 
   val simpleBatcher = new Batcher {
     def batchOf(d: Timestamp) =
@@ -80,10 +124,7 @@ object TestUtil {
     val delta = (maxtimeInc - mintimeInc)
     val MaxBatches = 5L min delta
     val batches = 1L + Gen.choose(0L, MaxBatches).sample.get
-    if (batches == 1L) simpleBatcher
-    else {
-      val timePerBatch = (delta + 1L) / batches
-      new MillisecondBatcher(timePerBatch)
-    }
+    val timePerBatch = (delta + 1L) / batches
+    new MillisecondBatcher(timePerBatch)
   }
 }

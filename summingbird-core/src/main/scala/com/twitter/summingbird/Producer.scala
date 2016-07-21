@@ -80,6 +80,7 @@ object Producer {
       case OptionMappedProducer(producer, _) => List(producer)
       case FlatMappedProducer(producer, _) => List(producer)
       case KeyFlatMappedProducer(producer, _) => List(producer)
+      case ValueFlatMappedProducer(producer, _) => List(producer)
       case WrittenProducer(producer, _) => List(producer)
       case LeftJoinedProducer(producer, _) => List(producer)
       case Summer(producer, _, _) => List(producer)
@@ -99,6 +100,7 @@ object Producer {
     case OptionMappedProducer(_, _) => false
     case FlatMappedProducer(_, _) => false
     case KeyFlatMappedProducer(_, _) => false
+    case ValueFlatMappedProducer(_, _) => false
     case WrittenProducer(_, _) => false
     case LeftJoinedProducer(_, _) => false
     case Summer(_, _, _) => false
@@ -273,7 +275,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
 
   /** Builds a new KeyedProvider by applying a partial function to values of elements of this one on which the function is defined.*/
   def collectValues[V2](pf: PartialFunction[V, V2]): KeyedProducer[P, K, V2] =
-    IdentityKeyedProducer(collect { case (k, v) if pf.isDefinedAt(v) => (k, pf(v)) })
+    flatMapValues { v => if (pf.isDefinedAt(v)) Iterator(pf(v)) else Iterator.empty }
 
   /**
    * Prefer this to filter or flatMap/flatMapKeys if you are filtering.
@@ -291,7 +293,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
    * the partition.
    */
   def filterValues(pred: V => Boolean): KeyedProducer[P, K, V] =
-    IdentityKeyedProducer(filter { case (_, v) => pred(v) })
+    flatMapValues { v => if (pred(v)) Iterator(v) else Iterator.empty }
 
   /**
    * Prefer to call this method to flatMap if you are expanding only keys.
@@ -302,7 +304,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
 
   /** Prefer this to a raw map as this may be optimized to avoid a key reshuffle */
   def flatMapValues[U](fn: V => TraversableOnce[U]): KeyedProducer[P, K, U] =
-    IdentityKeyedProducer(flatMap { case (k, v) => fn(v).map((k, _)) })
+    ValueFlatMappedProducer(this, fn)
 
   /** Return just the keys */
   def keys: Producer[P, K] = map(_._1)
@@ -333,7 +335,7 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
 
   /** Prefer this to a raw map as this may be optimized to avoid a key reshuffle */
   def mapValues[U](fn: V => U): KeyedProducer[P, K, U] =
-    IdentityKeyedProducer(map { case (k, v) => (k, fn(v)) })
+    flatMapValues { v => Iterator(fn(v)) }
 
   /**
    * emits a KeyedProducer with a value that is the store value, just BEFORE a merge,
@@ -354,7 +356,10 @@ sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
   def values: Producer[P, V] = map(_._2)
 }
 
-case class KeyFlatMappedProducer[P <: Platform[P], K, V, K2](producer: KeyedProducer[P, K, V], fn: K => TraversableOnce[K2]) extends KeyedProducer[P, K2, V]
+case class KeyFlatMappedProducer[P <: Platform[P], K, V, K2](producer: Producer[P, (K, V)], fn: K => TraversableOnce[K2]) extends KeyedProducer[P, K2, V]
+
+case class ValueFlatMappedProducer[P <: Platform[P], K, V, V2](producer: Producer[P, (K, V)],
+  fn: V => TraversableOnce[V2]) extends KeyedProducer[P, K, V2]
 
 case class IdentityKeyedProducer[P <: Platform[P], K, V](producer: Producer[P, (K, V)]) extends KeyedProducer[P, K, V]
 

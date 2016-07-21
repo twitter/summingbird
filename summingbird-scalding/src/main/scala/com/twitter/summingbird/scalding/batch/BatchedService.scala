@@ -19,12 +19,13 @@ package com.twitter.summingbird.scalding.batch
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.{ Interval, Semigroup }
 import com.twitter.scalding.{ Mode, TypedPipe }
+import com.twitter.scalding.typed.LookupJoin
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding
 import cascading.flow.FlowDef
 
-trait BatchedService[K, V] extends Service[K, V] {
+trait BatchedService[K, V] extends ExternalService[K, V] {
   // The batcher that describes this service
   def batcher: Batcher
   def ordering: Ordering[K]

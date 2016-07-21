@@ -82,7 +82,7 @@ object Executor {
 
     val scaldPlatform = Scalding(config.name, options)
       .withRegistrars(config.registrars)
-      .withConfigUpdater { c => c.updated(config.transformConfig(c.toMap)) }
+      .withConfigUpdater { c => com.twitter.scalding.Config.tryFrom(config.transformConfig(c.toMap).toMap).get }
 
     val toRun = scaldPlatform.plan(config.graph)
 

@@ -1,5 +1,61 @@
 # Summingbird #
 
+## 0.9.1
+* Fixes a bug in the LTuple2 class. Add a test for it: https://github.com/twitter/summingbird/pull/632
+
+## 0.9.0
+* Removing internal config setup from scalding platform: https://github.com/twitter/summingbird/pull/629
+* Remove store that no one seems to use and has no tests: https://github.com/twitter/summingbird/pull/630
+* Ianoc/optimization changes: https://github.com/twitter/summingbird/pull/628
+* Fixes tests: https://github.com/twitter/summingbird/pull/626
+* resilient to all stores being complete: https://github.com/twitter/summingbird/pull/627
+* Resilient to a store being ahead: https://github.com/twitter/summingbird/pull/625
+* move to scala test: https://github.com/twitter/summingbird/pull/621
+* Killing off Summingbird Java: https://github.com/twitter/summingbird/pull/624
+* Kill summingbird spark: https://github.com/twitter/summingbird/pull/622
+* Bumping sbt versions: https://github.com/twitter/summingbird/pull/623
+* Fixed erroneous comment in ClientStore&#39;s merge description: https://github.com/twitter/summingbird/pull/620
+
+## 0.8.0
+* bumping Scalding to 0.15.0, algebird to 0.10.1
+
+## 0.7.0
+* Registering summingbird counters with tormenta spouts #553
+* Add counters to default summers #571
+* Fixes the types off the summingbird java storm api #601
+* Adding explicit hadoop deps; dfs-datastores to 1.3.6 #592
+* Replace deprecated ClassManifest and erasure #608
+* Spark monad #607
+* replace deprecated erasure by runtimeClass #609
+* Revert "Remove StripNameNodes" #610
+* refactored core-tests into separate sub-project #593
+* Fix checking delta batch in readDeltaTimestamps in batched store when merging #612
+* ensure at least one batch before merging #613
+* MergeableStoreFactory extends java.io.Serializable #616
+* Spout storm metrics foreach #617
+* upgrade scalacheck #615
+* Use latest bijection, algebird, scalding, storehaus, chill, and tormenta
+
+## 0.6.0
+* Use latest bijection, algebird, scalding, storehaus, chill, and tormenta https://github.com/twitter/summingbird/pull/565
+* Remove scala 2.9 support https://github.com/twitter/summingbird/pull/565
+* Add counters to default summers https://github.com/twitter/summingbird/pull/571
+* Registering summingbird counters with tormenta spouts https://github.com/twitter/summingbird/pull/553
+* Remove StripNameNodes: https://github.com/twitter/summingbird/pull/587
+* Revert unneeded wrapper in DagOptimizer: https://github.com/twitter/summingbird/pull/584
+* Make some classes public so we can make custom platforms: https://github.com/twitter/summingbird/pull/564
+* IdentityKeyedProducer in ValueFlatMapToFlatMap Dag Optimizer rule: https://github.com/twitter/summingbird/pull/580
+* Lazy store init for CombinedServiceStoreFactory: https://github.com/twitter/summingbird/pull/582
+* Pass the reducers option down to leftJoin: https://github.com/twitter/summingbird/pull/578
+* Rename readBatched to readAfterLastBatch: https://github.com/twitter/summingbird/pull/577
+* Fixes BatchedStore interval calculation: https://github.com/twitter/summingbird/pull/573
+* Support for creating a store-service for Storm platform: https://github.com/twitter/summingbird/pull/563
+* Support leftJoin against a store in offline platform: https://github.com/twitter/summingbird/pull/557
+* Counters for ConcurrentMemory platform: https://github.com/twitter/summingbird/pull/550
+* Summingbird Storm/Online refactor: https://github.com/twitter/summingbird/pull/544
+* Memory platform counters: https://github.com/twitter/summingbird/pull/548
+* Example of using DagOptimizer: https://github.com/twitter/summingbird/pull/538
+
 ## 0.5.1
 * Change the javac options for doc generation in java to be successful. (Blocks maven publishing)
 

@@ -46,14 +46,17 @@ import org.apache.hadoop.mapred.JobConf
 import org.apache.hadoop.mapred.RecordReader
 import org.apache.hadoop.mapred.OutputCollector
 
-import org.specs2.mutable._
+import org.scalatest.WordSpec
 
 object VersionBatchLaws extends Properties("VersionBatchLaws") {
   property("version -> BatchID -> version") = forAll { (l: Long) =>
-    val vbs = new store.VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
-      0, Batcher.ofHours(1))(null)(null)
-    val b = vbs.versionToBatchID(l)
-    vbs.batchIDToVersion(b) <= l
+    (l == Long.MinValue) || {
+      // This law is only true for numbers greater than MinValue
+      val vbs = new store.VersionedBatchStore[Int, Int, Array[Byte], Array[Byte]](null,
+        0, Batcher.ofHours(1))(null)(null)
+      val b = vbs.versionToBatchID(l)
+      vbs.batchIDToVersion(b) <= l
+    }
   }
   property("BatchID -> version -> BatchID") = forAll { (bint: Int) =>
     val b = BatchID(bint)

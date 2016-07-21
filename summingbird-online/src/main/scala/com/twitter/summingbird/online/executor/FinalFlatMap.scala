@@ -16,8 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
-import com.twitter.algebird.{ SummingQueue, Semigroup, MapAlgebra }
-import com.twitter.algebird.util.summer.AsyncSummer
+import com.twitter.algebird.Semigroup
 import com.twitter.bijection.Injection
 import com.twitter.util.Future
 
@@ -25,19 +24,17 @@ import com.twitter.summingbird.online.Externalizer
 
 import com.twitter.summingbird.online.FlatMapOperation
 
-import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.option.{
   SummerBuilder,
   MaxWaitingFutures,
   MaxFutureWaitTime,
-  MaxEmitPerExecute,
-  FlushFrequency
+  MaxEmitPerExecute
 }
-import scala.collection.breakOut
 import scala.collection.mutable.{ Map => MMap, ListBuffer }
 // These CMaps we generate in the FFM, we use it as an immutable wrapper around
 // a mutable map.
 import scala.collection.{ Map => CMap }
+import scala.util.control.NonFatal
 
 /**
  * @author Oscar Boykin
@@ -109,7 +106,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
     sCache.tick.map(formatResult(_))
 
   def cache(state: S,
-    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] = {
+    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] =
     try {
       val itemL = items.toList
       if (itemL.size > 0) {
@@ -126,9 +123,8 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
         )
       }
     } catch {
-      case t: Throwable => Future.exception(t)
+      case NonFatal(e) => Future.exception(e)
     }
-  }
 
   override def apply(state: S,
     tup: Event) =
