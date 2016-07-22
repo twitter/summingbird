@@ -124,7 +124,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   private type Prod[T] = Producer[Storm, T]
 
   private[storm] def get[T <: AnyRef: ClassTag](dag: Dag[Storm], node: StormNode): Option[(String, T)] = {
-    val producer = node.members.last
+    val producer = node.members.head
     Options.getFirst[T](options, dag.producerToPriorityNames(producer))
   }
 
