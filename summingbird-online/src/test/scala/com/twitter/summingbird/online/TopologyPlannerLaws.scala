@@ -154,20 +154,6 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
     }
   }
 
-  property("Prior to a summer the Node should be a FlatMap Node") = forAll { (dag: MemoryDag) =>
-    dag.nodes.forall { n =>
-      val firstP = n.members.last
-      val success = firstP match {
-        case Summer(_, _, _) =>
-          dag.dependenciesOf(n).size > 0 && dag.dependenciesOf(n).forall { otherN =>
-            otherN.isInstanceOf[FlatMapNode[_]]
-          }
-        case _ => true
-      }
-      if (!success) dumpGraph(dag)
-      success
-    }
-  }
 
   property("There should be no flatmap producers in the source node") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall { n =>

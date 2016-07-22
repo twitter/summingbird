@@ -8,7 +8,7 @@ import com.twitter.summingbird.storm.Constants._
 import com.twitter.tormenta.spout.SpoutProxy
 import java.util
 import java.util.{ List => JList }
-import com.twitter.summingbird.storm.collector.KeyValueOutputCollector
+import com.twitter.summingbird.storm.collector.TransformingOutputCollector
 
 /**
  * Created by pnaramsetti on 7/19/16.
@@ -16,7 +16,8 @@ import com.twitter.summingbird.storm.collector.KeyValueOutputCollector
  * This is a spout used when the spout is being followed by summer.
  * It uses a KeyValueOutputCollector on open.
  */
-class RichStormSpout(val self: IRichSpout) extends SpoutProxy {
+
+class KeyValueSpout(in: IRichSpout) extends SpoutProxy {
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) = {
     declarer.declare(new Fields(AGG_KEY, AGG_VALUE))
@@ -32,7 +33,9 @@ class RichStormSpout(val self: IRichSpout) extends SpoutProxy {
   override def open(conf: util.Map[_, _],
     topologyContext: TopologyContext,
     outputCollector: SpoutOutputCollector): Unit = {
-    val adapterCollector = new KeyValueOutputCollector(outputCollector, transform)
+    val adapterCollector = new TransformingOutputCollector(outputCollector, transform)
     self.open(conf, topologyContext, adapterCollector)
   }
+
+  override protected def self: IRichSpout = in
 }

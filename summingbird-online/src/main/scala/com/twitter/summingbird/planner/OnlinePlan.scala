@@ -30,12 +30,12 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
   private val forkedNodes = depData.nodes
     .filter(depData.fanOut(_).exists(_ > 1)).toSet
 
-  private def get[T <: AnyRef: ClassTag](dep: Producer[P, _], nameMap: Map[Producer[P, _], List[String]]): Option[(String, T)] = {
+  private def get[T <: AnyRef: ClassTag](dep: Producer[P, _]) = {
     Options.getFirst[T](options, nameMap.get(dep).get)
   }
 
-  private def getOrElse[T <: AnyRef: ClassTag](dep: Producer[P, _], nameMap: Map[Producer[P, _], List[String]], default: T): T =
-    get[T](dep, nameMap) match {
+  private def getOrElse[T <: AnyRef: ClassTag](dep: Producer[P, _], default: T): T =
+    get[T](dep) match {
       case None => default
       case Some((namedSource, option)) => option
     }
@@ -51,7 +51,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
       case OptionMappedProducer(producer, _) => true
       case Source(_) => true
       case AlsoProducer(_, _) => true
-      case FlatMappedProducer(_, _) => getOrElse(dep, nameMap, FMMergeableWithSource(false)).get
+      case FlatMappedProducer(_, _) => getOrElse(dep, FMMergeableWithSource.default).get
       case ValueFlatMappedProducer(_, _) => false
       case KeyFlatMappedProducer(_, _) => false
       case LeftJoinedProducer(_, _) => false
@@ -156,8 +156,8 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
           case _ if (!noOpNode(activeBolt) && dependsOnSummerProducer(currentProducer)) => true
           /*
            * This should possibly be improved, but currently, we force a FlatMapNode just before a
-           * summer (to handle map-side aggregation). This check is here to prevent us from merging
-           * this current node all the way up to the source.
+           * summer (to handle map-side aggregation) unless the currentProducer is configured to be merged into Source.
+           * This check is here to prevent us from merging this current node all the way up to the source.
            */
           case FlatMapNode(_) if hasSummerAsDependantProducer(currentProducer) && allTransDepsMergeableWithSource(dep) && !(mergableWithSource(currentProducer)) => true
           /*
@@ -232,8 +232,10 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
 }
 
 object OnlinePlan {
-  def apply[P <: Platform[P], T](tail: TailProducer[P, T]): Dag[P] =
-    apply(tail, scala.collection.immutable.Map.empty)
+
+  def apply[P <: Platform[P], T](tail: TailProducer[P, T]): Dag[P] = {
+    apply(tail, Map.empty)
+  }
 
   def apply[P <: Platform[P], T](tail: TailProducer[P, T], options: Map[String, Options]): Dag[P] = {
     val (nameMap, strippedTail) = StripNamedNode(tail)

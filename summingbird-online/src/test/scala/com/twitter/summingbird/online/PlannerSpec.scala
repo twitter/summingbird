@@ -64,71 +64,26 @@ class PlannerSpec extends WordSpec {
   def arbSource2 = sample[KeyedProducer[Memory, Int, Int]]
 
   /*
- * Test Case : A simple src.map.summer topology with FMMergeableWithSource opt-in functionality[ No FlatMappedProducer ].
- * Asserts : Online Plan takes options as an argument
- *           The plan considers the options to convert into a two node toplogy removing FlatMapNode.
+ * Test Case : A simple src.map.summer topology with FMMergeableWithSource opt-in functionality.
+ * Asserts : The plan considers the options to convert into a two node toplogy removing FlatMapNode.
  */
-  "Basic Online Plan without a flat map and opt-in FMMergeableWithSource" in {
-    val store1 = testStore
-    val srcName = "first"
-    val fmName = "mapped"
-    val smName = "summer"
-    val h1 = arbSource1.name("first")
-      .map { i:Int => (i,i * i) }.name("mapped")
-      .sumByKey(store1)
 
+  "The Online Plan with a flat Map which has Summer as dependant and opted-in for FMMergeableWithSource" in {
+    val store1 = testStore
+    val fmname = "flatmapped"
+   // val h1 = arbSource1.map{ i:Int => List(i+1,i+2,i+3) }.flatMap{ x => x.toTraversable }.map{ x => (x *2,1) }.sumByKey(store1)
+    val h1 = arbSource1.flatMap{ i :Int => List((i+1,1),(i+2,1),(i+3,i))}.name(fmname).sumByKey(store1)
     val opts =  Map(
-      fmName  -> Options().set(SummerParallelism(10)).set(FlatMapParallelism(50)).set(SourceParallelism(50)).set(FMMergeableWithSource(true)),
-      smName  -> Options().set(SummerParallelism(20)),
-      srcName -> Options().set(FlatMapParallelism(100)).set(SourceParallelism(100))
+      fmname  -> Options().set(FMMergeableWithSource(true))
     )
     val planned = Try(OnlinePlan(h1,opts))
-    planned match {
-      case Success(graph) => {
-        assert(true)
-        assert(planned.get.nodes.size == 2)
-      }
-      case Failure(error) =>
-        val path = TopologyPlannerLaws.dumpGraph(h1)
-        error.printStackTrace
-        println("Dumped failing graph for the basic online paln without flat map - writing to: " + path)
-        assert(false)
+    assert(planned.isSuccess)
+    if(planned.isFailure){
+        planned.failed.get.printStackTrace
+        println("FAILED : The Online Plan with a flat Map which has no Summer as dependant - writing to: " + TopologyPlannerLaws.dumpGraph(h1))
     }
-
-  }
-
-  "The Online Plan with a flat Map which has no Summer as dependant" in {
-    val store1 = testStore
-   // val h1 = arbSource1.map{ i:Int => List(i+1,i+2,i+3) }.flatMap{ x => x.toTraversable }.map{ x => (x *2,1) }.sumByKey(store1)
-    val h1 = arbSource1.flatMap{ i :Int => List((i+1,1),(i+2,1),(i+3,i))}.name("lol").sumByKey(store1)
-    val planned = Try(OnlinePlan(h1))
-    planned match {
-      case Success(graph) => {
-        assert(true == true)
-      }
-      case Failure(error) =>
-        val path = TopologyPlannerLaws.dumpGraph(h1)
-        error.printStackTrace
-        println("Dumped failing graph for the flat map and no summer as dependant - writing to: " + path)
-        assert(false)
-    }
-  }
-
-  "Basic Online Plan with a flat map, before the summer" in {
-    val store1 = testStore
-    //val h1 = arbSource1.name("source of List(Ints)").flatMap { i:Int => List(i,i*2,i*3) }.map { x:Int => (x,1)}.sumByKey(store1)
-    val h1 = arbSource1.name("source of List(Ints)").flatMap { i:Int => List((i,1),(i*2,1),(i*3,1)) }.sumByKey(store1)
-    val planned = Try(OnlinePlan(h1))
-
-    planned match {
-      case Success(graph) => {
-        assert(true == true)
-      }
-      case Failure(error) =>
-        val path = TopologyPlannerLaws.dumpGraph(h1)
-        error.printStackTrace
-        println("Dumped failing graph for the basic plan with a flat map - writing to: " + path)
-        assert(false)
+    else{
+      assert(planned.get.nodes.size == 2)
     }
   }
 

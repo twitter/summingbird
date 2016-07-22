@@ -181,6 +181,28 @@ class TopologyTests extends WordSpec {
     }
   }
 
+  /*
+  * Test : FlatMap has a fanout and the producer has a opt-in FMMergeableWithSource.
+  * Behavior : When a flatMap has a fanOut then the FlatMappedProducer should not go into Source.
+  * Asserts : Number of bolts : flatMap, Map, Summer1, Summer2
+  *           Number of spouts : source.
+  */
+  "FMMergeableWithSource with a fanOut case after flatMap" in {
+    val sumName = "summer"
+    val p1 = Storm.source(TraversableSpout(sample[List[Int]])).flatMap( testFn )
+    val p2 = p1.sumByKey(TestStore.createStore[Int, Int]()._2).name("sum1")
+    val p3 = p1.map{ x => x }.sumByKey(TestStore.createStore[Int, Int]()._2).name("sum2")
+    val p = p2.also(p3)
+    val opts = Map("sum1" -> Options().set(FMMergeableWithSource(true)).set(FlatMapParallelism(15)),
+      "sum2" -> Options().set(SourceParallelism(50)).set(FMMergeableWithSource(true)))
+    val storm = Storm.local(opts)
+    val stormTopo = storm.plan(p).topology
+    val bolts = stormTopo.get_bolts()
+    val spouts = stormTopo.get_spouts()
+    assert(bolts.size() == 4) // FlatMap should go into SourceNode when it has a fanOut.FlatMap, Map, Summer, Summer
+    assert(spouts.size() == 1) // Spout
+  }
+
 
   "A named node after a flat map should imply its options" in {
     val nodeName = "super dooper node"

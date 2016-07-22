@@ -119,3 +119,7 @@ case class SummerBatchMultiplier(get: Int)
  */
 case class FMMergeableWithSource(get: Boolean)
 
+object FMMergeableWithSource {
+  val default: FMMergeableWithSource = FMMergeableWithSource(false)
+}
+
