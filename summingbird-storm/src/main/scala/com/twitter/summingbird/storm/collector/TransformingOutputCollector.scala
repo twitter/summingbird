@@ -4,10 +4,9 @@ import backtype.storm.spout.SpoutOutputCollector
 import java.util.{ List => JList }
 
 /**
- * Created by pnaramsetti on 7/19/16.
- *
  * The KeyValueOutputCollector is used to unwrap the Value object when passed on by the Spout.
  */
+
 class TransformingOutputCollector(self: SpoutOutputCollector, func: JList[AnyRef] => JList[AnyRef]) extends SpoutOutputCollector(null) {
 
   override def emitDirect(i: Int, s: String, list: JList[AnyRef], o: scala.AnyRef): Unit = self.emitDirect(i, s, func(list), o)

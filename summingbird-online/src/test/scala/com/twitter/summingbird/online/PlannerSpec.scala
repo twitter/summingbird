@@ -71,20 +71,13 @@ class PlannerSpec extends WordSpec {
   "The Online Plan with a flat Map which has Summer as dependant and opted-in for FMMergeableWithSource" in {
     val store1 = testStore
     val fmname = "flatmapped"
-   // val h1 = arbSource1.map{ i:Int => List(i+1,i+2,i+3) }.flatMap{ x => x.toTraversable }.map{ x => (x *2,1) }.sumByKey(store1)
-    val h1 = arbSource1.flatMap{ i :Int => List((i+1,1),(i+2,1),(i+3,i))}.name(fmname).sumByKey(store1)
+    val h1 = arbSource1.flatMap { i :Int => List((i+1, 1), (i+2, 1), (i+3, i)) }.name(fmname).sumByKey(store1)
     val opts =  Map(
       fmname  -> Options().set(FMMergeableWithSource(true))
     )
-    val planned = Try(OnlinePlan(h1,opts))
-    assert(planned.isSuccess)
-    if(planned.isFailure){
-        planned.failed.get.printStackTrace
-        println("FAILED : The Online Plan with a flat Map which has no Summer as dependant - writing to: " + TopologyPlannerLaws.dumpGraph(h1))
-    }
-    else{
-      assert(planned.get.nodes.size == 2)
-    }
+    val planned = Try(OnlinePlan(h1, opts))
+    assert(planned.isSuccess,"FAILED : The Online Plan with a flat Map which has no Summer as dependant - writing to: " + TopologyPlannerLaws.dumpGraph(h1))
+    assert(planned.get.nodes.size == 2)
   }
 
   "Must be able to plan user supplied Job A" in {
@@ -123,13 +116,11 @@ class PlannerSpec extends WordSpec {
 
     planned match {
       case Success(graph) => {
-        assert(true == true)
+        assert(true)
       }
       case Failure(error) =>
-        val path = TopologyPlannerLaws.dumpGraph(tail)
         error.printStackTrace
-        println("Dumped failing graph for ' Must be able to plan user supplied Job A ' to: " + path)
-        assert(false)
+        assert(false, "Dumped failing graph for ' Must be able to plan user supplied Job A ' to: " + TopologyPlannerLaws.dumpGraph(tail))
     }
   }
 

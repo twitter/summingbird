@@ -121,12 +121,12 @@ class TopologyTests extends WordSpec {
     val storm = Storm.local(opts)
     val stormTopo = storm.plan(p).topology
     val bolts = stormTopo.get_bolts
-    val spouts = stormTopo.get_spouts()
-    assert(bolts.size()==1 && spouts.size()==1)
-    assert(bolts("Tail").get_common().get_parallelism_hint()==7)
+    val spouts = stormTopo.get_spouts
+    assert(bolts.size == 1 && spouts.size == 1)
+    assert(bolts("Tail").get_common.get_parallelism_hint == 7)
 
     val spout = spouts.head._2
-    assert(spout.get_common().get_parallelism_hint()==10)
+    assert(spout.get_common.get_parallelism_hint == 10)
   }
 
   /*

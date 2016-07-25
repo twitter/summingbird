@@ -19,6 +19,7 @@ package com.twitter.summingbird.planner
 import com.twitter.summingbird._
 import scala.reflect.ClassTag
 import com.twitter.summingbird.online.option._
+import com.twitter.summingbird.online._
 
 class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Producer[P, _], List[String]], options: Map[String, Options]) {
   private type Prod[T] = Producer[P, T]
@@ -51,7 +52,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
       case OptionMappedProducer(producer, _) => true
       case Source(_) => true
       case AlsoProducer(_, _) => true
-      case FlatMappedProducer(_, _) => getOrElse(dep, FMMergeableWithSource.default).get
+      case FlatMappedProducer(_, _) => getOrElse(dep, OnlineDefaultConstants.DEFAULT_FM_MERGEABLE_WITH_SOURCE).get
       case ValueFlatMappedProducer(_, _) => false
       case KeyFlatMappedProducer(_, _) => false
       case LeftJoinedProducer(_, _) => false
@@ -93,6 +94,12 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
   private def allTransDepsMergeableWithSource(p: Prod[_]): Boolean =
     mergableWithSource(p) && Producer.dependenciesOf(p).forall(allTransDepsMergeableWithSource)
 
+  /*
+   *   This method is used when we need to check if the map-side aggregation node has to be added.
+   *   If the source is followed by summer, we create a FlatMapNode() for map-side aggregation.
+   */
+  private def isSourceFollowedBySummer(curr: Prod[_], dep: Prod[_]): Boolean =
+    hasSummerAsDependantProducer(curr) && allTransDepsMergeableWithSource(dep)
   /**
    * This is the main planning loop that goes bottom up planning into CNodes.
    * The default empty node is a FlatMapNode. When a node is fully planned, we put it
@@ -159,7 +166,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
            * summer (to handle map-side aggregation) unless the currentProducer is configured to be merged into Source.
            * This check is here to prevent us from merging this current node all the way up to the source.
            */
-          case FlatMapNode(_) if hasSummerAsDependantProducer(currentProducer) && allTransDepsMergeableWithSource(dep) && !(mergableWithSource(currentProducer)) => true
+          case FlatMapNode(_) if isSourceFollowedBySummer(currentProducer, dep) && !(mergableWithSource(currentProducer)) => true
           /*
            * if the current node can't be merged with a source, but the transitive deps can
            * then split now.

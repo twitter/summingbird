@@ -11,8 +11,6 @@ import java.util.{ List => JList }
 import com.twitter.summingbird.storm.collector.TransformingOutputCollector
 
 /**
- * Created by pnaramsetti on 7/19/16.
- *
  * This is a spout used when the spout is being followed by summer.
  * It uses a KeyValueOutputCollector on open.
  */

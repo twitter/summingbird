@@ -221,7 +221,10 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val summerOpt: Option[SummerNode[Storm]] = stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
 
     val stormSpout = summerOpt match {
-      //As the spout is being followed by a summer, we do not have map-side aggregation handled in the spout. This means Summer is the place where the aggregation should happen.
+      /*
+         *  As the spout is being followed by a summer, we do not have map-side aggregation handled in the spout.
+         *  This means Summer is the place where the aggregation should happen.
+         */
       case Some(s) => {
         val summerParalellism = getOrElse(stormDag, s, DEFAULT_SUMMER_PARALLELISM)
         val summerBatchMultiplier = getOrElse(stormDag, s, DEFAULT_SUMMER_BATCH_MULTIPLIER)
