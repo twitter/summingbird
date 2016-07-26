@@ -71,13 +71,59 @@ class PlannerSpec extends WordSpec {
   "The Online Plan with a flat Map which has Summer as dependant and opted-in for FMMergeableWithSource" in {
     val store1 = testStore
     val fmname = "flatmapped"
-    val h1 = arbSource1.flatMap { i :Int => List((i+1, 1), (i+2, 1), (i+3, i)) }.name(fmname).sumByKey(store1)
-    val opts =  Map(
-      fmname  -> Options().set(FMMergeableWithSource(true))
+    val h1 = arbSource1
+      .flatMap { i: Int => List((i + 1, 1), (i + 2, 1), (i + 3, i)) }.name(fmname)
+      .sumByKey(store1)
+
+    val opts = Map(
+      fmname -> Options().set(FMMergeableWithSource(true))
     )
     val planned = Try(OnlinePlan(h1, opts))
-    assert(planned.isSuccess,"FAILED : The Online Plan with a flat Map which has no Summer as dependant - writing to: " + TopologyPlannerLaws.dumpGraph(h1))
+
+    assert(planned.isSuccess, "FAILED : The Online Plan with a flat Map which has no Summer as dependant - writing to: " + TopologyPlannerLaws.dumpGraph(h1))
     assert(planned.get.nodes.size == 2)
+  }
+
+  /*
+   * Tests the fanOut case on the FlatMappedProducer when opt-in to FlatMapNode mergeable with SourceNode
+   * Asserts : SourceNode has two FlatMapNodes
+   *           Each FlatMapNode has a SummerNode as dependant.
+   */
+  "FMMergeableWithSource with a fanOut case after flatMap" in {
+
+    def testStore2: Memory#Store[Int, Int] = MMap[Int, Int]()
+    val sumName = "summer"
+
+    val p1 = arbSource1.flatMap { i: Int => List((i -> i)) }
+    val p2 = p1.sumByKey(testStore).name("sum1")
+    val p3 = p1.map { x => x }.sumByKey(testStore2).name("sum2")
+    val p = p2.also(p3)
+
+    val opts = Map("sum1" -> Options().set(FMMergeableWithSource(true)).set(FlatMapParallelism(15)),
+      "sum2" -> Options().set(SourceParallelism(50)).set(FMMergeableWithSource(true)))
+
+    val storm = Try(OnlinePlan(p, opts))
+
+    // Source Node should exist and have two FlatMapNodes as dependants
+    val sourceNodes = storm.get.dependantsOfM.keys.find(_.toString contains "SourceNode")
+    sourceNodes match {
+      case Some(s) => storm.get.dependantsOfM.get(s) match {
+        case Some(listOfFlatMapNodes) => assert(listOfFlatMapNodes.size == 2)
+        case None => assert(false, "No FlatMapNodes are found in dependant list of Source where as two FlatMapNodes are expected.")
+      }
+      case None => assert(false, "Could not find a SourceNode.")
+    }
+
+    // Each FlatMapNode should have a SummerNode as dependant.
+    val flatMapnodes = storm.get.dependantsOfM.filterKeys { _.toString contains "FlatMapNode" }
+    val fmnValues = flatMapnodes.values
+    fmnValues.foreach {
+      x: List[Node[Memory]] =>
+        {
+          assert(x.size == 1)
+          assert(x(0).toString contains "SummerNode")
+        }
+    }
   }
 
   "Must be able to plan user supplied Job A" in {
@@ -112,7 +158,6 @@ class PlannerSpec extends WordSpec {
       .sumByKey(store2)
 
     val planned = Try(OnlinePlan(tail))
-
 
     planned match {
       case Success(graph) => {
@@ -217,6 +262,5 @@ class PlannerSpec extends WordSpec {
         assert(false)
     }
   }
-
 
 }

@@ -12,7 +12,7 @@ import com.twitter.summingbird.storm.collector.TransformingOutputCollector
 
 /**
  * This is a spout used when the spout is being followed by summer.
- * It uses a KeyValueOutputCollector on open.
+ * It uses a TransformingOutputCollector on open.
  */
 
 class KeyValueSpout(in: IRichSpout) extends SpoutProxy {
@@ -24,14 +24,11 @@ class KeyValueSpout(in: IRichSpout) extends SpoutProxy {
   /*
   * The transform is the function which unwraps the Value object to get the actual fields present in it.
   */
-  val transform = {
-    input: JList[AnyRef] => input.get(0).asInstanceOf[JList[AnyRef]]
-  }
 
   override def open(conf: util.Map[_, _],
     topologyContext: TopologyContext,
     outputCollector: SpoutOutputCollector): Unit = {
-    val adapterCollector = new TransformingOutputCollector(outputCollector, transform)
+    val adapterCollector = new TransformingOutputCollector(outputCollector, _.get(0).asInstanceOf[JList[AnyRef]])
     self.open(conf, topologyContext, adapterCollector)
   }
 

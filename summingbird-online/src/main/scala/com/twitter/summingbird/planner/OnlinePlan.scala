@@ -31,15 +31,11 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
   private val forkedNodes = depData.nodes
     .filter(depData.fanOut(_).exists(_ > 1)).toSet
 
-  private def get[T <: AnyRef: ClassTag](dep: Producer[P, _]) = {
+  private def get[T <: AnyRef: ClassTag](dep: Producer[P, _]) =
     Options.getFirst[T](options, nameMap.get(dep).get)
-  }
 
   private def getOrElse[T <: AnyRef: ClassTag](dep: Producer[P, _], default: T): T =
-    get[T](dep) match {
-      case None => default
-      case Some((namedSource, option)) => option
-    }
+    get[T](dep).map { case (namedSource, opts) => opts }.getOrElse(default)
 
   private def distinctAddToList[T](l: List[T], n: T): List[T] = if (l.contains(n)) l else (n :: l)
 
@@ -166,7 +162,9 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
            * summer (to handle map-side aggregation) unless the currentProducer is configured to be merged into Source.
            * This check is here to prevent us from merging this current node all the way up to the source.
            */
-          case FlatMapNode(_) if isSourceFollowedBySummer(currentProducer, dep) && !(mergableWithSource(currentProducer)) => true
+
+          case FlatMapNode(_) if hasSummerAsDependantProducer(currentProducer) && allTransDepsMergeableWithSource(dep) => !(getOrElse(currentProducer, OnlineDefaultConstants.DEFAULT_FM_MERGEABLE_WITH_SOURCE).get)
+
           /*
            * if the current node can't be merged with a source, but the transitive deps can
            * then split now.
@@ -240,9 +238,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
 
 object OnlinePlan {
 
-  def apply[P <: Platform[P], T](tail: TailProducer[P, T]): Dag[P] = {
-    apply(tail, Map.empty)
-  }
+  def apply[P <: Platform[P], T](tail: TailProducer[P, T]): Dag[P] = apply(tail, Map.empty)
 
   def apply[P <: Platform[P], T](tail: TailProducer[P, T], options: Map[String, Options]): Dag[P] = {
     val (nameMap, strippedTail) = StripNamedNode(tail)

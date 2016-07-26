@@ -18,7 +18,7 @@ package com.twitter.summingbird.storm
 
 import backtype.storm.generated.StormTopology
 import com.twitter.algebird.{ MapAlgebra, Semigroup }
-import com.twitter.storehaus.{ ReadableStore, JMapStore }
+import com.twitter.storehaus.{ JMapStore, ReadableStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.online._
@@ -27,23 +27,16 @@ import com.twitter.summingbird.storm.option._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.tormenta.spout.Spout
-import com.twitter.util.Future
-import java.util.{ Collections, HashMap, Map => JMap, UUID }
+import com.twitter.util.{ Future, Try }
+import java.util.{ Collections, HashMap, UUID, Map => JMap }
 import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.WordSpec
 import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
-
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
-import scala.collection.mutable.{
-  ArrayBuffer,
-  HashMap => MutableHashMap,
-  Map => MutableMap,
-  SynchronizedBuffer,
-  SynchronizedMap
-}
+import scala.collection.mutable.{ ArrayBuffer, SynchronizedBuffer, SynchronizedMap, HashMap => MutableHashMap, Map => MutableMap }
 /**
  * Tests for Summingbird's Storm planner.
  */
@@ -140,7 +133,7 @@ class TopologyTests extends WordSpec {
     val smNodeName = "summer"
     val sourceNodeName = "source"
     val p = Storm.source(TraversableSpout(sample[List[Int]])).name(sourceNodeName)
-      .map(x => (x,1)).name(optNodeName)
+      .map(x => (x, 1)).name(optNodeName)
       .sumByKey(TestStore.createStore[Int, Int]()._2).name(smNodeName)
 
     val opts = Map(optNodeName -> Options().set(FMMergeableWithSource(true)).set(FlatMapParallelism(5)),
@@ -151,9 +144,9 @@ class TopologyTests extends WordSpec {
     val bolts = stormTopo.get_bolts
     val spouts = stormTopo.get_spouts
 
-    assert(stormTopo.get_bolts_size()==1 && stormTopo.get_spouts_size()==1)
-    assert(spouts.head._2.get_common().get_parallelism_hint()==10)
-    assert(bolts("Tail").get_common().get_parallelism_hint()==7)
+    assert(stormTopo.get_bolts_size == 1 && stormTopo.get_spouts_size == 1)
+    assert(spouts.head._2.get_common.get_parallelism_hint == 10)
+    assert(bolts("Tail").get_common.get_parallelism_hint == 7)
   }
 
   /*
@@ -172,12 +165,11 @@ class TopologyTests extends WordSpec {
       sourceNodeName -> Options().set(SourceParallelism(10)),
       smNodeName -> Options().set(SummerParallelism(7)))
     val storm = Storm.local(opts)
-    try{
+    try {
       val stormTopo = storm.plan(p).topology
       assert(false)
-    }
-    catch{
-      case _ : RuntimeException => assert(true)
+    } catch {
+      case _: RuntimeException => assert(true)
     }
   }
 
@@ -189,20 +181,19 @@ class TopologyTests extends WordSpec {
   */
   "FMMergeableWithSource with a fanOut case after flatMap" in {
     val sumName = "summer"
-    val p1 = Storm.source(TraversableSpout(sample[List[Int]])).flatMap( testFn )
+    val p1 = Storm.source(TraversableSpout(sample[List[Int]])).flatMap(testFn)
     val p2 = p1.sumByKey(TestStore.createStore[Int, Int]()._2).name("sum1")
-    val p3 = p1.map{ x => x }.sumByKey(TestStore.createStore[Int, Int]()._2).name("sum2")
+    val p3 = p1.map { x => x }.sumByKey(TestStore.createStore[Int, Int]()._2).name("sum2")
     val p = p2.also(p3)
     val opts = Map("sum1" -> Options().set(FMMergeableWithSource(true)).set(FlatMapParallelism(15)),
       "sum2" -> Options().set(SourceParallelism(50)).set(FMMergeableWithSource(true)))
     val storm = Storm.local(opts)
     val stormTopo = storm.plan(p).topology
-    val bolts = stormTopo.get_bolts()
-    val spouts = stormTopo.get_spouts()
-    assert(bolts.size() == 4) // FlatMap should go into SourceNode when it has a fanOut.FlatMap, Map, Summer, Summer
-    assert(spouts.size() == 1) // Spout
+    val bolts = stormTopo.get_bolts
+    val spouts = stormTopo.get_spouts
+    assert(bolts.size == 4) // FlatMap should go into SourceNode when it has a fanOut.FlatMap, Map, Summer, Summer
+    assert(spouts.size == 1) // Spout
   }
-
 
   "A named node after a flat map should imply its options" in {
     val nodeName = "super dooper node"
