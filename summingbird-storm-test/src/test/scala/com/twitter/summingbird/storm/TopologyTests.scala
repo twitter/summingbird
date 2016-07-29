@@ -191,8 +191,10 @@ class TopologyTests extends WordSpec {
     val stormTopo = storm.plan(p).topology
     val bolts = stormTopo.get_bolts
     val spouts = stormTopo.get_spouts
-    assert(bolts.size == 4) // FlatMap should go into SourceNode when it has a fanOut.FlatMap, Map, Summer, Summer
-    assert(spouts.size == 1) // Spout
+    // FlatMapNode is expected to get created when it has a fanOut. Nodes : FlatMap, Map, Summer, Summer
+    assert(bolts.size == 4)
+    // There should be one spout.
+    assert(spouts.size == 1)
   }
 
   "A named node after a flat map should imply its options" in {

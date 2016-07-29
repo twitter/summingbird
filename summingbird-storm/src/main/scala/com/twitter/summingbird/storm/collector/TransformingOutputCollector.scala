@@ -4,7 +4,7 @@ import backtype.storm.spout.SpoutOutputCollector
 import java.util.{ List => JList }
 
 /**
- * The TransformingOutputCollector is used to unwrap the Value object when passed on by the Spout.
+ * The TransformingOutputCollector is used to transform the Value object when passed on by the Spout.
  */
 
 class TransformingOutputCollector(self: SpoutOutputCollector, func: JList[AnyRef] => JList[AnyRef]) extends SpoutOutputCollector(self) {

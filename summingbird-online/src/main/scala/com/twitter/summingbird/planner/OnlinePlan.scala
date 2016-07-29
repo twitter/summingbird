@@ -18,8 +18,7 @@ package com.twitter.summingbird.planner
 
 import com.twitter.summingbird._
 import scala.reflect.ClassTag
-import com.twitter.summingbird.online.option._
-import com.twitter.summingbird.online._
+import com.twitter.summingbird.online.OnlineDefaultConstants
 
 class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Producer[P, _], List[String]], options: Map[String, Options]) {
   private type Prod[T] = Producer[P, T]
@@ -163,7 +162,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
            * This check is here to prevent us from merging this current node all the way up to the source.
            */
 
-          case FlatMapNode(_) if hasSummerAsDependantProducer(currentProducer) && allTransDepsMergeableWithSource(dep) => !(getOrElse(currentProducer, OnlineDefaultConstants.DEFAULT_FM_MERGEABLE_WITH_SOURCE).get)
+          case FlatMapNode(_) if isSourceFollowedBySummer(currentProducer, dep) => !(getOrElse(currentProducer, OnlineDefaultConstants.DEFAULT_FM_MERGEABLE_WITH_SOURCE).get)
 
           /*
            * if the current node can't be merged with a source, but the transitive deps can
