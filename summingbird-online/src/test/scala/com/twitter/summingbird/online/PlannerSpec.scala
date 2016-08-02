@@ -16,8 +16,8 @@
 
 package com.twitter.summingbird.online
 
-import com.twitter.algebird.{ MapAlgebra, Semigroup }
-import com.twitter.storehaus.{ ReadableStore, JMapStore }
+import com.twitter.algebird.{MapAlgebra, Semigroup}
+import com.twitter.storehaus.{JMapStore, ReadableStore}
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.memory._
@@ -26,12 +26,12 @@ import com.twitter.summingbird.online.option._
 import com.twitter.util.Future
 import org.scalatest.WordSpec
 import scala.collection.JavaConverters._
-import scala.collection.mutable.{ Map => MMap }
+import scala.collection.mutable.{Map => MMap}
 import org.scalacheck._
 import Gen._
 import Arbitrary._
 import org.scalacheck.Prop._
-import scala.util.{ Try, Success, Failure }
+import scala.util.{Failure, Success, Try}
 
 /**
  * Tests for Summingbird's Storm planner.
@@ -126,6 +126,32 @@ class PlannerSpec extends WordSpec {
     }
   }
 
+  /*
+   * Tests the alsoProducer case for two seperate sub-topologies.
+   * Asserts : There are two sourceNodes
+   *           Each SourceNode has a single dependant.
+   *           Each SourceNode has a summer as dependant.
+   */
+  "Also producer with two topos" in {
+    def testStore2 : Memory#Store[Int, Int] = MMap[Int, Int]()
+
+    val p1 = arbSource1.flatMap { i: Int => List((i -> i))}.sumByKey(testStore).name("topo1")
+    val p2 = arbSource2.flatMap { tup: (Int, Int) => List((tup._1, tup._2)) }.sumByKey(testStore2).name("topo2")
+    val p = p1.also(p2)
+
+    val opts = Map("topo1" -> Options().set(FMMergeableWithSource(true)),
+      "topo2" -> Options().set(FMMergeableWithSource(true)))
+    val storm = Try(OnlinePlan(p,opts))
+    val srcNodes = storm.get.dependantsOfM.filterKeys { _.toString contains "SourceNode"}
+    assert(srcNodes.keySet.size == 2)
+    srcNodes.keySet.foreach {
+      x => {
+        assert(storm.get.dependantsOfM.asJava.get(x).size == 1)
+        assert(storm.get.dependantsOfM.asJava.get(x).head.toString contains "SummerNode")
+      }
+    }
+  }
+
   "Must be able to plan user supplied Job A" in {
     val store1 = testStore
     val store2 = testStore
@@ -165,7 +191,7 @@ class PlannerSpec extends WordSpec {
       }
       case Failure(error) =>
         error.printStackTrace
-        assert(false, "Dumped failing graph for ' Must be able to plan user supplied Job A ' to: " + TopologyPlannerLaws.dumpGraph(tail))
+        fail("Dumped failing graph for ' Must be able to plan user supplied Job A ' to: " + TopologyPlannerLaws.dumpGraph(tail))
     }
   }
 
@@ -213,9 +239,7 @@ class PlannerSpec extends WordSpec {
       case Success(graph) => assert(true == true)
       case Failure(error) =>
         val path = TopologyPlannerLaws.dumpGraph(tail)
-        error.printStackTrace
-        println("Dumped failing graph to: " + path)
-        assert(false)
+        fail("Dumped failing graph to: " + path)
     }
   }
 
@@ -238,9 +262,7 @@ class PlannerSpec extends WordSpec {
       case Success(graph) => assert(true == true)
       case Failure(error) =>
         val path = TopologyPlannerLaws.dumpGraph(tail)
-        error.printStackTrace
-        println("Dumped failing graph to: " + path)
-        assert(false)
+        fail("Dumped failing graph to: " + path)
     }
   }
   "Chained SumByKey with extra Also is okay" in {
@@ -257,10 +279,7 @@ class PlannerSpec extends WordSpec {
         assert(TopologyPlannerLaws.summersOnlyShareNoOps(graph) == true)
       case Failure(error) =>
         val path = TopologyPlannerLaws.dumpGraph(part2)
-        error.printStackTrace
-        println("Dumped failing graph to: " + path)
-        assert(false)
+        fail("Dumped failing graph to: " + path)
     }
   }
-
 }

@@ -30,8 +30,8 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
   private val forkedNodes = depData.nodes
     .filter(depData.fanOut(_).exists(_ > 1)).toSet
 
-  private def get[T <: AnyRef: ClassTag](dep: Producer[P, _]) =
-    Options.getFirst[T](options, nameMap.get(dep).get)
+  private def get[T <: AnyRef: ClassTag](dep: Producer[P, _]): Option[(String, T)] =
+    Options.getFirst[T](options, nameMap(dep))
 
   private def getOrElse[T <: AnyRef: ClassTag](dep: Producer[P, _], default: T): T =
     get[T](dep).map { case (namedSource, opts) => opts }.getOrElse(default)

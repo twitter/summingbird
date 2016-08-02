@@ -99,6 +99,7 @@ class TopologyTests extends WordSpec {
   *  Asserts : the parallelism of the source node
   *            asserts it is a one spout and one bolt topology
   *            assert the summer parallelism too.
+  *     source -> flatMap -> sink
   */
   "Opt-in for the flatmap to merge in source." in {
     val fmNodeName = "flatMapper"
@@ -127,6 +128,7 @@ class TopologyTests extends WordSpec {
     Asserts : There is only one spout and one bolt
               Asserts the summer parallelism
               Asserts the source parallelism
+          source -> map -> sink
  */
   "Remove FlatMapNode where TailProducer does not have FlatMapProducer" in {
     val optNodeName = "optionMapper"
@@ -178,6 +180,9 @@ class TopologyTests extends WordSpec {
   * Behavior : When a flatMap has a fanOut then the FlatMappedProducer should not go into Source.
   * Asserts : Number of bolts : flatMap, Map, Summer1, Summer2
   *           Number of spouts : source.
+  *
+  *     source -> flatMap -> sink
+  *                       -> map -> sink
   */
   "FMMergeableWithSource with a fanOut case after flatMap" in {
     val sumName = "summer"
@@ -195,6 +200,35 @@ class TopologyTests extends WordSpec {
     assert(bolts.size == 4)
     // There should be one spout.
     assert(spouts.size == 1)
+  }
+
+  /*
+ * Test : FlatMap has a fanout and the producer has a opt-in FMMergeableWithSource.
+ * Behavior : When a flatMap has a fanOut then the FlatMappedProducer should not go into Source.
+ * Asserts : Number of bolts : flatMap, Map, Summer1, Summer2
+ *           Number of spouts : source.
+ *
+ *     source -> flatMap -> sink
+ *                          ^^^
+ *     source -> flatMap ----|
+ */
+  "FMMergeableWithSource with a merge into same sink" in {
+    val sumName = "summer"
+    val p1 = Storm.source(TraversableSpout(sample[List[Int]])).flatMap(testFn).name("src1")
+    val p2 = Storm.source(TraversableSpout(sample[List[Int]])).flatMap(testFn).name("src2")
+    val p3 = p1.merge(p2)
+    val p4 = p3.sumByKey(TestStore.createStore[Int, Int]()._2).name("summer")
+    val opts = Map("summer" -> Options().set(FMMergeableWithSource(true)).set(FlatMapParallelism(15)).set(SummerParallelism(15)),
+      "src1" -> Options().set(SourceParallelism(15)).set(FMMergeableWithSource(true)),
+      "src2" -> Options().set(SourceParallelism(15)).set(FMMergeableWithSource(true)))
+    val storm = Storm.local(opts)
+    val stormTopo = storm.plan(p4).topology
+    val bolts = stormTopo.get_bolts
+    val spouts = stormTopo.get_spouts
+    // FlatMapNode is expected to get created when it has a fanOut. Nodes : FlatMap, Map, Summer, Summer
+    assert(bolts.size == 1)
+    // There should be two spouts where flatMaps are merged into them.
+    assert(spouts.size == 2)
   }
 
   "A named node after a flat map should imply its options" in {

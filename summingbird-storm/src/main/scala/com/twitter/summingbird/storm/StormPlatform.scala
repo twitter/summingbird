@@ -16,8 +16,6 @@
 
 package com.twitter.summingbird.storm
 
-import java.util
-
 import Constants._
 import backtype.storm.generated.StormTopology
 import backtype.storm.metric.api.IMetric
@@ -225,25 +223,30 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
          *  As the spout is being followed by a summer, we do not have map-side aggregation handled in the spout.
          *  This means Summer is the place where the aggregation should happen.
          */
-      case Some(s) => {
-        val summerParalellism = getOrElse(stormDag, s, DEFAULT_SUMMER_PARALLELISM)
-        val summerBatchMultiplier = getOrElse(stormDag, s, DEFAULT_SUMMER_BATCH_MULTIPLIER)
-        val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
-
-        val summerProducer = s.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
-        val batcher = summerProducer.store.mergeableBatcher
-        val kvinj = new KeyValueInjection[Int, CMap[(_, BatchID), (Timestamp, _)]]
-        val formattedSummerSpout = hookedTormentaSpout.map {
-          case (time, (k, v)) =>
-            val newK = keyValueShards.summerIdFor(k)
-            val m = CMap((k, batcher.batchOf(time)) -> (time, v))
-            kvinj((newK, m))
-        }
-        new KeyValueSpout(formattedSummerSpout.getSpout)
-      }
+      case Some(s) => createSpoutToFeedSummer(stormDag, s, hookedTormentaSpout)
       case None => hookedTormentaSpout.getSpout
     }
     topologyBuilder.setSpout(nodeName, stormSpout, sourceParallelism)
+  }
+
+  private def createSpoutToFeedSummer(stormDag: Dag[Storm], node: StormNode, spout: Spout[(Timestamp, Any)]) = {
+    val summerParalellism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM)
+    val summerBatchMultiplier = getOrElse(stormDag, node, DEFAULT_SUMMER_BATCH_MULTIPLIER)
+    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
+    /*
+     This method is called only when SourceNode is followed by SummerNode.
+     The Summer exists. There will be always not more than one summer, taken care by OnlinePlan.
+    */
+    val summerProducer = node.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
+    val batcher = summerProducer.store.mergeableBatcher
+    val kvinj = new KeyValueInjection[Int, CMap[(_, BatchID), (Timestamp, _)]]
+    val formattedSummerSpout = spout.map {
+      case (time, (k, v)) =>
+        val newK = keyValueShards.summerIdFor(k)
+        val m = CMap((k, batcher.batchOf(time)) -> (time, v))
+        kvinj((newK, m))
+    }
+    new KeyValueSpout(formattedSummerSpout.getSpout)
   }
 
   private def scheduleSummerBolt[K, V](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
