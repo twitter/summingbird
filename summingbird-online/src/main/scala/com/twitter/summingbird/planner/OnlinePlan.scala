@@ -34,7 +34,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
     Options.getFirst[T](options, nameMap(dep))
 
   private def getOrElse[T <: AnyRef: ClassTag](dep: Producer[P, _], default: T): T =
-    get[T](dep).map { case (namedSource, opts) => opts }.getOrElse(default)
+    get[T](dep).map { case (_, t) => t }.getOrElse(default)
 
   private def distinctAddToList[T](l: List[T], n: T): List[T] = if (l.contains(n)) l else (n :: l)
 

@@ -16,8 +16,8 @@
 
 package com.twitter.summingbird.online
 
-import com.twitter.algebird.{MapAlgebra, Semigroup}
-import com.twitter.storehaus.{JMapStore, ReadableStore}
+import com.twitter.algebird.{ MapAlgebra, Semigroup }
+import com.twitter.storehaus.{ JMapStore, ReadableStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.memory._
@@ -26,12 +26,12 @@ import com.twitter.summingbird.online.option._
 import com.twitter.util.Future
 import org.scalatest.WordSpec
 import scala.collection.JavaConverters._
-import scala.collection.mutable.{Map => MMap}
+import scala.collection.mutable.{ Map => MMap }
 import org.scalacheck._
 import Gen._
 import Arbitrary._
 import org.scalacheck.Prop._
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Tests for Summingbird's Storm planner.
