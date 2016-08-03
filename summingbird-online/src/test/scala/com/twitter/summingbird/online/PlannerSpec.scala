@@ -17,11 +17,12 @@
 package com.twitter.summingbird.online
 
 import com.twitter.algebird.{ MapAlgebra, Semigroup }
-import com.twitter.storehaus.{ ReadableStore, JMapStore }
+import com.twitter.storehaus.{ JMapStore, ReadableStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.memory._
 import com.twitter.summingbird.planner._
+import com.twitter.summingbird.online.option._
 import com.twitter.util.Future
 import org.scalatest.WordSpec
 import scala.collection.JavaConverters._
@@ -30,7 +31,7 @@ import org.scalacheck._
 import Gen._
 import Arbitrary._
 import org.scalacheck.Prop._
-import scala.util.{ Try, Success, Failure }
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Tests for Summingbird's Storm planner.
@@ -61,6 +62,95 @@ class PlannerSpec extends WordSpec {
 
   def arbSource1 = sample[Producer[Memory, Int]]
   def arbSource2 = sample[KeyedProducer[Memory, Int, Int]]
+
+  /*
+ * Test Case : A simple src.map.summer topology with FMMergeableWithSource opt-in functionality.
+ * Asserts : The plan considers the options to convert into a two node toplogy removing FlatMapNode.
+ */
+
+  "The Online Plan with a flat Map which has Summer as dependant and opted-in for FMMergeableWithSource" in {
+    val store1 = testStore
+    val fmname = "flatmapped"
+    val h1 = arbSource1
+      .flatMap { i: Int => List((i + 1, 1), (i + 2, 1), (i + 3, i)) }.name(fmname)
+      .sumByKey(store1)
+
+    val opts = Map(
+      fmname -> Options().set(FMMergeableWithSource(true))
+    )
+    val planned = Try(OnlinePlan(h1, opts))
+
+    assert(planned.isSuccess, "FAILED : The Online Plan with a flat Map which has no Summer as dependant - writing to: " + TopologyPlannerLaws.dumpGraph(h1))
+    assert(planned.get.nodes.size == 2)
+  }
+
+  /*
+   * Tests the fanOut case on the FlatMappedProducer when opt-in to FlatMapNode mergeable with SourceNode
+   * Asserts : SourceNode has two FlatMapNodes
+   *           Each FlatMapNode has a SummerNode as dependant.
+   */
+  "FMMergeableWithSource with a fanOut case after flatMap" in {
+
+    def testStore2: Memory#Store[Int, Int] = MMap[Int, Int]()
+    val sumName = "summer"
+
+    val p1 = arbSource1.flatMap { i: Int => List((i -> i)) }
+    val p2 = p1.sumByKey(testStore).name("sum1")
+    val p3 = p1.map { x => x }.sumByKey(testStore2).name("sum2")
+    val p = p2.also(p3)
+
+    val opts = Map("sum1" -> Options().set(FMMergeableWithSource(true)).set(FlatMapParallelism(15)),
+      "sum2" -> Options().set(SourceParallelism(50)).set(FMMergeableWithSource(true)))
+
+    val storm = Try(OnlinePlan(p, opts))
+
+    // Source Node should exist and have two FlatMapNodes as dependants
+    val sourceNodes = storm.get.dependantsOfM.keys.find(_.toString contains "SourceNode")
+    sourceNodes match {
+      case Some(s) => storm.get.dependantsOfM.get(s) match {
+        case Some(listOfFlatMapNodes) => assert(listOfFlatMapNodes.size == 2)
+        case None => assert(false, "No FlatMapNodes are found in dependant list of Source where as two FlatMapNodes are expected.")
+      }
+      case None => assert(false, "Could not find a SourceNode.")
+    }
+
+    // Each FlatMapNode should have a SummerNode as dependant.
+    val flatMapnodes = storm.get.dependantsOfM.filterKeys { _.toString contains "FlatMapNode" }
+    val fmnValues = flatMapnodes.values
+    fmnValues.foreach {
+      x: List[Node[Memory]] =>
+        {
+          assert(x.size == 1)
+          assert(x(0).toString contains "SummerNode")
+        }
+    }
+  }
+
+  /*
+   * Tests the alsoProducer case for two seperate sub-topologies.
+   * Asserts : There are two sourceNodes
+   *           Each SourceNode has a single dependant.
+   *           Each SourceNode has a summer as dependant.
+   */
+  "Also producer with two topos" in {
+    def testStore2 : Memory#Store[Int, Int] = MMap[Int, Int]()
+
+    val p1 = arbSource1.flatMap { i: Int => List((i -> i))}.sumByKey(testStore).name("topo1")
+    val p2 = arbSource2.flatMap { tup: (Int, Int) => List((tup._1, tup._2)) }.sumByKey(testStore2).name("topo2")
+    val p = p1.also(p2)
+
+    val opts = Map("topo1" -> Options().set(FMMergeableWithSource(true)),
+      "topo2" -> Options().set(FMMergeableWithSource(true)))
+    val storm = Try(OnlinePlan(p,opts))
+    val srcNodes = storm.get.dependantsOfM.filterKeys { _.toString contains "SourceNode"}
+    assert(srcNodes.keySet.size == 2)
+    srcNodes.keySet.foreach {
+      x => {
+        assert(storm.get.dependantsOfM.asJava.get(x).size == 1)
+        assert(storm.get.dependantsOfM.asJava.get(x).head.toString contains "SummerNode")
+      }
+    }
+  }
 
   "Must be able to plan user supplied Job A" in {
     val store1 = testStore
@@ -94,15 +184,14 @@ class PlannerSpec extends WordSpec {
       .sumByKey(store2)
 
     val planned = Try(OnlinePlan(tail))
-    val path = TopologyPlannerLaws.dumpGraph(tail)
 
     planned match {
-      case Success(graph) => assert(true == true)
+      case Success(graph) => {
+        assert(true)
+      }
       case Failure(error) =>
-        val path = TopologyPlannerLaws.dumpGraph(tail)
         error.printStackTrace
-        println("Dumped failing graph to: " + path)
-        assert(false)
+        fail("Dumped failing graph for ' Must be able to plan user supplied Job A ' to: " + TopologyPlannerLaws.dumpGraph(tail))
     }
   }
 
@@ -150,9 +239,7 @@ class PlannerSpec extends WordSpec {
       case Success(graph) => assert(true == true)
       case Failure(error) =>
         val path = TopologyPlannerLaws.dumpGraph(tail)
-        error.printStackTrace
-        println("Dumped failing graph to: " + path)
-        assert(false)
+        fail("Dumped failing graph to: " + path)
     }
   }
 
@@ -175,9 +262,7 @@ class PlannerSpec extends WordSpec {
       case Success(graph) => assert(true == true)
       case Failure(error) =>
         val path = TopologyPlannerLaws.dumpGraph(tail)
-        error.printStackTrace
-        println("Dumped failing graph to: " + path)
-        assert(false)
+        fail("Dumped failing graph to: " + path)
     }
   }
   "Chained SumByKey with extra Also is okay" in {
@@ -194,9 +279,7 @@ class PlannerSpec extends WordSpec {
         assert(TopologyPlannerLaws.summersOnlyShareNoOps(graph) == true)
       case Failure(error) =>
         val path = TopologyPlannerLaws.dumpGraph(part2)
-        error.printStackTrace
-        println("Dumped failing graph to: " + path)
-        assert(false)
+        fail("Dumped failing graph to: " + path)
     }
   }
 }
