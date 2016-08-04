@@ -28,7 +28,7 @@ val log4jVersion = "1.2.16"
 val novocodeJunitVersion = "0.10"
 val scalaCheckVersion = "1.12.2"
 val scalatestVersion = "2.2.4"
-val scaldingVersion = "0.16.0-RC3"
+val scaldingVersion = "0.16.1-RC3"
 val slf4jVersion = "1.6.6"
 val storehausVersion = "0.15.0-RC1"
 val stormDep = "storm" % "storm" % "0.9.0-wip15" //This project also compiles with the latest storm, which is in fact required to run the example
@@ -39,7 +39,7 @@ val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalarifor
 
 val sharedSettings = extraSettings ++ Seq(
   organization := "com.twitter",
-  scalaVersion := "2.10.5",
+  scalaVersion := "2.11.7",
   crossScalaVersions := Seq("2.10.5", "2.11.7"),
   // To support hadoop 1.x
   javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
@@ -368,3 +368,4 @@ lazy val summingbirdCoreTest = module("core-test").settings(
 ).dependsOn(
     summingbirdCore % "test->test;compile->compile"
   )
+

@@ -20,30 +20,38 @@ import Constants._
 import backtype.storm.generated.StormTopology
 import backtype.storm.metric.api.IMetric
 import backtype.storm.task.TopologyContext
-import backtype.storm.topology.{ BoltDeclarer, TopologyBuilder }
-import backtype.storm.tuple.Fields
-import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, StormSubmitter }
+import backtype.storm.spout.SpoutOutputCollector
+import backtype.storm.topology.{ BoltDeclarer, IRichBolt, IRichSpout, OutputFieldsDeclarer, TopologyBuilder }
+import backtype.storm.tuple.{ Fields, Tuple }
+import backtype.storm.{ LocalCluster, StormSubmitter, Config => BacktypeStormConfig }
 import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.bijection.{ Base64String, Injection }
 import com.twitter.chill.IKryoRegistrar
-import com.twitter.storehaus.algebra.{ MergeableStore, Mergeable, StoreAlgebra }
-import com.twitter.storehaus.{ ReadableStore, WritableStore, Store }
+import com.twitter.storehaus.algebra.{ Mergeable, MergeableStore, StoreAlgebra }
+import com.twitter.storehaus.{ ReadableStore, Store, WritableStore }
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.chill.SBChillRegistrar
 import com.twitter.summingbird.online._
+import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.JobId
-import com.twitter.summingbird.planner.{ Dag, DagOptimizer, OnlinePlan, SummerNode, FlatMapNode, SourceNode }
+import com.twitter.summingbird.planner._
+import com.twitter.summingbird.storm.spout.KeyValueSpout
+import com.twitter.summingbird.storm.collector.TransformingOutputCollector
 import com.twitter.summingbird.storm.StormMetric
+import com.twitter.summingbird.storm.Constants
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.summingbird.viz.VizGraph
-import com.twitter.tormenta.spout.Spout
+import com.twitter.tormenta.spout.{ Spout, SpoutProxy }
 import com.twitter.util.{ Future, Time }
 import org.slf4j.LoggerFactory
+
 import scala.collection.{ Map => CMap }
 import scala.reflect.ClassTag
+import scala.util.{ Failure, Success }
+import java.util.{ List => JList }
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
@@ -165,7 +173,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     }
   }
 
-  private def scheduleSpout[K](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
+  private def scheduleSpout(jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
     val (spout, parOpt) = node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
     val nodeName = stormDag.getNodeName(node)
 
@@ -175,6 +183,10 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         case OptionMappedProducer(_, op) =>
           val boxed = Externalizer(op)
           spout.flatMap { case (time, t) => boxed.get(t).map { x => (time, x) } }
+        case FlatMappedProducer(_, op) => {
+          val lockedOp = Externalizer(op)
+          spout.flatMap { case (time, t) => lockedOp.get.apply(t).map { x => (time, x) } }
+        }
         case NamedProducer(_, _) => spout
         case IdentityKeyedProducer(_) => spout
         case AlsoProducer(_, _) => spout
@@ -183,7 +195,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     }
 
     val countersForSpout: Seq[(Group, Name)] = JobCounters.getCountersForJob(jobID).getOrElse(Nil)
+    val isMergeableWithSource = getOrElse(stormDag, node, DEFAULT_FM_MERGEABLE_WITH_SOURCE).get
+    val sourceParallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SOURCE_PARALLELISM)).parHint
+    val flatMapParallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
 
+    if (isMergeableWithSource) {
+      require(flatMapParallelism <= sourceParallelism, s"SourceParallelism ($sourceParallelism) must be at least as high as FlatMapParallelism ($flatMapParallelism) when merging flatMap with Source")
+    }
     val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
 
     val registerAllMetrics = Externalizer({ context: TopologyContext =>
@@ -196,9 +214,39 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       StormStatProvider.registerMetrics(jobID, context, countersForSpout)
       SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
     })
-    val stormSpout = tormentaSpout.openHook(registerAllMetrics.get).getSpout
-    val parallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SOURCE_PARALLELISM)).parHint
-    topologyBuilder.setSpout(nodeName, stormSpout, parallelism)
+    val hookedTormentaSpout = tormentaSpout.openHook(registerAllMetrics.get)
+
+    val summerOpt: Option[SummerNode[Storm]] = stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
+
+    val stormSpout = summerOpt match {
+      /*
+         *  As the spout is being followed by a summer, we do not have map-side aggregation handled in the spout.
+         *  This means Summer is the place where the aggregation should happen.
+         */
+      case Some(s) => createSpoutToFeedSummer(stormDag, s, hookedTormentaSpout)
+      case None => hookedTormentaSpout.getSpout
+    }
+    topologyBuilder.setSpout(nodeName, stormSpout, sourceParallelism)
+  }
+
+  private def createSpoutToFeedSummer(stormDag: Dag[Storm], node: StormNode, spout: Spout[(Timestamp, Any)]) = {
+    val summerParalellism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM)
+    val summerBatchMultiplier = getOrElse(stormDag, node, DEFAULT_SUMMER_BATCH_MULTIPLIER)
+    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
+    /*
+     This method is called only when SourceNode is followed by SummerNode.
+     The Summer exists. There will be always not more than one summer, taken care by OnlinePlan.
+    */
+    val summerProducer = node.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
+    val batcher = summerProducer.store.mergeableBatcher
+    val kvinj = new KeyValueInjection[Int, CMap[(_, BatchID), (Timestamp, _)]]
+    val formattedSummerSpout = spout.map {
+      case (time, (k, v)) =>
+        val newK = keyValueShards.summerIdFor(k)
+        val m = CMap((k, batcher.batchOf(time)) -> (time, v))
+        kvinj((newK, m))
+    }
+    new KeyValueSpout(formattedSummerSpout.getSpout)
   }
 
   private def scheduleSummerBolt[K, V](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
@@ -335,7 +383,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
      */
     val dagOptimizer = new DagOptimizer[Storm] {}
     val stormTail = dagOptimizer.optimize(tail, dagOptimizer.ValueFlatMapToFlatMap)
-    val stormDag = OnlinePlan(stormTail.asInstanceOf[TailProducer[Storm, T]])
+    val stormDag = OnlinePlan(stormTail.asInstanceOf[TailProducer[Storm, T]], options)
     implicit val topologyBuilder = new TopologyBuilder
     implicit val config = genConfig(stormDag)
     val jobID = {
