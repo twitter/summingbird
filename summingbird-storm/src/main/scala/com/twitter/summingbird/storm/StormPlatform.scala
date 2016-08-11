@@ -203,8 +203,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       require(flatMapParallelism <= sourceParallelism, s"SourceParallelism ($sourceParallelism) must be at least as high as FlatMapParallelism ($flatMapParallelism) when merging flatMap with Source")
     }
     val builder = BuildSummer(this, stormDag, node, jobID)
-    val lockedCounters = Externalizer(JobCounters.getCountersForJob(jobID).getOrElse(Nil))
-    val countersForSpout: Seq[(Group, Name)] = lockedCounters.get
+    val countersForSpout: Seq[(Group, Name)] = JobCounters.getCountersForJob(jobID).getOrElse(Nil)
 
     val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
 
@@ -393,7 +392,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       node match {
         case _: SummerNode[_] => scheduleSummerBolt(jobID, stormDag, node)
         case _: FlatMapNode[_] => scheduleFlatMapper(jobID, stormDag, node)
-        case _: SourceNode[_] => scheduleSpout(jobID, stormDag, node)
+        case _: SourceNode[_] => scheduleSpout[Any, Any](jobID, stormDag, node)
       }
     }
     PlannedTopology(config, topologyBuilder.createTopology)

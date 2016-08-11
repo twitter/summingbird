@@ -5,61 +5,81 @@ import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.online.option.SummerBuilder
 import backtype.storm.spout.SpoutOutputCollector
 import com.twitter.algebird.util.summer.AsyncSummer
-import com.twitter.util.{ Await, Future }
-import java.util.{ List => JList }
+import com.twitter.util.{ Await, Future, Time }
 import scala.collection.mutable.{ Map => MMap }
 import scala.collection.mutable.{ MutableList => MList }
 import scala.collection.{ Map => CMap }
 import scala.collection.JavaConverters._
 import java.util.{ List => JList }
 
-class AggregatorOutputCollector[K, V: Semigroup](in: SpoutOutputCollector, func: JList[AnyRef] => JList[AnyRef], summerBuilder: SummerBuilder, summerShards: KeyValueShards) extends TransformingOutputCollector(in, func) {
+class AggregatorOutputCollector[K, V: Semigroup](
+    in: SpoutOutputCollector,
+    transform: JList[AnyRef] => JList[AnyRef],
+    summerBuilder: SummerBuilder,
+    summerShards: KeyValueShards) extends SpoutOutputCollector(in) {
 
-  var spoutCaches = MMap[String, AsyncSummer[(K, V), Map[K, V]]]()
-  var lastDump = System.currentTimeMillis()
-  var streamMessageIdTracker = MMap[String, MMap[Int, MList[Object]]]()
+  val spoutCaches = MMap[String, AsyncSummer[(K, V), Map[K, V]]]()
+  var lastDump = Time.now.inMillis
+  val streamMessageIdTracker = MMap[String, MMap[Int, MList[Object]]]()
 
   def timerFlush() = {
-    spoutCaches.keys.foreach { stream =>
-      val tupsOut = spoutCaches(stream).tick.map { convertToSummerInputFormat(_) }
-      val tups = Await.result(tupsOut)
-
-      tups.foreach {
-        case (k, v) => {
-          val messageIdsTracker = streamMessageIdTracker(stream)
-          val messageIds = messageIdsTracker.remove(k)
-          (messageIds.isEmpty, stream.isEmpty) match {
-            case (true, true) => in.emit(List(k, v).asJava.asInstanceOf[JList[AnyRef]])
-            case (true, false) => in.emit(stream, List(k, v).asJava.asInstanceOf[JList[AnyRef]])
-            case (false, true) => in.emit(List(k, v).asJava.asInstanceOf[JList[AnyRef]], messageIds)
-            case (false, false) => in.emit(stream, List(k, v).asJava.asInstanceOf[JList[AnyRef]], messageIds)
+    /*
+    This is a flush called from the nextTuple() of the spout.
+    The timerFlush is triggered with tick frequency from the spout.
+     */
+    spoutCaches.foreach {
+      case (stream, _) =>
+        val tupsOut = spoutCaches(stream).tick.map { convertToSummerInputFormat(_) }
+        val tups = Await.result(tupsOut)
+        tups.foreach {
+          case (k, v) => {
+            val messageIdsTracker = streamMessageIdTracker(stream)
+            val messageIds = messageIdsTracker.remove(k)
+            val list = List(k, v).asJava.asInstanceOf[JList[AnyRef]]
+            callEmit(messageIds, list, stream)
           }
         }
-      }
     }
   }
 
-  private def convertToSummerInputFormat(data: CMap[K, V]): CMap[Int, CMap[K, V]] = {
-    data.groupBy { case (k, _) => summerShards.summerIdFor(k) }
+  private def convertToSummerInputFormat(flushedCache: CMap[K, V]): CMap[Int, CMap[K, V]] = {
+    flushedCache.groupBy { case (k, _) => summerShards.summerIdFor(k) }
   }
 
-  private def emitData[K, V](data: Future[Traversable[(Int, CMap[K, V])]], callerfunc: (String, JList[AnyRef], scala.Any) => JList[Integer], s: String, o: scala.Any): List[Int] = {
+  private def emitData[K, V](cache: Future[Traversable[(Int, CMap[K, V])]], s: String): List[Int] = {
+    /*
+    The method is invoked to handle the flushed cache caused by exceeding the memoryLimit, which is called within add method.
+     */
     var returns = MList[Int]()
-    val data_trav = Await.result(data)
-    data_trav
+    val flushedTups = Await.result(cache)
+    flushedTups
       .foreach {
-        case (k, v) => {
+        case (k, v) =>
           val messageIdsTracker = streamMessageIdTracker(s)
           val messageIds = messageIdsTracker.remove(k)
-          val taskIds = callerfunc(s, List(k, v).asJava.asInstanceOf[JList[AnyRef]], messageIds)
+          val list = List(k, v).asJava.asInstanceOf[JList[AnyRef]]
+          val taskIds = callEmit(messageIds, list, s)
           if (taskIds != null) returns ++= taskIds.asInstanceOf[JList[Int]].asScala.toList
-        }
       }
     returns.toList
   }
 
-  private def add(tuple: (K, V), o: scala.Any, s: String) = {
-    if (o != Nil) trackMessageId(tuple, o, s)
+  private def callEmit(messageIds: Option[Any], list: JList[AnyRef], stream: String): JList[Integer] = {
+    /*
+    This is a wrapper method to call the emit with appropriate signature
+    based on the arguments.
+     */
+    (messageIds.isEmpty, stream.isEmpty) match {
+      case (true, true) => in.emit(list)
+      case (true, false) => in.emit(stream, list)
+      case (false, true) => in.emit(list, messageIds)
+      case (false, false) => in.emit(stream, list, messageIds)
+    }
+  }
+
+  private def add(tuple: (K, V), s: String, o: Option[Any] = None) = {
+    if (o.isDefined)
+      trackMessageId(tuple, o.get, s)
     addToCache(tuple, s)
   }
 
@@ -81,23 +101,21 @@ class AggregatorOutputCollector[K, V: Semigroup](in: SpoutOutputCollector, func:
     streamMessageIdTracker(s) = messageIdTracker
   }
 
-  def emitHelper(s: String, list: JList[AnyRef], o: scala.Any)(callerFunc: (String, JList[AnyRef], scala.Any) => JList[Integer]): JList[Integer] = {
+  def extractAndProcessElements(s: String, list: JList[AnyRef], o: Option[Any] = None): JList[Integer] = {
 
-    val first: K = func(list).get(0).asInstanceOf[K]
-    val second: V = func(list).get(1).asInstanceOf[V]
-
-    val emitReturn = emitData(add((first, second), o, s).map(convertToSummerInputFormat(_)), callerFunc, s, o)
+    val first: K = transform(list).get(0).asInstanceOf[K]
+    val second: V = transform(list).get(1).asInstanceOf[V]
+    val emitReturn = emitData(add((first, second), s, o).map(convertToSummerInputFormat(_)), s)
     emitReturn.asJava.asInstanceOf[JList[Integer]]
   }
 
-  override def emit(s: String, list: JList[AnyRef], o: scala.AnyRef): JList[Integer] = emitHelper(s, list, o)((s, l, o) => in.emit(s, l, o))
+  override def emit(s: String, list: JList[AnyRef], o: scala.AnyRef): JList[Integer] = extractAndProcessElements(s, list, Some(o))
 
-  override def emit(list: JList[AnyRef], o: scala.AnyRef): JList[Integer] = emitHelper("", list, o)((s, l, o) => in.emit(l, o))
+  override def emit(list: JList[AnyRef], o: scala.AnyRef): JList[Integer] = extractAndProcessElements("", list, Some(o))
 
-  override def emit(list: JList[AnyRef]): JList[Integer] = emitHelper("", list, Nil)((s, l, o) => in.emit(l))
+  override def emit(list: JList[AnyRef]): JList[Integer] = extractAndProcessElements("", list)
 
-  override def emit(s: String, list: JList[AnyRef]): JList[Integer] = emitHelper(s, list, Nil)((s, l, o) => in.emit(s, l))
+  override def emit(s: String, list: JList[AnyRef]): JList[Integer] = extractAndProcessElements(s, list)
 
   override def reportError(throwable: Throwable): Unit = in.reportError(throwable)
-
 }

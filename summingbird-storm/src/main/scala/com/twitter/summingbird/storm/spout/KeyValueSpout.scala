@@ -14,6 +14,7 @@ import java.util
 import java.util.{ List => JList }
 import scala.collection.mutable.{ MutableList => MList }
 import com.twitter.summingbird.storm.collector.{ AggregatorOutputCollector, TransformingOutputCollector }
+import com.twitter.util.{ Duration, Time }
 
 /**
  * This is a spout used when the spout is being followed by summer.
@@ -22,9 +23,10 @@ import com.twitter.summingbird.storm.collector.{ AggregatorOutputCollector, Tran
 
 class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBuilder, summerShards: KeyValueShards, @transient callOnOpen: (TopologyContext) => Unit) extends SpoutProxy {
 
+  private final val tickFrequency = 1000
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
   val lockedFn = Externalizer(callOnOpen)
-  var lastDump = System.currentTimeMillis()
+  var lastDump = Time.now.inMillis
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) = {
     declarer.declare(new Fields(AGG_KEY, AGG_VALUE))
@@ -39,19 +41,30 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
   }
 
   override def nextTuple(): Unit = {
-    if (System.currentTimeMillis() - lastDump > 1000) {
+    /*
+    This method is used to call the tick on the cache.
+     */
+    if (Time.now.inMillis - lastDump > tickFrequency) {
       adapterCollector.timerFlush()
-      lastDump = System.currentTimeMillis()
+      lastDump = Time.now.inMillis
     }
     in.nextTuple()
   }
 
   override def ack(msgId: Object): Unit = {
+    /*
+    The msgId is a list of individual messageIds of emitted tuples
+    which are aggregated and emitted out as a single tuple.
+     */
     val msgIds = convertToList(msgId)
     msgIds.foreach { super.ack(_) }
   }
 
   override def fail(msgId: Object): Unit = {
+    /*
+    The msgId is a list of individual messageIds of emitted tuples
+    which are aggregated and emitted out as a single tuple.
+     */
     val msgIds = convertToList(msgId)
     msgIds.foreach { super.fail(_) }
   }
