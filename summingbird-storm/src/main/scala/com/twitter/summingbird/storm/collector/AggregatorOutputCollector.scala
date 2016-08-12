@@ -61,7 +61,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
           val list = List(k, v).asJava.asInstanceOf[JList[AnyRef]]
           callEmit(messageIds, list, streamId)
       }
-    returns.flatMap { _.asScala.toList.asInstanceOf[List[Int]] }.toList
+    returns.flatMap { x =>  { if(x != null) x.asScala.toList.asInstanceOf[List[Int]] else List[Int]() } }
   }
 
   /*
