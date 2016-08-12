@@ -219,13 +219,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val hookedTormentaSpout = tormentaSpout.openHook(registerAllMetrics.get)
     val summerOpt: Option[SummerNode[Storm]] = stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
     val stormSpout = summerOpt match {
-      case Some(s) => createSpoutToFeedSummer[Any, Any](stormDag, s, builder, hookedTormentaSpout)
+      case Some(s) => createSpoutToFeedSummer[Any, Any](stormDag, s, builder, hookedTormentaSpout, registerAllMetrics)
       case None => hookedTormentaSpout.getSpout
     }
     topologyBuilder.setSpout(nodeName, stormSpout, sourceParallelism)
   }
 
-  private def createSpoutToFeedSummer[K, V](stormDag: Dag[Storm], node: StormNode, builder: SummerBuilder, spout: Spout[(Timestamp, Any)]) = {
+  private def createSpoutToFeedSummer[K, V](stormDag: Dag[Storm], node: StormNode, builder: SummerBuilder, spout: Spout[(Timestamp, Any)], fn: Externalizer[(TopologyContext) => Unit]) = {
     val summerParalellism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM)
     val summerBatchMultiplier = getOrElse(stormDag, node, DEFAULT_SUMMER_BATCH_MULTIPLIER)
     val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
@@ -237,7 +237,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       case (time, (k: K, v: V)) => kvinj((k, batcher.batchOf(time)), (time, v))
     }
     implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
-    new KeyValueSpout[(K, BatchID), (Timestamp, V)](formattedSummerSpout.getSpout, builder, keyValueShards)
+    new KeyValueSpout[(K, BatchID), (Timestamp, V)](formattedSummerSpout.getSpout, builder, keyValueShards, fn.get)
 
   }
 

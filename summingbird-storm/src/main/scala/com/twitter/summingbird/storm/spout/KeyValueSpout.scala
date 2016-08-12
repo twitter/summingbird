@@ -21,11 +21,12 @@ import com.twitter.util.{ Duration, Time }
  * It uses a AggregatorOutputCollector on open.
  */
 
-class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBuilder, summerShards: KeyValueShards) extends SpoutProxy {
+class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBuilder, summerShards: KeyValueShards, @transient callOnOpen: (TopologyContext) => Unit) extends SpoutProxy {
 
   private final val tickFrequency = Duration.fromMilliseconds(1000)
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
   var lastDump = Time.now
+  val lockedFn = Externalizer(callOnOpen)
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) = {
     declarer.declare(new Fields(AGG_KEY, AGG_VALUE))
@@ -35,6 +36,7 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
     topologyContext: TopologyContext,
     outputCollector: SpoutOutputCollector): Unit = {
     adapterCollector = new AggregatorOutputCollector(outputCollector, summerBuilder, summerShards)
+    lockedFn.get(topologyContext)
     in.open(conf, topologyContext, adapterCollector)
   }
 
