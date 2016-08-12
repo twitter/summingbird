@@ -204,9 +204,9 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     }
 
     val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
-
+    val builder = BuildSummer(this, stormDag, node, jobID)
+    val countersForSpout: Seq[(Group, Name)] = JobCounters.getCountersForJob(jobID).getOrElse(Nil)
     val registerAllMetrics = Externalizer({ context: TopologyContext =>
-      val countersForSpout: Seq[(Group, Name)] = JobCounters.getCountersForJob(jobID).getOrElse(Nil)
       // Register metrics passed in SpoutStormMetrics option.
       metrics.metrics().foreach {
         x: StormMetric[IMetric] =>
@@ -219,14 +219,13 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val hookedTormentaSpout = tormentaSpout.openHook(registerAllMetrics.get)
     val summerOpt: Option[SummerNode[Storm]] = stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
     val stormSpout = summerOpt match {
-      case Some(s) => createSpoutToFeedSummer[Any, Any](stormDag, s, jobID, hookedTormentaSpout)
+      case Some(s) => createSpoutToFeedSummer[Any, Any](stormDag, s, builder, hookedTormentaSpout)
       case None => hookedTormentaSpout.getSpout
     }
     topologyBuilder.setSpout(nodeName, stormSpout, sourceParallelism)
   }
 
-  private def createSpoutToFeedSummer[K, V](stormDag: Dag[Storm], node: StormNode, jobID: JobId, spout: Spout[(Timestamp, Any)]) = {
-    val builder = BuildSummer(this, stormDag, node, jobID)
+  private def createSpoutToFeedSummer[K, V](stormDag: Dag[Storm], node: StormNode, builder: SummerBuilder, spout: Spout[(Timestamp, Any)]) = {
     val summerParalellism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM)
     val summerBatchMultiplier = getOrElse(stormDag, node, DEFAULT_SUMMER_BATCH_MULTIPLIER)
     val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
