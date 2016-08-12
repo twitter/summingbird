@@ -21,12 +21,11 @@ import com.twitter.util.{ Duration, Time }
  * It uses a AggregatorOutputCollector on open.
  */
 
-class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBuilder, summerShards: KeyValueShards, @transient callOnOpen: (TopologyContext) => Unit) extends SpoutProxy {
+class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBuilder, summerShards: KeyValueShards) extends SpoutProxy {
 
-  private final val tickFrequency = 1000
+  private final val tickFrequency = Duration.fromMilliseconds(1000)
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
-  val lockedFn = Externalizer(callOnOpen)
-  var lastDump = Time.now.inMillis
+  var lastDump = Time.now
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) = {
     declarer.declare(new Fields(AGG_KEY, AGG_VALUE))
@@ -35,8 +34,7 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
   override def open(conf: util.Map[_, _],
     topologyContext: TopologyContext,
     outputCollector: SpoutOutputCollector): Unit = {
-    adapterCollector = new AggregatorOutputCollector(outputCollector, _.get(0).asInstanceOf[JList[AnyRef]], summerBuilder, summerShards)
-    lockedFn.get(topologyContext)
+    adapterCollector = new AggregatorOutputCollector(outputCollector, summerBuilder, summerShards)
     in.open(conf, topologyContext, adapterCollector)
   }
 
@@ -44,9 +42,9 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
     /*
     This method is used to call the tick on the cache.
      */
-    if (Time.now.inMillis - lastDump > tickFrequency) {
+    if (Time.now - lastDump > tickFrequency) {
       adapterCollector.timerFlush()
-      lastDump = Time.now.inMillis
+      lastDump = Time.now
     }
     in.nextTuple()
   }
