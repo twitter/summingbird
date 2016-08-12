@@ -61,7 +61,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
           val list = List(k, v).asJava.asInstanceOf[JList[AnyRef]]
           callEmit(messageIds, list, streamId)
       }
-    returns.flatten
+    returns.flatMap { _.asScala.toList.asInstanceOf[List[Int]] }.toList
   }
 
   /*
@@ -96,7 +96,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
   private def trackMessageId(tuple: (K, V), o: scala.Any, s: String): Unit = {
     val messageIdTracker = streamMessageIdTracker.getOrElse(s, MMap[Int, MList[Object]]())
     var messageIds = messageIdTracker.getOrElse(summerShards.summerIdFor(tuple._1), MList())
-    messageIdTracker(summerShards.summerIdFor(tuple._1)) = ( messageIds += o.asInstanceOf[Object] )
+    messageIdTracker(summerShards.summerIdFor(tuple._1)) = (messageIds += o.asInstanceOf[Object])
     streamMessageIdTracker(s) = messageIdTracker
   }
 
