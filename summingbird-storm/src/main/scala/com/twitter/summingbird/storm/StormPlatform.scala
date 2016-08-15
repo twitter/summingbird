@@ -38,7 +38,6 @@ import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.storm.spout.KeyValueSpout
-import com.twitter.summingbird.storm.collector.TransformingOutputCollector
 import com.twitter.summingbird.storm.StormMetric
 import com.twitter.summingbird.storm.Constants
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
@@ -203,24 +202,26 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       require(flatMapParallelism <= sourceParallelism, s"SourceParallelism ($sourceParallelism) must be at least as high as FlatMapParallelism ($flatMapParallelism) when merging flatMap with Source")
     }
 
+    val summerOpt: Option[SummerNode[Storm]] = stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
+    val builder = if (summerOpt.isDefined) BuildSummer(this, stormDag, node, jobID)
     val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
-    val builder = BuildSummer(this, stormDag, node, jobID)
     val countersForSpout: Seq[(Group, Name)] = JobCounters.getCountersForJob(jobID).getOrElse(Nil)
     val registerAllMetrics = Externalizer({ context: TopologyContext =>
+
       // Register metrics passed in SpoutStormMetrics option.
       metrics.metrics().foreach {
         x: StormMetric[IMetric] =>
           context.registerMetric(x.name, x.metric, x.interval.inSeconds)
       }
       // Register summingbird counter metrics.
+      println("registerAllMetrics call jobId is %s\n countersForSpout is : %s".format(jobID.toString, countersForSpout.toString()))
       StormStatProvider.registerMetrics(jobID, context, countersForSpout)
       SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
     })
-    val hookedTormentaSpout = tormentaSpout.openHook(registerAllMetrics.get)
-    val summerOpt: Option[SummerNode[Storm]] = stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
+
     val stormSpout = summerOpt match {
-      case Some(s) => createSpoutToFeedSummer[Any, Any](stormDag, s, builder, hookedTormentaSpout, registerAllMetrics)
-      case None => hookedTormentaSpout.getSpout
+      case Some(s) => createSpoutToFeedSummer[Any, Any](stormDag, s, builder.asInstanceOf[SummerBuilder], tormentaSpout, registerAllMetrics)
+      case None => tormentaSpout.openHook(registerAllMetrics.get).getSpout
     }
     topologyBuilder.setSpout(nodeName, stormSpout, sourceParallelism)
   }
@@ -237,7 +238,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       case (time, (k: K, v: V)) => kvinj((k, batcher.batchOf(time)), (time, v))
     }
     implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
-    new KeyValueSpout[(K, BatchID), (Timestamp, V)](formattedSummerSpout.getSpout, builder, keyValueShards, fn.get)
+    new KeyValueSpout[(K, BatchID), (Timestamp, V)](formattedSummerSpout.openHook(fn.get).getSpout, builder, keyValueShards)
 
   }
 

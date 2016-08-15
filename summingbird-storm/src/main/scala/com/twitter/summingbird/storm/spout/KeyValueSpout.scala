@@ -13,7 +13,7 @@ import com.twitter.tormenta.spout.SpoutProxy
 import java.util
 import java.util.{ List => JList }
 import scala.collection.mutable.{ MutableList => MList }
-import com.twitter.summingbird.storm.collector.{ AggregatorOutputCollector, TransformingOutputCollector }
+import com.twitter.summingbird.storm.collector.AggregatorOutputCollector
 import com.twitter.util.{ Duration, Time }
 
 /**
@@ -21,12 +21,11 @@ import com.twitter.util.{ Duration, Time }
  * It uses a AggregatorOutputCollector on open.
  */
 
-class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBuilder, summerShards: KeyValueShards, @transient callOnOpen: (TopologyContext) => Unit) extends SpoutProxy {
+class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBuilder, summerShards: KeyValueShards) extends SpoutProxy {
 
   private final val tickFrequency = Duration.fromMilliseconds(1000)
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
   var lastDump = Time.now
-  val lockedFn = Externalizer(callOnOpen)
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) = {
     declarer.declare(new Fields(AGG_KEY, AGG_VALUE))
@@ -36,14 +35,13 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
     topologyContext: TopologyContext,
     outputCollector: SpoutOutputCollector): Unit = {
     adapterCollector = new AggregatorOutputCollector(outputCollector, summerBuilder, summerShards)
-    lockedFn.get(topologyContext)
     in.open(conf, topologyContext, adapterCollector)
   }
 
   override def nextTuple(): Unit = {
     /*
     This method is used to call the tick on the cache.
-     */
+    */
     if (Time.now - lastDump > tickFrequency) {
       adapterCollector.timerFlush()
       lastDump = Time.now
