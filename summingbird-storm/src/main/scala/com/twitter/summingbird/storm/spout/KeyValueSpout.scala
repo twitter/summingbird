@@ -67,10 +67,13 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
     msgIds.foreach { super.fail(_) }
   }
 
-  def convertToList(msgId: Object): MList[Object] = {
+  /*
+  The msgId Object is a list of individual messageIds of all the aggregated tuples.
+   */
+  def convertToList(msgId: Object): TraversableOnce[AnyRef] = {
     msgId match {
-      case Some(s) => s.asInstanceOf[MList[Object]]
-      case None => MList[Object]()
+      case Some(s) => s.asInstanceOf[TraversableOnce[AnyRef]]
+      case None => List()
     }
   }
 

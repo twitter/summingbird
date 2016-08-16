@@ -142,14 +142,15 @@ class PlannerSpec extends WordSpec {
     val opts = Map("topo1" -> Options().set(FMMergeableWithSource(true)),
       "topo2" -> Options().set(FMMergeableWithSource(true)))
     val storm = Try(OnlinePlan(p, opts))
-    val srcNodes = storm.get.dependantsOfM.filterKeys { _.toString contains "SourceNode" }
+    val dependents = storm.get.dependantsOfM
+    val srcNodes = dependents.filterKeys { _.toString contains "SourceNode" }
     assert(srcNodes.keySet.size == 2)
-    srcNodes.keySet.foreach {
-      x =>
-        {
-          assert(storm.get.dependantsOfM.asJava.get(x).size == 1)
-          assert(storm.get.dependantsOfM.asJava.get(x).head.toString contains "SummerNode")
-        }
+    srcNodes.keySet.foreach { x =>
+      {
+        val dependant = dependents.asJava.get(x)
+        assert(dependant.size == 1)
+        assert(dependant.head.toString contains "SummerNode")
+      }
     }
   }
 
