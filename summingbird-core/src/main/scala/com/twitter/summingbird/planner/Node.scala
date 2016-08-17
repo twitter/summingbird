@@ -98,10 +98,10 @@ case class SourceNode[P <: Platform[P]](override val members: List[Producer[P, _
  *                                    is that mapping. Note that this name is different from
  *                                    the name used for applying named options.
  * @param nameToNode                  Reverse of above mapping. What is the node for a given name.
- * @param dependenciesOfM             What nodes immediately depend on the given node. In
- *                                    other words what are the children of this node.
- * @param dependantsOfM               What nodes does this node immediately depend one. In
+ * @param dependenciesOfM             What nodes does this node immediately depend one. In
  *                                    other words, what are the parents of this node.
+ * @param dependantsOfM               What nodes immediately depend on the given node. In
+ *                                    other words what are the children of this node.
  * @tparam P                          Platform, e.g. Scalding, Storm, ConcurrentMemory.
  */
 case class Dag[P <: Platform[P]](
