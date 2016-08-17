@@ -85,6 +85,9 @@ case class SourceNode[P <: Platform[P]](override val members: List[Producer[P, _
  * here is pivoted on a single tail producer, in other words it is the view from a single
  * TailProducer, other TailProducers may have their own view.
  *
+ * Dag objects aren't typically constructed directly, but rather through the companion
+ * object helpers, which also generate unique names for each Node.
+ *
  * @param originalTail                The TailProducer before stripping out named nodes.
  * @param producerToPriorityNames     Map every producer to list of names that apply to it.
  *                                    These are the names provided by named nodes.
