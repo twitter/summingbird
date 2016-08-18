@@ -101,7 +101,7 @@ case class SourceNode[P <: Platform[P]](override val members: List[Producer[P, _
  *                                    is the mapping of nodes to their unique names.
  *                                    Note that this name is different from the name used for
  *                                    applying named options.
- * @param nameToNode                  Reverse of above mapping. What is the node for a given name.
+ * @param nameToNode                  Reverse of above mapping. Mapping of names to nodes.
  * @param dependenciesOfM             Nodes this node immediately depends on. In other words,
  *                                    the parents of this node in node graph.
  * @param dependantsOfM               Nodes that immediately depend on the given node. In
