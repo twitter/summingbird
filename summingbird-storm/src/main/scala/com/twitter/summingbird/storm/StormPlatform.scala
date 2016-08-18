@@ -24,6 +24,7 @@ import backtype.storm.spout.SpoutOutputCollector
 import backtype.storm.topology.{ BoltDeclarer, IRichBolt, IRichSpout, OutputFieldsDeclarer, TopologyBuilder }
 import backtype.storm.tuple.{ Fields, Tuple }
 import backtype.storm.{ LocalCluster, StormSubmitter, Config => BacktypeStormConfig }
+import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.bijection.{ Base64String, Injection }
 import com.twitter.chill.IKryoRegistrar
@@ -34,7 +35,7 @@ import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.chill.SBChillRegistrar
 import com.twitter.summingbird.online._
 import com.twitter.summingbird.online.executor.InputState
-import com.twitter.summingbird.online.option._
+import com.twitter.summingbird.online.option.{ SourceParallelism, _ }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.storm.spout.KeyValueSpout
@@ -172,88 +173,10 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   }
 
   private def scheduleSpout(jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
-
-    val (spout, parOpt) = node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
     val nodeName = stormDag.getNodeName(node)
-
-    val tormentaSpout = node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
-      p match {
-        case Source(_) => spout // The source is still in the members list so drop it
-        case OptionMappedProducer(_, op) =>
-          val boxed = Externalizer(op)
-          spout.flatMap { case (time, t) => boxed.get(t).map { x => (time, x) } }
-        case FlatMappedProducer(_, op) => {
-          val lockedOp = Externalizer(op)
-          spout.flatMap { case (time, t) => lockedOp.get.apply(t).map { x => (time, x) } }
-        }
-        case NamedProducer(_, _) => spout
-        case IdentityKeyedProducer(_) => spout
-        case AlsoProducer(_, _) => spout
-        case _ => sys.error("not possible, given the above call to span.\n" + p)
-      }
-    }
-
-    val isMergeableWithSource = getOrElse(stormDag, node, DEFAULT_FM_MERGEABLE_WITH_SOURCE).get
-    val sourceParallelism = getOrElse(stormDag, node, parOpt.getOrElse(DEFAULT_SOURCE_PARALLELISM)).parHint
-    val flatMapParallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
-
-    if (isMergeableWithSource) {
-      require(flatMapParallelism <= sourceParallelism, s"SourceParallelism ($sourceParallelism) must be at least as high as FlatMapParallelism ($flatMapParallelism) when merging flatMap with Source")
-    }
-    val metrics = getOrElse(stormDag, node, DEFAULT_SPOUT_STORM_METRICS)
-
-    val summerOpt: Option[SummerNode[Storm]] = stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
-    val stormSpout = summerOpt match {
-      case Some(s) => {
-        val builder = BuildSummer(this, stormDag, node, jobID)
-        val registerAllMetricsAndCounters = createRegistrationFunction(metrics, getCountersForJob(jobID), jobID)
-        createSpoutToFeedSummer[Any, Any](stormDag, s, builder, tormentaSpout, registerAllMetricsAndCounters)
-      }
-      case None => {
-        val registerAllMetricsAndCounters = createRegistrationFunction(metrics, getCountersForJob(jobID), jobID)
-        getStormSpout(tormentaSpout, registerAllMetricsAndCounters)
-      }
-    }
-    topologyBuilder.setSpout(nodeName, stormSpout, sourceParallelism)
-  }
-
-  // Tormenta bug when openHook might get lost if it doesn't happen right before the getSpout.
-  private def getStormSpout[T](spout: Spout[T], register: Externalizer[(TopologyContext) => Unit]) = {
-    val hookedSpout = spout.openHook(register.get)
-    hookedSpout.getSpout
-  }
-
-  private def getCountersForJob(jobId: JobId) = JobCounters.getCountersForJob(jobId).getOrElse(Nil)
-
-  /*
-  This function takes the metrics and counters to register to the TopologyContext of a JobID and outputs a function which can be called on openHook.
-   */
-  private def createRegistrationFunction(metrics: SpoutStormMetrics, counters: TraversableOnce[(Group, Name)], jobID: JobId): Externalizer[(TopologyContext) => Unit] = {
-    Externalizer({ context: TopologyContext =>
-      // Register metrics passed in SpoutStormMetrics option.
-      metrics.metrics().foreach {
-        x: StormMetric[IMetric] =>
-          context.registerMetric(x.name, x.metric, x.interval.inSeconds)
-      }
-      // Register summingbird counter metrics.
-      StormStatProvider.registerMetrics(jobID, context, counters.toSeq)
-      SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
-    })
-  }
-
-  private def createSpoutToFeedSummer[K, V](stormDag: Dag[Storm], node: StormNode, builder: SummerBuilder, spout: Spout[(Timestamp, Any)], fn: Externalizer[(TopologyContext) => Unit]): IRichSpout = {
-    val summerParalellism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM)
-    val summerBatchMultiplier = getOrElse(stormDag, node, DEFAULT_SUMMER_BATCH_MULTIPLIER)
-    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
-
-    val summerProducer = node.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
-    val batcher = summerProducer.store.mergeableBatcher
-    val kvinj = new KeyValueInjection[(K, BatchID), (Timestamp, V)]
-    val formattedSummerSpout = spout.map {
-      case (time, (k: K, v: V)) => kvinj((k, batcher.batchOf(time)), (time, v))
-    }
-    implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
-    new KeyValueSpout[(K, BatchID), (Timestamp, V)](getStormSpout(formattedSummerSpout, fn), builder, keyValueShards)
+    val spoutProvider = SpoutProvider(this, stormDag, node, jobID)
+    val stormSpout = spoutProvider.apply
+    topologyBuilder.setSpout(nodeName, stormSpout, spoutProvider.sourceParallelism)
   }
 
   private def scheduleSummerBolt[K, V](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {

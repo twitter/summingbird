@@ -5,6 +5,7 @@ import backtype.storm.task.TopologyContext
 import backtype.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
 import backtype.storm.tuple.Fields
 import com.twitter.algebird.Semigroup
+import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.online.option.SummerBuilder
@@ -20,8 +21,7 @@ import com.twitter.util.{ Duration, Time }
  * This is a spout used when the spout is being followed by summer.
  * It uses a AggregatorOutputCollector on open.
  */
-
-class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBuilder, summerShards: KeyValueShards) extends SpoutProxy {
+class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBuilder, summerShards: KeyValueShards, flushExecTimeCounter: Incrementor, executeTimeCounter: Incrementor) extends SpoutProxy {
 
   private final val tickFrequency = Duration.fromMilliseconds(1000)
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
@@ -34,14 +34,14 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
   override def open(conf: util.Map[_, _],
     topologyContext: TopologyContext,
     outputCollector: SpoutOutputCollector): Unit = {
-    adapterCollector = new AggregatorOutputCollector(outputCollector, summerBuilder, summerShards)
+    adapterCollector = new AggregatorOutputCollector(outputCollector, summerBuilder, summerShards, flushExecTimeCounter, executeTimeCounter)
     in.open(conf, topologyContext, adapterCollector)
   }
 
+  /**
+   * This method is used to call the tick on the cache.
+   */
   override def nextTuple(): Unit = {
-    /*
-    This method is used to call the tick on the cache.
-    */
     if (Time.now - lastDump > tickFrequency) {
       adapterCollector.timerFlush()
       lastDump = Time.now
@@ -49,31 +49,32 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
     in.nextTuple()
   }
 
-  override def ack(msgId: Object): Unit = {
-    /*
-    The msgId is a list of individual messageIds of emitted tuples
-    which are aggregated and emitted out as a single tuple.
-     */
+  /**
+   * The AggregateOutputCollectors send the ack on list of messageIds
+   * which are crushedDown together. So this msgId is a list of individual messageIds.
+   */
+  override def ack(msgId: AnyRef): Unit = {
     val msgIds = convertToList(msgId)
     msgIds.foreach { super.ack(_) }
   }
 
-  override def fail(msgId: Object): Unit = {
-    /*
-    The msgId is a list of individual messageIds of emitted tuples
-    which are aggregated and emitted out as a single tuple.
-     */
+  /**
+   * The AggregateOutputCollectors send the fail on list of messageIds
+   * which are crushedDown together. So this msgId is a list of individual messageIds.
+   */
+  override def fail(msgId: AnyRef): Unit = {
     val msgIds = convertToList(msgId)
     msgIds.foreach { super.fail(_) }
   }
 
-  /*
-  The msgId Object is a list of individual messageIds of all the aggregated tuples.
+  /**
+   * The msgId Object is a list of individual messageIds of all the aggregated tuples.
    */
-  def convertToList(msgId: Object): TraversableOnce[AnyRef] = {
+  private def convertToList(msgId: AnyRef): TraversableOnce[AnyRef] = {
     msgId match {
-      case Some(s) => s.asInstanceOf[TraversableOnce[AnyRef]]
-      case None => List()
+      case Some(s: TraversableOnce[_]) => s.asInstanceOf[TraversableOnce[AnyRef]]
+      case None => Nil
+      case otherwise => throw new ClassCastException(s"expected Option[TraversableOnce[AnyRef]] found class: ${otherwise.getClass} with value: $otherwise")
     }
   }
 

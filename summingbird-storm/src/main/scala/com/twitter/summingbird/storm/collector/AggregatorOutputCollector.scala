@@ -4,8 +4,8 @@ import com.twitter.algebird.Semigroup
 import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.online.option.SummerBuilder
 import backtype.storm.spout.SpoutOutputCollector
-import com.twitter.algebird.util.summer.AsyncSummer
-import com.twitter.util.{ Await, Future, Time }
+import com.twitter.algebird.util.summer.{ AsyncSummer, Incrementor }
+import com.twitter.util.{ Await, Duration, Future, Time }
 import scala.collection.mutable.{ Map => MMap }
 import scala.collection.mutable.{ MutableList => MList }
 import scala.collection.{ Map => CMap }
@@ -16,50 +16,57 @@ import java.util.{ List => JList }
  *
  * AggregatorOutputCollector is a wrapper around the SpoutOutputCollector.
  * AsyncSummer is used to aggregate the tuples.
- * Different streams have seperated aggregators and caches.
- *
+ * Different streams have separate aggregators and caches.
  */
 class AggregatorOutputCollector[K, V: Semigroup](
     in: SpoutOutputCollector,
     summerBuilder: SummerBuilder,
-    summerShards: KeyValueShards) extends SpoutOutputCollector(in) {
+    summerShards: KeyValueShards,
+    flushExecTimeCounter: Incrementor,
+    executeTimeCounter: Incrementor) extends SpoutOutputCollector(in) {
 
-  // Map keeps track of summers corresponding to streams.
+  // Mapping from streams to summers
   private val spoutCaches = MMap[String, AsyncSummer[(K, V), Map[K, V]]]()
 
-  // The Map keeps track of batch of aggregated tuples' messageIds. It also has a stream level tracking.
-  private val streamMessageIdTracker = MMap[String, MMap[Int, MList[Object]]]()
+  // The Map keeps track of aggregated tuples' messageIds. It also has stream level tracking.
+  private val cachesByStreamId = MMap[String, MMap[Int, MList[Object]]]()
 
-  def timerFlush() = {
+  def timerFlush(): Unit = {
     /*
-    This is a flush called from the nextTuple() of the spout.
-    The timerFlush is triggered with tick frequency from the spout.
+    This method is invoked from the nextTuple() of the spout.
+    This is triggered with tick frequency of the spout.
      */
+    val startTime = Time.now
     spoutCaches.foreach {
       case (stream, cache) =>
         val tupsOut = cache.tick.map { convertToSummerInputFormat(_) }
         emitData(tupsOut, stream)
     }
+    flushExecTimeCounter.incrBy(Time.now.inMillis - startTime.inMillis)
   }
 
-  private def convertToSummerInputFormat(flushedCache: CMap[K, V]): CMap[Int, CMap[K, V]] =
+  private def convertToSummerInputFormat(flushedCache: CMap[_, _]): CMap[Int, CMap[_, _]] =
     flushedCache.groupBy { case (k, _) => summerShards.summerIdFor(k) }
 
   /*
     The method is invoked to handle the flushed cache caused by
     exceeding the memoryLimit, which is called within add method.
    */
-  private def emitData[K, V](cache: Future[TraversableOnce[(Int, CMap[K, V])]], streamId: String): JList[Integer] = {
+  private def emitData(cache: Future[TraversableOnce[(Int, CMap[_, _])]], streamId: String): JList[Integer] = {
+    val startTime = Time.now
     val flushedTups = Await.result(cache)
-    val messageIdsTracker = streamMessageIdTracker(streamId)
+    val messageIdsTracker = cachesByStreamId(streamId)
     val returns = flushedTups.map {
       case (k, v) =>
         val messageIds = messageIdsTracker.remove(k)
-        val list = List(k, v).asJava.asInstanceOf[JList[AnyRef]]
+        val list = new java.util.ArrayList[AnyRef](2)
+        list.add(k.asInstanceOf[AnyRef])
+        list.add(v.asInstanceOf[AnyRef])
         callEmit(messageIds, list, streamId)
     }
     val result = new java.util.ArrayList[Integer]()
     returns.filter(_ != null).foreach { result.addAll(_) }
+    executeTimeCounter.incrBy(Time.now.inMillis - startTime.inMillis)
     result
   }
 
@@ -80,15 +87,15 @@ class AggregatorOutputCollector[K, V: Semigroup](
   Method wraps the adding the tuple to the spoutCache along with adding the corresponding
   messageId to the messageId Tracker.
    */
-  private def add(tuple: (K, V), streamid: String, messageId: Option[AnyRef] = None) = {
+  private def add(tuple: (K, V), streamid: String, messageId: Option[AnyRef] = None): Future[Map[K, V]] = {
     if (messageId.isDefined)
       trackMessageId(tuple, messageId.get, streamid)
     addToCache(tuple, streamid)
   }
 
-  private def addToCache(tuple: (K, V), streamid: String) = {
+  private def addToCache(tuple: (K, V), streamid: String): Future[Map[K, V]] = {
     spoutCaches.get(streamid) match {
-      case Some(cac) => cac.add(tuple)
+      case Some(cache) => cache.add(tuple)
       case None => {
         spoutCaches(streamid) = summerBuilder.getSummer[K, V](implicitly[Semigroup[V]])
         spoutCaches(streamid).add(tuple)
@@ -97,10 +104,10 @@ class AggregatorOutputCollector[K, V: Semigroup](
   }
 
   private def trackMessageId(tuple: (K, V), o: AnyRef, s: String): Unit = {
-    val messageIdTracker = streamMessageIdTracker.getOrElse(s, MMap[Int, MList[Object]]())
+    val messageIdTracker = cachesByStreamId.getOrElse(s, MMap[Int, MList[Object]]())
     var messageIds = messageIdTracker.getOrElse(summerShards.summerIdFor(tuple._1), MList())
     messageIdTracker(summerShards.summerIdFor(tuple._1)) = messageIds += o
-    streamMessageIdTracker(s) = messageIdTracker
+    cachesByStreamId(s) = messageIdTracker
   }
 
   private def extractAndProcessElements(streamId: String, list: JList[AnyRef], messageId: Option[AnyRef] = None): JList[Integer] = {
