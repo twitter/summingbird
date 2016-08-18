@@ -92,10 +92,11 @@ case class SourceNode[P <: Platform[P]](override val members: List[Producer[P, _
  * @param producerToPriorityNames     Map every producer to list of names that apply to it.
  *                                    These are the names provided by named nodes.
  *                                    e.g. .name("mynode"). Names flow from tail to source.
+ *                                    Nearest name takes priority.
  * @param tail                        The TailProducer after stripping out named nodes.
  * @param producerToNode              Maps producer to node. Many producers can map into a
  *                                    single node.
- * @param nodes                       All nodes covered by this Dag.
+ * @param nodes                       All nodes of the Dag.
  * @param nodeToName                  Summingbird assigns a unique name to every node. This
  *                                    is the mapping of nodes to their unique names.
  *                                    Note that this name is different from the name used for
