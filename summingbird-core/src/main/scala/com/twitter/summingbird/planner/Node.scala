@@ -91,20 +91,19 @@ case class SourceNode[P <: Platform[P]](override val members: List[Producer[P, _
  * @param originalTail                The TailProducer before stripping out named nodes.
  * @param producerToPriorityNames     Map every producer to list of names that apply to it.
  *                                    These are the names provided by named nodes.
- *                                    e.g. .name("mynode"). Names flow backwards, i.e from
- *                                    source to tail.
+ *                                    e.g. .name("mynode"). Names flow from tail to source.
  * @param tail                        The TailProducer after stripping out named nodes.
- * @param producerToNode              What node does a producer map to. Many producers can
- *                                    map into a single node.
+ * @param producerToNode              Maps producer to node. Many producers can map into a
+ *                                    single node.
  * @param nodes                       All nodes covered by this Dag.
  * @param nodeToName                  Summingbird assigns a unique name to every node. This
  *                                    is that mapping. Note that this name is different from
  *                                    the name used for applying named options.
  * @param nameToNode                  Reverse of above mapping. What is the node for a given name.
- * @param dependenciesOfM             What nodes does this node immediately depend one. In
- *                                    other words, what are the parents of this node.
- * @param dependantsOfM               What nodes immediately depend on the given node. In
- *                                    other words what are the children of this node.
+ * @param dependenciesOfM             Nodes this node immediately depends on. In other words,
+ *                                    the parents of this node in node graph.
+ * @param dependantsOfM               Nodes that immediately depend on the given node. In
+ *                                    other words the children of this node in node graph.
  * @tparam P                          Platform, e.g. Scalding, Storm, ConcurrentMemory.
  */
 case class Dag[P <: Platform[P]](
@@ -181,8 +180,8 @@ object Dag {
         { (s: String) => s.replaceAll("""[\[\]]|\-""", "|") })
 
   def apply[P <: Platform[P], T](
-    originalTail: TailProducer[P, Any], 
-    producerToPriorityNames: Map[Producer[P, Any], List[String]], 
+    originalTail: TailProducer[P, Any],
+    producerToPriorityNames: Map[Producer[P, Any], List[String]],
     tail: TailProducer[P, Any],
     registry: List[Node[P]],
     sanitizeName: String => String): Dag[P] = {
