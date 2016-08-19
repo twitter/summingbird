@@ -31,6 +31,9 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
     declarer.declare(new Fields(AGG_KEY, AGG_VALUE))
   }
 
+  /**
+   * On open the outputCollector is wrapped with AggregateOutputCollector and fed to the KeyValueSpout.
+   */
   override def open(conf: util.Map[_, _],
     topologyContext: TopologyContext,
     outputCollector: SpoutOutputCollector): Unit = {

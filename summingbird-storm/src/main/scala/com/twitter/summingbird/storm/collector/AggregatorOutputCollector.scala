@@ -25,17 +25,20 @@ class AggregatorOutputCollector[K, V: Semigroup](
     flushExecTimeCounter: Incrementor,
     executeTimeCounter: Incrementor) extends SpoutOutputCollector(in) {
 
-  // Mapping from streams to summers
+  // An individual summer is created for each stream of data. This map keeps track of the stream and its corresponding summer.
   private val spoutCaches = MMap[String, AsyncSummer[(K, V), Map[K, V]]]()
 
-  // The Map keeps track of aggregated tuples' messageIds. It also has stream level tracking.
+  // As the crushDown happens at a stream level. We have a mapping from stream to the messageIds.
+  // The messageIds are further aggregated to the level of summerShards.
+  // The Map keeps track of aggregated tuples' messageIds as a list.
   private val cachesByStreamId = MMap[String, MMap[Int, MList[Object]]]()
 
+  /**
+   * This method is invoked from the nextTuple() of the spout.
+   * This is triggered with tick frequency of the spout.
+   */
   def timerFlush(): Unit = {
-    /*
-    This method is invoked from the nextTuple() of the spout.
-    This is triggered with tick frequency of the spout.
-     */
+
     val startTime = Time.now
     spoutCaches.foreach {
       case (stream, cache) =>
@@ -93,6 +96,10 @@ class AggregatorOutputCollector[K, V: Semigroup](
     addToCache(tuple, streamid)
   }
 
+  /*
+   * As there are separate summers for each stream. This method takes care of the stream lookup
+   * and adding the tuple to the corresponding cache.
+   */
   private def addToCache(tuple: (K, V), streamid: String): Future[Map[K, V]] = {
     spoutCaches.get(streamid) match {
       case Some(cache) => cache.add(tuple)
@@ -103,6 +110,11 @@ class AggregatorOutputCollector[K, V: Semigroup](
     }
   }
 
+  /**
+   * The lookup of stream is followed by the lookup on summerShard happens.
+   * The messageId is added to the corresponding group.
+   * All the messageIds are sent along with the crushed tuple.
+   */
   private def trackMessageId(tuple: (K, V), o: AnyRef, s: String): Unit = {
     val messageIdTracker = cachesByStreamId.getOrElse(s, MMap[Int, MList[Object]]())
     var messageIds = messageIdTracker.getOrElse(summerShards.summerIdFor(tuple._1), MList())

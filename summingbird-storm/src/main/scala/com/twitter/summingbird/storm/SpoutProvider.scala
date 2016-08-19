@@ -24,8 +24,10 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
 
   private def getOrElse[T <: AnyRef: Manifest](stormDag: Dag[Storm], queryNode: StormNode = node, default: T) = storm.getOrElse(stormDag, queryNode, default)
 
-  var sourceParallelism = getOrElse(stormDag, node, Constants.DEFAULT_SOURCE_PARALLELISM).parHint
+  private var sourceParallelism = getOrElse(stormDag, node, Constants.DEFAULT_SOURCE_PARALLELISM).parHint
   private val metrics = getOrElse(stormDag, node, Constants.DEFAULT_SPOUT_STORM_METRICS)
+
+  private[storm] def getSpoutParallelism : Int = sourceParallelism
 
   private def computerSpout(): Spout[(Timestamp, Any)] = {
     val (spout, parOpt) = node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
@@ -50,7 +52,7 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
   }
 
   // Tormenta bug when openHook might get lost if it doesn't happen right before the getSpout.
-  private def getStormSpout[T](spout: Spout[T], register: Externalizer[(TopologyContext) => Unit]) = {
+  private def getStormSpout[T](spout: Spout[T], register: Externalizer[(TopologyContext) => Unit]): IRichSpout = {
     val hookedSpout = spout.openHook(register.get)
     hookedSpout.getSpout
   }
@@ -58,7 +60,7 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
   /**
    * This method checks that sourceParallelism is greater than flatMapParallelism when FMMergeableWithSource is opted-in
    */
-  private def checkParallelisms(stormDag: Dag[Storm], node: StormNode, sourceParallelism: Int) = {
+  private def checkParallelisms(stormDag: Dag[Storm], node: StormNode, sourceParallelism: Int): Unit = {
     val isMergeableWithSource = getOrElse(stormDag, node, Constants.DEFAULT_FM_MERGEABLE_WITH_SOURCE).get
     if (isMergeableWithSource) {
       val flatMapParallelism = getOrElse(stormDag, node, Constants.DEFAULT_FM_PARALLELISM).parHint
@@ -71,7 +73,11 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
   /**
    * This function takes the metrics and counters to register to the TopologyContext of a JobID and outputs a function which can be called on openHook.
    */
-  private def createRegistrationFunction(metrics: SpoutStormMetrics, counters: Seq[(Group, Name)], jobID: JobId): Externalizer[(TopologyContext) => Unit] = {
+  private def createRegistrationFunction(
+      metrics: SpoutStormMetrics,
+      counters: Seq[(Group, Name)],
+      jobID: JobId): Externalizer[(TopologyContext) => Unit] = {
+
     Externalizer({ context: TopologyContext =>
       // Register metrics passed in SpoutStormMetrics option.
       metrics.metrics().foreach {
@@ -84,9 +90,22 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
     })
   }
 
-  def counter(jobID: JobId, nodeName: Group, counterName: Name) = new Counter(Group("summingbird." + nodeName.getString), counterName)(jobID) with Incrementor
 
-  private def createSpoutToFeedSummer[K, V](stormDag: Dag[Storm], node: StormNode, builder: SummerBuilder, spout: Spout[(Timestamp, (K, V))], fn: Externalizer[(TopologyContext) => Unit], flushExecTimeCounter: Incrementor, executeTimeCounter: Incrementor): IRichSpout = {
+  private def counter(jobID: JobId, nodeName: Group, counterName: Name) = new Counter(Group("summingbird." + nodeName.getString), counterName)(jobID) with Incrementor
+
+
+  /*
+   * This method formats the tuples to batched format and wraps the spout into KeyValueSpout.
+   */
+  private def createSpoutToFeedSummer[K, V](
+      stormDag: Dag[Storm],
+      node: StormNode,
+      builder: SummerBuilder,
+      spout: Spout[(Timestamp, (K, V))],
+      fn: Externalizer[(TopologyContext) => Unit],
+      flushExecTimeCounter: Incrementor,
+      executeTimeCounter: Incrementor): IRichSpout = {
+
     val summerParalellism = getOrElse(stormDag, node, Constants.DEFAULT_SUMMER_PARALLELISM)
     val summerBatchMultiplier = getOrElse(stormDag, node, Constants.DEFAULT_SUMMER_BATCH_MULTIPLIER)
     val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
@@ -100,29 +119,36 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
     new KeyValueSpout[(K, BatchID), (Timestamp, V)](getStormSpout(formattedSummerSpout, fn), builder, keyValueShards, flushExecTimeCounter, executeTimeCounter)
   }
 
-  private def getKeyValueSpout[K, V](tormentaSpout: Spout[(Timestamp, (K, V))], sNode: StormNode): IRichSpout = {
-    val builder = BuildSummer(storm, stormDag, node, jobID)
+  /**
+   * This method creates the counters expicit for the KeyValueSpout.
+   * The function to register all the counters is created with all the registered metrics.
+   */
+  private def getKeyValueSpout[K, V](
+      tormentaSpout: Spout[(Timestamp, (K, V))],
+      sNode: StormNode): IRichSpout = {
 
+    val builder = BuildSummer(storm, stormDag, node, jobID)
     val nodeName = stormDag.getNodeName(node)
     val flushExecTimeCounter = counter(jobID, Group(nodeName), Name("spoutFlushExecTime"))
-    val executeTimeCounter = counter(jobID, Group(nodeName), Name("spoutExecTime"))
-
-    println("**********************************")
-    println(getCountersForJob(jobID))
-    println("**********************************")
-
+    val executeTimeCounter = counter(jobID, Group(nodeName), Name("spoutEmitExecTime"))
     val registerAllMetricsAndCounters = createRegistrationFunction(metrics, getCountersForJob(jobID), jobID)
     createSpoutToFeedSummer[K, V](stormDag, sNode, builder, tormentaSpout, registerAllMetricsAndCounters, flushExecTimeCounter, executeTimeCounter)
   }
 
+  /**
+   * This method registers the common counters and gets the stormSpout.
+   */
   private def getSpout(tormentaSpout: Spout[(Timestamp, Any)]): IRichSpout = {
     val registerAllMetricsAndCounters = createRegistrationFunction(metrics, getCountersForJob(jobID), jobID)
     getStormSpout(tormentaSpout, registerAllMetricsAndCounters)
   }
 
+  /**
+   * This is the decision logic.
+   * If the spout is followed by a summer wraps the spout in KeyValueSpout
+   */
   def apply: IRichSpout = {
     val tormentaSpout = computerSpout()
-
     val summerOpt: Option[SummerNode[Storm]] = stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
     summerOpt match {
       case Some(summerNode) => getKeyValueSpout[Any, Any](tormentaSpout.asInstanceOf[Spout[(Timestamp, (Any, Any))]], summerNode)

@@ -176,7 +176,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val nodeName = stormDag.getNodeName(node)
     val spoutProvider = SpoutProvider(this, stormDag, node, jobID)
     val stormSpout = spoutProvider.apply
-    topologyBuilder.setSpout(nodeName, stormSpout, spoutProvider.sourceParallelism)
+    topologyBuilder.setSpout(nodeName, stormSpout, spoutProvider.getSpoutParallelism)
   }
 
   private def scheduleSummerBolt[K, V](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
