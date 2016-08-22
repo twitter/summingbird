@@ -10,7 +10,6 @@ import scala.collection.mutable.{ Map => MMap, MutableList => MList }
 import scala.collection.{ Map => CMap }
 import scala.collection.JavaConverters._
 import java.util.{ List => JList }
-import scala.collection.mutable.{ LongMap => MLongMap }
 
 /**
  *
@@ -31,7 +30,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
   // As the crushDown happens at a stream level. We have a mapping from stream to the messageIds.
   // The messageIds are further aggregated to the level of summerShards.
   // The Map keeps track of aggregated tuples' messageIds as a list.
-  private val streamMessageIdTracker = MMap[String, MLongMap[MList[Object]]]()
+  private val streamMessageIdTracker = MMap[String, MMap[Int, MList[Object]]]()
 
   /**
    * This method is invoked from the nextTuple() of the spout.
@@ -58,7 +57,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
   private def emitData(cache: Future[TraversableOnce[(Int, CMap[_, _])]], streamId: String): JList[Integer] = {
     val startTime = Time.now
     val flushedTups = Await.result(cache)
-    val messageIdsTracker = streamMessageIdTracker.getOrElse(streamId, MLongMap[MList[Object]]())
+    val messageIdsTracker = streamMessageIdTracker.getOrElse(streamId, MMap[Int, MList[Object]]())
     val returns = flushedTups.map {
       case (k, v) =>
         val messageIds = messageIdsTracker.remove(k)
@@ -111,7 +110,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
    * All the messageIds are sent along with the crushed tuple.
    */
   private def trackMessageId(tuple: (K, V), o: AnyRef, s: String): Unit = {
-    val messageIdTracker = streamMessageIdTracker.getOrElseUpdate(s, MLongMap[MList[Object]]())
+    val messageIdTracker = streamMessageIdTracker.getOrElseUpdate(s, MMap[Int, MList[Object]]())
     val messageIds = messageIdTracker.getOrElseUpdate(summerShards.summerIdFor(tuple._1), MList())
     messageIds += o
   }
