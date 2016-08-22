@@ -119,8 +119,8 @@ class PlannerSpec extends WordSpec {
     val fmnValues = flatMapnodes.values
     fmnValues.foreach {
       x: List[Node[Memory]] =>
-          assert(x.size == 1)
-          assert(x(0).toString contains "SummerNode")
+        assert(x.size == 1)
+        assert(x(0).toString contains "SummerNode")
     }
   }
 
@@ -144,9 +144,9 @@ class PlannerSpec extends WordSpec {
     val srcNodes = dependents.filterKeys { _.toString contains "SourceNode" }
     assert(srcNodes.keySet.size == 2)
     srcNodes.keySet.foreach { x =>
-        val dependant = dependents.get(x)
-        assert(dependant.size == 1)
-        assert(dependant.head.toString contains "SummerNode")
+      val dependant = dependents.get(x)
+      assert(dependant.size == 1)
+      assert(dependant.head.toString contains "SummerNode")
     }
   }
 
