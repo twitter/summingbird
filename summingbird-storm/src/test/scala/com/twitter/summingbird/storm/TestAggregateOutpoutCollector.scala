@@ -8,11 +8,11 @@ import org.scalacheck._
 /**
  * Created by pnaramsetti on 8/19/16.
  */
-class TestAggregateOutpoutCollector(in: ISpoutOutputCollector, expected: MSet[(Int, Map[_, _])]) extends SpoutOutputCollector(in) {
+class TestAggregateOutpoutCollector(in: ISpoutOutputCollector, expectedTuplesToBeSent: MSet[(Int, Map[_, _])]) extends SpoutOutputCollector(in) {
 
-  private val expectedTuples = expected
+  private val expectedTuples = expectedTuplesToBeSent
 
-  def checkSize: Int = {
+  def getSize: Int = {
     expectedTuples.size
   }
 
@@ -38,7 +38,7 @@ class TestAggregateOutpoutCollector(in: ISpoutOutputCollector, expected: MSet[(I
       println(("Expected tuple (%s, %s) is not expected to be emitted".format(key, value)))
       assert(false)
     }
-    null
+    new util.ArrayList[Integer]
   }
 
   override def emit(

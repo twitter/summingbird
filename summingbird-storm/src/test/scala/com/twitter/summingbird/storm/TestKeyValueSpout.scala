@@ -29,12 +29,12 @@ import scala.collection.mutable.{ Set => MSet }
  */
 
 object TestKeyValueSpout {
-  def getSyncSummingQueueBuildSummer(batchSize: Int, flushFrequency: Int, memFlushPercent: Int) = {
+  def getSyncSummingQueueBuildSummer(batchSize: Int, flushFrequency: Duration, memFlushPercent: Int) = {
     new SummerBuilder {
       def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {
         new SyncSummingQueue[K, V](
           BufferSize(batchSize),
-          FlushFrequency(Duration.fromSeconds(flushFrequency)),
+          FlushFrequency(flushFrequency),
           MemoryFlushPercent(memFlushPercent),
           Counter("memory"),
           Counter("timeout"),
@@ -54,7 +54,7 @@ class TestKeyValueSpout extends WordSpec {
     }
     val flushCounter = Counter("flushTime")
     val execCounter = Counter("execTime")
-    val outputCollector: ISpoutOutputCollector = new MyISpoutOutputCollector
+    val outputCollector: ISpoutOutputCollector = new MockedISpoutOutputCollector
     val testSpout = new KeyValueSpout[(Int, BatchID), (Timestamp, Int)](formattedSummerSpout.getSpout, summer, KeyValueShards(1), flushCounter, execCounter)
     val myCollector = new TestAggregateOutpoutCollector(outputCollector, expected)
     testSpout.open(null, null, myCollector)
@@ -62,7 +62,7 @@ class TestKeyValueSpout extends WordSpec {
   }
 
   "Check two batches are being sent - 4 different tuples" in {
-    val summer = TestKeyValueSpout.getSyncSummingQueueBuildSummer(1, 1, 1)
+    val summer = TestKeyValueSpout.getSyncSummingQueueBuildSummer(1, Duration.fromSeconds(1), 1)
     val timeStamp = Timestamp.now
 
     //input
@@ -77,11 +77,11 @@ class TestKeyValueSpout extends WordSpec {
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
-    assert(collector.checkSize == 0)
+    assert(collector.getSize == 0)
   }
 
   "Tuples are to be aggregated - all four tuples should be crushed down" in {
-    val summer = TestKeyValueSpout.getSyncSummingQueueBuildSummer(2, 1, 1)
+    val summer = TestKeyValueSpout.getSyncSummingQueueBuildSummer(2, Duration.fromSeconds(1), 1)
     val timeStamp = Timestamp.now
 
     //input
@@ -95,11 +95,11 @@ class TestKeyValueSpout extends WordSpec {
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
-    assert(collector.checkSize == 0)
+    assert(collector.getSize == 0)
   }
 
   "No tuples should be emitted without timerflush - batch size greater than number of tuples" in {
-    val summer = TestKeyValueSpout.getSyncSummingQueueBuildSummer(10, 1, 1)
+    val summer = TestKeyValueSpout.getSyncSummingQueueBuildSummer(10, Duration.fromSeconds(1), 1)
     val timeStamp = Timestamp.now
 
     //input
@@ -112,11 +112,11 @@ class TestKeyValueSpout extends WordSpec {
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
-    assert(collector.checkSize == 0)
+    assert(collector.getSize == 0)
   }
 
   "One batch should be sent on timerFlush - batch size greater than number of tuples" in {
-    val summer = TestKeyValueSpout.getSyncSummingQueueBuildSummer(10, 1, 1)
+    val summer = TestKeyValueSpout.getSyncSummingQueueBuildSummer(10, Duration.fromSeconds(1), 1)
     val timeStamp = Timestamp.now
 
     //input
@@ -130,13 +130,13 @@ class TestKeyValueSpout extends WordSpec {
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
-    Thread.sleep(1000)
+    Thread.sleep(1200)
     spout.nextTuple()
-    assert(collector.checkSize == 0)
+    assert(collector.getSize == 0)
   }
 }
 
-class MyISpoutOutputCollector extends ISpoutOutputCollector {
+class MockedISpoutOutputCollector extends ISpoutOutputCollector {
   override def reportError(throwable: Throwable): Unit = ???
 
   override def emitDirect(
