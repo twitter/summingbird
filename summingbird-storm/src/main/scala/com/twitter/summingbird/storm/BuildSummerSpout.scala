@@ -65,47 +65,46 @@ object BuildSummerSpout {
     val insertCounter = counter(jobID, Group(nodeName), Name("inserts"))
     val insertFailCounter = counter(jobID, Group(nodeName), Name("insertFail"))
 
-      val softMemoryFlush = storm.getOrElse(dag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
-      logger.info(s"[$nodeName] softMemoryFlush : ${softMemoryFlush.get}")
+    val softMemoryFlush = storm.getOrElse(dag, node, DEFAULT_SOFT_MEMORY_FLUSH_PERCENT)
+    logger.info(s"[$nodeName] softMemoryFlush : ${softMemoryFlush.get}")
 
-      val flushFrequency = storm.getOrElse(dag, node, DEFAULT_FLUSH_FREQUENCY)
-      logger.info(s"[$nodeName] maxWaiting: ${flushFrequency.get}")
+    val flushFrequency = storm.getOrElse(dag, node, DEFAULT_FLUSH_FREQUENCY)
+    logger.info(s"[$nodeName] maxWaiting: ${flushFrequency.get}")
 
-      val useAsyncCache = storm.getOrElse(dag, node, DEFAULT_USE_ASYNC_CACHE)
-      logger.info(s"[$nodeName] useAsyncCache : ${useAsyncCache.get}")
+    val useAsyncCache = storm.getOrElse(dag, node, DEFAULT_USE_ASYNC_CACHE)
+    logger.info(s"[$nodeName] useAsyncCache : ${useAsyncCache.get}")
 
+    val asyncPoolSize = storm.getOrElse(dag, node, DEFAULT_ASYNC_POOL_SIZE)
+    logger.info(s"[$nodeName] asyncPoolSize : ${asyncPoolSize.get}")
 
-        val asyncPoolSize = storm.getOrElse(dag, node, DEFAULT_ASYNC_POOL_SIZE)
-        logger.info(s"[$nodeName] asyncPoolSize : ${asyncPoolSize.get}")
+    val valueCombinerCrushSize = storm.getOrElse(dag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
+    logger.info(s"[$nodeName] valueCombinerCrushSize : ${valueCombinerCrushSize.get}")
 
-        val valueCombinerCrushSize = storm.getOrElse(dag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
-        logger.info(s"[$nodeName] valueCombinerCrushSize : ${valueCombinerCrushSize.get}")
-
-        new SummerBuilder {
-          def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {
-            val executor = Executors.newFixedThreadPool(asyncPoolSize.get)
-            val futurePool = FuturePool(executor)
-            val summer = new AsyncListSum[K, V](BufferSize(cacheSize.lowerBound),
-              FlushFrequency(flushFrequency.get),
-              MemoryFlushPercent(softMemoryFlush.get),
-              memoryCounter,
-              timeoutCounter,
-              insertCounter,
-              insertFailCounter,
-              sizeCounter,
-              tupleInCounter,
-              tupleOutCounter,
-              futurePool,
-              Compact(false),
-              CompactionSize(0))
-            summer.withCleanup(() => {
-              Future {
-                executor.shutdown
-                executor.awaitTermination(10, TimeUnit.SECONDS)
-              }
-            })
+    new SummerBuilder {
+      def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {
+        val executor = Executors.newFixedThreadPool(asyncPoolSize.get)
+        val futurePool = FuturePool(executor)
+        val summer = new AsyncListSum[K, V](BufferSize(cacheSize.lowerBound),
+          FlushFrequency(flushFrequency.get),
+          MemoryFlushPercent(softMemoryFlush.get),
+          memoryCounter,
+          timeoutCounter,
+          insertCounter,
+          insertFailCounter,
+          sizeCounter,
+          tupleInCounter,
+          tupleOutCounter,
+          futurePool,
+          Compact(false),
+          CompactionSize(0))
+        summer.withCleanup(() => {
+          Future {
+            executor.shutdown
+            executor.awaitTermination(10, TimeUnit.SECONDS)
           }
-        }
+        })
+      }
+    }
   }
 
   def counter(jobID: JobId, nodeName: Group, counterName: Name) = new Counter(Group("summingbird." + nodeName.getString), counterName)(jobID) with Incrementor

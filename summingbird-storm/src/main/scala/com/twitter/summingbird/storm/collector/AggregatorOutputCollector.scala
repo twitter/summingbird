@@ -25,7 +25,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
     executeTimeCounter: Incrementor) extends SpoutOutputCollector(in) {
 
   // An individual summer is created for each stream of data. This map keeps track of the stream and its corresponding summer.
-  private val spoutCaches = MMap[String, AsyncSummer[(K, V), Map[K, V]]]()
+  private val cacheByStreamId = MMap[String, AsyncSummer[(K, V), Map[K, V]]]()
 
   // As the crushDown happens at a stream level. We have a mapping from stream to the messageIds.
   // The messageIds are further aggregated to the level of summerShards.
@@ -37,9 +37,8 @@ class AggregatorOutputCollector[K, V: Semigroup](
    * This is triggered with tick frequency of the spout.
    */
   def timerFlush(): Unit = {
-
     val startTime = Time.now
-    spoutCaches.foreach {
+    cacheByStreamId.foreach {
       case (stream, cache) =>
         val tupsOut = cache.tick.map { convertToSummerInputFormat(_) }
         emitData(tupsOut, stream)
@@ -54,9 +53,9 @@ class AggregatorOutputCollector[K, V: Semigroup](
     The method is invoked to handle the flushed cache caused by
     exceeding the memoryLimit, which is called within add method.
    */
-  private def emitData(cache: Future[TraversableOnce[(Int, CMap[_, _])]], streamId: String): JList[Integer] = {
+  private def emitData(tuples: Future[TraversableOnce[(Int, CMap[_, _])]], streamId: String): JList[Integer] = {
     val startTime = Time.now
-    val flushedTups = Await.result(cache)
+    val flushedTups = Await.result(tuples)
     val messageIdsTracker = streamMessageIdTracker.getOrElse(streamId, MMap[Int, MList[Object]]())
     val returns = flushedTups.map {
       case (k, v) =>
@@ -100,7 +99,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
    * and adding the tuple to the corresponding cache.
    */
   private def addToCache(tuple: (K, V), streamid: String): Future[Map[K, V]] = {
-    spoutCaches.getOrElseUpdate(streamid, summerBuilder.getSummer[K, V](implicitly[Semigroup[V]]))
+    cacheByStreamId.getOrElseUpdate(streamid, summerBuilder.getSummer[K, V](implicitly[Semigroup[V]]))
       .add(tuple)
   }
 
