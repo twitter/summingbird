@@ -102,7 +102,7 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
   private def getKeyValueSpout[K, V](
     tormentaSpout: Spout[(Timestamp, (K, V))],
     sNode: StormNode): IRichSpout = {
-    val builder = BuildSummerSpout(storm, stormDag, node, jobID)
+    val builder = BuildSummer(storm, stormDag, node, jobID)
     val nodeName = stormDag.getNodeName(node)
     val flushExecTimeCounter = counter(Group(nodeName), Name("spoutFlushExecTime"))
     val executeTimeCounter = counter(Group(nodeName), Name("spoutEmitExecTime"))
