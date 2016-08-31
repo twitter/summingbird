@@ -35,13 +35,12 @@ import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.chill.SBChillRegistrar
 import com.twitter.summingbird.online._
 import com.twitter.summingbird.online.executor.InputState
-import com.twitter.summingbird.online.option.{ SourceParallelism, _ }
+import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner._
-import com.twitter.summingbird.storm.spout.KeyValueSpout
 import com.twitter.summingbird.storm.StormMetric
 import com.twitter.summingbird.storm.Constants
-import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, SpoutStormMetrics }
+import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.tormenta.spout.{ Spout, SpoutProxy }

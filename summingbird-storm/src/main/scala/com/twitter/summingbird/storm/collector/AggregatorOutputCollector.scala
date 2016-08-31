@@ -76,11 +76,11 @@ class AggregatorOutputCollector[K, V: Semigroup](
    based on the arguments.
   */
   private def callEmit(messageIds: Option[TraversableOnce[AnyRef]], list: JList[AnyRef], stream: String): JList[Integer] = {
-    (messageIds.isEmpty, stream.isEmpty) match {
-      case (true, true) => in.emit(list)
-      case (true, false) => in.emit(stream, list)
-      case (false, true) => in.emit(list, messageIds)
-      case (false, false) => in.emit(stream, list, messageIds)
+    (messageIds, stream.isEmpty) match {
+      case (None, true) => in.emit(list)
+      case (None, false) => in.emit(stream, list)
+      case (Some(ids), true) => in.emit(list, ids)
+      case (Some(ids), false) => in.emit(stream, list, ids)
     }
   }
 

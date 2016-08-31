@@ -57,7 +57,7 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
    * which are crushedDown together. So this msgId is a list of individual messageIds.
    */
   override def ack(msgId: AnyRef): Unit = {
-    val msgIds = convertToList(msgId)
+    val msgIds = msgId.asInstanceOf[TraversableOnce[AnyRef]]
     msgIds.foreach { super.ack(_) }
   }
 
@@ -66,19 +66,8 @@ class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBu
    * which are crushedDown together. So this msgId is a list of individual messageIds.
    */
   override def fail(msgId: AnyRef): Unit = {
-    val msgIds = convertToList(msgId)
+    val msgIds = msgId.asInstanceOf[TraversableOnce[AnyRef]]
     msgIds.foreach { super.fail(_) }
-  }
-
-  /**
-   * The msgId Object is a list of individual messageIds of all the aggregated tuples.
-   */
-  private def convertToList(msgId: AnyRef): TraversableOnce[AnyRef] = {
-    msgId match {
-      case Some(s: TraversableOnce[_]) => s.asInstanceOf[TraversableOnce[AnyRef]]
-      case None => Nil
-      case otherwise => throw new ClassCastException(s"expected Option[TraversableOnce[AnyRef]] found class: ${otherwise.getClass} with value: $otherwise")
-    }
   }
 
   override protected def self: IRichSpout = in
