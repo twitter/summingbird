@@ -90,13 +90,13 @@ Boom. Counts for the word `"i"` are growing in realtime.
 
 See the [wiki page](https://github.com/twitter/summingbird/wiki/Getting-started-with-summingbird-example) for a more detailed explanation of the configuration required to get this job up and running and some ideas for where to go next.
 
-## Community and Documentation
-
-This, and all [github.com/twitter](https://github.com/twitter) projects, are under the [Twitter Open Source Code of Conduct](https://engineering.twitter.com/opensource/code-of-conduct). Additionally, see the [Typelevel Code of Conduct](http://typelevel.org/conduct) for specific examples of harassing behavior that are not tolerated.
+## Documentation
 
 To learn more and find links to tutorials and information around the web, check out the [Summingbird Wiki](https://github.com/twitter/summingbird/wiki).
 
 The latest ScalaDocs are hosted on Summingbird's [Github Project Page](http://twitter.github.io/summingbird).
+
+## Contact
 
 Discussion occurs primarily on the [Summingbird mailing list](https://groups.google.com/forum/#!forum/summingbird). Issues should be reported on the GitHub issue tracker. Simpler issues appropriate for first-time contributors looking to help out are tagged "newbie".
 
@@ -105,6 +105,17 @@ IRC: freenode channel #summingbird
 Follow [@summingbird](https://twitter.com/summingbird) on Twitter for updates.
 
 Please feel free to use the beautiful [Summingbird logo](https://drive.google.com/folderview?id=0B3i3pDi3yVgNMHV0TXVkTGZteWM&usp=sharing) artwork anywhere.
+
+## Get Involved + Code of Conduct
+Pull requests and bug reports are always welcome!
+
+We use a lightweight form of project governence inspired by the one used by Apache projects.
+Please see [Contributing and Committership](https://github.com/twitter/analytics-infra-governance#contributing-and-committership) for our code of conduct and our pull request review process.
+The TL;DR is send us a pull request, iterate on the feedback + discussion, and get a +1 from a [Committer](COMMITTERS.md) in order to get your PR accepted.
+
+The current list of active committers (who can +1 a pull request) can be found here: [Committers](COMMITTERS.md)
+
+A list of contributors to the project can be found here: [Contributors](https://github.com/twitter/summingbird/graphs/contributors)
 
 ## Maven
 
