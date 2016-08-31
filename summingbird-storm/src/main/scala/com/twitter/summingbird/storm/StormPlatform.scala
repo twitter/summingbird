@@ -24,7 +24,6 @@ import backtype.storm.spout.SpoutOutputCollector
 import backtype.storm.topology.{ BoltDeclarer, IRichBolt, IRichSpout, OutputFieldsDeclarer, TopologyBuilder }
 import backtype.storm.tuple.{ Fields, Tuple }
 import backtype.storm.{ LocalCluster, StormSubmitter, Config => BacktypeStormConfig }
-import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.bijection.{ Base64String, Injection }
 import com.twitter.chill.IKryoRegistrar
