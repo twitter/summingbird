@@ -8,7 +8,12 @@ import backtype.storm.tuple.Values
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.{ BufferSize, FlushFrequency, Incrementor, MemoryFlushPercent, SyncSummingQueue }
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.SummerBuilder
+import com.twitter.summingbird.online.option.{
+  SummerBuilder,
+  MaxWaitingFutures,
+  MaxFutureWaitTime,
+  MaxEmitPerExecute
+}
 import com.twitter.summingbird.storm.spout.KeyValueSpout
 import com.twitter.tormenta.spout.{ BaseSpout, Spout }
 import com.twitter.util.Duration
@@ -55,7 +60,16 @@ class TestKeyValueSpout extends WordSpec {
     val flushCounter = Counter("flushTime")
     val execCounter = Counter("execTime")
     val outputCollector: ISpoutOutputCollector = new MockedISpoutOutputCollector
-    val testSpout = new KeyValueSpout[(Int, BatchID), (Timestamp, Int)](formattedSummerSpout.getSpout, summer, KeyValueShards(1), flushCounter, execCounter)
+    val testSpout = new KeyValueSpout[(Int, BatchID), (Timestamp, Int)](
+      formattedSummerSpout.getSpout,
+      summer,
+      MaxWaitingFutures(100),
+      MaxFutureWaitTime(Duration.fromSeconds(10)),
+      MaxEmitPerExecute(10),
+      KeyValueShards(1),
+      flushCounter,
+      execCounter
+    )
     val myCollector = new TestAggregateOutpoutCollector(outputCollector, expected)
     testSpout.open(null, null, myCollector)
     (testSpout, myCollector)

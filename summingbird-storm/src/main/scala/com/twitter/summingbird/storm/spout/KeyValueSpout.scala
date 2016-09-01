@@ -7,7 +7,12 @@ import backtype.storm.tuple.Fields
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.SummerBuilder
+import com.twitter.summingbird.online.option.{
+  SummerBuilder,
+  MaxWaitingFutures,
+  MaxFutureWaitTime,
+  MaxEmitPerExecute
+}
 import com.twitter.summingbird.storm.Constants._
 import com.twitter.tormenta.spout.SpoutProxy
 import com.twitter.summingbird.storm.collector.AggregatorOutputCollector
@@ -21,6 +26,9 @@ import java.util.{ Map => JMap }
 class KeyValueSpout[K, V: Semigroup](
     protected val self: IRichSpout,
     summerBuilder: SummerBuilder,
+    maxWaitingFutures: MaxWaitingFutures,
+    maxWaitingTime: MaxFutureWaitTime,
+    maxEmitPerExec: MaxEmitPerExecute,
     summerShards: KeyValueShards,
     flushExecTimeCounter: Incrementor,
     executeTimeCounter: Incrementor) extends SpoutProxy {
@@ -42,6 +50,9 @@ class KeyValueSpout[K, V: Semigroup](
     adapterCollector = new AggregatorOutputCollector(
       outputCollector,
       summerBuilder,
+      maxWaitingFutures,
+      maxWaitingTime,
+      maxEmitPerExec,
       summerShards,
       flushExecTimeCounter,
       executeTimeCounter,

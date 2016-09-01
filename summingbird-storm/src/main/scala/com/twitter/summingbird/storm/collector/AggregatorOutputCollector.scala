@@ -17,6 +17,7 @@ import scala.collection.mutable.{ ListBuffer, Map => MMap, MutableList => MList 
 import scala.collection.{ Map => CMap }
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success }
+
 /**
  *
  * AggregatorOutputCollector is a wrapper around the SpoutOutputCollector.
@@ -26,6 +27,9 @@ import scala.util.{ Failure, Success }
 class AggregatorOutputCollector[K, V: Semigroup](
     in: SpoutOutputCollector,
     summerBuilder: SummerBuilder,
+    maxWaitingFutures: MaxWaitingFutures,
+    maxWaitingTime: MaxFutureWaitTime,
+    maxEmitPerExec: MaxEmitPerExecute,
     summerShards: KeyValueShards,
     flushExecTimeCounter: Incrementor,
     executeTimeCounter: Incrementor,
@@ -75,7 +79,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
     val startTime = Time.now
     val futureQueue = futureQueueByStreamId.getOrElseUpdate(
       streamId,
-      new FutureQueue(MaxWaitingFutures(1000), MaxFutureWaitTime(Duration.fromMilliseconds(10000)), MaxEmitPerExecute(10000))
+      new FutureQueue(maxWaitingFutures, maxWaitingTime, maxEmitPerExec)
     )
     futureQueue.addAllFuture(Nil, tuples)
 
@@ -117,7 +121,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
   private def add(tuple: (K, V), streamId: String, messageId: Option[AnyRef] = None): Future[Map[K, (Seq[Object], V)]] = {
     val buffer = messageId.map { id => ListBuffer(id) }.getOrElse(Nil)
     val (k, v) = tuple
-    cacheByStreamId.getOrElseUpdate(streamId, summerBuilder.getSummer[K, (OutputMessageId, V)])
+    cacheByStreamId.getOrElseUpdate(streamId, summerBuilder.getSummer[K, (Seq[Object], V)](implicitly[Semigroup[(Seq[Object], V)]]))
       .add(k -> ((buffer, v)))
   }
 
