@@ -1,16 +1,22 @@
 package com.twitter.summingbird.storm.collector
 
+import backtype.storm.spout.SpoutOutputCollector
 import com.twitter.algebird.Semigroup
+import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.SummerBuilder
-import backtype.storm.spout.{ ISpoutOutputCollector, SpoutOutputCollector }
+import com.twitter.summingbird.online.option.{
+  SummerBuilder,
+  MaxWaitingFutures,
+  MaxFutureWaitTime,
+  MaxEmitPerExecute
+}
 import com.twitter.algebird.util.summer.{ AsyncSummer, Incrementor }
 import com.twitter.util.{ Await, Duration, Future, Time }
-import scala.collection.mutable.{ Map => MMap, MutableList => MList }
+import java.util.{ List => JList }
+import scala.collection.mutable.{ ListBuffer, Map => MMap, MutableList => MList }
 import scala.collection.{ Map => CMap }
 import scala.collection.JavaConverters._
-import java.util.{ List => JList }
-
+import scala.util.{ Failure, Success }
 /**
  *
  * AggregatorOutputCollector is a wrapper around the SpoutOutputCollector.
@@ -22,15 +28,18 @@ class AggregatorOutputCollector[K, V: Semigroup](
     summerBuilder: SummerBuilder,
     summerShards: KeyValueShards,
     flushExecTimeCounter: Incrementor,
-    executeTimeCounter: Incrementor) extends SpoutOutputCollector(in) {
+    executeTimeCounter: Incrementor,
+    failHandler: AnyRef => Unit) extends SpoutOutputCollector(in) {
+
+  type AggKey = Int
+  type AggValue = CMap[K, V]
+  type OutputTuple = (AggKey, AggValue)
+  type OutputMessageId = TraversableOnce[Object]
 
   // An individual summer is created for each stream of data. This map keeps track of the stream and its corresponding summer.
-  private val cacheByStreamId = MMap[String, AsyncSummer[(K, V), Map[K, V]]]()
+  private val cacheByStreamId = MMap.empty[String, AsyncSummer[(K, (Seq[Object], V)), Map[K, (Seq[Object], V)]]]
 
-  // As the crushDown happens at a stream level. We have a mapping from stream to the messageIds.
-  // The messageIds are further aggregated to the level of summerShards.
-  // The Map keeps track of aggregated tuples' messageIds as a list.
-  private val streamMessageIdTracker = MMap[String, MMap[Int, MList[Object]]]()
+  private val futureQueueByStreamId = MMap.empty[String, FutureQueue[OutputMessageId, OutputTuple]]
 
   /**
    * This method is invoked from the nextTuple() of the spout.
@@ -46,27 +55,44 @@ class AggregatorOutputCollector[K, V: Semigroup](
     flushExecTimeCounter.incrBy(Time.now.inMillis - startTime.inMillis)
   }
 
-  private def convertToSummerInputFormat(flushedCache: CMap[_, _]): CMap[Int, CMap[_, _]] =
-    flushedCache.groupBy { case (k, _) => summerShards.summerIdFor(k) }
+  private def convertToSummerInputFormat(flushedCache: CMap[K, (Seq[Object], V)]): TraversableOnce[(OutputMessageId, Future[OutputTuple])] =
+    flushedCache.groupBy {
+      case (k, _) => summerShards.summerIdFor(k)
+    }.map {
+      case (index: Int, m: CMap[K, (Seq[Object], V)]) =>
+        val messageIds = m.values.flatMap { case (ids, _) => ids }
+        val results = m.mapValues { case (_, v) => v }
+        (messageIds, Future.value((index, results)))
+    }
 
   /*
     The method is invoked to handle the flushed cache caused by
     exceeding the memoryLimit, which is called within add method.
    */
-  private def emitData(tuples: Future[TraversableOnce[(Int, CMap[_, _])]], streamId: String): JList[Integer] = {
+  private def emitData(
+    tuples: Future[TraversableOnce[(OutputMessageId, Future[OutputTuple])]],
+    streamId: String): JList[Integer] = {
     val startTime = Time.now
-    val flushedTups = Await.result(tuples)
-    val messageIdsTracker = streamMessageIdTracker.getOrElse(streamId, MMap[Int, MList[Object]]())
-    val returns = flushedTups.map {
-      case (k, v) =>
-        val messageIds = messageIdsTracker.remove(k)
-        val list = new java.util.ArrayList[AnyRef](2)
-        list.add(k.asInstanceOf[AnyRef])
-        list.add(v.asInstanceOf[AnyRef])
-        callEmit(messageIds, list, streamId)
-    }
+    val futureQueue = futureQueueByStreamId.getOrElseUpdate(
+      streamId,
+      new FutureQueue(MaxWaitingFutures(1000), MaxFutureWaitTime(Duration.fromMilliseconds(10000)), MaxEmitPerExecute(10000))
+    )
+    futureQueue.addAllFuture(Nil, tuples)
+
+    val flushedTups = futureQueue.dequeue
     val result = new java.util.ArrayList[Integer]()
-    returns.filter(_ != null).foreach { result.addAll(_) }
+    flushedTups.foreach {
+      case (messageIds, t) =>
+        t match {
+          case Success((groupKey, data)) =>
+            val list = new java.util.ArrayList[AnyRef](2)
+            list.add(groupKey.asInstanceOf[AnyRef])
+            list.add(data.asInstanceOf[AnyRef])
+            result.addAll(callEmit(messageIds, list, streamId))
+          case Failure(_) =>
+            failHandler(messageIds.asInstanceOf[AnyRef])
+        }
+    }
     executeTimeCounter.incrBy(Time.now.inMillis - startTime.inMillis)
     result
   }
@@ -75,12 +101,12 @@ class AggregatorOutputCollector[K, V: Semigroup](
    This is a wrapper method to call the emit with appropriate signature
    based on the arguments.
   */
-  private def callEmit(messageIds: Option[TraversableOnce[AnyRef]], list: JList[AnyRef], stream: String): JList[Integer] = {
-    (messageIds, stream.isEmpty) match {
-      case (None, true) => in.emit(list)
-      case (None, false) => in.emit(stream, list)
-      case (Some(ids), true) => in.emit(list, ids)
-      case (Some(ids), false) => in.emit(stream, list, ids)
+  private def callEmit(messageIds: TraversableOnce[AnyRef], list: JList[AnyRef], stream: String): JList[Integer] = {
+    (messageIds.isEmpty, stream.isEmpty) match {
+      case (true, true) => in.emit(list)
+      case (true, false) => in.emit(stream, list)
+      case (false, true) => in.emit(list, messageIds)
+      case (false, false) => in.emit(stream, list, messageIds)
     }
   }
 
@@ -88,30 +114,11 @@ class AggregatorOutputCollector[K, V: Semigroup](
   Method wraps the adding the tuple to the spoutCache along with adding the corresponding
   messageId to the messageId Tracker.
    */
-  private def add(tuple: (K, V), streamid: String, messageId: Option[AnyRef] = None): Future[Map[K, V]] = {
-    if (messageId.isDefined)
-      trackMessageId(tuple, messageId.get, streamid)
-    addToCache(tuple, streamid)
-  }
-
-  /*
-   * As there are separate summers for each stream. This method takes care of the stream lookup
-   * and adding the tuple to the corresponding cache.
-   */
-  private def addToCache(tuple: (K, V), streamid: String): Future[Map[K, V]] = {
-    cacheByStreamId.getOrElseUpdate(streamid, summerBuilder.getSummer[K, V](implicitly[Semigroup[V]]))
-      .add(tuple)
-  }
-
-  /**
-   * The lookup of stream is followed by the lookup on summerShard happens.
-   * The messageId is added to the corresponding group.
-   * All the messageIds are sent along with the crushed tuple.
-   */
-  private def trackMessageId(tuple: (K, V), o: AnyRef, s: String): Unit = {
-    val messageIdTracker = streamMessageIdTracker.getOrElseUpdate(s, MMap[Int, MList[Object]]())
-    val messageIds = messageIdTracker.getOrElseUpdate(summerShards.summerIdFor(tuple._1), MList())
-    messageIds += o
+  private def add(tuple: (K, V), streamId: String, messageId: Option[AnyRef] = None): Future[Map[K, (Seq[Object], V)]] = {
+    val buffer = messageId.map { id => ListBuffer(id) }.getOrElse(Nil)
+    val (k, v) = tuple
+    cacheByStreamId.getOrElseUpdate(streamId, summerBuilder.getSummer[K, (OutputMessageId, V)])
+      .add(k -> ((buffer, v)))
   }
 
   private def extractAndProcessElements(streamId: String, list: JList[AnyRef], messageId: Option[AnyRef] = None): JList[Integer] = {

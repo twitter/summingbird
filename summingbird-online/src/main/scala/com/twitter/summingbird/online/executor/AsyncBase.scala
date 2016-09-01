@@ -19,48 +19,12 @@ package com.twitter.summingbird.online.executor
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.twitter.summingbird.online.Queue
+import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util._
 import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.util.{ Failure, Success, Try }
-
-object AsyncBase {
-  /**
-   * Ratio of total number of outstanding futures to the portion that is finished
-   * ,at which finished futures are cleared.
-   * Clearing finished futures costs proportional to total number of outstanding
-   * futures, so we want to make sure we only clear when sufficient portion is
-   * finished.
-   */
-  val OutstandingFuturesDequeueRatio = 2
-
-  /**
-   * Wait for n futures to finish. Doesn't block, the returned future is satisfied
-   * once n futures have finished either successfully or unsuccessfully.
-   * If n is greater than number of futures in queue then we wait on all of them.
-   */
-  def waitN[A](fs: Iterable[Future[A]], n: Int): Future[Unit] = {
-    val waitOnCount = Math.min(fs.size, n)
-    if (waitOnCount <= 0) {
-      Future.Unit
-    } else {
-      val count = new AtomicInteger(waitOnCount)
-      val p = Promise[Unit]()
-      fs.foreach { f =>
-        f.ensure {
-          // Note that since we are only decrementing we can cross 0 only
-          // once (unless we decrement more than 2^32 times).
-          if (count.decrementAndGet() == 0) {
-            p.setValue(())
-          }
-        }
-      }
-      p
-    }
-  }
-}
 
 abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I, O, S, D, RC] {
 

@@ -20,6 +20,7 @@ import java.util.concurrent.CyclicBarrier
 
 import com.twitter.bijection.Injection
 import com.twitter.conversions.time._
+import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util._
 import org.scalatest.WordSpec
@@ -34,7 +35,7 @@ class AsyncBaseSpec extends WordSpec with Eventually {
     val t = new Thread {
       @volatile var unblocked = false
       override def run() = {
-        Await.result(AsyncBase.waitN(ps, waitOn))
+        Await.result(FutureQueue.waitN(ps, waitOn))
         unblocked = true
       }
     }
