@@ -119,10 +119,8 @@ class PlannerSpec extends WordSpec {
     val fmnValues = flatMapnodes.values
     fmnValues.foreach {
       x: List[Node[Memory]] =>
-        {
-          assert(x.size == 1)
-          assert(x(0).toString contains "SummerNode")
-        }
+        assert(x.size == 1)
+        assert(x(0).toString contains "SummerNode")
     }
   }
 
@@ -133,22 +131,22 @@ class PlannerSpec extends WordSpec {
    *           Each SourceNode has a summer as dependant.
    */
   "Also producer with two topos" in {
-    def testStore2 : Memory#Store[Int, Int] = MMap[Int, Int]()
+    def testStore2: Memory#Store[Int, Int] = MMap[Int, Int]()
 
-    val p1 = arbSource1.flatMap { i: Int => List((i -> i))}.sumByKey(testStore).name("topo1")
+    val p1 = arbSource1.flatMap { i: Int => List((i -> i)) }.sumByKey(testStore).name("topo1")
     val p2 = arbSource2.flatMap { tup: (Int, Int) => List((tup._1, tup._2)) }.sumByKey(testStore2).name("topo2")
     val p = p1.also(p2)
 
     val opts = Map("topo1" -> Options().set(FMMergeableWithSource(true)),
       "topo2" -> Options().set(FMMergeableWithSource(true)))
-    val storm = Try(OnlinePlan(p,opts))
-    val srcNodes = storm.get.dependantsOfM.filterKeys { _.toString contains "SourceNode"}
+    val storm = Try(OnlinePlan(p, opts))
+    val dependents = storm.get.dependantsOfM
+    val srcNodes = dependents.filterKeys { _.toString contains "SourceNode" }
     assert(srcNodes.keySet.size == 2)
-    srcNodes.keySet.foreach {
-      x => {
-        assert(storm.get.dependantsOfM.asJava.get(x).size == 1)
-        assert(storm.get.dependantsOfM.asJava.get(x).head.toString contains "SummerNode")
-      }
+    srcNodes.keySet.foreach { x =>
+      val dependant = dependents.get(x)
+      assert(dependant.size == 1)
+      assert(dependant.head.toString contains "SummerNode")
     }
   }
 
