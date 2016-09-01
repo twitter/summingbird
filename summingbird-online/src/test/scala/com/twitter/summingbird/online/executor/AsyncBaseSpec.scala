@@ -21,45 +21,10 @@ import java.util.concurrent.CyclicBarrier
 import com.twitter.bijection.Injection
 import com.twitter.conversions.time._
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
-import com.twitter.util._
+import com.twitter.util.{ Future, Promise }
 import org.scalatest.WordSpec
-import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{ Seconds, Span }
 
-class AsyncBaseSpec extends WordSpec with Eventually {
-
-  def verifyWaitN[T](futuresCount: Int, waitOn: Int, valueToFill: Try[T]) = {
-    val ps = 0.until(futuresCount).map { _ => Promise[Unit]() }.toArray
-
-    val t = new Thread {
-      @volatile var unblocked = false
-      override def run() = {
-        Await.result(AsyncBase.waitN(ps, waitOn))
-        unblocked = true
-      }
-    }
-    t.start
-
-    for (i <- 0 until Math.min(futuresCount, waitOn)) {
-      assert(t.unblocked === false)
-      valueToFill match {
-        case Return(v) =>
-          ps(i).setValue(v)
-        case Throw(e) =>
-          ps(i).setException(e)
-      }
-    }
-    eventually(timeout(Span(5, Seconds)))(assert(t.unblocked === true))
-    t.join
-  }
-
-  "waitN should wait for exactly n futures to finish " in {
-    for {
-      futuresCount <- 0 until 10
-      waitOn <- 0 until 10
-      valueToFill <- Seq(Return(()), Throw(new Exception))
-    } verifyWaitN(futuresCount, waitOn, valueToFill)
-  }
+class AsyncBaseSpec extends WordSpec {
 
   "AsyncBase should force only the needed number of extra futures " in {
     val totalPromisesCount = 4
@@ -115,14 +80,14 @@ class AsyncBaseSpec extends WordSpec with Eventually {
     afterExecute.await()
 
     // Two promises have been processed, they should get queued up
-    assert(ab.outstandingFuturesQueue.size == 2)
+    assert(ab.futureQueue.outstandingFutures.size == 2)
 
     beforeExecute.await()
     Thread.sleep(1000)
     // t should block now, unblock it by clearing one
     promises(0).setValue(Seq(0))
     afterExecute.await()
-    assert(ab.outstandingFuturesQueue.size == 2)
+    assert(ab.futureQueue.outstandingFutures.size == 2)
 
     beforeExecute.await()
     Thread.sleep(1000)
@@ -131,7 +96,7 @@ class AsyncBaseSpec extends WordSpec with Eventually {
     afterExecute.await()
 
     // t should get unblocked now and stay unblocked
-    assert(ab.outstandingFuturesQueue.size == 2)
-    ab.outstandingFuturesQueue.foreach { f => assert(!f.isDefined) }
+    assert(ab.futureQueue.outstandingFutures.size == 2)
+    ab.futureQueue.outstandingFutures.foreach { f => assert(!f.isDefined) }
   }
 }
