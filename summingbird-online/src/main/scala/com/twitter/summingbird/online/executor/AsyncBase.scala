@@ -74,92 +74,21 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
   def apply(state: S, in: I): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]
   def tick: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
 
-  private lazy val outstandingFutures = Queue.linkedNonBlocking[Future[Unit]]
-  private lazy val numPendingOutstandingFutures = new AtomicInteger(0)
-  private lazy val responses = Queue.linkedNonBlocking[(Seq[S], Try[TraversableOnce[O]])]
-
-  // For testing only
-  private[executor] def outstandingFuturesQueue = outstandingFutures
+  private[executor] lazy val futureQueue = new FutureQueue[Seq[S], TraversableOnce[O]](maxWaitingFutures, maxWaitingTime, maxEmitPerExec)
 
   override def executeTick =
-    finishExecute(tick.onFailure { thr => responses.put(((Seq(), Failure(thr)))) })
+    finishExecute(Nil, tick)
 
   override def execute(state: S, data: I) =
-    finishExecute(apply(state, data).onFailure { thr => responses.put(((List(state), Failure(thr)))) })
+    finishExecute(List(state), apply(state, data))
 
-  private def finishExecute(fIn: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]) = {
-    addOutstandingFuture(handleSuccess(fIn).unit)
+  private def finishExecute(states: Seq[S], fIn: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]) = {
+    futureQueue.addAllFuture(states, fIn)
 
     // always empty the responses
-    emptyQueue
+    futureQueue.dequeue
   }
 
   private def handleSuccess(fut: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]) =
-    fut.onSuccess { iter: TraversableOnce[(Seq[S], Future[TraversableOnce[O]])] =>
-
-      // Collect the result onto our responses
-      val iterSize = iter.foldLeft(0) {
-        case (iterSize, (tups, res)) =>
-          res.onSuccess { t => responses.put(((tups, Success(t)))) }
-          res.onFailure { t => responses.put(((tups, Failure(t)))) }
-          // Make sure there are not too many outstanding:
-          if (addOutstandingFuture(res.unit)) {
-            iterSize + 1
-          } else {
-            iterSize
-          }
-      }
-      if (outstandingFutures.size > maxWaitingFutures.get) {
-        /*
-         * This can happen on large key expansion.
-         * May indicate maxWaitingFutures is too low.
-         */
-        logger.debug(
-          "Exceeded maxWaitingFutures({}), put {} futures", maxWaitingFutures.get, iterSize
-        )
-      }
-    }
-
-  private def addOutstandingFuture(fut: Future[Unit]): Boolean =
-    if (!fut.isDefined) {
-      outstandingFutures.put(fut)
-      numPendingOutstandingFutures.incrementAndGet
-      fut.ensure(numPendingOutstandingFutures.decrementAndGet)
-      true
-    } else {
-      false
-    }
-
-  private def forceExtraFutures() {
-    val maxWaitingFuturesCount = maxWaitingFutures.get
-    val pendingFuturesCount = numPendingOutstandingFutures.get
-    if (pendingFuturesCount > maxWaitingFuturesCount) {
-      // Too many futures waiting, let's clear.
-      val pending = outstandingFutures.toSeq.filterNot(_.isDefined)
-      val toClear = pending.size - maxWaitingFuturesCount
-      if (toClear > 0) {
-        try {
-          Await.ready(AsyncBase.waitN(pending, toClear), maxWaitingTime.get)
-        } catch {
-          case te: TimeoutException =>
-            logger.error(s"forceExtra failed on $toClear Futures", te)
-        }
-        outstandingFutures.putAll(pending.filterNot(_.isDefined))
-      } else {
-        outstandingFutures.putAll(pending)
-      }
-    } else {
-      // only dequeueAll if there's bang for the buck
-      if (outstandingFutures.size >= AsyncBase.OutstandingFuturesDequeueRatio * pendingFuturesCount) {
-        outstandingFutures.dequeueAll(_.isDefined)
-      }
-    }
-  }
-
-  private def emptyQueue = {
-    // don't let too many futures build up
-    forceExtraFutures()
-    // Take all results that have been placed for writing to the network
-    responses.take(maxEmitPerExec.get)
-  }
+    fut.onSuccess { iter => futureQueue.addAll(iter) }
 }

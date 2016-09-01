@@ -115,14 +115,14 @@ class AsyncBaseSpec extends WordSpec with Eventually {
     afterExecute.await()
 
     // Two promises have been processed, they should get queued up
-    assert(ab.outstandingFuturesQueue.size == 2)
+    assert(ab.futureQueue.outstandingFutures.size == 2)
 
     beforeExecute.await()
     Thread.sleep(1000)
     // t should block now, unblock it by clearing one
     promises(0).setValue(Seq(0))
     afterExecute.await()
-    assert(ab.outstandingFuturesQueue.size == 2)
+    assert(ab.futureQueue.outstandingFutures.size == 2)
 
     beforeExecute.await()
     Thread.sleep(1000)
@@ -131,7 +131,7 @@ class AsyncBaseSpec extends WordSpec with Eventually {
     afterExecute.await()
 
     // t should get unblocked now and stay unblocked
-    assert(ab.outstandingFuturesQueue.size == 2)
-    ab.outstandingFuturesQueue.foreach { f => assert(!f.isDefined) }
+    assert(ab.futureQueue.outstandingFutures.size == 2)
+    ab.futureQueue.outstandingFutures.foreach { f => assert(!f.isDefined) }
   }
 }
