@@ -92,7 +92,8 @@ class AggregatorOutputCollector[K, V: Semigroup](
             val list = new java.util.ArrayList[AnyRef](2)
             list.add(groupKey.asInstanceOf[AnyRef])
             list.add(data.asInstanceOf[AnyRef])
-            result.addAll(callEmit(messageIds, list, streamId))
+            val emitResult = callEmit(messageIds, list, streamId)
+            if (emitResult != null) result.addAll(emitResult)
           case Failure(_) =>
             failHandler(messageIds.asInstanceOf[AnyRef])
         }
