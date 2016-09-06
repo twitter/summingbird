@@ -14,6 +14,7 @@ Please see our [Project Governance](https://github.com/twitter/analytics-infra-g
 | Pankaj Gupta           | [@pankajroark](https://github.com/pankajroark)            |
 | Piyush Narang          | [@piyushnarang](https://github.com/piyushnarang)          |
 | Ruban Monu             | [@rubanm](https://github.com/rubanm)                      |
+| Sam Ritchie            | [@sritchie](https://github.com/sritchie)                  |
 | Sriram Krishnan        | [@sriramkrishnan](https://github.com/sriramkrishnan)      |
 
 ##Emeritus
