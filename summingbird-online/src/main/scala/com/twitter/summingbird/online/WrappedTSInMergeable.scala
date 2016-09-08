@@ -41,22 +41,3 @@ class WrappedTSInMergeable[K, V](self: Mergeable[K, V]) extends Mergeable[K, (Ti
         })
     }
 }
-
-object MergeableStoreFactoryAlgebra {
-  /*
-      Our tuples that we hand to the store are of the form ((K, BatchID), (Timestamp, V))
-      but in our store we only store ((K, BatchID), V). That is we don't include the timestamp.
-      We need these timestamps to continue processing downstream however, so we use a Right timestamp to say
-      the last value is taken. (Which may not be the max(TS)).
-
-      The merge operation here takes the inbound value of (Timestamp, V), performs the inner merge from the store.
-      Then looks back up the timestamp handed from the stream and outputs with that.
-      */
-  def wrapOnlineFactory[K, V](supplier: MergeableStoreFactory[K, V]): MergeableStoreFactory[K, (Timestamp, V)] =
-    {
-      val mergeable: () => Mergeable[K, (Timestamp, V)] =
-        () => { new WrappedTSInMergeable(supplier.mergeableStore()) }
-
-      MergeableStoreFactory[K, (Timestamp, V)](mergeable, supplier.mergeableBatcher)
-    }
-}
