@@ -39,10 +39,8 @@ object MergeableStoreFactory {
       def mergeableBatcher = batcher
     }
 
-  def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreFactory[(K, BatchID), V] = {
-    implicit val batcher = Batcher.unit
-    from(store.convert { k: (K, BatchID) => k._1 })
-  }
+  def fromOnlineOnly[K, V](store: => MergeableStore[K, V]): MergeableStoreFactory[(K, BatchID), V] =
+    fromOnlineOnlyWithSemigroup(_ => store)
 
   def fromOnlineOnlyWithSemigroup[K, V](fn: Semigroup[V] => MergeableStore[K, V]): MergeableStoreFactory[(K, BatchID), V] =
     fromWithSemigroup(fn.andThen(_.convert { k: (K, BatchID) => k._1 }))(Batcher.unit)
