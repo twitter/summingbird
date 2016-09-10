@@ -16,6 +16,7 @@
 
 package com.twitter.summingbird.online.executor
 
+import com.twitter.bijection.twitter_util.UtilBijections
 import com.twitter.conversions.time._
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util._
@@ -26,7 +27,7 @@ import org.scalacheck.Prop._
 import org.scalatest.WordSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{ Seconds, Span }
-import scala.util.{ Failure, Success }
+import scala.util.{ Failure, Random, Success }
 
 case class NonNegativeShort(get: Short) {
   require(get >= 0)
@@ -39,10 +40,8 @@ class FutureQueueLaws extends Properties("FutureQueue") with Eventually {
   implicit val arbNonNegativeShort: Arbitrary[NonNegativeShort] = Arbitrary(
     Arbitrary.arbitrary[Short].filter { _ >= 0 }.map { NonNegativeShort }
   )
-  def twitterToScala[T](t: Try[T]) = t match {
-    case Return(v) => Success(v)
-    case Throw(t) => Failure(t)
-  }
+
+  val twitterToScala = UtilBijections.twitter2ScalaTry[String]
 
   property("waitN should wait for exactly n futures to finish") =
     forAll { (futuresCount: NonNegativeShort, waitOn: NonNegativeShort, valueToFill: Try[Unit]) =>
@@ -85,8 +84,8 @@ class FutureQueueLaws extends Properties("FutureQueue") with Eventually {
       val res = fq.dequeue
       val end = Time.now
       res.isEmpty &&
-        (end - start < 15.seconds) &&
-        fq.outstandingFutures.size == futuresCount.get
+        (end - start < 15.seconds)
+      fq.numPendingOutstandingFutures.get == futuresCount.get
     }
 
   property("queue the initial future") =
@@ -98,10 +97,10 @@ class FutureQueueLaws extends Properties("FutureQueue") with Eventually {
       )
       val p = Promise[TraversableOnce[(Unit, Future[Unit])]]
       fq.addAllFuture((), p)
-      fq.outstandingFutures.size == 1
+      fq.numPendingOutstandingFutures.get == 1
     }
 
-  property("queue the inner future") =
+  property("queue the inner futures") =
     forAll { (futuresCount: NonNegativeShort) =>
       val fq = new FutureQueue[Unit, Unit](
         MaxWaitingFutures(futuresCount.get + 1),
@@ -114,7 +113,7 @@ class FutureQueueLaws extends Properties("FutureQueue") with Eventually {
         () -> Promise[Unit]
       })
 
-      fq.outstandingFutures.size == futuresCount.get + 1
+      fq.numPendingOutstandingFutures.get == futuresCount.get
     }
 
   property("addAllFuture yields the state and exception on failure") =
@@ -144,5 +143,65 @@ class FutureQueueLaws extends Properties("FutureQueue") with Eventually {
         case (state, t) =>
           state -> twitterToScala(t)
       }
+    }
+
+  property("accounts for completed futures") =
+    forAll { (incomplete: NonNegativeShort, complete: NonNegativeShort) =>
+      val incompleteFuture = Promise[Unit]
+      val completeFuture = Promise[Unit]
+      val incompleteFutures = Seq.fill(incomplete.get)(incompleteFuture)
+      val completeFutures = Seq.fill(complete.get)(completeFuture)
+      val mixedFutures = Random.shuffle(incompleteFutures ++ completeFutures)
+
+      val fq = new FutureQueue[Unit, Unit](
+        MaxWaitingFutures(1),
+        MaxFutureWaitTime(20.seconds),
+        MaxEmitPerExecute(1)
+      )
+      fq.addAll(mixedFutures.map { () -> _ })
+
+      val initialPendingCount = fq.numPendingOutstandingFutures.get
+      completeFuture.setValue(())
+
+      initialPendingCount == (incomplete.get + complete.get) &&
+        fq.numPendingOutstandingFutures.get == incomplete.get
+    }
+
+  property("add returns true for an incomplete future") =
+    forAll { _: Unit =>
+      val fq = new FutureQueue[Unit, Unit](
+        MaxWaitingFutures(1),
+        MaxFutureWaitTime(20.seconds),
+        MaxEmitPerExecute(1)
+      )
+
+      fq.add((), Promise[Unit])
+    }
+
+  property("add returns false for a complete future") =
+    forAll { t: Try[String] =>
+      val fq = new FutureQueue[Unit, String](
+        MaxWaitingFutures(1),
+        MaxFutureWaitTime(20.seconds),
+        MaxEmitPerExecute(1)
+      )
+
+      fq.add((), Future.const(t)) == false
+    }
+
+  property("addAll returns the number of incomplete futures") =
+    forAll { (incomplete: NonNegativeShort, complete: NonNegativeShort, t: Try[String]) =>
+      val incompleteFuture = Promise[String]
+      val completeFuture = Future.const(t)
+      val incompleteFutures = Seq.fill(incomplete.get)(incompleteFuture)
+      val completeFutures = Seq.fill(complete.get)(completeFuture)
+      val mixedFutures = Random.shuffle(incompleteFutures ++ completeFutures)
+
+      val fq = new FutureQueue[Unit, String](
+        MaxWaitingFutures(1),
+        MaxFutureWaitTime(20.seconds),
+        MaxEmitPerExecute(1)
+      )
+      fq.addAll(mixedFutures.map { () -> _ }) == incomplete.get
     }
 }

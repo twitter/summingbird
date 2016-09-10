@@ -233,6 +233,7 @@ lazy val summingbirdOnline = module("online").settings(
     "com.twitter" %% "algebird-core" % algebirdVersion,
     "com.twitter" %% "algebird-util" % algebirdVersion,
     "com.twitter" %% "bijection-core" % bijectionVersion,
+    "com.twitter" %% "bijection-util" % bijectionVersion,
     "com.twitter" %% "storehaus-core" % storehausVersion,
     "com.twitter" %% "chill" % chillVersion,
     "com.twitter" %% "storehaus-algebra" % storehausVersion,
