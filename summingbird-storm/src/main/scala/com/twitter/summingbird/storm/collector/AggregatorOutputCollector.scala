@@ -11,7 +11,7 @@ import com.twitter.summingbird.online.option.{
   MaxEmitPerExecute
 }
 import com.twitter.algebird.util.summer.{ AsyncSummer, Incrementor }
-import com.twitter.util.{ Await, Duration, Future, Time }
+import com.twitter.util.{ Await, Duration, Future, Return, Throw, Time }
 import java.util.{ List => JList }
 import scala.collection.mutable.{ ListBuffer, Map => MMap, MutableList => MList }
 import scala.collection.{ Map => CMap }
@@ -79,11 +79,14 @@ class AggregatorOutputCollector[K, V: Semigroup](
     val startTime = Time.now
     val futureQueue = futureQueueByStreamId.getOrElseUpdate(
       streamId,
-      new FutureQueue(maxWaitingFutures, maxWaitingTime, maxEmitPerExec)
+      new FutureQueue(maxWaitingFutures, maxWaitingTime)
     )
-    futureQueue.addAllFuture(Nil, tuples)
+    tuples.respond {
+      case Return(iter) => futureQueue.addAll(iter)
+      case Throw(ex) => futureQueue.add(Nil, Future.exception(ex))
+    }
 
-    val flushedTups = futureQueue.dequeue
+    val flushedTups = futureQueue.dequeue(maxEmitPerExec.get)
     val result = new java.util.ArrayList[Integer]()
     flushedTups.foreach {
       case (messageIds, t) =>
