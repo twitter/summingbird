@@ -14,11 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.online.executor
+package com.twitter.summingbird.online
 
 import com.twitter.bijection.twitter_util.UtilBijections
-import com.twitter.summingbird.online.Queue
-import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
+import com.twitter.summingbird.online.option.{ MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util.{ Await, Future, Promise, Return, Throw }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
@@ -74,23 +73,17 @@ private[summingbird] object FutureQueue {
  * via the dequeue method.
  *
  * To support batching, inputs can also be TraversableOnce[(S, Future[T])]
- *
- * To support additional asynchronous behavior, a state value along with a
- * Future[TraversableOnce[(S, Future[T])]] can be inserted.  On failure, the
- * outer state value is returned with the Failure.  On success, the inner
- * items are queued up to be inserted when they complete.
  */
 private[summingbird] class FutureQueue[S, T](
     maxWaitingFutures: MaxWaitingFutures,
-    maxWaitingTime: MaxFutureWaitTime,
-    maxEmitPerExec: MaxEmitPerExecute) {
+    maxWaitingTime: MaxFutureWaitTime) {
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
   // Track the futures that may be outstanding.  We may need to wait on some
   // of them in case the actual outstanding count gets too high.
   private lazy val outstandingFutures = Queue.linkedNonBlocking[Future[Unit]]
   // Track the number of actually outstanding futures
-  private[executor] lazy val numPendingOutstandingFutures = new AtomicInteger(0)
+  private[online] lazy val numPendingOutstandingFutures = new AtomicInteger(0)
   // When futures complete, they deposit their results here.
   private lazy val responses = Queue.linkedNonBlocking[(S, Try[T])]
 
@@ -99,12 +92,10 @@ private[summingbird] class FutureQueue[S, T](
   /**
    * Add a Future with state onto the queue.  This can eventually be
    * dequeued as (S, Try[T]) when the Future completes.
-   *
-   * Returns true if the Future is not yet complete.  When false, the
-   * result can still be dequeued, but this will not count against the
-   * maxWaitingFutures limit.
    */
-  def add(state: S, fut: Future[T]): Boolean = {
+  def add(state: S, fut: Future[T]): Unit = addInternal(state, fut)
+
+  private def addInternal(state: S, fut: Future[T]): Boolean = {
     val responded =
       fut.respond { t => responses.put((state, tryBijection(t))) }
     addOutstandingFuture(responded.unit)
@@ -114,14 +105,10 @@ private[summingbird] class FutureQueue[S, T](
    * Add a collection onto the queue.  Each associated pair can
    * eventually be dequeued as (S, Try[T]) when the associated
    * Future completes.
-   *
-   * Returns the number of uncompleted Futures.  All results can
-   * still be dequeued, but only uncompleted Futures will count
-   * against the maxWaitingFutures limit.
    */
-  def addAll(iter: TraversableOnce[(S, Future[T])]): Int = {
+  def addAll(iter: TraversableOnce[(S, Future[T])]): Unit = {
     val addedSize = iter.count {
-      case (state, fut) => add(state, fut)
+      case (state, fut) => addInternal(state, fut)
     }
 
     if (outstandingFutures.size > maxWaitingFutures.get) {
@@ -133,24 +120,7 @@ private[summingbird] class FutureQueue[S, T](
         "Exceeded maxWaitingFutures({}), put {} futures", maxWaitingFutures.get, addedSize
       )
     }
-
-    addedSize
   }
-
-  /**
-   * Queue a collection Future.  On failure, the state can be retrieved
-   * with the failure.  On success, the results are queued via addAll.
-   *
-   * The Future given here counts against the maxWaitingFutures, so calls
-   * to this method may cause a wait on dequeue.
-   */
-  def addAllFuture(state: S, iterFut: Future[TraversableOnce[(S, Future[T])]]): Unit =
-    addOutstandingFuture(
-      iterFut.respond {
-        case Return(iter) => addAll(iter)
-        case Throw(ex) => responses.put((state, Failure(ex)))
-      }.unit
-    )
 
   private def addOutstandingFuture(fut: Future[Unit]): Boolean =
     if (!fut.isDefined) {
@@ -162,7 +132,7 @@ private[summingbird] class FutureQueue[S, T](
       false
     }
 
-  private def forceExtraFutures() {
+  private def forceExtraFutures(): Unit = {
     val maxWaitingFuturesCount = maxWaitingFutures.get
     val pendingFuturesCount = numPendingOutstandingFutures.get
     if (pendingFuturesCount > maxWaitingFuturesCount) {
@@ -191,12 +161,12 @@ private[summingbird] class FutureQueue[S, T](
   /**
    * Retrieve any completed results, along with their associated states.
    *
-   * Returns up to maxEmitPerExec items.
+   * Returns up to maxItems items.
    */
-  def dequeue: TraversableOnce[(S, Try[T])] = {
+  def dequeue(maxItems: Int): Seq[(S, Try[T])] = {
     // don't let too many futures build up
     forceExtraFutures()
     // Take all results that have been placed for writing to the network
-    responses.take(maxEmitPerExec.get)
+    responses.take(maxItems)
   }
 }

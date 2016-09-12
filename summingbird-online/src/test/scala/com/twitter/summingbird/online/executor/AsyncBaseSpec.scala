@@ -20,93 +20,119 @@ import java.util.concurrent.CyclicBarrier
 
 import com.twitter.bijection.Injection
 import com.twitter.conversions.time._
+import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
-import com.twitter.util.{ Future, Promise }
+import com.twitter.util.{ Await, Future, Promise }
 import org.scalatest.WordSpec
 import scala.util.Try
 
 class AsyncBaseSpec extends WordSpec {
-  val tickData = Future(Seq((Seq(100, 104, 99), Future(Seq(9, 10, 13))), (Seq(12, 19), Future(Seq(100, 200, 500)))))
+  val data = Seq((Seq(100, 104, 99), Future(Seq(9, 10, 13))), (Seq(12, 19), Future(Seq(100, 200, 500))))
   val dequeueData = List((Seq(8, 9), Try(Seq(4, 5, 6))))
 
   class TestFutureQueue extends FutureQueue[Seq[Int], TraversableOnce[Int]](
     MaxWaitingFutures(100),
-    MaxFutureWaitTime(1.minute),
-    MaxEmitPerExecute(Int.MaxValue)
+    MaxFutureWaitTime(1.minute)
   ) {
     var added = false
+    var addedData: (Seq[Int], Future[TraversableOnce[Int]]) = _
+    var addedAllData: TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])] = _
     var dequeued = false
-    var addedAll: TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])] = _
-    var addedAllFuture: Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = _
-    var addedAllFutureState: Seq[Int] = _
+    var dequeuedCount: Int = 0
 
-    override def add(state: Seq[Int], fut: Future[TraversableOnce[Int]]) =
-      throw new RuntimeException("not implemented")
+    override def add(state: Seq[Int], fut: Future[TraversableOnce[Int]]): Unit = synchronized {
+      assert(!added)
+      added = true
+      addedData = (state, fut)
+    }
 
     override def addAll(
-      iter: TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]): Int = synchronized {
+      iter: TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]): Unit = synchronized {
       assert(!added)
       added = true
-      addedAll = iter
-      0
+      addedAllData = iter
     }
 
-    override def addAllFuture(
-      state: Seq[Int],
-      iterFut: Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]]): Unit = synchronized {
-      assert(!added)
-      added = true
-      addedAllFutureState = state
-      addedAllFuture = iterFut
-    }
-
-    override def dequeue: TraversableOnce[(Seq[Int], Try[TraversableOnce[Int]])] = synchronized {
+    override def dequeue(maxItems: Int): Seq[(Seq[Int], Try[TraversableOnce[Int]])] = synchronized {
       assert(!dequeued)
       dequeued = true
+      dequeuedCount = maxItems
       dequeueData
     }
   }
 
-  "Queues tick with Nil on executeTick" in {
-    val queue = new TestFutureQueue
-
-    val ab = new AsyncBase[Int, Int, Int, Int, Unit](
-      MaxWaitingFutures(100),
-      MaxFutureWaitTime(1.minute),
-      MaxEmitPerExecute(Int.MaxValue)
-    ) {
-      override lazy val futureQueue = queue
-      override def apply(state: Int, in: Int) = throw new RuntimeException("not implemented")
-      override def tick: Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = tickData
-      override def decoder: Injection[Int, Int] = implicitly
-      override def encoder: Injection[Int, Int] = implicitly
-    }
-
-    assert(ab.executeTick === dequeueData)
-    assert(queue.added)
-    assert(queue.addedAllFuture === tickData)
-    assert(queue.addedAllFutureState === Nil)
+  class TestAsyncBase(
+    queue: TestFutureQueue,
+    tickData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented"),
+    applyData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented")) extends AsyncBase[Int, Int, Int, Int, Unit](
+    MaxWaitingFutures(100),
+    MaxFutureWaitTime(1.minute),
+    MaxEmitPerExecute(57)
+  ) {
+    override lazy val futureQueue = queue
+    override def apply(state: Int, in: Int) = applyData
+    override def tick = tickData
+    override def decoder: Injection[Int, Int] = implicitly
+    override def encoder: Injection[Int, Int] = implicitly
   }
 
-  "Queues with state on apply" in {
+  def promise = Promise[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]]
+
+  "Queues tick on executeTick" in {
     val queue = new TestFutureQueue
-    val state = 1089
+    val p = promise
+    val ab = new TestAsyncBase(queue, tickData = p)
 
-    val ab = new AsyncBase[Int, Int, Int, Int, Unit](
-      MaxWaitingFutures(100),
-      MaxFutureWaitTime(1.minute),
-      MaxEmitPerExecute(Int.MaxValue)
-    ) {
-      override lazy val futureQueue = queue
-      override def apply(state: Int, in: Int) = tickData
-      override def tick: Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented")
-      override def decoder: Injection[Int, Int] = implicitly
-      override def encoder: Injection[Int, Int] = implicitly
-    }
+    assert(ab.executeTick === dequeueData)
+    assert(!queue.added)
 
-    assert(ab.execute(state, 5) === dequeueData)
+    p.setValue(data)
     assert(queue.added)
-    assert(queue.addedAllFuture === tickData)
-    assert(queue.addedAllFutureState === List(state))
+    assert(queue.addedAllData === data)
+    assert(queue.dequeuedCount === 57)
+  }
+
+  "Queues data on execute" in {
+    val queue = new TestFutureQueue
+    val p = promise
+    val ab = new TestAsyncBase(queue, applyData = p)
+
+    assert(ab.execute(1089, 5) === dequeueData)
+    assert(!queue.added)
+
+    p.setValue(data)
+    assert(queue.added)
+    assert(queue.addedAllData === data)
+    assert(queue.dequeuedCount === 57)
+  }
+
+  "Queues state when executeTick fails" in {
+    val queue = new TestFutureQueue
+    val p = promise
+    val ex = new RuntimeException("test fail 1")
+    val ab = new TestAsyncBase(queue, tickData = p)
+
+    assert(ab.executeTick === dequeueData)
+    assert(!queue.added)
+
+    p.setException(ex)
+    assert(queue.added)
+    assert(queue.addedData._1 === Nil)
+    assert(ex === intercept[RuntimeException] { Await.result(queue.addedData._2) })
+  }
+
+  "Queues state when execute fails" in {
+    val queue = new TestFutureQueue
+    val p = promise
+    val ex = new RuntimeException("test fail 2")
+    val ab = new TestAsyncBase(queue, applyData = p)
+
+    assert(ab.execute(1089, 5) === dequeueData)
+    assert(!queue.added)
+
+    p.setException(ex)
+    assert(queue.added)
+    assert(queue.addedData._1 === List(1089))
+    assert(ex === intercept[RuntimeException] { Await.result(queue.addedData._2) })
   }
 }

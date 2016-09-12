@@ -19,7 +19,7 @@ package com.twitter.summingbird.online.executor
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.twitter.summingbird.online.Queue
+import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util._
 
@@ -35,21 +35,19 @@ abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, m
   def apply(state: S, in: I): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]
   def tick: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
 
-  private[executor] lazy val futureQueue = new FutureQueue[Seq[S], TraversableOnce[O]](maxWaitingFutures, maxWaitingTime, maxEmitPerExec)
+  private[executor] lazy val futureQueue = new FutureQueue[Seq[S], TraversableOnce[O]](maxWaitingFutures, maxWaitingTime)
 
-  override def executeTick =
-    finishExecute(Nil, tick)
+  override def executeTick: TraversableOnce[(Seq[S], Try[TraversableOnce[O]])] =
+    finishExecute(None, tick)
 
-  override def execute(state: S, data: I) =
-    finishExecute(List(state), apply(state, data))
+  override def execute(state: S, data: I): TraversableOnce[(Seq[S], Try[TraversableOnce[O]])] =
+    finishExecute(Some(state), apply(state, data))
 
-  private def finishExecute(states: Seq[S], fIn: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]) = {
-    futureQueue.addAllFuture(states, fIn)
-
-    // always empty the responses
-    futureQueue.dequeue
+  private def finishExecute(failStateOpt: Option[S], fIn: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]) = {
+    fIn.respond {
+      case Return(iter) => futureQueue.addAll(iter)
+      case Throw(ex) => futureQueue.add(failStateOpt.toSeq, Future.exception(ex))
+    }
+    futureQueue.dequeue(maxEmitPerExec.get)
   }
-
-  private def handleSuccess(fut: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[O]])]]) =
-    fut.onSuccess { iter => futureQueue.addAll(iter) }
 }
