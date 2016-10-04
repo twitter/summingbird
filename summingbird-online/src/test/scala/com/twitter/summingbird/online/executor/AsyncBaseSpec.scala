@@ -20,118 +20,119 @@ import java.util.concurrent.CyclicBarrier
 
 import com.twitter.bijection.Injection
 import com.twitter.conversions.time._
+import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
-import com.twitter.util._
+import com.twitter.util.{ Await, Future, Promise }
 import org.scalatest.WordSpec
-import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{ Seconds, Span }
+import scala.util.Try
 
-class AsyncBaseSpec extends WordSpec with Eventually {
+class AsyncBaseSpec extends WordSpec {
+  val data = Seq((Seq(100, 104, 99), Future(Seq(9, 10, 13))), (Seq(12, 19), Future(Seq(100, 200, 500))))
+  val dequeueData = List((Seq(8, 9), Try(Seq(4, 5, 6))))
 
-  def verifyWaitN[T](futuresCount: Int, waitOn: Int, valueToFill: Try[T]) = {
-    val ps = 0.until(futuresCount).map { _ => Promise[Unit]() }.toArray
+  class TestFutureQueue extends FutureQueue[Seq[Int], TraversableOnce[Int]](
+    MaxWaitingFutures(100),
+    MaxFutureWaitTime(1.minute)
+  ) {
+    var added = false
+    var addedData: (Seq[Int], Future[TraversableOnce[Int]]) = _
+    var addedAllData: TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])] = _
+    var dequeued = false
+    var dequeuedCount: Int = 0
 
-    val t = new Thread {
-      @volatile var unblocked = false
-      override def run() = {
-        Await.result(AsyncBase.waitN(ps, waitOn))
-        unblocked = true
-      }
+    override def add(state: Seq[Int], fut: Future[TraversableOnce[Int]]): Unit = synchronized {
+      assert(!added)
+      added = true
+      addedData = (state, fut)
     }
-    t.start
 
-    for (i <- 0 until Math.min(futuresCount, waitOn)) {
-      assert(t.unblocked === false)
-      valueToFill match {
-        case Return(v) =>
-          ps(i).setValue(v)
-        case Throw(e) =>
-          ps(i).setException(e)
-      }
+    override def addAll(
+      iter: TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]): Unit = synchronized {
+      assert(!added)
+      added = true
+      addedAllData = iter
     }
-    eventually(timeout(Span(5, Seconds)))(assert(t.unblocked === true))
-    t.join
+
+    override def dequeue(maxItems: Int): Seq[(Seq[Int], Try[TraversableOnce[Int]])] = synchronized {
+      assert(!dequeued)
+      dequeued = true
+      dequeuedCount = maxItems
+      dequeueData
+    }
   }
 
-  "waitN should wait for exactly n futures to finish " in {
-    for {
-      futuresCount <- 0 until 10
-      waitOn <- 0 until 10
-      valueToFill <- Seq(Return(()), Throw(new Exception))
-    } verifyWaitN(futuresCount, waitOn, valueToFill)
+  class TestAsyncBase(
+    queue: TestFutureQueue,
+    tickData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented"),
+    applyData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented")) extends AsyncBase[Int, Int, Int, Int, Unit](
+    MaxWaitingFutures(100),
+    MaxFutureWaitTime(1.minute),
+    MaxEmitPerExecute(57)
+  ) {
+    override lazy val futureQueue = queue
+    override def apply(state: Int, in: Int) = applyData
+    override def tick = tickData
+    override def decoder: Injection[Int, Int] = implicitly
+    override def encoder: Injection[Int, Int] = implicitly
   }
 
-  "AsyncBase should force only the needed number of extra futures " in {
-    val totalPromisesCount = 4
-    val maxWaitingFutures = 2
+  def promise = Promise[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]]
 
-    /**
-     * What follows is a bit complex, here's the idea.
-     * We create an AsyncBase that consumes from a sequence of unfulfilled promises.
-     * We put synchronization points before and after calling execute method of
-     * AsyncBase. This way we control execution.
-     * We let AsyncBase move forward in a controlled way using the synchronization
-     * barriers and assert at appropriate places. We control the number of outstanding
-     * futures by selectively fulfilling the promises.
-     */
-    val promises = 0.until(totalPromisesCount).map { _ => Promise[Traversable[Int]]() }.toArray
+  "Queues tick on executeTick" in {
+    val queue = new TestFutureQueue
+    val p = promise
+    val ab = new TestAsyncBase(queue, tickData = p)
 
-    val ab = new AsyncBase[Int, Int, Unit, Int, Unit](
-      MaxWaitingFutures(maxWaitingFutures),
-      MaxFutureWaitTime(1.minute),
-      MaxEmitPerExecute(Int.MaxValue)
-    ) {
-      var promiseDelivered = 0
-      override def apply(state: Unit, in: Int): Future[TraversableOnce[(Seq[Unit], Future[TraversableOnce[Int]])]] = {
-        // Return one promise at a time
-        val ret = Future.value(Seq((Seq(()), promises(promiseDelivered))))
-        promiseDelivered += 1
-        ret
-      }
+    assert(ab.executeTick === dequeueData)
+    assert(!queue.added)
 
-      override def decoder: Injection[Int, Int] = implicitly
-      override def encoder: Injection[Int, Int] = implicitly
-    }
+    p.setValue(data)
+    assert(queue.added)
+    assert(queue.addedAllData === data)
+    assert(queue.dequeuedCount === 57)
+  }
 
-    val beforeExecute = new CyclicBarrier(2)
-    val afterExecute = new CyclicBarrier(2)
+  "Queues data on execute" in {
+    val queue = new TestFutureQueue
+    val p = promise
+    val ab = new TestAsyncBase(queue, applyData = p)
 
-    val t = new Thread {
-      override def run(): Unit = {
-        for (i <- 0 until totalPromisesCount) {
-          beforeExecute.await()
-          ab.execute((), 1)
-          afterExecute.await()
-        }
-      }
-    }
+    assert(ab.execute(1089, 5) === dequeueData)
+    assert(!queue.added)
 
-    t.start
+    p.setValue(data)
+    assert(queue.added)
+    assert(queue.addedAllData === data)
+    assert(queue.dequeuedCount === 57)
+  }
 
-    // Let two promises get queued up
-    beforeExecute.await()
-    afterExecute.await()
-    beforeExecute.await()
-    afterExecute.await()
+  "Queues state when executeTick fails" in {
+    val queue = new TestFutureQueue
+    val p = promise
+    val ex = new RuntimeException("test fail 1")
+    val ab = new TestAsyncBase(queue, tickData = p)
 
-    // Two promises have been processed, they should get queued up
-    assert(ab.outstandingFuturesQueue.size == 2)
+    assert(ab.executeTick === dequeueData)
+    assert(!queue.added)
 
-    beforeExecute.await()
-    Thread.sleep(1000)
-    // t should block now, unblock it by clearing one
-    promises(0).setValue(Seq(0))
-    afterExecute.await()
-    assert(ab.outstandingFuturesQueue.size == 2)
+    p.setException(ex)
+    assert(queue.added)
+    assert(queue.addedData._1 === Nil)
+    assert(ex === intercept[RuntimeException] { Await.result(queue.addedData._2) })
+  }
 
-    beforeExecute.await()
-    Thread.sleep(1000)
-    // t should block now, unblock it by clearing one
-    promises(2).setValue(Seq(0))
-    afterExecute.await()
+  "Queues state when execute fails" in {
+    val queue = new TestFutureQueue
+    val p = promise
+    val ex = new RuntimeException("test fail 2")
+    val ab = new TestAsyncBase(queue, applyData = p)
 
-    // t should get unblocked now and stay unblocked
-    assert(ab.outstandingFuturesQueue.size == 2)
-    ab.outstandingFuturesQueue.foreach { f => assert(!f.isDefined) }
+    assert(ab.execute(1089, 5) === dequeueData)
+    assert(!queue.added)
+
+    p.setException(ex)
+    assert(queue.added)
+    assert(queue.addedData._1 === List(1089))
+    assert(ex === intercept[RuntimeException] { Await.result(queue.addedData._2) })
   }
 }

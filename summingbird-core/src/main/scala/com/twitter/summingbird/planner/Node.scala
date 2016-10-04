@@ -109,15 +109,15 @@ case class SourceNode[P <: Platform[P]](override val members: List[Producer[P, _
  * @tparam P                          Platform, e.g. Scalding, Storm, ConcurrentMemory.
  */
 case class Dag[P <: Platform[P]](
-  originalTail: TailProducer[P, _],
-  producerToPriorityNames: Map[Producer[P, Any], List[String]],
-  tail: TailProducer[P, _],
-  producerToNode: Map[Producer[P, _], Node[P]],
-  nodes: List[Node[P]],
-  nodeToName: Map[Node[P], String] = Map[Node[P], String](),
-  nameToNode: Map[String, Node[P]] = Map[String, Node[P]](),
-  dependenciesOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]](),
-  dependantsOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]]()) {
+    originalTail: TailProducer[P, _],
+    producerToPriorityNames: Map[Producer[P, Any], List[String]],
+    tail: TailProducer[P, _],
+    producerToNode: Map[Producer[P, _], Node[P]],
+    nodes: List[Node[P]],
+    nodeToName: Map[Node[P], String] = Map[Node[P], String](),
+    nameToNode: Map[String, Node[P]] = Map[String, Node[P]](),
+    dependenciesOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]](),
+    dependantsOfM: Map[Node[P], List[Node[P]]] = Map[Node[P], List[Node[P]]]()) {
 
   lazy val producerDependants = Dependants(tail)
 
@@ -174,12 +174,12 @@ object Dag {
     producerToPriorityNames: Map[Producer[P, Any], List[String]],
     tail: TailProducer[P, Any],
     registry: List[Node[P]]): Dag[P] =
-      apply[P, T](
-        originalTail,
-        producerToPriorityNames,
-        tail,
-        registry,
-        { (s: String) => s.replaceAll("""[\[\]]|\-""", "|") })
+    apply[P, T](
+      originalTail,
+      producerToPriorityNames,
+      tail,
+      registry,
+      { (s: String) => s.replaceAll("""[\[\]]|\-""", "|") })
 
   def apply[P <: Platform[P], T](
     originalTail: TailProducer[P, Any],
