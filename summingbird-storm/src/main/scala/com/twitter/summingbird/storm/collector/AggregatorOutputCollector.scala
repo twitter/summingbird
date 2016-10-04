@@ -35,10 +35,10 @@ class AggregatorOutputCollector[K, V: Semigroup](
     executeTimeCounter: Incrementor,
     failHandler: AnyRef => Unit) extends SpoutOutputCollector(in) {
 
-  type AggKey = Int
-  type AggValue = CMap[K, V]
-  type OutputTuple = (AggKey, AggValue)
-  type OutputMessageId = TraversableOnce[Object]
+  private type AggKey = Int
+  private type AggValue = CMap[K, V]
+  private type OutputTuple = (AggKey, AggValue)
+  private type OutputMessageId = TraversableOnce[Object]
 
   // An individual summer is created for each stream of data. This map keeps track of the stream and its corresponding summer.
   private val cacheByStreamId = MMap.empty[String, AsyncSummer[(K, (Seq[Object], V)), Map[K, (Seq[Object], V)]]]
