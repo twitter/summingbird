@@ -186,14 +186,6 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     type ExecutorValueType = (Timestamp, V)
     type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
 
-    val supplier: MergeableStoreFactory[ExecutorKeyType, V] = summer.store match {
-      case m: MergeableStoreFactory[ExecutorKeyType, V] => m
-      case _ => sys.error("Should never be able to get here, looking for a MergeableStoreFactory from %s".format(summer.store))
-    }
-
-    val wrappedStore: MergeableStoreFactory[ExecutorKeyType, ExecutorValueType] =
-      MergeableStoreFactoryAlgebra.wrapOnlineFactory(supplier)
-
     val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
     val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
     val shouldEmit = stormDag.dependantsOf(node).size > 0
@@ -218,6 +210,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
       FlatMapOperation.apply(storeBaseFMOp)
 
+    val supplier: MergeableStoreFactory[ExecutorKeyType, V] = summer.store
+
     val sinkBolt = BaseBolt(
       jobID,
       metrics.metrics,
@@ -227,7 +221,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       ackOnEntry,
       maxExecutePerSec,
       new executor.Summer(
-        wrappedStore,
+        () => new WrappedTSInMergeable(supplier.mergeableStore(semigroup)),
         flatmapOp,
         getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
         getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),

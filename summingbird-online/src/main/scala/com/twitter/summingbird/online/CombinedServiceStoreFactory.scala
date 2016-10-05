@@ -28,22 +28,19 @@ object CombinedServiceStoreFactory {
   def apply[K, V](onlineStore: => MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit b: Batcher) = {
 
     lazy val clientStore = ClientStore[K, V](onlineStore, batchesToKeep)(b, onlineStore.semigroup)
-
-    new CombinedServiceStoreFactory[K, V] {
-      def mergeableStore = () => onlineStore
-      def mergeableBatcher = b
-      def serviceStore = () => clientStore
-    }
+    from[K, V](clientStore, onlineStore, b)
   }
 
   def apply[K, V](offlineStore: => ReadableStore[K, (BatchID, V)], onlineStore: => MergeableStore[(K, BatchID), V], batchesToKeep: Int)(implicit b: Batcher) = {
 
     lazy val clientStore = ClientStore[K, V](offlineStore, onlineStore, batchesToKeep)(b, onlineStore.semigroup)
-
-    new CombinedServiceStoreFactory[K, V] {
-      def mergeableStore = () => onlineStore
-      def mergeableBatcher = b
-      def serviceStore = () => clientStore
-    }
+    from[K, V](clientStore, onlineStore, b)
   }
+
+  private[this] def from[K, V](cs: => ReadableStore[K, V], online: => MergeableStore[(K, BatchID), V], b: Batcher): CombinedServiceStoreFactory[K, V] =
+    new CombinedServiceStoreFactory[K, V] {
+      def mergeableStore = _ => online
+      def mergeableBatcher = b
+      def serviceStore = () => cs
+    }
 }
