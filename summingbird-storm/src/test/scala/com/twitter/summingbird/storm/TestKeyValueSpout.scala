@@ -64,8 +64,8 @@ class TestKeyValueSpout extends WordSpec {
 
     //output
     val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
-    expectedTuples.add((0, Map((1, BatchID(1)) -> (timeStamp, 1), (2, BatchID(1)) -> (timeStamp, 1)), None, None))
-    expectedTuples.add((0, Map((3, BatchID(1)) -> (timeStamp, 1), (4, BatchID(1)) -> (timeStamp, 1)), None, None))
+    expectedTuples.add((0, Map((1, BatchID(1)) -> ((timeStamp, 1)), (2, BatchID(1)) -> ((timeStamp, 1))), None, None))
+    expectedTuples.add((0, Map((3, BatchID(1)) -> ((timeStamp, 1)), (4, BatchID(1)) -> ((timeStamp, 1))), None, None))
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
@@ -83,7 +83,7 @@ class TestKeyValueSpout extends WordSpec {
 
     //output
     val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
-    expectedTuples.add((0, Map((1, BatchID(1)) -> (timeStamp, 6)), None, None))
+    expectedTuples.add((0, Map((1, BatchID(1)) -> ((timeStamp, 6))), None, None))
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
@@ -118,7 +118,7 @@ class TestKeyValueSpout extends WordSpec {
 
     //output
     val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
-    expectedTuples.add((0, Map((2, BatchID(1)) -> (timeStamp, 1), (1, BatchID(1)) -> (timeStamp, 1), (3, BatchID(1)) -> (timeStamp, 1), (4, BatchID(1)) -> (timeStamp, 1)), None, None))
+    expectedTuples.add((0, Map((2, BatchID(1)) -> ((timeStamp, 1)), (1, BatchID(1)) -> ((timeStamp, 1)), (3, BatchID(1)) -> ((timeStamp, 1)), (4, BatchID(1)) -> ((timeStamp, 1))), None, None))
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
