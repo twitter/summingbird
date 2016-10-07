@@ -6,24 +6,22 @@ import backtype.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
 import backtype.storm.tuple.Fields
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
+import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.online.option.SummerBuilder
 import com.twitter.summingbird.storm.Constants._
 import com.twitter.tormenta.spout.SpoutProxy
+import java.util
+import java.util.{ List => JList }
+import scala.collection.mutable.{ MutableList => MList }
 import com.twitter.summingbird.storm.collector.AggregatorOutputCollector
 import com.twitter.util.{ Duration, Time }
-import java.util.{ Map => JMap }
 
 /**
  * This is a spout used when the spout is being followed by summer.
  * It uses a AggregatorOutputCollector on open.
  */
-class KeyValueSpout[K, V: Semigroup](
-    protected val self: IRichSpout,
-    summerBuilder: SummerBuilder,
-    summerShards: KeyValueShards,
-    flushExecTimeCounter: Incrementor,
-    executeTimeCounter: Incrementor) extends SpoutProxy {
+class KeyValueSpout[K, V: Semigroup](val in: IRichSpout, summerBuilder: SummerBuilder, summerShards: KeyValueShards, flushExecTimeCounter: Incrementor, executeTimeCounter: Incrementor) extends SpoutProxy {
 
   private final val tickFrequency = Duration.fromMilliseconds(1000)
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
@@ -36,11 +34,11 @@ class KeyValueSpout[K, V: Semigroup](
   /**
    * On open the outputCollector is wrapped with AggregateOutputCollector and fed to the KeyValueSpout.
    */
-  override def open(conf: JMap[_, _],
+  override def open(conf: util.Map[_, _],
     topologyContext: TopologyContext,
     outputCollector: SpoutOutputCollector): Unit = {
     adapterCollector = new AggregatorOutputCollector(outputCollector, summerBuilder, summerShards, flushExecTimeCounter, executeTimeCounter)
-    super.open(conf, topologyContext, adapterCollector)
+    in.open(conf, topologyContext, adapterCollector)
   }
 
   /**
@@ -51,7 +49,7 @@ class KeyValueSpout[K, V: Semigroup](
       adapterCollector.timerFlush()
       lastDump = Time.now
     }
-    super.nextTuple()
+    in.nextTuple()
   }
 
   /**
@@ -71,4 +69,6 @@ class KeyValueSpout[K, V: Semigroup](
     val msgIds = msgId.asInstanceOf[TraversableOnce[AnyRef]]
     msgIds.foreach { super.fail(_) }
   }
+
+  override protected def self: IRichSpout = in
 }
