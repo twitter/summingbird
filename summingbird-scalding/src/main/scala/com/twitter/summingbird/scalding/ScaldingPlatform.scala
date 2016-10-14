@@ -723,13 +723,13 @@ class Scalding(
   }
 
   final def buildConfig(hConf: Configuration): Config = {
-    val postConfig = finalTransform(Config.hadoopWithDefaults(hConf))
+    val postConfig = finalTransform(configProvider(hConf))
     postConfig.toMap.foreach { case (k, v) => hConf.set(k, v) }
     postConfig
   }
 
   private def finalTransform(c: Config): Config =
-    transformConfig(withKryo(c))
+    transformConfig(c)
       // Store the options used:
       .+("summingbird.options" -> options.toString)
       .+("summingbird.jobname" -> jobName)
