@@ -52,7 +52,7 @@ import scala.util.control.NonFatal
  * @author Ashu Singhal
  */
 
-class Summer[Key, Value: Semigroup, Event, S, D](
+class Summer[Key, Value: Semigroup, Event, S](
   @transient storeSupplier: () => Mergeable[Key, Value],
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
@@ -61,7 +61,7 @@ class Summer[Key, Value: Semigroup, Event, S, D](
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
-  includeSuccessHandler: IncludeSuccessHandler) extends AsyncBase[(Int, CMap[Key, Value]), Event, InputState[S], D](
+  includeSuccessHandler: IncludeSuccessHandler) extends AsyncBase[(Int, CMap[Key, Value]), Event, InputState[S]](
   maxWaitingFutures,
   maxWaitingTime,
   maxEmitPerExec) {

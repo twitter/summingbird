@@ -16,22 +16,22 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import scala.util.{Failure, Success}
-import backtype.storm.task.{OutputCollector, TopologyContext}
+import scala.util.{ Failure, Success }
+import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.IRichBolt
 import backtype.storm.topology.OutputFieldsDeclarer
-import backtype.storm.tuple.{Fields, Tuple, TupleImpl}
+import backtype.storm.tuple.{ Fields, Tuple, TupleImpl }
 import com.twitter.bijection.Injection
-import java.util.{Map => JMap}
-import com.twitter.summingbird.storm.option.{AckOnEntry, AnchorTuples, MaxExecutePerSecond}
+import java.util.{ Map => JMap }
+import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
 import com.twitter.summingbird.online.executor.OperationContainer
 import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.option.JobId
-import com.twitter.summingbird.{Group, JobCounters, Name, SummingbirdRuntimeStats}
+import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
 import com.twitter.summingbird.online.Externalizer
 import scala.collection.JavaConverters._
-import java.util.{List => JList}
-import org.slf4j.{Logger, LoggerFactory}
+import java.util.{ List => JList }
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
  *
@@ -47,8 +47,8 @@ case class BaseBolt[I, O](jobID: JobId,
     outputFields: Fields,
     ackOnEntry: AckOnEntry,
     maxExecutePerSec: MaxExecutePerSecond,
-    decoder: Injection[I,  JList[AnyRef]],
-    encoder: Injection[O,  JList[AnyRef]],
+    decoder: Injection[I, JList[AnyRef]],
+    encoder: Injection[O, JList[AnyRef]],
     executor: OperationContainer[I, O, InputState[Tuple]]) extends IRichBolt {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)

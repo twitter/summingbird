@@ -26,11 +26,11 @@ import com.twitter.summingbird.online.option.{
   MaxEmitPerExecute
 }
 
-class IntermediateFlatMap[T, U, S, D](
+class IntermediateFlatMap[T, U, S](
     @transient flatMapOp: FlatMapOperation[T, U],
     maxWaitingFutures: MaxWaitingFutures,
     maxWaitingTime: MaxFutureWaitTime,
-    maxEmitPerExec: MaxEmitPerExecute) extends AsyncBase[T, U, S, D](maxWaitingFutures, maxWaitingTime, maxEmitPerExec) {
+    maxEmitPerExec: MaxEmitPerExecute) extends AsyncBase[T, U, S](maxWaitingFutures, maxWaitingTime, maxEmitPerExec) {
 
   val lockedOp = Externalizer(flatMapOp)
 

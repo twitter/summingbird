@@ -22,7 +22,7 @@ import com.twitter.util._
 
 import scala.util.Try
 
-abstract class AsyncBase[I, O, S, D](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I, O, S] {
+abstract class AsyncBase[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I, O, S] {
 
   /**
    * If you can use Future.value below, do so. The double Future is here to deal with
