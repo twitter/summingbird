@@ -18,13 +18,11 @@ package com.twitter.summingbird.online.executor
 
 import com.twitter.util.{ Await, Future, Promise }
 import com.twitter.algebird.util.summer.AsyncSummer
-import com.twitter.algebird.{ Semigroup, SummingQueue }
+import com.twitter.algebird.Semigroup
 import com.twitter.storehaus.algebra.Mergeable
-import com.twitter.bijection.Injection
 
-import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer, MergeableStoreFactory }
+import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer }
 import com.twitter.summingbird.online.option._
-import com.twitter.summingbird.option.CacheSize
 
 // These CMaps we generate in the FFM, we use it as an immutable wrapper around
 // a mutable map.
@@ -63,16 +61,12 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
-  includeSuccessHandler: IncludeSuccessHandler,
-  pDecoder: Injection[(Int, CMap[Key, Value]), D],
-  pEncoder: Injection[Event, D]) extends AsyncBase[(Int, CMap[Key, Value]), Event, InputState[S], D, RC](
+  includeSuccessHandler: IncludeSuccessHandler) extends AsyncBase[(Int, CMap[Key, Value]), Event, InputState[S], D, RC](
   maxWaitingFutures,
   maxWaitingTime,
   maxEmitPerExec) {
 
   val lockedOp = Externalizer(flatMapOp)
-  val encoder = pEncoder
-  val decoder = pDecoder
 
   val storeBox = Externalizer(storeSupplier)
   lazy val storePromise = Promise[Mergeable[Key, Value]]

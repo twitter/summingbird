@@ -17,7 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.online.executor
 
 import com.twitter.algebird.Semigroup
-import com.twitter.bijection.Injection
 import com.twitter.util.Future
 
 import com.twitter.summingbird.online.Externalizer
@@ -57,18 +56,13 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
-  summerShards: KeyValueShards,
-  pDecoder: Injection[Event, D],
-  pEncoder: Injection[(Int, CMap[Key, Value]), D])
+  summerShards: KeyValueShards)
     extends AsyncBase[Event, (Int, CMap[Key, Value]), S, D, RC](maxWaitingFutures,
       maxWaitingTime,
       maxEmitPerExec) {
 
   type InS = S
   type OutputElement = (Int, CMap[Key, Value])
-
-  val encoder = pEncoder
-  val decoder = pDecoder
 
   val lockedOp = Externalizer(flatMapOp)
 

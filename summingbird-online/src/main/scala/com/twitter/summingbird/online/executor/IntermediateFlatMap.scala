@@ -18,7 +18,6 @@ package com.twitter.summingbird.online.executor
 
 import com.twitter.util.Future
 
-import com.twitter.bijection.Injection
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.online.option.{
@@ -31,12 +30,7 @@ class IntermediateFlatMap[T, U, S, D, RC](
     @transient flatMapOp: FlatMapOperation[T, U],
     maxWaitingFutures: MaxWaitingFutures,
     maxWaitingTime: MaxFutureWaitTime,
-    maxEmitPerExec: MaxEmitPerExecute,
-    pDecoder: Injection[T, D],
-    pEncoder: Injection[U, D]) extends AsyncBase[T, U, S, D, RC](maxWaitingFutures, maxWaitingTime, maxEmitPerExec) {
-
-  val encoder = pEncoder
-  val decoder = pDecoder
+    maxEmitPerExec: MaxEmitPerExecute) extends AsyncBase[T, U, S, D, RC](maxWaitingFutures, maxWaitingTime, maxEmitPerExec) {
 
   val lockedOp = Externalizer(flatMapOp)
 

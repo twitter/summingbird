@@ -17,11 +17,8 @@ limitations under the License.
 package com.twitter.summingbird.online.executor
 
 import scala.util.Try
-import com.twitter.bijection.Injection
 
-trait OperationContainer[Input, Output, State, WireFmt, RuntimeContext] {
-  def decoder: Injection[Input, WireFmt]
-  def encoder: Injection[Output, WireFmt]
+trait OperationContainer[Input, Output, State, RuntimeContext] {
   def executeTick: TraversableOnce[(Seq[State], Try[TraversableOnce[Output]])]
   def execute(state: State,
     data: Input): TraversableOnce[(Seq[State], Try[TraversableOnce[Output]])]
