@@ -19,11 +19,11 @@ package com.twitter.summingbird.online.executor
 import scala.util.Try
 
 trait OperationContainer[Input, Output, State] {
-  def init() {}
-  def cleanup() {}
+  def init(): Unit = {}
+  def cleanup(): Unit = {}
 
   def executeTick: TraversableOnce[(Seq[State], Try[TraversableOnce[Output]])]
   def execute(state: State,
     data: Input): TraversableOnce[(Seq[State], Try[TraversableOnce[Output]])]
-  def notifyFailure(inputs: Seq[State], e: Throwable) {}
+  def notifyFailure(inputs: Seq[State], e: Throwable): Unit = {}
 }

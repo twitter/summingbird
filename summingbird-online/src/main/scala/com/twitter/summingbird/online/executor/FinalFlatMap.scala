@@ -124,7 +124,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_]](
     tup: Event) =
     lockedOp.get.apply(tup).map { cache(state, _) }.flatten
 
-  override def cleanup {
+  override def cleanup(): Unit = {
     lockedOp.get.close
     sCache.cleanup
   }

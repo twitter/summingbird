@@ -40,5 +40,5 @@ class IntermediateFlatMap[T, U, S](
       List((List(state), Future.value(res)))
     }
 
-  override def cleanup() { lockedOp.get.close }
+  override def cleanup(): Unit = lockedOp.get.close
 }

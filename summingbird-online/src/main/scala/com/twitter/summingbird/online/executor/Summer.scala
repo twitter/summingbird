@@ -78,7 +78,7 @@ class Summer[Key, Value: Semigroup, Event, S](
   val successHandlerBox = Externalizer(successHandler)
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
-  override def init() {
+  override def init(): Unit = {
     super.init()
     storePromise.setValue(storeBox.get())
     store.toString // Do the lazy evaluation now so we can connect before tuples arrive.
@@ -119,5 +119,5 @@ class Summer[Key, Value: Semigroup, Event, S](
     }
   }
 
-  override def cleanup = Await.result(store.close)
+  override def cleanup(): Unit = Await.result(store.close)
 }
