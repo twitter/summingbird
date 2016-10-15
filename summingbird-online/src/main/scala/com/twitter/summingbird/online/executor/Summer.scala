@@ -52,7 +52,7 @@ import scala.util.control.NonFatal
  * @author Ashu Singhal
  */
 
-class Summer[Key, Value: Semigroup, Event, S, D, RC](
+class Summer[Key, Value: Semigroup, Event, S, D](
   @transient storeSupplier: () => Mergeable[Key, Value],
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
@@ -61,7 +61,7 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
-  includeSuccessHandler: IncludeSuccessHandler) extends AsyncBase[(Int, CMap[Key, Value]), Event, InputState[S], D, RC](
+  includeSuccessHandler: IncludeSuccessHandler) extends AsyncBase[(Int, CMap[Key, Value]), Event, InputState[S], D](
   maxWaitingFutures,
   maxWaitingTime,
   maxEmitPerExec) {
@@ -78,8 +78,8 @@ class Summer[Key, Value: Semigroup, Event, S, D, RC](
   val successHandlerBox = Externalizer(successHandler)
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
-  override def init(runtimeContext: RC) {
-    super.init(runtimeContext)
+  override def init() {
+    super.init()
     storePromise.setValue(storeBox.get())
     store.toString // Do the lazy evaluation now so we can connect before tuples arrive.
 

@@ -61,7 +61,7 @@ class AsyncBaseSpec extends WordSpec {
   class TestAsyncBase(
     queue: TestFutureQueue,
     tickData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented"),
-    applyData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented")) extends AsyncBase[Int, Int, Int, Int, Unit](
+    applyData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented")) extends AsyncBase[Int, Int, Int, Int](
     MaxWaitingFutures(100),
     MaxFutureWaitTime(1.minute),
     MaxEmitPerExecute(57)

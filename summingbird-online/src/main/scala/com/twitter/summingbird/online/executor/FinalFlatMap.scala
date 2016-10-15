@@ -50,14 +50,14 @@ private[summingbird] case class KeyValueShards(get: Int) {
     math.abs(k.hashCode % get)
 }
 
-class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D, RC](
+class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_], D](
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
   summerBuilder: SummerBuilder,
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
   summerShards: KeyValueShards)
-    extends AsyncBase[Event, (Int, CMap[Key, Value]), S, D, RC](maxWaitingFutures,
+    extends AsyncBase[Event, (Int, CMap[Key, Value]), S, D](maxWaitingFutures,
       maxWaitingTime,
       maxEmitPerExec) {
 

@@ -49,7 +49,7 @@ case class BaseBolt[I, O](jobID: JobId,
     maxExecutePerSec: MaxExecutePerSecond,
     decoder: Injection[I,  JList[AnyRef]],
     encoder: Injection[O,  JList[AnyRef]],
-    executor: OperationContainer[I, O, InputState[Tuple], TopologyContext]) extends IRichBolt {
+    executor: OperationContainer[I, O, InputState[Tuple]]) extends IRichBolt {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -173,7 +173,7 @@ case class BaseBolt[I, O](jobID: JobId,
   override def prepare(conf: JMap[_, _], context: TopologyContext, oc: OutputCollector) {
     collector = oc
     metrics().foreach { _.register(context) }
-    executor.init(context)
+    executor.init()
     StormStatProvider.registerMetrics(jobID, context, countersForBolt)
     SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
     logger.debug("In Bolt prepare: added jobID stat provider for jobID {}", jobID)
