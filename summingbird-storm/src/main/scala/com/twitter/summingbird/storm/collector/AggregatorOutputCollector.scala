@@ -56,10 +56,10 @@ class AggregatorOutputCollector[K, V: Semigroup](
   private def convertToSummerInputFormat(flushedCache: Map[K, (OutputMessageId, V)]): TraversableOnce[OutputTuple] =
     flushedCache.groupBy {
       case (k, _) => summerShards.summerIdFor(k)
-    }.map {
-      case (index: AggKey, m: Map[K, (OutputMessageId, V)]) =>
-        val messageIds = m.values.iterator.flatMap { case (ids, _) => ids }
-        val results = m.mapValues { case (_, v) => v }
+    }.iterator.map {
+      case (index, data) =>
+        val messageIds = data.values.iterator.flatMap { case (ids, _) => ids }
+        val results = data.mapValues { case (_, v) => v }
         (index, results, messageIds)
     }
 
