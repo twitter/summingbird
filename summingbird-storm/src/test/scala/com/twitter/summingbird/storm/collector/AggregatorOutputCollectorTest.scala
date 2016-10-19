@@ -12,16 +12,16 @@ import com.twitter.util.Future
 import org.scalatest.WordSpec
 import scala.collection.mutable.{ Set => MSet }
 
-class TestAsyncSummer(state: Seq[Object]) extends AsyncSummer[(Int, (Seq[Object], Int)), Iterable[(Int, (Seq[Object], Int))]] {
-  override def flush: Future[Iterable[(Int, (Seq[Object], Int))]] = Future.Nil
+class TestAsyncSummer(state: Iterator[Object]) extends AsyncSummer[(Int, (Iterator[Object], Int)), Iterable[(Int, (Iterator[Object], Int))]] {
+  override def flush: Future[Iterable[(Int, (Iterator[Object], Int))]] = Future.Nil
   override def isFlushed = true
   override def tick = Future.Nil
-  override def addAll(vals: TraversableOnce[(Int, (Seq[Object], Int))]): Future[Iterable[(Int, (Seq[Object], Int))]] =
+  override def addAll(vals: TraversableOnce[(Int, (Iterator[Object], Int))]): Future[Iterable[(Int, (Iterator[Object], Int))]] =
     Future(Map(0 -> ((state, 10))))
 }
 
 class AggregatorOutputCollectorTest extends WordSpec {
-  def setup(state: Seq[Object], expected: MSet[(Int, Map[_, _], Option[String], Option[Any])]) = {
+  def setup(state: Iterator[Object], expected: MSet[TestAggregateOutpoutCollector.ExpectedTuple]) = {
     val mockCollector: ISpoutOutputCollector = new MockedISpoutOutputCollector
     val validatingCollector = new TestAggregateOutpoutCollector(mockCollector, expected)
 
@@ -42,33 +42,33 @@ class AggregatorOutputCollectorTest extends WordSpec {
   }
 
   "Yields addAll result with no stream/message ID" in {
-    val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
     expectedTuples.add((0, Map(0 -> 10), None, None))
-    val (aggregator, validator) = setup(Nil, expectedTuples)
+    val (aggregator, validator) = setup(Iterator.empty, expectedTuples)
     aggregator.emit(new Values((4, 5).asInstanceOf[AnyRef]))
     assert(validator.getSize == 0)
   }
 
   "Yields addAll result with the specified stream ID" in {
-    val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
     expectedTuples.add((0, Map(0 -> 10), Some("foo"), None))
-    val (aggregator, validator) = setup(Nil, expectedTuples)
+    val (aggregator, validator) = setup(Iterator.empty, expectedTuples)
     aggregator.emit("foo", new Values((4, 5).asInstanceOf[AnyRef]))
     assert(validator.getSize == 0)
   }
 
   "Yields addAll result with the associated message ID" in {
-    val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
     expectedTuples.add((0, Map(0 -> 10), None, Some(List("messageId"))))
-    val (aggregator, validator) = setup(Seq("messageId"), expectedTuples)
+    val (aggregator, validator) = setup(Iterator("messageId"), expectedTuples)
     aggregator.emit(new Values((0, 5).asInstanceOf[AnyRef]))
     assert(validator.getSize == 0)
   }
 
   "Doesn't return message ID from colliding key" in {
-    val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
     expectedTuples.add((0, Map(0 -> 10), None, None))
-    val (aggregator, validator) = setup(Nil, expectedTuples)
+    val (aggregator, validator) = setup(Iterator.empty, expectedTuples)
     aggregator.emit(new Values((10, 5).asInstanceOf[AnyRef]), "messageId")
     assert(validator.getSize == 0)
   }

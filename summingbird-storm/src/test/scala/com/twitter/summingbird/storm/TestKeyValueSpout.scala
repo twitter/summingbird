@@ -40,7 +40,7 @@ object TestKeyValueSpout {
 }
 class TestKeyValueSpout extends WordSpec {
 
-  def process(spout: Spout[(Timestamp, (Int, Int))], summer: SummerBuilder, expected: MSet[(Int, Map[_, _], Option[String], Option[Any])]) = {
+  def process(spout: Spout[(Timestamp, (Int, Int))], summer: SummerBuilder, expected: MSet[TestAggregateOutpoutCollector.ExpectedTuple]) = {
     val formattedSummerSpout = spout.map {
       case (time, (k, v)) => ((k, BatchID(1)), (time, v))
     }
@@ -63,7 +63,7 @@ class TestKeyValueSpout extends WordSpec {
     }
 
     //output
-    val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
     expectedTuples.add((0, Map((1, BatchID(1)) -> ((timeStamp, 1)), (2, BatchID(1)) -> ((timeStamp, 1))), None, None))
     expectedTuples.add((0, Map((3, BatchID(1)) -> ((timeStamp, 1)), (4, BatchID(1)) -> ((timeStamp, 1))), None, None))
 
@@ -82,7 +82,7 @@ class TestKeyValueSpout extends WordSpec {
     }
 
     //output
-    val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
     expectedTuples.add((0, Map((1, BatchID(1)) -> ((timeStamp, 6))), None, None))
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
@@ -100,7 +100,7 @@ class TestKeyValueSpout extends WordSpec {
     }
 
     //output
-    val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
@@ -117,7 +117,7 @@ class TestKeyValueSpout extends WordSpec {
     }
 
     //output
-    val expectedTuples = MSet[(Int, Map[_, _], Option[String], Option[Any])]()
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
     expectedTuples.add((0, Map((2, BatchID(1)) -> ((timeStamp, 1)), (1, BatchID(1)) -> ((timeStamp, 1)), (3, BatchID(1)) -> ((timeStamp, 1)), (4, BatchID(1)) -> ((timeStamp, 1))), None, None))
 
     val (spout, collector) = process(basespout, summer, expectedTuples)

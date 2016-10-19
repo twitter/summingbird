@@ -5,10 +5,12 @@ import scala.collection.mutable.{ Set => MSet }
 import java.util
 import org.scalacheck._
 
-/**
- * Created by pnaramsetti on 8/19/16.
- */
-class TestAggregateOutpoutCollector(in: ISpoutOutputCollector, expectedTuplesToBeSent: MSet[(Int, Map[_, _], Option[String], Option[Any])]) extends SpoutOutputCollector(in) {
+object TestAggregateOutpoutCollector {
+  type ExpectedTuple = (Int, Map[_, _], Option[String], Option[Seq[Any]])
+  def emptyTupleSet = MSet.empty[ExpectedTuple]
+}
+
+class TestAggregateOutpoutCollector(in: ISpoutOutputCollector, expectedTuplesToBeSent: MSet[TestAggregateOutpoutCollector.ExpectedTuple]) extends SpoutOutputCollector(in) {
 
   private val expectedTuples = expectedTuplesToBeSent
 
@@ -24,10 +26,13 @@ class TestAggregateOutpoutCollector(in: ISpoutOutputCollector, expectedTuplesToB
     messageIdOpt: Option[Any]): util.List[Integer] = {
     val key = list.get(0).asInstanceOf[Int]
     val value = list.get(1).asInstanceOf[Map[_, _]]
-    if (expectedTuples.contains((key, value, streamOpt, messageIdOpt))) {
-      expectedTuples.remove((key, value, streamOpt, messageIdOpt))
+    val messageIdOptAsSeq = messageIdOpt.map {
+      case iter: TraversableOnce[_] => iter.toSeq
+    }
+    if (expectedTuples.contains((key, value, streamOpt, messageIdOptAsSeq))) {
+      expectedTuples.remove((key, value, streamOpt, messageIdOptAsSeq))
     } else {
-      println(("Emitted tuple (%s, %s, %s, %s) is not expected to be emitted".format(key, value, streamOpt, messageIdOpt)))
+      println(("Emitted tuple (%s, %s, %s, %s) is not expected to be emitted".format(key, value, streamOpt, messageIdOptAsSeq)))
       assert(false)
     }
     ret

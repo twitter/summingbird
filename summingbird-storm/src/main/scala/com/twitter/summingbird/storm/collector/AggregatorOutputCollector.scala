@@ -25,11 +25,19 @@ class AggregatorOutputCollector[K, V: Semigroup](
 
   private type AggKey = Int
   private type AggValue = Map[K, V]
-  private type OutputMessageId = TraversableOnce[Object]
+  private type OutputMessageId = Iterator[Object]
   private type OutputTuple = (AggKey, AggValue, OutputMessageId)
 
   // An individual summer is created for each stream of data. This map keeps track of the stream and its corresponding summer.
-  private val cacheByStreamId = MMap.empty[String, AsyncSummer[(K, (Seq[Object], V)), Map[K, (Seq[Object], V)]]]
+  private val cacheByStreamId = MMap.empty[String, AsyncSummer[(K, (OutputMessageId, V)), Map[K, (OutputMessageId, V)]]]
+
+  implicit val messageIdSg = new Semigroup[OutputMessageId] {
+    override def plus(a: OutputMessageId, b: OutputMessageId) = a ++ b
+    override def sumOption(iter: TraversableOnce[OutputMessageId]) =
+      if (iter.isEmpty) None else Some(iter.flatten)
+  }
+
+  private def getSummer = summerBuilder.getSummer[K, (OutputMessageId, V)](implicitly[Semigroup[(OutputMessageId, V)]])
 
   /**
    * This method is invoked from the nextTuple() of the spout.
@@ -45,12 +53,12 @@ class AggregatorOutputCollector[K, V: Semigroup](
     flushExecTimeCounter.incrBy(Time.now.inMillis - startTime.inMillis)
   }
 
-  private def convertToSummerInputFormat(flushedCache: Map[K, (Seq[Object], V)]): TraversableOnce[OutputTuple] =
+  private def convertToSummerInputFormat(flushedCache: Map[K, (OutputMessageId, V)]): TraversableOnce[OutputTuple] =
     flushedCache.groupBy {
       case (k, _) => summerShards.summerIdFor(k)
     }.map {
       case (index: AggKey, m: Map[K, (OutputMessageId, V)]) =>
-        val messageIds = m.values.flatMap { case (ids, _) => ids }
+        val messageIds = m.values.iterator.flatMap { case (ids, _) => ids }
         val results = m.mapValues { case (_, v) => v }
         (index, results, messageIds)
     }
@@ -93,10 +101,10 @@ class AggregatorOutputCollector[K, V: Semigroup](
   Method wraps the adding the tuple to the spoutCache along with adding the corresponding
   messageId to the messageId Tracker.
    */
-  private def add(tuple: (K, V), streamId: String, messageId: Option[AnyRef] = None): Future[Map[K, (Seq[Object], V)]] = {
-    val buffer = messageId.map { id => ListBuffer(id) }.getOrElse(Nil)
+  private def add(tuple: (K, V), streamId: String, messageId: Option[AnyRef] = None): Future[Map[K, (OutputMessageId, V)]] = {
+    val buffer = messageId.iterator
     val (k, v) = tuple
-    cacheByStreamId.getOrElseUpdate(streamId, summerBuilder.getSummer[K, (Seq[Object], V)](implicitly[Semigroup[(Seq[Object], V)]]))
+    cacheByStreamId.getOrElseUpdate(streamId, getSummer)
       .add(k -> ((buffer, v)))
   }
 
