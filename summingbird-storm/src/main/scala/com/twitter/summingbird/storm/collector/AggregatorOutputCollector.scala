@@ -37,7 +37,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
       if (iter.isEmpty) None else Some(iter.flatten)
   }
 
-  private def getSummer = summerBuilder.getSummer[K, (OutputMessageId, V)](implicitly[Semigroup[(OutputMessageId, V)]])
+  private def getSummer = summerBuilder.getSummer[K, (OutputMessageId, V)]
 
   /**
    * This method is invoked from the nextTuple() of the spout.
