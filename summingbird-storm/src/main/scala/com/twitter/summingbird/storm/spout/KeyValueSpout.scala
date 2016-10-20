@@ -55,8 +55,7 @@ class KeyValueSpout[K, V: Semigroup](
       maxEmitPerExec,
       summerShards,
       flushExecTimeCounter,
-      executeTimeCounter,
-      fail(_)
+      executeTimeCounter
     )
     super.open(conf, topologyContext, adapterCollector)
   }

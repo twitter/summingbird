@@ -1,12 +1,9 @@
 package com.twitter.summingbird.storm
 
-import backtype.storm.spout.{ ISpoutOutputCollector, SpoutOutputCollector }
-import com.twitter.summingbird.storm.spout.{ KeyValueSpout, TraversableSpout }
-import backtype.storm.task.TopologyContext
-import backtype.storm.topology.IRichSpout
+import backtype.storm.spout.ISpoutOutputCollector
 import backtype.storm.tuple.Values
 import com.twitter.algebird.Semigroup
-import com.twitter.algebird.util.summer.{ BufferSize, FlushFrequency, Incrementor, MemoryFlushPercent, SyncSummingQueue }
+import com.twitter.algebird.util.summer.{ AsyncSummer, BufferSize, FlushFrequency, MemoryFlushPercent, SyncSummingQueue }
 import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.online.option.{
   SummerBuilder,
@@ -17,15 +14,10 @@ import com.twitter.summingbird.online.option.{
 import com.twitter.summingbird.storm.spout.KeyValueSpout
 import com.twitter.tormenta.spout.{ BaseSpout, Spout }
 import com.twitter.util.Duration
-import com.twitter.algebird.util.summer.SyncSummingQueue
 import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import com.twitter.summingbird.storm.collector.AggregatorOutputCollector
-import java.util
-import java.util.HashMap
-import org.junit.runner.RunWith
-import org.scalatest.{ FunSuite, WordSpec }
-import org.scalatest.junit.JUnitRunner
-import java.util.List
+import java.util.{ List => JList }
+import org.scalatest.WordSpec
 import org.scalacheck._
 import scala.collection.mutable.{ Set => MSet }
 
@@ -36,7 +28,7 @@ import scala.collection.mutable.{ Set => MSet }
 object TestKeyValueSpout {
   def getSyncSummingQueueBuildSummer(batchSize: Int, flushFrequency: Duration, memFlushPercent: Int) = {
     new SummerBuilder {
-      def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {
+      def getSummer[K, V: Semigroup]: AsyncSummer[(K, V), Map[K, V]] = {
         new SyncSummingQueue[K, V](
           BufferSize(batchSize),
           FlushFrequency(flushFrequency),
@@ -53,7 +45,7 @@ object TestKeyValueSpout {
 }
 class TestKeyValueSpout extends WordSpec {
 
-  def process(spout: Spout[(Timestamp, (Int, Int))], summer: SummerBuilder, expected: MSet[(Int, Map[_, _])]) = {
+  def process(spout: Spout[(Timestamp, (Int, Int))], summer: SummerBuilder, expected: MSet[TestAggregateOutpoutCollector.ExpectedTuple]) = {
     val formattedSummerSpout = spout.map {
       case (time, (k, v)) => ((k, BatchID(1)), (time, v))
     }
@@ -85,9 +77,9 @@ class TestKeyValueSpout extends WordSpec {
     }
 
     //output
-    val expectedTuples = MSet[(Int, Map[_, _])]()
-    expectedTuples.add((0, Map((1, BatchID(1)) -> (timeStamp, 1), (2, BatchID(1)) -> (timeStamp, 1))))
-    expectedTuples.add((0, Map((3, BatchID(1)) -> (timeStamp, 1), (4, BatchID(1)) -> (timeStamp, 1))))
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
+    expectedTuples.add((0, Map((1, BatchID(1)) -> ((timeStamp, 1)), (2, BatchID(1)) -> ((timeStamp, 1))), None, None))
+    expectedTuples.add((0, Map((3, BatchID(1)) -> ((timeStamp, 1)), (4, BatchID(1)) -> ((timeStamp, 1))), None, None))
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
@@ -104,8 +96,8 @@ class TestKeyValueSpout extends WordSpec {
     }
 
     //output
-    val expectedTuples = MSet[(Int, Map[_, _])]()
-    expectedTuples.add((0, Map((1, BatchID(1)) -> (timeStamp, 6))))
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
+    expectedTuples.add((0, Map((1, BatchID(1)) -> ((timeStamp, 6))), None, None))
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
@@ -122,7 +114,7 @@ class TestKeyValueSpout extends WordSpec {
     }
 
     //output
-    val expectedTuples = MSet[(Int, Map[_, _])]()
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
@@ -139,8 +131,8 @@ class TestKeyValueSpout extends WordSpec {
     }
 
     //output
-    val expectedTuples = MSet[(Int, Map[_, _])]()
-    expectedTuples.add((0, Map((2, BatchID(1)) -> (timeStamp, 1), (1, BatchID(1)) -> (timeStamp, 1), (3, BatchID(1)) -> (timeStamp, 1), (4, BatchID(1)) -> (timeStamp, 1))))
+    val expectedTuples = TestAggregateOutpoutCollector.emptyTupleSet
+    expectedTuples.add((0, Map((2, BatchID(1)) -> ((timeStamp, 1)), (1, BatchID(1)) -> ((timeStamp, 1)), (3, BatchID(1)) -> ((timeStamp, 1)), (4, BatchID(1)) -> ((timeStamp, 1))), None, None))
 
     val (spout, collector) = process(basespout, summer, expectedTuples)
     spout.nextTuple()
@@ -148,6 +140,7 @@ class TestKeyValueSpout extends WordSpec {
     spout.nextTuple()
     assert(collector.getSize == 0)
   }
+
 }
 
 class MockedISpoutOutputCollector extends ISpoutOutputCollector {
@@ -156,11 +149,11 @@ class MockedISpoutOutputCollector extends ISpoutOutputCollector {
   override def emitDirect(
     i: Int,
     s: String,
-    list: util.List[AnyRef],
+    list: JList[AnyRef],
     o: scala.Any): Unit = ???
 
   override def emit(
     s: String,
-    list: util.List[AnyRef],
-    o: scala.Any): util.List[Integer] = ???
+    list: JList[AnyRef],
+    o: scala.Any): JList[Integer] = ???
 }

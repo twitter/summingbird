@@ -4,17 +4,12 @@ import backtype.storm.spout.SpoutOutputCollector
 import com.twitter.algebird.Semigroup
 import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.{
-  SummerBuilder,
-  MaxWaitingFutures,
-  MaxFutureWaitTime,
-  MaxEmitPerExecute
-}
+import com.twitter.summingbird.online.option.{ SummerBuilder, MaxWaitingFutures, MaxFutureWaitTime, MaxEmitPerExecute }
 import com.twitter.algebird.util.summer.{ AsyncSummer, Incrementor }
-import com.twitter.util.{ Await, Duration, Future, Return, Throw, Time }
+import com.twitter.util.{ Future, Return, Throw, Time }
 import java.util.{ List => JList }
-import scala.collection.mutable.{ ListBuffer, Map => MMap, MutableList => MList }
 import scala.collection.{ Map => CMap }
+import scala.collection.mutable.{ Map => MMap }
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success }
 
@@ -32,18 +27,25 @@ class AggregatorOutputCollector[K, V: Semigroup](
     maxEmitPerExec: MaxEmitPerExecute,
     summerShards: KeyValueShards,
     flushExecTimeCounter: Incrementor,
-    executeTimeCounter: Incrementor,
-    failHandler: AnyRef => Unit) extends SpoutOutputCollector(in) {
+    executeTimeCounter: Incrementor) extends SpoutOutputCollector(in) {
 
   private type AggKey = Int
   private type AggValue = CMap[K, V]
+  private type OutputMessageId = Iterator[Object]
   private type OutputTuple = (AggKey, AggValue)
-  private type OutputMessageId = TraversableOnce[Object]
 
   // An individual summer is created for each stream of data. This map keeps track of the stream and its corresponding summer.
-  private val cacheByStreamId = MMap.empty[String, AsyncSummer[(K, (Seq[Object], V)), Map[K, (Seq[Object], V)]]]
+  private val cacheByStreamId = MMap.empty[String, AsyncSummer[(K, (OutputMessageId, V)), Map[K, (OutputMessageId, V)]]]
 
   private val futureQueueByStreamId = MMap.empty[String, FutureQueue[OutputMessageId, OutputTuple]]
+
+  implicit val messageIdSg = new Semigroup[OutputMessageId] {
+    override def plus(a: OutputMessageId, b: OutputMessageId) = a ++ b
+    override def sumOption(iter: TraversableOnce[OutputMessageId]) =
+      if (iter.isEmpty) None else Some(iter.flatten)
+  }
+
+  private def getSummer = summerBuilder.getSummer[K, (OutputMessageId, V)]
 
   /**
    * This method is invoked from the nextTuple() of the spout.
@@ -59,13 +61,13 @@ class AggregatorOutputCollector[K, V: Semigroup](
     flushExecTimeCounter.incrBy(Time.now.inMillis - startTime.inMillis)
   }
 
-  private def convertToSummerInputFormat(flushedCache: CMap[K, (Seq[Object], V)]): TraversableOnce[(OutputMessageId, Future[OutputTuple])] =
+  private def convertToSummerInputFormat(flushedCache: CMap[K, (OutputMessageId, V)]): TraversableOnce[(OutputMessageId, Future[OutputTuple])] =
     flushedCache.groupBy {
       case (k, _) => summerShards.summerIdFor(k)
-    }.map {
-      case (index: Int, m: CMap[K, (Seq[Object], V)]) =>
-        val messageIds = m.values.flatMap { case (ids, _) => ids }
-        val results = m.mapValues { case (_, v) => v }
+    }.iterator.map {
+      case (index, data) =>
+        val messageIds = data.values.iterator.flatMap { case (ids, _) => ids }
+        val results = data.mapValues { case (_, v) => v }
         (messageIds, Future.value((index, results)))
     }
 
@@ -73,9 +75,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
     The method is invoked to handle the flushed cache caused by
     exceeding the memoryLimit, which is called within add method.
    */
-  private def emitData(
-    tuples: Future[TraversableOnce[(OutputMessageId, Future[OutputTuple])]],
-    streamId: String): JList[Integer] = {
+  private def emitData(tuples: Future[TraversableOnce[(OutputMessageId, Future[OutputTuple])]], streamId: String): JList[Integer] = {
     val startTime = Time.now
     val futureQueue = futureQueueByStreamId.getOrElseUpdate(
       streamId,
@@ -83,23 +83,21 @@ class AggregatorOutputCollector[K, V: Semigroup](
     )
     tuples.respond {
       case Return(iter) => futureQueue.addAll(iter)
-      case Throw(ex) => futureQueue.add(Nil, Future.exception(ex))
+      case Throw(ex) => futureQueue.add(Iterator.empty, Future.exception(ex))
     }
 
     val flushedTups = futureQueue.dequeue(maxEmitPerExec.get)
     val result = new java.util.ArrayList[Integer]()
     flushedTups.foreach {
-      case (messageIds, t) =>
-        t match {
-          case Success((groupKey, data)) =>
-            val list = new java.util.ArrayList[AnyRef](2)
-            list.add(groupKey.asInstanceOf[AnyRef])
-            list.add(data.asInstanceOf[AnyRef])
-            val emitResult = callEmit(messageIds, list, streamId)
-            if (emitResult != null) result.addAll(emitResult)
-          case Failure(_) =>
-            failHandler(messageIds.asInstanceOf[AnyRef])
-        }
+      case (messageIds, resultTry) =>
+        // There's no post-processing after aggregation, so this will always
+        // be a success.  See convertToSummerInputFormat construction.
+        val (groupKey, data) = resultTry.get
+        val tuple = new java.util.ArrayList[AnyRef](2)
+        tuple.add(groupKey.asInstanceOf[AnyRef])
+        tuple.add(data.asInstanceOf[AnyRef])
+        val emitResult = callEmit(tuple, messageIds, streamId)
+        if (emitResult != null) result.addAll(emitResult)
     }
     executeTimeCounter.incrBy(Time.now.inMillis - startTime.inMillis)
     result
@@ -109,12 +107,12 @@ class AggregatorOutputCollector[K, V: Semigroup](
    This is a wrapper method to call the emit with appropriate signature
    based on the arguments.
   */
-  private def callEmit(messageIds: TraversableOnce[AnyRef], list: JList[AnyRef], stream: String): JList[Integer] = {
+  private def callEmit(tuple: JList[AnyRef], messageIds: TraversableOnce[AnyRef], stream: String): JList[Integer] = {
     (messageIds.isEmpty, stream.isEmpty) match {
-      case (true, true) => in.emit(list)
-      case (true, false) => in.emit(stream, list)
-      case (false, true) => in.emit(list, messageIds)
-      case (false, false) => in.emit(stream, list, messageIds)
+      case (true, true) => in.emit(tuple)
+      case (true, false) => in.emit(stream, tuple)
+      case (false, true) => in.emit(tuple, messageIds)
+      case (false, false) => in.emit(stream, tuple, messageIds)
     }
   }
 
@@ -122,10 +120,10 @@ class AggregatorOutputCollector[K, V: Semigroup](
   Method wraps the adding the tuple to the spoutCache along with adding the corresponding
   messageId to the messageId Tracker.
    */
-  private def add(tuple: (K, V), streamId: String, messageId: Option[AnyRef] = None): Future[Map[K, (Seq[Object], V)]] = {
-    val buffer = messageId.map { id => ListBuffer(id) }.getOrElse(Nil)
+  private def add(tuple: (K, V), streamId: String, messageId: Option[AnyRef] = None): Future[Map[K, (OutputMessageId, V)]] = {
+    val buffer = messageId.iterator
     val (k, v) = tuple
-    cacheByStreamId.getOrElseUpdate(streamId, summerBuilder.getSummer[K, (Seq[Object], V)](implicitly[Semigroup[(Seq[Object], V)]]))
+    cacheByStreamId.getOrElseUpdate(streamId, getSummer)
       .add(k -> ((buffer, v)))
   }
 
