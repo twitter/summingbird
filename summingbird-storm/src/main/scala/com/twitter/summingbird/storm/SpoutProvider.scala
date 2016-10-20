@@ -81,15 +81,11 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
     implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
     val stormSpout = getStormSpout(formattedSummerSpout)
 
-    val maxWaiting = getOrElse(node, Constants.DEFAULT_MAX_WAITING_FUTURES)
-    val maxWaitTime = getOrElse(node, Constants.DEFAULT_MAX_FUTURE_WAIT_TIME)
     val maxEmitPerExecute = getOrElse(node, Constants.DEFAULT_MAX_EMIT_PER_EXECUTE)
 
     new KeyValueSpout[(K, BatchID), (Timestamp, V)](
       stormSpout,
       builder,
-      maxWaiting,
-      maxWaitTime,
       maxEmitPerExecute,
       keyValueShards,
       flushExecTimeCounter,

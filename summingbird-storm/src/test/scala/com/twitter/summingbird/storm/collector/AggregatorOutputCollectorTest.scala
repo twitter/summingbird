@@ -4,9 +4,8 @@ import backtype.storm.spout.ISpoutOutputCollector
 import backtype.storm.tuple.Values
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.AsyncSummer
-import com.twitter.conversions.time._
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.{ SummerBuilder, MaxWaitingFutures, MaxFutureWaitTime, MaxEmitPerExecute }
+import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
 import com.twitter.summingbird.storm.{ Counter, MockedISpoutOutputCollector, TestAggregateOutpoutCollector }
 import com.twitter.util.Future
 import org.scalatest.WordSpec
@@ -33,8 +32,6 @@ class AggregatorOutputCollectorTest extends WordSpec {
     val aggregatorCollector = new AggregatorOutputCollector(
       validatingCollector,
       summerBuilder,
-      MaxWaitingFutures(100),
-      MaxFutureWaitTime(1.minute),
       MaxEmitPerExecute(100),
       KeyValueShards(10),
       Counter("flush"),
