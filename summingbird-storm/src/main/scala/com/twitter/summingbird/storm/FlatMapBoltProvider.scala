@@ -19,17 +19,12 @@ package com.twitter.summingbird.storm
 import Constants._
 import backtype.storm.topology.TopologyBuilder
 import backtype.storm.tuple.Fields
-import backtype.storm.tuple.Tuple
 
-import com.twitter.algebird.{ Semigroup, Monoid }
-import com.twitter.storehaus.ReadableStore
+import com.twitter.algebird.Semigroup
 import com.twitter.summingbird._
-import com.twitter.summingbird.chill._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
-import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples }
-import com.twitter.summingbird.online.executor.InputState
-import com.twitter.summingbird.online.option.{ IncludeSuccessHandler, MaxWaitingFutures, MaxFutureWaitTime, SummerBuilder }
-import com.twitter.summingbird.option.{ CacheSize, JobId }
+import com.twitter.summingbird.storm.option.AnchorTuples
+import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
@@ -123,15 +118,15 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       new Fields(AGG_KEY, AGG_VALUE),
       ackOnEntry,
       maxExecutePerSec,
+      new SingleItemInjection[ExecutorInput],
+      new KeyValueInjection[ExecutorKey, ExecutorValue],
       new executor.FinalFlatMap(
         wrappedOperation,
         builder,
         maxWaiting,
         maxWaitTime,
         maxEmitPerExecute,
-        keyValueShards,
-        new SingleItemInjection[ExecutorInput],
-        new KeyValueInjection[ExecutorKey, ExecutorValue]
+        keyValueShards
       )(implicitly[Semigroup[InnerValue]])
     )
   }
@@ -151,13 +146,13 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       new Fields(VALUE_FIELD),
       ackOnEntry,
       maxExecutePerSec,
+      new SingleItemInjection[ExecutorInput],
+      new SingleItemInjection[ExecutorOutput],
       new executor.IntermediateFlatMap(
         wrappedOperation,
         maxWaiting,
         maxWaitTime,
-        maxEmitPerExecute,
-        new SingleItemInjection[ExecutorInput],
-        new SingleItemInjection[ExecutorOutput]
+        maxEmitPerExecute
       )
     )
   }

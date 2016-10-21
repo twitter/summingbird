@@ -16,16 +16,13 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
-
 import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util._
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.Try
 
-abstract class AsyncBase[I, O, S, D, RC](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I, O, S, D, RC] {
+abstract class AsyncBase[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I, O, S] {
 
   /**
    * If you can use Future.value below, do so. The double Future is here to deal with

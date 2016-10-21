@@ -16,25 +16,22 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import scala.util.{ Success, Failure }
-
+import scala.util.{ Failure, Success }
 import backtype.storm.task.{ OutputCollector, TopologyContext }
 import backtype.storm.topology.IRichBolt
 import backtype.storm.topology.OutputFieldsDeclarer
-import backtype.storm.tuple.{ Tuple, TupleImpl, Fields }
-
+import backtype.storm.tuple.{ Fields, Tuple, TupleImpl }
+import com.twitter.bijection.Injection
 import java.util.{ Map => JMap }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
 import com.twitter.summingbird.online.executor.OperationContainer
-import com.twitter.summingbird.online.executor.{ InflightTuples, InputState }
+import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
 import com.twitter.summingbird.online.Externalizer
-
 import scala.collection.JavaConverters._
-
 import java.util.{ List => JList }
-import org.slf4j.{ LoggerFactory, Logger }
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
  *
@@ -50,7 +47,9 @@ case class BaseBolt[I, O](jobID: JobId,
     outputFields: Fields,
     ackOnEntry: AckOnEntry,
     maxExecutePerSec: MaxExecutePerSecond,
-    executor: OperationContainer[I, O, InputState[Tuple], JList[AnyRef], TopologyContext]) extends IRichBolt {
+    decoder: Injection[I, JList[AnyRef]],
+    encoder: Injection[O, JList[AnyRef]],
+    executor: OperationContainer[I, O, InputState[Tuple]]) extends IRichBolt {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -131,7 +130,7 @@ case class BaseBolt[I, O](jobID: JobId,
      * System ticks come with a fixed stream id
      */
     val curResults = if (!tuple.getSourceStreamId.equals("__tick")) {
-      val tsIn = executor.decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
+      val tsIn = decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
       // Don't hold on to the input values
       clearValues(tuple)
       if (earlyAck) { collector.ack(tuple) }
@@ -155,12 +154,12 @@ case class BaseBolt[I, O](jobID: JobId,
     if (hasDependants) {
       if (anchorTuples.anchor) {
         results.foreach { result =>
-          collector.emit(inputs.map(_.state).asJava, executor.encoder(result))
+          collector.emit(inputs.map(_.state).asJava, encoder(result))
           emitCount += 1
         }
       } else { // don't anchor
         results.foreach { result =>
-          collector.emit(executor.encoder(result))
+          collector.emit(encoder(result))
           emitCount += 1
         }
       }
@@ -174,7 +173,7 @@ case class BaseBolt[I, O](jobID: JobId,
   override def prepare(conf: JMap[_, _], context: TopologyContext, oc: OutputCollector) {
     collector = oc
     metrics().foreach { _.register(context) }
-    executor.init(context)
+    executor.init()
     StormStatProvider.registerMetrics(jobID, context, countersForBolt)
     SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
     logger.debug("In Bolt prepare: added jobID stat provider for jobID {}", jobID)

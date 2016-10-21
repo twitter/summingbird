@@ -16,9 +16,6 @@
 
 package com.twitter.summingbird.online.executor
 
-import java.util.concurrent.CyclicBarrier
-
-import com.twitter.bijection.Injection
 import com.twitter.conversions.time._
 import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
@@ -64,7 +61,7 @@ class AsyncBaseSpec extends WordSpec {
   class TestAsyncBase(
     queue: TestFutureQueue,
     tickData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented"),
-    applyData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented")) extends AsyncBase[Int, Int, Int, Int, Unit](
+    applyData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented")) extends AsyncBase[Int, Int, Int](
     MaxWaitingFutures(100),
     MaxFutureWaitTime(1.minute),
     MaxEmitPerExecute(57)
@@ -72,8 +69,6 @@ class AsyncBaseSpec extends WordSpec {
     override lazy val futureQueue = queue
     override def apply(state: Int, in: Int) = applyData
     override def tick = tickData
-    override def decoder: Injection[Int, Int] = implicitly
-    override def encoder: Injection[Int, Int] = implicitly
   }
 
   def promise = Promise[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]]
