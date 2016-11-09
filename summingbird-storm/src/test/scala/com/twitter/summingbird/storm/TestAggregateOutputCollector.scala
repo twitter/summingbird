@@ -1,6 +1,6 @@
 package com.twitter.summingbird.storm
 
-import backtype.storm.spout.{ ISpoutOutputCollector, SpoutOutputCollector }
+import org.apache.storm.spout.{ ISpoutOutputCollector, SpoutOutputCollector }
 import scala.collection.mutable.{ Set => MSet }
 import java.util
 import org.scalacheck._

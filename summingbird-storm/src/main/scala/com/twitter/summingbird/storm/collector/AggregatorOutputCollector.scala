@@ -1,6 +1,6 @@
 package com.twitter.summingbird.storm.collector
 
-import backtype.storm.spout.SpoutOutputCollector
+import org.apache.storm.spout.SpoutOutputCollector
 import com.twitter.algebird.Semigroup
 import com.twitter.summingbird.online.Queue
 import com.twitter.summingbird.online.executor.KeyValueShards

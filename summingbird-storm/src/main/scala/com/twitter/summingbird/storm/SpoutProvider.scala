@@ -1,8 +1,5 @@
 package com.twitter.summingbird.storm
 
-import backtype.storm.metric.api.IMetric
-import backtype.storm.task.TopologyContext
-import backtype.storm.topology.{ IRichSpout, TopologyBuilder }
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird._
@@ -15,6 +12,9 @@ import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.storm.option.SpoutStormMetrics
 import com.twitter.summingbird.storm.spout.KeyValueSpout
+import org.apache.storm.metric.api.IMetric
+import org.apache.storm.task.TopologyContext
+import org.apache.storm.topology.{ IRichSpout, TopologyBuilder }
 
 case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jobID: JobId)(implicit topologyBuilder: TopologyBuilder) {
 

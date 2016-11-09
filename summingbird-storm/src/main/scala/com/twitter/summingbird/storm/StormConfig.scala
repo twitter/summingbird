@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.{ Config => BacktypeStormConfig }
+import org.apache.storm.{ Config => BacktypeStormConfig }
 import scala.collection.JavaConverters._
 import com.twitter.summingbird.{ WrappingConfig, ReadableMap }
 

@@ -16,20 +16,22 @@
 
 package com.twitter.summingbird.storm.spout;
 
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.testing.FixedTuple;
-import backtype.storm.testing.CompletableSpout;
-import backtype.storm.topology.IRichSpout;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
-import backtype.storm.utils.Utils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import static backtype.storm.utils.Utils.get;
+
+import org.apache.storm.spout.SpoutOutputCollector;
+import org.apache.storm.task.TopologyContext;
+import org.apache.storm.testing.CompletableSpout;
+import org.apache.storm.testing.FixedTuple;
+import org.apache.storm.topology.IRichSpout;
+import org.apache.storm.topology.OutputFieldsDeclarer;
+import org.apache.storm.tuple.Fields;
+import org.apache.storm.utils.Utils;
+
+import static org.apache.storm.utils.Utils.get;
 
 public class FixedTupleSpout implements IRichSpout, CompletableSpout {
   private static final Map<String, Integer> acked = new HashMap<String, Integer>();

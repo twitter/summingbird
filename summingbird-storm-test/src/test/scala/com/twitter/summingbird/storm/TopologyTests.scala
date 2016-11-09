@@ -16,27 +16,15 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.generated.StormTopology
-import com.twitter.algebird.{ MapAlgebra, Semigroup }
-import com.twitter.storehaus.{ JMapStore, ReadableStore }
-import com.twitter.storehaus.algebra.MergeableStore
+import org.apache.storm.generated.StormTopology
+import com.twitter.algebird.MapAlgebra
 import com.twitter.summingbird._
-import com.twitter.summingbird.online._
 import com.twitter.summingbird.online.option._
-import com.twitter.summingbird.storm.option._
-import com.twitter.summingbird.batch.{ BatchID, Batcher }
+import com.twitter.summingbird.batch.Batcher
 import com.twitter.summingbird.storm.spout.TraversableSpout
-import com.twitter.tormenta.spout.Spout
-import com.twitter.util.{ Future, Try }
-import java.util.{ Collections, HashMap, UUID, Map => JMap }
-import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.WordSpec
 import org.scalacheck._
-import org.scalacheck.Prop._
-import org.scalacheck.Properties
 import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
-import scala.collection.mutable.{ ArrayBuffer, SynchronizedBuffer, SynchronizedMap, HashMap => MutableHashMap, Map => MutableMap }
 /**
  * Tests for Summingbird's Storm planner.
  */

@@ -16,12 +16,9 @@
 
 package com.twitter.summingbird.storm
 
-import com.twitter.storehaus.JMapStore
-import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.online._
 import com.twitter.summingbird.planner._
-import com.twitter.summingbird.storm.planner._
 import com.twitter.storehaus.{ ReadableStore, JMapStore }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.{ BatchID, Batcher }

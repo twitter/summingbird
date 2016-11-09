@@ -17,10 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.storm
 
 import scala.util.{ Failure, Success }
-import backtype.storm.task.{ OutputCollector, TopologyContext }
-import backtype.storm.topology.IRichBolt
-import backtype.storm.topology.OutputFieldsDeclarer
-import backtype.storm.tuple.{ Fields, Tuple, TupleImpl }
 import com.twitter.bijection.Injection
 import java.util.{ Map => JMap }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
@@ -32,6 +28,9 @@ import com.twitter.summingbird.online.Externalizer
 import chain.Chain
 import scala.collection.JavaConverters._
 import java.util.{ List => JList }
+import org.apache.storm.task.{ OutputCollector, TopologyContext }
+import org.apache.storm.topology.{ IRichBolt, OutputFieldsDeclarer }
+import org.apache.storm.tuple.{ Fields, Tuple, TupleImpl }
 import org.slf4j.{ Logger, LoggerFactory }
 
 /**

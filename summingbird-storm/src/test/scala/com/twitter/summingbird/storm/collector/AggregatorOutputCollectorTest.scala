@@ -1,7 +1,7 @@
 package com.twitter.summingbird.storm.collector
 
-import backtype.storm.spout.ISpoutOutputCollector
-import backtype.storm.tuple.Values
+import org.apache.storm.spout.ISpoutOutputCollector
+import org.apache.storm.tuple.Values
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.AsyncSummer
 import com.twitter.summingbird.online.executor.KeyValueShards
