@@ -2,13 +2,13 @@ package com.twitter.summingbird.storm.collector
 
 import backtype.storm.spout.SpoutOutputCollector
 import com.twitter.algebird.Semigroup
+import com.twitter.summingbird.online.Queue
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.SummerBuilder
+import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
 import com.twitter.algebird.util.summer.{ AsyncSummer, Incrementor }
-import com.twitter.util.{ Await, Future, Time }
+import com.twitter.util.{ Future, Time }
 import java.util.{ List => JList }
-import scala.collection.mutable.{ ListBuffer, Map => MMap }
-import scala.collection.JavaConverters._
+import scala.collection.mutable.{ Map => MMap }
 
 /**
  *
@@ -19,6 +19,7 @@ import scala.collection.JavaConverters._
 class AggregatorOutputCollector[K, V: Semigroup](
     in: SpoutOutputCollector,
     summerBuilder: SummerBuilder,
+    maxEmitPerExec: MaxEmitPerExecute,
     summerShards: KeyValueShards,
     flushExecTimeCounter: Incrementor,
     executeTimeCounter: Incrementor) extends SpoutOutputCollector(in) {
@@ -31,6 +32,8 @@ class AggregatorOutputCollector[K, V: Semigroup](
   // An individual summer is created for each stream of data. This map keeps track of the stream and its corresponding summer.
   private val cacheByStreamId = MMap.empty[String, AsyncSummer[(K, (OutputMessageId, V)), Map[K, (OutputMessageId, V)]]]
 
+  private val queueByStreamId = MMap.empty[String, Queue[OutputTuple]]
+
   implicit val messageIdSg = new Semigroup[OutputMessageId] {
     override def plus(a: OutputMessageId, b: OutputMessageId) = a ++ b
     override def sumOption(iter: TraversableOnce[OutputMessageId]) =
@@ -38,6 +41,7 @@ class AggregatorOutputCollector[K, V: Semigroup](
   }
 
   private def getSummer = summerBuilder.getSummer[K, (OutputMessageId, V)]
+  private def getQueue = Queue.linkedNonBlocking[OutputTuple]
 
   /**
    * This method is invoked from the nextTuple() of the spout.
@@ -69,8 +73,10 @@ class AggregatorOutputCollector[K, V: Semigroup](
    */
   private def emitData(tuples: Future[TraversableOnce[OutputTuple]], streamId: String): JList[Integer] = {
     val startTime = Time.now
+    val queue = queueByStreamId.getOrElseUpdate(streamId, getQueue)
+    tuples.onSuccess { iter => queue.putAll(iter) }
 
-    val flushedTups = Await.result(tuples)
+    val flushedTups = queue.take(maxEmitPerExec.get)
     val result = new java.util.ArrayList[Integer]()
     flushedTups.foreach {
       case (groupKey, data, messageIds) =>

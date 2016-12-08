@@ -13,7 +13,6 @@ import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, SummerNode }
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.tormenta.spout.Spout
-import com.twitter.summingbird.storm.Constants
 import com.twitter.summingbird.storm.option.SpoutStormMetrics
 import com.twitter.summingbird.storm.spout.KeyValueSpout
 
@@ -81,7 +80,17 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
     }
     implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
     val stormSpout = getStormSpout(formattedSummerSpout)
-    new KeyValueSpout[(K, BatchID), (Timestamp, V)](stormSpout, builder, keyValueShards, flushExecTimeCounter, executeTimeCounter)
+
+    val maxEmitPerExecute = getOrElse(node, Constants.DEFAULT_MAX_EMIT_PER_EXECUTE)
+
+    new KeyValueSpout[(K, BatchID), (Timestamp, V)](
+      stormSpout,
+      builder,
+      maxEmitPerExecute,
+      keyValueShards,
+      flushExecTimeCounter,
+      executeTimeCounter
+    )
   }
 
   private def getCountersForJob: Seq[(Group, Name)] = JobCounters.getCountersForJob(jobID).getOrElse(Nil)
