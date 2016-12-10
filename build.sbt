@@ -1,11 +1,9 @@
 import AssemblyKeys._
 import ReleaseTransformations._
 import com.typesafe.sbt.SbtScalariform._
-import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbtassembly.Plugin._
 import scalariform.formatter.preferences._
-import summingbird._
 
 def scalaBinaryVersion(scalaVersion: String) = scalaVersion match {
   case version if version startsWith "2.10" => "2.10"
@@ -35,7 +33,7 @@ val stormDep = "storm" % "storm" % "0.9.0-wip15" //This project also compiles wi
 val tormentaVersion = "0.11.1"
 val utilVersion = "6.34.0"
 
-val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalariformSettings
+val extraSettings = mimaDefaultSettings ++ scalariformSettings
 
 val sharedSettings = extraSettings ++ Seq(
   organization := "com.twitter",
@@ -100,15 +98,12 @@ val sharedSettings = extraSettings ++ Seq(
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
     pushChanges),
 
-  publishTo <<= version { v =>
-    Some(
-      if (v.trim.toUpperCase.endsWith("SNAPSHOT"))
+  publishTo := Some(
+      if (version.value.trim.toUpperCase.endsWith("SNAPSHOT"))
         Opts.resolver.sonatypeSnapshots
       else
         Opts.resolver.sonatypeStaging
-        //"twttr" at "http://artifactory.local.twitter.com/libs-releases-local"
-    )
-  },
+    ),
 
   pomExtra := (
     <url>https://github.com/twitter/summingbird</url>
@@ -150,15 +145,19 @@ lazy val formattingPreferences = {
    setPreference(PreserveSpaceBeforeArguments, true)
 }
 
+lazy val noPublishSettings = Seq(
+    publish := (),
+    publishLocal := (),
+    test := (),
+    publishArtifact := false
+  )
+
 lazy val summingbird = Project(
   id = "summingbird",
   base = file("."),
-  settings = sharedSettings ++ DocGen.publishSettings
-).settings(
-  test := { },
-  publish := { }, // skip publishing for this root project.
-  publishLocal := { }
-).aggregate(
+  settings = sharedSettings)
+  .settings(noPublishSettings)
+  .aggregate(
   summingbirdCore,
   summingbirdBatch,
   summingbirdBatchHadoop,
@@ -189,7 +188,7 @@ def module(name: String) = {
   val id = "summingbird-%s".format(name)
   Project(id = id, base = file(id), settings = sharedSettings ++ Seq(
     Keys.name := id,
-    previousArtifact := youngestForwardCompatible(name))
+    mimaPreviousArtifacts := youngestForwardCompatible(name).toSet)
   )
 }
 
@@ -369,4 +368,3 @@ lazy val summingbirdCoreTest = module("core-test").settings(
 ).dependsOn(
     summingbirdCore % "test->test;compile->compile"
   )
-

@@ -1,0 +1,13 @@
+-Dlog4j.configuration=file://$TRAVIS_BUILD_DIR/project/travis-log4j.properties
+-Dfile.encoding=UTF8
+-Xms1G
+-Xmx3G
+-Xss2m
+-XX:MaxPermSize=512M
+-XX:ReservedCodeCacheSize=250M
+-XX:+TieredCompilation
+-XX:-UseGCOverheadLimit
+# effectively adds GC to Perm space
+-XX:+CMSClassUnloadingEnabled
+# must be enabled for CMSClassUnloadingEnabled to work
+-XX:+UseConcMarkSweepGC
