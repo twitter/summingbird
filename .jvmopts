@@ -1,4 +1,3 @@
--Dlog4j.configuration=file://$TRAVIS_BUILD_DIR/project/travis-log4j.properties
 -Dfile.encoding=UTF8
 -Xms1G
 -Xmx3G

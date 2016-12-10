@@ -1,13 +1,17 @@
 language: scala
 sudo: false
 before_install: umask 0022
+env:
+  global:
+    - LOG4J=file://$TRAVIS_BUILD_DIR/project/travis-log4j.properties
+
 matrix:
   include:
     - scala: 2.10.6
-      script: ./sbt ++$TRAVIS_SCALA_VERSION test mimaReportBinaryIssues
+      script: ./sbt -Dlog4j.configuration=$LOG4J ++$TRAVIS_SCALA_VERSION test mimaReportBinaryIssues
 
     - scala: 2.11.8
-      script: ./sbt ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
+      script: ./sbt -Dlog4j.configuration=$LOG4J ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
       after_success:
         - bash <(curl -s https://codecov.io/bash)
 
