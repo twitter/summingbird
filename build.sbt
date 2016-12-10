@@ -184,12 +184,68 @@ def youngestForwardCompatible(subProj: String) =
     .filterNot(unreleasedModules.contains(_))
     .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.9.0" }
 
+/**
+  * Empty this each time we publish a new version (and bump the minor number)
+  */
+val ignoredABIProblems = {
+  import com.typesafe.tools.mima.core._
+  import com.typesafe.tools.mima.core.ProblemFilters._
+  Seq(
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.memory.Memory.toStream"),
+    exclude[ReversedMissingMethodProblem]("com.twitter.summingbird.planner.DagOptimizer.FlatMapValuesFusion"),
+    exclude[ReversedMissingMethodProblem]("com.twitter.summingbird.planner.DagOptimizer.FlatMapKeyFusion"),
+    exclude[IncompatibleResultTypeProblem]("com.twitter.summingbird.batch.store.HDFSMetadata.versionedStore"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.planner.OnlinePlan.this"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.planner.StripNamedNode.castTail"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.planner.StripNamedNode.functionize"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.planner.StripNamedNode.castToPair"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.planner.StripNamedNode.processLevel"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.planner.StripNamedNode.toFunctional"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.planner.StripNamedNode.mutateGraph"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.planner.StripNamedNode.stripNamedNodes"),
+    exclude[ReversedMissingMethodProblem]("com.twitter.summingbird.online.OnlineDefaultConstants.com$twitter$summingbird$online$OnlineDefaultConstants$_setter_$DEFAULT_FM_MERGEABLE_WITH_SOURCE_="),
+    exclude[ReversedMissingMethodProblem]("com.twitter.summingbird.online.OnlineDefaultConstants.DEFAULT_FM_MERGEABLE_WITH_SOURCE"),
+    exclude[MissingClassProblem]("com.twitter.summingbird.online.MergeableStoreFactoryAlgebra"),
+    exclude[MissingClassProblem]("com.twitter.summingbird.online.MergeableStoreFactoryAlgebra$"),
+    exclude[IncompatibleResultTypeProblem]("com.twitter.summingbird.online.MergeableStoreFactory.mergeableStore"),
+    exclude[ReversedMissingMethodProblem]("com.twitter.summingbird.online.MergeableStoreFactory.mergeableStore"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.OperationContainer.init"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.OperationContainer.decoder"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.OperationContainer.encoder"),
+    exclude[ReversedMissingMethodProblem]("com.twitter.summingbird.online.executor.OperationContainer.init"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.FinalFlatMap.decoder"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.FinalFlatMap.encoder"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.FinalFlatMap.this"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.IntermediateFlatMap.decoder"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.IntermediateFlatMap.encoder"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.IntermediateFlatMap.this"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.AsyncBase.init"),
+    exclude[IncompatibleResultTypeProblem]("com.twitter.summingbird.online.executor.AsyncBase.execute"),
+    exclude[IncompatibleResultTypeProblem]("com.twitter.summingbird.online.executor.AsyncBase.executeTick"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.AsyncBase.logger"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.Summer.init"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.Summer.this"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.Summer.decoder"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.Summer.encoder"),
+    exclude[MissingClassProblem]("com.twitter.summingbird.scalding.LookupJoin"),
+    exclude[MissingClassProblem]("com.twitter.summingbird.scalding.LookupJoin$"),
+    exclude[IncompatibleResultTypeProblem]("com.twitter.summingbird.storm.BaseBolt.copy$default$8"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.storm.BaseBolt.copy"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.storm.BaseBolt.this"),
+    exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.storm.Storm.get"),
+    exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.storm.Storm.getOrElse"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.storm.BaseBolt.apply"),
+    exclude[IncompatibleResultTypeProblem]("com.twitter.summingbird.example.Memcache.client")
+  )
+}
+
 def module(name: String) = {
   val id = "summingbird-%s".format(name)
   Project(id = id, base = file(id), settings = sharedSettings ++ Seq(
     Keys.name := id,
-    mimaPreviousArtifacts := youngestForwardCompatible(name).toSet)
-  )
+    mimaPreviousArtifacts := youngestForwardCompatible(name).toSet,
+    mimaBinaryIssueFilters ++= ignoredABIProblems
+  ))
 }
 
 lazy val summingbirdBatch = module("batch").settings(
