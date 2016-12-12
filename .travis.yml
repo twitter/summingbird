@@ -1,109 +1,38 @@
-#test execution script.
-
 language: scala
 sudo: false
 before_install: umask 0022
-scala:
-  - 2.10.5
-  - 2.11.7
-script:
-- "echo no op"
+env:
+  global:
+    - LOG4J=file://$TRAVIS_BUILD_DIR/project/travis-log4j.properties
 
 matrix:
   include:
-#BASE TESTS
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-batch"
-      script: "scripts/run_tests.sh"
+    - scala: 2.10.6
+      script: ./sbt -Dlog4j.configuration=$LOG4J ++$TRAVIS_SCALA_VERSION test mimaReportBinaryIssues
 
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-batch-hadoop"
-      script: "scripts/run_tests.sh"
+    - scala: 2.11.8
+      script: ./sbt -Dlog4j.configuration=$LOG4J ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
 
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-builder"
-      script: "scripts/run_tests.sh"
+cache:
+  directories:
+  - $HOME/.sbt/0.13/dependency
+  - $HOME/.sbt/boot/scala*
+  - $HOME/.sbt/launchers
+  - $HOME/.ivy2/cache
+  - $HOME/.nvm
 
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-chill"
-      script: "scripts/run_tests.sh"
+before_cache:
+  - du -h -d 1 $HOME/.ivy2/cache
+  - du -h -d 2 $HOME/.sbt/
+  - find $HOME/.sbt -name "*.lock" -type f -delete
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
 
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-core"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-core-test"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-example"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-online"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-scalding"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-scalding-test"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-storm"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.10.5
-      env: BUILD="base" TEST_TARGET="summingbird-storm-test"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-batch"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-batch-hadoop"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-builder"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-chill"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-core"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-core-test"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-example"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-online"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-scalding"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-scalding-test"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-storm"
-      script: "scripts/run_tests.sh"
-
-    - scala: 2.11.7
-      env: BUILD="base" TEST_TARGET="summingbird-storm-test"
-      script: "scripts/run_tests.sh"
+notifications:
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/535b6396650b3a9c54a7
+    on_success: change
+    on_failure: always
+    on_start: never
