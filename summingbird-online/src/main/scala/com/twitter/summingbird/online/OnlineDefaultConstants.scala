@@ -41,6 +41,7 @@ private[summingbird] trait OnlineDefaultConstants {
   val DEFAULT_USE_ASYNC_CACHE = UseAsyncCache(false)
   val DEFAULT_ASYNC_POOL_SIZE = AsyncPoolSize(Runtime.getRuntime().availableProcessors())
   val DEFAULT_SOFT_MEMORY_FLUSH_PERCENT = SoftMemoryFlushPercent(80.0F)
+  val DEFAULT_COMPACT_VALUES = CompactValues(false)
   val DEFAULT_VALUE_COMBINER_CACHE_SIZE = ValueCombinerCacheSize(100)
   val DEFAULT_MAX_EMIT_PER_EXECUTE = MaxEmitPerExecute(Int.MaxValue)
   val DEFAULT_SUMMER_BATCH_MULTIPLIER = SummerBatchMultiplier(100)
