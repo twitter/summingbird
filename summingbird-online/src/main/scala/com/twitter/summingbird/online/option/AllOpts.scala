@@ -76,7 +76,11 @@ case class SoftMemoryFlushPercent(get: Float) {
 /**
  * Enable early crush down of values, without emitting, for the caches that support this.
  */
-case class CompactValues(get: Boolean)
+case class CompactValues(toBoolean: Boolean)
+
+object CompactValues {
+  def default = CompactValues(false)
+}
 
 /**
  * ValueCombinerCacheSize is used in caches that support it as a trigger to crush down a high locality of
