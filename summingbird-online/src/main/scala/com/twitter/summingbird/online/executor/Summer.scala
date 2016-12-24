@@ -72,7 +72,8 @@ class Summer[Key, Value: Semigroup, Event, S](
   lazy val storePromise = Promise[Mergeable[Key, Value]]
   lazy val store = Await.result(storePromise)
 
-  lazy val sSummer: AsyncSummer[(Key, (Seq[InputState[S]], Value)), Map[Key, (Seq[InputState[S]], Value)]] = summerBuilder.getSummer[Key, (Seq[InputState[S]], Value)](implicitly[Semigroup[(Seq[InputState[S]], Value)]])
+  lazy val sSummer: AsyncSummer[(Key, (Iterator[InputState[S]], Value)), Map[Key, (Iterator[InputState[S]], Value)]] =
+    summerBuilder.getSummer[Key, (Iterator[InputState[S]], Value)](implicitly[Semigroup[(Iterator[InputState[S]], Value)]])
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
@@ -86,12 +87,12 @@ class Summer[Key, Value: Semigroup, Event, S](
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  override def notifyFailure(inputs: Seq[InputState[S]], error: Throwable): Unit = {
+  override def notifyFailure(inputs: Iterator[InputState[S]], error: Throwable): Unit = {
     super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
   }
 
-  private def handleResult(kvs: Map[Key, (Seq[InputState[S]], Value)]): TraversableOnce[(Seq[InputState[S]], Future[TraversableOnce[Event]])] =
+  private def handleResult(kvs: Map[Key, (Iterator[InputState[S]], Value)]): TraversableOnce[(Iterator[InputState[S]], Future[TraversableOnce[Event]])] =
     store.multiMerge(kvs.mapValues(_._2)).iterator.map {
       case (k, beforeF) =>
         val (tups, delta) = kvs(k)
@@ -110,7 +111,7 @@ class Summer[Key, Value: Semigroup, Event, S](
       state.fanOut(innerTuples.size)
       val cacheEntries = innerTuples.map {
         case (k, v) =>
-          (k, (List(state), v))
+          (k, (Iterator.single(state), v))
       }
 
       sSummer.addAll(cacheEntries).map(handleResult(_))

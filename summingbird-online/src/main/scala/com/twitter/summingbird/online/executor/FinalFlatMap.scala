@@ -67,15 +67,16 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_]](
   val lockedOp = Externalizer(flatMapOp)
 
   type SummerK = Key
-  type SummerV = (Seq[S], Value)
-  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(Seq[S], Value)]])
+  type SummerV = (Iterator[S], Value)
+
+  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(Iterator[S], Value)]])
 
   // Lazy transient as const futures are not serializable
   @transient private[this] lazy val noData = List(
-    (List(), Future.value(Nil))
+    (List().toIterator, Future.value(Nil))
   )
 
-  private def formatResult(outData: Map[Key, (Seq[S], Value)]): TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])] = {
+  private def formatResult(outData: Map[Key, (Iterator[S], Value)]): TraversableOnce[(Iterator[S], Future[TraversableOnce[OutputElement]])] = {
     if (outData.isEmpty) {
       noData
     } else {
@@ -91,28 +92,28 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_]](
 
       mmMap.toIterator.map {
         case (outerKey, (listS, innerMap)) =>
-          (listS, Future.value(List((outerKey, innerMap))))
+          (listS.toIterator, Future.value(List((outerKey, innerMap))))
       }
     }
   }
 
-  override def tick: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] =
+  override def tick: Future[TraversableOnce[(Iterator[S], Future[TraversableOnce[OutputElement]])]] =
     sCache.tick.map(formatResult(_))
 
   def cache(state: S,
-    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] =
+    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(Iterator[S], Future[TraversableOnce[OutputElement]])]] =
     try {
       val itemL = items.toList
       if (itemL.size > 0) {
         state.fanOut(itemL.size)
         sCache.addAll(itemL.map {
           case (k, v) =>
-            k -> (List(state), v)
+            k -> (Iterator.single(state), v)
         }).map(formatResult(_))
       } else { // Here we handle mapping to nothing, option map et. al
         Future.value(
           List(
-            (List(state), Future.value(Nil))
+            (Iterator.single(state), Future.value(Nil))
           )
         )
       }

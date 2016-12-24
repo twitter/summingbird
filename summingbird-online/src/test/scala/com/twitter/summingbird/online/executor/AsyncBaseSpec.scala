@@ -24,33 +24,36 @@ import org.scalatest.WordSpec
 import scala.util.Try
 
 class AsyncBaseSpec extends WordSpec {
-  val data = Seq((Seq(100, 104, 99), Future(Seq(9, 10, 13))), (Seq(12, 19), Future(Seq(100, 200, 500))))
-  val dequeueData = List((Seq(8, 9), Try(Seq(4, 5, 6))))
+  val data = Seq(
+    (Seq(100, 104, 99).toIterator, Future(Seq(9, 10, 13))),
+    (Seq(12, 19).toIterator, Future(Seq(100, 200, 500))))
 
-  class TestFutureQueue extends FutureQueue[Seq[Int], TraversableOnce[Int]](
+  val dequeueData = List((Seq(8, 9).toIterator, Try(Seq(4, 5, 6))))
+
+  class TestFutureQueue extends FutureQueue[Iterator[Int], TraversableOnce[Int]](
     MaxWaitingFutures(100),
     MaxFutureWaitTime(1.minute)
   ) {
     var added = false
-    var addedData: (Seq[Int], Future[TraversableOnce[Int]]) = _
-    var addedAllData: TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])] = _
+    var addedData: (Iterator[Int], Future[TraversableOnce[Int]]) = _
+    var addedAllData: TraversableOnce[(Iterator[Int], Future[TraversableOnce[Int]])] = _
     var dequeued = false
     var dequeuedCount: Int = 0
 
-    override def add(state: Seq[Int], fut: Future[TraversableOnce[Int]]): Unit = synchronized {
+    override def add(state: Iterator[Int], fut: Future[TraversableOnce[Int]]): Unit = synchronized {
       assert(!added)
       added = true
       addedData = (state, fut)
     }
 
     override def addAll(
-      iter: TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]): Unit = synchronized {
+      iter: TraversableOnce[(Iterator[Int], Future[TraversableOnce[Int]])]): Unit = synchronized {
       assert(!added)
       added = true
       addedAllData = iter
     }
 
-    override def dequeue(maxItems: Int): Seq[(Seq[Int], Try[TraversableOnce[Int]])] = synchronized {
+    override def dequeue(maxItems: Int): Seq[(Iterator[Int], Try[TraversableOnce[Int]])] = synchronized {
       assert(!dequeued)
       dequeued = true
       dequeuedCount = maxItems
@@ -60,8 +63,8 @@ class AsyncBaseSpec extends WordSpec {
 
   class TestAsyncBase(
     queue: TestFutureQueue,
-    tickData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented"),
-    applyData: => Future[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented")) extends AsyncBase[Int, Int, Int](
+    tickData: => Future[TraversableOnce[(Iterator[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented"),
+    applyData: => Future[TraversableOnce[(Iterator[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented")) extends AsyncBase[Int, Int, Int](
     MaxWaitingFutures(100),
     MaxFutureWaitTime(1.minute),
     MaxEmitPerExecute(57)
@@ -71,7 +74,7 @@ class AsyncBaseSpec extends WordSpec {
     override def tick = tickData
   }
 
-  def promise = Promise[TraversableOnce[(Seq[Int], Future[TraversableOnce[Int]])]]
+  def promise = Promise[TraversableOnce[(Iterator[Int], Future[TraversableOnce[Int]])]]
 
   "Queues tick on executeTick" in {
     val queue = new TestFutureQueue
@@ -112,7 +115,7 @@ class AsyncBaseSpec extends WordSpec {
 
     p.setException(ex)
     assert(queue.added)
-    assert(queue.addedData._1 === Nil)
+    assert(queue.addedData._1.toList === Nil)
     assert(ex === intercept[RuntimeException] { Await.result(queue.addedData._2) })
   }
 
@@ -127,7 +130,7 @@ class AsyncBaseSpec extends WordSpec {
 
     p.setException(ex)
     assert(queue.added)
-    assert(queue.addedData._1 === List(1089))
+    assert(queue.addedData._1.toList === List(1089))
     assert(ex === intercept[RuntimeException] { Await.result(queue.addedData._2) })
   }
 }
