@@ -32,7 +32,7 @@ abstract class AsyncBase[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxWaiti
   def apply(state: S, in: I): Future[TraversableOnce[(Stream[S], Future[TraversableOnce[O]])]]
   def tick: Future[TraversableOnce[(Stream[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
 
-  implicit def itertorSemigroup[T]: Semigroup[Stream[T]] = new Semigroup[Stream[T]] {
+  implicit def streamSemigroup[T]: Semigroup[Stream[T]] = new Semigroup[Stream[T]] {
     override def plus(l: Stream[T], r: Stream[T]): Stream[T] = l ++ r
   }
 
