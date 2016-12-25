@@ -35,9 +35,9 @@ class IntermediateFlatMap[T, U, S](
   val lockedOp = Externalizer(flatMapOp)
 
   override def apply(state: S,
-    tup: T): Future[Iterable[(Iterator[S], Future[TraversableOnce[U]])]] =
+    tup: T): Future[Iterable[(Stream[S], Future[TraversableOnce[U]])]] =
     lockedOp.get.apply(tup).map { res =>
-      List((Iterator.single(state), Future.value(res)))
+      List((Stream(state), Future.value(res)))
     }
 
   override def cleanup(): Unit = lockedOp.get.close

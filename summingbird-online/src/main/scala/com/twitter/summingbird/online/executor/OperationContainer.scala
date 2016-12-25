@@ -22,8 +22,8 @@ trait OperationContainer[Input, Output, State] {
   def init(): Unit = {}
   def cleanup(): Unit = {}
 
-  def executeTick: TraversableOnce[(Iterator[State], Try[TraversableOnce[Output]])]
+  def executeTick: TraversableOnce[(Stream[State], Try[TraversableOnce[Output]])]
   def execute(state: State,
-    data: Input): TraversableOnce[(Iterator[State], Try[TraversableOnce[Output]])]
-  def notifyFailure(inputs: Iterator[State], e: Throwable): Unit = {}
+    data: Input): TraversableOnce[(Stream[State], Try[TraversableOnce[Output]])]
+  def notifyFailure(inputs: Stream[State], e: Throwable): Unit = {}
 }

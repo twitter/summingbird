@@ -118,7 +118,7 @@ case class BaseBolt[I, O](jobID: JobId,
     logger.error(message, err)
   }
 
-  private def fail(inputs: Iterator[InputState[Tuple]], error: Throwable): Unit = {
+  private def fail(inputs: Stream[InputState[Tuple]], error: Throwable): Unit = {
     executor.notifyFailure(inputs, error)
     if (!earlyAck) { inputs.foreach(_.fail(collector.fail(_))) }
     logError("Storm DAG of: %d tuples failed".format(inputs.size), error)
@@ -149,7 +149,7 @@ case class BaseBolt[I, O](jobID: JobId,
     }
   }
 
-  private def finish(inputs: Iterator[InputState[Tuple]], results: TraversableOnce[O]) {
+  private def finish(inputs: Stream[InputState[Tuple]], results: TraversableOnce[O]) {
     var emitCount = 0
     if (hasDependants) {
       if (anchorTuples.anchor) {

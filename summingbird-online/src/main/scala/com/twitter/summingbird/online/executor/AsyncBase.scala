@@ -29,25 +29,25 @@ abstract class AsyncBase[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxWaiti
    * cases that need to complete operations after or before doing a FlatMapOperation or
    * doing a store merge
    */
-  def apply(state: S, in: I): Future[TraversableOnce[(Iterator[S], Future[TraversableOnce[O]])]]
-  def tick: Future[TraversableOnce[(Iterator[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
+  def apply(state: S, in: I): Future[TraversableOnce[(Stream[S], Future[TraversableOnce[O]])]]
+  def tick: Future[TraversableOnce[(Stream[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
 
-  implicit def itertorSemigroup[T]: Semigroup[Iterator[T]] = new Semigroup[Iterator[T]] {
-    override def plus(l: Iterator[T], r: Iterator[T]): Iterator[T] = l ++ r
+  implicit def itertorSemigroup[T]: Semigroup[Stream[T]] = new Semigroup[Stream[T]] {
+    override def plus(l: Stream[T], r: Stream[T]): Stream[T] = l ++ r
   }
 
-  private[executor] lazy val futureQueue = new FutureQueue[Iterator[S], TraversableOnce[O]](maxWaitingFutures, maxWaitingTime)
+  private[executor] lazy val futureQueue = new FutureQueue[Stream[S], TraversableOnce[O]](maxWaitingFutures, maxWaitingTime)
 
-  override def executeTick: TraversableOnce[(Iterator[S], Try[TraversableOnce[O]])] =
+  override def executeTick: TraversableOnce[(Stream[S], Try[TraversableOnce[O]])] =
     finishExecute(None, tick)
 
-  override def execute(state: S, data: I): TraversableOnce[(Iterator[S], Try[TraversableOnce[O]])] =
+  override def execute(state: S, data: I): TraversableOnce[(Stream[S], Try[TraversableOnce[O]])] =
     finishExecute(Some(state), apply(state, data))
 
-  private def finishExecute(failStateOpt: Option[S], fIn: Future[TraversableOnce[(Iterator[S], Future[TraversableOnce[O]])]]) = {
+  private def finishExecute(failStateOpt: Option[S], fIn: Future[TraversableOnce[(Stream[S], Future[TraversableOnce[O]])]]) = {
     fIn.respond {
       case Return(iter) => futureQueue.addAll(iter)
-      case Throw(ex) => futureQueue.add(failStateOpt.toIterator, Future.exception(ex))
+      case Throw(ex) => futureQueue.add(failStateOpt.toStream, Future.exception(ex))
     }
     futureQueue.dequeue(maxEmitPerExec.get)
   }
