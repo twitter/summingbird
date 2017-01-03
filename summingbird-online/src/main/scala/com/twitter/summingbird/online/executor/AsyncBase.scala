@@ -20,6 +20,7 @@ import com.twitter.algebird.Semigroup
 import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util._
+import chain.Chain
 import scala.util.Try
 
 abstract class AsyncBase[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxWaitingTime: MaxFutureWaitTime, maxEmitPerExec: MaxEmitPerExecute) extends Serializable with OperationContainer[I, O, S] {
@@ -29,25 +30,30 @@ abstract class AsyncBase[I, O, S](maxWaitingFutures: MaxWaitingFutures, maxWaiti
    * cases that need to complete operations after or before doing a FlatMapOperation or
    * doing a store merge
    */
-  def apply(state: S, in: I): Future[TraversableOnce[(Stream[S], Future[TraversableOnce[O]])]]
-  def tick: Future[TraversableOnce[(Stream[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
+  def apply(state: S, in: I): Future[TraversableOnce[(Chain[S], Future[TraversableOnce[O]])]]
+  def tick: Future[TraversableOnce[(Chain[S], Future[TraversableOnce[O]])]] = Future.value(Nil)
 
-  implicit def streamSemigroup[T]: Semigroup[Stream[T]] = new Semigroup[Stream[T]] {
-    override def plus(l: Stream[T], r: Stream[T]): Stream[T] = l ++ r
+  implicit def chainSemigroup[T]: Semigroup[Chain[T]] = new Semigroup[Chain[T]] {
+    override def plus(l: Chain[T], r: Chain[T]): Chain[T] = l ++ r
   }
 
-  private[executor] lazy val futureQueue = new FutureQueue[Stream[S], TraversableOnce[O]](maxWaitingFutures, maxWaitingTime)
+  private[executor] lazy val futureQueue = new FutureQueue[Chain[S], TraversableOnce[O]](maxWaitingFutures, maxWaitingTime)
 
-  override def executeTick: TraversableOnce[(Stream[S], Try[TraversableOnce[O]])] =
+  override def executeTick: TraversableOnce[(Chain[S], Try[TraversableOnce[O]])] =
     finishExecute(None, tick)
 
-  override def execute(state: S, data: I): TraversableOnce[(Stream[S], Try[TraversableOnce[O]])] =
+  override def execute(state: S, data: I): TraversableOnce[(Chain[S], Try[TraversableOnce[O]])] =
     finishExecute(Some(state), apply(state, data))
 
-  private def finishExecute(failStateOpt: Option[S], fIn: Future[TraversableOnce[(Stream[S], Future[TraversableOnce[O]])]]) = {
+  private def finishExecute(failStateOpt: Option[S], fIn: Future[TraversableOnce[(Chain[S], Future[TraversableOnce[O]])]]) = {
     fIn.respond {
       case Return(iter) => futureQueue.addAll(iter)
-      case Throw(ex) => futureQueue.add(failStateOpt.toStream, Future.exception(ex))
+      case Throw(ex) =>
+        val failState = failStateOpt match {
+          case Some(state) => Chain.single(state)
+          case None => Chain.Empty
+        }
+        futureQueue.add(failState, Future.exception(ex))
     }
     futureQueue.dequeue(maxEmitPerExec.get)
   }

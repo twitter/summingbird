@@ -16,14 +16,15 @@ limitations under the License.
 
 package com.twitter.summingbird.online.executor
 
+import chain.Chain
 import scala.util.Try
 
 trait OperationContainer[Input, Output, State] {
   def init(): Unit = {}
   def cleanup(): Unit = {}
 
-  def executeTick: TraversableOnce[(Stream[State], Try[TraversableOnce[Output]])]
+  def executeTick: TraversableOnce[(Chain[State], Try[TraversableOnce[Output]])]
   def execute(state: State,
-    data: Input): TraversableOnce[(Stream[State], Try[TraversableOnce[Output]])]
-  def notifyFailure(inputs: Stream[State], e: Throwable): Unit = {}
+    data: Input): TraversableOnce[(Chain[State], Try[TraversableOnce[Output]])]
+  def notifyFailure(inputs: Chain[State], e: Throwable): Unit = {}
 }

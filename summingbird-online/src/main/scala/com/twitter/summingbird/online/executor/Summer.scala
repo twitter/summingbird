@@ -24,6 +24,8 @@ import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.summingbird.online.{ FlatMapOperation, Externalizer }
 import com.twitter.summingbird.online.option._
 
+import chain.Chain
+
 // These CMaps we generate in the FFM, we use it as an immutable wrapper around
 // a mutable map.
 import scala.collection.{ Map => CMap }
@@ -72,8 +74,8 @@ class Summer[Key, Value: Semigroup, Event, S](
   lazy val storePromise = Promise[Mergeable[Key, Value]]
   lazy val store = Await.result(storePromise)
 
-  lazy val sSummer: AsyncSummer[(Key, (Stream[InputState[S]], Value)), Map[Key, (Stream[InputState[S]], Value)]] =
-    summerBuilder.getSummer[Key, (Stream[InputState[S]], Value)](implicitly[Semigroup[(Stream[InputState[S]], Value)]])
+  lazy val sSummer: AsyncSummer[(Key, (Chain[InputState[S]], Value)), Map[Key, (Chain[InputState[S]], Value)]] =
+    summerBuilder.getSummer[Key, (Chain[InputState[S]], Value)](implicitly[Semigroup[(Chain[InputState[S]], Value)]])
 
   val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
   val successHandlerBox = Externalizer(successHandler)
@@ -87,12 +89,12 @@ class Summer[Key, Value: Semigroup, Event, S](
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
   }
 
-  override def notifyFailure(inputs: Stream[InputState[S]], error: Throwable): Unit = {
+  override def notifyFailure(inputs: Chain[InputState[S]], error: Throwable): Unit = {
     super.notifyFailure(inputs, error)
     exceptionHandlerBox.get.apply(error)
   }
 
-  private def handleResult(kvs: Map[Key, (Stream[InputState[S]], Value)]): TraversableOnce[(Stream[InputState[S]], Future[TraversableOnce[Event]])] =
+  private def handleResult(kvs: Map[Key, (Chain[InputState[S]], Value)]): TraversableOnce[(Chain[InputState[S]], Future[TraversableOnce[Event]])] =
     store.multiMerge(kvs.mapValues(_._2)).iterator.map {
       case (k, beforeF) =>
         val (tups, delta) = kvs(k)
@@ -111,7 +113,7 @@ class Summer[Key, Value: Semigroup, Event, S](
       state.fanOut(innerTuples.size)
       val cacheEntries = innerTuples.map {
         case (k, v) =>
-          (k, (Stream(state), v))
+          (k, (Chain.single(state), v))
       }
 
       sSummer.addAll(cacheEntries).map(handleResult(_))

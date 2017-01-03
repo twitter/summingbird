@@ -25,6 +25,7 @@ import com.twitter.summingbird.online.option.{
   MaxFutureWaitTime,
   MaxEmitPerExecute
 }
+import chain.Chain
 
 class IntermediateFlatMap[T, U, S](
     @transient flatMapOp: FlatMapOperation[T, U],
@@ -35,9 +36,9 @@ class IntermediateFlatMap[T, U, S](
   val lockedOp = Externalizer(flatMapOp)
 
   override def apply(state: S,
-    tup: T): Future[Iterable[(Stream[S], Future[TraversableOnce[U]])]] =
+    tup: T): Future[Iterable[(Chain[S], Future[TraversableOnce[U]])]] =
     lockedOp.get.apply(tup).map { res =>
-      List((Stream(state), Future.value(res)))
+      List((Chain.single(state), Future.value(res)))
     }
 
   override def cleanup(): Unit = lockedOp.get.close
