@@ -236,7 +236,11 @@ val ignoredABIProblems = {
     exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.storm.Storm.get"),
     exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.storm.Storm.getOrElse"),
     exclude[DirectMissingMethodProblem]("com.twitter.summingbird.storm.BaseBolt.apply"),
-    exclude[IncompatibleResultTypeProblem]("com.twitter.summingbird.example.Memcache.client")
+    exclude[IncompatibleResultTypeProblem]("com.twitter.summingbird.example.Memcache.client"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.OperationContainer.notifyFailure"),
+    exclude[ReversedMissingMethodProblem]("com.twitter.summingbird.online.executor.OperationContainer.notifyFailure"),
+    exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.online.executor.AsyncBase.notifyFailure"),
+    exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.online.executor.Summer.notifyFailure")
   )
 }
 
