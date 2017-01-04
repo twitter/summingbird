@@ -33,6 +33,7 @@ import chain.Chain
 import scala.collection.JavaConverters._
 import java.util.{ List => JList }
 import org.slf4j.{ Logger, LoggerFactory }
+import scala.collection.mutable.ListBuffer
 
 /**
  *
@@ -150,14 +151,24 @@ case class BaseBolt[I, O](jobID: JobId,
     }
   }
 
+  // Avoid additional pass to get size
+  private def toListWithSize[A](iter: Iterator[A]): (List[A], Int) = {
+    val lb = new ListBuffer[A]
+    for (a <- iter) {
+      lb += a
+    }
+    (lb.toList, lb.size)
+  }
+
   private def finish(inputs: Chain[InputState[Tuple]], results: TraversableOnce[O]) {
     var numTuples = Option.empty[Int]
     var emitCount = 0
     if (hasDependants) {
       if (anchorTuples.anchor) {
+        val states = inputs.iterator.map(_.state)
+        val (tuples, count) = toListWithSize(states)
+        numTuples = Some(count)
         results.foreach { result =>
-          val tuples = inputs.iterator.map(_.state).toList
-          numTuples = Some(tuples.size)
           collector.emit(tuples.asJava, encoder(result))
           emitCount += 1
         }
