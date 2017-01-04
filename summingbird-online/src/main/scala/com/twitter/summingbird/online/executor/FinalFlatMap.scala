@@ -29,6 +29,7 @@ import com.twitter.summingbird.online.option.{
   MaxFutureWaitTime,
   MaxEmitPerExecute
 }
+import chain.Chain
 import scala.collection.mutable.{ Map => MMap, ListBuffer }
 // These CMaps we generate in the FFM, we use it as an immutable wrapper around
 // a mutable map.
@@ -67,15 +68,16 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_]](
   val lockedOp = Externalizer(flatMapOp)
 
   type SummerK = Key
-  type SummerV = (Seq[S], Value)
-  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(Seq[S], Value)]])
+  type SummerV = (Chain[S], Value)
+
+  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(Chain[S], Value)]])
 
   // Lazy transient as const futures are not serializable
   @transient private[this] lazy val noData = List(
-    (List(), Future.value(Nil))
+    (Chain.empty, Future.value(Nil))
   )
 
-  private def formatResult(outData: Map[Key, (Seq[S], Value)]): TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])] = {
+  private def formatResult(outData: Map[Key, (Chain[S], Value)]): TraversableOnce[(Chain[S], Future[TraversableOnce[OutputElement]])] = {
     if (outData.isEmpty) {
       noData
     } else {
@@ -85,34 +87,34 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_]](
         case (k, (listS, v)) =>
           val newK = summerShards.summerIdFor(k)
           val (buffer, mmap) = mmMap.getOrElseUpdate(newK, (ListBuffer[S](), MMap[Key, Value]()))
-          buffer ++= listS
+          buffer ++= listS.iterator
           mmap += k -> v
       }
 
       mmMap.toIterator.map {
         case (outerKey, (listS, innerMap)) =>
-          (listS, Future.value(List((outerKey, innerMap))))
+          (Chain(listS), Future.value(List((outerKey, innerMap))))
       }
     }
   }
 
-  override def tick: Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] =
+  override def tick: Future[TraversableOnce[(Chain[S], Future[TraversableOnce[OutputElement]])]] =
     sCache.tick.map(formatResult(_))
 
   def cache(state: S,
-    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(Seq[S], Future[TraversableOnce[OutputElement]])]] =
+    items: TraversableOnce[(Key, Value)]): Future[TraversableOnce[(Chain[S], Future[TraversableOnce[OutputElement]])]] =
     try {
       val itemL = items.toList
       if (itemL.size > 0) {
         state.fanOut(itemL.size)
         sCache.addAll(itemL.map {
           case (k, v) =>
-            k -> (List(state), v)
+            k -> (Chain.single(state), v)
         }).map(formatResult(_))
       } else { // Here we handle mapping to nothing, option map et. al
         Future.value(
           List(
-            (List(state), Future.value(Nil))
+            (Chain.single(state), Future.value(Nil))
           )
         )
       }

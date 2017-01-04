@@ -32,6 +32,7 @@ val storehausVersion = "0.15.0-RC1"
 val stormDep = "storm" % "storm" % "0.9.0-wip15" //This project also compiles with the latest storm, which is in fact required to run the example
 val tormentaVersion = "0.11.1"
 val utilVersion = "6.34.0"
+val chainVersion = "0.1.0"
 
 val extraSettings = mimaDefaultSettings ++ scalariformSettings
 
@@ -235,7 +236,11 @@ val ignoredABIProblems = {
     exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.storm.Storm.get"),
     exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.storm.Storm.getOrElse"),
     exclude[DirectMissingMethodProblem]("com.twitter.summingbird.storm.BaseBolt.apply"),
-    exclude[IncompatibleResultTypeProblem]("com.twitter.summingbird.example.Memcache.client")
+    exclude[IncompatibleResultTypeProblem]("com.twitter.summingbird.example.Memcache.client"),
+    exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.OperationContainer.notifyFailure"),
+    exclude[ReversedMissingMethodProblem]("com.twitter.summingbird.online.executor.OperationContainer.notifyFailure"),
+    exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.online.executor.AsyncBase.notifyFailure"),
+    exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.online.executor.Summer.notifyFailure")
   )
 }
 
@@ -293,7 +298,8 @@ lazy val summingbirdOnline = module("online").settings(
     "com.twitter" %% "chill" % chillVersion,
     "com.twitter" %% "storehaus-algebra" % storehausVersion,
     "com.twitter" %% "util-core" % utilVersion,
-    "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
+    "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test",
+    "org.spire-math" %% "chain" % chainVersion
   )
 ).dependsOn(
   summingbirdCore % "test->test;compile->compile",
@@ -315,6 +321,7 @@ lazy val summingbirdStorm = module("storm").settings(
     "com.twitter" %% "scalding-args" % scaldingVersion,
     "com.twitter" %% "tormenta-core" % tormentaVersion,
     "com.twitter" %% "util-core" % utilVersion,
+    "org.spire-math" %% "chain" % chainVersion,
     stormDep % "provided"
   )
 ).dependsOn(

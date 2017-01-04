@@ -29,6 +29,7 @@ import com.twitter.summingbird.online.executor.InputState
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
 import com.twitter.summingbird.online.Externalizer
+import chain.Chain
 import scala.collection.JavaConverters._
 import java.util.{ List => JList }
 import org.slf4j.{ Logger, LoggerFactory }
@@ -118,10 +119,10 @@ case class BaseBolt[I, O](jobID: JobId,
     logger.error(message, err)
   }
 
-  private def fail(inputs: Seq[InputState[Tuple]], error: Throwable): Unit = {
+  private def fail(inputs: Chain[InputState[Tuple]], error: Throwable): Unit = {
     executor.notifyFailure(inputs, error)
     if (!earlyAck) { inputs.foreach(_.fail(collector.fail(_))) }
-    logError("Storm DAG of: %d tuples failed".format(inputs.size), error)
+    logError("Storm DAG of: %d tuples failed".format(inputs.iterator.size), error)
   }
 
   override def execute(tuple: Tuple) = {
@@ -149,12 +150,13 @@ case class BaseBolt[I, O](jobID: JobId,
     }
   }
 
-  private def finish(inputs: Seq[InputState[Tuple]], results: TraversableOnce[O]) {
+  private def finish(inputs: Chain[InputState[Tuple]], results: TraversableOnce[O]) {
     var emitCount = 0
     if (hasDependants) {
       if (anchorTuples.anchor) {
+        val states = inputs.iterator.map(_.state).toList.asJava
         results.foreach { result =>
-          collector.emit(inputs.map(_.state).asJava, encoder(result))
+          collector.emit(states, encoder(result))
           emitCount += 1
         }
       } else { // don't anchor
@@ -167,7 +169,9 @@ case class BaseBolt[I, O](jobID: JobId,
     // Always ack a tuple on completion:
     if (!earlyAck) { inputs.foreach(_.ack(collector.ack(_))) }
 
-    logger.debug("bolt finished processed {} linked tuples, emitted: {}", inputs.size, emitCount)
+    if (logger.isDebugEnabled()) {
+      logger.debug("bolt finished processed {} linked tuples, emitted: {}", inputs.iterator.size, emitCount)
+    }
   }
 
   override def prepare(conf: JMap[_, _], context: TopologyContext, oc: OutputCollector) {
