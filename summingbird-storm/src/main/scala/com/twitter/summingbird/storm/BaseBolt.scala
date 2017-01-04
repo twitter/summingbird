@@ -151,11 +151,13 @@ case class BaseBolt[I, O](jobID: JobId,
   }
 
   private def finish(inputs: Chain[InputState[Tuple]], results: TraversableOnce[O]) {
-    val tuples = inputs.iterator.map(_.state).toList
+    var numTuples = Option.empty[Int]
     var emitCount = 0
     if (hasDependants) {
       if (anchorTuples.anchor) {
         results.foreach { result =>
+          val tuples = inputs.iterator.map(_.state).toList
+          numTuples = Some(tuples.size)
           collector.emit(tuples.asJava, encoder(result))
           emitCount += 1
         }
@@ -169,7 +171,7 @@ case class BaseBolt[I, O](jobID: JobId,
     // Always ack a tuple on completion:
     if (!earlyAck) { inputs.foreach(_.ack(collector.ack(_))) }
 
-    logger.debug("bolt finished processed {} linked tuples, emitted: {}", tuples.size, emitCount)
+    logger.debug("bolt finished processed {} linked tuples, emitted: {}", numTuples.getOrElse(inputs.iterator.size), emitCount)
   }
 
   override def prepare(conf: JMap[_, _], context: TopologyContext, oc: OutputCollector) {
