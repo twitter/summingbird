@@ -18,17 +18,14 @@ package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer._
-import com.twitter.summingbird.{ Name, Group, Counter }
-import com.twitter.summingbird.online.option.{ SummerBuilder, SummerConstructor }
-import com.twitter.summingbird.option.{ JobId, CacheSize }
+import com.twitter.summingbird.{ Counter, Group, Name }
+import com.twitter.summingbird.online.option.{ CompactValues, SummerBuilder, SummerConstructor }
+import com.twitter.summingbird.option.{ CacheSize, JobId }
 import com.twitter.summingbird.planner.Dag
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.util.{ Future, FuturePool }
-
 import java.util.concurrent.{ Executors, TimeUnit }
-
 import org.slf4j.LoggerFactory
-
 import Constants._
 
 /*
@@ -103,6 +100,8 @@ object BuildSummer {
         val valueCombinerCrushSize = storm.getOrElse(dag, node, DEFAULT_VALUE_COMBINER_CACHE_SIZE)
         logger.info(s"[$nodeName] valueCombinerCrushSize : ${valueCombinerCrushSize.get}")
 
+        val doCompact = storm.getOrElse(dag, node, CompactValues.default)
+
         new SummerBuilder {
           def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {
             val executor = Executors.newFixedThreadPool(asyncPoolSize.get)
@@ -118,8 +117,8 @@ object BuildSummer {
               tupleInCounter,
               tupleOutCounter,
               futurePool,
-              Compact(false),
-              CompactionSize(0))
+              Compact(doCompact.toBoolean),
+              CompactionSize(valueCombinerCrushSize.get))
             summer.withCleanup(() => {
               Future {
                 executor.shutdown
