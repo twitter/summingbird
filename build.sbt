@@ -240,7 +240,8 @@ val ignoredABIProblems = {
     exclude[DirectMissingMethodProblem]("com.twitter.summingbird.online.executor.OperationContainer.notifyFailure"),
     exclude[ReversedMissingMethodProblem]("com.twitter.summingbird.online.executor.OperationContainer.notifyFailure"),
     exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.online.executor.AsyncBase.notifyFailure"),
-    exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.online.executor.Summer.notifyFailure")
+    exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.online.executor.Summer.notifyFailure"),
+    exclude[IncompatibleMethTypeProblem]("com.twitter.summingbird.TPNamedProducer.this")
   )
 }
 
