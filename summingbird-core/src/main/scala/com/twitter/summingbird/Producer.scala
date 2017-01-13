@@ -222,7 +222,7 @@ case class AlsoProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], re
 
 case class NamedProducer[P <: Platform[P], +T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
-class TPNamedProducer[P <: Platform[P], +T](producer: Producer[P, T], id: String) extends NamedProducer[P, T](producer, id) with TailProducer[P, T]
+class TPNamedProducer[P <: Platform[P], +T](val tail: TailProducer[P, T], id: String) extends NamedProducer[P, T](tail, id) with TailProducer[P, T]
 
 /**
  * Represents filters and maps which may be optimized differently
