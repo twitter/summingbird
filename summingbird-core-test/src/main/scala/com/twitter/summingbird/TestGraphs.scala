@@ -68,7 +68,7 @@ object TestGraphs {
                  * This is a lookup, but there is no value for this key
                  */
               val joinResult = Some((time, (u, None)))
-              val sumResult = Semigroup.sumOption(valuesFn(time, (u, None))).map(v => (time, (None, v._2)))
+              val sumResult = Semigroup.sumOption(valuesFn((time, (u, None)))).map(v => (time, (None, v._2)))
               (joinResult, sumResult)
             case ((_, Some((_, (optv, v)))), (time, Left(u))) =>
               /*
@@ -76,7 +76,7 @@ object TestGraphs {
                  */
               val currentV = Some(sum(optv, v)) // isn't u already a sum and optu prev value?
               val joinResult = Some((time, (u, currentV)))
-              val sumResult = Semigroup.sumOption(valuesFn(time, (u, currentV))).map(v => (time, (currentV, v._2)))
+              val sumResult = Semigroup.sumOption(valuesFn((time, (u, currentV)))).map(v => (time, (currentV, v._2)))
               (joinResult, sumResult)
             case ((_, None), (time, Right(v))) =>
               /*

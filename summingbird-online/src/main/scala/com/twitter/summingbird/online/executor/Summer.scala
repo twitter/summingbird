@@ -100,7 +100,7 @@ class Summer[Key, Value: Semigroup, Event, S](
         val (tups, delta) = kvs(k)
         (tups, beforeF.flatMap { before =>
           lockedOp.get.apply((k, (before, delta)))
-        }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply() })
+        }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply(()) })
     }.toList
 
   override def tick = sSummer.tick.map(handleResult(_))

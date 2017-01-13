@@ -1,9 +1,7 @@
 import AssemblyKeys._
 import ReleaseTransformations._
-import com.typesafe.sbt.SbtScalariform._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbtassembly.Plugin._
-import scalariform.formatter.preferences._
 
 def scalaBinaryVersion(scalaVersion: String) = scalaVersion match {
   case version if version startsWith "2.10" => "2.10"
@@ -34,7 +32,7 @@ val tormentaVersion = "0.11.1"
 val utilVersion = "6.34.0"
 val chainVersion = "0.1.0"
 
-val extraSettings = mimaDefaultSettings ++ scalariformSettings
+val extraSettings = mimaDefaultSettings
 
 val sharedSettings = extraSettings ++ Seq(
   organization := "com.twitter",
@@ -138,13 +136,6 @@ val sharedSettings = extraSettings ++ Seq(
       </developer>
     </developers>)
 )
-
-lazy val formattingPreferences = {
- import scalariform.formatter.preferences._
- FormattingPreferences().
-   setPreference(AlignParameters, false).
-   setPreference(PreserveSpaceBeforeArguments, true)
-}
 
 lazy val noPublishSettings = Seq(
     publish := (),

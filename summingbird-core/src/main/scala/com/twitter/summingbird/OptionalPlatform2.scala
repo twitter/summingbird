@@ -83,6 +83,10 @@ case class OptionalUnzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val left = for (li <- l; leftStorei <- leftStore) yield Summer(li, leftStorei, monoid)
         val right = for (ri <- r; rightStorei <- rightStore) yield Summer(ri, rightStorei, monoid)
         cast((left, right))
+
+      case ValueFlatMappedProducer(p, fn) =>
+        val (l, r) = apply(p)
+        cast((l.map(ValueFlatMappedProducer(_, fn)), r.map(ValueFlatMappedProducer(_, fn))))
     }
 }
 

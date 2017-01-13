@@ -195,8 +195,8 @@ class ConcurrentMemory(implicit jobID: JobId = JobId("default.concurrent.memory.
             go(fn)
 
           case WrittenProducer(prod, queue) =>
-            def go[T](in: Prod[T], sink: Sink[T]) = {
-              val (planned, targets) = maybeFanout[T]
+            def go[U](in: Prod[U], sink: Sink[U]) = {
+              val (planned, targets) = maybeFanout[U]
               val phys = Writer(sink, targets)
               (planned + (that -> phys), phys)
             }
