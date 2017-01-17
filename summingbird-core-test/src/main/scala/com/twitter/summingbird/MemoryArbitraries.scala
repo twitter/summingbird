@@ -15,7 +15,6 @@ limitations under the License.
 */
 package com.twitter.summingbird
 
-import com.twitter.summingbird.{ KeyedProducer, Producer }
 import com.twitter.summingbird.memory.{ MemoryService, Memory }
 import org.scalacheck.{ Gen, Arbitrary }
 

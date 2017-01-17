@@ -108,11 +108,11 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
     }
   }
 
-  protected def sumByBatches[K1, V: Semigroup](ins: TypedPipe[(Timestamp, (K1, V))],
+  protected def sumByBatches[K1, V1: Semigroup](ins: TypedPipe[(Timestamp, (K1, V1))],
     capturedBatcher: Batcher,
-    commutativity: Commutativity): TypedPipe[(LTuple2[K1, BatchID], (Timestamp, V))] = {
-    implicit val timeValueSemigroup: Semigroup[(Timestamp, V)] =
-      IteratorSums.optimizedPairSemigroup[Timestamp, V](1000)
+    commutativity: Commutativity): TypedPipe[(LTuple2[K1, BatchID], (Timestamp, V1))] = {
+    implicit val timeValueSemigroup: Semigroup[(Timestamp, V1)] =
+      IteratorSums.optimizedPairSemigroup[Timestamp, V1](1000)
 
     val inits = ins.map {
       case (t, (k, v)) =>

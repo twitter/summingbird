@@ -109,7 +109,7 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_]](
         state.fanOut(itemL.size)
         sCache.addAll(itemL.map {
           case (k, v) =>
-            k -> (Chain.single(state), v)
+            (k, (Chain.single(state), v))
         }).map(formatResult(_))
       } else { // Here we handle mapping to nothing, option map et. al
         Future.value(

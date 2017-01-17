@@ -200,7 +200,7 @@ trait DagOptimizer[P <: Platform[P]] {
    */
   def expressionDag[T](p: Producer[P, T]): (ExpressionDag[Prod], Id[T]) = {
     val prodToLit = new GenFunction[Prod, LitProd] {
-      def apply[T] = { p => toLiteral(p) }
+      def apply[U] = { p => toLiteral(p) }
     }
     ExpressionDag[T, Prod](p, prodToLit)
   }

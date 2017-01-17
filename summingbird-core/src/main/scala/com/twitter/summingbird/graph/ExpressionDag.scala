@@ -50,7 +50,7 @@ object Literal {
     evaluate(HMap.empty[({ type L[T] = Literal[T, N] })#L, N], lit)._2
 
   // Memoized version of the above to handle diamonds
-  private def evaluate[T, N[_]](hm: HMap[({ type L[T] = Literal[T, N] })#L, N], lit: Literal[T, N]): (HMap[({ type L[T] = Literal[T, N] })#L, N], N[T]) =
+  private def evaluate[T, N[_]](hm: HMap[({ type L[T1] = Literal[T1, N] })#L, N], lit: Literal[T, N]): (HMap[({ type L[T1] = Literal[T1, N] })#L, N], N[T]) =
     hm.get(lit) match {
       case Some(prod) => (hm, prod)
       case None =>
@@ -216,7 +216,7 @@ sealed trait ExpressionDag[N[_]] { self =>
    */
   def find[T](node: N[T]): Option[Id[T]] = nodeToId.getOrElseUpdate(node, {
     val partial = new GenPartial[HMap[Id, E]#Pair, Id] {
-      def apply[T] = { case (thisId, expr) if node == expr.evaluate(idToExp) => thisId }
+      def apply[T1] = { case (thisId, expr) if node == expr.evaluate(idToExp) => thisId }
     }
     idToExp.collect(partial).headOption.asInstanceOf[Option[Id[T]]]
   })
@@ -273,7 +273,7 @@ sealed trait ExpressionDag[N[_]] { self =>
   def evaluateOption[T](id: Id[T]): Option[N[T]] =
     idToN.getOrElseUpdate(id, {
       val partial = new GenPartial[HMap[Id, E]#Pair, N] {
-        def apply[T] = { case (thisId, expr) if (id == thisId) => expr.evaluate(idToExp) }
+        def apply[T1] = { case (thisId, expr) if (id == thisId) => expr.evaluate(idToExp) }
       }
       idToExp.collect(partial).headOption.asInstanceOf[Option[N[T]]]
     })

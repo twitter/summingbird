@@ -108,10 +108,10 @@ case class SourceBuilder[T: Manifest] private (
 
   def write[U](sink: CompoundSink[U])(conversion: T => TraversableOnce[U])(implicit batcher: Batcher, mf: Manifest[U]): SourceBuilder[T] = {
     val newNode =
-      node.flatMap(conversion).write(
+      node.flatMap(conversion).write((
         sink.offline.map(new BatchedSinkFromOffline[U](batcher, _)),
         sink.online.map { supplier => new StormSink[U] { lazy val toFn = supplier() } }
-      )
+      ))
     copy(
       node = node.either(newNode).flatMap[T] {
         case Left(t) => Some(t)
@@ -122,10 +122,10 @@ case class SourceBuilder[T: Manifest] private (
 
   def write(sink: CompoundSink[T])(implicit batcher: Batcher): SourceBuilder[T] =
     copy(
-      node = node.write(
+      node = node.write((
         sink.offline.map(new BatchedSinkFromOffline[T](batcher, _)),
         sink.online.map { supplier => new StormSink[T] { lazy val toFn = supplier() } }
-      )
+      ))
     )
 
   def leftJoin[K, V, JoinedValue](service: CompoundService[K, JoinedValue])(implicit ev: T <:< (K, V), keyMf: Manifest[K], valMf: Manifest[V], joinedMf: Manifest[JoinedValue]): SourceBuilder[(K, (V, Option[JoinedValue]))] =
