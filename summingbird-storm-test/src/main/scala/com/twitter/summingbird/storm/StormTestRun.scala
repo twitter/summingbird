@@ -17,16 +17,15 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
-import org.apache.storm.{ LocalCluster, Config => BacktypeStormConfig }
+import org.apache.storm.{ ILocalCluster, Testing, Config => BacktypeStormConfig }
 import com.twitter.summingbird.online.executor.InflightTuples
-import org.apache.storm.testing.{ CompleteTopologyParam, MockedSources }
+import org.apache.storm.testing.{ CompleteTopologyParam, MockedSources, TestJob }
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird._
 import java.security.Permission
 import com.twitter.util.Duration
-import org.apache.storm.utils.Time
 
 /**
  * This stops Storm's exception handling triggering an exit(1)
@@ -35,9 +34,9 @@ private[storm] class MySecurityManager extends SecurityManager {
   override def checkExit(status: Int): Unit = {
     throw new SecurityException()
   }
-  override def checkAccess(t: Thread): Unit = {}
-  override def checkPermission(p: Permission): Unit = {}
-  override def checkPermission(perm: Permission, context: scala.Any): Unit = {}
+  override def checkAccess(thread: Thread): Unit = {}
+  override def checkPermission(perm: Permission): Unit = {}
+  override def checkPermission(perm: Permission, context: AnyRef): Unit = {}
 }
 
 /*
@@ -61,26 +60,15 @@ object StormTestRun {
     System.setSecurityManager(new MySecurityManager())
     InflightTuples.reset()
     try {
-      Time.startSimulating()
-      val cluster = new LocalCluster()
-      cluster.submitTopology("test topology", plannedTopology.config, plannedTopology.topology)
-      sleepInSimulation(7000)
-      cluster.killTopology("test topology")
-      sleepInSimulation(1500)
-      cluster.shutdown
+      Testing.withSimulatedTimeLocalCluster(new TestJob {
+        override def run(cluster: ILocalCluster): Unit = {
+          Testing.completeTopology(cluster, plannedTopology.topology, completeTopologyParam(plannedTopology.config))
+        }
+      })
     } finally {
-      Time.stopSimulating()
       System.setSecurityManager(oldSecManager)
     }
     require(InflightTuples.get == 0, "Inflight tuples is: %d".format(InflightTuples.get))
-  }
-
-  def sleepInSimulation(millis: Int): Unit = {
-    val quantification = 10
-    0.to(millis / quantification).foreach { iter =>
-      Thread.sleep(quantification)
-      Time.advanceTime(quantification)
-    }
   }
 
   def apply(graph: TailProducer[Storm, Any])(implicit storm: Storm) {
