@@ -172,9 +172,11 @@ lazy val summingbird = Project(
 val unreleasedModules = Set[String]()
 
 def youngestForwardCompatible(subProj: String) =
-  Some(subProj)
-    .filterNot(unreleasedModules.contains(_))
-    .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.9.0" }
+  None
+// Uncomment after release.
+//  Some(subProj)
+//    .filterNot(unreleasedModules.contains(_))
+//    .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.9.0" }
 
 /**
   * Empty this each time we publish a new version (and bump the minor number)
