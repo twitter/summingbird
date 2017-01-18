@@ -16,7 +16,7 @@ def isScala210x(scalaVersion: String) = scalaBinaryVersion(scalaVersion) == "2.1
 
 val algebirdVersion = "0.12.0"
 val bijectionVersion = "0.9.1"
-val chillVersion = "0.7.3"
+val chillVersion = "0.8.3"
 val commonsHttpClientVersion = "3.1"
 val commonsLangVersion = "2.6"
 val finagleVersion = "6.35.0"
@@ -30,7 +30,7 @@ val scaldingVersion = "0.16.1-RC3"
 val slf4jVersion = "1.6.6"
 val storehausVersion = "0.15.0-RC1"
 val stormDep = "org.apache.storm" % "storm-core" % "1.0.2"
-val tormentaVersion = "0.11.1"
+val tormentaVersion = "0.12.0"
 val utilVersion = "6.34.0"
 val chainVersion = "0.1.0"
 
