@@ -81,6 +81,10 @@ case class Unzip2[P1 <: Platform[P1], P2 <: Platform[P2]]() {
         val (l, r) = apply(producer)
         val (leftStore, rightStore) = store
         cast((Summer(l, leftStore, monoid), Summer(r, rightStore, monoid)))
+
+      case ValueFlatMappedProducer(p, fn) =>
+        val (l, r) = apply(p)
+        cast((ValueFlatMappedProducer(l, fn), ValueFlatMappedProducer(r, fn)))
     }
 }
 

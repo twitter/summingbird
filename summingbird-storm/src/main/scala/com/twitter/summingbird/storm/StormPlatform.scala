@@ -167,76 +167,79 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     topologyBuilder.setSpout(nodeName, stormSpout, sourceParalleism)
   }
 
-  private def scheduleSummerBolt[K, V](jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) = {
-    val summer: Summer[Storm, K, V] = node.members.collect { case c: Summer[Storm, K, V] => c }.head
-    implicit val semigroup = summer.semigroup
-    implicit val batcher = summer.store.mergeableBatcher
+  private def scheduleSummerBolt(jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder): Unit = {
+
     val nodeName = stormDag.getNodeName(node)
 
-    type ExecutorKeyType = (K, BatchID)
-    type ExecutorValueType = (Timestamp, V)
-    type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
+    def sinkBolt[K, V](summer: Summer[Storm, K, V]): BaseBolt[_, _] = {
+      implicit val semigroup = summer.semigroup
+      implicit val batcher = summer.store.mergeableBatcher
 
-    val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
-    val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
-    val shouldEmit = stormDag.dependantsOf(node).size > 0
+      type ExecutorKeyType = (K, BatchID)
+      type ExecutorValueType = (Timestamp, V)
+      type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
 
-    val builder = BuildSummer(this, stormDag, node, jobID)
+      val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
+      val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
+      val shouldEmit = stormDag.dependantsOf(node).size > 0
 
-    val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
-    logger.info(s"[$nodeName] ackOnEntry : ${ackOnEntry.get}")
+      val builder = BuildSummer(this, stormDag, node, jobID)
 
-    val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
-    logger.info(s"[$nodeName] maxEmitPerExecute : ${maxEmitPerExecute.get}")
+      val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
+      logger.info(s"[$nodeName] ackOnEntry : ${ackOnEntry.get}")
 
-    val maxExecutePerSec = getOrElse(stormDag, node, DEFAULT_MAX_EXECUTE_PER_SEC)
-    logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
+      val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
+      logger.info(s"[$nodeName] maxEmitPerExecute : ${maxEmitPerExecute.get}")
 
-    val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
-      val ((k, batchID), (optiVWithTS, (ts, v))) = op
-      val optiV = optiVWithTS.map(_._2)
-      List((ts, (k, (optiV, v))))
+      val maxExecutePerSec = getOrElse(stormDag, node, DEFAULT_MAX_EXECUTE_PER_SEC)
+      logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
+
+      val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
+        val ((k, batchID), (optiVWithTS, (ts, v))) = op
+        val optiV = optiVWithTS.map(_._2)
+        List((ts, (k, (optiV, v))))
+      }
+
+      val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
+        FlatMapOperation.apply(storeBaseFMOp)
+
+      val supplier: MergeableStoreFactory[ExecutorKeyType, V] = summer.store
+
+      BaseBolt(
+        jobID,
+        metrics.metrics,
+        anchorTuples,
+        shouldEmit,
+        new Fields(VALUE_FIELD),
+        ackOnEntry,
+        maxExecutePerSec,
+        new KeyValueInjection[Int, CMap[ExecutorKeyType, ExecutorValueType]],
+        new SingleItemInjection[ExecutorOutputType],
+        new executor.Summer(
+          () => new WrappedTSInMergeable(supplier.mergeableStore(semigroup)),
+          flatmapOp,
+          getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
+          getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
+          builder,
+          getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
+          getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
+          maxEmitPerExecute,
+          getOrElse(stormDag, node, IncludeSuccessHandler.default))
+      )
     }
 
-    val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
-      FlatMapOperation.apply(storeBaseFMOp)
-
-    val supplier: MergeableStoreFactory[ExecutorKeyType, V] = summer.store
-
-    val sinkBolt = BaseBolt(
-      jobID,
-      metrics.metrics,
-      anchorTuples,
-      shouldEmit,
-      new Fields(VALUE_FIELD),
-      ackOnEntry,
-      maxExecutePerSec,
-      new KeyValueInjection[Int, CMap[ExecutorKeyType, ExecutorValueType]],
-      new SingleItemInjection[ExecutorOutputType],
-      new executor.Summer(
-        () => new WrappedTSInMergeable(supplier.mergeableStore(semigroup)),
-        flatmapOp,
-        getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
-        getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-        builder,
-        getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
-        getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
-        maxEmitPerExecute,
-        getOrElse(stormDag, node, IncludeSuccessHandler.default))
-    )
-
+    val summerUntyped = node.members.collect { case c@Summer(_, _, _) => c }.head
     val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint
     val declarer =
       topologyBuilder.setBolt(
         nodeName,
-        sinkBolt,
+        sinkBolt(summerUntyped),
         parallelism
       ).addConfigurations(tickConfig)
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
     dependenciesNames.foreach { parentName =>
       declarer.fieldsGrouping(parentName, new Fields(AGG_KEY))
     }
-
   }
 
   private def dumpOptions: String = {

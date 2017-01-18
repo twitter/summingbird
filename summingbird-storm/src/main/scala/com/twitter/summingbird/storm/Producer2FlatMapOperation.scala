@@ -49,7 +49,14 @@ object Producer2FlatMapOperation {
           case AlsoProducer(_, _) => acc
           case Source(_) => sys.error("Should not schedule a source inside a flat mapper")
           case Summer(_, _, _) => sys.error("Should not schedule a Summer inside a flat mapper")
-          case KeyFlatMappedProducer(_, op) => acc.andThen(FlatMapOperation.keyFlatMap[Any, Any, Any](op).asInstanceOf[FlatMapOperation[Any, Any]])
+          case KeyFlatMappedProducer(_, op) =>
+            acc.andThen(FlatMapOperation.keyFlatMap[Any, Any, Any](op).asInstanceOf[FlatMapOperation[Any, Any]])
+          case ValueFlatMappedProducer(_, op) =>
+            val fn = { kv: Any =>
+              val (k, v) = kv.asInstanceOf[(Any, Any)]
+              op(v).map((k, _))
+            }
+            acc.andThen(FlatMapOperation(fn).asInstanceOf[FlatMapOperation[Any, Any]])
         }
     }.asInstanceOf[FlatMapOperation[T, U]]
 }
