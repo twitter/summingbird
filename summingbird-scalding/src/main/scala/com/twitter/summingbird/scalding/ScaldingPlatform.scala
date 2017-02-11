@@ -748,7 +748,12 @@ class Scalding(
             if (flowDef.getSinks.isEmpty) {
               Right((ts, None))
             } else {
-              Right((ts, Some(mode.newFlowConnector(config).connect(flowDef))))
+              // Scalding has a lot of extra stuff it does to produce
+              // a flow, we have to use this method to do it correctly
+              ExecutionContext.newContext(config)(flowDef, mode).buildFlow match {
+                case Success(f) => Right((ts, Some(f)))
+                case Failure(e) => toTry(e)
+              }
             }
           } catch {
             case NonFatal(e) => toTry(e)
