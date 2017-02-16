@@ -32,7 +32,7 @@ import com.twitter.summingbird.batch.{
 }
 import com.twitter.summingbird.batch.store.HDFSMetadata
 import org.slf4j.LoggerFactory
-import scala.util.{Failure, Success, Try => ScalaTry}
+import scala.util.{ Failure, Success, Try => ScalaTry }
 
 /**
  * State representation used by the builder API for compatibility.

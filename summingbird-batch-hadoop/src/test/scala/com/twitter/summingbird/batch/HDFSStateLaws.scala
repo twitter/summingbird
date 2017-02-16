@@ -16,9 +16,9 @@
 
 package com.twitter.summingbird.batch
 
-import java.util.{TimeZone, UUID}
-import com.twitter.algebird.{Intersection, Interval}
-import com.twitter.scalding.{DateParser, RichDate}
+import java.util.{ TimeZone, UUID }
+import com.twitter.algebird.{ Intersection, Interval }
+import com.twitter.scalding.{ DateParser, RichDate }
 import com.twitter.summingbird.batch.state.HDFSState
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem

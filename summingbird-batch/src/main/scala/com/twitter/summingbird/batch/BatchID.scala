@@ -27,7 +27,7 @@ import com.twitter.algebird.{
   Interval,
   Universe
 }
-import com.twitter.bijection.{Bijection, Injection}
+import com.twitter.bijection.{ Bijection, Injection }
 import scala.collection.Iterator.iterate
 
 /**

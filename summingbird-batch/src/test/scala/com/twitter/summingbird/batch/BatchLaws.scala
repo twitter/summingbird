@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import org.scalacheck.{Arbitrary, Gen, Properties}
+import org.scalacheck.{ Arbitrary, Gen, Properties }
 import org.scalacheck.Prop._
 import com.twitter.algebird.Interval
 
