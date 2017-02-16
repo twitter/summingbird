@@ -16,25 +16,24 @@
 
 package com.twitter.summingbird.scalding
 
+import com.twitter.algebird.Interval.MaybeEmpty
 import com.twitter.algebird.{
+  ExclusiveUpper,
   InclusiveUpper,
   Intersection,
-  Interval,
-  ExclusiveUpper
+  Interval
 }
 import com.twitter.summingbird.batch.{
-  Batcher,
   BatchID,
+  Batcher,
   PrepareState,
   RunningState,
   Timestamp,
   WaitingState
 }
 import com.twitter.summingbird.batch.store.HDFSMetadata
-
 import org.slf4j.LoggerFactory
-
-import scala.util.{ Try => ScalaTry, Success, Failure }
+import scala.util.{Failure, Success, Try => ScalaTry}
 
 /**
  * State representation used by the builder API for compatibility.
@@ -81,7 +80,10 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
       Interval.leftClosedRightOpen(
         batcher.earliestTimeOf(beginning),
         batcher.earliestTimeOf(end)
-      ).right.get
+      ) match {
+        case MaybeEmpty.NotSoEmpty(interval) => interval
+        case _ => throw new NoSuchElementException("Got an empty interval")
+      }
     }
 
     def willAccept(available: Interval[Timestamp]) =
