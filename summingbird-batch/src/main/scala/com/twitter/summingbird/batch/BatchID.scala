@@ -19,12 +19,12 @@ package com.twitter.summingbird.batch
 import com.twitter.algebird.Monoid
 import com.twitter.algebird.{
   Empty,
-  Interval,
-  Intersection,
-  InclusiveLower,
-  ExclusiveUpper,
-  InclusiveUpper,
   ExclusiveLower,
+  ExclusiveUpper,
+  InclusiveLower,
+  InclusiveUpper,
+  Intersection,
+  Interval,
   Universe
 }
 import com.twitter.bijection.{ Bijection, Injection }
@@ -75,7 +75,7 @@ object BatchID {
       .flatMap {
         case (min, max, cnt) =>
           if ((min + cnt) == (max + 1L)) {
-            Some(Interval.leftClosedRightOpen(min, max.next).right.get)
+            Some[Interval[BatchID]](Interval.leftClosedRightOpen(min, max.next))
           } else {
             // These batches are not contiguous, not an interval
             None
