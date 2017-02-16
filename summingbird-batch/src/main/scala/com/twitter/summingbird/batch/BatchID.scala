@@ -16,7 +16,6 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import com.twitter.algebird.Interval.MaybeEmpty
 import com.twitter.algebird.Monoid
 import com.twitter.algebird.{
   Empty,
@@ -76,10 +75,7 @@ object BatchID {
       .flatMap {
         case (min, max, cnt) =>
           if ((min + cnt) == (max + 1L)) {
-            Interval.leftClosedRightOpen(min, max.next) match {
-              case MaybeEmpty.NotSoEmpty(interval) => Some(interval)
-              case _ => throw new NoSuchElementException("Got an empty interval")
-            }
+            Some[Interval[BatchID]](Interval.leftClosedRightOpen(min, max.next))
           } else {
             // These batches are not contiguous, not an interval
             None

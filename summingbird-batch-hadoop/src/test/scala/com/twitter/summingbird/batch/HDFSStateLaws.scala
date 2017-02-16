@@ -16,15 +16,13 @@
 
 package com.twitter.summingbird.batch
 
-import java.util.{ TimeZone, UUID }
-
-import com.twitter.algebird.{ Intersection, Interval }
-import com.twitter.scalding.{ DateParser, RichDate }
+import java.util.{TimeZone, UUID}
+import com.twitter.algebird.{Intersection, Interval}
+import com.twitter.scalding.{DateParser, RichDate}
 import com.twitter.summingbird.batch.state.HDFSState
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
-
 import org.scalatest.WordSpec
 
 class HDFSStateLaws extends WordSpec {
@@ -81,7 +79,7 @@ class HDFSStateLaws extends WordSpec {
     }
   }
 
-  def leftClosedRightOpenInterval(low: Timestamp, high: Timestamp) = Interval.leftClosedRightOpen[Timestamp](low, high).right.get
+  def leftClosedRightOpenInterval(low: Timestamp, high: Timestamp) = Interval.leftClosedRightOpen[Timestamp](low, high)
 
   def shouldNotAcceptInterval(state: WaitingState[Interval[Timestamp]], interval: Interval[Timestamp], message: String = "PreparedState accepted a bad Interval!") = {
     state.begin.willAccept(interval) match {

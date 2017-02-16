@@ -16,7 +16,6 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.Interval.MaybeEmpty
 import com.twitter.algebird.{
   ExclusiveUpper,
   InclusiveUpper,
@@ -80,10 +79,7 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
       Interval.leftClosedRightOpen(
         batcher.earliestTimeOf(beginning),
         batcher.earliestTimeOf(end)
-      ) match {
-        case MaybeEmpty.NotSoEmpty(interval) => interval
-        case _ => throw new NoSuchElementException("Got an empty interval")
-      }
+      )
     }
 
     def willAccept(available: Interval[Timestamp]) =
