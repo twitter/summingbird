@@ -19,12 +19,15 @@ package com.twitter.summingbird.batch
 import com.twitter.algebird.Monoid
 import com.twitter.algebird.{
   Empty,
-  Interval,
-  Intersection,
-  InclusiveLower,
-  ExclusiveUpper,
-  InclusiveUpper,
   ExclusiveLower,
+  ExclusiveUpper,
+  InclusiveLower,
+  InclusiveUpper,
+  Intersection,
+  Interval,
+  Monoid,
+  Successible,
+  Predecessible,
   Universe
 }
 import com.twitter.bijection.{ Bijection, Injection }
@@ -49,6 +52,16 @@ object BatchID {
   import OrderedFromOrderingExt._
   implicit val equiv: Equiv[BatchID] = Equiv.by(_.id)
 
+  implicit def batchIdSuccessible: Successible[BatchID] =
+    Successible.fromNextOrd[BatchID] { bid =>
+      if (bid.id < Long.MaxValue) Some(bid.next) else None
+    }
+
+  implicit def batchIdPredecessible: Predecessible[BatchID] =
+    Predecessible.fromPrevOrd[BatchID] { bid =>
+      if (bid.id > Long.MinValue) Some(bid.prev) else None
+    }
+
   // Enables BatchID(someBatchID.toString) roundtripping
   def apply(str: String) = new BatchID(str.split("\\.")(1).toLong)
 
@@ -57,8 +70,12 @@ object BatchID {
    * `[startBatch, endBatch]` (inclusive).
    */
   def range(start: BatchID, end: BatchID): Iterable[BatchID] =
-    new Iterable[BatchID] {
-      def iterator = iterate(start)(_.next).takeWhile(_ <= end)
+    if (start == end) List(start)
+    else {
+      // if start == end and end == Long.MaxValue, this does not terminate
+      new Iterable[BatchID] {
+        def iterator = iterate(start)(_.next).takeWhile(_ <= end)
+      }
     }
 
   /**
