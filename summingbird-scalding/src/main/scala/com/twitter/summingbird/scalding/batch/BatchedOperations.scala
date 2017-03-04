@@ -37,6 +37,10 @@ private class BatchedOperations(batcher: Batcher) {
     BatchID.toIterable(batchInterval)
   }
 
+  // Only here for binary compatibility reasons
+  def batchToTimestamp(bint: Interval[BatchID]): Interval[Timestamp] =
+    batcher.toTimestamp(bint)
+
   def intersect(batches: Interval[BatchID], ts: Interval[Timestamp]): Interval[Timestamp] =
     batcher.toTimestamp(batches) && ts
 
