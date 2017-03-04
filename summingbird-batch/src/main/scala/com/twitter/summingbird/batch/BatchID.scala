@@ -16,7 +16,6 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import com.twitter.algebird.Monoid
 import com.twitter.algebird.{
   Empty,
   ExclusiveLower,
