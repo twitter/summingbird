@@ -69,17 +69,13 @@ object BatchID {
    * `[startBatch, endBatch]` (inclusive).
    */
   def range(start: BatchID, end: BatchID): Iterable[BatchID] =
-    if (start == end) List(start)
-    else if (end < start) Nil
+    if (end < start) Nil
     else {
       new Iterable[BatchID] {
-        val suc = batchIdSuccessible
-        def iterator = iterate(Option(start))(suc.next)
-          .takeWhile {
-            case Some(b) => b <= end
-            case None => false
-          }
-          .collect { case Some(b) => b }
+        def iterator = {
+          val beforeEnd = iterate(start)(_.next).takeWhile(_ < end)
+          beforeEnd ++ Iterator.single(end)
+        }
       }
     }
 
