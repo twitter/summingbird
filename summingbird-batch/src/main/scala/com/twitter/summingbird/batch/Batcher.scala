@@ -17,15 +17,16 @@ limitations under the License.
 package com.twitter.summingbird.batch
 
 import com.twitter.algebird.{
-  Universe,
   Empty,
-  Interval,
-  Intersection,
-  InclusiveLower,
-  ExclusiveUpper,
-  InclusiveUpper,
   ExclusiveLower,
+  ExclusiveUpper,
+  InclusiveLower,
+  InclusiveUpper,
+  Intersection,
+  Interval,
   Lower,
+  Successible,
+  Universe,
   Upper
 }
 
@@ -169,12 +170,12 @@ trait Batcher extends Serializable {
     dateToBatch(interval)(truncateUp)(truncateDown)
 
   def toInterval(b: BatchID): Interval[Timestamp] =
-    if (b.id < Long.MaxValue) {
-      Intersection(InclusiveLower(earliestTimeOf(b)), ExclusiveUpper(earliestTimeOf(b.next)))
-    }
-    else {
-      // this is defensive, but if BatchID == Long.MaxValue, probably the timestamp has overflowed
-      Intersection(InclusiveLower(earliestTimeOf(b)), InclusiveUpper(latestTimeOf(b)))
+    Successible.next(b) match {
+      case Some(bnext) =>
+        Intersection(InclusiveLower(earliestTimeOf(b)), ExclusiveUpper(earliestTimeOf(bnext)))
+      case None =>
+        // this is defensive, but if BatchID == Long.MaxValue, probably the timestamp has overflowed
+        Intersection(InclusiveLower(earliestTimeOf(b)), InclusiveUpper(latestTimeOf(b)))
     }
 
   def toTimestamp(b: Interval[BatchID]): Interval[Timestamp] =
