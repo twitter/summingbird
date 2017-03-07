@@ -37,12 +37,12 @@ private class BatchedOperations(batcher: Batcher) {
     BatchID.toIterable(batchInterval)
   }
 
-  // This does not look correct. How does this work for closed intervals for instance?
+  // Only here for binary compatibility reasons
   def batchToTimestamp(bint: Interval[BatchID]): Interval[Timestamp] =
-    bint.mapNonDecreasing { batcher.earliestTimeOf(_) }
+    batcher.toTimestamp(bint)
 
   def intersect(batches: Interval[BatchID], ts: Interval[Timestamp]): Interval[Timestamp] =
-    batchToTimestamp(batches) && ts
+    batcher.toTimestamp(batches) && ts
 
   def intersect(batches: Iterable[BatchID], ts: Interval[Timestamp]): Option[Interval[Timestamp]] =
     BatchID.toInterval(batches).map { intersect(_, ts) }
@@ -57,7 +57,7 @@ private class BatchedOperations(batcher: Batcher) {
       }
 
   def readBatched[T](inBatches: Interval[BatchID], mode: Mode, in: PipeFactory[T]): Try[(Interval[BatchID], FlowToPipe[T])] = {
-    val inTimes = batchToTimestamp(inBatches)
+    val inTimes = batcher.toTimestamp(inBatches)
     // Read the delta stream for the needed times
     in((inTimes, mode))
       .right
