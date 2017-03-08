@@ -25,7 +25,6 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{ FileSystem, Path }
 import scala.collection.JavaConverters._
 import scala.util.Try
-import scala.util.control.Exception.allCatch
 
 /**
  * @author Oscar Boykin

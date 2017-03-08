@@ -17,16 +17,13 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
-import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster, Testing }
+import backtype.storm.{ Config => BacktypeStormConfig, LocalCluster }
 import com.twitter.summingbird.online.executor.InflightTuples
 import backtype.storm.testing.{ CompleteTopologyParam, MockedSources }
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird._
-import com.twitter.summingbird.planner._
-import com.twitter.tormenta.spout.Spout
-import scala.collection.JavaConverters._
 import java.security.Permission
 import com.twitter.util.Duration
 

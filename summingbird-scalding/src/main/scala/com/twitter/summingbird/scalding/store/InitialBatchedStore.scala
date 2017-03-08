@@ -17,12 +17,10 @@
 package com.twitter.summingbird.scalding.store
 
 import com.twitter.scalding.{ Mode, TypedPipe }
-import com.twitter.summingbird._
 import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.scalding.{ Try, FlowProducer, Scalding }
 import com.twitter.summingbird.batch.{ BatchID, OrderedFromOrderingExt }
 import cascading.flow.FlowDef
-import com.twitter.summingbird.scalding._
 
 /**
  * For (firstNonZero - 1) we read empty. For all before we error on read. For all later, we proxy

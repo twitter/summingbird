@@ -18,7 +18,7 @@ package com.twitter.summingbird.online
 
 import com.twitter.algebird.{ Semigroup, Tuple2Semigroup }
 import com.twitter.storehaus.algebra.Mergeable
-import com.twitter.summingbird.batch.{ BatchID, Timestamp }
+import com.twitter.summingbird.batch.{ Timestamp }
 import com.twitter.util.{ Future, Time }
 
 // Cannot use a MergeableProxy here since we change the type.

@@ -16,13 +16,9 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding.store
 
-import cascading.flow.FlowDef
 import com.twitter.bijection.Injection
-import com.twitter.scalding.{ Dsl, Mode, TDsl, TypedPipe }
 import com.twitter.scalding.commons.source.VersionedKeyValSource
-import com.twitter.summingbird.batch.{ Batcher, BatchID, PrunedSpace, Timestamp }
-import scala.util.control.Exception.allCatch
-import com.twitter.summingbird.scalding._
+import com.twitter.summingbird.batch.{ Batcher, BatchID, PrunedSpace }
 
 /**
  * Scalding implementation of the batch read and write components

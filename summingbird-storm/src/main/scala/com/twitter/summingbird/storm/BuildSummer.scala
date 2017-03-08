@@ -20,7 +20,7 @@ import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer._
 import com.twitter.summingbird.{ Counter, Group, Name }
 import com.twitter.summingbird.online.option.{ CompactValues, SummerBuilder, SummerConstructor }
-import com.twitter.summingbird.option.{ CacheSize, JobId }
+import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.Dag
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.util.{ Future, FuturePool }

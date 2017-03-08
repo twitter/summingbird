@@ -17,12 +17,10 @@
 package com.twitter.summingbird
 
 import com.twitter.summingbird.option.JobId
-import scala.collection.JavaConverters._
 import scala.collection.parallel.mutable.ParHashSet
 import scala.ref.WeakReference
 import scala.util.Try
 import java.util.concurrent.ConcurrentHashMap
-import java.util.Collections
 
 trait CounterIncrementor {
   def incrBy(by: Long): Unit

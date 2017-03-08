@@ -17,7 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.store
 
 import com.twitter.summingbird.online.Externalizer
-import com.twitter.storehaus.ReadableStore
 import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.scalding.batch.BatchedStore

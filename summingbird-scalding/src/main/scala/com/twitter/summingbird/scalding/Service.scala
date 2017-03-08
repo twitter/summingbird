@@ -17,7 +17,6 @@
 package com.twitter.summingbird.scalding
 
 import com.twitter.algebird.Semigroup
-import com.twitter.scalding.TypedPipe
 import com.twitter.scalding.typed.LookupJoin
 import com.twitter.summingbird._
 import com.twitter.summingbird.option._
@@ -189,7 +188,7 @@ private[scalding] object InternalService {
    * @param left TypedPipe of producer of input to the join
    * @param mergeLog TypedPipe of merges to the store
    * @param valueExpansion a function on the values coming out of the join
-   * @param reduers an option number of reducers to use for the join
+   * @param reducers an option number of reducers to use for the join
    *
    * This function performs the loop join by sorting the input by time and then calling scanLeft to merge the two TypedPipes.
    * The result is a join stream and the output stream of the store.

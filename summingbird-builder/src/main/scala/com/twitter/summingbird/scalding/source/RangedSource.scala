@@ -16,10 +16,8 @@ limitations under the License.
 
 package com.twitter.summingbird.scalding.source
 
-import cascading.flow.FlowDef
-import com.twitter.scalding.{ Mode, Mappable, DateRange, RichDate, Hours }
+import com.twitter.scalding.{ Mappable, DateRange, Hours }
 import com.twitter.summingbird.source.OfflineSource
-import java.util.Date
 
 /**
  * @author Oscar Boykin

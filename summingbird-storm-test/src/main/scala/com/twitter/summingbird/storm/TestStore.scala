@@ -23,7 +23,6 @@ import com.twitter.summingbird.online._
 import com.twitter.util.Future
 import java.util.{ Collections, HashMap, Map => JMap, UUID }
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.mutable.SynchronizedMap
 import java.util.WeakHashMap
 import scala.collection.JavaConverters._
 

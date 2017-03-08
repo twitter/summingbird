@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding
 
 import cascading.scheme.NullScheme
 import cascading.tap.Tap
-import cascading.tuple.{ Tuple, Fields, TupleEntry }
+import cascading.tuple.Fields
 import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
 import java.io.{ InputStream, OutputStream }
 import org.apache.hadoop.mapred.JobConf

@@ -16,15 +16,6 @@
 
 package com.twitter.summingbird.scalding.batch
 
-import cascading.flow.{ Flow, FlowDef }
-
-import com.twitter.algebird._
-import com.twitter.algebird.monad._
-import com.twitter.summingbird.batch._
-import com.twitter.summingbird.option.{ Commutative, NonCommutative, Commutativity }
-import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
-
-import org.scalacheck._
 import org.scalacheck.Prop._
 import org.scalacheck.Properties
 

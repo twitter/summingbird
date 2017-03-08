@@ -17,15 +17,14 @@ limitations under the License.
 package com.twitter.summingbird.builder
 
 import com.twitter.algebird.{ Monoid, Semigroup }
-import com.twitter.bijection.{ Codec, Injection }
+import com.twitter.bijection.Codec
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.chill.java.IterableRegistrar
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Batcher }
-import com.twitter.summingbird.option.CacheSize
-import com.twitter.summingbird.scalding.{ Scalding, Service, ScaldingEnv, Sink }
+import com.twitter.summingbird.scalding.{ Scalding, ScaldingEnv }
 import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.service.CompoundService
 import com.twitter.summingbird.sink.{ CompoundSink, BatchedSinkFromOffline }
@@ -35,7 +34,6 @@ import com.twitter.summingbird.online._
 import com.twitter.summingbird.storm.{
   Storm,
   StormEnv,
-  StormSource,
   StormSink
 }
 import java.io.Serializable

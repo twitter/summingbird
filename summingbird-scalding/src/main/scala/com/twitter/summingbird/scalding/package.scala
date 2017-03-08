@@ -23,9 +23,7 @@ import cascading.flow.FlowDef
 
 import com.twitter.algebird.monad.{ Reader, StateWithError }
 import com.twitter.algebird.Interval
-import com.twitter.summingbird
 import com.twitter.summingbird.batch.Timestamp
-import org.apache.hadoop.io.Writable
 
 package object scalding {
   /** How we represent the streams in scalding */

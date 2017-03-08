@@ -4,7 +4,6 @@ import backtype.storm.metric.api.CountMetric
 import backtype.storm.task.TopologyContext
 import com.twitter.summingbird.{ CounterIncrementor, Group, Name, PlatformStatProvider }
 import com.twitter.summingbird.option.JobId
-import com.twitter.util.{ Promise, Await }
 import java.util.concurrent.ConcurrentHashMap
 import org.slf4j.LoggerFactory
 import scala.collection.JavaConverters._
