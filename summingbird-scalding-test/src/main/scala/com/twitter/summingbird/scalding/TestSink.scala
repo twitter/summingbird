@@ -16,11 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.monad._
 import com.twitter.summingbird.batch._
-
-import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
-import com.twitter.scalding.typed.TypedSink
 
 /**
  * This is a test sink that assumes single threaded testing with

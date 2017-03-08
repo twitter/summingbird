@@ -17,17 +17,10 @@ limitations under the License.
 
 package com.twitter.summingbird.source
 
-import cascading.flow.FlowDef
 import com.twitter.scalding.DateRange
 import com.twitter.scalding.Mappable
 
-import com.twitter.scalding.Mode
-import com.twitter.scalding.TypedPipe
-import com.twitter.summingbird.batch.{ Batcher, BatchID }
-import com.twitter.summingbird.scalding.ScaldingEnv
 import com.twitter.tormenta.spout.Spout
-
-import java.util.Date
 
 object OfflineSource {
   def apply[Event](fn: DateRange => Mappable[Event]) =

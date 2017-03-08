@@ -18,11 +18,7 @@ package com.twitter.summingbird.example
 
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
-import com.twitter.summingbird.online.MergeableStoreFactory
-import com.twitter.summingbird.storm.Storm
 import twitter4j.Status
-import twitter4j.TwitterStreamFactory
-import twitter4j.conf.ConfigurationBuilder
 
 object StatusStreamer {
   /**

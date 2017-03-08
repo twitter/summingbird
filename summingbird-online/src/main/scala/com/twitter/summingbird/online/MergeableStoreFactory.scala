@@ -17,7 +17,7 @@
 package com.twitter.summingbird.online
 
 import com.twitter.algebird.Semigroup
-import com.twitter.storehaus.algebra.{ MergeableStore, Mergeable, StoreAlgebra }
+import com.twitter.storehaus.algebra.{ MergeableStore, Mergeable }
 import com.twitter.summingbird.batch.{ Batcher, BatchID }
 
 /*

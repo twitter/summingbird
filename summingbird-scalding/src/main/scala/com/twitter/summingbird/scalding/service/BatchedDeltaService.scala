@@ -16,12 +16,10 @@
 
 package com.twitter.summingbird.scalding.service
 
-import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.algebird.Semigroup
 import com.twitter.scalding.{ Mode, TypedPipe }
 import com.twitter.scalding.typed.LookupJoin
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
-import cascading.flow.FlowDef
+import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import com.twitter.summingbird.scalding._
 
 /**

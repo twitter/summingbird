@@ -15,7 +15,6 @@
  */
 package com.twitter.summingbird.storm
 
-import com.twitter.summingbird._
 import com.twitter.summingbird.chill.ChillExecutionConfig
 import com.twitter.scalding.Args
 

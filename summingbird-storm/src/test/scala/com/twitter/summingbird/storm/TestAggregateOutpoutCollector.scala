@@ -3,7 +3,6 @@ package com.twitter.summingbird.storm
 import backtype.storm.spout.{ ISpoutOutputCollector, SpoutOutputCollector }
 import scala.collection.mutable.{ Set => MSet }
 import java.util
-import org.scalacheck._
 
 object TestAggregateOutpoutCollector {
   type ExpectedTuple = (Int, Map[_, _], Option[String], Option[Seq[Any]])

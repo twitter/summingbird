@@ -19,8 +19,6 @@ package com.twitter.summingbird.batch
 import org.scalacheck.{ Arbitrary, Gen, Properties }
 import org.scalacheck.Prop._
 
-import java.util.concurrent.TimeUnit
-
 import com.twitter.algebird.{ Interval, Successible, Predecessible }
 
 object BatchLaws extends Properties("BatchID") {

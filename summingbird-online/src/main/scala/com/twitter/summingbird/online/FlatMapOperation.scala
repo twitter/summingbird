@@ -16,7 +16,6 @@
 
 package com.twitter.summingbird.online
 
-import com.twitter.storehaus.ReadableStore
 import com.twitter.util.{ Future, Await }
 import java.io.{ Closeable, Serializable }
 

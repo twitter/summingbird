@@ -18,7 +18,7 @@ package com.twitter.summingbird.scalding
 
 import com.twitter.scalding.{ Args, Config, Hdfs, RichDate, DateParser }
 import com.twitter.summingbird.batch.store.HDFSMetadata
-import com.twitter.summingbird.{ Env, Summer, TailProducer, AbstractJob }
+import com.twitter.summingbird.{ Env, Summer, TailProducer }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.builder.{ SourceBuilder, CompletedBuilder }
 import com.twitter.summingbird.batch.option.Reducers

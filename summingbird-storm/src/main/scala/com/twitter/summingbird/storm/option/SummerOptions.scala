@@ -18,8 +18,6 @@ package com.twitter.summingbird.storm.option
 
 import com.twitter.summingbird.storm.StormMetric
 
-import com.twitter.util.Duration
-
 /**
  * Options used by the sink phase of the Storm Platform's topology.
  *

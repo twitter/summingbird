@@ -16,17 +16,14 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.Semigroup
 import com.twitter.algebird.monad._
 import com.twitter.summingbird.batch._
-import com.twitter.summingbird.batch.state.HDFSState
 
-import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
+import com.twitter.scalding.{ Source => ScaldingSource, _ }
 import com.twitter.scalding.typed.TypedSink
 
 import scala.collection.mutable.Buffer
 
-import cascading.scheme.local.{ TextDelimited => CLTextDelimited }
 import cascading.tuple.{ Tuple, TupleEntry }
 import cascading.flow.FlowDef
 

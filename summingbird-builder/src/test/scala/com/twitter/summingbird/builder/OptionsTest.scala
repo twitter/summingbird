@@ -28,9 +28,6 @@ import org.scalatest.WordSpec
 
 import org.apache.hadoop.conf.Configuration
 
-import com.twitter.bijection.Conversion.asMethod
-import ConfigBijection._
-
 class TestJob1(env: Env) extends AbstractJob(env) {
 
   implicit def batcher = Batcher.ofHours(1)

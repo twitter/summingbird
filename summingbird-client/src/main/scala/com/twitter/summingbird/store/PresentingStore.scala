@@ -19,7 +19,6 @@ package com.twitter.summingbird.store
 import com.twitter.storehaus.{ ReadableStore, Store }
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.util.Future
 
 /**
  * Returns a MergeableStore that augments a Summingbird "online

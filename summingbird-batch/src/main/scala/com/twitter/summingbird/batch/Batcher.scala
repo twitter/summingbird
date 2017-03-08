@@ -24,14 +24,11 @@ import com.twitter.algebird.{
   InclusiveUpper,
   Intersection,
   Interval,
-  Lower,
   Successible,
-  Universe,
-  Upper
+  Universe
 }
 
 import scala.collection.immutable.SortedSet
-import java.util.{ Comparator, Date }
 import java.util.concurrent.TimeUnit
 import java.io.Serializable
 

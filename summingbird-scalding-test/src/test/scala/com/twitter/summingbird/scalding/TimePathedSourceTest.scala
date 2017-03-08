@@ -16,9 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.summingbird.scalding._
 import source.{ TimePathedSource => BTimePathedSource }
-import com.twitter.summingbird._
 import org.scalacheck._
 import Gen._
 import Arbitrary._
