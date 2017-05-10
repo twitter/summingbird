@@ -56,13 +56,11 @@ object Timestamp {
   implicit val timestampSuccessible: Successible[Timestamp] = new Successible[Timestamp] {
     def next(old: Timestamp) = if (old.milliSinceEpoch != Long.MaxValue) Some(old.next) else None
     def ordering: Ordering[Timestamp] = Timestamp.orderingOnTimestamp
-    def partialOrdering = Timestamp.orderingOnTimestamp
   }
 
   implicit val timestampPredecessible: Predecessible[Timestamp] = new Predecessible[Timestamp] {
     def prev(old: Timestamp) = if (old.milliSinceEpoch != Long.MinValue) Some(old.prev) else None
     def ordering: Ordering[Timestamp] = Timestamp.orderingOnTimestamp
-    def partialOrdering = Timestamp.orderingOnTimestamp
   }
 
   // This is a right semigroup, that given any two Timestamps just take the one on the right.
