@@ -16,11 +16,9 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
-import org.scalacheck.{ Arbitrary, Properties }
+import org.scalacheck.Properties
 import org.scalacheck.Prop._
-import org.scalatest.WordSpec
 
-import com.twitter.summingbird.batch._
 import com.twitter.algebird.{ Interval, ExclusiveUpper, Empty }
 import java.util.concurrent.TimeUnit
 

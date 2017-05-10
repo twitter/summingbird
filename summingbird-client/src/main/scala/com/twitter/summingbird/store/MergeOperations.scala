@@ -21,7 +21,7 @@ import com.twitter.algebird.util.UtilAlgebras._
 import com.twitter.bijection.Pivot
 import com.twitter.storehaus.FutureCollector
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.util.{ Future, Return, Try }
+import com.twitter.util.Future
 
 object MergeOperations {
   type FOpt[T] = Future[Option[T]]

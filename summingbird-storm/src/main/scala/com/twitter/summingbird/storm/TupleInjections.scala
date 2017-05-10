@@ -16,9 +16,8 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import com.twitter.bijection.{ Injection, Inversion, AbstractInjection }
+import com.twitter.bijection.{ Injection, Inversion }
 import java.util.{ List => JList, ArrayList => JAList }
-import scala.util.Try
 
 class SingleItemInjection[T] extends Injection[T, JList[AnyRef]] {
 

@@ -16,8 +16,6 @@
 
 package com.twitter.summingbird
 
-import com.twitter.storehaus.ReadableStore
-
 /**
  * Package containing the Summingbird Storm platform.
  */

@@ -23,9 +23,8 @@ import com.twitter.summingbird.planner.DagOptimizer
 import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
-import scala.collection.mutable.Buffer
 import scala.concurrent.{ ExecutionContext, Future }
-import java.util.concurrent.{ BlockingQueue, LinkedBlockingQueue, ConcurrentHashMap }
+import java.util.concurrent.{ BlockingQueue, ConcurrentHashMap }
 
 object ConcurrentMemory {
   implicit def toSource[T](traversable: TraversableOnce[T]): Producer[ConcurrentMemory, T] =

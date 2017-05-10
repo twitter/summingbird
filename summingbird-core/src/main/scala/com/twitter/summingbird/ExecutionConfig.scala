@@ -16,8 +16,6 @@
 
 package com.twitter.summingbird
 
-import com.twitter.summingbird._
-
 /**
  * @author Ian O Connell
  */
@@ -34,4 +32,3 @@ trait ExecutionConfig[P <: Platform[P]] {
 
   def graph: TailProducer[P, Any]
 }
-

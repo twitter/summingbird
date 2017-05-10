@@ -16,12 +16,10 @@
 
 package com.twitter.summingbird.scalding.service
 
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, Milliseconds }
+import com.twitter.summingbird.batch.{ BatchID, Timestamp, Milliseconds }
 import com.twitter.summingbird.scalding._
-import com.twitter.scalding.{ Mode, TypedPipe, AbsoluteDuration }
+import com.twitter.scalding.{ Mode, TypedPipe }
 import com.twitter.scalding.typed.LookupJoin
-import com.twitter.algebird.monad.Reader
-import cascading.flow.FlowDef
 
 /**
  * This is a service that has a finite memory. There is a materialized

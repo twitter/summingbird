@@ -10,7 +10,6 @@ import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, SummerNode }
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.tormenta.spout.Spout
-import com.twitter.summingbird.storm.option.SpoutStormMetrics
 import com.twitter.summingbird.storm.spout.KeyValueSpout
 import org.apache.storm.metric.api.IMetric
 import org.apache.storm.task.TopologyContext

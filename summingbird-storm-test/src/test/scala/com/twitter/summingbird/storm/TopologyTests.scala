@@ -30,8 +30,6 @@ import scala.collection.JavaConversions._
  */
 
 class TopologyTests extends WordSpec {
-  import MapAlgebra.sparseEquiv
-
   // This is dangerous, obviously. The Storm platform graphs tested
   // here use the UnitBatcher, so the actual time extraction isn't
   // needed.

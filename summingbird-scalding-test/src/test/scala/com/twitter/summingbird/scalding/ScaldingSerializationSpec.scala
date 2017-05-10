@@ -16,35 +16,13 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{ MapAlgebra, Monoid, Group, Interval, Last }
-import com.twitter.algebird.monad._
-import com.twitter.summingbird.{ Producer, TimeExtractor, TestGraphs }
+import com.twitter.algebird.Interval
+import com.twitter.summingbird.{ TimeExtractor, TestGraphs }
 import com.twitter.summingbird.batch._
-import com.twitter.summingbird.batch.state.HDFSState
 
-import java.util.TimeZone
-import java.io.File
-
-import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
-import com.twitter.scalding.typed.TypedSink
-
-import org.scalacheck._
-import org.scalacheck.Prop._
-import org.scalacheck.Properties
+import com.twitter.scalding.{ Source => ScaldingSource, _ }
 
 import org.apache.hadoop.conf.Configuration
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable.{ ArrayBuffer, Buffer, HashMap => MutableHashMap, Map => MutableMap, SynchronizedBuffer, SynchronizedMap }
-
-import cascading.scheme.local.{ TextDelimited => CLTextDelimited }
-import cascading.tuple.{ Tuple, Fields, TupleEntry }
-import cascading.flow.FlowDef
-import cascading.tap.Tap
-import cascading.scheme.NullScheme
-import org.apache.hadoop.mapred.JobConf
-import org.apache.hadoop.mapred.RecordReader
-import org.apache.hadoop.mapred.OutputCollector
 
 import org.scalatest.WordSpec
 import com.twitter.scalding.Config

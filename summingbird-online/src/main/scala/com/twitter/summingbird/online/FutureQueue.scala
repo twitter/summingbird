@@ -18,11 +18,11 @@ package com.twitter.summingbird.online
 
 import com.twitter.bijection.twitter_util.UtilBijections
 import com.twitter.summingbird.online.option.{ MaxFutureWaitTime, MaxWaitingFutures }
-import com.twitter.util.{ Await, Future, Promise, Return, Throw }
+import com.twitter.util.{ Await, Future, Promise }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import org.slf4j.{ Logger, LoggerFactory }
-import scala.util.{ Failure, Success, Try }
+import scala.util.Try
 
 private[summingbird] object FutureQueue {
   /**

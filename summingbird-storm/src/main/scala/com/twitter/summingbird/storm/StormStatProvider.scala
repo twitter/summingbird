@@ -2,7 +2,6 @@ package com.twitter.summingbird.storm
 
 import com.twitter.summingbird.{ CounterIncrementor, Group, Name, PlatformStatProvider }
 import com.twitter.summingbird.option.JobId
-import com.twitter.util.{ Promise, Await }
 import java.util.concurrent.ConcurrentHashMap
 import org.apache.storm.metric.api.CountMetric
 import org.apache.storm.task.TopologyContext

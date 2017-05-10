@@ -20,14 +20,12 @@ import cascading.flow.FlowDef
 import com.twitter.algebird.monad.Reader
 import com.twitter.bijection.Injection
 import com.twitter.scalding.commons.source.VersionedKeyValSource
-import com.twitter.scalding.{ Mode, TypedPipe, Hdfs => HdfsMode, TupleSetter }
+import com.twitter.scalding.{ Mode, TypedPipe, Hdfs => HdfsMode }
 import com.twitter.summingbird.batch.store.HDFSMetadata
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp, OrderedFromOrderingExt }
-import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding.batch.BatchedStore
-import com.twitter.summingbird.scalding.{ Try, FlowProducer, Scalding }
+import com.twitter.summingbird.scalding.{ Try, FlowProducer }
 import org.slf4j.LoggerFactory
-import scala.util.{ Try => ScalaTry }
 
 /**
  * Scalding implementation of the batch read and write components of a

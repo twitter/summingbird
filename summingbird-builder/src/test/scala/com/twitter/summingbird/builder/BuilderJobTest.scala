@@ -32,7 +32,6 @@ import java.util.Date
 import scala.util.Try
 
 object TestJob {
-  import Dsl._
   import StoreAlgebra.enrich
 
   implicit val batcher: Batcher = Batcher.ofHours(1)

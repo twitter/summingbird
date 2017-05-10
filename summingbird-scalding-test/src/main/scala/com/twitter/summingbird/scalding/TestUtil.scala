@@ -16,16 +16,11 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{ MapAlgebra, Monoid, Group, Interval, Last }
-import com.twitter.algebird.monad._
+import com.twitter.algebird.{ Monoid, Group, Interval }
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.TimeExtractor
 
-import com.twitter.scalding.{ Source => ScaldingSource, Test => TestMode, _ }
-
 import org.scalacheck._
-import org.scalacheck.Prop._
-import org.scalacheck.Properties
 
 object TestUtil {
   def simpleTimeExtractor[T <: (Long, _)]: TimeExtractor[T] = TimeExtractor(_._1)

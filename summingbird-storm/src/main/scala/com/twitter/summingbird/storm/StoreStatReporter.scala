@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import com.twitter.storehaus.algebra.reporting.{ MergeableReporter, StoreReporter }
+import com.twitter.storehaus.algebra.reporting.{ StoreReporter, MergeableReporter }
 import com.twitter.storehaus.algebra.{ Mergeable, MergeableProxy }
 import com.twitter.storehaus.{ Store, StoreProxy }
 import com.twitter.util.Future

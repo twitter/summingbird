@@ -18,10 +18,9 @@ package com.twitter.summingbird.store
 
 import com.twitter.algebird.{ MapMonoid, Monoid, Semigroup }
 import com.twitter.algebird.util.UtilAlgebras._
-import com.twitter.bijection.Pivot
 import com.twitter.storehaus.{ FutureCollector, FutureOps, ReadableStore }
-import com.twitter.storehaus.algebra.{ Mergeable, MergeableStore }
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import com.twitter.storehaus.algebra.Mergeable
+import com.twitter.summingbird.batch.{ BatchID, Batcher }
 import com.twitter.util.Future
 
 import scala.collection.breakOut

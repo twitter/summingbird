@@ -19,12 +19,8 @@ package com.twitter.summingbird.builder
 import com.twitter.bijection.Injection
 import com.twitter.chill.{ InjectionDefaultRegistrar, InjectionRegistrar, IKryoRegistrar }
 import com.twitter.chill.java.IterableRegistrar
-import com.twitter.storehaus.algebra.MergeableStore.enrich
-import com.twitter.summingbird.{ Env, KeyedProducer, Options, Platform, Summer }
+import com.twitter.summingbird.{ Env, Options, Platform, Summer }
 import com.twitter.summingbird.batch.Batcher
-import com.twitter.summingbird.option.CacheSize
-import com.twitter.summingbird.scalding.Scalding
-import com.twitter.summingbird.storm.Storm
 
 import java.io.Serializable
 

@@ -16,8 +16,6 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import java.io.Serializable
-
 import com.twitter.util.Duration
 import org.apache.storm.metric.api.IMetric
 import org.apache.storm.task.TopologyContext
