@@ -81,7 +81,8 @@ class HDFSStateLaws extends WordSpec {
     }
   }
 
-  def leftClosedRightOpenInterval(low: Timestamp, high: Timestamp) = Interval.leftClosedRightOpen[Timestamp](low, high).right.get
+  def leftClosedRightOpenInterval(low: Timestamp, high: Timestamp): Interval[Timestamp] =
+    Interval.leftClosedRightOpen[Timestamp](low, high)
 
   def shouldNotAcceptInterval(state: WaitingState[Interval[Timestamp]], interval: Interval[Timestamp], message: String = "PreparedState accepted a bad Interval!") = {
     state.begin.willAccept(interval) match {
