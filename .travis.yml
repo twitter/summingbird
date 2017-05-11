@@ -1,4 +1,5 @@
 language: scala
+jdk: oraclejdk8
 sudo: false
 before_install: umask 0022
 env:
@@ -8,8 +9,6 @@ env:
 matrix:
   include:
     - scala: 2.11.11
-    # remove this after twitter util for scala 2.11 will be published with jvm 1.6 bytecode
-      jdk: oraclejdk8
       script: ./sbt -Dlog4j.configuration=$LOG4J ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
       after_success:
         - bash <(curl -s https://codecov.io/bash)
