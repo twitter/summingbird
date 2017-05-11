@@ -7,9 +7,6 @@ env:
 
 matrix:
   include:
-    - scala: 2.10.6
-      script: ./sbt -Dlog4j.configuration=$LOG4J ++$TRAVIS_SCALA_VERSION test mimaReportBinaryIssues
-
     - scala: 2.11.8
       script: ./sbt -Dlog4j.configuration=$LOG4J ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
       after_success:
