@@ -7,7 +7,7 @@ env:
 
 matrix:
   include:
-    - scala: 2.11.8
+    - scala: 2.11.11
       jdk: oraclejdk8
       script: ./sbt -Dlog4j.configuration=$LOG4J ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
       after_success:

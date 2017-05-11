@@ -33,8 +33,8 @@ val extraSettings = mimaDefaultSettings
 
 val sharedSettings = extraSettings ++ Seq(
   organization := "com.twitter",
-  scalaVersion := "2.11.7",
-  crossScalaVersions := Seq("2.11.7"),
+  scalaVersion := "2.11.11",
+  crossScalaVersions := Seq("2.11.11"),
   // To support hadoop 1.x
   javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
