@@ -4,7 +4,6 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbtassembly.Plugin._
 
 def scalaBinaryVersion(scalaVersion: String) = scalaVersion match {
-  case version if version startsWith "2.10" => "2.10"
   case version if version startsWith "2.11" => "2.11"
   case version if version startsWith "2.12" => "2.12"
   case _ => sys.error("Unsupported scala version: " + scalaVersion)
@@ -36,8 +35,8 @@ val extraSettings = mimaDefaultSettings
 
 val sharedSettings = extraSettings ++ Seq(
   organization := "com.twitter",
-  scalaVersion := "2.11.7",
-  crossScalaVersions := Seq("2.10.5", "2.11.7"),
+  scalaVersion := "2.11.11",
+  crossScalaVersions := Seq("2.11.11", "2.12.2"),
   // To support hadoop 1.x
   javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
@@ -176,7 +175,7 @@ def youngestForwardCompatible(subProj: String) =
 // Uncomment after release.
 //  Some(subProj)
 //    .filterNot(unreleasedModules.contains(_))
-//    .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.9.0" }
+//    .map { s => "com.twitter" % ("summingbird-" + s + "_2.11") % "0.9.0" }
 
 /**
   * Empty this each time we publish a new version (and bump the minor number)
