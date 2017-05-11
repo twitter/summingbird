@@ -16,10 +16,9 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.task.TopologyContext
-
 import com.twitter.util.Duration
-import backtype.storm.metric.api.IMetric
+import org.apache.storm.metric.api.IMetric
+import org.apache.storm.task.TopologyContext
 
 /**
  * Necessary info for registering a metric in storm

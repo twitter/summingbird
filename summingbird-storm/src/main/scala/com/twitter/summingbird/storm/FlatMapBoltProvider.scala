@@ -17,9 +17,6 @@
 package com.twitter.summingbird.storm
 
 import Constants._
-import backtype.storm.topology.TopologyBuilder
-import backtype.storm.tuple.Fields
-
 import com.twitter.algebird.Semigroup
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
@@ -29,8 +26,9 @@ import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
+import org.apache.storm.topology.TopologyBuilder
+import org.apache.storm.tuple.Fields
 import org.slf4j.LoggerFactory
-
 import scala.collection.{ Map => CMap }
 
 /**

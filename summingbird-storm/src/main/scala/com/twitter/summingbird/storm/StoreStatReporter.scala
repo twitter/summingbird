@@ -16,12 +16,12 @@ limitations under the License.
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.task.TopologyContext
-import backtype.storm.metric.api.CountMetric
 import com.twitter.storehaus.algebra.reporting.{ StoreReporter, MergeableReporter }
 import com.twitter.storehaus.algebra.{ Mergeable, MergeableProxy }
 import com.twitter.storehaus.{ Store, StoreProxy }
 import com.twitter.util.Future
+import org.apache.storm.metric.api.CountMetric
+import org.apache.storm.task.TopologyContext
 
 /**
  *

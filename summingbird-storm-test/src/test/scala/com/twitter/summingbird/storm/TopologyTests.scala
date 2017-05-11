@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.storm
 
-import backtype.storm.generated.StormTopology
+import org.apache.storm.generated.StormTopology
 import com.twitter.algebird.MapAlgebra
 import com.twitter.summingbird._
 import com.twitter.summingbird.online.option._

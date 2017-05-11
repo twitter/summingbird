@@ -22,7 +22,7 @@ import com.twitter.summingbird.option.CacheSize
 import com.twitter.summingbird.online.MergeableStoreFactory
 import com.twitter.summingbird.storm.{ Storm, Executor, StormExecutionConfig }
 import com.twitter.summingbird.online.option.{ FlatMapParallelism, SummerParallelism, SourceParallelism }
-import backtype.storm.{ Config => BTConfig }
+import org.apache.storm.{ Config => BTConfig }
 import com.twitter.scalding.Args
 import com.twitter.tormenta.spout.TwitterSpout
 import com.twitter.util.Await

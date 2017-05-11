@@ -17,10 +17,7 @@
 package com.twitter.summingbird.storm
 
 import Constants._
-import backtype.storm.generated.StormTopology
-import backtype.storm.topology.TopologyBuilder
-import backtype.storm.tuple.Fields
-import backtype.storm.{ LocalCluster, StormSubmitter, Config => BacktypeStormConfig }
+import org.apache.storm.{ LocalCluster, StormSubmitter, Config => BacktypeStormConfig }
 import com.twitter.bijection.{ Base64String, Injection }
 import com.twitter.chill.IKryoRegistrar
 import com.twitter.storehaus.algebra.{ Mergeable, MergeableStore }
@@ -37,6 +34,9 @@ import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
+import org.apache.storm.generated.StormTopology
+import org.apache.storm.topology.TopologyBuilder
+import org.apache.storm.tuple.Fields
 import org.slf4j.LoggerFactory
 import scala.collection.{ Map => CMap }
 import scala.reflect.ClassTag

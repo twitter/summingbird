@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.storm.spout
 
-import backtype.storm.tuple.Values
+import org.apache.storm.tuple.Values
 import com.twitter.tormenta.spout.Spout
 import java.util.ArrayList
 import collection.JavaConverters._

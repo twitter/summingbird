@@ -1,6 +1,6 @@
 package com.twitter.summingbird.storm
 
-import backtype.storm.spout.ISpoutOutputCollector
+import org.apache.storm.spout.ISpoutOutputCollector
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.{ AsyncSummer, BufferSize, FlushFrequency, MemoryFlushPercent, SyncSummingQueue }
 import com.twitter.summingbird.online.executor.KeyValueShards
@@ -12,10 +12,6 @@ import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import java.util.{ List => JList }
 import org.scalatest.WordSpec
 import scala.collection.mutable.{ Set => MSet }
-
-/**
- * Created by pnaramsetti on 8/18/16.
- */
 
 object TestKeyValueSpout {
   def getSyncSummingQueueBuildSummer(batchSize: Int, flushFrequency: Duration, memFlushPercent: Int) = {
@@ -146,4 +142,6 @@ class MockedISpoutOutputCollector extends ISpoutOutputCollector {
     s: String,
     list: JList[AnyRef],
     o: scala.Any): JList[Integer] = ???
+
+  override def getPendingCount: Long = ???
 }

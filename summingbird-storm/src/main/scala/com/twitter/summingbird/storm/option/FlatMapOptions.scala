@@ -16,10 +16,10 @@ limitations under the License.
 
 package com.twitter.summingbird.storm.option
 
-import backtype.storm.metric.api.IMetric
 import com.twitter.summingbird.storm.StormMetric
 import com.twitter.tormenta.spout.Metric
 import java.io.Serializable
+import org.apache.storm.metric.api.IMetric
 
 /**
  * Options used by the flatMapping stage of a storm topology.

@@ -1,9 +1,5 @@
 package com.twitter.summingbird.storm.spout
 
-import backtype.storm.spout.SpoutOutputCollector
-import backtype.storm.task.TopologyContext
-import backtype.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
-import backtype.storm.tuple.Fields
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird.online.executor.KeyValueShards
@@ -12,6 +8,10 @@ import com.twitter.summingbird.storm.Constants._
 import com.twitter.tormenta.spout.SpoutProxy
 import com.twitter.summingbird.storm.collector.AggregatorOutputCollector
 import com.twitter.util.{ Duration, Time }
+import org.apache.storm.spout.SpoutOutputCollector
+import org.apache.storm.task.TopologyContext
+import org.apache.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
+import org.apache.storm.tuple.Fields
 import java.util.{ Map => JMap }
 
 /**
