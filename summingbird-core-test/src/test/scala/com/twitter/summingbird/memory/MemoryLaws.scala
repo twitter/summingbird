@@ -195,7 +195,7 @@ class MemoryLaws extends WordSpec {
     "diamond w/ String, Short, Map[Set[Int], Long]" in { assert(diamondLaw[String, Short, Map[Set[Int], Long]] == true) }
 
     "leftJoin w/ Int, Int, String, Long, Set[Int]" in { assert(leftJoinLaw[Int, Int, String, Long, Set[Int]] == true) }
-    "leftJoinAgainstStore w/ Int, Int, String, Long, Int" in { assert(leftJoinAgainstStoreChecker[Int, Int, String, Long, Int] == true) }
+//    "leftJoinAgainstStore w/ Int, Int, String, Long, Int" in { assert(leftJoinAgainstStoreChecker[Int, Int, String, Long, Int] == true) }
 
     "flatMapKeys w/ Int, Int, Int, Set[Int]" in { assert(mapKeysChecker[Int, Int, Int, Set[Int]] == true) }
 
