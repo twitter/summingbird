@@ -1,5 +1,4 @@
 language: scala
-jdk: oraclejdk8
 sudo: false
 before_install: umask 0022
 env:
@@ -9,11 +8,13 @@ env:
 matrix:
   include:
     - scala: 2.11.11
+      jdk: oraclejdk8
       script: ./sbt -Dlog4j.configuration=$LOG4J ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
       after_success:
         - bash <(curl -s https://codecov.io/bash)
 
     - scala: 2.12.2
+      jdk: oraclejdk8
       script: ./sbt ++$TRAVIS_SCALA_VERSION clean test
 
 cache:
