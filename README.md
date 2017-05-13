@@ -5,6 +5,8 @@
 [![Latest version](https://index.scala-lang.org/twitter/summingbird/summingbird-core/latest.svg?color=orange)](https://index.scala-lang.org/twitter/summingbird/summingbird-core)
 [![Chat](https://badges.gitter.im/twitter/summingbird.svg)](https://gitter.im/twitter/summingbird?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+[![Join the chat at https://gitter.im/twitter/summingbird](https://badges.gitter.im/twitter/summingbird.svg)](https://gitter.im/twitter/summingbird?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Summingbird is a library that lets you write MapReduce programs that look like native Scala or Java collection transformations and execute them on a number of well-known distributed MapReduce platforms, including [Storm](https://github.com/nathanmarz/storm) and [Scalding](https://github.com/twitter/scalding).
 
 ![Summingbird Logo](https://raw.github.com/twitter/summingbird/develop/logo/summingbird_logo.png)
