@@ -65,7 +65,7 @@ class MemoryLaws extends WordSpec {
    * Tests the in-memory planner by generating arbitrary flatMap and
    * service functions.
    */
-  def leftJoinLaw[T: Manifest: Arbitrary: Cogen, K: Arbitrary :Cogen, U: Arbitrary: Cogen, JoinedU: Arbitrary: Cogen, V: Monoid: Arbitrary: Equiv] = {
+  def leftJoinLaw[T: Manifest: Arbitrary: Cogen, K: Arbitrary: Cogen, U: Arbitrary: Cogen, JoinedU: Arbitrary: Cogen, V: Monoid: Arbitrary: Equiv] = {
     import MemoryArbitraries._
     val serviceFn: MemoryService[K, JoinedU] = Arbitrary.arbitrary[MemoryService[K, JoinedU]].sample.get
     testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn,
@@ -79,7 +79,7 @@ class MemoryLaws extends WordSpec {
    * Tests the in-memory planner by generating arbitrary flatMap and
    * service functions and joining against a store (independent of the join).
    */
-  def leftJoinAgainstStoreChecker[T: Manifest: Arbitrary :Cogen, K: Arbitrary: Cogen, U: Arbitrary: Cogen, JoinedU: Monoid: Arbitrary :Cogen, V: Monoid: Arbitrary: Equiv] = {
+  def leftJoinAgainstStoreChecker[T: Manifest: Arbitrary: Cogen, K: Arbitrary: Cogen, U: Arbitrary: Cogen, JoinedU: Monoid: Arbitrary: Cogen, V: Monoid: Arbitrary: Equiv] = {
     val platform = new Memory
     val finalStore: Memory#Store[K, V] = MutableMap.empty[K, V]
     val storeAndService: Memory#Store[K, JoinedU] with Memory#Service[K, JoinedU] = new MutableHashMap[K, JoinedU]() with MemoryService[K, JoinedU]
