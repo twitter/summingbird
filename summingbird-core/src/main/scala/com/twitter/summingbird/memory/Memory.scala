@@ -112,8 +112,8 @@ class Memory(implicit jobID: JobId = JobId("default.memory.jobId")) extends Plat
             val (left, leftM) = toStream(l, jamfs)
             val (right, rightM) = toStream(r, leftM)
 
-            // We need to force all of left to make sure any
-            // side effects in write happen
+            // We execute right firstly and left after to enforce people
+            // do not rely on ordering in `also` producer.
             lazy val lforcedEmpty = left.filter(_ => false)
             (right.append(lforcedEmpty), rightM)
 
