@@ -90,7 +90,8 @@ object TestUtil {
    * maxTime is an exclusive upper bound.
    */
   def toTimeInterval(minTime: Long, maxTime: Long): Interval[Timestamp] =
-    Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime))
+    if (maxTime != minTime) Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime))
+    else Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime + 1))
 
   val simpleBatcher = new Batcher {
     def batchOf(d: Timestamp) =
