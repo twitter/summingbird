@@ -35,6 +35,39 @@ class TestStoreService[K, V](store: TestStore[K, V]) extends StoreService[K, V](
   val sourceToBuffer: Map[ScaldingSource, Buffer[Tuple]] = store.sourceToBuffer
 }
 
+object TestService {
+  def apply[K, V](
+    service: String,
+    batcher: Batcher,
+    // Times when we want to observe `Service`.
+    allTimes: Iterable[Timestamp],
+    allKeys: Iterable[K],
+    serviceF: (Timestamp, K) => Option[V]
+  )(
+    implicit ord: Ordering[K],
+    tset: TupleSetter[(Timestamp, (K, Option[V]))],
+    tset2: TupleSetter[(Timestamp, (K, V))],
+    tconv: TupleConverter[(Timestamp, (K, Option[V]))],
+    tconv2: TupleConverter[(Timestamp, (K, V))]
+  ): TestService[K, V] = {
+    // We use read first, write second behaviour in case if read and write happened
+    // at the same time in `leftJoin`. That's why we do `- Milliseconds(1)` here.
+    val stream = for {
+      time <- allTimes
+      key <- allKeys
+      v = serviceF(time, key)
+    } yield (time - Milliseconds(1), (key, v))
+    val batchedService = stream.groupBy { case (ts, _) => batcher.batchOf(ts) }
+    // Add empty batches because we need all of them in `TestService`.
+    val emptyBatches = BatchID.range(batcher.batchOf(allTimes.min), batcher.batchOf(allTimes.max))
+      .filter(!batchedService.contains(_))
+      .map((_, List()))
+    // minBatch is a batch which is first and empty.
+    val minBatch = batcher.batchOf(allTimes.min - Milliseconds(1)).prev
+    new TestService(service, batcher, minBatch, batchedService ++ emptyBatches)
+  }
+}
+
 class TestService[K, V](service: String,
   inBatcher: Batcher,
   minBatch: BatchID,
