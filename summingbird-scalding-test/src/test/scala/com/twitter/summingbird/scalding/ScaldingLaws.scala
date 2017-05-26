@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.scalding
 
-import com.twitter.algebird.{ MapAlgebra, Monoid }
+import com.twitter.algebird.Monoid
 import com.twitter.summingbird.TestGraphs
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.option.JobId
@@ -359,7 +359,8 @@ class ScaldingLaws extends WordSpec {
       val (inMemoryA, inMemoryB) =
         TestGraphs.leftJoinWithStoreInScala(batchCoveredInput1, batchCoveredInput2)(fnAWithTime)(fnBWithTime)(postJoinWithTime)
 
-      val storeAndServiceInit = sample[Map[Int, Int]]
+      // For `inMemory` impl we assume store is empty in the beginning.
+      val storeAndServiceInit = Map[Int, Int]()
       val storeAndServiceStore = TestStore[Int, Int]("storeAndService", batcher, storeAndServiceInit, inWithTime1.size)
       val storeAndService = TestStoreService[Int, Int](storeAndServiceStore)
 
