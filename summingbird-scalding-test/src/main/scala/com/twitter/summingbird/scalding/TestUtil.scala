@@ -75,13 +75,13 @@ object TestUtil {
    * by the batches. This is used for the scala part of the job tests.
    * Keep both time and value.
    */
-  def pruneToBatchCoveredWithTime[T](input: TraversableOnce[(Long, T)], inputRange: Interval[Timestamp], batcher: Batcher): TraversableOnce[(Long, T)] = {
+  def pruneToBatchCoveredWithTime[T](input: Traversable[(Long, T)], inputRange: Interval[Timestamp], batcher: Batcher): Traversable[(Long, T)] = {
     val batchRange = batcher.toTimestamp(batcher.batchesCoveredBy(inputRange))
     input.filter { case (ts, _) => batchRange.contains(Timestamp(ts)) }
   }
 
   /* keep just the values */
-  def pruneToBatchCovered[T](input: TraversableOnce[(Long, T)], inputRange: Interval[Timestamp], batcher: Batcher): TraversableOnce[T] = {
+  def pruneToBatchCovered[T](input: Traversable[(Long, T)], inputRange: Interval[Timestamp], batcher: Batcher): Traversable[T] = {
     pruneToBatchCoveredWithTime(input, inputRange, batcher).map { case (ts, v) => v }
   }
 
