@@ -35,15 +35,8 @@ class MillisecondBatcher(val durationMillis: Long) extends AbstractBatcher {
     // toward negative infinity, a negative timeInMillis will
     // produce the BatchID AFTER the proper batch. To correct for
     // this, subtract a batch.
-    if (timeInMillis < 0L) batch.prev else batch
+    if (timeInMillis < 0L && timeInMillis % durationMillis != 0) batch.prev else batch
   }
 
-  def earliestTimeOf(batch: BatchID) = {
-    val id = batch.id
-    // Correct for the rounding-to-zero issue described above.
-    if (id >= 0L)
-      Timestamp(id * durationMillis)
-    else
-      Timestamp(id * durationMillis + 1L)
-  }
+  def earliestTimeOf(batch: BatchID) = Timestamp(batch.id * durationMillis)
 }

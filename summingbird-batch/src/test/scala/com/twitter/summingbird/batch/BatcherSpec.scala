@@ -16,6 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.batch
 
+import java.util.concurrent.TimeUnit
 import org.scalatest.WordSpec
 
 class BatcherSpec extends WordSpec {
@@ -52,5 +53,26 @@ class BatcherSpec extends WordSpec {
     (10 to 100).foreach { n =>
       assert(Batcher.ofHours(n).enclosedBy(BatchID(100), hourlyBatcher).size == n)
     }
+  }
+
+  "DurationBatcher for 1ms should work with negative timestamps" in {
+    val batcher = Batcher.apply(1, TimeUnit.MILLISECONDS)
+
+    assert(batcher.batchOf(Timestamp(-1)) == BatchID(-1))
+    assert(batcher.batchOf(Timestamp(-2)) == BatchID(-2))
+
+    assert(batcher.earliestTimeOf(BatchID(-1)) == Timestamp(-1))
+    assert(batcher.earliestTimeOf(BatchID(-2)) == Timestamp(-2))
+  }
+
+  "DurationBatcher for 2ms should work with negative timestamps" in {
+    val batcher = Batcher.apply(2, TimeUnit.MILLISECONDS)
+
+    assert(batcher.batchOf(Timestamp(-1)) == BatchID(-1))
+    assert(batcher.batchOf(Timestamp(-2)) == BatchID(-1))
+    assert(batcher.batchOf(Timestamp(-3)) == BatchID(-2))
+
+    assert(batcher.earliestTimeOf(BatchID(-1)) == Timestamp(-2))
+    assert(batcher.earliestTimeOf(BatchID(-2)) == Timestamp(-4))
   }
 }
