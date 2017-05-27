@@ -101,12 +101,7 @@ object BatcherLaws extends Properties("Batcher") {
 
   val millisPerHour = 1000 * 60 * 60
 
-  def hourlyBatchFloor(batchIdx: Long): Long =
-    if (batchIdx >= 0)
-      batchIdx * millisPerHour
-    else
-      batchIdx * millisPerHour + 1
-
+  def hourlyBatchFloor(batchIdx: Long): Long = batchIdx * millisPerHour
   val hourlyBatcher = Batcher.ofHours(1)
 
   property("DurationBatcher should batch correctly") =
@@ -115,7 +110,7 @@ object BatcherLaws extends Properties("Batcher") {
 
       // Long division rounds toward zero. Add a correction to make
       // sure that our index is floored toward negative inf.
-      val flooredBatch = BatchID(if (millis < 0) (hourIndex - 1) else hourIndex)
+      val flooredBatch = BatchID(if (millis < 0 && millis%millisPerHour != 0) (hourIndex - 1) else hourIndex)
 
       (hourlyBatcher.batchOf(Timestamp(millis)) == flooredBatch) &&
         (hourlyBatcher.earliestTimeOf(flooredBatch).milliSinceEpoch ==
