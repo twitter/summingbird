@@ -212,14 +212,14 @@ object TestGraphs {
       .sumByKey(store)
 
   def leftJoinWithStoreInScala[T1, T2, U, JoinedU: Monoid, K: Ordering, V: Monoid](
-    source1: Traversable[T1],
-    source2: Traversable[T2]
+    source1: TraversableOnce[T1],
+    source2: TraversableOnce[T2]
   )(
-    simpleFM1: T1 => Traversable[(Long, (K, JoinedU))]
+    simpleFM1: T1 => TraversableOnce[(Long, (K, JoinedU))]
   )(
-    simpleFM2: T2 => Traversable[(Long, (K, U))]
+    simpleFM2: T2 => TraversableOnce[(Long, (K, U))]
   )(
-    postJoinFn: ((Long, (K, (U, Option[JoinedU])))) => Traversable[(Long, (K, V))]
+    postJoinFn: ((Long, (K, (U, Option[JoinedU])))) => TraversableOnce[(Long, (K, V))]
   ): (Map[K, JoinedU], Map[K, V]) = {
 
     val firstStore = MapAlgebra.sumByKey(

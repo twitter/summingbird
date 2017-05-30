@@ -349,7 +349,7 @@ class ScaldingLaws extends WordSpec {
       val batchCoveredInput1 = TestUtil.pruneToBatchCoveredWithTime(inWithTime1, intr, batcher)
       val batchCoveredInput2 = TestUtil.pruneToBatchCoveredWithTime(inWithTime2, intr, batcher)
 
-      def toTime[T, U](fn: T => Traversable[U]): ((Long, T)) => Traversable[(Long, U)] =
+      def toTime[T, U](fn: T => TraversableOnce[U]): ((Long, T)) => TraversableOnce[(Long, U)] =
         (x: (Long, T)) => fn(x._2).map((x._1, _))
 
       val fnAWithTime = toTime(fnA)
