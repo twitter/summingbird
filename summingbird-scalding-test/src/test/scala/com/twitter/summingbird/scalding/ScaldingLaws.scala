@@ -56,7 +56,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
@@ -87,7 +87,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
@@ -123,7 +123,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
@@ -166,7 +166,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
@@ -201,7 +201,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher).toList
@@ -235,7 +235,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher).toIterable
@@ -287,7 +287,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher).toIterable
@@ -343,7 +343,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime2 = original2.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original1.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original1)
 
       val batcher = TestUtil.randomBatcher(inWithTime1)
       val batchCoveredInput1 = TestUtil.pruneToBatchCoveredWithTime(inWithTime1, intr, batcher)
@@ -412,7 +412,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCoveredWithTime(inWithTime, intr, batcher)
@@ -462,7 +462,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCoveredWithTime(inWithTime, intr, batcher)
@@ -505,7 +505,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)
@@ -548,7 +548,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher).toList
@@ -582,7 +582,7 @@ class ScaldingLaws extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batcher = TestUtil.randomBatcher(inWithTime)
       val batchCoveredInput = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher)

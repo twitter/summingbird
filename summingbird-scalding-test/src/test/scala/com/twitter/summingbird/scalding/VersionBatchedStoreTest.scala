@@ -73,7 +73,7 @@ class VersionedBatchedStoreTest extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batchCoveredInput: List[Int] = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher).toList
 
