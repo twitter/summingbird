@@ -23,6 +23,7 @@ import com.twitter.conversions.time._
 import com.twitter.finagle.builder.ClientBuilder
 import com.twitter.finagle.memcached.KetamaClientBuilder
 import com.twitter.finagle.memcached.protocol.text.Memcached
+import com.twitter.finagle.transport.Transport
 import com.twitter.storehaus.Store
 import com.twitter.storehaus.algebra.MergeableStore
 import com.twitter.storehaus.memcache.{ HashEncoder, MemcacheStore }
@@ -43,12 +44,14 @@ object Memcache {
       .tcpConnectTimeout(DEFAULT_TIMEOUT)
       .requestTimeout(DEFAULT_TIMEOUT)
       .connectTimeout(DEFAULT_TIMEOUT)
-      .readerIdleTimeout(DEFAULT_TIMEOUT)
       .hostConnectionLimit(1)
       .codec(Memcached())
 
+    val liveness = builder.params[Transport.Liveness].copy(readTimeout = DEFAULT_TIMEOUT)
+    val liveBuilder = builder.configured(liveness)
+
     KetamaClientBuilder()
-      .clientBuilder(builder)
+      .clientBuilder(liveBuilder)
       .nodes("localhost:11211")
       .build()
   }

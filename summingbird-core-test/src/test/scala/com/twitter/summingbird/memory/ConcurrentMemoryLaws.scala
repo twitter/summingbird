@@ -17,13 +17,11 @@ limitations under the License.
 package com.twitter.summingbird.memory
 
 import java.util.concurrent.{ BlockingQueue, ConcurrentHashMap, LinkedBlockingQueue }
-
 import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
-import org.scalacheck.Arbitrary
+import org.scalacheck.{ Arbitrary, Cogen }
 import org.scalatest.WordSpec
-
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
@@ -68,26 +66,26 @@ class ConcurrentMemoryLaws extends WordSpec {
    * Tests the in-memory planner against a job with a single flatMap
    * operation.
    */
-  def singleStepLaw[T: Arbitrary: Manifest, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
+  def singleStepLaw[T: Arbitrary: Cogen: Manifest, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
     testGraph[T, K, V].singleStepChecker(sample[List[T]], sample[T => List[(K, V)]])
 
   /**
    * Tests the in-memory planner against a job with a single flatMap
    * operation.
    */
-  def diamondLaw[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
+  def diamondLaw[T: Manifest: Arbitrary: Cogen, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
     testGraph[T, K, V].diamondChecker(sample[List[T]], sample[T => List[(K, V)]], sample[T => List[(K, V)]])
 
   /**
    * Tests the in-memory planner by generating arbitrary flatMap and
    * service functions.
    */
-  def leftJoinLaw[T: Manifest: Arbitrary, K: Arbitrary, U: Arbitrary, JoinedU: Arbitrary, V: Monoid: Arbitrary: Equiv] = {
+  def leftJoinLaw[T: Manifest: Arbitrary: Cogen, K: Arbitrary: Cogen, U: Arbitrary: Cogen, JoinedU: Arbitrary: Cogen, V: Monoid: Arbitrary: Equiv] = {
     val serviceFn = Arbitrary.arbitrary[K => Option[JoinedU]].sample.get
     testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn, identity, sample[List[T]], sample[T => List[(K, U)]], sample[((K, (U, Option[JoinedU]))) => List[(K, V)]])
   }
 
-  def mapKeysChecker[T: Manifest: Arbitrary, K1: Arbitrary, K2: Arbitrary, V: Monoid: Arbitrary: Equiv](): Boolean = {
+  def mapKeysChecker[T: Manifest: Arbitrary: Cogen, K1: Arbitrary: Cogen, K2: Arbitrary, V: Monoid: Arbitrary: Equiv](): Boolean = {
     val platform = new ConcurrentMemory
     val currentStore = new ConcurrentHashMap[K2, V]()
     val original = sample[List[T]]
@@ -108,7 +106,7 @@ class ConcurrentMemoryLaws extends WordSpec {
     }
   }
 
-  def lookupCollectChecker[T: Arbitrary: Equiv: Manifest, U: Arbitrary: Equiv]: Boolean = {
+  def lookupCollectChecker[T: Arbitrary: Cogen: Equiv: Manifest, U: Arbitrary: Equiv]: Boolean = {
     val mem = new ConcurrentMemory
     val input = sample[List[T]]
     val srv = sample[T => Option[U]]
@@ -125,7 +123,7 @@ class ConcurrentMemoryLaws extends WordSpec {
    * Tests the in-memory planner against a job with a single flatMap
    * operation and some test counters
    */
-  def counterChecker[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv]: Boolean = {
+  def counterChecker[T: Manifest: Arbitrary: Cogen, K: Arbitrary, V: Monoid: Arbitrary: Equiv]: Boolean = {
     implicit val jobID: JobId = new JobId("concurrent.memory.job.testJobId")
     val mem = new ConcurrentMemory
     val input = sample[List[T]]
