@@ -19,7 +19,7 @@ package com.twitter.summingbird.batch
 import org.scalacheck.{ Arbitrary, Gen, Properties }
 import org.scalacheck.Prop._
 
-import com.twitter.algebird.{ Interval, Successible, Predecessible }
+import com.twitter.algebird._
 
 object BatchLaws extends Properties("BatchID") {
   import Generators._
@@ -68,10 +68,11 @@ object BatchLaws extends Properties("BatchID") {
     forAll(Arbitrary.arbitrary[BatchID], Gen.choose(0L, 1000L)) { (b1: BatchID, diff: Long) =>
       // We can't enumerate too much:
       val b2 = b1 + diff
-      val interval = Interval.leftClosedRightOpen(b1, b2.next) match {
-        case Left(i) => i
-        case Right(i) => i
-      }
+
+      val interval = if (Ordering[BatchID].lteq(b1, b2))
+        Intersection(InclusiveLower(b1), InclusiveUpper(b2)) else
+        Empty[BatchID]()
+
       (BatchID.toInterval(BatchID.range(b1, b2)) == Some(interval)) &&
         BatchID.toIterable(interval).toList == BatchID.range(b1, b2).toList
     }
