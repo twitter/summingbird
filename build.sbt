@@ -334,7 +334,14 @@ lazy val summingbirdStormTest = module("storm-test").settings(
     "com.twitter" %% "storehaus-algebra" % storehausVersion,
     "com.twitter" %% "tormenta-core" % tormentaVersion,
     "com.twitter" %% "util-core" % utilVersion,
-    stormDep % "provided"
+    stormDep % "provided",
+
+    // Storm uses log4j2 for logs, we want to enforce usage of log4j12,
+    // to make it consistent with other tests.
+    (stormDep
+      exclude("org.slf4j", "log4j-over-slf4j")
+      exclude("org.apache.logging.log4j", "log4j-slf4j-impl")) % "test",
+    "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
   )
 ).dependsOn(
   summingbirdCore % "test->test;compile->compile",
@@ -404,13 +411,10 @@ lazy val summingbirdBuilder = module("builder").settings(
 
 lazy val summingbirdExample = module("example").settings(
   libraryDependencies ++= Seq(
-    "log4j" % "log4j" % log4jVersion,
-    "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
-    stormDep exclude("org.slf4j", "log4j-over-slf4j") exclude("ch.qos.logback", "logback-classic"),
     "com.twitter" %% "bijection-netty" % bijectionVersion,
     "com.twitter" %% "tormenta-twitter" % tormentaVersion,
     "com.twitter" %% "storehaus-memcache" % storehausVersion,
-    "org.slf4j" % "slf4j-log4j12" % slf4jVersion % "test"
+    stormDep
   )
 ).dependsOn(summingbirdCore, summingbirdStorm)
 
