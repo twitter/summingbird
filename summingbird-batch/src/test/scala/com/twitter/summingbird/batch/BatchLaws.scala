@@ -69,9 +69,15 @@ object BatchLaws extends Properties("BatchID") {
       // We can't enumerate too much:
       val b2 = b1 + diff
 
-      val interval = if (Ordering[BatchID].lteq(b1, b2))
-        Intersection(InclusiveLower(b1), InclusiveUpper(b2)) else
+      val interval = if (Ordering[BatchID].lteq(b1, b2)) {
+        if (b2 != BatchID(Long.MaxValue)) {
+          Intersection(InclusiveLower(b1), ExclusiveUpper(b2.next))
+        } else {
+          Intersection(InclusiveLower(b1), InclusiveUpper(b2))
+        }
+      } else {
         Empty[BatchID]()
+      }
 
       (BatchID.toInterval(BatchID.range(b1, b2)) == Some(interval)) &&
         BatchID.toIterable(interval).toList == BatchID.range(b1, b2).toList
