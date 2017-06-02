@@ -221,18 +221,17 @@ object TestGraphs {
   )(
     postJoinFn: ((Long, (K, (U, Option[JoinedU])))) => TraversableOnce[(Long, (K, V))]
   ): (Map[K, JoinedU], Map[K, V]) = {
+    val flatMappedSource1 = source1.flatMap(simpleFM1).toList
 
     val firstStore = MapAlgebra.sumByKey(
-      source1
-        .flatMap(simpleFM1)
+      flatMappedSource1
         .map { case (_, kju) => kju } // drop the time from the key for the store
     )
 
     // create the delta stream
     val sumStream: Iterable[(Long, (K, (Option[JoinedU], JoinedU)))] =
-      source1
-        .flatMap(simpleFM1)
-        .toList.groupBy(_._1)
+      flatMappedSource1
+        .groupBy(_._1)
         .mapValues {
           _.map { case (time, (k, joinedu)) => (k, joinedu) }
             .groupBy(_._1)
