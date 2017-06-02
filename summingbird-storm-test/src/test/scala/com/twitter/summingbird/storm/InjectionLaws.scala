@@ -26,12 +26,12 @@ object InjectionLaws extends Properties("InjectionTests") {
   implicit def ts: Arbitrary[Timestamp] =
     Arbitrary(Arbitrary.arbitrary[Long].map(Timestamp(_)))
 
-  property("Single injection works") = forAll { in: String =>
-    val inj = new SingleItemInjection[String]
+  property("Item injection works") = forAll { in: String =>
+    val inj = EdgeInjections.forItem[String]()
     inj.invert(inj(in)).get == in
   }
   property("KV injection works") = forAll { in: (String, List[Int]) =>
-    val inj = new KeyValueInjection[String, List[Int]]
+    val inj = EdgeInjections.forKeyValue[String, List[Int]]()
     inj.invert(inj(in)).get == in
   }
 }

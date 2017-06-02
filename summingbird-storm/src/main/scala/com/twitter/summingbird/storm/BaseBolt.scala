@@ -17,7 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.storm
 
 import scala.util.{ Failure, Success }
-import com.twitter.bijection.Injection
 import java.util.{ Map => JMap }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
 import com.twitter.summingbird.online.executor.OperationContainer
@@ -27,10 +26,9 @@ import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeSta
 import com.twitter.summingbird.online.Externalizer
 import chain.Chain
 import scala.collection.JavaConverters._
-import java.util.{ List => JList }
 import org.apache.storm.task.{ OutputCollector, TopologyContext }
-import org.apache.storm.topology.{ IRichBolt, OutputFieldsDeclarer }
-import org.apache.storm.tuple.{ Fields, Tuple, TupleImpl }
+import org.apache.storm.topology.{ BoltDeclarer, IRichBolt, OutputFieldsDeclarer }
+import org.apache.storm.tuple.{ Tuple, TupleImpl }
 import org.slf4j.{ Logger, LoggerFactory }
 
 /**
@@ -44,11 +42,10 @@ case class BaseBolt[I, O](jobID: JobId,
     metrics: () => TraversableOnce[StormMetric[_]],
     anchorTuples: AnchorTuples,
     hasDependants: Boolean,
-    outputFields: Fields,
     ackOnEntry: AckOnEntry,
     maxExecutePerSec: MaxExecutePerSecond,
-    decoder: Injection[I, JList[AnyRef]],
-    encoder: Injection[O, JList[AnyRef]],
+    inputEdges: Map[String, Edge[I]],
+    outputEdge: Edge[O],
     executor: OperationContainer[I, O, InputState[Tuple]]) extends IRichBolt {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -130,7 +127,10 @@ case class BaseBolt[I, O](jobID: JobId,
      * System ticks come with a fixed stream id
      */
     val curResults = if (!tuple.getSourceStreamId.equals("__tick")) {
-      val tsIn = decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
+      val tsIn = inputEdges.get(tuple.getSourceComponent) match {
+        case Some(inputEdge) => inputEdge.injection.invert(tuple.getValues).get
+        case None => throw new Exception("Unrecognized source component: " + tuple.getSourceComponent)
+      }
       // Don't hold on to the input values
       clearValues(tuple)
       if (earlyAck) { collector.ack(tuple) }
@@ -155,12 +155,12 @@ case class BaseBolt[I, O](jobID: JobId,
       if (anchorTuples.anchor) {
         val states = inputs.iterator.map(_.state).toList.asJava
         results.foreach { result =>
-          collector.emit(states, encoder(result))
+          collector.emit(states, outputEdge.injection(result))
           emitCount += 1
         }
       } else { // don't anchor
         results.foreach { result =>
-          collector.emit(encoder(result))
+          collector.emit(outputEdge.injection(result))
           emitCount += 1
         }
       }
@@ -183,13 +183,19 @@ case class BaseBolt[I, O](jobID: JobId,
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    if (hasDependants) { declarer.declare(outputFields) }
+    if (hasDependants) { declarer.declare(outputEdge.fields) }
   }
 
   override val getComponentConfiguration = null
 
   override def cleanup {
     executor.cleanup
+  }
+
+  def applyGroupings(declarer: BoltDeclarer): Unit = {
+    inputEdges.foreach { case (parentName, inputEdge) =>
+      inputEdge.grouping.apply(declarer, parentName)
+    }
   }
 
   /**

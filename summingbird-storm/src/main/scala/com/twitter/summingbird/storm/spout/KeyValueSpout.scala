@@ -4,15 +4,15 @@ import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
-import com.twitter.summingbird.storm.Constants._
 import com.twitter.tormenta.spout.SpoutProxy
 import com.twitter.summingbird.storm.collector.AggregatorOutputCollector
 import com.twitter.util.{ Duration, Time }
 import org.apache.storm.spout.SpoutOutputCollector
 import org.apache.storm.task.TopologyContext
 import org.apache.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
-import org.apache.storm.tuple.Fields
 import java.util.{ Map => JMap }
+
+import com.twitter.summingbird.storm.AggregatedKeyValuesEdge
 
 /**
  * This is a spout used when the spout is being followed by summer.
@@ -26,12 +26,14 @@ class KeyValueSpout[K, V: Semigroup](
     flushExecTimeCounter: Incrementor,
     executeTimeCounter: Incrementor) extends SpoutProxy {
 
-  private final val tickFrequency = Duration.fromMilliseconds(1000)
+  private val tickFrequency = Duration.fromMilliseconds(1000)
+  private val outputEdge = AggregatedKeyValuesEdge(summerShards)
+
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
   var lastDump = Time.now
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) = {
-    declarer.declare(new Fields(AGG_KEY, AGG_VALUE))
+    declarer.declare(outputEdge.fields)
   }
 
   /**
