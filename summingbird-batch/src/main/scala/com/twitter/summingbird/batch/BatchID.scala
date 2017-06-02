@@ -93,7 +93,11 @@ object BatchID {
       .flatMap {
         case (min, max, cnt) =>
           if ((min + cnt) == (max + 1L)) {
-            Some(Interval.leftClosedRightOpen(min, max.next).right.get)
+            if (max != BatchID(Long.MaxValue)) {
+              Some(Intersection(InclusiveLower(min), ExclusiveUpper(max.next)))
+            } else {
+              Some(Intersection(InclusiveLower(min), InclusiveUpper(max)))
+            }
           } else {
             // These batches are not contiguous, not an interval
             None

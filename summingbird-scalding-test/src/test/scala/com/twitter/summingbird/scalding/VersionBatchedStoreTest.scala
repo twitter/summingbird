@@ -59,11 +59,11 @@ class VersionedBatchedStoreTest extends WordSpec {
   "The VersionedBatchStore" should {
 
     "support a multiple summer job with one store already satisfied" in {
-      val rangeMax = 1000
+      val rangeMax = 100
       val original: List[Int] = (0 until rangeMax).toList // Input Data
       implicit val batcher = new MillisecondBatcher(20L)
 
-      val lastExpectedWriteBatch = 1000
+      val lastExpectedWriteBatch = 100
 
       val fnA = sample[(Int) => List[(Int)]]
       val fnB = sample[(Int) => List[(Int, Int)]]
@@ -73,7 +73,7 @@ class VersionedBatchedStoreTest extends WordSpec {
       val inWithTime = original.zipWithIndex.map { case (item, time) => (time.toLong, item) }
 
       // get time interval for the input
-      val intr = TestUtil.toTimeInterval(0L, original.size.toLong)
+      val intr = TestUtil.coveringTimeInterval(original)
 
       val batchCoveredInput: List[Int] = TestUtil.pruneToBatchCovered(inWithTime, intr, batcher).toList
 

@@ -51,21 +51,21 @@ class MemoryLaws extends WordSpec {
    * Tests the in-memory planner against a job with a single flatMap
    * operation.
    */
-  def singleStepLaw[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
+  def singleStepLaw[T: Manifest: Arbitrary: Cogen, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
     testGraph[T, K, V].singleStepChecker(sample[List[T]], sample[T => List[(K, V)]])
 
   /**
    * Tests the in-memory planner against a job with a single flatMap
    * operation.
    */
-  def diamondLaw[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
+  def diamondLaw[T: Manifest: Arbitrary: Cogen, K: Arbitrary, V: Monoid: Arbitrary: Equiv] =
     testGraph[T, K, V].diamondChecker(sample[List[T]], sample[T => List[(K, V)]], sample[T => List[(K, V)]])
 
   /**
    * Tests the in-memory planner by generating arbitrary flatMap and
    * service functions.
    */
-  def leftJoinLaw[T: Manifest: Arbitrary, K: Arbitrary, U: Arbitrary, JoinedU: Arbitrary, V: Monoid: Arbitrary: Equiv] = {
+  def leftJoinLaw[T: Manifest: Arbitrary: Cogen, K: Arbitrary: Cogen, U: Arbitrary: Cogen, JoinedU: Arbitrary: Cogen, V: Monoid: Arbitrary: Equiv] = {
     import MemoryArbitraries._
     val serviceFn: MemoryService[K, JoinedU] = Arbitrary.arbitrary[MemoryService[K, JoinedU]].sample.get
     testGraph[T, K, V].leftJoinChecker[U, JoinedU](serviceFn,
@@ -75,56 +75,7 @@ class MemoryLaws extends WordSpec {
       sample[((K, (U, Option[JoinedU]))) => List[(K, V)]])
   }
 
-  /**
-   * Tests the in-memory planner by generating arbitrary flatMap and
-   * service functions and joining against a store (independent of the join).
-   */
-  def leftJoinAgainstStoreChecker[T: Manifest: Arbitrary, K: Arbitrary, U: Arbitrary, JoinedU: Monoid: Arbitrary, V: Monoid: Arbitrary: Equiv] = {
-    val platform = new Memory
-    val finalStore: Memory#Store[K, V] = MutableMap.empty[K, V]
-    val storeAndService: Memory#Store[K, JoinedU] with Memory#Service[K, JoinedU] = new MutableHashMap[K, JoinedU]() with MemoryService[K, JoinedU]
-    val sourceMaker = Memory.toSource[T](_)
-    val items1 = sample[List[T]]
-    val items2 = sample[List[T]]
-
-    val fnA = sample[(T) => List[(K, JoinedU)]]
-    val fnB = sample[(T) => List[(K, U)]]
-    val postJoinFn = sample[((K, (U, Option[JoinedU]))) => List[(K, V)]]
-
-    val plan = platform.plan {
-      TestGraphs.leftJoinWithStoreJob[Memory, T, T, U, K, JoinedU, V](sourceMaker(items1),
-        sourceMaker(items2),
-        storeAndService,
-        finalStore)(fnA)(fnB)(postJoinFn)
-    }
-    platform.run(plan)
-    val serviceFn = storeAndService.get(_)
-    val lookupFn = finalStore.get(_)
-
-    val storeAndServiceMatches = MapAlgebra.sumByKey(
-      items1
-        .flatMap(fnA)
-    ).forall {
-        case (k, v) =>
-          val lv: JoinedU = serviceFn(k).getOrElse(Monoid.zero[JoinedU])
-          Equiv[JoinedU].equiv(v, lv)
-      }
-
-    val finalStoreMatches = MapAlgebra.sumByKey(
-      items2.
-        flatMap(fnB)
-        .map { case (k, u) => (k, (u, serviceFn(k))) }
-        .flatMap(postJoinFn)
-    ).forall {
-        case (k, v) =>
-          val lv = lookupFn(k).getOrElse(Monoid.zero[V])
-          Equiv[V].equiv(v, lv)
-      }
-
-    storeAndServiceMatches && finalStoreMatches
-  }
-
-  def mapKeysChecker[T: Manifest: Arbitrary, K1: Arbitrary, K2: Arbitrary, V: Monoid: Arbitrary: Equiv](): Boolean = {
+  def mapKeysChecker[T: Manifest: Arbitrary: Cogen, K1: Arbitrary: Cogen, K2: Arbitrary, V: Monoid: Arbitrary: Equiv](): Boolean = {
     val platform = new Memory
     val currentStore: Memory#Store[K2, V] = MutableMap.empty[K2, V]
     val sourceMaker = Memory.toSource[T](_)
@@ -163,7 +114,7 @@ class MemoryLaws extends WordSpec {
    * Tests the in-memory planner against a job with a single flatMap
    * operation and some test counters
    */
-  def counterChecker[T: Manifest: Arbitrary, K: Arbitrary, V: Monoid: Arbitrary: Equiv]: Boolean = {
+  def counterChecker[T: Manifest: Arbitrary: Cogen, K: Arbitrary, V: Monoid: Arbitrary: Equiv]: Boolean = {
     implicit val jobID: JobId = new JobId("memory.job.testJobId")
     val mem = new Memory
     val fn = sample[(T) => List[(K, V)]]
@@ -195,7 +146,6 @@ class MemoryLaws extends WordSpec {
     "diamond w/ String, Short, Map[Set[Int], Long]" in { assert(diamondLaw[String, Short, Map[Set[Int], Long]] == true) }
 
     "leftJoin w/ Int, Int, String, Long, Set[Int]" in { assert(leftJoinLaw[Int, Int, String, Long, Set[Int]] == true) }
-    "leftJoinAgainstStore w/ Int, Int, String, Long, Int" in { assert(leftJoinAgainstStoreChecker[Int, Int, String, Long, Int] == true) }
 
     "flatMapKeys w/ Int, Int, Int, Set[Int]" in { assert(mapKeysChecker[Int, Int, Int, Set[Int]] == true) }
 

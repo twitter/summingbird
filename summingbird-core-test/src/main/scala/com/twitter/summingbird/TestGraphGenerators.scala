@@ -49,13 +49,21 @@ object TestGraphGenerators {
   def aDependency[P <: Platform[P]](p: KeyedProducer[P, Int, Int])(implicit genSource1: Arbitrary[Producer[P, Int]], genSource2: Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
     testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[KeyedProducer[P, Int, Int]] = {
     val deps = Producer.transitiveDependenciesOf(p).collect { case x: KeyedProducer[_, _, _] => x.asInstanceOf[KeyedProducer[P, Int, Int]] }
-    if (deps.size == 1) genProd2 else oneOf(deps)
+    deps.size match {
+      case 0 => fail
+      case 1 => genProd2
+      case _ => oneOf(deps)
+    }
   }
 
   def aDependency1[P <: Platform[P]](p: Producer[P, Int])(implicit genSource1: Arbitrary[Producer[P, Int]], genSource2: Arbitrary[KeyedProducer[P, Int, Int]], genService2: Arbitrary[P#Service[Int, Int]],
     testStore: P#Store[Int, Int], sink1: P#Sink[Int], sink2: P#Sink[(Int, Int)]): Gen[Producer[P, Int]] = {
     val deps = Producer.transitiveDependenciesOf(p).filter(_ == p).collect { case x: Producer[_, _] => x.asInstanceOf[Producer[P, Int]] }
-    if (deps.size == 1) genProd1 else oneOf(deps)
+    deps.size match {
+      case 0 => fail
+      case 1 => genProd1
+      case _ => oneOf(deps)
+    }
   }
 
   def aTailDependency[P <: Platform[P]](p: Producer[P, Any])(implicit genSource1: Arbitrary[Producer[P, Int]],

@@ -86,11 +86,11 @@ object TestUtil {
   }
 
   /**
-   * This converts the min and max times to a time interval.
-   * maxTime is an exclusive upper bound.
+   * Returns non empty time interval which covers elements, assuming they have
+   * timestamps from 0 to `elements.size - 1`.
    */
-  def toTimeInterval(minTime: Long, maxTime: Long): Interval[Timestamp] =
-    Interval.leftClosedRightOpen(Timestamp(minTime), Timestamp(maxTime))
+  def coveringTimeInterval(elements: List[Any]): Interval[Timestamp] =
+    Interval.leftClosedRightOpen(Timestamp(0), Timestamp(Math.max(1, elements.size)))
 
   val simpleBatcher = new Batcher {
     def batchOf(d: Timestamp) =
