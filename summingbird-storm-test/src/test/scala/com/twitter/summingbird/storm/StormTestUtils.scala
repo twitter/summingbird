@@ -3,9 +3,10 @@ package com.twitter.summingbird.storm
 import java.util.UUID
 
 import com.twitter.algebird.Semigroup
+import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.memory.Memory
-import com.twitter.summingbird.online.MergeableStoreFactory
+import com.twitter.summingbird.memory.{Memory, MemoryService}
+import com.twitter.summingbird.online.{MergeableStoreFactory, OnlineServiceFactory, ReadableServiceFactory}
 import com.twitter.summingbird.storm.Storm.toStormSource
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird._
@@ -24,12 +25,14 @@ object StormTestUtils {
     val memorySourceCreator = new MemorySourceCreator()
     val memoryStoreCreator = new MemoryStoreCreator(seed, params)
     val memorySinkCreator = new MemorySinkCreator()
-    val memoryCtx = new CreatorCtx(memorySourceCreator, memoryStoreCreator, memorySinkCreator)
+    val memoryServiceCreator = new MemoryServiceCreator()
+    val memoryCtx = new CreatorCtx(memorySourceCreator, memoryStoreCreator, memorySinkCreator, memoryServiceCreator)
 
     val stormSourceCreator = new StormSourceCreator()
     val stormStoreCreator = new StormStoreCreator(seed, params)
     val stormSinkCreator = new StormSinkCreator()
-    val stormCtx = new CreatorCtx(stormSourceCreator, stormStoreCreator, stormSinkCreator)
+    val stormServiceCreator = new StormServiceCreator
+    val stormCtx = new CreatorCtx(stormSourceCreator, stormStoreCreator, stormSinkCreator, stormServiceCreator)
 
     val memory = new Memory()
     memory.run(memory.plan(producerCreator.apply(memoryCtx)))
@@ -64,12 +67,13 @@ trait ProducerCreator {
 class CreatorCtx[P <: Platform[P]](
   sourceCreator: SourceCreator[P],
   storeCreator: StoreCreator[P],
-  sinkCreator: SinkCreator[P]
+  sinkCreator: SinkCreator[P],
+  serviceCreator: ServiceCreator[P]
 ) {
   def source[T](data: List[T]): Source[P, T] = sourceCreator(data)
-
   def store[K: Arbitrary, V: Arbitrary: Semigroup](id: String): P#Store[K, V] = storeCreator(id)
   def sink[V: Ordering](id: String): P#Sink[V] = sinkCreator(id)
+  def service[K, V](fn: K => Option[V]): P#Service[K, V] = serviceCreator(fn)
 }
 
 trait SourceCreator[P <: Platform[P]] {
@@ -83,6 +87,10 @@ trait StoreCreator[P <: Platform[P]] {
 
 trait SinkCreator[P <: Platform[P]] {
   def apply[V: Ordering](id: String): P#Sink[V]
+}
+
+trait ServiceCreator[P <: Platform[P]] {
+  def apply[K, V](fn: K => Option[V]): P#Service[K, V]
 }
 
 class MemorySourceCreator extends SourceCreator[Memory] {
@@ -161,4 +169,15 @@ class StormSinkCreator() extends SinkCreator[Storm] {
 
   def clear(): Unit =
     StormSinkCreator.sinks.synchronized(uuids.values.foreach(uuid => StormSinkCreator.sinks.remove(uuid)))
+}
+
+class MemoryServiceCreator() extends ServiceCreator[Memory] {
+  override def apply[K, V](fn: (K) => Option[V]): MemoryService[K, V] = new MemoryService[K, V] {
+    override def get(k: K): Option[V] = fn(k)
+  }
+}
+
+class StormServiceCreator() extends ServiceCreator[Storm] {
+  override def apply[K, V](fn: (K) => Option[V]): OnlineServiceFactory[K, V] =
+    ReadableServiceFactory[K, V](() => ReadableStore.fromFn(fn))
 }
