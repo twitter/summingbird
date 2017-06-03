@@ -21,12 +21,12 @@ object StormTestUtils {
   }
 
   def testStormEqualToMemory(producerCreator: ProducerCreator, seed: Seed, params: Gen.Parameters)(implicit storm: Storm): Unit = {
-    val memorySourceCreator = new MemorySourceCreator(seed, params)
+    val memorySourceCreator = new MemorySourceCreator()
     val memoryStoreCreator = new MemoryStoreCreator(seed, params)
     val memorySinkCreator = new MemorySinkCreator()
     val memoryCtx = new CreatorCtx(memorySourceCreator, memoryStoreCreator, memorySinkCreator)
 
-    val stormSourceCreator = new StormSourceCreator(seed, params)
+    val stormSourceCreator = new StormSourceCreator()
     val stormStoreCreator = new StormStoreCreator(seed, params)
     val stormSinkCreator = new StormSinkCreator()
     val stormCtx = new CreatorCtx(stormSourceCreator, stormStoreCreator, stormSinkCreator)
@@ -37,7 +37,6 @@ object StormTestUtils {
 //    assert(OnlinePlan(tail).nodes.size < 10)
     StormTestRun(producerCreator.apply(stormCtx))
 
-    assertEquiv(memorySourceCreator.sources, stormSourceCreator.sources)
     assertEquiv(memoryStoreCreator.ids(), stormStoreCreator.ids())
     memoryStoreCreator.ids().foreach(id =>
       assertEquiv(memoryStoreCreator.get(id), stormStoreCreator.get(id))
@@ -67,7 +66,6 @@ class CreatorCtx[P <: Platform[P]](
   storeCreator: StoreCreator[P],
   sinkCreator: SinkCreator[P]
 ) {
-  def source[T: Arbitrary](id: String): Source[P, T] = sourceCreator(id)
   def source[T](data: List[T]): Source[P, T] = sourceCreator(data)
 
   def store[K: Arbitrary, V: Arbitrary: Semigroup](id: String): P#Store[K, V] = storeCreator(id)
@@ -75,7 +73,6 @@ class CreatorCtx[P <: Platform[P]](
 }
 
 trait SourceCreator[P <: Platform[P]] {
-  def apply[T: Arbitrary](id: String): Source[P, T]
   // Should be with time
   def apply[T](data: List[T]): Source[P, T]
 }
@@ -88,24 +85,11 @@ trait SinkCreator[P <: Platform[P]] {
   def apply[V: Ordering](id: String): P#Sink[V]
 }
 
-abstract class BaseSourceCreator[P <: Platform[P]](seed: Seed, params: Gen.Parameters) extends SourceCreator[P] {
-  val sources: mutable.Map[String, List[_]] = mutable.Map()
-
-  def get[T: Arbitrary](id: String): List[T] =
-    sources.getOrElseUpdate(id, {
-      StormTestUtils.sample[List[T]](seed, params, id)
-    }).asInstanceOf[List[T]]
-
-  override def apply[T: Arbitrary](id: String): Source[P, T] = apply(get(id))
-
-  def ids(): Set[String] = sources.keys.toSet
-}
-
-class MemorySourceCreator(seed: Seed, params: Gen.Parameters) extends BaseSourceCreator[Memory](seed, params) {
+class MemorySourceCreator extends SourceCreator[Memory] {
   override def apply[T](data: List[T]): Source[Memory, T] = Source[Memory, T](data)
 }
 
-class StormSourceCreator(seed: Seed, params: Gen.Parameters) extends BaseSourceCreator[Storm](seed, params) {
+class StormSourceCreator extends SourceCreator[Storm] {
   override def apply[T](data: List[T]): Source[Storm, T] = {
     implicit def extractor[E]: TimeExtractor[E] = TimeExtractor(_ => 0L)
     Source[Storm, T](toStormSource(TraversableSpout(data)))

@@ -63,48 +63,53 @@ class StormLaws extends WordSpec {
   import MapAlgebra.sparseEquiv
 
   "StormPlatform matches Scala for single step jobs" in {
+    val original = sample[List[Int]]
     val fn = sample[Int => List[(Int, Int)]]
 
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.singleStepJob[P, Int, Int, Int](
-          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(fn)
+          ctx.source(original), ctx.store[Int, Int]("store"))(fn)
     })
   }
 
   "FlatMap to nothing" in {
+    val original = sample[List[Int]]
     val fn = { (x: Int) => List[(Int, Int)]() }
 
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.singleStepJob[P, Int, Int, Int](
-          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(fn)
+          ctx.source(original), ctx.store[Int, Int]("store"))(fn)
     })
   }
 
   "OptionMap and FlatMap" in {
+    val original = sample[List[Int]]
     val fnA = sample[Int => Option[Int]]
     val fnB = sample[Int => List[(Int, Int)]]
 
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.twinStepOptionMapFlatMapJob[P, Int, Int, Int, Int](
-          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(fnA, fnB)
+          ctx.source(original), ctx.store[Int, Int]("store"))(fnA, fnB)
     })
   }
 
   "OptionMap to nothing and FlatMap" in {
+    val original = sample[List[Int]]
     val fnA = { (x: Int) => None }
     val fnB = sample[Int => List[(Int, Int)]]
 
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.twinStepOptionMapFlatMapJob[P, Int, Int, Int, Int](
-          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(fnA, fnB)
+          ctx.source(original), ctx.store[Int, Int]("store"))(fnA, fnB)
     })
   }
 
   "StormPlatform matches Scala for large expansion single step jobs" in {
+    val original = sample[List[Int]]
     val expander = sample[Int => List[(Int, Int)]]
     val expansionFunc = { (x: Int) =>
       expander(x).flatMap { case (k, v) => List((k, v), (k, v), (k, v), (k, v), (k, v)) }
@@ -113,7 +118,7 @@ class StormLaws extends WordSpec {
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.singleStepJob[P, Int, Int, Int](
-          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(expansionFunc)
+          ctx.source(original), ctx.store[Int, Int]("store"))(expansionFunc)
     })
   }
 
@@ -173,9 +178,11 @@ class StormLaws extends WordSpec {
   }
 
   "StormPlatform matches Scala for optionMap only jobs" in {
+    val original = sample[List[Int]]
+
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        ctx.source[Int]("source")
+        ctx.source(original)
           .filter(_ % 2 == 0)
           .map(_ -> 10)
           .sumByKey(ctx.store("store"))
@@ -183,9 +190,11 @@ class StormLaws extends WordSpec {
   }
 
   "StormPlatform matches Scala for MapOnly/NoSummer" in {
+    val original = sample[List[Int]]
+
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.mapOnlyJob[P, Int, Int](ctx.source[Int]("source"), ctx.sink[Int]("sink"))(x => List(x))
+        TestGraphs.mapOnlyJob[P, Int, Int](ctx.source(original), ctx.sink[Int]("sink"))(x => List(x))
     })
   }
 
@@ -242,11 +251,12 @@ class StormLaws extends WordSpec {
   }
 
   "StormPlatform should be able to handle AlsoProducer with Summer and FlatMap in different branches" in {
+    val original = sample[List[(Int, Int)]]
     val branchFlatMap = sample[((Int, Int)) => List[(Int, Int)]]
 
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
-        val source = ctx.source[(Int, Int)]("source")
+        val source = ctx.source(original)
         source.sumByKey(ctx.store("store1")).also(
           source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
         )
@@ -256,7 +266,7 @@ class StormLaws extends WordSpec {
 //    Fails, see https://github.com/twitter/summingbird/issues/725 for details.
 //    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
 //      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
-//        val source = ctx.source[(Int, Int)]("source").flatMap(e => List(e))
+//        val source = ctx.source(original).flatMap(e => List(e))
 //        source.sumByKey(ctx.store("store1")).also(
 //          source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
 //        )
@@ -266,7 +276,7 @@ class StormLaws extends WordSpec {
 //    Workaround
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
-        val source = ctx.source[(Int, Int)]("source").flatMap(e => List(e))
+        val source = ctx.source(original).flatMap(e => List(e))
         source.map(identity).sumByKey(ctx.store("store1")).also(
           source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
         )
@@ -276,7 +286,7 @@ class StormLaws extends WordSpec {
 //    Also fails.
 //    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
 //      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
-//        val source = ctx.source[(Int, Int)]("source")
+//        val source = ctx.source(original)
 //          .sumByKey(ctx.store("tmpStore")).map({ case (key, (_, value)) => (key, value) })
 //
 //        source.sumByKey(ctx.store("store1")).also(
