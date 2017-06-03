@@ -36,7 +36,6 @@ object StormTestUtils {
 
 //    assert(OnlinePlan(tail).nodes.size < 10)
     StormTestRun(producerCreator.apply(stormCtx))
-    Thread.sleep(70000)
 
     assertEquiv(memorySourceCreator.sources, stormSourceCreator.sources)
     assertEquiv(memoryStoreCreator.ids(), stormStoreCreator.ids())
