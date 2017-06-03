@@ -243,23 +243,13 @@ class StormLaws extends WordSpec {
   }
 
   "StormPlatform matches Scala for optionMap only jobs" in {
-    val original = sample[List[Int]]
-    val (id, storeSupplier) = genStore
-
-    val cluster = new LocalCluster()
-
-    val producer =
-      Storm.source(TraversableSpout(original))
-        .filter(_ % 2 == 0)
-        .map(_ -> 10)
-        .sumByKey(storeSupplier)
-
-    StormTestRun(producer)
-
-    assertEquiv[Map[Int, Int]](
-      MapAlgebra.sumByKey(original.filter(_ % 2 == 0).map(_ -> 10)),
-      TestStore[Int, Int](id).get.toScala
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] =
+        Source[P, Int](createSource("source"))
+          .filter(_ % 2 == 0)
+          .map(_ -> 10)
+          .sumByKey(createStore("store"))
+    })
   }
 
   "StormPlatform matches Scala for MapOnly/NoSummer" in {
@@ -278,31 +268,15 @@ class StormLaws extends WordSpec {
   }
 
   "StormPlatform with multiple summers" in {
-    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41) // sample[List[Int]]
-    val doubler = { (x): (Int) => List((x -> x * 2)) }
-    val simpleOp = { (x): (Int) => List(x * 10) }
-
-    val source = Storm.source(TraversableSpout(original))
-    val (store1Id, store1) = genStore
-    val (store2Id, store2) = genStore
-
-    val tail = TestGraphs.multipleSummerJob[Storm, Int, Int, Int, Int, Int, Int](source, store1, store2)(simpleOp, doubler, doubler)
-
-    StormTestRun(tail)
-
-    val (scalaA, scalaB) = TestGraphs.multipleSummerJobInScala(original)(simpleOp, doubler, doubler)
-
-    val store1Map = TestStore[Int, Int](store1Id).get.toScala
-    val store2Map = TestStore[Int, Int](store2Id).get.toScala
-    assertEquiv[Map[Int, Int]](
-      scalaA,
-      store1Map
-    )
-
-    assertEquiv[Map[Int, Int]](
-      scalaB,
-      store2Map
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
+        TestGraphs.multipleSummerJob[P, Int, Int, Int, Int, Int, Int](
+          Source[P, Int](createSource[Int]("source")),
+          createStore("store1"),
+          createStore("store2")
+        )(x => List(x * 10), x => List((x, x)), x => List((x, x)))
+      }
+    })
   }
 
   "StormPlatform should be efficent in real world job" in {
