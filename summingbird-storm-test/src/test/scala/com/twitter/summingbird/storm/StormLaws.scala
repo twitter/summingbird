@@ -16,29 +16,20 @@
 
 package com.twitter.summingbird.storm
 
-import org.apache.storm.LocalCluster
-import com.twitter.algebird.{MapAlgebra, Semigroup}
+import com.twitter.algebird.MapAlgebra
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird.online._
-import com.twitter.summingbird.memory._
 import com.twitter.summingbird.planner._
-import com.twitter.summingbird.viz.DagViz
-import com.twitter.util.Future
 import org.scalatest.WordSpec
 import org.scalacheck._
-
-import scala.collection.TraversableOnce
-import scala.collection.mutable.{ArrayBuffer, SynchronizedBuffer}
 
 /**
  * Tests for Summingbird's Storm planner.
  */
 object StormLaws {
-  val outputList = new ArrayBuffer[Int] with SynchronizedBuffer[Int]
-
   // This is dangerous, obviously. The Storm platform graphs tested
   // here use the UnitBatcher, so the actual time extraction isn't
   // needed.
@@ -53,41 +44,6 @@ object StormLaws {
 
   def genStore: (String, Storm#Store[Int, Int]) = TestStore.createStore[Int, Int]()
 
-  def genSink: () => ((Int) => Future[Unit]) = () => { x: Int =>
-    append(x)
-    Future.Unit
-  }
-
-  def memoryPlanWithoutSummer(original: List[Int])(mkJob: (Producer[Memory, Int], Memory#Sink[Int]) => TailProducer[Memory, Int]): List[Int] = {
-    val memory = new Memory
-    val outputList = ArrayBuffer[Int]()
-    val sink: (Int) => Unit = { x: Int => outputList += x }
-
-    val job = mkJob(
-      Memory.toSource(original),
-      sink
-    )
-    val topo = memory.plan(job)
-    memory.run(topo)
-    outputList.toList
-  }
-
-  def append(x: Int): Unit = {
-    StormLaws.outputList += x
-  }
-
-  def runWithOutSummer(original: List[Int])(mkJob: (Producer[Storm, Int], Storm#Sink[Int]) => TailProducer[Storm, Int]): List[Int] = {
-    val cluster = new LocalCluster()
-
-    val job = mkJob(
-      Storm.source(TraversableSpout(original)),
-      Storm.sink[Int]({ (x: Int) => append(x); Future.Unit })
-    )
-
-    StormTestRun(job)
-    StormLaws.outputList.toList
-  }
-
   val nextFn = { pair: ((Int, (Int, Option[Int]))) =>
     val (k, (v, joinedV)) = pair
     List((k -> joinedV.getOrElse(10)))
@@ -100,7 +56,6 @@ object StormLaws {
 
   val serviceFn = sample[Int => Option[Int]]
   val service = ReadableServiceFactory[Int, Int](() => ReadableStore.fromFn(serviceFn))
-
 }
 
 // ALL TESTS START GO IN THE CLASS NOT OBJECT
