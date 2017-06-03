@@ -68,12 +68,16 @@ class CreatorCtx[P <: Platform[P]](
   sinkCreator: SinkCreator[P]
 ) {
   def source[T: Arbitrary](id: String): Source[P, T] = sourceCreator(id)
+  def source[T](data: List[T]): Source[P, T] = sourceCreator(data)
+
   def store[K: Arbitrary, V: Arbitrary: Semigroup](id: String): P#Store[K, V] = storeCreator(id)
   def sink[V: Ordering](id: String): P#Sink[V] = sinkCreator(id)
 }
 
 trait SourceCreator[P <: Platform[P]] {
   def apply[T: Arbitrary](id: String): Source[P, T]
+  // Should be with time
+  def apply[T](data: List[T]): Source[P, T]
 }
 
 trait StoreCreator[P <: Platform[P]] {
@@ -92,17 +96,19 @@ abstract class BaseSourceCreator[P <: Platform[P]](seed: Seed, params: Gen.Param
       StormTestUtils.sample[List[T]](seed, params, id)
     }).asInstanceOf[List[T]]
 
+  override def apply[T: Arbitrary](id: String): Source[P, T] = apply(get(id))
+
   def ids(): Set[String] = sources.keys.toSet
 }
 
 class MemorySourceCreator(seed: Seed, params: Gen.Parameters) extends BaseSourceCreator[Memory](seed, params) {
-  override def apply[T: Arbitrary](id: String): Source[Memory, T] = Source[Memory, T](get(id))
+  override def apply[T](data: List[T]): Source[Memory, T] = Source[Memory, T](data)
 }
 
 class StormSourceCreator(seed: Seed, params: Gen.Parameters) extends BaseSourceCreator[Storm](seed, params) {
-  override def apply[T: Arbitrary](id: String): Source[Storm, T] = {
+  override def apply[T](data: List[T]): Source[Storm, T] = {
     implicit def extractor[E]: TimeExtractor[E] = TimeExtractor(_ => 0L)
-    Source[Storm, T](toStormSource(TraversableSpout(get(id))))
+    Source[Storm, T](toStormSource(TraversableSpout(data)))
   }
 }
 
