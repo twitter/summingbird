@@ -16,13 +16,8 @@
 
 package com.twitter.summingbird.storm
 
-import com.twitter.algebird.MapAlgebra
-import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
-import com.twitter.summingbird.storm.spout.TraversableSpout
-import com.twitter.summingbird.online._
-import com.twitter.summingbird.planner._
 import org.scalatest.WordSpec
 import org.scalacheck._
 
@@ -40,8 +35,6 @@ object StormLaws {
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
 
-  def genStore: (String, Storm#Store[Int, Int]) = TestStore.createStore[Int, Int]()
-
   val nextFn = { pair: ((Int, (Int, Option[Int]))) =>
     val (k, (v, joinedV)) = pair
     List((k -> joinedV.getOrElse(10)))
@@ -53,14 +46,12 @@ object StormLaws {
   }
 
   val serviceFn = sample[Int => Option[Int]]
-  val service = ReadableServiceFactory[Int, Int](() => ReadableStore.fromFn(serviceFn))
 }
 
 // ALL TESTS START GO IN THE CLASS NOT OBJECT
 
 class StormLaws extends WordSpec {
   import StormLaws._
-  import MapAlgebra.sparseEquiv
 
   "StormPlatform matches Scala for single step jobs" in {
     val original = sample[List[Int]]
@@ -136,45 +127,35 @@ class StormLaws extends WordSpec {
 
   "StormPlatform matches Scala for left join jobs" in {
     val original = sample[List[Int]]
-    val staticFunc = { i: Int => List((i -> i)) }
-    val returnedState =
-      StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.leftJoinJob[Storm, Int, Int, Int, Int, Int](_, service, _)(staticFunc)(nextFn)
-      )
+    val staticFunc = { i: Int => List((i, i)) }
 
-    assertEquiv[Map[Int, Int]](
-      TestGraphs.leftJoinInScala(original)(serviceFn)(staticFunc)(nextFn),
-      returnedState.toScala
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.leftJoinJob[P, Int, Int, Int, Int, Int](
+          ctx.source(original), ctx.service(serviceFn), ctx.store("store"))(staticFunc)(nextFn)
+    })
   }
 
   "StormPlatform matches Scala for left join with flatMapValues jobs" in {
     val original = sample[List[Int]]
-    val staticFunc = { i: Int => List((i -> i)) }
+    val staticFunc = { i: Int => List((i, i)) }
 
-    val returnedState =
-      StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.leftJoinJobWithFlatMapValues[Storm, Int, Int, Int, Int, Int](_, service, _)(staticFunc)(nextFn1)
-      )
-
-    assertEquiv[Map[Int, Int]](
-      TestGraphs.leftJoinWithFlatMapValuesInScala(original)(serviceFn)(staticFunc)(nextFn1),
-      returnedState.toScala
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.leftJoinJobWithFlatMapValues[P, Int, Int, Int, Int, Int](
+          ctx.source(original), ctx.service(serviceFn), ctx.store("store"))(staticFunc)(nextFn1)
+    })
   }
 
   "StormPlatform matches Scala for repeated tuple leftJoin jobs" in {
     val original = sample[List[Int]]
-    val staticFunc = { i: Int => List((i -> i)) }
-    val returnedState =
-      StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.repeatedTupleLeftJoinJob[Storm, Int, Int, Int, Int, Int](_, service, _)(staticFunc)(nextFn)
-      )
+    val staticFunc = { i: Int => List((i, i)) }
 
-    assertEquiv[Map[Int, Int]](
-      TestGraphs.repeatedTupleLeftJoinInScala(original)(serviceFn)(staticFunc)(nextFn),
-      returnedState.toScala
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.repeatedTupleLeftJoinJob[P, Int, Int, Int, Int, Int](
+          ctx.source(original), ctx.service(serviceFn), ctx.store("store"))(staticFunc)(nextFn)
+    })
   }
 
   "StormPlatform matches Scala for optionMap only jobs" in {
@@ -217,37 +198,22 @@ class StormLaws extends WordSpec {
     val original2 = sample[List[Int]]
     val original3 = sample[List[Int]]
     val original4 = sample[List[Int]]
-    val source1 = Storm.source(TraversableSpout(original1))
-    val source2 = Storm.source(TraversableSpout(original2))
-    val source3 = Storm.source(TraversableSpout(original3))
-    val source4 = Storm.source(TraversableSpout(original4))
 
     val fn1 = sample[(Int) => List[(Int, Int)]]
     val fn2 = sample[(Int) => List[(Int, Int)]]
     val fn3 = sample[(Int) => List[(Int, Int)]]
 
-    val (store1Id, store1) = genStore
-
     val preJoinFn = sample[(Int) => (Int, Int)]
     val postJoinFn = sample[((Int, (Int, Option[Int]))) => List[(Int, Int)]]
 
     val serviceFn = sample[Int => Option[Int]]
-    val service = ReadableServiceFactory[Int, Int](() => ReadableStore.fromFn(serviceFn))
 
-    val tail = TestGraphs.realJoinTestJob[Storm, Int, Int, Int, Int, Int, Int, Int, Int, Int](source1, source2, source3, source4,
-      service, store1, fn1, fn2, fn3, preJoinFn, postJoinFn)
-
-    assert(OnlinePlan(tail).nodes.size < 10)
-    StormTestRun(tail)
-
-    val scalaA = TestGraphs.realJoinTestJobInScala(original1, original2, original3, original4,
-      serviceFn, fn1, fn2, fn3, preJoinFn, postJoinFn)
-
-    val store1Map = TestStore[Int, Int](store1Id).get.toScala
-    assertEquiv[Map[Int, Int]](
-      scalaA,
-      store1Map
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.realJoinTestJob[P, Int, Int, Int, Int, Int, Int, Int, Int, Int](
+          ctx.source(original1), ctx.source(original2), ctx.source(original3), ctx.source(original4),
+          ctx.service(serviceFn), ctx.store("store"), fn1, fn2, fn3, preJoinFn, postJoinFn)
+    })
   }
 
   "StormPlatform should be able to handle AlsoProducer with Summer and FlatMap in different branches" in {
