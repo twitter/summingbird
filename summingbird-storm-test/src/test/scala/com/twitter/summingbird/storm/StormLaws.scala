@@ -244,11 +244,11 @@ class StormLaws extends WordSpec {
 
   "StormPlatform matches Scala for optionMap only jobs" in {
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] =
-        createSource[Int]("source")
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        ctx.source[Int]("source")
           .filter(_ % 2 == 0)
           .map(_ -> 10)
-          .sumByKey(createStore("store"))
+          .sumByKey(ctx.store("store"))
     })
   }
 
@@ -269,11 +269,11 @@ class StormLaws extends WordSpec {
 
   "StormPlatform with multiple summers" in {
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
         TestGraphs.multipleSummerJob[P, Int, Int, Int, Int, Int, Int](
-          createSource[Int]("source"),
-          createStore("store1"),
-          createStore("store2")
+          ctx.source[Int]("source"),
+          ctx.store("store1"),
+          ctx.store("store2")
         )(x => List(x * 10), x => List((x, x)), x => List((x, x)))
       }
     })
@@ -321,42 +321,42 @@ class StormLaws extends WordSpec {
     val branchFlatMap = sample[((Int, Int)) => List[(Int, Int)]]
 
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
-        val source = createSource[(Int, Int)]("source")
-        source.sumByKey(createStore("store1")).also(
-          source.flatMap(branchFlatMap).sumByKey(createStore("store2"))
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
+        val source = ctx.source[(Int, Int)]("source")
+        source.sumByKey(ctx.store("store1")).also(
+          source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
         )
       }
     })
 
 //    Fails, see https://github.com/twitter/summingbird/issues/725 for details.
 //    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
-//      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
-//        val source = Source[P, (Int, Int)](createSource("source")).flatMap(e => List(e))
-//        source.sumByKey(createStore("store1")).also(
-//          source.flatMap(branchFlatMap).sumByKey(createStore("store2"))
+//      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
+//        val source = ctx.source[(Int, Int)]("source").flatMap(e => List(e))
+//        source.sumByKey(ctx.store("store1")).also(
+//          source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
 //        )
 //      }
 //    })
 
 //    Workaround
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
-        val source = createSource[(Int, Int)]("source").flatMap(e => List(e))
-        source.map(identity).sumByKey(createStore("store1")).also(
-          source.flatMap(branchFlatMap).sumByKey(createStore("store2"))
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
+        val source = ctx.source[(Int, Int)]("source").flatMap(e => List(e))
+        source.map(identity).sumByKey(ctx.store("store1")).also(
+          source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
         )
       }
     })
 
 //    Also fails.
 //    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
-//      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
-//        val source = Source[P, (Int, Int)](createSource("source"))
-//          .sumByKey(createStore("tmpStore")).map({ case (key, (_, value)) => (key, value) })
+//      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
+//        val source = ctx.source[(Int, Int)]("source")
+//          .sumByKey(ctx.store("tmpStore")).map({ case (key, (_, value)) => (key, value) })
 //
-//        source.sumByKey(createStore("store1")).also(
-//          source.flatMap(branchFlatMap).sumByKey(createStore("store2"))
+//        source.sumByKey(ctx.store("store1")).also(
+//          source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
 //        )
 //      }
 //    })

@@ -20,14 +20,17 @@ object StormTestUtils {
   def testStormEqualToMemory(producerCreator: ProducerCreator, seed: Seed, params: Gen.Parameters)(implicit storm: Storm): Unit = {
     val memorySourceCreator = new MemorySourceCreator(seed, params)
     val memoryStoreCreator = new MemoryStoreCreator(seed, params)
+    val memoryCtx = new CreatorCtx(memorySourceCreator, memoryStoreCreator)
+
     val stormSourceCreator = new StormSourceCreator(seed, params)
     val stormStoreCreator = new StormStoreCreator(seed, params)
+    val stormCtx = new CreatorCtx(stormSourceCreator, stormStoreCreator)
 
     val memory = new Memory()
-    memory.run(memory.plan(producerCreator.apply[Memory](memorySourceCreator, memoryStoreCreator)))
+    memory.run(memory.plan(producerCreator.apply(memoryCtx)))
 
 //    assert(OnlinePlan(tail).nodes.size < 10)
-    StormTestRun(producerCreator.apply[Storm](stormSourceCreator, stormStoreCreator))
+    StormTestRun(producerCreator.apply(stormCtx))
 
     assertEquiv(memorySourceCreator.sources, stormSourceCreator.sources)
     assertEquiv(memoryStoreCreator.ids(), stormStoreCreator.ids())
@@ -49,7 +52,12 @@ object StormTestUtils {
 }
 
 trait ProducerCreator {
-  def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any]
+  def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any]
+}
+
+class CreatorCtx[P <: Platform[P]](sourceCreator: SourceCreator[P], storeCreator: StoreCreator[P]) {
+  def source[T: Arbitrary](id: String): Source[P, T] = sourceCreator(id)
+  def store[K: Arbitrary, V: Arbitrary: Semigroup](id: String): P#Store[K, V] = storeCreator(id)
 }
 
 trait SourceCreator[P <: Platform[P]] {
