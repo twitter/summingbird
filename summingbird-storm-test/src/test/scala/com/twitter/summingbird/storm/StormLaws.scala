@@ -17,7 +17,7 @@
 package com.twitter.summingbird.storm
 
 import org.apache.storm.LocalCluster
-import com.twitter.algebird.MapAlgebra
+import com.twitter.algebird.{MapAlgebra, Semigroup}
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
@@ -25,13 +25,13 @@ import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird.online._
 import com.twitter.summingbird.memory._
 import com.twitter.summingbird.planner._
+import com.twitter.summingbird.viz.DagViz
 import com.twitter.util.Future
 import org.scalatest.WordSpec
 import org.scalacheck._
-import scala.collection.mutable.{
-  ArrayBuffer,
-  SynchronizedBuffer
-}
+
+import scala.collection.TraversableOnce
+import scala.collection.mutable.{ArrayBuffer, SynchronizedBuffer}
 
 /**
  * Tests for Summingbird's Storm planner.
@@ -341,6 +341,51 @@ class StormLaws extends WordSpec {
       scalaA,
       store1Map
     )
+  }
+
+  "StormPlatform should be able to handle AlsoProducer with Summer and FlatMap in different branches" in {
+    val branchFlatMap = sample[((Int, Int)) => List[(Int, Int)]]
+
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
+        val source = Source[P, (Int, Int)](createSource("source"))
+        source.sumByKey(createStore("store1")).also(
+          source.flatMap(branchFlatMap).sumByKey(createStore("store2"))
+        )
+      }
+    })
+
+//    Fails, see https://github.com/twitter/summingbird/issues/725 for details.
+//    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+//      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
+//        val source = Source[P, (Int, Int)](createSource("source")).flatMap(e => List(e))
+//        source.sumByKey(createStore("store1")).also(
+//          source.flatMap(branchFlatMap).sumByKey(createStore("store2"))
+//        )
+//      }
+//    })
+
+//    Workaround
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
+        val source = Source[P, (Int, Int)](createSource("source")).flatMap(e => List(e))
+        source.map(identity).sumByKey(createStore("store1")).also(
+          source.flatMap(branchFlatMap).sumByKey(createStore("store2"))
+        )
+      }
+    })
+
+//    Also fails.
+//    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+//      override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
+//        val source = Source[P, (Int, Int)](createSource("source"))
+//          .sumByKey(createStore("tmpStore")).map({ case (key, (_, value)) => (key, value) })
+//
+//        source.sumByKey(createStore("store1")).also(
+//          source.flatMap(branchFlatMap).sumByKey(createStore("store2"))
+//        )
+//      }
+//    })
   }
 
   def assertEquiv[T](expected: T, returned: T)(implicit equiv: Equiv[T]): Unit = {

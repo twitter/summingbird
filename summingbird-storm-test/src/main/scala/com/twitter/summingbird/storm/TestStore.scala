@@ -29,7 +29,7 @@ import scala.collection.JavaConverters._
 object TestStore {
   private val testStores = new WeakHashMap[String, TestStore[_, _]]
 
-  def apply[K, V: Semigroup](storeID: String): Option[TestStore[K, V]] =
+  def apply[K, V](storeID: String): Option[TestStore[K, V]] =
     (Option(testStores.get(storeID)).map { s =>
       s.asInstanceOf[TestStore[K, V]]
     })
@@ -66,7 +66,7 @@ object TestStore {
 
 case class TestStore[K, V: Semigroup](storeID: String, initialData: Map[K, V]) extends MergeableStore[K, V] {
   private val backingStore: JMap[K, Option[V]] =
-    Collections.synchronizedMap(new HashMap[K, Option[V]]())
+    Collections.synchronizedMap(new HashMap[K, Option[V]](initialData.mapValues(Some(_)).asJava))
   val updates: AtomicInteger = new AtomicInteger(0)
   val reads: AtomicInteger = new AtomicInteger(0)
 
