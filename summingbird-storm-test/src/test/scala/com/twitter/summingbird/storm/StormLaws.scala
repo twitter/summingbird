@@ -18,6 +18,7 @@ package com.twitter.summingbird.storm
 
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
+import com.twitter.summingbird.storm.StormTestUtils.testStormEqualToMemory
 import org.scalatest.WordSpec
 import org.scalacheck._
 
@@ -57,7 +58,7 @@ class StormLaws extends WordSpec {
     val original = sample[List[Int]]
     val fn = sample[Int => List[(Int, Int)]]
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.singleStepJob[P, Int, Int, Int](
           ctx.source(original), ctx.store[Int, Int]("store"))(fn)
@@ -68,7 +69,7 @@ class StormLaws extends WordSpec {
     val original = sample[List[Int]]
     val fn = { (x: Int) => List[(Int, Int)]() }
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.singleStepJob[P, Int, Int, Int](
           ctx.source(original), ctx.store[Int, Int]("store"))(fn)
@@ -80,7 +81,7 @@ class StormLaws extends WordSpec {
     val fnA = sample[Int => Option[Int]]
     val fnB = sample[Int => List[(Int, Int)]]
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.twinStepOptionMapFlatMapJob[P, Int, Int, Int, Int](
           ctx.source(original), ctx.store[Int, Int]("store"))(fnA, fnB)
@@ -92,7 +93,7 @@ class StormLaws extends WordSpec {
     val fnA = { (x: Int) => None }
     val fnB = sample[Int => List[(Int, Int)]]
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.twinStepOptionMapFlatMapJob[P, Int, Int, Int, Int](
           ctx.source(original), ctx.store[Int, Int]("store"))(fnA, fnB)
@@ -106,7 +107,7 @@ class StormLaws extends WordSpec {
       expander(x).flatMap { case (k, v) => List((k, v), (k, v), (k, v), (k, v), (k, v)) }
     }
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.singleStepJob[P, Int, Int, Int](
           ctx.source(original), ctx.store[Int, Int]("store"))(expansionFunc)
@@ -118,7 +119,7 @@ class StormLaws extends WordSpec {
     val fnA = sample[Int => List[(Int, Int)]]
     val fnB = sample[Int => List[Int]]
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.singleStepMapKeysJob[P, Int, Int, Int, Int](
           ctx.source(original), ctx.store[Int, Int]("store"))(fnA, fnB)
@@ -129,7 +130,7 @@ class StormLaws extends WordSpec {
     val original = sample[List[Int]]
     val staticFunc = { i: Int => List((i, i)) }
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.leftJoinJob[P, Int, Int, Int, Int, Int](
           ctx.source(original), ctx.service(serviceFn), ctx.store("store"))(staticFunc)(nextFn)
@@ -140,7 +141,7 @@ class StormLaws extends WordSpec {
     val original = sample[List[Int]]
     val staticFunc = { i: Int => List((i, i)) }
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.leftJoinJobWithFlatMapValues[P, Int, Int, Int, Int, Int](
           ctx.source(original), ctx.service(serviceFn), ctx.store("store"))(staticFunc)(nextFn1)
@@ -151,7 +152,7 @@ class StormLaws extends WordSpec {
     val original = sample[List[Int]]
     val staticFunc = { i: Int => List((i, i)) }
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.repeatedTupleLeftJoinJob[P, Int, Int, Int, Int, Int](
           ctx.source(original), ctx.service(serviceFn), ctx.store("store"))(staticFunc)(nextFn)
@@ -161,7 +162,7 @@ class StormLaws extends WordSpec {
   "StormPlatform matches Scala for optionMap only jobs" in {
     val original = sample[List[Int]]
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         ctx.source(original)
           .filter(_ % 2 == 0)
@@ -173,7 +174,7 @@ class StormLaws extends WordSpec {
   "StormPlatform matches Scala for MapOnly/NoSummer" in {
     val original = sample[List[Int]]
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.mapOnlyJob[P, Int, Int](ctx.source(original), ctx.sink[Int]("sink"))(x => List(x))
     })
@@ -182,7 +183,7 @@ class StormLaws extends WordSpec {
   "StormPlatform with multiple summers" in {
     val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41) // sample[List[Int]]
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.multipleSummerJob[P, Int, Int, Int, Int, Int, Int](
           ctx.source(original),
@@ -207,7 +208,7 @@ class StormLaws extends WordSpec {
 
     val serviceFn = sample[Int => Option[Int]]
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.realJoinTestJob[P, Int, Int, Int, Int, Int, Int, Int, Int, Int](
           ctx.source(original1), ctx.source(original2), ctx.source(original3), ctx.source(original4),
@@ -219,7 +220,7 @@ class StormLaws extends WordSpec {
     val original = sample[List[(Int, Int)]]
     val branchFlatMap = sample[((Int, Int)) => List[(Int, Int)]]
 
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
         val source = ctx.source(original)
         source.sumByKey(ctx.store("store1")).also(
@@ -229,7 +230,7 @@ class StormLaws extends WordSpec {
     })
 
 //    Fails, see https://github.com/twitter/summingbird/issues/725 for details.
-//    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+//    testStormEqualToMemory(new ProducerCreator {
 //      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
 //        val source = ctx.source(original).flatMap(e => List(e))
 //        source.sumByKey(ctx.store("store1")).also(
@@ -239,7 +240,7 @@ class StormLaws extends WordSpec {
 //    })
 
 //    Workaround
-    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+    testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
         val source = ctx.source(original).flatMap(e => List(e))
         source.map(identity).sumByKey(ctx.store("store1")).also(
@@ -249,7 +250,7 @@ class StormLaws extends WordSpec {
     })
 
 //    Also fails.
-//    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+//    testStormEqualToMemory(new ProducerCreator {
 //      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
 //        val source = ctx.source(original)
 //          .sumByKey(ctx.store("tmpStore")).map({ case (key, (_, value)) => (key, value) })
