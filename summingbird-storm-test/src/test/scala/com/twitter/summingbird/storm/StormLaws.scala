@@ -245,7 +245,7 @@ class StormLaws extends WordSpec {
   "StormPlatform matches Scala for optionMap only jobs" in {
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] =
-        Source[P, Int](createSource("source"))
+        createSource[Int]("source")
           .filter(_ % 2 == 0)
           .map(_ -> 10)
           .sumByKey(createStore("store"))
@@ -271,7 +271,7 @@ class StormLaws extends WordSpec {
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
         TestGraphs.multipleSummerJob[P, Int, Int, Int, Int, Int, Int](
-          Source[P, Int](createSource[Int]("source")),
+          createSource[Int]("source"),
           createStore("store1"),
           createStore("store2")
         )(x => List(x * 10), x => List((x, x)), x => List((x, x)))
@@ -322,7 +322,7 @@ class StormLaws extends WordSpec {
 
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
-        val source = Source[P, (Int, Int)](createSource("source"))
+        val source = createSource[(Int, Int)]("source")
         source.sumByKey(createStore("store1")).also(
           source.flatMap(branchFlatMap).sumByKey(createStore("store2"))
         )
@@ -342,7 +342,7 @@ class StormLaws extends WordSpec {
 //    Workaround
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](createSource: SourceCreator[P], createStore: StoreCreator[P]): TailProducer[P, Any] = {
-        val source = Source[P, (Int, Int)](createSource("source")).flatMap(e => List(e))
+        val source = createSource[(Int, Int)]("source").flatMap(e => List(e))
         source.map(identity).sumByKey(createStore("store1")).also(
           source.flatMap(branchFlatMap).sumByKey(createStore("store2"))
         )

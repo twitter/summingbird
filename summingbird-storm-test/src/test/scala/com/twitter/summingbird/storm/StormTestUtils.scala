@@ -4,8 +4,9 @@ import com.twitter.algebird.Semigroup
 import com.twitter.summingbird.batch.BatchID
 import com.twitter.summingbird.memory.Memory
 import com.twitter.summingbird.online.MergeableStoreFactory
+import com.twitter.summingbird.storm.Storm.toStormSource
 import com.twitter.summingbird.storm.spout.TraversableSpout
-import com.twitter.summingbird.{Platform, TailProducer, TimeExtractor}
+import com.twitter.summingbird._
 import org.scalacheck.rng.Seed
 import org.scalacheck.{Arbitrary, Cogen, Gen}
 
@@ -52,7 +53,7 @@ trait ProducerCreator {
 }
 
 trait SourceCreator[P <: Platform[P]] {
-  def apply[T: Arbitrary](id: String): P#Source[T]
+  def apply[T: Arbitrary](id: String): Source[P, T]
 }
 
 trait StoreCreator[P <: Platform[P]] {
@@ -71,13 +72,13 @@ abstract class BaseSourceCreator[P <: Platform[P]](seed: Seed, params: Gen.Param
 }
 
 class MemorySourceCreator(seed: Seed, params: Gen.Parameters) extends BaseSourceCreator[Memory](seed, params) {
-  override def apply[T: Arbitrary](id: String): TraversableOnce[T] = get(id)
+  override def apply[T: Arbitrary](id: String): Source[Memory, T] = Source[Memory, T](get(id))
 }
 
 class StormSourceCreator(seed: Seed, params: Gen.Parameters) extends BaseSourceCreator[Storm](seed, params) {
-  override def apply[T: Arbitrary](id: String): StormSource[T] = {
+  override def apply[T: Arbitrary](id: String): Source[Storm, T] = {
     implicit def extractor[E]: TimeExtractor[E] = TimeExtractor(_ => 0L)
-    Storm.toStormSource(TraversableSpout(get(id)))
+    Source[Storm, T](toStormSource(TraversableSpout(get(id))))
   }
 }
 
