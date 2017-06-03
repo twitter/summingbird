@@ -162,7 +162,6 @@ class StormSinkCreator() extends SinkCreator[Storm] {
     new SinkFn[V](v => {
       val sink = StormSinkCreator.sinks.getOrElseUpdate(uuid, { new SinkContent() }).asInstanceOf[SinkContent[V]]
       sink.add(v)
-      println("!"+v)
       Future.Unit
     })
   }
