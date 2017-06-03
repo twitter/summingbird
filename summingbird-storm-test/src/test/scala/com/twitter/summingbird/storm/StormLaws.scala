@@ -118,13 +118,14 @@ class StormLaws extends WordSpec {
   }
 
   "StormPlatform matches Scala for flatmap keys jobs" in {
+    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41) // sample[List[Int]]
     val fnA = sample[Int => List[(Int, Int)]]
     val fnB = sample[Int => List[Int]]
 
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
         TestGraphs.singleStepMapKeysJob[P, Int, Int, Int, Int](
-          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(fnA, fnB)
+          ctx.source(original), ctx.store[Int, Int]("store"))(fnA, fnB)
     })
   }
 
@@ -189,10 +190,12 @@ class StormLaws extends WordSpec {
   }
 
   "StormPlatform with multiple summers" in {
+    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41) // sample[List[Int]]
+
     StormTestUtils.testStormEqualToMemory(new ProducerCreator {
       override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
         TestGraphs.multipleSummerJob[P, Int, Int, Int, Int, Int, Int](
-          ctx.source[Int]("source"),
+          ctx.source(original),
           ctx.store("store1"),
           ctx.store("store2")
         )(x => List(x * 10), x => List((x, x)), x => List((x, x)))
