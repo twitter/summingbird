@@ -2,8 +2,8 @@
 -Xms1G
 -Xmx3G
 -Xss2m
--XX:MaxPermSize=512M
--XX:ReservedCodeCacheSize=250M
+-XX:MaxMetaspaceSize=384M
+-XX:ReservedCodeCacheSize=128M
 -XX:+TieredCompilation
 -XX:-UseGCOverheadLimit
 # effectively adds GC to Perm space
