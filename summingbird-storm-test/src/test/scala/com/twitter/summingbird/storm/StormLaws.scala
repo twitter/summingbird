@@ -253,18 +253,10 @@ class StormLaws extends WordSpec {
   }
 
   "StormPlatform matches Scala for MapOnly/NoSummer" in {
-    val original = sample[List[Int]]
-    val doubler = { x: Int => List(x * 2) }
-
-    val stormOutputList =
-      runWithOutSummer(original)(
-        TestGraphs.mapOnlyJob[Storm, Int, Int](_, _)(doubler)
-      ).sorted
-
-    val memoryOutputList =
-      memoryPlanWithoutSummer(original)(TestGraphs.mapOnlyJob[Memory, Int, Int](_, _)(doubler)).sorted
-
-    assert(stormOutputList == memoryOutputList)
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.mapOnlyJob[P, Int, Int](ctx.source[Int]("source"), ctx.sink[Int]("sink"))(x => List(x))
+    })
   }
 
   "StormPlatform with multiple summers" in {
