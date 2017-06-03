@@ -36,8 +36,6 @@ object StormLaws {
   implicit def extractor[T]: TimeExtractor[T] = TimeExtractor(_ => 0L)
   implicit val batcher = Batcher.unit
 
-  val testFn = sample[Int => List[(Int, Int)]]
-
   implicit val storm = Storm.local(Map())
 
   def sample[T: Arbitrary]: T = Arbitrary.arbitrary[T].sample.get
@@ -65,93 +63,69 @@ class StormLaws extends WordSpec {
   import MapAlgebra.sparseEquiv
 
   "StormPlatform matches Scala for single step jobs" in {
-    val original = sample[List[Int]]
-    val returnedState =
-      StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.singleStepJob[Storm, Int, Int, Int](_, _)(testFn)
-      )
+    val fn = sample[Int => List[(Int, Int)]]
 
-    assertEquiv[Map[Int, Int]](
-      TestGraphs.singleStepInScala(original)(testFn),
-      returnedState.toScala
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.singleStepJob[P, Int, Int, Int](
+          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(fn)
+    })
   }
 
   "FlatMap to nothing" in {
-    val original = sample[List[Int]]
     val fn = { (x: Int) => List[(Int, Int)]() }
-    val returnedState =
-      StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.singleStepJob[Storm, Int, Int, Int](_, _)(fn)
-      )
 
-    assertEquiv[Map[Int, Int]](
-      TestGraphs.singleStepInScala(original)(fn),
-      returnedState.toScala
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.singleStepJob[P, Int, Int, Int](
+          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(fn)
+    })
   }
 
   "OptionMap and FlatMap" in {
-    val original = sample[List[Int]]
     val fnA = sample[Int => Option[Int]]
     val fnB = sample[Int => List[(Int, Int)]]
 
-    val returnedState =
-      StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_, _)(fnA, fnB)
-      )
-
-    assertEquiv[Map[Int, Int]](
-      TestGraphs.twinStepOptionMapFlatMapScala(original)(fnA, fnB),
-      returnedState.toScala
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.twinStepOptionMapFlatMapJob[P, Int, Int, Int, Int](
+          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(fnA, fnB)
+    })
   }
 
   "OptionMap to nothing and FlatMap" in {
-    val original = sample[List[Int]]
     val fnA = { (x: Int) => None }
     val fnB = sample[Int => List[(Int, Int)]]
 
-    val returnedState =
-      StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.twinStepOptionMapFlatMapJob[Storm, Int, Int, Int, Int](_, _)(fnA, fnB)
-      )
-    assertEquiv[Map[Int, Int]](
-      TestGraphs.twinStepOptionMapFlatMapScala(original)(fnA, fnB),
-      returnedState.toScala
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.twinStepOptionMapFlatMapJob[P, Int, Int, Int, Int](
+          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(fnA, fnB)
+    })
   }
 
   "StormPlatform matches Scala for large expansion single step jobs" in {
-    val original = sample[List[Int]]
     val expander = sample[Int => List[(Int, Int)]]
     val expansionFunc = { (x: Int) =>
       expander(x).flatMap { case (k, v) => List((k, v), (k, v), (k, v), (k, v), (k, v)) }
     }
-    val returnedState =
-      StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.singleStepJob[Storm, Int, Int, Int](_, _)(expansionFunc)
-      )
 
-    assertEquiv[Map[Int, Int]](
-      TestGraphs.singleStepInScala(original)(expansionFunc),
-      returnedState.toScala
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.singleStepJob[P, Int, Int, Int](
+          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(expansionFunc)
+    })
   }
 
   "StormPlatform matches Scala for flatmap keys jobs" in {
-    val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41) // sample[List[Int]]
     val fnA = sample[Int => List[(Int, Int)]]
     val fnB = sample[Int => List[Int]]
-    val returnedState =
-      StormTestRun.simpleRun[Int, Int, Int](original,
-        TestGraphs.singleStepMapKeysJob[Storm, Int, Int, Int, Int](_, _)(fnA, fnB)
-      )
 
-    assertEquiv[Map[Int, Int]](
-      TestGraphs.singleStepMapKeysInScala(original)(fnA, fnB),
-      returnedState.toScala
-    )
+    StormTestUtils.testStormEqualToMemory(new ProducerCreator {
+      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
+        TestGraphs.singleStepMapKeysJob[P, Int, Int, Int, Int](
+          ctx.source[Int]("source"), ctx.store[Int, Int]("store"))(fnA, fnB)
+    })
   }
 
   "StormPlatform matches Scala for left join jobs" in {
