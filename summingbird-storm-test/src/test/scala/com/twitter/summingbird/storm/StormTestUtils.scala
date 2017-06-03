@@ -5,14 +5,14 @@ import java.util.UUID
 import com.twitter.algebird.Semigroup
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird.batch.BatchID
-import com.twitter.summingbird.memory.{Memory, MemoryService}
-import com.twitter.summingbird.online.{MergeableStoreFactory, OnlineServiceFactory, ReadableServiceFactory}
+import com.twitter.summingbird.memory.{ Memory, MemoryService }
+import com.twitter.summingbird.online.{ MergeableStoreFactory, OnlineServiceFactory, ReadableServiceFactory }
 import com.twitter.summingbird.storm.Storm.toStormSource
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import com.twitter.summingbird._
 import com.twitter.util.Future
 import org.scalacheck.rng.Seed
-import org.scalacheck.{Arbitrary, Cogen, Gen}
+import org.scalacheck.{ Arbitrary, Cogen, Gen }
 
 import scala.collection.mutable
 
