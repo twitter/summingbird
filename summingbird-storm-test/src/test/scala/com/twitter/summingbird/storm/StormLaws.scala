@@ -260,8 +260,4 @@ class StormLaws extends WordSpec {
 //      }
 //    })
   }
-
-  def assertEquiv[T](expected: T, returned: T)(implicit equiv: Equiv[T]): Unit = {
-    assert(equiv.equiv(expected, returned), (expected.toString, returned.toString))
-  }
 }
