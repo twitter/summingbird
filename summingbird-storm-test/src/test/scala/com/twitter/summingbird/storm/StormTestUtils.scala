@@ -163,16 +163,18 @@ object StormSinkCreator {
 class StormSinkCreator() extends SinkCreator[Storm] {
   val uuids = mutable.Map[String, UUID]()
 
-  override def apply[V: Ordering](id: String): StormSink[V] = {
+  override def apply[V: Ordering](id: String): StormSink[V] = StormSinkCreator.sinks.synchronized {
     val uuid = uuids.getOrElseUpdate(id, UUID.randomUUID())
-    new SinkFn[V](v => {
+    new SinkFn[V](v => StormSinkCreator.sinks.synchronized {
       val sink = StormSinkCreator.sinks.getOrElseUpdate(uuid, { new SinkContent() }).asInstanceOf[SinkContent[V]]
       sink.add(v)
       Future.Unit
     })
   }
 
-  def get(): Map[String, List[_]] = uuids.mapValues(StormSinkCreator.sinks.get(_).get.toList).toMap
+  def get(): Map[String, List[_]] =
+    StormSinkCreator.sinks.synchronized(uuids.mapValues(StormSinkCreator.sinks.get(_).get.toList).toMap)
 
-  def clear(): Unit = uuids.values.foreach(uuid => StormSinkCreator.sinks.remove(uuid))
+  def clear(): Unit =
+    StormSinkCreator.sinks.synchronized(uuids.values.foreach(uuid => StormSinkCreator.sinks.remove(uuid)))
 }
