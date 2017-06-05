@@ -5,7 +5,6 @@ import org.apache.storm.tuple.Fields
 import java.util.{ ArrayList => JAList, List => JList }
 
 import com.twitter.summingbird.online.executor.KeyValueShards
-import org.apache.storm.topology.BoltDeclarer
 
 import scala.collection.{ Map => CMap }
 import scala.util.Try
@@ -16,41 +15,25 @@ sealed trait Edge[T] {
   val grouping: EdgeGrouping
 }
 
-sealed trait EdgeGrouping {
-  def apply(declarer: BoltDeclarer, parentName: String): Unit
-}
-case object ShuffleEdgeGrouping extends EdgeGrouping {
-  override def apply(declarer: BoltDeclarer, parentName: String): Unit =
-    declarer.shuffleGrouping(parentName)
-}
-case object LocalOrShuffleEdgeGrouping extends EdgeGrouping {
-  override def apply(declarer: BoltDeclarer, parentName: String): Unit =
-    declarer.localOrShuffleGrouping(parentName)
-}
-case class FieldsEdgeGrouping(fields: Fields) extends EdgeGrouping {
-  override def apply(declarer: BoltDeclarer, parentName: String): Unit =
-    declarer.fieldsGrouping(parentName, fields)
+object Edge {
+  case class Item[T] private[storm] (edgeGrouping: EdgeGrouping) extends Edge[T] {
+    override val fields: Fields = new Fields("value")
+    override val injection: Injection[T, JList[AnyRef]] =  EdgeInjections.forItem
+    override val grouping: EdgeGrouping = edgeGrouping
+  }
+
+  case class AggregatedKeyValues[K, V](shards: KeyValueShards) extends Edge[(Int, CMap[K, V])] {
+    override val fields: Fields = new Fields("aggKey", "aggValue")
+    override val injection: Injection[(Int, CMap[K, V]), JList[AnyRef]] = EdgeInjections.forKeyValue
+    override val grouping: EdgeGrouping = EdgeGrouping.Fields(new Fields("aggKey"))
+  }
+
+  def itemWithShuffleGrouping[T]: Item[T] = Item[T](EdgeGrouping.Shuffle)
+  def itemWithLocalOrShuffleGrouping[T]: Item[T] = Item[T](EdgeGrouping.LocalOrShuffle)
 }
 
-case class ItemEdge[T] private (edgeGrouping: EdgeGrouping) extends Edge[T] {
-  override val fields: Fields = new Fields("value")
-  override val injection: Injection[T, JList[AnyRef]] =  EdgeInjections.forItem()
-  override val grouping: EdgeGrouping = edgeGrouping
-}
-
-object ItemEdge {
-  def withShuffleGrouping[T](): ItemEdge[T] = ItemEdge[T](ShuffleEdgeGrouping)
-  def withLocalOrShuffleGrouping[T](): ItemEdge[T] = ItemEdge[T](LocalOrShuffleEdgeGrouping)
-}
-
-case class AggregatedKeyValuesEdge[K, V](shards: KeyValueShards) extends Edge[(Int, CMap[K, V])] {
-  override val fields: Fields = new Fields("aggKey", "aggValue")
-  override val injection: Injection[(Int, CMap[K, V]), JList[AnyRef]] = EdgeInjections.forKeyValue()
-  override val grouping: EdgeGrouping = FieldsEdgeGrouping(new Fields("aggKey"))
-}
-
-object EdgeInjections {
-  def forItem[T](): Injection[T, JList[AnyRef]] = new Injection[T, JList[AnyRef]] {
+private object EdgeInjections {
+  def forItem[T]: Injection[T, JList[AnyRef]] = new Injection[T, JList[AnyRef]] {
     override def apply(t: T): JAList[AnyRef] = {
       val list = new JAList[AnyRef](1)
       list.add(t.asInstanceOf[AnyRef])
@@ -62,7 +45,7 @@ object EdgeInjections {
     }
   }
 
-  def forKeyValue[K, V](): Injection[(K, V), JList[AnyRef]] = new Injection[(K, V), JList[AnyRef]] {
+  def forKeyValue[K, V]: Injection[(K, V), JList[AnyRef]] = new Injection[(K, V), JList[AnyRef]] {
     override def apply(item: (K, V)): JAList[AnyRef] = {
       val (key, v) = item
       val list = new JAList[AnyRef](2)
