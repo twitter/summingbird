@@ -19,7 +19,7 @@ package com.twitter.summingbird.online.executor
 import chain.Chain
 import scala.util.Try
 
-trait OperationContainer[Input, Output, State] {
+trait OperationContainer[-Input, +Output, State] {
   def init(): Unit = {}
   def cleanup(): Unit = {}
 

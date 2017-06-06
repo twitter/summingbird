@@ -1,11 +1,9 @@
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.storm.builder
 
 import com.twitter.bijection.{ Injection, Inversion }
-import org.apache.storm.tuple.Fields
-import java.util.{ ArrayList => JAList, List => JList }
-
 import com.twitter.summingbird.online.executor.KeyValueShards
-
+import java.util.{ ArrayList => JAList, List => JList }
+import org.apache.storm.tuple.Fields
 import scala.collection.{ Map => CMap }
 import scala.util.Try
 

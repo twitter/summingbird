@@ -14,13 +14,12 @@
  limitations under the License.
  */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.storm.builder
 
 import com.twitter.summingbird.batch.Timestamp
-
-import org.scalacheck._
-import Arbitrary._
+import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
+import org.scalacheck._
 
 object InjectionLaws extends Properties("InjectionTests") {
   implicit def ts: Arbitrary[Timestamp] =

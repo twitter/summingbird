@@ -7,6 +7,7 @@ import com.twitter.summingbird.online.option.IncludeSuccessHandler
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, FlatMapNode, SourceNode, SummerNode }
 import com.twitter.summingbird.storm.Constants._
+import com.twitter.summingbird.storm.builder.EdgeType
 import com.twitter.summingbird.storm.option.AnchorTuples
 import com.twitter.summingbird.storm.planner.StormNode
 import org.apache.storm.generated.StormTopology

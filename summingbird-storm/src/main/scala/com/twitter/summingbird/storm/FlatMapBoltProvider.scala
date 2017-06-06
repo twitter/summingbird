@@ -24,6 +24,7 @@ import com.twitter.summingbird.storm.option.AnchorTuples
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
+import com.twitter.summingbird.storm.builder.EdgeType
 import com.twitter.summingbird.storm.planner._
 import org.slf4j.LoggerFactory
 
