@@ -3,6 +3,9 @@ package com.twitter.summingbird.storm
 import org.apache.storm.topology.BoltDeclarer
 import org.apache.storm.tuple.{ Fields => StormFields }
 
+/**
+  * This trait is used to represent different grouping strategies in `Storm`.
+  */
 sealed trait EdgeGrouping {
   def apply(declarer: BoltDeclarer, parentName: String): Unit
 }

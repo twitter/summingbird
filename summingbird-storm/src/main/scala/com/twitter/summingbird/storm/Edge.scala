@@ -9,19 +9,42 @@ import com.twitter.summingbird.online.executor.KeyValueShards
 import scala.collection.{ Map => CMap }
 import scala.util.Try
 
+/**
+  * This trait represents an edge in Storm topology DAG between two nodes.
+  * @tparam T represents type of tuples sent over this `Edge`.
+  */
 sealed trait Edge[T] {
+  /**
+    * Storm's `Fields` are going to be sent over this `Edge`.
+    */
   val fields: Fields
+
+  /**
+    * Injection from values (which are going to be sent) to Storm's values.
+    * Each element in returned array corresponds to element in `Fields` at the same index.
+    */
   val injection: Injection[T, JList[AnyRef]]
+
+  /**
+    * Grouping for this `Edge`.
+    */
   val grouping: EdgeGrouping
 }
 
 object Edge {
+  /**
+    * Simplest possible type of `Edge`, without any assumptions about content inside.
+    */
   case class Item[T] private[storm] (edgeGrouping: EdgeGrouping) extends Edge[T] {
     override val fields: Fields = new Fields("value")
     override val injection: Injection[T, JList[AnyRef]] =  EdgeInjections.forItem
     override val grouping: EdgeGrouping = edgeGrouping
   }
 
+  /**
+    * This `Edge` type used for aggregated key value pairs emitted by partial aggregation.
+    * @param shards is a number which was used for partial aggregation.
+    */
   case class AggregatedKeyValues[K, V](shards: KeyValueShards) extends Edge[(Int, CMap[K, V])] {
     override val fields: Fields = new Fields("aggKey", "aggValue")
     override val injection: Injection[(Int, CMap[K, V]), JList[AnyRef]] = EdgeInjections.forKeyValue

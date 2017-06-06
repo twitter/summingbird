@@ -32,12 +32,24 @@ import org.apache.storm.tuple.{ Tuple, TupleImpl }
 import org.slf4j.{ Logger, LoggerFactory }
 
 /**
- *
- * @author Oscar Boykin
- * @author Ian O Connell
- * @author Sam Ritchie
- * @author Ashu Singhal
- */
+  *  This class is used as an implementation for Storm's `Bolt`s.
+  *
+  * @param jobID is an id for current topology, used for metrics.
+  * @param metrics represents metrics we want to collect on this node.
+  * @param anchorTuples should be equal to true if you want to utilize Storm's anchoring of tuples,
+  *                     false otherwise.
+  * @param hasDependants does this node have any downstream nodes?
+  * @param ackOnEntry ack tuples in the beginning of processing.
+  * @param maxExecutePerSec limits number of executes per second, will block processing thread after.
+  * @param inputEdges is a map from name of downstream node to `Edge` from it.
+  * @param outputEdge is an edge from this node. To be precise there are number of output edges,
+  *                   but we expect them to have same format and we don't use their grouping information here,
+  *                   therefore it's ok to have only one instance of `Edge` here.
+  * @param executor is `OperationContainer` which represents operation for this `Bolt`,
+  *                 for example it can be summing or flat mapping.
+  * @tparam I is a type of input tuples for this `Bolt`s executor.
+  * @tparam O is a type of output tuples for this `Bolt`s executor.
+  */
 case class BaseBolt[I, O](jobID: JobId,
     metrics: () => TraversableOnce[StormMetric[_]],
     anchorTuples: AnchorTuples,
@@ -192,6 +204,9 @@ case class BaseBolt[I, O](jobID: JobId,
     executor.cleanup
   }
 
+  /**
+    * Apply groupings defined by input edges of this `Bolt` to Storm's topology.
+    */
   def applyGroupings(declarer: BoltDeclarer): Unit = {
     inputEdges.foreach { case (parentName, inputEdge) =>
       inputEdge.grouping.apply(declarer, parentName)
