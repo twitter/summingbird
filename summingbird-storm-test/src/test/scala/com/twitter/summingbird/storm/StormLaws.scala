@@ -18,7 +18,6 @@ package com.twitter.summingbird.storm
 
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
-import com.twitter.summingbird.storm.StormTestUtils.testStormEqualToMemory
 import org.scalatest.WordSpec
 import org.scalacheck._
 
@@ -58,22 +57,16 @@ class StormLaws extends WordSpec {
     val original = sample[List[Int]]
     val fn = sample[Int => List[(Int, Int)]]
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.singleStepJob[P, Int, Int, Int](
-          ctx.source(original), ctx.store[Int, Int]("store"))(fn)
-    })
+    testProducer(TestGraphs.singleStepJob[TestPlatform, Int, Int, Int](
+      TestPlatform.source(original), TestPlatform.store[Int, Int]("store"))(fn))
   }
 
   "FlatMap to nothing" in {
     val original = sample[List[Int]]
     val fn = { (x: Int) => List[(Int, Int)]() }
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.singleStepJob[P, Int, Int, Int](
-          ctx.source(original), ctx.store[Int, Int]("store"))(fn)
-    })
+    testProducer(TestGraphs.singleStepJob[TestPlatform, Int, Int, Int](
+      TestPlatform.source(original), TestPlatform.store[Int, Int]("store"))(fn))
   }
 
   "OptionMap and FlatMap" in {
@@ -81,11 +74,8 @@ class StormLaws extends WordSpec {
     val fnA = sample[Int => Option[Int]]
     val fnB = sample[Int => List[(Int, Int)]]
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.twinStepOptionMapFlatMapJob[P, Int, Int, Int, Int](
-          ctx.source(original), ctx.store[Int, Int]("store"))(fnA, fnB)
-    })
+    testProducer(TestGraphs.twinStepOptionMapFlatMapJob[TestPlatform, Int, Int, Int, Int](
+      TestPlatform.source(original), TestPlatform.store[Int, Int]("store"))(fnA, fnB))
   }
 
   "OptionMap to nothing and FlatMap" in {
@@ -93,11 +83,8 @@ class StormLaws extends WordSpec {
     val fnA = { (x: Int) => None }
     val fnB = sample[Int => List[(Int, Int)]]
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.twinStepOptionMapFlatMapJob[P, Int, Int, Int, Int](
-          ctx.source(original), ctx.store[Int, Int]("store"))(fnA, fnB)
-    })
+    testProducer(TestGraphs.twinStepOptionMapFlatMapJob[TestPlatform, Int, Int, Int, Int](
+      TestPlatform.source(original), TestPlatform.store[Int, Int]("store"))(fnA, fnB))
   }
 
   "StormPlatform matches Scala for large expansion single step jobs" in {
@@ -107,11 +94,8 @@ class StormLaws extends WordSpec {
       expander(x).flatMap { case (k, v) => List((k, v), (k, v), (k, v), (k, v), (k, v)) }
     }
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.singleStepJob[P, Int, Int, Int](
-          ctx.source(original), ctx.store[Int, Int]("store"))(expansionFunc)
-    })
+    testProducer(TestGraphs.singleStepJob[TestPlatform, Int, Int, Int](
+      TestPlatform.source(original), TestPlatform.store[Int, Int]("store"))(expansionFunc))
   }
 
   "StormPlatform matches Scala for flatmap keys jobs" in {
@@ -119,78 +103,59 @@ class StormLaws extends WordSpec {
     val fnA = sample[Int => List[(Int, Int)]]
     val fnB = sample[Int => List[Int]]
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.singleStepMapKeysJob[P, Int, Int, Int, Int](
-          ctx.source(original), ctx.store[Int, Int]("store"))(fnA, fnB)
-    })
+    testProducer(TestGraphs.singleStepMapKeysJob[TestPlatform, Int, Int, Int, Int](
+      TestPlatform.source(original), TestPlatform.store[Int, Int]("store"))(fnA, fnB))
   }
 
   "StormPlatform matches Scala for left join jobs" in {
     val original = sample[List[Int]]
     val staticFunc = { i: Int => List((i, i)) }
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.leftJoinJob[P, Int, Int, Int, Int, Int](
-          ctx.source(original), ctx.service(serviceFn), ctx.store("store"))(staticFunc)(nextFn)
-    })
+    testProducer(TestGraphs.leftJoinJob[TestPlatform, Int, Int, Int, Int, Int](
+      TestPlatform.source(original), TestPlatform.service(serviceFn), TestPlatform.store("store"))(staticFunc)(nextFn))
   }
 
   "StormPlatform matches Scala for left join with flatMapValues jobs" in {
     val original = sample[List[Int]]
     val staticFunc = { i: Int => List((i, i)) }
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.leftJoinJobWithFlatMapValues[P, Int, Int, Int, Int, Int](
-          ctx.source(original), ctx.service(serviceFn), ctx.store("store"))(staticFunc)(nextFn1)
-    })
+    testProducer(TestGraphs.leftJoinJobWithFlatMapValues[TestPlatform, Int, Int, Int, Int, Int](
+          TestPlatform.source(original), TestPlatform.service(serviceFn), TestPlatform.store("store"))(staticFunc)(nextFn1))
   }
 
   "StormPlatform matches Scala for repeated tuple leftJoin jobs" in {
     val original = sample[List[Int]]
     val staticFunc = { i: Int => List((i, i)) }
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.repeatedTupleLeftJoinJob[P, Int, Int, Int, Int, Int](
-          ctx.source(original), ctx.service(serviceFn), ctx.store("store"))(staticFunc)(nextFn)
-    })
+    testProducer(TestGraphs.repeatedTupleLeftJoinJob[TestPlatform, Int, Int, Int, Int, Int](
+      TestPlatform.source(original), TestPlatform.service(serviceFn), TestPlatform.store("store"))(staticFunc)(nextFn))
   }
 
   "StormPlatform matches Scala for optionMap only jobs" in {
     val original = sample[List[Int]]
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        ctx.source(original)
-          .filter(_ % 2 == 0)
-          .map(_ -> 10)
-          .sumByKey(ctx.store("store"))
-    })
+    testProducer(
+      TestPlatform.source(original)
+        .filter(_ % 2 == 0)
+        .map(_ -> 10)
+        .sumByKey(TestPlatform.store("store")))
   }
 
   "StormPlatform matches Scala for MapOnly/NoSummer" in {
     val original = sample[List[Int]]
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.mapOnlyJob[P, Int, Int](ctx.source(original), ctx.sink[Int]("sink"))(x => List(x))
-    })
+    testProducer(TestGraphs.mapOnlyJob[TestPlatform, Int, Int](
+      TestPlatform.source(original), TestPlatform.sink[Int]("sink"))(x => List(x)))
   }
 
   "StormPlatform with multiple summers" in {
     val original = List(1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 41) // sample[List[Int]]
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.multipleSummerJob[P, Int, Int, Int, Int, Int, Int](
-          ctx.source(original),
-          ctx.store("store1"),
-          ctx.store("store2")
-        )(x => List(x * 10), x => List((x, x)), x => List((x, x)))
-    })
+    testProducer(TestGraphs.multipleSummerJob[TestPlatform, Int, Int, Int, Int, Int, Int](
+      TestPlatform.source(original),
+      TestPlatform.store("store1"),
+      TestPlatform.store("store2")
+    )(x => List(x * 10), x => List((x, x)), x => List((x, x))))
   }
 
   "StormPlatform should be efficent in real world job" in {
@@ -208,57 +173,57 @@ class StormLaws extends WordSpec {
 
     val serviceFn = sample[Int => Option[Int]]
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] =
-        TestGraphs.realJoinTestJob[P, Int, Int, Int, Int, Int, Int, Int, Int, Int](
-          ctx.source(original1), ctx.source(original2), ctx.source(original3), ctx.source(original4),
-          ctx.service(serviceFn), ctx.store("store"), fn1, fn2, fn3, preJoinFn, postJoinFn)
-    })
+    testProducer(TestGraphs.realJoinTestJob[TestPlatform, Int, Int, Int, Int, Int, Int, Int, Int, Int](
+      TestPlatform.source(original1), TestPlatform.source(original2), TestPlatform.source(original3), TestPlatform.source(original4),
+      TestPlatform.service(serviceFn), TestPlatform.store("store"), fn1, fn2, fn3, preJoinFn, postJoinFn))
   }
 
   "StormPlatform should be able to handle AlsoProducer with Summer and FlatMap in different branches" in {
     val original = sample[List[(Int, Int)]]
     val branchFlatMap = sample[((Int, Int)) => List[(Int, Int)]]
 
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
-        val source = ctx.source(original)
-        source.sumByKey(ctx.store("store1")).also(
-          source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
-        )
-      }
-    })
+    {
+      val source = TestPlatform.source(original)
+      testProducer(source.sumByKey(TestPlatform.store("store1")).also(
+        source.flatMap(branchFlatMap).sumByKey(TestPlatform.store("store2"))
+      ))
+    }
 
 //    Fails, see https://github.com/twitter/summingbird/issues/725 for details.
-//    testStormEqualToMemory(new ProducerCreator {
-//      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
-//        val source = ctx.source(original).flatMap(e => List(e))
-//        source.sumByKey(ctx.store("store1")).also(
-//          source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
-//        )
-//      }
-//    })
+//    {
+//      val source = TestPlatform.source(original).flatMap(e => List(e))
+//      testProducer(source.sumByKey(TestPlatform.store("store1")).also(
+//        source.flatMap(branchFlatMap).sumByKey(TestPlatform.store("store2"))
+//      ))
+//    }
 
 //    Workaround
-    testStormEqualToMemory(new ProducerCreator {
-      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
-        val source = ctx.source(original).flatMap(e => List(e))
-        source.map(identity).sumByKey(ctx.store("store1")).also(
-          source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
-        )
-      }
-    })
+    {
+      val source = TestPlatform.source(original).flatMap(e => List(e))
+      testProducer(source.map(identity).sumByKey(TestPlatform.store("store1")).also(
+        source.flatMap(branchFlatMap).sumByKey(TestPlatform.store("store2"))
+      ))
+    }
 
 //    Also fails.
-//    testStormEqualToMemory(new ProducerCreator {
-//      override def apply[P <: Platform[P]](ctx: CreatorCtx[P]): TailProducer[P, Any] = {
-//        val source = ctx.source(original)
-//          .sumByKey(ctx.store("tmpStore")).map({ case (key, (_, value)) => (key, value) })
+//    {
+//      val source = TestPlatform.source(original)
+//        .sumByKey(TestPlatform.store("tmpStore")).map({ case (key, (_, value)) => (key, value) })
 //
-//        source.sumByKey(ctx.store("store1")).also(
-//          source.flatMap(branchFlatMap).sumByKey(ctx.store("store2"))
-//        )
-//      }
-//    })
+//      testProducer(source.sumByKey(TestPlatform.store("store1")).also(
+//        source.flatMap(branchFlatMap).sumByKey(TestPlatform.store("store2"))
+//      ))
+//    }
+  }
+
+  def testProducer[T](producer: TailProducer[TestPlatform, T])(implicit storm: Storm): Unit = {
+    val memoryResult = MemoryTestExecutor(producer)
+    val stormResult = StormTestExecutor(producer, storm)
+    assertEquiv(memoryResult.stores, stormResult.stores)
+    assertEquiv(memoryResult.sinks, stormResult.sinks)
+  }
+
+  def assertEquiv[T](expected: T, returned: T)(implicit equiv: Equiv[T]): Unit = {
+    assert(equiv.equiv(expected, returned), (expected.toString, returned.toString))
   }
 }
