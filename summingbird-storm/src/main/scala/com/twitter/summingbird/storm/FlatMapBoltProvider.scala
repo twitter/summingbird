@@ -21,12 +21,10 @@ import com.twitter.algebird.Semigroup
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.storm.option.AnchorTuples
-import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
-import org.apache.storm.topology.TopologyBuilder
 import org.slf4j.LoggerFactory
 
 /**
@@ -56,14 +54,14 @@ object FlatMapBoltProvider {
   }
 }
 
-case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm], node: StormNode)(implicit topologyBuilder: TopologyBuilder) {
+case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
   import FlatMapBoltProvider._
   import Producer2FlatMapOperation._
 
-  def getOrElse[T <: AnyRef: Manifest](default: T, queryNode: StormNode = node) = storm.getOrElse(stormDag, queryNode, default)
+  def getOrElse[T <: AnyRef: Manifest](default: T, queryNode: StormNode = node) = builder.getOrElse(queryNode, default)
 
   // Boilerplate extracting of the options from the DAG
-  private val nodeName = stormDag.getNodeName(node)
+  private val nodeName = builder.getNodeName(node)
   private val metrics = getOrElse(DEFAULT_FM_STORM_METRICS)
   private val anchorTuples = getOrElse(AnchorTuples.default)
   logger.info(s"[$nodeName] Anchoring: ${anchorTuples.anchor}")
@@ -95,16 +93,16 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
     implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
 
     // This option we report its value here, but its not user settable.
-    val keyValueShards = storm.getSummerKeyValueShards(stormDag, summer)
+    val keyValueShards = builder.getSummerKeyValueShards(summer)
     logger.info(s"[$nodeName] keyValueShards : ${keyValueShards.get}")
 
     val operation = foldOperations[T, (K, V)](node.members.reverse)
     val wrappedOperation = wrapTimeBatchIDKV(operation)(batcher)
 
-    val builder = BuildSummer(storm, stormDag, node, jobID)
+    val summerBuilder = BuildSummer(builder, node)
 
     BaseBolt(
-      jobID,
+      builder.jobId,
       metrics.metrics,
       anchorTuples,
       true,
@@ -114,7 +112,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       EdgeType.AggregatedKeyValues[OutputKey, OutputValue](keyValueShards),
       new executor.FinalFlatMap(
         wrappedOperation,
-        builder,
+        summerBuilder,
         maxWaiting,
         maxWaitTime,
         maxEmitPerExecute,
@@ -131,10 +129,10 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
     val wrappedOperation = wrapTime(operation)
 
     BaseBolt(
-      jobID,
+      builder.jobId,
       metrics.metrics,
       anchorTuples,
-      stormDag.dependantsOf(node).size > 0,
+      builder.stormDag.dependantsOf(node).size > 0,
       ackOnEntry,
       maxExecutePerSec,
       inputEdgeTypes[ExecutorInput],
@@ -150,7 +148,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
   }
 
   def apply: BaseBolt[Any, Any] = {
-    val summerOpt: Option[SummerNode[Storm]] = stormDag.dependantsOf(node).collect { case s: SummerNode[Storm] => s }.headOption
+    val summerOpt: Option[SummerNode[Storm]] = builder.stormDag.dependantsOf(node).collect { case s: SummerNode[Storm] => s }.headOption
     summerOpt match {
       case Some(s) => getFFMBolt[Any, Any, Any](s).asInstanceOf[BaseBolt[Any, Any]]
       case None => getIntermediateFMBolt[Any, Any].asInstanceOf[BaseBolt[Any, Any]]
@@ -164,7 +162,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       EdgeType.itemWithShuffleGrouping[Input]
     }
 
-    val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
+    val dependenciesNames = builder.stormDag.dependenciesOf(node).collect { case x: StormNode => builder.getNodeName(x) }
     dependenciesNames.map((_, edge)).toMap
   }
 }

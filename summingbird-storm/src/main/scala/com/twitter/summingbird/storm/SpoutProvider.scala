@@ -6,18 +6,17 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import com.twitter.summingbird.online.{ Externalizer, executor }
 import com.twitter.summingbird.online.option.{ SourceParallelism, SummerBuilder }
-import com.twitter.summingbird.option.JobId
-import com.twitter.summingbird.planner.{ Dag, SummerNode }
+import com.twitter.summingbird.planner.SummerNode
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.tormenta.spout.Spout
 import com.twitter.summingbird.storm.spout.KeyValueSpout
 import org.apache.storm.metric.api.IMetric
 import org.apache.storm.task.TopologyContext
-import org.apache.storm.topology.{ IRichSpout, TopologyBuilder }
+import org.apache.storm.topology.IRichSpout
 
-case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jobID: JobId)(implicit topologyBuilder: TopologyBuilder) {
+case class SpoutProvider(builder: StormTopologyBuilder, node: StormNode) {
 
-  private def getOrElse[T <: AnyRef: Manifest](node: StormNode, default: T): T = storm.getOrElse(stormDag, node, default)
+  private def getOrElse[T <: AnyRef: Manifest](node: StormNode, default: T): T = builder.getOrElse(node, default)
 
   private def getSourceParallelism(sourceParOption: Option[SourceParallelism]) =
     getOrElse(node, sourceParOption.getOrElse(Constants.DEFAULT_SOURCE_PARALLELISM)).parHint
@@ -28,7 +27,7 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
     node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
 
   private def computeSpout(spout: Spout[(Timestamp, Any)]): Spout[(Timestamp, Any)] = {
-    val nodeName = stormDag.getNodeName(node)
+    val nodeName = builder.getNodeName(node)
     node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
       p match {
         case Source(_) => spout // The source is still in the members list so drop it
@@ -92,10 +91,10 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
     )
   }
 
-  private def getCountersForJob: Seq[(Group, Name)] = JobCounters.getCountersForJob(jobID).getOrElse(Nil)
+  private def getCountersForJob: Seq[(Group, Name)] = JobCounters.getCountersForJob(builder.jobId).getOrElse(Nil)
 
   private def counter(nodeName: Group, counterName: Name): Counter with Incrementor =
-    new Counter(Group("summingbird." + nodeName.getString), counterName)(jobID) with Incrementor
+    new Counter(Group("summingbird." + nodeName.getString), counterName)(builder.jobId) with Incrementor
 
   // Tormenta bug when openHook might get lost if it doesn't happen right before the getSpout.
   private def getStormSpout[T](spout: Spout[T]): IRichSpout = {
@@ -110,11 +109,11 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
   private def getKeyValueSpout[K, V](
     tormentaSpout: Spout[(Timestamp, (K, V))],
     sNode: SummerNode[Storm]): IRichSpout = {
-    val builder = BuildSummer(storm, stormDag, node, jobID)
-    val nodeName = stormDag.getNodeName(node)
+    val summerBuilder = BuildSummer(builder, node)
+    val nodeName = builder.getNodeName(node)
     val flushExecTimeCounter = counter(Group(nodeName), Name("spoutFlushExecTime"))
     val executeTimeCounter = counter(Group(nodeName), Name("spoutEmitExecTime"))
-    createSpoutToFeedSummer[K, V](sNode, builder, tormentaSpout, flushExecTimeCounter, executeTimeCounter)
+    createSpoutToFeedSummer[K, V](sNode, summerBuilder, tormentaSpout, flushExecTimeCounter, executeTimeCounter)
   }
 
   /**
@@ -129,7 +128,7 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
           context.registerMetric(x.name, x.metric, x.interval.inSeconds)
       }
       // Register summingbird counter metrics.
-      StormStatProvider.registerMetrics(jobID, context, counters)
+      StormStatProvider.registerMetrics(builder.jobId, context, counters)
       SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
     })
   }
@@ -143,7 +142,7 @@ case class SpoutProvider(storm: Storm, stormDag: Dag[Storm], node: StormNode, jo
     val tormentaSpout = computeSpout(spout)
     val sourceParallelism = getSourceParallelism(sourceParallelismOption)
     validateParallelisms(sourceParallelism)
-    val summerOpt: Option[SummerNode[Storm]] = stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
+    val summerOpt: Option[SummerNode[Storm]] = builder.stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
     val stormSpout: IRichSpout = summerOpt match {
       case Some(summerNode) => {
         // since we know that the the next node is a summer, this implies the type of the spout must be `(K, V)` for some `K, V`
