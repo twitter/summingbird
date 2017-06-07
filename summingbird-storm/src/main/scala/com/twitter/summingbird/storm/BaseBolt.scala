@@ -41,6 +41,7 @@ import org.slf4j.{ Logger, LoggerFactory }
   * @param hasDependants does this node have any downstream nodes?
   * @param ackOnEntry ack tuples in the beginning of processing.
   * @param maxExecutePerSec limits number of executes per second, will block processing thread after.
+  *                         Used for rate limiting.
   * @param inputEdges is a map from name of downstream node to `Edge` from it.
   * @param outputEdge is an edge from this node. To be precise there are number of output edges,
   *                   but we expect them to have same format and we don't use their grouping information here,

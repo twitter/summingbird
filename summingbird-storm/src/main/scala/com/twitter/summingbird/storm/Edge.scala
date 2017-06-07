@@ -57,29 +57,29 @@ object Edge {
 
 private object EdgeInjections {
   def forItem[T]: Injection[T, JList[AnyRef]] = new Injection[T, JList[AnyRef]] {
-    override def apply(t: T): JAList[AnyRef] = {
+    override def apply(tuple: T): JAList[AnyRef] = {
       val list = new JAList[AnyRef](1)
-      list.add(t.asInstanceOf[AnyRef])
+      list.add(tuple.asInstanceOf[AnyRef])
       list
     }
 
-    override def invert(vin: JList[AnyRef]): Try[T] = Inversion.attempt(vin) { v =>
-      v.get(0).asInstanceOf[T]
+    override def invert(valueIn: JList[AnyRef]): Try[T] = Inversion.attempt(valueIn) { input =>
+      input.get(0).asInstanceOf[T]
     }
   }
 
   def forKeyValue[K, V]: Injection[(K, V), JList[AnyRef]] = new Injection[(K, V), JList[AnyRef]] {
-    override def apply(item: (K, V)): JAList[AnyRef] = {
-      val (key, v) = item
+    override def apply(tuple: (K, V)): JAList[AnyRef] = {
+      val (key, value) = tuple
       val list = new JAList[AnyRef](2)
       list.add(key.asInstanceOf[AnyRef])
-      list.add(v.asInstanceOf[AnyRef])
+      list.add(value.asInstanceOf[AnyRef])
       list
     }
 
-    override def invert(vin: JList[AnyRef]): Try[(K, V)] = Inversion.attempt(vin) { v =>
-      val key = v.get(0).asInstanceOf[K]
-      val value = v.get(1).asInstanceOf[V]
+    override def invert(valueIn: JList[AnyRef]): Try[(K, V)] = Inversion.attempt(valueIn) { input =>
+      val key = input.get(0).asInstanceOf[K]
+      val value = input.get(1).asInstanceOf[V]
       (key, value)
     }
   }
