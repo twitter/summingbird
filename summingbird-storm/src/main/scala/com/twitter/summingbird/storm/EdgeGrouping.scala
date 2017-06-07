@@ -7,6 +7,9 @@ import org.apache.storm.tuple.{ Fields => StormFields }
   * This trait is used to represent different grouping strategies in `Storm`.
   */
 sealed trait EdgeGrouping {
+  /**
+   * How to apply this `EdgeGrouping` to edge between `parentName` node and bolt declared by `declarer`.
+   */
   def apply(declarer: BoltDeclarer, parentName: String): Unit
 }
 
