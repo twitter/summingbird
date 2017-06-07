@@ -110,8 +110,8 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       true,
       ackOnEntry,
       maxExecutePerSec,
-      inputEdges[Input],
-      Edge.AggregatedKeyValues[OutputKey, OutputValue](keyValueShards),
+      inputEdgeTypes[Input],
+      EdgeType.AggregatedKeyValues[OutputKey, OutputValue](keyValueShards),
       new executor.FinalFlatMap(
         wrappedOperation,
         builder,
@@ -137,9 +137,9 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       stormDag.dependantsOf(node).size > 0,
       ackOnEntry,
       maxExecutePerSec,
-      inputEdges[ExecutorInput],
+      inputEdgeTypes[ExecutorInput],
       // Output edge's grouping isn't important for now.
-      Edge.itemWithLocalOrShuffleGrouping[ExecutorOutput],
+      EdgeType.itemWithLocalOrShuffleGrouping[ExecutorOutput],
       new executor.IntermediateFlatMap(
         wrappedOperation,
         maxWaiting,
@@ -157,11 +157,11 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
     }
   }
 
-  private def inputEdges[Input]: Map[String, Edge[Input]] = {
+  private def inputEdgeTypes[Input]: Map[String, EdgeType[Input]] = {
     val edge = if (usePreferLocalDependency.get) {
-      Edge.itemWithLocalOrShuffleGrouping[Input]
+      EdgeType.itemWithLocalOrShuffleGrouping[Input]
     } else {
-      Edge.itemWithShuffleGrouping[Input]
+      EdgeType.itemWithShuffleGrouping[Input]
     }
 
     val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }

@@ -13,7 +13,7 @@ import scala.util.Try
   * This trait represents an edge in Storm topology DAG between two nodes.
   * @tparam T represents type of tuples sent over this `Edge`.
   */
-sealed trait Edge[T] {
+sealed trait EdgeType[T] {
   /**
     * Storm's `Fields` are going to be sent over this `Edge`.
     */
@@ -31,13 +31,13 @@ sealed trait Edge[T] {
   val grouping: EdgeGrouping
 }
 
-object Edge {
+object EdgeType {
   /**
     * Simplest possible type of `Edge`, without any assumptions about content inside.
     */
-  case class Item[T] private[storm] (edgeGrouping: EdgeGrouping) extends Edge[T] {
+  case class Item[T] private[storm] (edgeGrouping: EdgeGrouping) extends EdgeType[T] {
     override val fields: Fields = new Fields("value")
-    override val injection: Injection[T, JList[AnyRef]] =  EdgeInjections.forItem
+    override val injection: Injection[T, JList[AnyRef]] =  EdgeTypeInjections.forItem
     override val grouping: EdgeGrouping = edgeGrouping
   }
 
@@ -45,9 +45,9 @@ object Edge {
     * This `Edge` type used for aggregated key value pairs emitted by partial aggregation.
     * @param shards is a number which was used for partial aggregation.
     */
-  case class AggregatedKeyValues[K, V](shards: KeyValueShards) extends Edge[(Int, CMap[K, V])] {
+  case class AggregatedKeyValues[K, V](shards: KeyValueShards) extends EdgeType[(Int, CMap[K, V])] {
     override val fields: Fields = new Fields("aggKey", "aggValue")
-    override val injection: Injection[(Int, CMap[K, V]), JList[AnyRef]] = EdgeInjections.forKeyValue
+    override val injection: Injection[(Int, CMap[K, V]), JList[AnyRef]] = EdgeTypeInjections.forKeyValue
     override val grouping: EdgeGrouping = EdgeGrouping.Fields(new Fields("aggKey"))
   }
 
@@ -55,7 +55,7 @@ object Edge {
   def itemWithLocalOrShuffleGrouping[T]: Item[T] = Item[T](EdgeGrouping.LocalOrShuffle)
 }
 
-private object EdgeInjections {
+private object EdgeTypeInjections {
   def forItem[T]: Injection[T, JList[AnyRef]] = new Injection[T, JList[AnyRef]] {
     override def apply(tuple: T): JAList[AnyRef] = {
       val list = new JAList[AnyRef](1)

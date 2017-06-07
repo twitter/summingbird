@@ -12,7 +12,7 @@ import org.apache.storm.task.TopologyContext
 import org.apache.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
 import java.util.{ Map => JMap }
 
-import com.twitter.summingbird.storm.Edge
+import com.twitter.summingbird.storm.EdgeType
 
 /**
  * This is a spout used when the spout is being followed by summer.
@@ -27,13 +27,13 @@ class KeyValueSpout[K, V: Semigroup](
     executeTimeCounter: Incrementor) extends SpoutProxy {
 
   private val tickFrequency = Duration.fromMilliseconds(1000)
-  private val outputEdge = Edge.AggregatedKeyValues(summerShards)
+  private val outputEdgeType = EdgeType.AggregatedKeyValues(summerShards)
 
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
   var lastDump = Time.now
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) = {
-    declarer.declare(outputEdge.fields)
+    declarer.declare(outputEdgeType.fields)
   }
 
   /**

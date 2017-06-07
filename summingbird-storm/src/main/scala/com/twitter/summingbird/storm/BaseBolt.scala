@@ -42,10 +42,10 @@ import org.slf4j.{ Logger, LoggerFactory }
   * @param ackOnEntry ack tuples in the beginning of processing.
   * @param maxExecutePerSec limits number of executes per second, will block processing thread after.
   *                         Used for rate limiting.
-  * @param inputEdges is a map from name of downstream node to `Edge` from it.
-  * @param outputEdge is an edge from this node. To be precise there are number of output edges,
-  *                   but we expect them to have same format and we don't use their grouping information here,
-  *                   therefore it's ok to have only one instance of `Edge` here.
+  * @param inputEdgeTypes is a map from name of downstream node to `Edge` from it.
+  * @param outputEdgeType is an edge from this node. To be precise there are number of output edges,
+  *                       but we expect them to have same format and we don't use their grouping
+  *                       information here, therefore it's ok to have only one instance of `Edge` here.
   * @param executor is `OperationContainer` which represents operation for this `Bolt`,
   *                 for example it can be summing or flat mapping.
   * @tparam I is a type of input tuples for this `Bolt`s executor.
@@ -57,8 +57,8 @@ case class BaseBolt[I, O](jobID: JobId,
     hasDependants: Boolean,
     ackOnEntry: AckOnEntry,
     maxExecutePerSec: MaxExecutePerSecond,
-    inputEdges: Map[String, Edge[I]],
-    outputEdge: Edge[O],
+    inputEdgeTypes: Map[String, EdgeType[I]],
+    outputEdgeType: EdgeType[O],
     executor: OperationContainer[I, O, InputState[Tuple]]) extends IRichBolt {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -140,8 +140,8 @@ case class BaseBolt[I, O](jobID: JobId,
      * System ticks come with a fixed stream id
      */
     val curResults = if (!tuple.getSourceStreamId.equals("__tick")) {
-      val tsIn = inputEdges.get(tuple.getSourceComponent) match {
-        case Some(inputEdge) => inputEdge.injection.invert(tuple.getValues).get
+      val tsIn = inputEdgeTypes.get(tuple.getSourceComponent) match {
+        case Some(inputEdgeType) => inputEdgeType.injection.invert(tuple.getValues).get
         case None => throw new Exception("Unrecognized source component: " + tuple.getSourceComponent)
       }
       // Don't hold on to the input values
@@ -168,12 +168,12 @@ case class BaseBolt[I, O](jobID: JobId,
       if (anchorTuples.anchor) {
         val states = inputs.iterator.map(_.state).toList.asJava
         results.foreach { result =>
-          collector.emit(states, outputEdge.injection(result))
+          collector.emit(states, outputEdgeType.injection(result))
           emitCount += 1
         }
       } else { // don't anchor
         results.foreach { result =>
-          collector.emit(outputEdge.injection(result))
+          collector.emit(outputEdgeType.injection(result))
           emitCount += 1
         }
       }
@@ -196,7 +196,7 @@ case class BaseBolt[I, O](jobID: JobId,
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    if (hasDependants) { declarer.declare(outputEdge.fields) }
+    if (hasDependants) { declarer.declare(outputEdgeType.fields) }
   }
 
   override val getComponentConfiguration = null
@@ -209,8 +209,8 @@ case class BaseBolt[I, O](jobID: JobId,
     * Apply groupings defined by input edges of this `Bolt` to Storm's topology.
     */
   def applyGroupings(declarer: BoltDeclarer): Unit = {
-    inputEdges.foreach { case (parentName, inputEdge) =>
-      inputEdge.grouping.apply(declarer, parentName)
+    inputEdgeTypes.foreach { case (parentName, inputEdgeType) =>
+      inputEdgeType.grouping.apply(declarer, parentName)
     }
   }
 

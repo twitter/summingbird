@@ -206,7 +206,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
       val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
       val inputEdges = dependenciesNames.map(parent =>
-        (parent, Edge.AggregatedKeyValues[ExecutorKeyType, ExecutorValueType](getSummerKeyValueShards(stormDag, node)))
+        (parent, EdgeType.AggregatedKeyValues[ExecutorKeyType, ExecutorValueType](getSummerKeyValueShards(stormDag, node)))
       ).toMap
 
       BaseBolt(
@@ -218,7 +218,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
         maxExecutePerSec,
         inputEdges,
         // Output edge's grouping isn't important for now.
-        Edge.itemWithLocalOrShuffleGrouping[ExecutorOutputType],
+        EdgeType.itemWithLocalOrShuffleGrouping[ExecutorOutputType],
         new executor.Summer(
           () => new WrappedTSInMergeable(supplier.mergeableStore(semigroup)),
           flatmapOp,
