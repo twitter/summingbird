@@ -14,11 +14,11 @@ object MemoryTestExecutor {
 
   case class TestResult(stores: Map[String, Map[_, _]], sinks: Map[String, List[_]])
 
-  class SinkContent[V: Ordering]() {
+  class SinkContent[V]() {
     val buffer: mutable.ListBuffer[V] = mutable.ListBuffer[V]()
 
     def add(value: V): Unit = buffer.append(value)
-    def toList: List[V] = buffer.toList.sorted(implicitly[Ordering[V]])
+    def toList: List[V] = buffer.toList
   }
 }
 
@@ -32,7 +32,7 @@ private class TestToMemoryTranformer extends PlatformTransformer[TestPlatform, M
 
   override def transformSink[T](source: TestPlatform.Sink[T]): (T) => Unit = {
     val sink = sinks.getOrElseUpdate(source.id, {
-      new MemoryTestExecutor.SinkContent()(source.ordering)
+      new MemoryTestExecutor.SinkContent[T]()
     }).asInstanceOf[MemoryTestExecutor.SinkContent[T]]
     v => sink.add(v)
   }

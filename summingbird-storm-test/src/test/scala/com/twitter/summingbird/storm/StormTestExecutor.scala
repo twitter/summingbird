@@ -41,7 +41,7 @@ private class TestToStormTranformer extends PlatformTransformer[TestPlatform, St
       val uuid = sinksUuids.getOrElseUpdate(source.id, UUID.randomUUID())
       new SinkFn[T](v => StormTestExecutor.sinks.synchronized {
         val sink = StormTestExecutor.sinks.getOrElseUpdate(uuid, {
-          new SinkContent()(source.ordering)
+          new SinkContent[T]()
         }).asInstanceOf[SinkContent[T]]
         sink.add(v)
         Future.Unit

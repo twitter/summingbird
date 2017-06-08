@@ -205,7 +205,7 @@ class StormLaws extends WordSpec {
       ))
     }
 
-//    Also fails.
+//    This is also fails, see https://github.com/twitter/summingbird/issues/725 for details.
 //    {
 //      val source = TestPlatform.source(original)
 //        .sumByKey(TestPlatform.store("tmpStore")).map({ case (key, (_, value)) => (key, value) })
@@ -220,7 +220,16 @@ class StormLaws extends WordSpec {
     val memoryResult = MemoryTestExecutor(producer)
     val stormResult = StormTestExecutor(producer, storm)
     assertEquiv(memoryResult.stores, stormResult.stores)
-    assertEquiv(memoryResult.sinks, stormResult.sinks)
+    assertEquiv(memoryResult.sinks.keys, stormResult.sinks.keys)
+    memoryResult.sinks.keys.foreach { key =>
+      assertSinksAreTheSame(memoryResult.sinks(key), stormResult.sinks(key))
+    }
+  }
+
+  def assertSinksAreTheSame[T](expected: List[T], returned: List[T]): Unit = {
+    // We ignore order of elements in `Sinks` because it can be different on concurrent platforms.
+    assert(expected.diff(returned).isEmpty)
+    assert(returned.diff(expected).isEmpty)
   }
 
   def assertEquiv[T](expected: T, returned: T)(implicit equiv: Equiv[T]): Unit = {

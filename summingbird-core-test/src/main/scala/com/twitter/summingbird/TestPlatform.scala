@@ -19,9 +19,7 @@ object TestPlatform {
   case class Store[K, V: Semigroup](id: String, initial: Map[K, V]) {
     val valueSemigroup: Semigroup[V] = implicitly[Semigroup[V]]
   }
-  case class Sink[T: Ordering](id: String) {
-    val ordering: Ordering[T] = implicitly[Ordering[T]]
-  }
+  case class Sink[T](id: String)
   case class Service[K, V](fn: K => Option[V])
 
   def source[T](data: List[T]): Source[TestPlatform, T] = Source[TestPlatform, T](SourceList(data))
@@ -37,5 +35,5 @@ object TestPlatform {
    * For consistency with source and store.
    */
   def service[K, V](fn: K => Option[V]): Service[K, V] = Service(fn)
-  def sink[T: Ordering](id: String): Sink[T] = Sink(id)
+  def sink[T](id: String): Sink[T] = Sink(id)
 }
