@@ -3,10 +3,10 @@ package com.twitter.summingbird.storm
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{BatchID, Timestamp}
-import com.twitter.summingbird.online.{Externalizer, executor}
-import com.twitter.summingbird.online.option.{SourceParallelism, SummerBuilder}
-import com.twitter.summingbird.planner.{SourceNode, SummerNode}
+import com.twitter.summingbird.batch.{ BatchID, Timestamp }
+import com.twitter.summingbird.online.{ Externalizer, executor }
+import com.twitter.summingbird.online.option.{ SourceParallelism, SummerBuilder }
+import com.twitter.summingbird.planner.{ SourceNode, SummerNode }
 import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.tormenta.spout.Spout
@@ -64,7 +64,8 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
     builder: SummerBuilder,
     spout: Spout[(Timestamp, (K, V))],
     flushExecTimeCounter: Incrementor,
-    executeTimeCounter: Incrementor): Topology.KeyValueSpout[(K, BatchID), (Timestamp, V)] = {
+    executeTimeCounter: Incrementor
+  ): Topology.KeyValueSpout[(K, BatchID), (Timestamp, V)] = {
     val summerParalellism = getOrElse(summerNode, Constants.DEFAULT_SUMMER_PARALLELISM)
     val summerBatchMultiplier = getOrElse(summerNode, Constants.DEFAULT_SUMMER_BATCH_MULTIPLIER)
     val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
@@ -98,7 +99,8 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
   private def getKeyValueSpout[K, V](
     sourceParallelism: Int,
     tormentaSpout: Spout[(Timestamp, (K, V))],
-    sNode: SummerNode[Storm]): Topology.Spout[_] = {
+    sNode: SummerNode[Storm]
+  ): Topology.Spout[_] = {
     val summerBuilder = BuildSummer(builder, node)
     val nodeName = builder.getNodeName(node)
     val flushExecTimeCounter = counter(Group(nodeName), Name("spoutFlushExecTime"))

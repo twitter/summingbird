@@ -1,14 +1,14 @@
 package com.twitter.summingbird.storm
 
-import com.twitter.summingbird.{Options, Summer}
-import com.twitter.summingbird.batch.{BatchID, Timestamp}
-import com.twitter.summingbird.online.{FlatMapOperation, MergeableStoreFactory, WrappedTSInMergeable, executor}
+import com.twitter.summingbird.{ Options, Summer }
+import com.twitter.summingbird.batch.{ BatchID, Timestamp }
+import com.twitter.summingbird.online.{ FlatMapOperation, MergeableStoreFactory, WrappedTSInMergeable, executor }
 import com.twitter.summingbird.online.option.IncludeSuccessHandler
 import com.twitter.summingbird.option.JobId
-import com.twitter.summingbird.planner.{Dag, FlatMapNode, SourceNode, SummerNode}
+import com.twitter.summingbird.planner.{ Dag, FlatMapNode, SourceNode, SummerNode }
 import com.twitter.summingbird.storm.Constants._
 import com.twitter.summingbird.storm.builder.Topology.ReceivingId
-import com.twitter.summingbird.storm.builder.{EdgeType, Topology}
+import com.twitter.summingbird.storm.builder.{ EdgeType, Topology }
 import com.twitter.summingbird.storm.option.AnchorTuples
 import com.twitter.summingbird.storm.planner.StormNode
 import org.apache.storm.generated.StormTopology
@@ -100,6 +100,7 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
       logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
 
       val parallelism = getOrElse(node, DEFAULT_SUMMER_PARALLELISM).parHint
+      logger.info(s"[$nodeName] parallelism : $parallelism")
 
       val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
         val ((key, batchID), (optPrevExecutorValue, (timestamp, value))) = op

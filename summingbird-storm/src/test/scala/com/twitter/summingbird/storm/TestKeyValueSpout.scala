@@ -2,16 +2,16 @@ package com.twitter.summingbird.storm
 
 import org.apache.storm.spout.ISpoutOutputCollector
 import com.twitter.algebird.Semigroup
-import com.twitter.algebird.util.summer.{AsyncSummer, BufferSize, FlushFrequency, MemoryFlushPercent, SyncSummingQueue}
+import com.twitter.algebird.util.summer.{ AsyncSummer, BufferSize, FlushFrequency, MemoryFlushPercent, SyncSummingQueue }
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.{MaxEmitPerExecute, SummerBuilder}
-import com.twitter.tormenta.spout.{BaseSpout, Spout}
-import com.twitter.util.Duration
-import com.twitter.summingbird.batch.{BatchID, Timestamp}
+import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
 import com.twitter.summingbird.storm.builder.KeyValueSpout
-import java.util.{List => JList}
+import com.twitter.tormenta.spout.{ BaseSpout, Spout }
+import com.twitter.util.Duration
+import com.twitter.summingbird.batch.{ BatchID, Timestamp }
+import java.util.{ List => JList }
 import org.scalatest.WordSpec
-import scala.collection.mutable.{Set => MSet}
+import scala.collection.mutable.{ Set => MSet }
 
 object TestKeyValueSpout {
   def getSyncSummingQueueBuildSummer(batchSize: Int, flushFrequency: Duration, memFlushPercent: Int) = {
