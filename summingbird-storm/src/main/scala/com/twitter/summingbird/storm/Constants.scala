@@ -24,14 +24,6 @@ import com.twitter.summingbird.online.OnlineDefaultConstants
  * Here we can override ones from online, or add more that are more Storm specific
  */
 object Constants extends OnlineDefaultConstants {
-  val AGG_KEY = "aggKey"
-  val AGG_VALUE = "aggValue"
-  val AGG_BATCH = "aggBatchID"
-  val RETURN_INFO = "return-info"
-
-  val VALUE_FIELD = "value"
-  val GROUP_BY_SUM = "groupBySum"
-
   val DEFAULT_SPOUT_STORM_METRICS = SpoutStormMetrics(None)
   val DEFAULT_FM_STORM_METRICS = FlatMapStormMetrics(None)
   val DEFAULT_SUMMER_STORM_METRICS = SummerStormMetrics(None)

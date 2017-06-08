@@ -17,7 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.storm
 
 import scala.util.{ Failure, Success }
-import com.twitter.bijection.Injection
 import java.util.{ Map => JMap }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
 import com.twitter.summingbird.online.executor.OperationContainer
@@ -27,28 +26,39 @@ import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeSta
 import com.twitter.summingbird.online.Externalizer
 import chain.Chain
 import scala.collection.JavaConverters._
-import java.util.{ List => JList }
 import org.apache.storm.task.{ OutputCollector, TopologyContext }
-import org.apache.storm.topology.{ IRichBolt, OutputFieldsDeclarer }
-import org.apache.storm.tuple.{ Fields, Tuple, TupleImpl }
+import org.apache.storm.topology.{ BoltDeclarer, IRichBolt, OutputFieldsDeclarer }
+import org.apache.storm.tuple.{ Tuple, TupleImpl }
 import org.slf4j.{ Logger, LoggerFactory }
 
 /**
- *
- * @author Oscar Boykin
- * @author Ian O Connell
- * @author Sam Ritchie
- * @author Ashu Singhal
- */
+  *  This class is used as an implementation for Storm's `Bolt`s.
+  *
+  * @param jobID is an id for current topology, used for metrics.
+  * @param metrics represents metrics we want to collect on this node.
+  * @param anchorTuples should be equal to true if you want to utilize Storm's anchoring of tuples,
+  *                     false otherwise.
+  * @param hasDependants does this node have any downstream nodes?
+  * @param ackOnEntry ack tuples in the beginning of processing.
+  * @param maxExecutePerSec limits number of executes per second, will block processing thread after.
+  *                         Used for rate limiting.
+  * @param inputEdgeTypes is a map from name of downstream node to `Edge` from it.
+  * @param outputEdgeType is an edge from this node. To be precise there are number of output edges,
+  *                       but we expect them to have same format and we don't use their grouping
+  *                       information here, therefore it's ok to have only one instance of `Edge` here.
+  * @param executor is `OperationContainer` which represents operation for this `Bolt`,
+  *                 for example it can be summing or flat mapping.
+  * @tparam I is a type of input tuples for this `Bolt`s executor.
+  * @tparam O is a type of output tuples for this `Bolt`s executor.
+  */
 case class BaseBolt[I, O](jobID: JobId,
     metrics: () => TraversableOnce[StormMetric[_]],
     anchorTuples: AnchorTuples,
     hasDependants: Boolean,
-    outputFields: Fields,
     ackOnEntry: AckOnEntry,
     maxExecutePerSec: MaxExecutePerSecond,
-    decoder: Injection[I, JList[AnyRef]],
-    encoder: Injection[O, JList[AnyRef]],
+    inputEdgeTypes: Map[String, EdgeType[I]],
+    outputEdgeType: EdgeType[O],
     executor: OperationContainer[I, O, InputState[Tuple]]) extends IRichBolt {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -130,7 +140,10 @@ case class BaseBolt[I, O](jobID: JobId,
      * System ticks come with a fixed stream id
      */
     val curResults = if (!tuple.getSourceStreamId.equals("__tick")) {
-      val tsIn = decoder.invert(tuple.getValues).get // Failing to decode here is an ERROR
+      val tsIn = inputEdgeTypes.get(tuple.getSourceComponent) match {
+        case Some(inputEdgeType) => inputEdgeType.injection.invert(tuple.getValues).get
+        case None => throw new Exception("Unrecognized source component: " + tuple.getSourceComponent)
+      }
       // Don't hold on to the input values
       clearValues(tuple)
       if (earlyAck) { collector.ack(tuple) }
@@ -155,12 +168,12 @@ case class BaseBolt[I, O](jobID: JobId,
       if (anchorTuples.anchor) {
         val states = inputs.iterator.map(_.state).toList.asJava
         results.foreach { result =>
-          collector.emit(states, encoder(result))
+          collector.emit(states, outputEdgeType.injection(result))
           emitCount += 1
         }
       } else { // don't anchor
         results.foreach { result =>
-          collector.emit(encoder(result))
+          collector.emit(outputEdgeType.injection(result))
           emitCount += 1
         }
       }
@@ -183,13 +196,22 @@ case class BaseBolt[I, O](jobID: JobId,
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    if (hasDependants) { declarer.declare(outputFields) }
+    if (hasDependants) { declarer.declare(outputEdgeType.fields) }
   }
 
   override val getComponentConfiguration = null
 
   override def cleanup {
     executor.cleanup
+  }
+
+  /**
+    * Apply groupings defined by input edges of this `Bolt` to Storm's topology.
+    */
+  def applyGroupings(declarer: BoltDeclarer): Unit = {
+    inputEdgeTypes.foreach { case (parentName, inputEdgeType) =>
+      inputEdgeType.grouping.apply(declarer, parentName)
+    }
   }
 
   /**

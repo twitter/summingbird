@@ -27,9 +27,7 @@ import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.planner._
 import org.apache.storm.topology.TopologyBuilder
-import org.apache.storm.tuple.Fields
 import org.slf4j.LoggerFactory
-import scala.collection.{ Map => CMap }
 
 /**
  * These are helper functions for building a bolt from a Node[Storm] element.
@@ -83,24 +81,21 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
   private val maxEmitPerExecute = getOrElse(DEFAULT_MAX_EMIT_PER_EXECUTE)
   logger.info(s"[$nodeName] maxEmitPerExecute : ${maxEmitPerExecute.get}")
 
+  private val usePreferLocalDependency = getOrElse(DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
+  logger.info(s"[$nodeName] usePreferLocalDependency: ${usePreferLocalDependency.get}")
+
   private def getFFMBolt[T, K, V](summer: SummerNode[Storm]) = {
-    type ExecutorInput = (Timestamp, T)
-    type ExecutorKey = Int
-    type InnerValue = (Timestamp, V)
-    type ExecutorValue = CMap[(K, BatchID), InnerValue]
+    type Input = (Timestamp, T)
+    type OutputKey = (K, BatchID)
+    type OutputValue = (Timestamp, V)
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
     val batcher = summerProducer.store.mergeableBatcher
     implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
 
-    // Query to get the summer paralellism of the summer down stream of us we are emitting to
-    // to ensure no edge case between what we might see for its parallelism and what it would see/pass to storm.
-    val summerParalellism = getOrElse(DEFAULT_SUMMER_PARALLELISM, summer)
-    val summerBatchMultiplier = getOrElse(DEFAULT_SUMMER_BATCH_MULTIPLIER, summer)
-
     // This option we report its value here, but its not user settable.
-    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
+    val keyValueShards = storm.getSummerKeyValueShards(stormDag, summer)
     logger.info(s"[$nodeName] keyValueShards : ${keyValueShards.get}")
 
     val operation = foldOperations[T, (K, V)](node.members.reverse)
@@ -113,11 +108,10 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       metrics.metrics,
       anchorTuples,
       true,
-      new Fields(AGG_KEY, AGG_VALUE),
       ackOnEntry,
       maxExecutePerSec,
-      new SingleItemInjection[ExecutorInput],
-      new KeyValueInjection[ExecutorKey, ExecutorValue],
+      inputEdgeTypes[Input],
+      EdgeType.AggregatedKeyValues[OutputKey, OutputValue](keyValueShards),
       new executor.FinalFlatMap(
         wrappedOperation,
         builder,
@@ -125,7 +119,7 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
         maxWaitTime,
         maxEmitPerExecute,
         keyValueShards
-      )(implicitly[Semigroup[InnerValue]])
+      )(implicitly[Semigroup[OutputValue]])
     )
   }
 
@@ -141,11 +135,11 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       metrics.metrics,
       anchorTuples,
       stormDag.dependantsOf(node).size > 0,
-      new Fields(VALUE_FIELD),
       ackOnEntry,
       maxExecutePerSec,
-      new SingleItemInjection[ExecutorInput],
-      new SingleItemInjection[ExecutorOutput],
+      inputEdgeTypes[ExecutorInput],
+      // Output edge's grouping isn't important for now.
+      EdgeType.itemWithLocalOrShuffleGrouping[ExecutorOutput],
       new executor.IntermediateFlatMap(
         wrappedOperation,
         maxWaiting,
@@ -161,5 +155,16 @@ case class FlatMapBoltProvider(storm: Storm, jobID: JobId, stormDag: Dag[Storm],
       case Some(s) => getFFMBolt[Any, Any, Any](s).asInstanceOf[BaseBolt[Any, Any]]
       case None => getIntermediateFMBolt[Any, Any].asInstanceOf[BaseBolt[Any, Any]]
     }
+  }
+
+  private def inputEdgeTypes[Input]: Map[String, EdgeType[Input]] = {
+    val edge = if (usePreferLocalDependency.get) {
+      EdgeType.itemWithLocalOrShuffleGrouping[Input]
+    } else {
+      EdgeType.itemWithShuffleGrouping[Input]
+    }
+
+    val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
+    dependenciesNames.map((_, edge)).toMap
   }
 }
