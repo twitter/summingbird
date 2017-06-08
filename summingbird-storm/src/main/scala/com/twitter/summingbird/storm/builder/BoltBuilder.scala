@@ -29,7 +29,7 @@ private[builder] object BoltBuilder {
       hasDependants = outputEdges.nonEmpty,
       bolt.ackOnEntry,
       bolt.maxExecutePerSec,
-      inputEdges.map(edge => (edge.dest.id, edge.edgeType.injection)).toMap,
+      inputEdges.map(edge => (edge.source.id, edge.edgeType.injection)).toMap,
       fields,
       outputInjection,
       bolt.executor
