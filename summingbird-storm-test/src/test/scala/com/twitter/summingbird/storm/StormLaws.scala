@@ -205,7 +205,7 @@ class StormLaws extends WordSpec {
       ))
     }
 
-//    This is also fails, see https://github.com/twitter/summingbird/issues/725 for details.
+//    This also fails, see https://github.com/twitter/summingbird/issues/725 for details.
 //    {
 //      val source = TestPlatform.source(original)
 //        .sumByKey(TestPlatform.store("tmpStore")).map({ case (key, (_, value)) => (key, value) })
