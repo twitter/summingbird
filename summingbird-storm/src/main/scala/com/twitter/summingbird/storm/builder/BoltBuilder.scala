@@ -23,6 +23,7 @@ private[builder] object BoltBuilder {
 
     BaseBolt(
       jobId,
+      boltId,
       bolt.metrics,
       bolt.anchorTuples,
       hasDependants = outputEdges.nonEmpty,

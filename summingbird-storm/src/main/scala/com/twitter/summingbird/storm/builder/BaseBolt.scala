@@ -35,7 +35,8 @@ import scala.util.{ Failure, Success }
 /**
   *  This class is used as an implementation for Storm's `Bolt`s.
   *
-  * @param jobID is an id for current topology, used for metrics.
+  * @param jobId is an id for current topology, used for metrics.
+  * @param boltId is an id for current bolt, used for logging.
   * @param metrics represents metrics we want to collect on this node.
   * @param anchorTuples should be equal to true if you want to utilize Storm's anchoring of tuples,
   *                     false otherwise.
@@ -51,20 +52,23 @@ import scala.util.{ Failure, Success }
   * @tparam I is a type of input tuples for this `Bolt`s executor.
   * @tparam O is a type of output tuples for this `Bolt`s executor.
   */
-private[builder] case class BaseBolt[I, O](jobID: JobId,
-    metrics: () => TraversableOnce[StormMetric[_]],
-    anchorTuples: AnchorTuples,
-    hasDependants: Boolean,
-    ackOnEntry: AckOnEntry,
-    maxExecutePerSec: MaxExecutePerSecond,
-    inputInjections: Map[String, Injection[I, JList[AnyRef]]],
-    outputFields: Fields,
-    outputInjection: Injection[O, JList[AnyRef]],
-    executor: OperationContainer[I, O, InputState[Tuple]]) extends IRichBolt {
+private[builder] case class BaseBolt[I, O](
+  jobId: JobId,
+  boltId: Topology.BoltId[I, O],
+  metrics: () => TraversableOnce[StormMetric[_]],
+  anchorTuples: AnchorTuples,
+  hasDependants: Boolean,
+  ackOnEntry: AckOnEntry,
+  maxExecutePerSec: MaxExecutePerSecond,
+  inputInjections: Map[String, Injection[I, JList[AnyRef]]],
+  outputFields: Fields,
+  outputInjection: Injection[O, JList[AnyRef]],
+  executor: OperationContainer[I, O, InputState[Tuple]]
+) extends IRichBolt {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  private[this] val lockedCounters = Externalizer(JobCounters.getCountersForJob(jobID).getOrElse(Nil))
+  private[this] val lockedCounters = Externalizer(JobCounters.getCountersForJob(jobId).getOrElse(Nil))
 
   lazy val countersForBolt: Seq[(Group, Name)] = lockedCounters.get
 
@@ -143,7 +147,8 @@ private[builder] case class BaseBolt[I, O](jobID: JobId,
     val curResults = if (!tuple.getSourceStreamId.equals("__tick")) {
       val tsIn = inputInjections.get(tuple.getSourceComponent) match {
         case Some(inputFormat) => inputFormat.invert(tuple.getValues).get
-        case None => throw new Exception("Unrecognized source component: " + tuple.getSourceComponent)
+        case None => throw new Exception("Unrecognized source component: " +
+          tuple.getSourceComponent+", current bolt: " + boltId.id)
       }
       // Don't hold on to the input values
       clearValues(tuple)
@@ -191,9 +196,9 @@ private[builder] case class BaseBolt[I, O](jobID: JobId,
     collector = oc
     metrics().foreach { _.register(context) }
     executor.init()
-    StormStatProvider.registerMetrics(jobID, context, countersForBolt)
+    StormStatProvider.registerMetrics(jobId, context, countersForBolt)
     SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
-    logger.debug("In Bolt prepare: added jobID stat provider for jobID {}", jobID)
+    logger.debug("In Bolt prepare: added jobId stat provider for jobID {}", jobId)
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
