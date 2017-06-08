@@ -1,17 +1,16 @@
-package com.twitter.summingbird.storm.spout
+package com.twitter.summingbird.storm.builder
 
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, SummerBuilder }
-import com.twitter.summingbird.storm.builder.EdgeType
-import com.twitter.tormenta.spout.SpoutProxy
+import com.twitter.summingbird.online.option.{MaxEmitPerExecute, SummerBuilder}
 import com.twitter.summingbird.storm.collector.AggregatorOutputCollector
-import com.twitter.util.{ Duration, Time }
+import com.twitter.tormenta.spout.SpoutProxy
+import com.twitter.util.{Duration, Time}
+import java.util.{Map => JMap}
 import org.apache.storm.spout.SpoutOutputCollector
 import org.apache.storm.task.TopologyContext
-import org.apache.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
-import java.util.{ Map => JMap }
+import org.apache.storm.topology.{IRichSpout, OutputFieldsDeclarer}
 
 /**
  * This is a spout used when the spout is being followed by summer.

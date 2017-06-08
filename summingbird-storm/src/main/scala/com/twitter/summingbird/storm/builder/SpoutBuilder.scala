@@ -4,14 +4,13 @@ import com.twitter.algebird.Semigroup
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.option.JobId
 import EdgeType.AggregatedKeyValues
-import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
+import com.twitter.summingbird.{Group, JobCounters, Name, SummingbirdRuntimeStats}
 import com.twitter.summingbird.storm._
-import com.twitter.summingbird.storm.spout.KeyValueSpout
 import com.twitter.tormenta.spout.Spout
 import org.apache.storm.metric.api.IMetric
 import org.apache.storm.task.TopologyContext
 import org.apache.storm.topology.IRichSpout
-import scala.collection.{ Map => CMap }
+import scala.collection.{Map => CMap}
 
 private[builder] object SpoutBuilder {
   def apply[T](
