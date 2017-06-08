@@ -16,7 +16,6 @@
 
 package com.twitter.summingbird.storm
 
-import Constants._
 import org.apache.storm.{ LocalCluster, StormSubmitter, Config => BacktypeStormConfig }
 import com.twitter.bijection.{ Base64String, Injection }
 import com.twitter.chill.IKryoRegistrar
@@ -29,15 +28,11 @@ import com.twitter.summingbird.online._
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner._
-import com.twitter.summingbird.storm.option.AnchorTuples
-import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.summingbird.viz.VizGraph
 import com.twitter.tormenta.spout.Spout
 import com.twitter.util.Future
 import org.apache.storm.generated.StormTopology
-import org.apache.storm.topology.TopologyBuilder
 import org.slf4j.LoggerFactory
-import scala.reflect.ClassTag
 
 /*
  * Batchers are used for partial aggregation. We never aggregate past two items which are not in the same batch.
@@ -117,133 +112,6 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
 
   private type Prod[T] = Producer[Storm, T]
 
-  private[storm] def get[T <: AnyRef: ClassTag](dag: Dag[Storm], node: StormNode): Option[(String, T)] = {
-    val producer = node.members.last
-    Options.getFirst[T](options, dag.producerToPriorityNames(producer))
-  }
-
-  private[storm] def getOrElse[T <: AnyRef: ClassTag](dag: Dag[Storm], node: StormNode, default: T): T =
-    get[T](dag, node) match {
-      case None =>
-        logger.debug(s"Node (${dag.getNodeName(node)}): Using default setting $default")
-        default
-      case Some((namedSource, option)) =>
-        logger.info(s"Node ${dag.getNodeName(node)}: Using $option found via NamedProducer ${'"'}$namedSource${'"'}")
-        option
-    }
-
-  private[storm] def getSummerKeyValueShards(dag: Dag[Storm], summer: SummerNode[Storm]): executor.KeyValueShards = {
-    // Query to get the summer paralellism of the summer down stream of us we are emitting to
-    // to ensure no edge case between what we might see for its parallelism and what it would see/pass to storm.
-    val summerParalellism = getOrElse(dag, summer, DEFAULT_SUMMER_PARALLELISM)
-    val summerBatchMultiplier = getOrElse(dag, summer, DEFAULT_SUMMER_BATCH_MULTIPLIER)
-
-    executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
-  }
-
-  /**
-   * Set storm to tick our nodes every second to clean up finished futures
-   */
-  private def tickConfig = {
-    val boltConfig = new BacktypeStormConfig
-    boltConfig.put(BacktypeStormConfig.TOPOLOGY_TICK_TUPLE_FREQ_SECS, java.lang.Integer.valueOf(1))
-    boltConfig
-  }
-
-  private def scheduleFlatMapper(jobID: JobId, stormDag: Dag[Storm], node: FlatMapNode[Storm])(implicit topologyBuilder: TopologyBuilder) = {
-    val nodeName = stormDag.getNodeName(node)
-
-    val bolt: BaseBolt[Any, Any] = FlatMapBoltProvider(this, jobID, stormDag, node).apply
-
-    val parallelism = getOrElse(stormDag, node, DEFAULT_FM_PARALLELISM).parHint
-    val declarer = topologyBuilder.setBolt(nodeName, bolt, parallelism).addConfigurations(tickConfig)
-    bolt.applyGroupings(declarer)
-  }
-
-  private def scheduleSpout(jobID: JobId, stormDag: Dag[Storm], node: SourceNode[Storm])(implicit topologyBuilder: TopologyBuilder) = {
-    val nodeName = stormDag.getNodeName(node)
-    val (sourceParalleism, stormSpout) = SpoutProvider(this, stormDag, node, jobID).apply
-    topologyBuilder.setSpout(nodeName, stormSpout, sourceParalleism)
-  }
-
-  private def scheduleSummerBolt(jobID: JobId, stormDag: Dag[Storm], node: SummerNode[Storm])(implicit topologyBuilder: TopologyBuilder): Unit = {
-
-    val nodeName = stormDag.getNodeName(node)
-
-    def sinkBolt[K, V](summer: Summer[Storm, K, V]): BaseBolt[_, _] = {
-      implicit val semigroup = summer.semigroup
-      implicit val batcher = summer.store.mergeableBatcher
-
-      type ExecutorKeyType = (K, BatchID)
-      type ExecutorValueType = (Timestamp, V)
-      type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
-
-      val anchorTuples = getOrElse(stormDag, node, AnchorTuples.default)
-      val metrics = getOrElse(stormDag, node, DEFAULT_SUMMER_STORM_METRICS)
-      val shouldEmit = stormDag.dependantsOf(node).size > 0
-
-      val builder = BuildSummer(this, stormDag, node, jobID)
-
-      val ackOnEntry = getOrElse(stormDag, node, DEFAULT_ACK_ON_ENTRY)
-      logger.info(s"[$nodeName] ackOnEntry : ${ackOnEntry.get}")
-
-      val maxEmitPerExecute = getOrElse(stormDag, node, DEFAULT_MAX_EMIT_PER_EXECUTE)
-      logger.info(s"[$nodeName] maxEmitPerExecute : ${maxEmitPerExecute.get}")
-
-      val maxExecutePerSec = getOrElse(stormDag, node, DEFAULT_MAX_EXECUTE_PER_SEC)
-      logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
-
-      val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
-        val ((k, batchID), (optiVWithTS, (ts, v))) = op
-        val optiV = optiVWithTS.map(_._2)
-        List((ts, (k, (optiV, v))))
-      }
-
-      val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
-        FlatMapOperation.apply(storeBaseFMOp)
-
-      val supplier: MergeableStoreFactory[ExecutorKeyType, V] = summer.store
-
-      val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => stormDag.getNodeName(x) }
-      val inputEdges = dependenciesNames.map(parent =>
-        (parent, EdgeType.AggregatedKeyValues[ExecutorKeyType, ExecutorValueType](getSummerKeyValueShards(stormDag, node)))
-      ).toMap
-
-      BaseBolt(
-        jobID,
-        metrics.metrics,
-        anchorTuples,
-        shouldEmit,
-        ackOnEntry,
-        maxExecutePerSec,
-        inputEdges,
-        // Output edge's grouping isn't important for now.
-        EdgeType.itemWithLocalOrShuffleGrouping[ExecutorOutputType],
-        new executor.Summer(
-          () => new WrappedTSInMergeable(supplier.mergeableStore(semigroup)),
-          flatmapOp,
-          getOrElse(stormDag, node, DEFAULT_ONLINE_SUCCESS_HANDLER),
-          getOrElse(stormDag, node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-          builder,
-          getOrElse(stormDag, node, DEFAULT_MAX_WAITING_FUTURES),
-          getOrElse(stormDag, node, DEFAULT_MAX_FUTURE_WAIT_TIME),
-          maxEmitPerExecute,
-          getOrElse(stormDag, node, IncludeSuccessHandler.default))
-      )
-    }
-
-    val summerUntyped = node.members.collect { case c@Summer(_, _, _) => c }.head
-    val parallelism = getOrElse(stormDag, node, DEFAULT_SUMMER_PARALLELISM).parHint
-    val bolt = sinkBolt(summerUntyped)
-    val declarer =
-      topologyBuilder.setBolt(
-        nodeName,
-        bolt,
-        parallelism
-      ).addConfigurations(tickConfig)
-    bolt.applyGroupings(declarer)
-  }
-
   private def dumpOptions: String = {
     options.map {
       case (k, opts) =>
@@ -301,9 +169,8 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
     val dagOptimizer = new DagOptimizer[Storm] {}
     val stormTail = dagOptimizer.optimize(tail, dagOptimizer.ValueFlatMapToFlatMap)
     val stormDag = OnlinePlan(stormTail.asInstanceOf[TailProducer[Storm, T]], options)
-    implicit val topologyBuilder = new TopologyBuilder
-    implicit val config = genConfig(stormDag)
-    val jobID = {
+    val config = genConfig(stormDag)
+    val jobId = {
       val stormJobId = config.get("storm.job.uniqueId").asInstanceOf[String]
       if (stormJobId == null) {
         JobId(java.util.UUID.randomUUID().toString + "-AutoGenerated-ForInbuiltStats-UserStatsWillFail.")
@@ -312,12 +179,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       }
     }
 
-    stormDag.nodes.foreach {
-      case summerNode: SummerNode[Storm] => scheduleSummerBolt(jobID, stormDag, summerNode)
-      case flatMapNode: FlatMapNode[Storm] => scheduleFlatMapper(jobID, stormDag, flatMapNode)
-      case sourceNode: SourceNode[Storm] => scheduleSpout(jobID, stormDag, sourceNode)
-    }
-    PlannedTopology(config, topologyBuilder.createTopology)
+    PlannedTopology(config, StormTopologyBuilder(options, jobId, stormDag).build())
   }
   def run(tail: TailProducer[Storm, _], jobName: String): Unit = run(plan(tail), jobName)
   def run(plannedTopology: PlannedTopology, jobName: String): Unit
