@@ -15,6 +15,9 @@ import org.apache.storm.{ Config => BacktypeStormConfig }
 import org.slf4j.LoggerFactory
 import scala.reflect.ClassTag
 
+/**
+ * This class encapsulates logic how to build `StormTopology` from DAG of the job, jobId and options.
+ */
 case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
 
@@ -52,7 +55,6 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
   }
 
   private def scheduleSummerBolt(node: SummerNode[Storm], topologyBuilder: TopologyBuilder): Unit = {
-
     val nodeName = getNodeName(node)
 
     def sinkBolt[K, V](summer: Summer[Storm, K, V]): BaseBolt[_, _] = {
@@ -79,9 +81,9 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
       logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
 
       val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
-        val ((k, batchID), (optiVWithTS, (ts, v))) = op
-        val optiV = optiVWithTS.map(_._2)
-        List((ts, (k, (optiV, v))))
+        val ((key, batchID), (optPrevExecutorValue, (timestamp, value))) = op
+        val optPrevValue = optPrevExecutorValue.map(_._2)
+        List((timestamp, (key, (optPrevValue, value))))
       }
 
       val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
