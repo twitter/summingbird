@@ -21,35 +21,38 @@ import scala.reflect.ClassTag
 case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
 
-  def build: StormTopology = scheduleEdges(scheduleNodes).build(jobId)
+  def build: StormTopology = registerEdges(registerNodes).build(jobId)
 
-  private def scheduleNodes: Topology =
+  private def registerNodes: Topology =
     stormDag.nodes.foldLeft(Topology.EMPTY) {
-      case (topology, node@(summerNode: SummerNode[Storm])) =>
-        topology.withBolt(getNodeName(node), scheduleSummerBolt(summerNode))._2
-      case (topology, node@(flatMapNode: FlatMapNode[Storm])) =>
-        topology.withBolt(getNodeName(node), FlatMapBoltProvider(this, flatMapNode).apply)._2
-      case (topology, node@(sourceNode: SourceNode[Storm])) =>
+      case (topology, node: SummerNode[Storm]) =>
+        topology.withBolt(getNodeName(node), scheduleSummerBolt(node))._2
+      case (topology, node: FlatMapNode[Storm]) =>
+        topology.withBolt(getNodeName(node), FlatMapBoltProvider(this, node).apply)._2
+      case (topology, node: SourceNode[Storm]) =>
         topology.withSpout(getNodeName(node), SpoutProvider(this, node).apply)._2
     }
 
-  private def scheduleEdges(topologyWithNode: Topology): Topology =
-    stormDag.nodes.foldLeft(topologyWithNode) {
-      case (topology, node@(summerNode: SummerNode[Storm])) =>
+  private def registerEdges(topologyWithNodes: Topology): Topology =
+    stormDag.nodes.foldLeft(topologyWithNodes) {
+      case (topology, node: SummerNode[Storm]) =>
         val edgeType = EdgeType.AggregatedKeyValues[Any, Any](getSummerKeyValueShards(node))
         scheduleIncomingEdges(topology, node, edgeType)
-      case (topology, node@(flatMapNode: FlatMapNode[Storm])) =>
-        val usePreferLocalDependency = getOrElse(node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
-        logger.info(s"[${getNodeName(node)}] usePreferLocalDependency: ${usePreferLocalDependency.get}")
-        val edgeType = if (usePreferLocalDependency.get) {
-          EdgeType.itemWithLocalOrShuffleGrouping[Any]
-        } else {
-          EdgeType.itemWithShuffleGrouping[Any]
-        }
-        scheduleIncomingEdges(topology, flatMapNode, edgeType)
-      case (topology, node@(sourceNode: SourceNode[Storm])) => topology
+      case (topology, node: FlatMapNode[Storm]) =>
+        scheduleIncomingEdges(topology, node, flatMapEdgeType(node))
+      case (topology, node: SourceNode[Storm]) => topology
         // ignore, no incoming edges into sources
     }
+
+  private def flatMapEdgeType(node: FlatMapNode[Storm]): EdgeType[_] = {
+    val usePreferLocalDependency = getOrElse(node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
+    logger.info(s"[${getNodeName(node)}] usePreferLocalDependency: ${usePreferLocalDependency.get}")
+    if (usePreferLocalDependency.get) {
+      EdgeType.itemWithLocalOrShuffleGrouping[Any]
+    } else {
+      EdgeType.itemWithShuffleGrouping[Any]
+    }
+  }
 
   private def scheduleIncomingEdges(topology: Topology, node: StormNode, edgeType: EdgeType[_]): Topology = {
     val nodeId: ReceivingId[Any] = getId(node).asInstanceOf[Topology.ReceivingId[Any]]
