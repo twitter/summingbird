@@ -69,10 +69,13 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
     case flatMapNode: FlatMapNode[Storm] => getFlatMapId(flatMapNode)
     case summerNode: SummerNode[Storm] => getSummerId(summerNode)
   }
+
   private def getSummerId(node: SummerNode[Storm]): Topology.BoltId[_, _] =
     Topology.BoltId(getNodeName(node))
+
   private def getFlatMapId(node: FlatMapNode[Storm]): Topology.BoltId[_, _] =
     Topology.BoltId(getNodeName(node))
+
   private def getSourceId(node: SourceNode[Storm]): Topology.SpoutId[_] =
     Topology.SpoutId(getNodeName(node))
 
