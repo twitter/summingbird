@@ -35,7 +35,7 @@ object EdgeType {
     */
   case class Item[T] private[storm] (edgeGrouping: EdgeGrouping) extends EdgeType[T] {
     override val fields: Fields = new Fields("value")
-    override val injection: Injection[T, JList[AnyRef]] =  EdgeTypeInjections.forItem
+    override val injection: Injection[T, JList[AnyRef]] = EdgeTypeInjections.ForItem()
     override val grouping: EdgeGrouping = edgeGrouping
   }
 
@@ -45,7 +45,7 @@ object EdgeType {
     */
   case class AggregatedKeyValues[K, V](shards: KeyValueShards) extends EdgeType[(Int, CMap[K, V])] {
     override val fields: Fields = new Fields("aggKey", "aggValue")
-    override val injection: Injection[(Int, CMap[K, V]), JList[AnyRef]] = EdgeTypeInjections.forKeyValue
+    override val injection: Injection[(Int, CMap[K, V]), JList[AnyRef]] = EdgeTypeInjections.ForKeyValue()
     override val grouping: EdgeGrouping = EdgeGrouping.Fields(new Fields("aggKey"))
   }
 
@@ -54,7 +54,7 @@ object EdgeType {
 }
 
 private object EdgeTypeInjections {
-  def forItem[T]: Injection[T, JList[AnyRef]] = new Injection[T, JList[AnyRef]] {
+  case class ForItem[T]() extends Injection[T, JList[AnyRef]] {
     override def apply(tuple: T): JAList[AnyRef] = {
       val list = new JAList[AnyRef](1)
       list.add(tuple.asInstanceOf[AnyRef])
@@ -66,7 +66,7 @@ private object EdgeTypeInjections {
     }
   }
 
-  def forKeyValue[K, V]: Injection[(K, V), JList[AnyRef]] = new Injection[(K, V), JList[AnyRef]] {
+  case class ForKeyValue[K, V]() extends Injection[(K, V), JList[AnyRef]] {
     override def apply(tuple: (K, V)): JAList[AnyRef] = {
       val (key, value) = tuple
       val list = new JAList[AnyRef](2)

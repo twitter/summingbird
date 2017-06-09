@@ -12,14 +12,14 @@ private[builder] object BoltBuilder {
     inputEdges: List[Topology.Edge[I]],
     outputEdges: List[Topology.Edge[O]]
   ): IRichBolt = {
-    val fields = outputEdges.headOption.map(_.edgeType.fields).getOrElse(new Fields())
+    val outputFields = outputEdges.headOption.map(_.edgeType.fields).getOrElse(new Fields())
     assert(
-      outputEdges.forall(_.edgeType.fields == fields),
-      "Output edges should have same `Fields` object")
+      outputEdges.forall(_.edgeType.fields.toList == outputFields.toList),
+      s"$boltId: Output edges should have same `Fields` $outputEdges")
     val outputInjection = outputEdges.headOption.map(_.edgeType.injection).orNull
     assert(
       outputEdges.forall(_.edgeType.injection == outputInjection),
-      "Output edges should have same `Fields` object")
+      s"$boltId: Output edges should have same `Injection` $outputEdges.")
 
     BaseBolt(
       jobId,
@@ -30,7 +30,7 @@ private[builder] object BoltBuilder {
       bolt.ackOnEntry,
       bolt.maxExecutePerSec,
       inputEdges.map(edge => (edge.source.id, edge.edgeType.injection)).toMap,
-      fields,
+      outputFields,
       outputInjection,
       bolt.executor
     )
