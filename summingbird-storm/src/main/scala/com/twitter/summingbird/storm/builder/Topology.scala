@@ -38,7 +38,7 @@ private[summingbird] case class Topology(
       !(anotherEdge.source == edge.source && anotherEdge.dest == edge.dest)
     })
 
-    Topology(spouts, bolts, edges ++ List(edge))
+    Topology(spouts, bolts, edges :+ edge)
   }
 
   def contains(id: Topology.ComponentId): Boolean = id match {
@@ -51,7 +51,7 @@ private[summingbird] case class Topology(
     edges.filter(_.dest == id).asInstanceOf[List[Topology.Edge[T]]]
   }
 
-  def outcomingEdges[T](id: Topology.EmittingId[T]): List[Topology.Edge[T]] = {
+  def outgoingEdges[T](id: Topology.EmittingId[T]): List[Topology.Edge[T]] = {
     assert(contains(id))
     edges.filter(_.source == id).asInstanceOf[List[Topology.Edge[T]]]
   }
@@ -64,7 +64,7 @@ private[summingbird] case class Topology(
         jobId,
         spoutId,
         spout,
-        outcomingEdges(spoutId)
+        outgoingEdges(spoutId)
       )
       builder.setSpout(spoutId.id, builtSpout, spout.parallelism)
     }
@@ -75,7 +75,7 @@ private[summingbird] case class Topology(
         boltId,
         bolt,
         incomingEdges(boltId),
-        outcomingEdges(boltId)
+        outgoingEdges(boltId)
       )
 
       val declarer = builder.setBolt(
