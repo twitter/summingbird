@@ -10,10 +10,12 @@ import com.twitter.summingbird.planner.{ SourceNode, SummerNode }
 import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.tormenta.spout.Spout
+import scala.reflect.ClassTag
 
 case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm]) {
 
-  private def getOrElse[T <: AnyRef: Manifest](node: StormNode, default: T): T = builder.getOrElse(node, default)
+  private def getOrElse[T <: AnyRef: ClassTag](node: StormNode, default: T): T =
+    builder.getOrElse(node, default)
 
   private def getSourceParallelism(sourceParOption: Option[SourceParallelism]) =
     getOrElse(node, sourceParOption.getOrElse(Constants.DEFAULT_SOURCE_PARALLELISM)).parHint

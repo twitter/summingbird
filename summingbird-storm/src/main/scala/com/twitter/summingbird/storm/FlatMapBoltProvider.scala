@@ -27,8 +27,8 @@ import com.twitter.summingbird.online.FlatMapOperation
 import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.planner._
 import org.slf4j.LoggerFactory
-
 import scala.collection.{ Map => CMap }
+import scala.reflect.ClassTag
 
 /**
  * These are helper functions for building a bolt from a Node[Storm] element.
@@ -61,7 +61,8 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
   import FlatMapBoltProvider._
   import Producer2FlatMapOperation._
 
-  def getOrElse[T <: AnyRef: Manifest](default: T, queryNode: StormNode = node) = builder.getOrElse(queryNode, default)
+  private def getOrElse[T <: AnyRef: ClassTag](default: T, queryNode: StormNode = node) =
+    builder.getOrElse(queryNode, default)
 
   // Boilerplate extracting of the options from the DAG
   private val nodeName = builder.getNodeName(node)
@@ -76,7 +77,7 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
   private val ackOnEntry = getOrElse(DEFAULT_ACK_ON_ENTRY)
   logger.info(s"[$nodeName] ackOnEntry : ${ackOnEntry.get}")
 
-  val maxExecutePerSec = getOrElse(DEFAULT_MAX_EXECUTE_PER_SEC)
+  private val maxExecutePerSec = getOrElse(DEFAULT_MAX_EXECUTE_PER_SEC)
   logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
 
   private val maxEmitPerExecute = getOrElse(DEFAULT_MAX_EMIT_PER_EXECUTE)
