@@ -17,14 +17,13 @@ limitations under the License.
 package com.twitter.summingbird.storm.builder
 
 import chain.Chain
-import com.twitter.bijection.Injection
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.executor.{ InputState, OperationContainer }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.storm.{ StormMetric, StormStatProvider }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
 import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
-import java.util.{ List => JList, Map => JMap }
+import java.util.{ Map => JMap }
 import org.apache.storm.task.{ OutputCollector, TopologyContext }
 import org.apache.storm.topology.{ IRichBolt, OutputFieldsDeclarer }
 import org.apache.storm.tuple.{ Fields, Tuple, TupleImpl }
@@ -40,13 +39,11 @@ import scala.util.{ Failure, Success }
   * @param metrics we want to collect on this node.
   * @param anchorTuples should be equal to true if you want to utilize Storm's anchoring of tuples,
   *                     false otherwise.
-  * @param hasDependants does this node have any downstream nodes?
   * @param ackOnEntry ack tuples in the beginning of processing.
   * @param maxExecutePerSec limits number of executes per second, will block processing thread after.
   *                         Used for rate limiting.
-  * @param inputInjections map from name of downstream node to format `Injection` from it.
-  * @param outputFields Storm's `Fields` that this bolt is going to emit.
-  * @param outputInjection output format `Injection`.
+  * @param inputEdges list of edges incoming to this bolt.
+  * @param outputEdges: list of edges outgoing from this bolt.
   * @param executor `OperationContainer` which represents operation for this `Bolt`,
   *                 for example it can be summing or flat mapping.
   * @tparam I type of input tuples for this `Bolt`s executor.
@@ -57,12 +54,10 @@ private[builder] case class BaseBolt[I, O](
   boltId: Topology.BoltId[I, O],
   metrics: () => TraversableOnce[StormMetric[_]],
   anchorTuples: AnchorTuples,
-  hasDependants: Boolean,
   ackOnEntry: AckOnEntry,
   maxExecutePerSec: MaxExecutePerSecond,
-  inputInjections: Map[String, Injection[I, JList[AnyRef]]],
-  outputFields: Fields,
-  outputInjection: Injection[O, JList[AnyRef]],
+  inputEdges: List[Topology.Edge[I]],
+  outputEdges: List[Topology.Edge[O]],
   executor: OperationContainer[I, O, InputState[Tuple]]
 ) extends IRichBolt {
 
@@ -86,6 +81,17 @@ private[builder] case class BaseBolt[I, O](
 
   private[this] lazy val startPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
   private[this] lazy val endRampPeriod = startPeriod + rampPeriods
+
+  private[this] val outputFields = outputEdges.headOption.map(_.edgeType.fields).getOrElse(new Fields())
+  assert(
+    outputEdges.forall(_.edgeType.fields.toList == outputFields.toList),
+    s"$boltId: Output edges should have same `Fields` $outputEdges")
+  private[this] val outputInjection = outputEdges.headOption.map(_.edgeType.injection).orNull
+  assert(
+    outputEdges.forall(_.edgeType.injection == outputInjection),
+    s"$boltId: Output edges should have same `Injection` $outputEdges.")
+
+  private[this] val inputInjections = inputEdges.map(edge => (edge.source.id, edge.edgeType.injection)).toMap
 
   /*
     This is the rate limit how many tuples we allow the bolt to process per second.
@@ -170,7 +176,7 @@ private[builder] case class BaseBolt[I, O](
 
   private def finish(inputs: Chain[InputState[Tuple]], results: TraversableOnce[O]) {
     var emitCount = 0
-    if (hasDependants) {
+    if (outputEdges.nonEmpty) {
       if (anchorTuples.anchor) {
         val states = inputs.iterator.map(_.state).toList.asJava
         results.foreach { result =>
@@ -202,7 +208,7 @@ private[builder] case class BaseBolt[I, O](
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    if (hasDependants) { declarer.declare(outputFields) }
+    if (outputEdges.nonEmpty) { declarer.declare(outputFields) }
   }
 
   override val getComponentConfiguration = null

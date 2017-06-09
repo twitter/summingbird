@@ -70,12 +70,16 @@ private[summingbird] case class Topology(
     }
 
     bolts.foreach { case (boltId: Topology.BoltId[Any, Any], bolt: Topology.Bolt[Any, Any]) =>
-      val builtBolt: IRichBolt = BoltBuilder.apply[Any, Any](
+      val builtBolt: IRichBolt = BaseBolt[Any, Any](
         jobId,
         boltId,
-        bolt,
+        bolt.metrics,
+        bolt.anchorTuples,
+        bolt.ackOnEntry,
+        bolt.maxExecutePerSec,
         incomingEdges(boltId),
-        outgoingEdges(boltId)
+        outgoingEdges(boltId),
+        bolt.executor
       )
 
       val declarer = builder.setBolt(
