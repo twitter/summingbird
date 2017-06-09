@@ -16,7 +16,7 @@ import org.apache.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
  * This is a spout used when the spout is being followed by summer.
  * It uses a AggregatorOutputCollector on open.
  */
-class KeyValueSpout[K, V: Semigroup](
+private[builder] class KeyValueSpout[K, V: Semigroup](
     protected val self: IRichSpout,
     summerBuilder: SummerBuilder,
     maxEmitPerExec: MaxEmitPerExecute,

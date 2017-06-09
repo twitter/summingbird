@@ -14,8 +14,7 @@ import org.apache.storm.{ Config => BacktypeStormConfig }
 import org.apache.storm.tuple.Tuple
 import scala.collection.{ Map => CMap }
 
-// Mark as package private?
-case class Topology(
+private[summingbird] case class Topology(
   spouts: Map[Topology.SpoutId[_], Topology.Spout[_]],
   bolts: Map[Topology.BoltId[_, _], Topology.Bolt[_, _]],
   edges: List[Topology.Edge[_]]
@@ -103,7 +102,7 @@ case class Topology(
   }
 }
 
-object Topology {
+private[summingbird] object Topology {
   val EMPTY = Topology(Map(), Map(), List())
 
   sealed trait ComponentId {

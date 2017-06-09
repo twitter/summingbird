@@ -11,7 +11,7 @@ import scala.util.Try
   * This trait represents an edge in Storm topology DAG between two nodes.
   * @tparam T represents type of tuples sent over this `Edge`.
   */
-sealed trait EdgeType[T] {
+private[summingbird] sealed trait EdgeType[T] {
   /**
     * Storm's `Fields` are going to be sent over this `Edge`.
     */
@@ -29,7 +29,7 @@ sealed trait EdgeType[T] {
   val grouping: EdgeGrouping
 }
 
-object EdgeType {
+private[summingbird] object EdgeType {
   /**
     * Simplest possible type of `Edge`, without any assumptions about content inside.
     */

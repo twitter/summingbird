@@ -6,14 +6,14 @@ import org.apache.storm.tuple.{ Fields => StormFields }
 /**
   * This trait is used to represent different grouping strategies in `Storm`.
   */
-sealed trait EdgeGrouping {
+private[summingbird] sealed trait EdgeGrouping {
   /**
    * How to apply this `EdgeGrouping` to edge between `parentName` node and bolt declared by `declarer`.
    */
   def apply(declarer: BoltDeclarer, parent: Topology.EmittingId[_]): Unit
 }
 
-object EdgeGrouping {
+private[summingbird] object EdgeGrouping {
   case object Shuffle extends EdgeGrouping {
     override def apply(declarer: BoltDeclarer, parent: Topology.EmittingId[_]): Unit =
       declarer.shuffleGrouping(parent.id)
