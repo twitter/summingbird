@@ -100,12 +100,12 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
     sourceParallelism: Int,
     tormentaSpout: Spout[(Timestamp, (K, V))],
     sNode: SummerNode[Storm]
-  ): Topology.Spout[_] = {
+  ): Topology.KeyValueSpout[(K, BatchID), (Timestamp, V)] = {
     val summerBuilder = BuildSummer(builder, node)
     val nodeName = builder.getNodeName(node)
     val flushExecTimeCounter = counter(Group(nodeName), Name("spoutFlushExecTime"))
     val executeTimeCounter = counter(Group(nodeName), Name("spoutEmitExecTime"))
-    createSpoutToFeedSummer[K, V](sourceParallelism, sNode, summerBuilder, tormentaSpout, flushExecTimeCounter, executeTimeCounter)
+    createSpoutToFeedSummer(sourceParallelism, sNode, summerBuilder, tormentaSpout, flushExecTimeCounter, executeTimeCounter)
   }
 
   /**

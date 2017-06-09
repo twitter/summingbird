@@ -85,7 +85,9 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
   private val parallelism = getOrElse(DEFAULT_FM_PARALLELISM)
   logger.info(s"[$nodeName] parallelism: ${parallelism.parHint}")
 
-  private def getFFMBolt[T, K, V](summer: SummerNode[Storm]): Topology.Bolt[_, _] = {
+  private def getFFMBolt[T, K, V](summer: SummerNode[Storm]):
+    Topology.Bolt[(Timestamp, T), (Int, CMap[(K, BatchID), (Timestamp, V)])] = {
+
     type Input = (Timestamp, T)
     type OutputKey = (K, BatchID)
     type OutputValue = (Timestamp, V)
@@ -104,7 +106,7 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
 
     val summerBuilder = BuildSummer(builder, node)
 
-    Topology.Bolt[Input, (Int, CMap[OutputKey, OutputValue])](
+    Topology.Bolt(
       parallelism.parHint,
       metrics.metrics,
       anchorTuples,
@@ -121,7 +123,7 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
     )
   }
 
-  def getIntermediateFMBolt[T, U]: Topology.Bolt[_, _] = {
+  def getIntermediateFMBolt[T, U]: Topology.Bolt[(Timestamp, T), (Timestamp, U)] = {
     type ExecutorInput = (Timestamp, T)
     type ExecutorOutput = (Timestamp, U)
 
