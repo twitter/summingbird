@@ -105,25 +105,50 @@ private[summingbird] case class Topology(
 private[summingbird] object Topology {
   val EMPTY = Topology(Map(), Map(), List())
 
+  /**
+   * Represents id of topology's component.
+   */
   sealed trait ComponentId {
     val id: String
   }
 
+  /**
+   * Represents id of topology's component which receives tuples with type `I`.
+   */
   trait ReceivingId[-I] extends ComponentId
 
+  /**
+   * Represents id of topology's component which emits tuples with type `O`.
+   */
   trait EmittingId[+O] extends ComponentId
 
+  /**
+   * Represents id of topology's spout which emits tuples with type `O`.
+   */
   case class SpoutId[+O](override val id: String) extends EmittingId[O]
 
+  /**
+   * Represents id of topology's bolt which receives tuples with type `I` and emits tuples with type `O`.
+   */
   case class BoltId[-I, +O](override val id: String) extends ReceivingId[I] with EmittingId[O]
 
+  /**
+   * Represents topology's edge with source and destination node's ids and edge type.
+   */
   case class Edge[T](source: EmittingId[T], edgeType: EdgeType[T], dest: ReceivingId[T])
 
+  /**
+   * Base trait for all components with parallelism and metrics.
+   */
   sealed trait Component {
     val parallelism: Int
     val metrics: () => TraversableOnce[StormMetric[_]]
   }
 
+  /**
+   * Base trait for spouts.
+   * There are two implementations: raw tormenta spout and key value spout.
+   */
   trait Spout[+O] extends Component
 
   case class RawSpout[+O](
@@ -144,6 +169,9 @@ private[summingbird] object Topology {
     val semigroup: Semigroup[V] = implicitly[Semigroup[V]]
   }
 
+  /**
+   * Base class for bolts.
+   */
   case class Bolt[-I, +O](
     override val parallelism: Int,
     override val metrics: () => TraversableOnce[StormMetric[_]],
