@@ -6,7 +6,7 @@ import scala.collection.mutable
 object MemoryTestExecutor {
   def apply[T](producer: TailProducer[TestPlatform, T]): TestResult = {
     val transformer = new TestToMemoryTranformer()
-    val memoryProducer = transformer.transformProducer(producer).asInstanceOf[TailProducer[Memory, T]]
+    val memoryProducer = PlatformTransformer(transformer, producer).asInstanceOf[TailProducer[Memory, T]]
     val memory = new Memory()
     memory.run(memory.plan(memoryProducer))
     TestResult(transformer.stores.mapValues(_.toMap).toMap, transformer.sinks.mapValues(_.toList).toMap)

@@ -16,7 +16,7 @@ object StormTestExecutor {
 
   def apply[T](producer: TailProducer[TestPlatform, T], storm: Storm): TestResult = {
     val transformer = new TestToStormTranformer()
-    val stormProducer = transformer.transformProducer(producer).asInstanceOf[TailProducer[Storm, T]]
+    val stormProducer = PlatformTransformer(transformer, producer).asInstanceOf[TailProducer[Storm, T]]
     StormTestRun(stormProducer)(storm)
     val storesResult = transformer.stores
       .toMap
