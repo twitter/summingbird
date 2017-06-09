@@ -21,7 +21,7 @@ import scala.reflect.ClassTag
 case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
 
-  def apply: StormTopology = scheduleEdges(scheduleNodes).build(jobId)
+  def build: StormTopology = scheduleEdges(scheduleNodes).build(jobId)
 
   private def scheduleNodes: Topology =
     stormDag.nodes.foldLeft(Topology.EMPTY) {
