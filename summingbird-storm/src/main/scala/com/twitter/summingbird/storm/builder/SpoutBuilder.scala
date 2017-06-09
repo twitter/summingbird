@@ -13,7 +13,7 @@ import org.apache.storm.topology.IRichSpout
 import scala.collection.{ Map => CMap }
 
 private[builder] object SpoutBuilder {
-  def apply[T](
+  def build[T](
     jobId: JobId,
     spoutId: Topology.SpoutId[T],
     spout: Topology.Spout[T],

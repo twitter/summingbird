@@ -58,7 +58,7 @@ private[summingbird] case class Topology(
     val builder = new TopologyBuilder
 
     spouts.foreach { case (spoutId: Topology.SpoutId[Any], spout: Topology.Spout[Any]) =>
-      val builtSpout = SpoutBuilder[Any](
+      val builtSpout = SpoutBuilder.build[Any](
         jobId,
         spoutId,
         spout,
