@@ -4,7 +4,7 @@ import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.{ BatchID, Timestamp }
-import com.twitter.summingbird.online.{ Externalizer, executor }
+import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.option.{ SourceParallelism, SummerBuilder }
 import com.twitter.summingbird.planner.{ SourceNode, SummerNode }
 import com.twitter.summingbird.storm.builder.Topology
@@ -26,7 +26,6 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
     node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
 
   private def computeSpout(spout: Spout[(Timestamp, Any)]): Spout[(Timestamp, Any)] = {
-    val nodeName = builder.getNodeName(node)
     node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
       p match {
         case Source(_) => spout // The source is still in the members list so drop it
@@ -68,9 +67,6 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
     flushExecTimeCounter: Incrementor,
     executeTimeCounter: Incrementor
   ): Topology.KeyValueSpout[(K, BatchID), (Timestamp, V)] = {
-    val summerParalellism = getOrElse(summerNode, Constants.DEFAULT_SUMMER_PARALLELISM)
-    val summerBatchMultiplier = getOrElse(summerNode, Constants.DEFAULT_SUMMER_BATCH_MULTIPLIER)
-    val keyValueShards = executor.KeyValueShards(summerParalellism.parHint * summerBatchMultiplier.get)
     val summerProducer = summerNode.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     val batcher = summerProducer.store.mergeableBatcher
     val formattedSummerSpout = spout.map {

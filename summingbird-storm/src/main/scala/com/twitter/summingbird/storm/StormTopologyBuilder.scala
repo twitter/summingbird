@@ -89,7 +89,6 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
 
       val anchorTuples = getOrElse(node, AnchorTuples.default)
       val metrics = getOrElse(node, DEFAULT_SUMMER_STORM_METRICS)
-      val shouldEmit = stormDag.dependantsOf(node).size > 0
 
       val builder = BuildSummer(this, node)
 
