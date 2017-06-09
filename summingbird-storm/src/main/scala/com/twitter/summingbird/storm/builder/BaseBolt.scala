@@ -32,7 +32,9 @@ import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success }
 
 /**
-  *  This class is used as an implementation for Storm's `Bolt`s.
+  * This class is used as an implementation for Storm's `Bolt`s.
+  * We avoid `List`s as a parameters because they cause Scala serialization issues
+  * see (https://stackoverflow.com/questions/40607954/scala-case-class-serialization).
   *
   * @param jobId of current topology, used for metrics.
   * @param boltId of current bolt, used for logging.
@@ -42,8 +44,8 @@ import scala.util.{ Failure, Success }
   * @param ackOnEntry ack tuples in the beginning of processing.
   * @param maxExecutePerSec limits number of executes per second, will block processing thread after.
   *                         Used for rate limiting.
-  * @param inputEdges list of edges incoming to this bolt.
-  * @param outputEdges: list of edges outgoing from this bolt.
+  * @param inputEdges vector of edges incoming to this bolt.
+  * @param outputEdges vector of edges outgoing from this bolt.
   * @param executor `OperationContainer` which represents operation for this `Bolt`,
   *                 for example it can be summing or flat mapping.
   * @tparam I type of input tuples for this `Bolt`s executor.
@@ -56,8 +58,8 @@ private[builder] case class BaseBolt[I, O](
   anchorTuples: AnchorTuples,
   ackOnEntry: AckOnEntry,
   maxExecutePerSec: MaxExecutePerSecond,
-  inputEdges: List[Topology.Edge[I]],
-  outputEdges: List[Topology.Edge[O]],
+  inputEdges: Vector[Topology.Edge[I]],
+  outputEdges: Vector[Topology.Edge[O]],
   executor: OperationContainer[I, O, InputState[Tuple]]
 ) extends IRichBolt {
 
@@ -79,9 +81,6 @@ private[builder] case class BaseBolt[I, O](
   private[this] val rampPeriods = maxExecutePerSec.rampUptimeMS / PERIOD_LENGTH_MS
   private[this] val deltaPerPeriod: Long = if (rampPeriods > 0) (upperBound - lowerBound) / rampPeriods else 0
 
-  private[this] lazy val startPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
-  private[this] lazy val endRampPeriod = startPeriod + rampPeriods
-
   private[this] val outputFields = outputEdges.headOption.map(_.edgeType.fields).getOrElse(new Fields())
   assert(
     outputEdges.forall(_.edgeType.fields.toList == outputFields.toList),
@@ -92,6 +91,9 @@ private[builder] case class BaseBolt[I, O](
     s"$boltId: Output edges should have same `Injection` $outputEdges.")
 
   private[this] val inputInjections = inputEdges.map(edge => (edge.source.id, edge.edgeType.injection)).toMap
+
+  private[this] lazy val startPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
+  private[this] lazy val endRampPeriod = startPeriod + rampPeriods
 
   /*
     This is the rate limit how many tuples we allow the bolt to process per second.

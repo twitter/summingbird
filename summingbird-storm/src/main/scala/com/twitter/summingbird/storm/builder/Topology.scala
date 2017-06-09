@@ -75,8 +75,8 @@ private[summingbird] case class Topology(
         bolt.anchorTuples,
         bolt.ackOnEntry,
         bolt.maxExecutePerSec,
-        incomingEdges(boltId),
-        outgoingEdges(boltId),
+        incomingEdges(boltId).toVector,
+        outgoingEdges(boltId).toVector,
         bolt.executor
       )
 
