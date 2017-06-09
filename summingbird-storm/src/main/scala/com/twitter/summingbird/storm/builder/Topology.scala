@@ -34,9 +34,7 @@ private[summingbird] case class Topology(
   def withEdge[T](edge: Topology.Edge[T]): Topology = {
     assert(contains(edge.source) && contains(edge.dest))
     assert(edge.source != edge.dest)
-    assert(edges.forall { anotherEdge =>
-      !(anotherEdge.source == edge.source && anotherEdge.dest == edge.dest)
-    })
+    assert(edges.forall { !edge.sameEndPoints(_) })
 
     Topology(spouts, bolts, edges :+ edge)
   }
@@ -139,7 +137,10 @@ private[summingbird] object Topology {
   /**
    * Represents topology's edge with source and destination node's ids and edge type.
    */
-  case class Edge[T](source: EmittingId[T], edgeType: EdgeType[T], dest: ReceivingId[T])
+  case class Edge[T](source: EmittingId[T], edgeType: EdgeType[T], dest: ReceivingId[T]) {
+    def sameEndPoints(another: Edge[_]): Boolean =
+      source == another.source && dest == another.dest
+  }
 
   /**
    * Base trait for all components with parallelism and metrics.
