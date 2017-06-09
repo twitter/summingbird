@@ -1,4 +1,4 @@
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.storm.builder
 
 import org.apache.storm.spout.ISpoutOutputCollector
 import com.twitter.algebird.Semigroup

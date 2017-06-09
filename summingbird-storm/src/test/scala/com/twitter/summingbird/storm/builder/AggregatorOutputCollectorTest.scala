@@ -1,4 +1,4 @@
-package com.twitter.summingbird.storm.collector
+package com.twitter.summingbird.storm.builder
 
 import org.apache.storm.spout.ISpoutOutputCollector
 import org.apache.storm.tuple.Values
@@ -6,7 +6,6 @@ import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.AsyncSummer
 import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
-import com.twitter.summingbird.storm.{ Counter, MockedISpoutOutputCollector, TestAggregateOutpoutCollector }
 import com.twitter.util.Future
 import org.scalatest.WordSpec
 import scala.collection.mutable.{ Set => MSet }

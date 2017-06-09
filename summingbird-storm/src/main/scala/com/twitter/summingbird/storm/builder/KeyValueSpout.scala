@@ -4,7 +4,6 @@ import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, SummerBuilder }
-import com.twitter.summingbird.storm.collector.AggregatorOutputCollector
 import com.twitter.tormenta.spout.SpoutProxy
 import com.twitter.util.{ Duration, Time }
 import java.util.{ Map => JMap }

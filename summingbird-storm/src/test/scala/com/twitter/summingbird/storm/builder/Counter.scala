@@ -1,4 +1,4 @@
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.storm.builder
 
 import java.util.concurrent.atomic.AtomicLong
 import com.twitter.algebird.util.summer.Incrementor
