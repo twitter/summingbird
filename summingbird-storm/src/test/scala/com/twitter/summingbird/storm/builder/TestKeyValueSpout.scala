@@ -5,7 +5,6 @@ import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.{ AsyncSummer, BufferSize, FlushFrequency, MemoryFlushPercent, SyncSummingQueue }
 import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
-import com.twitter.summingbird.storm.builder.KeyValueSpout
 import com.twitter.tormenta.spout.{ BaseSpout, Spout }
 import com.twitter.util.Duration
 import com.twitter.summingbird.batch.{ BatchID, Timestamp }

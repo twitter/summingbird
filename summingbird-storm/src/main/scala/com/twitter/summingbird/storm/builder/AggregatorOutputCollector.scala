@@ -16,7 +16,7 @@ import scala.collection.mutable.{ Map => MMap }
  * AsyncSummer is used to aggregate the tuples.
  * Different streams have separate aggregators and caches.
  */
-class AggregatorOutputCollector[K, V: Semigroup](
+private[builder] class AggregatorOutputCollector[K, V: Semigroup](
     in: SpoutOutputCollector,
     summerBuilder: SummerBuilder,
     maxEmitPerExec: MaxEmitPerExecute,
