@@ -35,22 +35,22 @@ import scala.util.{ Failure, Success }
 /**
   *  This class is used as an implementation for Storm's `Bolt`s.
   *
-  * @param jobId is an id for current topology, used for metrics.
-  * @param boltId is an id for current bolt, used for logging.
-  * @param metrics represents metrics we want to collect on this node.
+  * @param jobId of current topology, used for metrics.
+  * @param boltId of current bolt, used for logging.
+  * @param metrics we want to collect on this node.
   * @param anchorTuples should be equal to true if you want to utilize Storm's anchoring of tuples,
   *                     false otherwise.
   * @param hasDependants does this node have any downstream nodes?
   * @param ackOnEntry ack tuples in the beginning of processing.
   * @param maxExecutePerSec limits number of executes per second, will block processing thread after.
   *                         Used for rate limiting.
-  * @param inputInjections is a map from name of downstream node to format `Injection` from it.
-  * @param outputFields is Storm's `Fields` this bolt going to emit.
-  * @param outputInjection is an output format `Injection`.
-  * @param executor is `OperationContainer` which represents operation for this `Bolt`,
+  * @param inputInjections map from name of downstream node to format `Injection` from it.
+  * @param outputFields Storm's `Fields` that this bolt is going to emit.
+  * @param outputInjection output format `Injection`.
+  * @param executor `OperationContainer` which represents operation for this `Bolt`,
   *                 for example it can be summing or flat mapping.
-  * @tparam I is a type of input tuples for this `Bolt`s executor.
-  * @tparam O is a type of output tuples for this `Bolt`s executor.
+  * @tparam I type of input tuples for this `Bolt`s executor.
+  * @tparam O type of output tuples for this `Bolt`s executor.
   */
 private[builder] case class BaseBolt[I, O](
   jobId: JobId,
