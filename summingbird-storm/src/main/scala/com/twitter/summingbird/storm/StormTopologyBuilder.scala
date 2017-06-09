@@ -26,7 +26,7 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
   private def registerNodes: Topology =
     stormDag.nodes.foldLeft(Topology.EMPTY) {
       case (topology, node: SummerNode[Storm]) =>
-        topology.withBolt(getNodeName(node), scheduleSummerBolt(node))._2
+        topology.withBolt(getNodeName(node), registerSummerBolt(node))._2
       case (topology, node: FlatMapNode[Storm]) =>
         topology.withBolt(getNodeName(node), FlatMapBoltProvider(this, node).apply)._2
       case (topology, node: SourceNode[Storm]) =>
@@ -37,9 +37,9 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
     stormDag.nodes.foldLeft(topologyWithNodes) {
       case (topology, node: SummerNode[Storm]) =>
         val edgeType = EdgeType.AggregatedKeyValues[Any, Any](getSummerKeyValueShards(node))
-        scheduleIncomingEdges(topology, node, edgeType)
+        registerIncomingEdges(topology, node, edgeType)
       case (topology, node: FlatMapNode[Storm]) =>
-        scheduleIncomingEdges(topology, node, flatMapEdgeType(node))
+        registerIncomingEdges(topology, node, flatMapEdgeType(node))
       case (topology, node: SourceNode[Storm]) => topology
         // ignore, no incoming edges into sources
     }
@@ -54,7 +54,7 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
     }
   }
 
-  private def scheduleIncomingEdges(topology: Topology, node: StormNode, edgeType: EdgeType[_]): Topology = {
+  private def registerIncomingEdges(topology: Topology, node: StormNode, edgeType: EdgeType[_]): Topology = {
     val nodeId: ReceivingId[Any] = getId(node).asInstanceOf[Topology.ReceivingId[Any]]
     stormDag.dependenciesOf(node).foldLeft(topology) { (current, upstreamNode) =>
       current.withEdge(Topology.Edge[Any](
@@ -76,7 +76,7 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
   private def getSourceId(node: SourceNode[Storm]): Topology.SpoutId[_] =
     Topology.SpoutId(getNodeName(node))
 
-  private def scheduleSummerBolt(node: SummerNode[Storm]): Topology.Bolt[_, _] = {
+  private def registerSummerBolt(node: SummerNode[Storm]): Topology.Bolt[_, _] = {
     val nodeName = getNodeName(node)
 
     def sinkBolt[K, V](summer: Summer[Storm, K, V]): Topology.Bolt[_, _] = {
