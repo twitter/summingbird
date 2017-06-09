@@ -26,11 +26,11 @@ object InjectionLaws extends Properties("InjectionTests") {
     Arbitrary(Arbitrary.arbitrary[Long].map(Timestamp(_)))
 
   property("Item injection works") = forAll { in: String =>
-    val inj = EdgeTypeInjections.ForItem[String]()
+    val inj = EdgeTypeInjections.Item[String]()
     inj.invert(inj(in)).get == in
   }
   property("KV injection works") = forAll { in: (String, List[Int]) =>
-    val inj = EdgeTypeInjections.ForKeyValue[String, List[Int]]()
+    val inj = EdgeTypeInjections.KeyValue[String, List[Int]]()
     inj.invert(inj(in)).get == in
   }
 }
