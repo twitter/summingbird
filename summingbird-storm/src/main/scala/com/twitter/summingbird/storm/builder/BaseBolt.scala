@@ -59,8 +59,8 @@ private[builder] case class BaseBolt[I, O](
   anchorTuples: AnchorTuples,
   ackOnEntry: AckOnEntry,
   maxExecutePerSec: MaxExecutePerSecond,
-  inputEdges: Vector[Topology.Edge[I]],
-  outputEdges: Vector[Topology.Edge[O]],
+  inputEdges: Vector[Topology.Edge[_, I]],
+  outputEdges: Vector[Topology.Edge[O, _]],
   executor: OperationContainer[I, O, InputState[Tuple]]
 ) extends IRichBolt {
 
@@ -94,7 +94,8 @@ private[builder] case class BaseBolt[I, O](
     outputEdges.forall(edge => outputInjection == Some(edge.edgeType.injection)),
     s"$boltId: Output edges should have same `Injection` $outputEdges.")
 
-  private[this] val inputInjections = inputEdges.map(edge => (edge.source.id, edge.edgeType.injection)).toMap
+  private[this] val inputEdgesMap: Map[String, Topology.Edge[_, I]] =
+    inputEdges.map(edge => (edge.source.id, edge)).toMap
 
   private[this] lazy val startPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
   private[this] lazy val endRampPeriod = startPeriod + rampPeriods
@@ -157,8 +158,8 @@ private[builder] case class BaseBolt[I, O](
      * System ticks come with a fixed stream id
      */
     val curResults = if (!tuple.getSourceStreamId.equals("__tick")) {
-      val tsIn = inputInjections.get(tuple.getSourceComponent) match {
-        case Some(inputFormat) => inputFormat.invert(tuple.getValues).get
+      val tsIn = inputEdgesMap.get(tuple.getSourceComponent) match {
+        case Some(edge) => edge.deserialize(tuple.getValues).get
         case None => throw new Exception("Unrecognized source component: " +
           tuple.getSourceComponent+", current bolt: " + boltId.id)
       }

@@ -13,30 +13,30 @@ import org.apache.storm.topology.IRichSpout
 import scala.collection.{ Map => CMap }
 
 private[builder] object SpoutBuilder {
-  def build[T](
+  def build[O](
     jobId: JobId,
-    spoutId: Topology.SpoutId[T],
-    spout: Topology.Spout[T],
-    outputEdges: List[Topology.Edge[T]]
+    spoutId: Topology.SpoutId[O],
+    spout: Topology.Spout[O],
+    outputEdges: List[Topology.Edge[O, _]]
   ): IRichSpout = spout match {
-    case rawSpout: Topology.RawSpout[T] =>
+    case rawSpout: Topology.RawSpout[O] =>
       createRawSpout(jobId, spoutId, rawSpout, outputEdges)
     case keyValueSpout: Topology.KeyValueSpout[_, _] =>
       createKeyValueSpout[Any, Any](
         jobId,
         spoutId.asInstanceOf[Topology.SpoutId[(Int, CMap[Any, Any])]],
         keyValueSpout.asInstanceOf[Topology.KeyValueSpout[Any, Any]],
-        outputEdges.asInstanceOf[List[Topology.Edge[(Int, CMap[Any, Any])]]]
+        outputEdges.asInstanceOf[List[Topology.Edge[(Int, CMap[Any, Any]), _]]]
       )(
         keyValueSpout.semigroup.asInstanceOf[Semigroup[Any]]
       )
   }
 
-  def createRawSpout[T](
+  def createRawSpout[O](
     jobId: JobId,
-    spoutId: Topology.SpoutId[T],
-    spout: Topology.RawSpout[T],
-    outputEdges: List[Topology.Edge[T]]
+    spoutId: Topology.SpoutId[O],
+    spout: Topology.RawSpout[O],
+    outputEdges: List[Topology.Edge[O, _]]
   ): IRichSpout = {
     assert(
       outputEdges.forall(_.edgeType.isInstanceOf[EdgeType.Item[_]]),
@@ -50,7 +50,7 @@ private[builder] object SpoutBuilder {
     jobId: JobId,
     spoutId: Topology.SpoutId[(Int, CMap[K, V])],
     spout: Topology.KeyValueSpout[K, V],
-    outputEdges: List[Topology.Edge[(Int, CMap[K, V])]]
+    outputEdges: List[Topology.Edge[(Int, CMap[K, V]), _]]
   ): IRichSpout = {
     val stormSpout = getStormSpout(jobId, spout.spout, spout.metrics)
     assert(outputEdges.nonEmpty, "Should be at least one output edge from KeyValueSpout")

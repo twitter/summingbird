@@ -76,9 +76,10 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
   private def registerIncomingEdges(topology: Topology, node: StormNode, edgeType: EdgeType[_]): Topology = {
     val nodeId: ReceivingId[Any] = getId(node).asInstanceOf[Topology.ReceivingId[Any]]
     stormDag.dependenciesOf(node).foldLeft(topology) { (current, upstreamNode) =>
-      current.withEdge(Topology.Edge[Any](
+      current.withEdge(Topology.Edge[Any, Any](
         getId(upstreamNode),
         edgeType.asInstanceOf[EdgeType[Any]],
+        identity[Any],
         nodeId))
     }
   }

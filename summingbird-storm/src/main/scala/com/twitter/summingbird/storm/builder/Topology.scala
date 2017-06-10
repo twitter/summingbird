@@ -13,11 +13,12 @@ import org.apache.storm.topology.{ IRichBolt, TopologyBuilder }
 import org.apache.storm.{ Config => BacktypeStormConfig }
 import org.apache.storm.tuple.Tuple
 import scala.collection.{ Map => CMap }
+import scala.util.Try
 
 private[summingbird] case class Topology(
   spouts: Map[Topology.SpoutId[_], Topology.Spout[_]],
   bolts: Map[Topology.BoltId[_, _], Topology.Bolt[_, _]],
-  edges: List[Topology.Edge[_]]
+  edges: List[Topology.Edge[_, _]]
 ) {
   def withSpout[O](id: String, spout: Topology.Spout[O]): (Topology.SpoutId[O], Topology) = {
     val spoutId = Topology.SpoutId[O](id)
@@ -31,7 +32,7 @@ private[summingbird] case class Topology(
     (boltId, Topology(spouts, bolts.updated(boltId, bolt), edges))
   }
 
-  def withEdge[T](edge: Topology.Edge[T]): Topology = {
+  def withEdge[I, O](edge: Topology.Edge[I, O]): Topology = {
     assert(contains(edge.source) && contains(edge.dest))
     assert(edge.source != edge.dest)
     assert(edges.forall { !edge.sameEndPoints(_) })
@@ -44,14 +45,14 @@ private[summingbird] case class Topology(
     case boltId: Topology.BoltId[_, _] => bolts.contains(boltId)
   }
 
-  def incomingEdges[T](id: Topology.ReceivingId[T]): List[Topology.Edge[T]] = {
+  def incomingEdges[O](id: Topology.ReceivingId[O]): List[Topology.Edge[_, O]] = {
     assert(contains(id))
-    edges.filter(_.dest == id).asInstanceOf[List[Topology.Edge[T]]]
+    edges.filter(_.dest == id).asInstanceOf[List[Topology.Edge[_, O]]]
   }
 
-  def outgoingEdges[T](id: Topology.EmittingId[T]): List[Topology.Edge[T]] = {
+  def outgoingEdges[I](id: Topology.EmittingId[I]): List[Topology.Edge[I, _]] = {
     assert(contains(id))
-    edges.filter(_.source == id).asInstanceOf[List[Topology.Edge[T]]]
+    edges.filter(_.source == id).asInstanceOf[List[Topology.Edge[I, _]]]
   }
 
   def build(jobId: JobId): StormTopology = {
@@ -137,9 +138,17 @@ private[summingbird] object Topology {
   /**
    * Represents topology's edge with source and destination node's ids and edge type.
    */
-  case class Edge[T](source: EmittingId[T], edgeType: EdgeType[T], dest: ReceivingId[T]) {
-    def sameEndPoints(another: Edge[_]): Boolean =
+  case class Edge[I, O](
+    source: EmittingId[I],
+    edgeType: EdgeType[I],
+    onReceiveTransform: I => O,
+    dest: ReceivingId[O]
+  ) {
+    def sameEndPoints(another: Edge[_, _]): Boolean =
       source == another.source && dest == another.dest
+
+    def deserialize(serialized: java.util.List[AnyRef]): Try[O] =
+      edgeType.injection.invert(serialized).map(onReceiveTransform)
   }
 
   /**
