@@ -1,6 +1,7 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.summingbird.Options
+import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, FlatMapNode, SourceNode, SummerNode }
@@ -11,6 +12,25 @@ import com.twitter.summingbird.storm.planner.StormNode
 import org.apache.storm.generated.StormTopology
 import org.slf4j.LoggerFactory
 import scala.reflect.ClassTag
+
+import scala.collection.{ Map => CMap }
+
+object StormTopologyBuilder {
+  type Item[T] = (Timestamp, T)
+
+  type AggregatedKey[K] = (K, BatchID)
+  type AggregatedValue[V] = (Timestamp, V)
+  type PartiallyAggregated[K, V] = (Int, CMap[AggregatedKey[K], AggregatedValue[V]])
+
+  type ItemSpout[T] = Topology.Spout[Item[T]]
+  type AggregatedSpout[K, V] = Topology.Spout[PartiallyAggregated[K, V]]
+
+  type IntermediateFMBolt[T, U] = Topology.Bolt[Item[T], Item[U]]
+  type FinalFMBolt[T, K, V] = Topology.Bolt[Item[T], PartiallyAggregated[K, V]]
+
+  type SummerOutput[K, V] = Item[(K, (Option[V], V))]
+  type SummerBolt[K, V] = Topology.Bolt[PartiallyAggregated[K, V], SummerOutput[K, V]]
+}
 
 /**
  * This class encapsulates logic how to build `StormTopology` from DAG of the job, jobId and options.

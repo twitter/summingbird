@@ -1,17 +1,16 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.summingbird.Summer
-import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import com.twitter.summingbird.online.{ FlatMapOperation, MergeableStoreFactory, WrappedTSInMergeable, executor }
 import com.twitter.summingbird.online.option.IncludeSuccessHandler
 import com.twitter.summingbird.planner.SummerNode
 import com.twitter.summingbird.storm.Constants._
+import com.twitter.summingbird.storm.StormTopologyBuilder._
 import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.option.AnchorTuples
 import com.twitter.summingbird.storm.planner.StormNode
 import org.slf4j.LoggerFactory
 import scala.reflect.ClassTag
-import scala.collection.{ Map => CMap }
 
 case object SummerBoltProvider {
   @transient private val logger = LoggerFactory.getLogger(SummerBoltProvider.getClass)
@@ -20,9 +19,7 @@ case object SummerBoltProvider {
 case class SummerBoltProvider(builder: StormTopologyBuilder, node: SummerNode[Storm]) {
   import SummerBoltProvider._
 
-  def apply[K, V]: Topology.Bolt[
-    (Int, CMap[(K, BatchID), (Timestamp, V)]),
-    (Timestamp, (K, (Option[V], V)))] = {
+  def apply[K, V]: SummerBolt[K, V] = {
     val nodeName = builder.getNodeName(node)
 
     val summer = node.members.collect { case c@Summer(_, _, _) => c }.head
@@ -30,10 +27,6 @@ case class SummerBoltProvider(builder: StormTopologyBuilder, node: SummerNode[St
 
     implicit val semigroup = summer.semigroup
     implicit val batcher = summer.store.mergeableBatcher
-
-    type ExecutorKeyType = (K, BatchID)
-    type ExecutorValueType = (Timestamp, V)
-    type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
 
     val anchorTuples = getOrElse(AnchorTuples.default)
     val metrics = getOrElse(DEFAULT_SUMMER_STORM_METRICS)
@@ -51,16 +44,16 @@ case class SummerBoltProvider(builder: StormTopologyBuilder, node: SummerNode[St
     logger.info(s"[$nodeName] parallelism : $parallelism")
 
     val summerBuilder = BuildSummer(builder, node)
-    val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
+    val storeBaseFMOp = { op: (AggregatedKey[K], (Option[Item[V]], Item[V])) =>
       val ((key, batchID), (optPrevExecutorValue, (timestamp, value))) = op
       val optPrevValue = optPrevExecutorValue.map(_._2)
       List((timestamp, (key, (optPrevValue, value))))
     }
 
-    val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
+    val flatmapOp: FlatMapOperation[(AggregatedKey[K], (Option[Item[V]], Item[V])), SummerOutput[K, V]] =
       FlatMapOperation.apply(storeBaseFMOp)
 
-    val supplier: MergeableStoreFactory[ExecutorKeyType, V] = summer.store
+    val supplier: MergeableStoreFactory[AggregatedKey[K], V] = summer.store
 
     Topology.Bolt(
       parallelism,

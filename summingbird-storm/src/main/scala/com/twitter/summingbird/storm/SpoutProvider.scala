@@ -3,10 +3,11 @@ package com.twitter.summingbird.storm
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{ BatchID, Timestamp }
+import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.option.{ SourceParallelism, SummerBuilder }
 import com.twitter.summingbird.planner.{ SourceNode, SummerNode }
+import com.twitter.summingbird.storm.StormTopologyBuilder._
 import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.tormenta.spout.Spout
@@ -25,7 +26,7 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
   private def extractSourceAttributes: (Spout[(Timestamp, Any)], Option[SourceParallelism]) =
     node.members.collect { case Source(SpoutSource(s, parOpt)) => (s, parOpt) }.head
 
-  private def computeSpout(spout: Spout[(Timestamp, Any)]): Spout[(Timestamp, Any)] = {
+  private def computeSpout[T](spout: Spout[(Timestamp, _)]): Spout[Item[T]] = {
     node.members.reverse.foldLeft(spout.asInstanceOf[Spout[(Timestamp, Any)]]) { (spout, p) =>
       p match {
         case Source(_) => spout // The source is still in the members list so drop it
@@ -41,7 +42,7 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
         case AlsoProducer(_, _) => spout
         case _ => sys.error("not possible, given the above call to span.\n" + p)
       }
-    }
+    }.asInstanceOf[Spout[Item[T]]]
   }
 
   /**
@@ -63,10 +64,10 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
     sourceParallelism: Int,
     summerNode: SummerNode[Storm],
     builder: SummerBuilder,
-    spout: Spout[(Timestamp, (K, V))],
+    spout: Spout[Item[(K, V)]],
     flushExecTimeCounter: Incrementor,
     executeTimeCounter: Incrementor
-  ): Topology.KeyValueSpout[(K, BatchID), (Timestamp, V)] = {
+  ): AggregatedSpout[K, V] = {
     val summerProducer = summerNode.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     val batcher = summerProducer.store.mergeableBatcher
     val formattedSummerSpout = spout.map {
@@ -76,7 +77,7 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
 
     val maxEmitPerExecute = getOrElse(node, Constants.DEFAULT_MAX_EMIT_PER_EXECUTE)
 
-    Topology.KeyValueSpout[(K, BatchID), (Timestamp, V)](
+    Topology.KeyValueSpout(
       sourceParallelism,
       spoutStormMetrics.metrics,
       formattedSummerSpout,
@@ -96,9 +97,9 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
    */
   private def getKeyValueSpout[K, V](
     sourceParallelism: Int,
-    tormentaSpout: Spout[(Timestamp, (K, V))],
+    tormentaSpout: Spout[Item[(K, V)]],
     sNode: SummerNode[Storm]
-  ): Topology.KeyValueSpout[(K, BatchID), (Timestamp, V)] = {
+  ): AggregatedSpout[K, V] = {
     val summerBuilder = BuildSummer(builder, node)
     val nodeName = builder.getNodeName(node)
     val flushExecTimeCounter = counter(Group(nodeName), Name("spoutFlushExecTime"))
@@ -106,22 +107,31 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
     createSpoutToFeedSummer(sourceParallelism, sNode, summerBuilder, tormentaSpout, flushExecTimeCounter, executeTimeCounter)
   }
 
+  private def getRawSpout[T](
+    sourceParallelism: Int,
+    tormentaSpout: Spout[Item[T]]
+  ): ItemSpout[T] =
+    Topology.RawSpout(sourceParallelism, spoutStormMetrics.metrics, tormentaSpout)
+
   /**
    * This is the decision logic.
    * If the spout is followed by a summer wraps the spout in KeyValueSpout
    */
-  def apply: Topology.Spout[_] = {
+  def apply[T]: Topology.Spout[_] = {
     val (spout, sourceParallelismOption) = extractSourceAttributes
-    val tormentaSpout = computeSpout(spout)
+    val tormentaSpout: Spout[Item[T]] = computeSpout(spout)
     val sourceParallelism = getSourceParallelism(sourceParallelismOption)
     validateParallelisms(sourceParallelism)
     val summerOpt: Option[SummerNode[Storm]] = builder.stormDag.dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }.headOption
     summerOpt match {
       case Some(summerNode) =>
         // since we know that the the next node is a summer, this implies the type of the spout must be `(K, V)` for some `K, V`
-        val kvSpout = tormentaSpout.asInstanceOf[Spout[(Timestamp, (Any, Any))]]
-        getKeyValueSpout(sourceParallelism, kvSpout, summerNode)
-      case None => Topology.RawSpout(sourceParallelism, spoutStormMetrics.metrics, tormentaSpout)
+        getKeyValueSpout[Any, Any](
+          sourceParallelism,
+          tormentaSpout.asInstanceOf[Spout[Item[(Any, Any)]]],
+          summerNode
+        )
+      case None => getRawSpout[T](sourceParallelism, tormentaSpout)
     }
   }
 }

@@ -24,10 +24,10 @@ import com.twitter.summingbird.storm.option.AnchorTuples
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
+import com.twitter.summingbird.storm.StormTopologyBuilder._
 import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.planner._
 import org.slf4j.LoggerFactory
-import scala.collection.{ Map => CMap }
 import scala.reflect.ClassTag
 
 /**
@@ -86,12 +86,7 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
   private val parallelism = getOrElse(DEFAULT_FM_PARALLELISM)
   logger.info(s"[$nodeName] parallelism: ${parallelism.parHint}")
 
-  private def getFFMBolt[T, K, V](summer: SummerNode[Storm]):
-    Topology.Bolt[(Timestamp, T), (Int, CMap[(K, BatchID), (Timestamp, V)])] = {
-
-    type Input = (Timestamp, T)
-    type OutputKey = (K, BatchID)
-    type OutputValue = (Timestamp, V)
+  private def getFFMBolt[T, K, V](summer: SummerNode[Storm]): FinalFMBolt[T, K, V] = {
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
@@ -120,18 +115,15 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
         maxWaitTime,
         maxEmitPerExecute,
         keyValueShards
-      )(implicitly[Semigroup[OutputValue]])
+      )(implicitly[Semigroup[AggregatedValue[V]]])
     )
   }
 
-  def getIntermediateFMBolt[T, U]: Topology.Bolt[(Timestamp, T), (Timestamp, U)] = {
-    type ExecutorInput = (Timestamp, T)
-    type ExecutorOutput = (Timestamp, U)
-
+  def getIntermediateFMBolt[T, U]: IntermediateFMBolt[T, U] = {
     val operation = foldOperations[T, U](node.members.reverse)
     val wrappedOperation = wrapTime(operation)
 
-    Topology.Bolt[ExecutorInput, ExecutorOutput](
+    Topology.Bolt(
       parallelism.parHint,
       metrics.metrics,
       anchorTuples,
