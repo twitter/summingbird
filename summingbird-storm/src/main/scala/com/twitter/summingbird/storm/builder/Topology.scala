@@ -33,7 +33,6 @@ private[summingbird] case class Topology(
   }
 
   def withEdge[I, O](edge: Topology.Edge[I, O]): Topology = {
-    assert(contains(edge.source) && contains(edge.dest))
     assert(edge.source != edge.dest)
     assert(edges.forall { !edge.sameEndPoints(_) })
 
@@ -56,6 +55,8 @@ private[summingbird] case class Topology(
   }
 
   def build(jobId: JobId): StormTopology = {
+    edges.foreach(edge => assert(contains(edge.source) && contains(edge.dest)))
+
     val builder = new TopologyBuilder
 
     spouts.foreach { case (spoutId: Topology.SpoutId[Any], spout: Topology.Spout[Any]) =>

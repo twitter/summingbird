@@ -19,7 +19,14 @@ case object SummerBoltProvider {
 case class SummerBoltProvider(builder: StormTopologyBuilder, node: SummerNode[Storm]) {
   import SummerBoltProvider._
 
-  def apply[K, V]: SummerBolt[K, V] = {
+  def register[K, V](topology: Topology): Topology = {
+    val (boltId, topologyWithBolt) = topology.withBolt(builder.getNodeName(node), bolt[K, V])
+    // this is noop to check that created id has signature we expect it to have
+    val checkIdCorrectness: SummerBoltId[K, V] = boltId
+    builder.registerItemEdges[(K, (Option[V], V))](topologyWithBolt, node, boltId)
+  }
+
+  private def bolt[K, V]: Topology.Bolt[SummerInput[K, V], SummerOutput[K, V]] = {
     val nodeName = builder.getNodeName(node)
 
     val summer = node.members.collect { case c@Summer(_, _, _) => c }.head

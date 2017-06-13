@@ -49,8 +49,7 @@ private[summingbird] object EdgeType {
     override val grouping: EdgeGrouping = EdgeGrouping.Fields(new Fields("aggKey"))
   }
 
-  def itemWithShuffleGrouping[T]: Item[T] = Item[T](EdgeGrouping.Shuffle)
-  def itemWithLocalOrShuffleGrouping[T]: Item[T] = Item[T](EdgeGrouping.LocalOrShuffle)
+  def item[T](withLocal: Boolean): Item[T] = Item(EdgeGrouping.shuffle(withLocal))
 }
 
 private object EdgeTypeInjections {

@@ -6,7 +6,6 @@ import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, FlatMapNode, SourceNode, SummerNode }
 import com.twitter.summingbird.storm.Constants._
-import com.twitter.summingbird.storm.builder.Topology.ReceivingId
 import com.twitter.summingbird.storm.builder.{ EdgeType, Topology }
 import com.twitter.summingbird.storm.planner.StormNode
 import org.apache.storm.generated.StormTopology
@@ -24,14 +23,11 @@ object StormTopologyBuilder {
   type AggregateValue[V] = (Timestamp, V)
   type Aggregated[K, V] = (Int, CMap[AggregateKey[K], AggregateValue[V]])
 
-  type ItemSpout[T] = Topology.Spout[Item[T]]
-  type AggregatedSpout[K, V] = Topology.Spout[Aggregated[K, V]]
-
-  type ItemFMBolt[T, U] = Topology.Bolt[Item[T], Item[U]]
-  type AggregatedFMBolt[T, K, V] = Topology.Bolt[Item[T], Aggregated[K, V]]
-
+  type SummerInput[K, V] = Traversable[(AggregateKey[K], AggregateValue[V])]
   type SummerOutput[K, V] = Item[(K, (Option[V], V))]
-  type SummerBolt[K, V] = Topology.Bolt[Aggregated[K, V], SummerOutput[K, V]]
+
+  type FlatMapBoltId[T] = Topology.BoltId[Item[T], _]
+  type SummerBoltId[K, V] = Topology.BoltId[SummerInput[K, V], SummerOutput[K, V]]
 }
 
 /**
@@ -40,64 +36,81 @@ object StormTopologyBuilder {
 case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
   import StormTopologyBuilder._
 
-  def build: StormTopology = registerEdges(registerNodes).build(jobId)
+  def build: StormTopology = {
+    val topology = stormDag.nodes.foldLeft(Topology.empty) {
+      case (currentTopology, node: SummerNode[Storm]) =>
+        SummerBoltProvider(this, node).register[Any, Any](currentTopology)
+      case (currentTopology, node: FlatMapNode[Storm]) =>
+        FlatMapBoltProvider(this, node).register(currentTopology)
+      case (currentTopology, node: SourceNode[Storm]) =>
+        SpoutProvider(this, node).register[Any](currentTopology)
+    }
+    topology.build(jobId)
+  }
 
-  private def registerNodes: Topology =
-    stormDag.nodes.foldLeft(Topology.empty) {
-      case (topology, node: SummerNode[Storm]) =>
-        topology.withBolt(getNodeName(node), SummerBoltProvider(this, node).apply)._2
-      case (topology, node: FlatMapNode[Storm]) =>
-        topology.withBolt(getNodeName(node), FlatMapBoltProvider(this, node).apply)._2
-      case (topology, node: SourceNode[Storm]) =>
-        topology.withSpout(getNodeName(node), SpoutProvider(this, node).apply)._2
+  private[storm] def registerAggregatedEdges[K, V](
+    topology: Topology,
+    source: StormNode,
+    sourceId: Topology.EmittingId[Aggregated[K, V]]
+  ): Topology =
+  // todo: validate all downstream nodes being with same semigroup and shards count
+    stormDag.dependantsOf(source).foldLeft(topology) {
+      // Downstream node must be `SummerNode`.
+      case (currentTopology, downstreamNode: SummerNode[Storm]) =>
+        currentTopology.withEdge(aggregatedToSummerEdge(sourceId, downstreamNode))
     }
 
-  private def registerEdges(topologyWithNodes: Topology): Topology =
-    stormDag.nodes.foldLeft(topologyWithNodes) {
-      case (topology, node: SummerNode[Storm]) =>
-        val edgeType = EdgeType.AggregatedKeyValues[Any, Any](getSummerKeyValueShards(node))
-        registerIncomingEdges(topology, node, edgeType)
-      case (topology, node: FlatMapNode[Storm]) =>
-        registerIncomingEdges(topology, node, flatMapEdgeType(node))
-      case (topology, node: SourceNode[Storm]) => topology
-        // ignore, no incoming edges into sources
+  private[storm] def registerItemEdges[T](
+    topology: Topology,
+    source: StormNode,
+    sourceId: Topology.EmittingId[Item[T]]
+  ): Topology = {
+    stormDag.dependantsOf(source).foldLeft(topology) {
+      case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
+        currentTopology.withEdge(itemToFlatMapEdge(sourceId, downstreamNode))
+      case (currentTopology, downstreamNode: SummerNode[Storm]) =>
+        val kvSourceId = sourceId.asInstanceOf[Topology.EmittingId[Item[(Any, Any)]]]
+        currentTopology.withEdge(itemToSummerEdge[Any, Any](kvSourceId, downstreamNode))
     }
+  }
 
-  private def flatMapEdgeType(node: FlatMapNode[Storm]): EdgeType[_] = {
+  private def aggregatedToSummerEdge[K, V](
+    sourceId: Topology.EmittingId[Aggregated[K, V]],
+    node: SummerNode[Storm]
+  ): Topology.Edge[Aggregated[K, V], SummerInput[K, V]] = Topology.Edge(
+    sourceId,
+    EdgeType.AggregatedKeyValues(getSummerKeyValueShards(node)),
+    _._2,
+    getSummerBoltId[K, V](node)
+  )
+
+  private def itemToFlatMapEdge[T](
+    sourceId: Topology.EmittingId[Item[T]],
+    node: FlatMapNode[Storm]
+  ): Topology.Edge[Item[T], Item[T]] = {
     val usePreferLocalDependency = getOrElse(node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
     logger.info(s"[${getNodeName(node)}] usePreferLocalDependency: ${usePreferLocalDependency.get}")
-    if (usePreferLocalDependency.get) {
-      EdgeType.itemWithLocalOrShuffleGrouping[Any]
-    } else {
-      EdgeType.itemWithShuffleGrouping[Any]
-    }
+
+    Topology.Edge[Item[T], Item[T]](
+      sourceId,
+      EdgeType.item(usePreferLocalDependency.get),
+      identity,
+      getFMBoltId[T](node)
+    )
   }
 
-  private def registerIncomingEdges(topology: Topology, node: StormNode, edgeType: EdgeType[_]): Topology = {
-    val nodeId: ReceivingId[Any] = getId(node).asInstanceOf[Topology.ReceivingId[Any]]
-    stormDag.dependenciesOf(node).foldLeft(topology) { (current, upstreamNode) =>
-      current.withEdge(Topology.Edge[Any, Any](
-        getId(upstreamNode),
-        edgeType.asInstanceOf[EdgeType[Any]],
-        identity[Any],
-        nodeId))
-    }
+  private def itemToSummerEdge[K, V](
+    sourceId: Topology.EmittingId[Item[(K, V)]],
+    node: SummerNode[Storm]
+  ): Topology.Edge[Item[(K, V)], SummerInput[K, V]] = {
+    throw new Exception("cannot emit to summer nodes from item source")
   }
 
-  private def getId(node: StormNode): Topology.EmittingId[_] = node match {
-    case sourceNode: SourceNode[Storm] => getSourceId(sourceNode)
-    case flatMapNode: FlatMapNode[Storm] => getFlatMapId(flatMapNode)
-    case summerNode: SummerNode[Storm] => getSummerId(summerNode)
-  }
-
-  private def getSummerId(node: SummerNode[Storm]): Topology.BoltId[_, _] =
+  private[storm] def getSummerBoltId[K, V](node: SummerNode[Storm]): SummerBoltId[K, V] =
     Topology.BoltId(getNodeName(node))
 
-  private def getFlatMapId(node: FlatMapNode[Storm]): Topology.BoltId[_, _] =
+  private[storm] def getFMBoltId[T](node: FlatMapNode[Storm]): FlatMapBoltId[T] =
     Topology.BoltId(getNodeName(node))
-
-  private def getSourceId(node: SourceNode[Storm]): Topology.SpoutId[_] =
-    Topology.SpoutId(getNodeName(node))
 
   private[storm] def getOrElse[T <: AnyRef: ClassTag](node: StormNode, default: T): T =
     get[T](node) match {

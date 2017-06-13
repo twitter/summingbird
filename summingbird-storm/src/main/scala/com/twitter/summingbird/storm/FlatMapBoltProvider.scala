@@ -61,6 +61,28 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
   import FlatMapBoltProvider._
   import Producer2FlatMapOperation._
 
+  def register(topology: Topology): Topology = {
+    val summerOpt: Option[SummerNode[Storm]] = builder.stormDag.dependantsOf(node).collect { case s: SummerNode[Storm] => s }.headOption
+    summerOpt match {
+      case Some(s) => registerAggregatedFMBolt[Any, Any, Any](topology, s)
+      case None => registerItemFMBolt[Any, Any](topology)
+    }
+  }
+
+  private def registerItemFMBolt[T, U](topology: Topology): Topology = {
+    val (boltId, topologyWithBolt) = topology.withBolt(builder.getNodeName(node), itemBolt[T, U])
+    // this is noop to check that created id has signature we expect it to have
+    val checkIdCorrectness: FlatMapBoltId[T] = boltId
+    builder.registerItemEdges[U](topologyWithBolt, node, boltId)
+  }
+
+  private def registerAggregatedFMBolt[T, K, V](topology: Topology, summer: SummerNode[Storm]): Topology = {
+    val (boltId, topologyWithBolt) = topology.withBolt(builder.getNodeName(node), aggregatedBolt[T, K, V](summer))
+    // this is noop to check that created id has signature we expect it to have
+    val checkIdCorrectness: FlatMapBoltId[T] = boltId
+    builder.registerAggregatedEdges[K, V](topologyWithBolt, node, boltId)
+  }
+
   private def getOrElse[T <: AnyRef: ClassTag](default: T, queryNode: StormNode = node) =
     builder.getOrElse(queryNode, default)
 
@@ -86,7 +108,7 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
   private val parallelism = getOrElse(DEFAULT_FM_PARALLELISM)
   logger.info(s"[$nodeName] parallelism: ${parallelism.parHint}")
 
-  private def getFFMBolt[T, K, V](summer: SummerNode[Storm]): AggregatedFMBolt[T, K, V] = {
+  private def aggregatedBolt[T, K, V](summer: SummerNode[Storm]): Topology.Bolt[Item[T], Aggregated[K, V]] = {
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
@@ -119,7 +141,7 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
     )
   }
 
-  def getIntermediateFMBolt[T, U]: ItemFMBolt[T, U] = {
+  def itemBolt[T, U]: Topology.Bolt[Item[T], Item[U]] = {
     val operation = foldOperations[T, U](node.members.reverse)
     val wrappedOperation = wrapTime(operation)
 
@@ -136,13 +158,5 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
         maxEmitPerExecute
       )
     )
-  }
-
-  def apply: Topology.Bolt[_, _] = {
-    val summerOpt: Option[SummerNode[Storm]] = builder.stormDag.dependantsOf(node).collect { case s: SummerNode[Storm] => s }.headOption
-    summerOpt match {
-      case Some(s) => getFFMBolt[Any, Any, Any](s)
-      case None => getIntermediateFMBolt
-    }
   }
 }
