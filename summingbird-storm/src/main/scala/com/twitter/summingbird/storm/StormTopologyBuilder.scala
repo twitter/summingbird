@@ -43,7 +43,7 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
   def build: StormTopology = registerEdges(registerNodes).build(jobId)
 
   private def registerNodes: Topology =
-    stormDag.nodes.foldLeft(Topology.EMPTY) {
+    stormDag.nodes.foldLeft(Topology.empty) {
       case (topology, node: SummerNode[Storm]) =>
         topology.withBolt(getNodeName(node), SummerBoltProvider(this, node).apply)._2
       case (topology, node: FlatMapNode[Storm]) =>

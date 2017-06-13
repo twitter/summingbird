@@ -105,13 +105,13 @@ private[summingbird] case class Topology(
 }
 
 private[summingbird] object Topology {
-  val EMPTY = Topology(Map(), Map(), List())
+  val empty = Topology(Map(), Map(), List())
 
   /**
    * Represents id of topology's component.
    */
   sealed trait ComponentId {
-    val id: String
+    def id: String
   }
 
   /**
@@ -146,8 +146,8 @@ private[summingbird] object Topology {
    * Base trait for all components with parallelism and metrics.
    */
   sealed trait Component {
-    val parallelism: Int
-    val metrics: () => TraversableOnce[StormMetric[_]]
+    def parallelism: Int
+    def metrics: () => TraversableOnce[StormMetric[_]]
   }
 
   /**
@@ -157,14 +157,14 @@ private[summingbird] object Topology {
   trait Spout[+O] extends Component
 
   case class RawSpout[+O](
-    override val parallelism: Int,
-    override val metrics: () => TraversableOnce[StormMetric[_]],
+    parallelism: Int,
+    metrics: () => TraversableOnce[StormMetric[_]],
     spout: TormentaSpout[O]
   ) extends Spout[O]
 
   case class KeyValueSpout[K, V: Semigroup](
-    override val parallelism: Int,
-    override val metrics: () => TraversableOnce[StormMetric[_]],
+    parallelism: Int,
+    metrics: () => TraversableOnce[StormMetric[_]],
     spout: TormentaSpout[(K, V)],
     summerBuilder: SummerBuilder,
     maxEmitPerExec: MaxEmitPerExecute,
@@ -178,8 +178,8 @@ private[summingbird] object Topology {
    * Base class for bolts.
    */
   case class Bolt[-I, +O](
-    override val parallelism: Int,
-    override val metrics: () => TraversableOnce[StormMetric[_]],
+    parallelism: Int,
+    metrics: () => TraversableOnce[StormMetric[_]],
     anchorTuples: AnchorTuples,
     ackOnEntry: AckOnEntry,
     maxExecutePerSec: MaxExecutePerSecond,
