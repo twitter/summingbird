@@ -25,7 +25,7 @@ object StormTopologyBuilder {
   type ItemSpout[T] = Topology.Spout[Item[T]]
   type AggregatedSpout[K, V] = Topology.Spout[PartiallyAggregated[K, V]]
 
-  type IntermediateFMBolt[T, U] = Topology.Bolt[Item[T], Item[U]]
+  type ItemFMBolt[T, U] = Topology.Bolt[Item[T], Item[U]]
   type AggregatedFMBolt[T, K, V] = Topology.Bolt[Item[T], PartiallyAggregated[K, V]]
 
   type SummerOutput[K, V] = Item[(K, (Option[V], V))]

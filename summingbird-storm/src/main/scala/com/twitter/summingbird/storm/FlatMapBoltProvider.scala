@@ -119,7 +119,7 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
     )
   }
 
-  def getIntermediateFMBolt[T, U]: IntermediateFMBolt[T, U] = {
+  def getIntermediateFMBolt[T, U]: ItemFMBolt[T, U] = {
     val operation = foldOperations[T, U](node.members.reverse)
     val wrappedOperation = wrapTime(operation)
 
