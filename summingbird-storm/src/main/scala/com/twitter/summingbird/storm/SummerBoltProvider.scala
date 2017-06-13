@@ -44,16 +44,16 @@ case class SummerBoltProvider(builder: StormTopologyBuilder, node: SummerNode[St
     logger.info(s"[$nodeName] parallelism : $parallelism")
 
     val summerBuilder = BuildSummer(builder, node)
-    val storeBaseFMOp = { op: (AggregatedKey[K], (Option[Item[V]], Item[V])) =>
+    val storeBaseFMOp = { op: (AggregateKey[K], (Option[Item[V]], Item[V])) =>
       val ((key, batchID), (optPrevExecutorValue, (timestamp, value))) = op
       val optPrevValue = optPrevExecutorValue.map(_._2)
       List((timestamp, (key, (optPrevValue, value))))
     }
 
-    val flatmapOp: FlatMapOperation[(AggregatedKey[K], (Option[Item[V]], Item[V])), SummerOutput[K, V]] =
+    val flatmapOp: FlatMapOperation[(AggregateKey[K], (Option[Item[V]], Item[V])), SummerOutput[K, V]] =
       FlatMapOperation.apply(storeBaseFMOp)
 
-    val supplier: MergeableStoreFactory[AggregatedKey[K], V] = summer.store
+    val supplier: MergeableStoreFactory[AggregateKey[K], V] = summer.store
 
     Topology.Bolt(
       parallelism,

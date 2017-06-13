@@ -86,7 +86,7 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
   private val parallelism = getOrElse(DEFAULT_FM_PARALLELISM)
   logger.info(s"[$nodeName] parallelism: ${parallelism.parHint}")
 
-  private def getFFMBolt[T, K, V](summer: SummerNode[Storm]): FinalFMBolt[T, K, V] = {
+  private def getFFMBolt[T, K, V](summer: SummerNode[Storm]): AggregatedFMBolt[T, K, V] = {
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
@@ -115,7 +115,7 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
         maxWaitTime,
         maxEmitPerExecute,
         keyValueShards
-      )(implicitly[Semigroup[AggregatedValue[V]]])
+      )(implicitly[Semigroup[AggregateValue[V]]])
     )
   }
 
