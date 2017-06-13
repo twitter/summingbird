@@ -57,7 +57,7 @@ object FlatMapBoltProvider {
   }
 }
 
-case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
+case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[Storm]) {
   import FlatMapBoltProvider._
   import Producer2FlatMapOperation._
 
