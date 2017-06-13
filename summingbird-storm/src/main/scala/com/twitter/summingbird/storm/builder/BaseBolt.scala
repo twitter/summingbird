@@ -17,13 +17,14 @@ limitations under the License.
 package com.twitter.summingbird.storm.builder
 
 import chain.Chain
+import com.twitter.bijection.Injection
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.executor.{ InputState, OperationContainer }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.storm.{ StormMetric, StormStatProvider }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
 import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
-import java.util.{ Map => JMap }
+import java.util.{ Map => JMap, List => JList }
 import org.apache.storm.task.{ OutputCollector, TopologyContext }
 import org.apache.storm.topology.{ IRichBolt, OutputFieldsDeclarer }
 import org.apache.storm.tuple.{ Fields, Tuple, TupleImpl }
@@ -81,13 +82,16 @@ private[builder] case class BaseBolt[I, O](
   private[this] val rampPeriods = maxExecutePerSec.rampUptimeMS / PERIOD_LENGTH_MS
   private[this] val deltaPerPeriod: Long = if (rampPeriods > 0) (upperBound - lowerBound) / rampPeriods else 0
 
-  private[this] val outputFields = outputEdges.headOption.map(_.edgeType.fields).getOrElse(new Fields())
+  private[this] val outputFields: Option[Fields] =
+    outputEdges.headOption.map(_.edgeType.fields)
   assert(
-    outputEdges.forall(_.edgeType.fields.toList == outputFields.toList),
+    outputEdges.forall(edge => outputFields.map(_.toList).contains(edge.edgeType.fields.toList)),
     s"$boltId: Output edges should have same `Fields` $outputEdges")
-  private[this] val outputInjection = outputEdges.headOption.map(_.edgeType.injection).orNull
+
+  private[this] val outputInjection: Option[Injection[O, JList[AnyRef]]] =
+    outputEdges.headOption.map(_.edgeType.injection)
   assert(
-    outputEdges.forall(_.edgeType.injection == outputInjection),
+    outputEdges.forall(edge => outputInjection.contains(edge.edgeType.injection)),
     s"$boltId: Output edges should have same `Injection` $outputEdges.")
 
   private[this] val inputInjections = inputEdges.map(edge => (edge.source.id, edge.edgeType.injection)).toMap
@@ -178,16 +182,16 @@ private[builder] case class BaseBolt[I, O](
 
   private def finish(inputs: Chain[InputState[Tuple]], results: TraversableOnce[O]) {
     var emitCount = 0
-    if (outputEdges.nonEmpty) {
+    outputInjection.foreach { injection =>
       if (anchorTuples.anchor) {
         val states = inputs.iterator.map(_.state).toList.asJava
         results.foreach { result =>
-          collector.emit(states, outputInjection(result))
+          collector.emit(states, injection(result))
           emitCount += 1
         }
       } else { // don't anchor
         results.foreach { result =>
-          collector.emit(outputInjection(result))
+          collector.emit(injection(result))
           emitCount += 1
         }
       }
@@ -210,7 +214,7 @@ private[builder] case class BaseBolt[I, O](
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    if (outputEdges.nonEmpty) { declarer.declare(outputFields) }
+   outputFields.foreach(declarer.declare)
   }
 
   override val getComponentConfiguration = null
