@@ -16,6 +16,8 @@ import scala.reflect.ClassTag
 import scala.collection.{ Map => CMap }
 
 object StormTopologyBuilder {
+  @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
+
   type Item[T] = (Timestamp, T)
 
   type AggregateKey[K] = (K, BatchID)
@@ -36,7 +38,7 @@ object StormTopologyBuilder {
  * This class encapsulates logic how to build `StormTopology` from DAG of the job, jobId and options.
  */
 case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
-  @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
+  import StormTopologyBuilder._
 
   def build: StormTopology = registerEdges(registerNodes).build(jobId)
 
