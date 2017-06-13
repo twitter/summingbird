@@ -85,13 +85,13 @@ private[builder] case class BaseBolt[I, O](
   private[this] val outputFields: Option[Fields] =
     outputEdges.headOption.map(_.edgeType.fields)
   assert(
-    outputEdges.forall(edge => outputFields.map(_.toList).contains(edge.edgeType.fields.toList)),
+    outputEdges.forall(edge => outputFields.map(_.toList) == Some(edge.edgeType.fields.toList)),
     s"$boltId: Output edges should have same `Fields` $outputEdges")
 
   private[this] val outputInjection: Option[Injection[O, JList[AnyRef]]] =
     outputEdges.headOption.map(_.edgeType.injection)
   assert(
-    outputEdges.forall(edge => outputInjection.contains(edge.edgeType.injection)),
+    outputEdges.forall(edge => outputInjection == Some(edge.edgeType.injection)),
     s"$boltId: Output edges should have same `Injection` $outputEdges.")
 
   private[this] val inputInjections = inputEdges.map(edge => (edge.source.id, edge.edgeType.injection)).toMap
