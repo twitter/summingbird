@@ -20,16 +20,16 @@ object StormTopologyBuilder {
 
   type AggregateKey[K] = (K, BatchID)
   type AggregateValue[V] = (Timestamp, V)
-  type PartiallyAggregated[K, V] = (Int, CMap[AggregateKey[K], AggregateValue[V]])
+  type Aggregated[K, V] = (Int, CMap[AggregateKey[K], AggregateValue[V]])
 
   type ItemSpout[T] = Topology.Spout[Item[T]]
-  type AggregatedSpout[K, V] = Topology.Spout[PartiallyAggregated[K, V]]
+  type AggregatedSpout[K, V] = Topology.Spout[Aggregated[K, V]]
 
   type ItemFMBolt[T, U] = Topology.Bolt[Item[T], Item[U]]
-  type AggregatedFMBolt[T, K, V] = Topology.Bolt[Item[T], PartiallyAggregated[K, V]]
+  type AggregatedFMBolt[T, K, V] = Topology.Bolt[Item[T], Aggregated[K, V]]
 
   type SummerOutput[K, V] = Item[(K, (Option[V], V))]
-  type SummerBolt[K, V] = Topology.Bolt[PartiallyAggregated[K, V], SummerOutput[K, V]]
+  type SummerBolt[K, V] = Topology.Bolt[Aggregated[K, V], SummerOutput[K, V]]
 }
 
 /**
