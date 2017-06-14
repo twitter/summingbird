@@ -1,11 +1,9 @@
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.storm.builder
 
 import com.twitter.bijection.{ Injection, Inversion }
-import org.apache.storm.tuple.Fields
-import java.util.{ ArrayList => JAList, List => JList }
-
 import com.twitter.summingbird.online.executor.KeyValueShards
-
+import java.util.{ ArrayList => JAList, List => JList }
+import org.apache.storm.tuple.Fields
 import scala.collection.{ Map => CMap }
 import scala.util.Try
 
@@ -13,7 +11,7 @@ import scala.util.Try
   * This trait represents an edge in Storm topology DAG between two nodes.
   * @tparam T represents type of tuples sent over this `Edge`.
   */
-sealed trait EdgeType[T] {
+private[summingbird] sealed trait EdgeType[T] {
   /**
     * Storm's `Fields` are going to be sent over this `Edge`.
     */
@@ -31,13 +29,13 @@ sealed trait EdgeType[T] {
   val grouping: EdgeGrouping
 }
 
-object EdgeType {
+private[summingbird] object EdgeType {
   /**
     * Simplest possible type of `Edge`, without any assumptions about content inside.
     */
   case class Item[T] private[storm] (edgeGrouping: EdgeGrouping) extends EdgeType[T] {
     override val fields: Fields = new Fields("value")
-    override val injection: Injection[T, JList[AnyRef]] =  EdgeTypeInjections.forItem
+    override val injection: Injection[T, JList[AnyRef]] = EdgeTypeInjections.Item()
     override val grouping: EdgeGrouping = edgeGrouping
   }
 
@@ -47,7 +45,7 @@ object EdgeType {
     */
   case class AggregatedKeyValues[K, V](shards: KeyValueShards) extends EdgeType[(Int, CMap[K, V])] {
     override val fields: Fields = new Fields("aggKey", "aggValue")
-    override val injection: Injection[(Int, CMap[K, V]), JList[AnyRef]] = EdgeTypeInjections.forKeyValue
+    override val injection: Injection[(Int, CMap[K, V]), JList[AnyRef]] = EdgeTypeInjections.KeyValue()
     override val grouping: EdgeGrouping = EdgeGrouping.Fields(new Fields("aggKey"))
   }
 
@@ -56,7 +54,7 @@ object EdgeType {
 }
 
 private object EdgeTypeInjections {
-  def forItem[T]: Injection[T, JList[AnyRef]] = new Injection[T, JList[AnyRef]] {
+  case class Item[T]() extends Injection[T, JList[AnyRef]] {
     override def apply(tuple: T): JAList[AnyRef] = {
       val list = new JAList[AnyRef](1)
       list.add(tuple.asInstanceOf[AnyRef])
@@ -68,7 +66,7 @@ private object EdgeTypeInjections {
     }
   }
 
-  def forKeyValue[K, V]: Injection[(K, V), JList[AnyRef]] = new Injection[(K, V), JList[AnyRef]] {
+  case class KeyValue[K, V]() extends Injection[(K, V), JList[AnyRef]] {
     override def apply(tuple: (K, V)): JAList[AnyRef] = {
       val (key, value) = tuple
       val list = new JAList[AnyRef](2)

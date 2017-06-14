@@ -24,8 +24,11 @@ import com.twitter.summingbird.storm.option.AnchorTuples
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
+import com.twitter.summingbird.storm.StormTopologyBuilder._
+import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.planner._
 import org.slf4j.LoggerFactory
+import scala.reflect.ClassTag
 
 /**
  * These are helper functions for building a bolt from a Node[Storm] element.
@@ -54,11 +57,12 @@ object FlatMapBoltProvider {
   }
 }
 
-case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
+case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[Storm]) {
   import FlatMapBoltProvider._
   import Producer2FlatMapOperation._
 
-  def getOrElse[T <: AnyRef: Manifest](default: T, queryNode: StormNode = node) = builder.getOrElse(queryNode, default)
+  private def getOrElse[T <: AnyRef: ClassTag](default: T, queryNode: StormNode = node) =
+    builder.getOrElse(queryNode, default)
 
   // Boilerplate extracting of the options from the DAG
   private val nodeName = builder.getNodeName(node)
@@ -73,19 +77,16 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
   private val ackOnEntry = getOrElse(DEFAULT_ACK_ON_ENTRY)
   logger.info(s"[$nodeName] ackOnEntry : ${ackOnEntry.get}")
 
-  val maxExecutePerSec = getOrElse(DEFAULT_MAX_EXECUTE_PER_SEC)
+  private val maxExecutePerSec = getOrElse(DEFAULT_MAX_EXECUTE_PER_SEC)
   logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
 
   private val maxEmitPerExecute = getOrElse(DEFAULT_MAX_EMIT_PER_EXECUTE)
   logger.info(s"[$nodeName] maxEmitPerExecute : ${maxEmitPerExecute.get}")
 
-  private val usePreferLocalDependency = getOrElse(DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
-  logger.info(s"[$nodeName] usePreferLocalDependency: ${usePreferLocalDependency.get}")
+  private val parallelism = getOrElse(DEFAULT_FM_PARALLELISM)
+  logger.info(s"[$nodeName] parallelism: ${parallelism.parHint}")
 
-  private def getFFMBolt[T, K, V](summer: SummerNode[Storm]) = {
-    type Input = (Timestamp, T)
-    type OutputKey = (K, BatchID)
-    type OutputValue = (Timestamp, V)
+  private def getFFMBolt[T, K, V](summer: SummerNode[Storm]): AggregatedFMBolt[T, K, V] = {
     val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
@@ -101,15 +102,12 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
 
     val summerBuilder = BuildSummer(builder, node)
 
-    BaseBolt(
-      builder.jobId,
+    Topology.Bolt(
+      parallelism.parHint,
       metrics.metrics,
       anchorTuples,
-      true,
       ackOnEntry,
       maxExecutePerSec,
-      inputEdgeTypes[Input],
-      EdgeType.AggregatedKeyValues[OutputKey, OutputValue](keyValueShards),
       new executor.FinalFlatMap(
         wrappedOperation,
         summerBuilder,
@@ -117,27 +115,20 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
         maxWaitTime,
         maxEmitPerExecute,
         keyValueShards
-      )(implicitly[Semigroup[OutputValue]])
+      )(implicitly[Semigroup[AggregateValue[V]]])
     )
   }
 
-  def getIntermediateFMBolt[T, U] = {
-    type ExecutorInput = (Timestamp, T)
-    type ExecutorOutput = (Timestamp, U)
-
+  def getIntermediateFMBolt[T, U]: ItemFMBolt[T, U] = {
     val operation = foldOperations[T, U](node.members.reverse)
     val wrappedOperation = wrapTime(operation)
 
-    BaseBolt(
-      builder.jobId,
+    Topology.Bolt(
+      parallelism.parHint,
       metrics.metrics,
       anchorTuples,
-      builder.stormDag.dependantsOf(node).size > 0,
       ackOnEntry,
       maxExecutePerSec,
-      inputEdgeTypes[ExecutorInput],
-      // Output edge's grouping isn't important for now.
-      EdgeType.itemWithLocalOrShuffleGrouping[ExecutorOutput],
       new executor.IntermediateFlatMap(
         wrappedOperation,
         maxWaiting,
@@ -147,22 +138,11 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: StormNode) {
     )
   }
 
-  def apply: BaseBolt[Any, Any] = {
+  def apply: Topology.Bolt[_, _] = {
     val summerOpt: Option[SummerNode[Storm]] = builder.stormDag.dependantsOf(node).collect { case s: SummerNode[Storm] => s }.headOption
     summerOpt match {
-      case Some(s) => getFFMBolt[Any, Any, Any](s).asInstanceOf[BaseBolt[Any, Any]]
-      case None => getIntermediateFMBolt[Any, Any].asInstanceOf[BaseBolt[Any, Any]]
+      case Some(s) => getFFMBolt[Any, Any, Any](s)
+      case None => getIntermediateFMBolt
     }
-  }
-
-  private def inputEdgeTypes[Input]: Map[String, EdgeType[Input]] = {
-    val edge = if (usePreferLocalDependency.get) {
-      EdgeType.itemWithLocalOrShuffleGrouping[Input]
-    } else {
-      EdgeType.itemWithShuffleGrouping[Input]
-    }
-
-    val dependenciesNames = builder.stormDag.dependenciesOf(node).collect { case x: StormNode => builder.getNodeName(x) }
-    dependenciesNames.map((_, edge)).toMap
   }
 }

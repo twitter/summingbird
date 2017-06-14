@@ -14,56 +14,59 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.storm.builder
 
-import scala.util.{ Failure, Success }
-import java.util.{ Map => JMap }
-import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
-import com.twitter.summingbird.online.executor.OperationContainer
-import com.twitter.summingbird.online.executor.InputState
-import com.twitter.summingbird.option.JobId
-import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
-import com.twitter.summingbird.online.Externalizer
 import chain.Chain
-import scala.collection.JavaConverters._
+import com.twitter.bijection.Injection
+import com.twitter.summingbird.online.Externalizer
+import com.twitter.summingbird.online.executor.{ InputState, OperationContainer }
+import com.twitter.summingbird.option.JobId
+import com.twitter.summingbird.storm.{ StormMetric, StormStatProvider }
+import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
+import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
+import java.util.{ Map => JMap, List => JList }
 import org.apache.storm.task.{ OutputCollector, TopologyContext }
-import org.apache.storm.topology.{ BoltDeclarer, IRichBolt, OutputFieldsDeclarer }
-import org.apache.storm.tuple.{ Tuple, TupleImpl }
+import org.apache.storm.topology.{ IRichBolt, OutputFieldsDeclarer }
+import org.apache.storm.tuple.{ Fields, Tuple, TupleImpl }
 import org.slf4j.{ Logger, LoggerFactory }
+import scala.collection.JavaConverters._
+import scala.util.{ Failure, Success }
 
 /**
-  *  This class is used as an implementation for Storm's `Bolt`s.
+  * This class is used as an implementation for Storm's `Bolt`s.
+  * We avoid `List`s as a parameters because they cause Scala serialization issues
+  * see (https://stackoverflow.com/questions/40607954/scala-case-class-serialization).
   *
-  * @param jobID is an id for current topology, used for metrics.
-  * @param metrics represents metrics we want to collect on this node.
+  * @param jobId of current topology, used for metrics.
+  * @param boltId of current bolt, used for logging.
+  * @param metrics we want to collect on this node.
   * @param anchorTuples should be equal to true if you want to utilize Storm's anchoring of tuples,
   *                     false otherwise.
-  * @param hasDependants does this node have any downstream nodes?
   * @param ackOnEntry ack tuples in the beginning of processing.
   * @param maxExecutePerSec limits number of executes per second, will block processing thread after.
   *                         Used for rate limiting.
-  * @param inputEdgeTypes is a map from name of downstream node to `Edge` from it.
-  * @param outputEdgeType is an edge from this node. To be precise there are number of output edges,
-  *                       but we expect them to have same format and we don't use their grouping
-  *                       information here, therefore it's ok to have only one instance of `Edge` here.
-  * @param executor is `OperationContainer` which represents operation for this `Bolt`,
+  * @param inputEdges vector of edges incoming to this bolt.
+  * @param outputEdges vector of edges outgoing from this bolt.
+  * @param executor `OperationContainer` which represents operation for this `Bolt`,
   *                 for example it can be summing or flat mapping.
-  * @tparam I is a type of input tuples for this `Bolt`s executor.
-  * @tparam O is a type of output tuples for this `Bolt`s executor.
+  * @tparam I type of input tuples for this `Bolt`s executor.
+  * @tparam O type of output tuples for this `Bolt`s executor.
   */
-case class BaseBolt[I, O](jobID: JobId,
-    metrics: () => TraversableOnce[StormMetric[_]],
-    anchorTuples: AnchorTuples,
-    hasDependants: Boolean,
-    ackOnEntry: AckOnEntry,
-    maxExecutePerSec: MaxExecutePerSecond,
-    inputEdgeTypes: Map[String, EdgeType[I]],
-    outputEdgeType: EdgeType[O],
-    executor: OperationContainer[I, O, InputState[Tuple]]) extends IRichBolt {
+private[builder] case class BaseBolt[I, O](
+  jobId: JobId,
+  boltId: Topology.BoltId[I, O],
+  metrics: () => TraversableOnce[StormMetric[_]],
+  anchorTuples: AnchorTuples,
+  ackOnEntry: AckOnEntry,
+  maxExecutePerSec: MaxExecutePerSecond,
+  inputEdges: Vector[Topology.Edge[I]],
+  outputEdges: Vector[Topology.Edge[O]],
+  executor: OperationContainer[I, O, InputState[Tuple]]
+) extends IRichBolt {
 
   @transient protected lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  private[this] val lockedCounters = Externalizer(JobCounters.getCountersForJob(jobID).getOrElse(Nil))
+  private[this] val lockedCounters = Externalizer(JobCounters.getCountersForJob(jobId).getOrElse(Nil))
 
   lazy val countersForBolt: Seq[(Group, Name)] = lockedCounters.get
 
@@ -78,6 +81,20 @@ case class BaseBolt[I, O](jobID: JobId,
 
   private[this] val rampPeriods = maxExecutePerSec.rampUptimeMS / PERIOD_LENGTH_MS
   private[this] val deltaPerPeriod: Long = if (rampPeriods > 0) (upperBound - lowerBound) / rampPeriods else 0
+
+  private[this] val outputFields: Option[Fields] =
+    outputEdges.headOption.map(_.edgeType.fields)
+  assert(
+    outputEdges.forall(edge => outputFields.map(_.toList) == Some(edge.edgeType.fields.toList)),
+    s"$boltId: Output edges should have same `Fields` $outputEdges")
+
+  private[this] val outputInjection: Option[Injection[O, JList[AnyRef]]] =
+    outputEdges.headOption.map(_.edgeType.injection)
+  assert(
+    outputEdges.forall(edge => outputInjection == Some(edge.edgeType.injection)),
+    s"$boltId: Output edges should have same `Injection` $outputEdges.")
+
+  private[this] val inputInjections = inputEdges.map(edge => (edge.source.id, edge.edgeType.injection)).toMap
 
   private[this] lazy val startPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
   private[this] lazy val endRampPeriod = startPeriod + rampPeriods
@@ -140,9 +157,10 @@ case class BaseBolt[I, O](jobID: JobId,
      * System ticks come with a fixed stream id
      */
     val curResults = if (!tuple.getSourceStreamId.equals("__tick")) {
-      val tsIn = inputEdgeTypes.get(tuple.getSourceComponent) match {
-        case Some(inputEdgeType) => inputEdgeType.injection.invert(tuple.getValues).get
-        case None => throw new Exception("Unrecognized source component: " + tuple.getSourceComponent)
+      val tsIn = inputInjections.get(tuple.getSourceComponent) match {
+        case Some(inputFormat) => inputFormat.invert(tuple.getValues).get
+        case None => throw new Exception("Unrecognized source component: " +
+          tuple.getSourceComponent+", current bolt: " + boltId.id)
       }
       // Don't hold on to the input values
       clearValues(tuple)
@@ -164,16 +182,16 @@ case class BaseBolt[I, O](jobID: JobId,
 
   private def finish(inputs: Chain[InputState[Tuple]], results: TraversableOnce[O]) {
     var emitCount = 0
-    if (hasDependants) {
+    outputInjection.foreach { injection =>
       if (anchorTuples.anchor) {
         val states = inputs.iterator.map(_.state).toList.asJava
         results.foreach { result =>
-          collector.emit(states, outputEdgeType.injection(result))
+          collector.emit(states, injection(result))
           emitCount += 1
         }
       } else { // don't anchor
         results.foreach { result =>
-          collector.emit(outputEdgeType.injection(result))
+          collector.emit(injection(result))
           emitCount += 1
         }
       }
@@ -190,28 +208,19 @@ case class BaseBolt[I, O](jobID: JobId,
     collector = oc
     metrics().foreach { _.register(context) }
     executor.init()
-    StormStatProvider.registerMetrics(jobID, context, countersForBolt)
+    StormStatProvider.registerMetrics(jobId, context, countersForBolt)
     SummingbirdRuntimeStats.addPlatformStatProvider(StormStatProvider)
-    logger.debug("In Bolt prepare: added jobID stat provider for jobID {}", jobID)
+    logger.debug("In Bolt prepare: added jobId stat provider for jobID {}", jobId)
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-    if (hasDependants) { declarer.declare(outputEdgeType.fields) }
+   outputFields.foreach(declarer.declare)
   }
 
   override val getComponentConfiguration = null
 
   override def cleanup {
     executor.cleanup
-  }
-
-  /**
-    * Apply groupings defined by input edges of this `Bolt` to Storm's topology.
-    */
-  def applyGroupings(declarer: BoltDeclarer): Unit = {
-    inputEdgeTypes.foreach { case (parentName, inputEdgeType) =>
-      inputEdgeType.grouping.apply(declarer, parentName)
-    }
   }
 
   /**

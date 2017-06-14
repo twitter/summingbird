@@ -1,11 +1,10 @@
-package com.twitter.summingbird.storm
+package com.twitter.summingbird.storm.builder
 
 import org.apache.storm.spout.ISpoutOutputCollector
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.{ AsyncSummer, BufferSize, FlushFrequency, MemoryFlushPercent, SyncSummingQueue }
 import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
-import com.twitter.summingbird.storm.spout.KeyValueSpout
 import com.twitter.tormenta.spout.{ BaseSpout, Spout }
 import com.twitter.util.Duration
 import com.twitter.summingbird.batch.{ BatchID, Timestamp }

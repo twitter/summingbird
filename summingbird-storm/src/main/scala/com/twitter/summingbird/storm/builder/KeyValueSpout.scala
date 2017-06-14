@@ -1,30 +1,28 @@
-package com.twitter.summingbird.storm.spout
+package com.twitter.summingbird.storm.builder
 
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
+import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, SummerBuilder }
 import com.twitter.tormenta.spout.SpoutProxy
-import com.twitter.summingbird.storm.collector.AggregatorOutputCollector
 import com.twitter.util.{ Duration, Time }
+import java.util.{ Map => JMap }
 import org.apache.storm.spout.SpoutOutputCollector
 import org.apache.storm.task.TopologyContext
 import org.apache.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
-import java.util.{ Map => JMap }
-
-import com.twitter.summingbird.storm.EdgeType
 
 /**
  * This is a spout used when the spout is being followed by summer.
  * It uses a AggregatorOutputCollector on open.
  */
-class KeyValueSpout[K, V: Semigroup](
+private[builder] class KeyValueSpout[K, V: Semigroup](
     protected val self: IRichSpout,
     summerBuilder: SummerBuilder,
     maxEmitPerExec: MaxEmitPerExecute,
     summerShards: KeyValueShards,
     flushExecTimeCounter: Incrementor,
-    executeTimeCounter: Incrementor) extends SpoutProxy {
+    executeTimeCounter: Incrementor
+) extends SpoutProxy {
 
   private val tickFrequency = Duration.fromMilliseconds(1000)
   private val outputEdgeType = EdgeType.AggregatedKeyValues(summerShards)

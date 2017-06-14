@@ -1,135 +1,102 @@
 package com.twitter.summingbird.storm
 
-import com.twitter.summingbird.{ Options, Summer }
+import com.twitter.summingbird.Options
 import com.twitter.summingbird.batch.{ BatchID, Timestamp }
-import com.twitter.summingbird.online.{ FlatMapOperation, MergeableStoreFactory, WrappedTSInMergeable, executor }
-import com.twitter.summingbird.online.option.IncludeSuccessHandler
+import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, FlatMapNode, SourceNode, SummerNode }
 import com.twitter.summingbird.storm.Constants._
-import com.twitter.summingbird.storm.option.AnchorTuples
+import com.twitter.summingbird.storm.builder.Topology.ReceivingId
+import com.twitter.summingbird.storm.builder.{ EdgeType, Topology }
 import com.twitter.summingbird.storm.planner.StormNode
 import org.apache.storm.generated.StormTopology
-import org.apache.storm.topology.TopologyBuilder
-import org.apache.storm.{ Config => BacktypeStormConfig }
 import org.slf4j.LoggerFactory
 import scala.reflect.ClassTag
+
+import scala.collection.{ Map => CMap }
+
+object StormTopologyBuilder {
+  @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
+
+  type Item[T] = (Timestamp, T)
+
+  type AggregateKey[K] = (K, BatchID)
+  type AggregateValue[V] = (Timestamp, V)
+  type Aggregated[K, V] = (Int, CMap[AggregateKey[K], AggregateValue[V]])
+
+  type ItemSpout[T] = Topology.Spout[Item[T]]
+  type AggregatedSpout[K, V] = Topology.Spout[Aggregated[K, V]]
+
+  type ItemFMBolt[T, U] = Topology.Bolt[Item[T], Item[U]]
+  type AggregatedFMBolt[T, K, V] = Topology.Bolt[Item[T], Aggregated[K, V]]
+
+  type SummerOutput[K, V] = Item[(K, (Option[V], V))]
+  type SummerBolt[K, V] = Topology.Bolt[Aggregated[K, V], SummerOutput[K, V]]
+}
 
 /**
  * This class encapsulates logic how to build `StormTopology` from DAG of the job, jobId and options.
  */
 case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
-  @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
+  import StormTopologyBuilder._
 
-  def build(): StormTopology = {
-    val topologyBuilder = new TopologyBuilder
-    stormDag.nodes.foreach {
-      case summerNode: SummerNode[Storm] => scheduleSummerBolt(summerNode, topologyBuilder)
-      case flatMapNode: FlatMapNode[Storm] => scheduleFlatMapper(flatMapNode, topologyBuilder)
-      case sourceNode: SourceNode[Storm] => scheduleSpout(sourceNode, topologyBuilder)
-    }
-    topologyBuilder.createTopology()
-  }
+  def build: StormTopology = registerEdges(registerNodes).build(jobId)
 
-  /**
-   * Set storm to tick our nodes every second to clean up finished futures
-   */
-  private def tickConfig = {
-    val boltConfig = new BacktypeStormConfig
-    boltConfig.put(BacktypeStormConfig.TOPOLOGY_TICK_TUPLE_FREQ_SECS, java.lang.Integer.valueOf(1))
-    boltConfig
-  }
-
-  private def scheduleFlatMapper(node: FlatMapNode[Storm], topologyBuilder: TopologyBuilder) = {
-    val bolt: BaseBolt[Any, Any] = FlatMapBoltProvider(this, node).apply
-
-    val parallelism = getOrElse(node, DEFAULT_FM_PARALLELISM).parHint
-    val declarer = topologyBuilder.setBolt(getNodeName(node), bolt, parallelism).addConfigurations(tickConfig)
-    bolt.applyGroupings(declarer)
-  }
-
-  private def scheduleSpout(node: SourceNode[Storm], topologyBuilder: TopologyBuilder) = {
-    val nodeName = stormDag.getNodeName(node)
-    val (sourceParalleism, stormSpout) = SpoutProvider(this, node).apply
-    topologyBuilder.setSpout(nodeName, stormSpout, sourceParalleism)
-  }
-
-  private def scheduleSummerBolt(node: SummerNode[Storm], topologyBuilder: TopologyBuilder): Unit = {
-    val nodeName = getNodeName(node)
-
-    def sinkBolt[K, V](summer: Summer[Storm, K, V]): BaseBolt[_, _] = {
-      implicit val semigroup = summer.semigroup
-      implicit val batcher = summer.store.mergeableBatcher
-
-      type ExecutorKeyType = (K, BatchID)
-      type ExecutorValueType = (Timestamp, V)
-      type ExecutorOutputType = (Timestamp, (K, (Option[V], V)))
-
-      val anchorTuples = getOrElse(node, AnchorTuples.default)
-      val metrics = getOrElse(node, DEFAULT_SUMMER_STORM_METRICS)
-      val shouldEmit = stormDag.dependantsOf(node).size > 0
-
-      val builder = BuildSummer(this, node)
-
-      val ackOnEntry = getOrElse(node, DEFAULT_ACK_ON_ENTRY)
-      logger.info(s"[$nodeName] ackOnEntry : ${ackOnEntry.get}")
-
-      val maxEmitPerExecute = getOrElse(node, DEFAULT_MAX_EMIT_PER_EXECUTE)
-      logger.info(s"[$nodeName] maxEmitPerExecute : ${maxEmitPerExecute.get}")
-
-      val maxExecutePerSec = getOrElse(node, DEFAULT_MAX_EXECUTE_PER_SEC)
-      logger.info(s"[$nodeName] maxExecutePerSec : $maxExecutePerSec")
-
-      val storeBaseFMOp = { op: (ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)) =>
-        val ((key, batchID), (optPrevExecutorValue, (timestamp, value))) = op
-        val optPrevValue = optPrevExecutorValue.map(_._2)
-        List((timestamp, (key, (optPrevValue, value))))
-      }
-
-      val flatmapOp: FlatMapOperation[(ExecutorKeyType, (Option[ExecutorValueType], ExecutorValueType)), ExecutorOutputType] =
-        FlatMapOperation.apply(storeBaseFMOp)
-
-      val supplier: MergeableStoreFactory[ExecutorKeyType, V] = summer.store
-
-      val dependenciesNames = stormDag.dependenciesOf(node).collect { case x: StormNode => getNodeName(x) }
-      val inputEdges = dependenciesNames.map(parent =>
-        (parent, EdgeType.AggregatedKeyValues[ExecutorKeyType, ExecutorValueType](getSummerKeyValueShards(node)))
-      ).toMap
-
-      BaseBolt(
-        jobId,
-        metrics.metrics,
-        anchorTuples,
-        shouldEmit,
-        ackOnEntry,
-        maxExecutePerSec,
-        inputEdges,
-        // Output edge's grouping isn't important for now.
-        EdgeType.itemWithLocalOrShuffleGrouping[ExecutorOutputType],
-        new executor.Summer(
-          () => new WrappedTSInMergeable(supplier.mergeableStore(semigroup)),
-          flatmapOp,
-          getOrElse(node, DEFAULT_ONLINE_SUCCESS_HANDLER),
-          getOrElse(node, DEFAULT_ONLINE_EXCEPTION_HANDLER),
-          builder,
-          getOrElse(node, DEFAULT_MAX_WAITING_FUTURES),
-          getOrElse(node, DEFAULT_MAX_FUTURE_WAIT_TIME),
-          maxEmitPerExecute,
-          getOrElse(node, IncludeSuccessHandler.default))
-      )
+  private def registerNodes: Topology =
+    stormDag.nodes.foldLeft(Topology.empty) {
+      case (topology, node: SummerNode[Storm]) =>
+        topology.withBolt(getNodeName(node), SummerBoltProvider(this, node).apply)._2
+      case (topology, node: FlatMapNode[Storm]) =>
+        topology.withBolt(getNodeName(node), FlatMapBoltProvider(this, node).apply)._2
+      case (topology, node: SourceNode[Storm]) =>
+        topology.withSpout(getNodeName(node), SpoutProvider(this, node).apply)._2
     }
 
-    val summerUntyped = node.members.collect { case c@Summer(_, _, _) => c }.head
-    val parallelism = getOrElse(node, DEFAULT_SUMMER_PARALLELISM).parHint
-    val bolt = sinkBolt(summerUntyped)
-    val declarer =
-      topologyBuilder.setBolt(
-        nodeName,
-        bolt,
-        parallelism
-      ).addConfigurations(tickConfig)
-    bolt.applyGroupings(declarer)
+  private def registerEdges(topologyWithNodes: Topology): Topology =
+    stormDag.nodes.foldLeft(topologyWithNodes) {
+      case (topology, node: SummerNode[Storm]) =>
+        val edgeType = EdgeType.AggregatedKeyValues[Any, Any](getSummerKeyValueShards(node))
+        registerIncomingEdges(topology, node, edgeType)
+      case (topology, node: FlatMapNode[Storm]) =>
+        registerIncomingEdges(topology, node, flatMapEdgeType(node))
+      case (topology, node: SourceNode[Storm]) => topology
+        // ignore, no incoming edges into sources
+    }
+
+  private def flatMapEdgeType(node: FlatMapNode[Storm]): EdgeType[_] = {
+    val usePreferLocalDependency = getOrElse(node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
+    logger.info(s"[${getNodeName(node)}] usePreferLocalDependency: ${usePreferLocalDependency.get}")
+    if (usePreferLocalDependency.get) {
+      EdgeType.itemWithLocalOrShuffleGrouping[Any]
+    } else {
+      EdgeType.itemWithShuffleGrouping[Any]
+    }
   }
+
+  private def registerIncomingEdges(topology: Topology, node: StormNode, edgeType: EdgeType[_]): Topology = {
+    val nodeId: ReceivingId[Any] = getId(node).asInstanceOf[Topology.ReceivingId[Any]]
+    stormDag.dependenciesOf(node).foldLeft(topology) { (current, upstreamNode) =>
+      current.withEdge(Topology.Edge[Any](
+        getId(upstreamNode),
+        edgeType.asInstanceOf[EdgeType[Any]],
+        nodeId))
+    }
+  }
+
+  private def getId(node: StormNode): Topology.EmittingId[_] = node match {
+    case sourceNode: SourceNode[Storm] => getSourceId(sourceNode)
+    case flatMapNode: FlatMapNode[Storm] => getFlatMapId(flatMapNode)
+    case summerNode: SummerNode[Storm] => getSummerId(summerNode)
+  }
+
+  private def getSummerId(node: SummerNode[Storm]): Topology.BoltId[_, _] =
+    Topology.BoltId(getNodeName(node))
+
+  private def getFlatMapId(node: FlatMapNode[Storm]): Topology.BoltId[_, _] =
+    Topology.BoltId(getNodeName(node))
+
+  private def getSourceId(node: SourceNode[Storm]): Topology.SpoutId[_] =
+    Topology.SpoutId(getNodeName(node))
 
   private[storm] def getOrElse[T <: AnyRef: ClassTag](node: StormNode, default: T): T =
     get[T](node) match {

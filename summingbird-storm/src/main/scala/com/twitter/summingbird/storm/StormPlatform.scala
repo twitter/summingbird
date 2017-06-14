@@ -179,7 +179,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       }
     }
 
-    PlannedTopology(config, StormTopologyBuilder(options, jobId, stormDag).build())
+    PlannedTopology(config, StormTopologyBuilder(options, jobId, stormDag).build)
   }
   def run(tail: TailProducer[Storm, _], jobName: String): Unit = run(plan(tail), jobName)
   def run(plannedTopology: PlannedTopology, jobName: String): Unit
