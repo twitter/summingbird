@@ -63,7 +63,7 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
   private def createSpoutToFeedSummer[K, V](
     sourceParallelism: Int,
     summerNode: SummerNode[Storm],
-    builder: SummerBuilder,
+    summerBuilder: SummerBuilder,
     spout: Spout[Item[(K, V)]],
     flushExecTimeCounter: Incrementor,
     executeTimeCounter: Incrementor
@@ -81,7 +81,8 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
       sourceParallelism,
       spoutStormMetrics.metrics,
       formattedSummerSpout,
-      builder,
+      builder.getSummerKeyValueShards(summerNode),
+      summerBuilder,
       maxEmitPerExecute,
       flushExecTimeCounter,
       executeTimeCounter

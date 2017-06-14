@@ -17,17 +17,16 @@ limitations under the License.
 package com.twitter.summingbird.storm.builder
 
 import chain.Chain
-import com.twitter.bijection.Injection
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.executor.{ InputState, OperationContainer }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.storm.{ StormMetric, StormStatProvider }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
 import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
-import java.util.{ Map => JMap, List => JList }
+import java.util.{ Map => JMap }
 import org.apache.storm.task.{ OutputCollector, TopologyContext }
 import org.apache.storm.topology.{ IRichBolt, OutputFieldsDeclarer }
-import org.apache.storm.tuple.{ Fields, Tuple, TupleImpl }
+import org.apache.storm.tuple.{ Tuple, TupleImpl }
 import org.slf4j.{ Logger, LoggerFactory }
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success }
@@ -82,20 +81,10 @@ private[builder] case class BaseBolt[I, O](
   private[this] val rampPeriods = maxExecutePerSec.rampUptimeMS / PERIOD_LENGTH_MS
   private[this] val deltaPerPeriod: Long = if (rampPeriods > 0) (upperBound - lowerBound) / rampPeriods else 0
 
-  private[this] val outputFields: Option[Fields] =
-    outputEdges.headOption.map(_.edgeType.fields)
-  assert(
-    outputEdges.forall(edge => outputFields.map(_.toList) == Some(edge.edgeType.fields.toList)),
-    s"$boltId: Output edges should have same `Fields` $outputEdges")
-
-  private[this] val outputInjection: Option[Injection[O, JList[AnyRef]]] =
-    outputEdges.headOption.map(_.edgeType.injection)
-  assert(
-    outputEdges.forall(edge => outputInjection == Some(edge.edgeType.injection)),
-    s"$boltId: Output edges should have same `Injection` $outputEdges.")
-
   private[this] val inputEdgesMap: Map[String, Topology.Edge[_, I]] =
     inputEdges.map(edge => (edge.source.id, edge)).toMap
+
+  private[this] val outputFormat: Option[OutputFormat[O]] = OutputFormat.get(outputEdges)
 
   private[this] lazy val startPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
   private[this] lazy val endRampPeriod = startPeriod + rampPeriods
@@ -183,16 +172,16 @@ private[builder] case class BaseBolt[I, O](
 
   private def finish(inputs: Chain[InputState[Tuple]], results: TraversableOnce[O]) {
     var emitCount = 0
-    outputInjection.foreach { injection =>
+    outputFormat.foreach { format =>
       if (anchorTuples.anchor) {
         val states = inputs.iterator.map(_.state).toList.asJava
         results.foreach { result =>
-          collector.emit(states, injection(result))
+          collector.emit(states, format.injection(result))
           emitCount += 1
         }
       } else { // don't anchor
         results.foreach { result =>
-          collector.emit(injection(result))
+          collector.emit(format.injection(result))
           emitCount += 1
         }
       }
@@ -215,7 +204,7 @@ private[builder] case class BaseBolt[I, O](
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-   outputFields.foreach(declarer.declare)
+   outputFormat.foreach(format => declarer.declare(format.fields))
   }
 
   override val getComponentConfiguration = null

@@ -9,6 +9,7 @@ import com.twitter.tormenta.spout.{ BaseSpout, Spout }
 import com.twitter.util.Duration
 import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import java.util.{ List => JList }
+import org.apache.storm.tuple.Fields
 import org.scalatest.WordSpec
 import scala.collection.mutable.{ Set => MSet }
 
@@ -45,7 +46,8 @@ class TestKeyValueSpout extends WordSpec {
       MaxEmitPerExecute(10),
       KeyValueShards(1),
       flushCounter,
-      execCounter
+      execCounter,
+      OutputFormat(new Fields("aggKey", "aggValue"), EdgeTypeInjections.KeyValue())
     )
     val myCollector = new TestAggregateOutpoutCollector(outputCollector, expected)
     testSpout.open(null, null, myCollector)

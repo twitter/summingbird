@@ -1,7 +1,7 @@
 package com.twitter.summingbird.storm.builder
 
 import org.apache.storm.spout.ISpoutOutputCollector
-import org.apache.storm.tuple.Values
+import org.apache.storm.tuple.{ Fields, Values }
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.AsyncSummer
 import com.twitter.summingbird.online.executor.KeyValueShards
@@ -28,13 +28,14 @@ class AggregatorOutputCollectorTest extends WordSpec {
         (new TestAsyncSummer(state)).asInstanceOf[AsyncSummer[(K, V), Map[K, V]]]
     }
 
-    val aggregatorCollector = new AggregatorOutputCollector(
+    val aggregatorCollector = new AggregatorOutputCollector[Any, Int](
       validatingCollector,
       summerBuilder,
       MaxEmitPerExecute(100),
       KeyValueShards(10),
       Counter("flush"),
-      Counter("execTime")
+      Counter("execTime"),
+      OutputFormat(new Fields("key, value"), EdgeTypeInjections.KeyValue())
     )(Semigroup.intSemigroup)
 
     (aggregatorCollector, validatingCollector)

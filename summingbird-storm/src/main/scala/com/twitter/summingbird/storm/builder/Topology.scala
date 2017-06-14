@@ -2,7 +2,7 @@ package com.twitter.summingbird.storm.builder
 
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
-import com.twitter.summingbird.online.executor.{ InputState, OperationContainer }
+import com.twitter.summingbird.online.executor.{ InputState, KeyValueShards, OperationContainer }
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, SummerBuilder }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.storm.StormMetric
@@ -176,6 +176,7 @@ private[summingbird] object Topology {
     parallelism: Int,
     metrics: () => TraversableOnce[StormMetric[_]],
     spout: TormentaSpout[(K, V)],
+    shards: KeyValueShards,
     summerBuilder: SummerBuilder,
     maxEmitPerExec: MaxEmitPerExecute,
     flushExecTimeCounter: Incrementor,

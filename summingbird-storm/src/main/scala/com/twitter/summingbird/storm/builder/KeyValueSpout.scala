@@ -10,28 +10,29 @@ import java.util.{ Map => JMap }
 import org.apache.storm.spout.SpoutOutputCollector
 import org.apache.storm.task.TopologyContext
 import org.apache.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
+import scala.collection.{ Map => CMap }
 
 /**
  * This is a spout used when the spout is being followed by summer.
  * It uses a AggregatorOutputCollector on open.
  */
 private[builder] class KeyValueSpout[K, V: Semigroup](
-    protected val self: IRichSpout,
-    summerBuilder: SummerBuilder,
-    maxEmitPerExec: MaxEmitPerExecute,
-    summerShards: KeyValueShards,
-    flushExecTimeCounter: Incrementor,
-    executeTimeCounter: Incrementor
+  protected val self: IRichSpout,
+  summerBuilder: SummerBuilder,
+  maxEmitPerExec: MaxEmitPerExecute,
+  summerShards: KeyValueShards,
+  flushExecTimeCounter: Incrementor,
+  executeTimeCounter: Incrementor,
+  format: OutputFormat[(Int, CMap[K, V])]
 ) extends SpoutProxy {
 
   private val tickFrequency = Duration.fromMilliseconds(1000)
-  private val outputEdgeType = EdgeType.AggregatedKeyValues(summerShards)
 
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
   var lastDump = Time.now
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) = {
-    declarer.declare(outputEdgeType.fields)
+    declarer.declare(format.fields)
   }
 
   /**
@@ -46,7 +47,8 @@ private[builder] class KeyValueSpout[K, V: Semigroup](
       maxEmitPerExec,
       summerShards,
       flushExecTimeCounter,
-      executeTimeCounter
+      executeTimeCounter,
+      format
     )
     super.open(conf, topologyContext, adapterCollector)
   }

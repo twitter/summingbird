@@ -9,6 +9,7 @@ import com.twitter.algebird.util.summer.{ AsyncSummer, Incrementor }
 import com.twitter.util.{ Future, Time }
 import java.util.{ List => JList }
 import scala.collection.mutable.{ Map => MMap }
+import scala.collection.{ Map => CMap }
 
 /**
  *
@@ -17,12 +18,14 @@ import scala.collection.mutable.{ Map => MMap }
  * Different streams have separate aggregators and caches.
  */
 private[builder] class AggregatorOutputCollector[K, V: Semigroup](
-    in: SpoutOutputCollector,
-    summerBuilder: SummerBuilder,
-    maxEmitPerExec: MaxEmitPerExecute,
-    summerShards: KeyValueShards,
-    flushExecTimeCounter: Incrementor,
-    executeTimeCounter: Incrementor) extends SpoutOutputCollector(in) {
+  in: SpoutOutputCollector,
+  summerBuilder: SummerBuilder,
+  maxEmitPerExec: MaxEmitPerExecute,
+  summerShards: KeyValueShards,
+  flushExecTimeCounter: Incrementor,
+  executeTimeCounter: Incrementor,
+  format: OutputFormat[(Int, CMap[K, V])]
+) extends SpoutOutputCollector(in) {
 
   private type AggKey = Int
   private type AggValue = Map[K, V]
@@ -80,9 +83,7 @@ private[builder] class AggregatorOutputCollector[K, V: Semigroup](
     val result = new java.util.ArrayList[Integer]()
     flushedTups.foreach {
       case (groupKey, data, messageIds) =>
-        val tuple = new java.util.ArrayList[AnyRef](2)
-        tuple.add(groupKey.asInstanceOf[AnyRef])
-        tuple.add(data.asInstanceOf[AnyRef])
+        val tuple = format.injection.apply((groupKey, data))
         val emitResult = callEmit(tuple, messageIds, streamId)
         if (emitResult != null) result.addAll(emitResult)
     }
