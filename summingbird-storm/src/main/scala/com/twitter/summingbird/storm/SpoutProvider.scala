@@ -3,17 +3,60 @@ package com.twitter.summingbird.storm
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird._
-import com.twitter.summingbird.batch.Timestamp
+import com.twitter.summingbird.batch.{ Batcher, Timestamp }
 import com.twitter.summingbird.online.Externalizer
-import com.twitter.summingbird.online.option.{ SourceParallelism, SummerBuilder }
-import com.twitter.summingbird.planner.{ SourceNode, SummerNode }
+import com.twitter.summingbird.online.executor.KeyValueShards
+import com.twitter.summingbird.online.option.SourceParallelism
+import com.twitter.summingbird.planner.SourceNode
 import com.twitter.summingbird.storm.StormTopologyBuilder._
 import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.tormenta.spout.Spout
 import scala.reflect.ClassTag
 
-case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm]) {
+case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm]) extends ComponentProvider {
+  override def createSingle[T, O](fn: Item[T] => O): Topology.Component[O] = {
+    val (tormentaSpout, parallelism) = getTormentaSpoutAndParallelism[T]
+    Topology.RawSpout[O](parallelism, spoutStormMetrics.metrics, tormentaSpout.map(fn))
+  }
+
+  override def createAggregated[K, V](
+    batcher: Batcher,
+    shards: KeyValueShards,
+    semigroup: Semigroup[V]
+  ): Option[Topology.Component[Aggregated[K, V]]] = {
+    val (tormentaSpout, parallelism) = getTormentaSpoutAndParallelism[(K, V)]
+    val summerBuilder = BuildSummer(builder, node)
+    val nodeName = builder.getNodeName(node)
+    val flushExecTimeCounter = counter(Group(nodeName), Name("spoutFlushExecTime"))
+    val executeTimeCounter = counter(Group(nodeName), Name("spoutEmitExecTime"))
+
+    val formattedSummerSpout = tormentaSpout.map {
+      case (time, (k, v)) => ((k, batcher.batchOf(time)), (time, v))
+    }
+    implicit val valueMonoid: Semigroup[V] = semigroup
+
+    val maxEmitPerExecute = getOrElse(node, Constants.DEFAULT_MAX_EMIT_PER_EXECUTE)
+
+    Some(Topology.KeyValueSpout(
+      parallelism,
+      spoutStormMetrics.metrics,
+      formattedSummerSpout,
+      shards,
+      summerBuilder,
+      maxEmitPerExecute,
+      flushExecTimeCounter,
+      executeTimeCounter
+    ))
+  }
+
+  private def getTormentaSpoutAndParallelism[T]: (Spout[Item[T]], Int) = {
+    val (spout, sourceParallelismOption) = extractSourceAttributes
+    val tormentaSpout: Spout[Item[T]] = computeSpout(spout)
+    val sourceParallelism = getSourceParallelism(sourceParallelismOption)
+    validateParallelisms(sourceParallelism)
+    (tormentaSpout, sourceParallelism)
+  }
 
   private def getOrElse[T <: AnyRef: ClassTag](node: StormNode, default: T): T =
     builder.getOrElse(node, default)
@@ -57,93 +100,6 @@ case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm])
     }
   }
 
-  /*
-   * This method formats the tuples to batched format and wraps the spout into KeyValueSpout.
-   */
-  private def createSpoutToFeedSummer[K, V](
-    sourceParallelism: Int,
-    summerNode: SummerNode[Storm],
-    summerBuilder: SummerBuilder,
-    spout: Spout[Item[(K, V)]],
-    flushExecTimeCounter: Incrementor,
-    executeTimeCounter: Incrementor
-  ): Topology.Spout[Aggregated[K, V]] = {
-    val summerProducer = summerNode.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
-    val batcher = summerProducer.store.mergeableBatcher
-    val formattedSummerSpout = spout.map {
-      case (time, (k, v)) => ((k, batcher.batchOf(time)), (time, v))
-    }
-    implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
-
-    val maxEmitPerExecute = getOrElse(node, Constants.DEFAULT_MAX_EMIT_PER_EXECUTE)
-
-    Topology.KeyValueSpout(
-      sourceParallelism,
-      spoutStormMetrics.metrics,
-      formattedSummerSpout,
-      builder.getSummerKeyValueShards(summerNode),
-      summerBuilder,
-      maxEmitPerExecute,
-      flushExecTimeCounter,
-      executeTimeCounter
-    )
-  }
-
   private def counter(nodeName: Group, counterName: Name): Counter with Incrementor =
     new Counter(Group("summingbird." + nodeName.getString), counterName)(builder.jobId) with Incrementor
-
-  /**
-   * This method creates the counters expicit for the KeyValueSpout.
-   * The function to register all the counters is created with all the registered metrics.
-   */
-  private def registerKeyValueSpout[K, V](
-    topology: Topology,
-    sourceParallelism: Int,
-    tormentaSpout: Spout[Item[(K, V)]],
-    sNode: SummerNode[Storm]
-  ): Topology = {
-    val summerBuilder = BuildSummer(builder, node)
-    val nodeName = builder.getNodeName(node)
-    val flushExecTimeCounter = counter(Group(nodeName), Name("spoutFlushExecTime"))
-    val executeTimeCounter = counter(Group(nodeName), Name("spoutEmitExecTime"))
-    val spout = createSpoutToFeedSummer[K, V](
-      sourceParallelism, sNode, summerBuilder, tormentaSpout, flushExecTimeCounter, executeTimeCounter)
-    val (spoutId, topologyWithSpout) = topology.withSpout(builder.getNodeName(node), spout)
-    builder.registerAggregatedEdges[K, V](topologyWithSpout, node, spoutId)
-  }
-
-  private def registerRawSpout[T](
-    topology: Topology,
-    sourceParallelism: Int,
-    tormentaSpout: Spout[Item[T]]
-  ): Topology = {
-    val bolt = Topology.RawSpout[Item[T]](sourceParallelism, spoutStormMetrics.metrics, tormentaSpout)
-    val (boltId, topologyWithBolt) = topology.withSpout(builder.getNodeName(node), bolt)
-    builder.registerItemEdges[T](topologyWithBolt, node, boltId)
-  }
-
-  /**
-   * This is the decision logic.
-   * If the spout is followed by a summer wraps the spout in KeyValueSpout
-   */
-  def register[T](topology: Topology): Topology = {
-    val (spout, sourceParallelismOption) = extractSourceAttributes
-    val tormentaSpout: Spout[Item[T]] = computeSpout(spout)
-    val sourceParallelism = getSourceParallelism(sourceParallelismOption)
-    validateParallelisms(sourceParallelism)
-    val summerOpt: Option[SummerNode[Storm]] = builder.stormDag
-      .dependantsOf(node.asInstanceOf[StormNode]).collect { case s: SummerNode[Storm] => s }
-      .headOption
-    summerOpt match {
-      case Some(summerNode) =>
-        // since we know that the the next node is a summer, this implies the type of the spout must be `(K, V)` for some `K, V`
-        registerKeyValueSpout[Any, Any](
-          topology,
-          sourceParallelism,
-          tormentaSpout.asInstanceOf[Spout[Item[(Any, Any)]]],
-          summerNode
-        )
-      case None => registerRawSpout[T](topology, sourceParallelism, tormentaSpout)
-    }
-  }
 }

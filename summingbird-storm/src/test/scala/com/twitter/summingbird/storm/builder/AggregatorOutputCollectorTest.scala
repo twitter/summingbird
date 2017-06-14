@@ -35,7 +35,7 @@ class AggregatorOutputCollectorTest extends WordSpec {
       KeyValueShards(10),
       Counter("flush"),
       Counter("execTime"),
-      OutputFormat(new Fields("key, value"), EdgeTypeInjections.KeyValue())
+      OutputFormat(new Fields("key, value"), EdgeTypeInjections.Pair())
     )(Semigroup.intSemigroup)
 
     (aggregatorCollector, validatingCollector)

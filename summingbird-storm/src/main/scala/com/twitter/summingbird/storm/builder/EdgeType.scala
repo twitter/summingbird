@@ -1,7 +1,7 @@
 package com.twitter.summingbird.storm.builder
 
 import com.twitter.bijection.{ Injection, Inversion }
-import com.twitter.summingbird.online.executor.KeyValueShards
+import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import java.util.{ ArrayList => JAList, List => JList }
 import org.apache.storm.tuple.Fields
 import scala.collection.{ Map => CMap }
@@ -30,54 +30,77 @@ private[summingbird] sealed trait EdgeType[T] {
 }
 
 private[summingbird] object EdgeType {
+  private val shardKey = "shard"
+
   /**
     * Simplest possible type of `Edge`, without any assumptions about content inside.
     */
-  case class Item[T] private[storm] (edgeGrouping: EdgeGrouping) extends EdgeType[T] {
-    override val fields: Fields = new Fields("value")
-    override val injection: Injection[T, JList[AnyRef]] = EdgeTypeInjections.Item()
+  case class Item[T] private[storm] (edgeGrouping: EdgeGrouping) extends EdgeType[(Timestamp, T)] {
+    override val fields: Fields = new Fields("timestamp", "value")
+    override val injection: Injection[(Timestamp, T), JList[AnyRef]] =
+      EdgeTypeInjections.Pair()
     override val grouping: EdgeGrouping = edgeGrouping
   }
 
   /**
     * This `Edge` type used for aggregated key value pairs emitted by partial aggregation.
-    * @param shards is a number which was used for partial aggregation.
     */
-  case class AggregatedKeyValues[K, V](shards: KeyValueShards) extends EdgeType[(Int, CMap[K, V])] {
-    override val fields: Fields = new Fields("aggKey", "aggValue")
-    override val injection: Injection[(Int, CMap[K, V]), JList[AnyRef]] = EdgeTypeInjections.KeyValue()
-    override val grouping: EdgeGrouping = EdgeGrouping.Fields(new Fields("aggKey"))
+  case class AggregatedKeyValues[K, V]() extends EdgeType[(Int, CMap[(K, BatchID), (Timestamp, V)])] {
+    override val fields: Fields = new Fields(shardKey, "aggregated")
+    override val injection: Injection[(Int, CMap[(K, BatchID), (Timestamp, V)]), JList[AnyRef]] =
+      EdgeTypeInjections.Pair()
+    override val grouping: EdgeGrouping = EdgeGrouping.Fields(new Fields(shardKey))
+  }
+
+  case class KeyValue[K, V] private[storm](edgeGrouping: EdgeGrouping) extends EdgeType[(Timestamp, K, V)] {
+    override val fields: Fields = new Fields("timestamp", "key", "value")
+    override val injection: Injection[(Timestamp, K, V), JList[AnyRef]] =
+      EdgeTypeInjections.Triple()
+    override val grouping: EdgeGrouping = edgeGrouping
+  }
+
+  case class ShardedKeyValue[K, V] private[storm](
+    edgeGrouping: EdgeGrouping
+  ) extends EdgeType[(Int, (K, BatchID), (Timestamp, V))] {
+    override val fields: Fields = new Fields(shardKey, "keyWithBatch", "valueWithTimestamp")
+    override val injection: Injection[(Int, (K, BatchID), (Timestamp, V)), JList[AnyRef]] =
+      EdgeTypeInjections.Triple()
+    override val grouping: EdgeGrouping = edgeGrouping
   }
 
   def item[T](withLocal: Boolean): Item[T] = Item(EdgeGrouping.shuffle(withLocal))
+  def keyValue[K, V](withLocal: Boolean): KeyValue[K, V] = KeyValue(EdgeGrouping.shuffle(withLocal))
+  def groupedShardedKeyValue[K, V]: ShardedKeyValue[K, V] =
+    ShardedKeyValue(EdgeGrouping.Fields(new Fields(shardKey)))
+  def shuffledShardedKeyValue[K, V](withLocal: Boolean): ShardedKeyValue[K, V] =
+    ShardedKeyValue(EdgeGrouping.shuffle(withLocal))
 }
 
 private object EdgeTypeInjections {
-  case class Item[T]() extends Injection[T, JList[AnyRef]] {
-    override def apply(tuple: T): JAList[AnyRef] = {
-      val list = new JAList[AnyRef](1)
-      list.add(tuple.asInstanceOf[AnyRef])
+  case class Pair[T1, T2]() extends Injection[(T1, T2), JList[AnyRef]] {
+    override def apply(tuple: (T1, T2)): JAList[AnyRef] = {
+      val list = new JAList[AnyRef](2)
+      list.add(tuple._1.asInstanceOf[AnyRef])
+      list.add(tuple._2.asInstanceOf[AnyRef])
       list
     }
 
-    override def invert(valueIn: JList[AnyRef]): Try[T] = Inversion.attempt(valueIn) { input =>
-      input.get(0).asInstanceOf[T]
+    override def invert(valueIn: JList[AnyRef]): Try[(T1, T2)] = Inversion.attempt(valueIn) { input =>
+      (input.get(0).asInstanceOf[T1], input.get(1).asInstanceOf[T2])
     }
   }
 
-  case class KeyValue[K, V]() extends Injection[(K, V), JList[AnyRef]] {
-    override def apply(tuple: (K, V)): JAList[AnyRef] = {
-      val (key, value) = tuple
-      val list = new JAList[AnyRef](2)
-      list.add(key.asInstanceOf[AnyRef])
-      list.add(value.asInstanceOf[AnyRef])
+  case class Triple[T1, T2, T3]() extends Injection[(T1, T2, T3), JList[AnyRef]] {
+    override def apply(tuple: (T1, T2, T3)): JAList[AnyRef] = {
+      val list = new JAList[AnyRef](3)
+      list.add(tuple._1.asInstanceOf[AnyRef])
+      list.add(tuple._2.asInstanceOf[AnyRef])
+      list.add(tuple._3.asInstanceOf[AnyRef])
       list
     }
 
-    override def invert(valueIn: JList[AnyRef]): Try[(K, V)] = Inversion.attempt(valueIn) { input =>
-      val key = input.get(0).asInstanceOf[K]
-      val value = input.get(1).asInstanceOf[V]
-      (key, value)
+    override def invert(valueIn: JList[AnyRef]): Try[(T1, T2, T3)] = Inversion.attempt(valueIn) { input =>
+      (input.get(0).asInstanceOf[T1], input.get(1).asInstanceOf[T2], input.get(2).asInstanceOf[T3])
     }
   }
 }

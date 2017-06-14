@@ -32,6 +32,13 @@ private[summingbird] case class Topology(
     (boltId, Topology(spouts, bolts.updated(boltId, bolt), edges))
   }
 
+  def withComponent[O](id: String, component: Topology.Component[O]): (Topology.EmittingId[O], Topology) = {
+    component match {
+      case bolt: Topology.Bolt[_, O] => withBolt(id, bolt)
+      case spout: Topology.Spout[O] => withSpout(id, spout)
+    }
+  }
+
   def withEdge[I, O](edge: Topology.Edge[I, O]): Topology = {
     assert(edge.source != edge.dest)
     assert(edges.forall { !edge.sameEndPoints(_) })
@@ -155,7 +162,7 @@ private[summingbird] object Topology {
   /**
    * Base trait for all components with parallelism and metrics.
    */
-  sealed trait Component {
+  sealed trait Component[+O] {
     def parallelism: Int
     def metrics: () => TraversableOnce[StormMetric[_]]
   }
@@ -164,7 +171,7 @@ private[summingbird] object Topology {
    * Base trait for spouts.
    * There are two implementations: raw tormenta spout and key value spout.
    */
-  trait Spout[+O] extends Component
+  trait Spout[+O] extends Component[O]
 
   case class RawSpout[+O](
     parallelism: Int,
@@ -195,5 +202,5 @@ private[summingbird] object Topology {
     ackOnEntry: AckOnEntry,
     maxExecutePerSec: MaxExecutePerSecond,
     executor: OperationContainer[I, O, InputState[Tuple]]
-  ) extends Component
+  ) extends Component[O]
 }

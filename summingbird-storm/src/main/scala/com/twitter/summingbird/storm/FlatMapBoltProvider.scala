@@ -18,12 +18,12 @@ package com.twitter.summingbird.storm
 
 import Constants._
 import com.twitter.algebird.Semigroup
-import com.twitter.summingbird._
-import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
+import com.twitter.summingbird.batch.{ Batcher, Timestamp }
 import com.twitter.summingbird.storm.option.AnchorTuples
 import com.twitter.summingbird.planner._
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.FlatMapOperation
+import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.storm.StormTopologyBuilder._
 import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.planner._
@@ -37,8 +37,10 @@ import scala.reflect.ClassTag
  */
 object FlatMapBoltProvider {
   @transient private val logger = LoggerFactory.getLogger(FlatMapBoltProvider.getClass)
-  private def wrapTimeBatchIDKV[T, K, V](existingOp: FlatMapOperation[T, (K, V)])(batcher: Batcher): FlatMapOperation[(Timestamp, T), ((K, BatchID), (Timestamp, V))] =
-    FlatMapOperation.generic[(Timestamp, T), ((K, BatchID), (Timestamp, V))]({
+  private def wrapTimeBatchIDKV[T, K, V](existingOp: FlatMapOperation[T, (K, V)])(
+    batcher: Batcher
+  ): FlatMapOperation[Item[T], (AggregateKey[K], AggregateValue[V])] =
+    FlatMapOperation.generic[Item[T], (AggregateKey[K], AggregateValue[V])]({
       case (ts, data) =>
         existingOp.apply(data).map { vals =>
           vals.map {
@@ -48,7 +50,7 @@ object FlatMapBoltProvider {
         }
     })
 
-  def wrapTime[T, U](existingOp: FlatMapOperation[T, U]): FlatMapOperation[(Timestamp, T), (Timestamp, U)] = {
+  def wrapTime[T, U](existingOp: FlatMapOperation[T, U]): FlatMapOperation[Item[T], Item[U]] = {
     FlatMapOperation.generic({ x: (Timestamp, T) =>
       existingOp.apply(x._2).map { vals =>
         vals.map((x._1, _))
@@ -57,31 +59,19 @@ object FlatMapBoltProvider {
   }
 }
 
-case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[Storm]) {
+case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[Storm]) extends ComponentProvider {
   import FlatMapBoltProvider._
   import Producer2FlatMapOperation._
 
-  def register(topology: Topology): Topology = {
-    val summerOpt: Option[SummerNode[Storm]] = builder.stormDag.dependantsOf(node).collect { case s: SummerNode[Storm] => s }.headOption
-    summerOpt match {
-      case Some(s) => registerAggregatedFMBolt[Any, Any, Any](topology, s)
-      case None => registerItemFMBolt[Any, Any](topology)
-    }
-  }
+  override def createSingle[T, O](fn: Item[T] => O): Topology.Component[O] =
+    itemBolt[Any, T, O](fn)
 
-  private def registerItemFMBolt[T, U](topology: Topology): Topology = {
-    val (boltId, topologyWithBolt) = topology.withBolt(builder.getNodeName(node), itemBolt[T, U])
-    // this is noop to check that created id has signature we expect it to have
-    val checkIdCorrectness: FlatMapBoltId[T] = boltId
-    builder.registerItemEdges[U](topologyWithBolt, node, boltId)
-  }
-
-  private def registerAggregatedFMBolt[T, K, V](topology: Topology, summer: SummerNode[Storm]): Topology = {
-    val (boltId, topologyWithBolt) = topology.withBolt(builder.getNodeName(node), aggregatedBolt[T, K, V](summer))
-    // this is noop to check that created id has signature we expect it to have
-    val checkIdCorrectness: FlatMapBoltId[T] = boltId
-    builder.registerAggregatedEdges[K, V](topologyWithBolt, node, boltId)
-  }
+  override def createAggregated[K, V](
+    batcher: Batcher,
+    shards: KeyValueShards,
+    semigroup: Semigroup[V]
+  ): Option[Topology.Component[Aggregated[K, V]]] =
+    Some(aggregatedBolt[Any, K, V](batcher, shards, semigroup))
 
   private def getOrElse[T <: AnyRef: ClassTag](default: T, queryNode: StormNode = node) =
     builder.getOrElse(queryNode, default)
@@ -108,16 +98,14 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
   private val parallelism = getOrElse(DEFAULT_FM_PARALLELISM)
   logger.info(s"[$nodeName] parallelism: ${parallelism.parHint}")
 
-  private def aggregatedBolt[T, K, V](summer: SummerNode[Storm]): Topology.Bolt[Item[T], Aggregated[K, V]] = {
-    val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, K, V]]
+  private def aggregatedBolt[T, K, V](
+    batcher: Batcher,
+    shards: KeyValueShards,
+    semigroup: Semigroup[V]
+  ): Topology.Bolt[Item[T], Aggregated[K, V]] = {
     // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
     // The monoid we use in aggregation is timestamp max.
-    val batcher = summerProducer.store.mergeableBatcher
-    implicit val valueMonoid: Semigroup[V] = summerProducer.semigroup
-
-    // This option we report its value here, but its not user settable.
-    val keyValueShards = builder.getSummerKeyValueShards(summer)
-    logger.info(s"[$nodeName] keyValueShards : ${keyValueShards.get}")
+    implicit val valueMonoid: Semigroup[V] = semigroup
 
     val operation = foldOperations[T, (K, V)](node.members.reverse)
     val wrappedOperation = wrapTimeBatchIDKV(operation)(batcher)
@@ -136,14 +124,14 @@ case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[
         maxWaiting,
         maxWaitTime,
         maxEmitPerExecute,
-        keyValueShards
+        shards
       )(implicitly[Semigroup[AggregateValue[V]]])
     )
   }
 
-  def itemBolt[T, U]: Topology.Bolt[Item[T], Item[U]] = {
+  private def itemBolt[T, U, O](finalTransform: (Item[U]) => O): Topology.Bolt[Item[T], O] = {
     val operation = foldOperations[T, U](node.members.reverse)
-    val wrappedOperation = wrapTime(operation)
+    val wrappedOperation = wrapTime(operation).map(finalTransform)
 
     Topology.Bolt(
       parallelism.parHint,
