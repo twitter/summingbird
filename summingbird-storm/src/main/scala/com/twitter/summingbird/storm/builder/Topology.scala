@@ -96,7 +96,7 @@ private[summingbird] case class Topology(
       ).addConfigurations(tickConfig)
 
       incomingEdges(boltId).foreach { edge =>
-        edge.edgeType.grouping.apply(declarer, edge.source)
+        edge.grouping.apply(declarer, edge.source)
       }
     }
 
@@ -148,7 +148,8 @@ private[summingbird] object Topology {
    */
   case class Edge[I, O](
     source: EmittingId[I],
-    edgeType: EdgeType[I],
+    format: OutputFormat[I],
+    grouping: EdgeGrouping,
     onReceiveTransform: I => O,
     dest: ReceivingId[O]
   ) {
@@ -156,7 +157,7 @@ private[summingbird] object Topology {
       source == another.source && dest == another.dest
 
     def deserialize(serialized: java.util.List[AnyRef]): Try[O] =
-      edgeType.injection.invert(serialized).map(onReceiveTransform)
+      format.injection.invert(serialized).map(onReceiveTransform)
   }
 
   /**

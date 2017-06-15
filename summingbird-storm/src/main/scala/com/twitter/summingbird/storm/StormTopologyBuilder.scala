@@ -8,7 +8,7 @@ import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, FlatMapNode, SourceNode, SummerNode }
 import com.twitter.summingbird.storm.Constants._
-import com.twitter.summingbird.storm.builder.{ EdgeType, Topology }
+import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.planner.StormNode
 import org.apache.storm.generated.StormTopology
 import org.slf4j.LoggerFactory
@@ -17,10 +17,11 @@ import scala.collection.{ Map => CMap }
 
 /**
  * Emitted values are Item[T], KeyValue[K, V], Aggregated[K, V] and Sharded[K, V].
- * `EdgeType`s corresponds to this values.
+ * `Edges` corresponds to this values.
  * Source spouts can emit all types of values.
- * FlatMap bolts accepts `Item[_]` as inputs, can emit everything.
- * Summer bolts accepts `SummerInput[_, _]` as inputs, can emit KeyValue / Sharded.
+ *
+ * FlatMap bolts accepts `Item[_]` as inputs.
+ * Summer bolts accepts `SummerInput[_, _]` as inputs.
  */
 object StormTopologyBuilder {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
@@ -98,26 +99,26 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
     topology: Topology,
     node: StormNode,
     provider: ComponentProvider
-  ): Topology =
-    outgoingSummersProps(node) match {
-      case Some(props) if props.allSummers =>
-        // Use Aggregated if possible.
-        provider.createAggregated[K, V](props.batcher, props.shards, props.semigroup.asInstanceOf[Semigroup[V]]) match {
-          case Some(component) =>
-            val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
-            registerAggregatedEdges[K, V](topologyWithComponent, node, componentId)
-          case None =>
-            // Fallback to Sharded.
-            registerShardedKeyValue[K, V](topology, node, provider, props.batcher, props.shards)
-        }
-      case Some(props) =>
-        registerShardedKeyValue[K, V](topology, node, provider, props.batcher, props.shards)
-      case None =>
-        // There is no outgoing summers - use plain key value edge.
-        val component = provider.createSingle[(K, V), KeyValue[K, V]](wrapKeyValue)
-        val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
-        registerKeyValueEdges[K, V](topologyWithComponent, node, componentId)
-    }
+  ): Topology = outgoingSummersProps(node) match {
+    case Some(props) if props.allSummers =>
+      // Use Aggregated if possible.
+      provider.createAggregated[K, V](props.batcher, props.shards, props.semigroup
+        .asInstanceOf[Semigroup[V]]) match {
+        case Some(component) =>
+          val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
+          registerAggregatedEdges[K, V](topologyWithComponent, node, componentId)
+        case None =>
+          // Fallback to Sharded.
+          registerShardedKeyValue[K, V](topology, node, provider, props.batcher, props.shards)
+      }
+    case Some(props) =>
+      registerShardedKeyValue[K, V](topology, node, provider, props.batcher, props.shards)
+    case None =>
+      // There is no outgoing summers - use plain key value edge.
+      val component = provider.createSingle[(K, V), KeyValue[K, V]](wrapKeyValue)
+      val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
+      registerKeyValueEdges[K, V](topologyWithComponent, node, componentId)
+  }
 
   private def registerShardedKeyValue[K, V](
     topology: Topology,
@@ -137,7 +138,11 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
     sourceId: Topology.EmittingId[Item[T]]
   ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
     case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
-      currentTopology.withEdge(itemToFlatMapEdge(sourceId, downstreamNode))
+      currentTopology.withEdge(Edges.shuffleItemToItem[T](
+        sourceId,
+        getFMBoltId[T](downstreamNode),
+        withLocalGrouping(downstreamNode)
+      ))
     case (_, downstreamNode: SummerNode[Storm]) =>
       throw new Exception(s"Impossible to create item edge to summer node: " +
         s"$sourceId -> ${getNodeName(downstreamNode)}")
@@ -149,7 +154,11 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
     sourceId: Topology.EmittingId[KeyValue[K, V]]
   ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
     case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
-      currentTopology.withEdge(keyValueToFlatMapEdge(sourceId, downstreamNode))
+      currentTopology.withEdge(Edges.shuffleKeyValueToItem[K, V](
+        sourceId,
+        getFMBoltId[(K, V)](downstreamNode),
+        withLocalGrouping(downstreamNode)
+      ))
     case (_, downstreamNode: SummerNode[Storm]) =>
       throw new Exception(s"Impossible to create key value edge to summer node: " +
         s"$sourceId -> ${getNodeName(downstreamNode)}")
@@ -159,93 +168,34 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
     topology: Topology,
     source: StormNode,
     sourceId: Topology.EmittingId[Aggregated[K, V]]
-  ): Topology =
-  // todo: validate all downstream are summers with same semigroup and shards count
-    stormDag.dependantsOf(source).foldLeft(topology) {
-      case (_, downstreamNode: FlatMapNode[Storm]) =>
-        throw new Exception(s"Impossible to create aggregated edge to flat map node: " +
-          s"$sourceId -> ${getNodeName(downstreamNode)}")
-      case (currentTopology, downstreamNode: SummerNode[Storm]) =>
-        currentTopology.withEdge(aggregatedToSummerEdge(sourceId, downstreamNode))
-    }
+  ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
+    case (_, downstreamNode: FlatMapNode[Storm]) =>
+      throw new Exception(s"Impossible to create aggregated edge to flat map node: " +
+        s"$sourceId -> ${ getNodeName(downstreamNode) }")
+    case (currentTopology, downstreamNode: SummerNode[Storm]) =>
+      currentTopology.withEdge(Edges.groupedAggregatedToSummer[K, V](
+        sourceId,
+        getSummerBoltId[K, V](downstreamNode)
+      ))
+  }
 
   private def registerShardedEdges[K, V](
     topology: Topology,
     source: StormNode,
     sourceId: Topology.EmittingId[Sharded[K, V]]
-  ): Topology =
-  // todo: validate all summer downstream nodes being with same semigroup and shards count
-    stormDag.dependantsOf(source).foldLeft(topology) {
-      case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
-        currentTopology.withEdge(shardedToFlatMapEdge(sourceId, downstreamNode))
-      case (currentTopology, downstreamNode: SummerNode[Storm]) =>
-        currentTopology.withEdge(shardedToSummerEdge(sourceId, downstreamNode))
-    }
-
-  private def itemToFlatMapEdge[T](
-    sourceId: Topology.EmittingId[Item[T]],
-    node: FlatMapNode[Storm]
-  ): Topology.Edge[Item[T], Item[T]] = {
-    val usePreferLocalDependency = getOrElse(node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
-    logger.info(s"[${getNodeName(node)}] usePreferLocalDependency: ${usePreferLocalDependency.get}")
-
-    Topology.Edge[Item[T], Item[T]](
-      sourceId,
-      EdgeType.item[T](usePreferLocalDependency.get),
-      identity,
-      getFMBoltId[T](node)
-    )
+  ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
+    case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
+      currentTopology.withEdge(Edges.shuffleShardedToItem[K, V](
+        sourceId,
+        getFMBoltId[(K, V)](downstreamNode),
+        withLocalGrouping(downstreamNode)
+      ))
+    case (currentTopology, downstreamNode: SummerNode[Storm]) =>
+      currentTopology.withEdge(Edges.groupedShardedToSummer[K, V](
+        sourceId,
+        getSummerBoltId[K, V](downstreamNode)
+      ))
   }
-
-  private def keyValueToFlatMapEdge[K, V](
-    sourceId: Topology.EmittingId[KeyValue[K, V]],
-    node: FlatMapNode[Storm]
-  ): Topology.Edge[KeyValue[K, V], Item[(K, V)]] = {
-    val usePreferLocalDependency = getOrElse(node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
-    logger.info(s"[${getNodeName(node)}] usePreferLocalDependency: ${usePreferLocalDependency.get}")
-
-    Topology.Edge(
-      sourceId,
-      EdgeType.keyValue[K, V](usePreferLocalDependency.get),
-      value => (value._1, (value._2, value._3)),
-      getFMBoltId[(K, V)](node)
-    )
-  }
-
-  private def aggregatedToSummerEdge[K, V](
-    sourceId: Topology.EmittingId[Aggregated[K, V]],
-    node: SummerNode[Storm]
-  ): Topology.Edge[Aggregated[K, V], SummerInput[K, V]] = Topology.Edge(
-    sourceId,
-    EdgeType.AggregatedKeyValues[K, V](),
-    _._2,
-    getSummerBoltId[K, V](node)
-  )
-
-  private def shardedToFlatMapEdge[K, V](
-    sourceId: Topology.EmittingId[Sharded[K, V]],
-    node: FlatMapNode[Storm]
-  ): Topology.Edge[Sharded[K, V], Item[(K, V)]] = {
-    val usePreferLocalDependency = getOrElse(node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
-    logger.info(s"[${getNodeName(node)}] usePreferLocalDependency: ${usePreferLocalDependency.get}")
-
-    Topology.Edge(
-      sourceId,
-      EdgeType.shuffledShardedKeyValue[K, V](usePreferLocalDependency.get),
-      sharded => (sharded._3._1, (sharded._2._1, sharded._3._2)),
-      getFMBoltId[(K, V)](node)
-    )
-  }
-
-  private def shardedToSummerEdge[K, V](
-    sourceId: Topology.EmittingId[Sharded[K, V]],
-    node: SummerNode[Storm]
-  ): Topology.Edge[Sharded[K, V], SummerInput[K, V]] = Topology.Edge[Sharded[K, V], SummerInput[K, V]](
-    sourceId,
-    EdgeType.groupedShardedKeyValue[K, V],
-    sharded => Some((sharded._2, sharded._3)),
-    getSummerBoltId[K, V](node)
-  )
 
   private def getSummerBoltId[K, V](node: SummerNode[Storm]): SummerBoltId[K, V] =
     Topology.BoltId(getNodeName(node))
@@ -256,22 +206,38 @@ case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, sto
   private def shouldEmitKeyValues(node: StormNode): Boolean =
     stormDag.dependantsOf(node).exists(_.isInstanceOf[SummerNode[_]])
 
+  private def withLocalGrouping(node: FlatMapNode[Storm]): Boolean = {
+    val usePreferLocalDependency = getOrElse(node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
+    logger.info(s"[${getNodeName(node)}] usePreferLocalDependency: ${usePreferLocalDependency.get}")
+    usePreferLocalDependency.get
+  }
+
   private def outgoingSummersProps(node: StormNode): Option[OutgoingSummersProps] = {
     val dependants = stormDag.dependantsOf(node)
-    val summers = dependants.filter(_.isInstanceOf[SummerNode[Storm]])
-    if (summers.isEmpty) {
-      None
+    val summerNodes = dependants.collect { case s: SummerNode[Storm] => s }
+    if (summerNodes.nonEmpty) {
+      val shards = getSummerKeyValueShards(summerNodes.head)
+      val batcher = getSummer(summerNodes.head).store.mergeableBatcher
+      val semigroup = getSummer(summerNodes.head).semigroup
+
+      summerNodes.foreach { summerNode =>
+        assert(
+          getSummerKeyValueShards(summerNode) == shards &&
+          getSummer(summerNode).store.mergeableBatcher == batcher &&
+          getSummer(summerNode).semigroup == semigroup,
+          "All outgoing summers should have same number of shards, batcher and semigroup. " +
+            "See https://github.com/twitter/summingbird/issues/733 for details."
+        )
+      }
+
+      Some(OutgoingSummersProps(summerNodes.size == dependants.size, batcher, semigroup, shards))
     } else {
-      val summer = summers.head.asInstanceOf[SummerNode[Storm]]
-      val summerProducer = summer.members.collect { case s: Summer[_, _, _] => s }.head.asInstanceOf[Summer[Storm, _, _]]
-      // todo: validate all summers have same settings
-      Some(OutgoingSummersProps(
-        summers.size == dependants.size,
-        summerProducer.store.mergeableBatcher,
-        summerProducer.semigroup,
-        getSummerKeyValueShards(summer)))
+      None
     }
   }
+
+  def getSummer(node: SummerNode[Storm]): Summer[Storm, _, _] = node.members
+    .collect { case s: Summer[Storm, _, _] => s }.head
 
   private def getSummerKeyValueShards(summer: SummerNode[Storm]): executor.KeyValueShards = {
     // Query to get the summer paralellism of the summer down stream of us we are emitting to

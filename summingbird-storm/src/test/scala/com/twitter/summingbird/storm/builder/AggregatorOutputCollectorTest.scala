@@ -1,11 +1,11 @@
 package com.twitter.summingbird.storm.builder
 
 import org.apache.storm.spout.ISpoutOutputCollector
-import org.apache.storm.tuple.{ Fields, Values }
+import org.apache.storm.tuple.Values
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.AsyncSummer
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
+import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, SummerBuilder }
 import com.twitter.util.Future
 import org.scalatest.WordSpec
 import scala.collection.mutable.{ Set => MSet }
@@ -35,7 +35,7 @@ class AggregatorOutputCollectorTest extends WordSpec {
       KeyValueShards(10),
       Counter("flush"),
       Counter("execTime"),
-      OutputFormat(new Fields("key, value"), EdgeTypeInjections.Pair())
+      OutputFormat.nullFormat
     )(Semigroup.intSemigroup)
 
     (aggregatorCollector, validatingCollector)

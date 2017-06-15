@@ -1,23 +1,30 @@
 package com.twitter.summingbird.storm.builder
 
 import com.twitter.bijection.Injection
+import java.util.{ArrayList => JArrayList, List => JList}
 import org.apache.storm.tuple.Fields
-import java.util.{ List => JList }
+import scala.collection.JavaConverters.bufferAsJavaListConverter
+import scala.collection.mutable.ListBuffer
+import scala.util.{ Failure, Try }
 
-private[builder] case class OutputFormat[T](fields: Fields, injection: Injection[T, JList[AnyRef]])
+private[storm] case class OutputFormat[T](fields: List[String], injection: Injection[T, JList[AnyRef]]) {
+  def asStormFields: Fields = new Fields(ListBuffer(fields: _*).asJava)
+}
 
-private[builder] object OutputFormat {
+private[storm] object OutputFormat {
+  def nullFormat[T]: OutputFormat[T] = OutputFormat[T](List(), new Injection[T, JList[AnyRef]] {
+    override def apply(a: T): JList[AnyRef] = new JArrayList()
+    override def invert(b: JList[AnyRef]): Try[T] =
+      Failure(new Exception("cannot invert nullFormat"))
+  })
+
   def get[T](outgoingEdges: Traversable[Topology.Edge[T, _]]): Option[OutputFormat[T]] = {
     if (outgoingEdges.isEmpty) None else {
-      val fields = outgoingEdges.head.edgeType.fields
+      val format = outgoingEdges.head.format
       assert(
-        outgoingEdges.forall(edge => edge.edgeType.fields.toList == fields.toList),
-        s"Outgoing edges should have same `Fields` $outgoingEdges")
-      val injection = outgoingEdges.head.edgeType.injection
-      assert(
-        outgoingEdges.forall(edge => edge.edgeType.injection == injection),
-        s"Outgoing edges should have same `Injection` $outgoingEdges")
-      Some(OutputFormat(fields, injection))
+        outgoingEdges.forall(edge => edge.format == format),
+        s"Outgoing edges should have same format $outgoingEdges")
+      Some(format)
     }
   }
 }

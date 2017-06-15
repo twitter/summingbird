@@ -47,7 +47,7 @@ class TestKeyValueSpout extends WordSpec {
       KeyValueShards(1),
       flushCounter,
       execCounter,
-      OutputFormat(new Fields("aggKey", "aggValue"), EdgeTypeInjections.Pair())
+      OutputFormat.nullFormat
     )
     val myCollector = new TestAggregateOutpoutCollector(outputCollector, expected)
     testSpout.open(null, null, myCollector)

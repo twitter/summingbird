@@ -12,7 +12,7 @@ private[builder] class FormattedSpout[T](
   format: OutputFormat[T]
 ) extends SpoutProxy {
   override def declareOutputFields(declarer: OutputFieldsDeclarer): Unit =
-    declarer.declare(format.fields)
+    declarer.declare(format.asStormFields)
 
   override def open(
     conf: JMap[_, _],

@@ -31,9 +31,8 @@ private[builder] class KeyValueSpout[K, V: Semigroup](
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
   var lastDump = Time.now
 
-  override def declareOutputFields(declarer: OutputFieldsDeclarer) = {
-    declarer.declare(format.fields)
-  }
+  override def declareOutputFields(declarer: OutputFieldsDeclarer): Unit =
+    declarer.declare(format.asStormFields)
 
   /**
    * On open the outputCollector is wrapped with AggregateOutputCollector and fed to the KeyValueSpout.

@@ -11,7 +11,7 @@ import scala.collection.JavaConverters.asJavaIterableConverter
  * This is custom wrapping `Scheme` class which is a way to customize Scheme's format.
  */
 private[builder] sealed class FormattedScheme[T](scheme: Scheme[T], format: OutputFormat[T]) extends Scheme[T] {
-  override lazy val getOutputFields: Fields = format.fields
+  override lazy val getOutputFields: Fields = format.asStormFields
 
   override def deserialize(bytes: ByteBuffer): JIterable[JList[AnyRef]] =
     try {

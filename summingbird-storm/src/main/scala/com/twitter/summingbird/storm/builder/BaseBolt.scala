@@ -204,7 +204,7 @@ private[builder] case class BaseBolt[I, O](
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-   outputFormat.foreach(format => declarer.declare(format.fields))
+   outputFormat.foreach(format => declarer.declare(format.asStormFields))
   }
 
   override val getComponentConfiguration = null
