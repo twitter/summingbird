@@ -17,7 +17,7 @@
 package com.twitter.summingbird.storm.builder
 
 import com.twitter.summingbird.batch.Timestamp
-import com.twitter.summingbird.storm.EdgesInjections
+import com.twitter.summingbird.storm.EdgeInjections
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
 import org.scalacheck._
@@ -27,11 +27,11 @@ object InjectionLaws extends Properties("InjectionTests") {
     Arbitrary(Arbitrary.arbitrary[Long].map(Timestamp(_)))
 
   property("Pair injection works") = forAll { in: (String, String) =>
-    val inj = EdgesInjections.Pair[String, String]()
+    val inj = EdgeInjections.Pair[String, String]()
     inj.invert(inj(in)).get == in
   }
   property("Triple injection works") = forAll { in: (Int, String, List[Int]) =>
-    val inj = EdgesInjections.Triple[Int, String, List[Int]]()
+    val inj = EdgeInjections.Triple[Int, String, List[Int]]()
     inj.invert(inj(in)).get == in
   }
 }

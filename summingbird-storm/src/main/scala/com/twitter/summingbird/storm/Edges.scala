@@ -1,12 +1,10 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.bijection.{ Injection, Inversion }
-import com.twitter.summingbird.batch.{ BatchID, Timestamp }
 import com.twitter.summingbird.storm.builder.{ EdgeGrouping, OutputFormat, Topology }
 import scala.util.Try
 import java.util.{ ArrayList => JAList, List => JList }
 import org.apache.storm.tuple.Fields
-import scala.collection.{ Map => CMap }
 import StormTopologyBuilder._
 
 private[storm] object Edges {
@@ -17,7 +15,7 @@ private[storm] object Edges {
   ): Topology.Edge[Item[T], Item[T]] =
     Topology.Edge[Item[T], Item[T]](
       sourceId,
-      EdgesFormats.item[T],
+      EdgeFormats.item[T],
       EdgeGrouping.shuffle(withLocal),
       identity,
       destId
@@ -30,7 +28,7 @@ private[storm] object Edges {
   ): Topology.Edge[KeyValue[K, V], Item[(K, V)]] =
     Topology.Edge(
       sourceId,
-      EdgesFormats.keyValue[K, V],
+      EdgeFormats.keyValue[K, V],
       EdgeGrouping.shuffle(withLocal),
       value => (value._1, (value._2, value._3)),
       destId
@@ -42,8 +40,8 @@ private[storm] object Edges {
   ): Topology.Edge[Aggregated[K, V], SummerInput[K, V]] =
     Topology.Edge(
       sourceId,
-      EdgesFormats.aggregated[K, V],
-      EdgeGrouping.Fields(new Fields(EdgesFormats.shardKey)),
+      EdgeFormats.aggregated[K, V],
+      EdgeGrouping.Fields(new Fields(EdgeFormats.shardKey)),
       _._2,
       destId
     )
@@ -55,7 +53,7 @@ private[storm] object Edges {
   ): Topology.Edge[Sharded[K, V], Item[(K, V)]] =
     Topology.Edge(
       sourceId,
-      EdgesFormats.sharded[K, V],
+      EdgeFormats.sharded[K, V],
       EdgeGrouping.shuffle(withLocal),
       sharded => (sharded._3._1, (sharded._2._1, sharded._3._2)),
       destId
@@ -67,27 +65,27 @@ private[storm] object Edges {
   ): Topology.Edge[Sharded[K, V], SummerInput[K, V]] =
     Topology.Edge(
       sourceId,
-      EdgesFormats.sharded[K, V],
-      EdgeGrouping.Fields(new Fields(EdgesFormats.shardKey)),
+      EdgeFormats.sharded[K, V],
+      EdgeGrouping.Fields(new Fields(EdgeFormats.shardKey)),
       sharded => Some((sharded._2, sharded._3)),
       destId
     )
 }
 
-private object EdgesFormats {
+private object EdgeFormats {
   val shardKey = "shard"
 
   def item[T]: OutputFormat[Item[T]] =
-    OutputFormat(List("timestamp", "value"), EdgesInjections.Pair())
+    OutputFormat(List("timestamp", "value"), EdgeInjections.Pair())
   def aggregated[K, V]: OutputFormat[Aggregated[K, V]] =
-    OutputFormat(List(shardKey, "aggregated"), EdgesInjections.Pair())
+    OutputFormat(List(shardKey, "aggregated"), EdgeInjections.Pair())
   def keyValue[K, V]: OutputFormat[KeyValue[K, V]] =
-    OutputFormat(List("timestamp", "key", "value"), EdgesInjections.Triple())
+    OutputFormat(List("timestamp", "key", "value"), EdgeInjections.Triple())
   def sharded[K, V]: OutputFormat[Sharded[K, V]] =
-    OutputFormat(List(shardKey, "keyWithBatch", "valueWithTimestamp"), EdgesInjections.Triple())
+    OutputFormat(List(shardKey, "keyWithBatch", "valueWithTimestamp"), EdgeInjections.Triple())
 }
 
-private object EdgesInjections {
+private object EdgeInjections {
   case class Pair[T1, T2]() extends Injection[(T1, T2), JList[AnyRef]] {
     override def apply(tuple: (T1, T2)): JAList[AnyRef] = {
       val list = new JAList[AnyRef](2)
