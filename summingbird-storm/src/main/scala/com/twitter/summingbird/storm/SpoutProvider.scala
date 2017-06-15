@@ -14,7 +14,10 @@ import com.twitter.summingbird.storm.planner.StormNode
 import com.twitter.tormenta.spout.Spout
 import scala.reflect.ClassTag
 
-case class SpoutProvider(builder: StormTopologyBuilder, node: SourceNode[Storm]) extends ComponentProvider {
+private[storm] case class SpoutProvider(
+  builder: StormTopologyBuilder,
+  node: SourceNode[Storm]
+) extends ComponentProvider {
   override def createSingle[T, O](fn: Item[T] => O): Topology.Component[O] = {
     val (tormentaSpout, parallelism) = getTormentaSpoutAndParallelism[T]
     Topology.RawSpout[O](parallelism, spoutStormMetrics.metrics, tormentaSpout.map(fn))

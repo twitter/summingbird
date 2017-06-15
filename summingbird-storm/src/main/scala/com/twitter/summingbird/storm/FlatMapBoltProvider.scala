@@ -35,7 +35,7 @@ import scala.reflect.ClassTag
  * There are two main codepaths here, for intermediate flat maps and final flat maps.
  * The primary difference between those two being the the presents of map side aggreagtion in a final flatmap.
  */
-object FlatMapBoltProvider {
+private[storm] object FlatMapBoltProvider {
   @transient private val logger = LoggerFactory.getLogger(FlatMapBoltProvider.getClass)
   private def wrapTimeBatchIDKV[T, K, V](existingOp: FlatMapOperation[T, (K, V)])(
     batcher: Batcher
@@ -59,7 +59,10 @@ object FlatMapBoltProvider {
   }
 }
 
-case class FlatMapBoltProvider(builder: StormTopologyBuilder, node: FlatMapNode[Storm]) extends ComponentProvider {
+private[storm] case class FlatMapBoltProvider(
+  builder: StormTopologyBuilder,
+  node: FlatMapNode[Storm]
+) extends ComponentProvider {
   import FlatMapBoltProvider._
   import Producer2FlatMapOperation._
 

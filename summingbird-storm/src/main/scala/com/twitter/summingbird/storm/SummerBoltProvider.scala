@@ -15,11 +15,14 @@ import com.twitter.summingbird.storm.planner.StormNode
 import org.slf4j.LoggerFactory
 import scala.reflect.ClassTag
 
-case object SummerBoltProvider {
+private[storm] case object SummerBoltProvider {
   @transient private val logger = LoggerFactory.getLogger(SummerBoltProvider.getClass)
 }
 
-case class SummerBoltProvider(builder: StormTopologyBuilder, node: SummerNode[Storm]) extends ComponentProvider {
+private[storm] case class SummerBoltProvider(
+  builder: StormTopologyBuilder,
+  node: SummerNode[Storm]
+) extends ComponentProvider {
   import SummerBoltProvider._
 
   override def createSingle[T, O](fn: Item[T] => O): Topology.Component[O] = {

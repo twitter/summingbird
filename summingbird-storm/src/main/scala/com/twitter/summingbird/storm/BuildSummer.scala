@@ -32,7 +32,7 @@ import Constants._
  * It has two primary modes, reading a SummerConstructor setting directly and using its contents, or via the legacy route.
  * Reading all the options internally.
  */
-object BuildSummer {
+private[storm] object BuildSummer {
   @transient private val logger = LoggerFactory.getLogger(BuildSummer.getClass)
 
   def apply(builder: StormTopologyBuilder, node: StormNode) = {
@@ -132,5 +132,4 @@ object BuildSummer {
   }
 
   def counter(jobID: JobId, nodeName: Group, counterName: Name) = new Counter(Group("summingbird." + nodeName.getString), counterName)(jobID) with Incrementor
-
 }

@@ -23,7 +23,7 @@ import scala.collection.{ Map => CMap }
  * FlatMap bolts accepts `Item[_]` as inputs.
  * Summer bolts accepts `SummerInput[_, _]` as inputs.
  */
-object StormTopologyBuilder {
+private[storm] object StormTopologyBuilder {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
 
   type Item[T] = (Timestamp, T)
@@ -63,7 +63,7 @@ object StormTopologyBuilder {
 /**
  * This class encapsulates logic how to build `StormTopology` from DAG of the job, jobId and options.
  */
-case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
+private[storm] case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
   import StormTopologyBuilder._
 
   def build: StormTopology = {
