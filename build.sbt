@@ -174,7 +174,8 @@ lazy val summingbird = Project(
   summingbirdBuilder,
   summingbirdChill,
   summingbirdExample,
-  summingbirdCoreTest
+  summingbirdCoreTest,
+  summingbirdOnlinePerf
 )
 
 /**
@@ -313,6 +314,10 @@ lazy val summingbirdOnline = module("online").settings(
   summingbirdBatch,
   summingbirdClient
 )
+
+lazy val summingbirdOnlinePerf = module("online-perf")
+  .enablePlugins(JmhPlugin)
+  .dependsOn(summingbirdOnline)
 
 lazy val summingbirdStorm = module("storm").settings(
   parallelExecution in Test := false,
