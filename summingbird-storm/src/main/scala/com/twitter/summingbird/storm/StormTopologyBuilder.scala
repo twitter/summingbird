@@ -44,7 +44,7 @@ private[storm] object StormTopologyBuilder {
   type Aggregated[K, V] = (Int, CMap[AggregateKey[K], AggregateValue[V]])
   type Sharded[K, V] = (Int, AggregateKey[K], AggregateValue[V])
 
-  type SummerInput[K, V] = Traversable[(AggregateKey[K], AggregateValue[V])]
+  type SummerInput[K, V] = Iterable[(AggregateKey[K], AggregateValue[V])]
 
   type FlatMapBoltId[T] = Topology.BoltId[Item[T], _]
   type SummerBoltId[K, V] = Topology.BoltId[SummerInput[K, V], _]

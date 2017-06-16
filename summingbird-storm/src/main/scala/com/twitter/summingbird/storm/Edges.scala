@@ -17,7 +17,7 @@ private[storm] object Edges {
   ): Topology.Edge[Item[T], Item[T]] = Topology.Edge(
     sourceId,
     EdgeFormats.item[T],
-    EdgeGrouping.shuffle(withLocal),
+    if (withLocal) EdgeGrouping.LocalOrShuffle else EdgeGrouping.Shuffle,
     identity,
     destId
   )
@@ -29,7 +29,7 @@ private[storm] object Edges {
   ): Topology.Edge[KeyValue[K, V], Item[(K, V)]] = Topology.Edge(
     sourceId,
     EdgeFormats.keyValue[K, V],
-    EdgeGrouping.shuffle(withLocal),
+    if (withLocal) EdgeGrouping.LocalOrShuffle else EdgeGrouping.Shuffle,
     value => (value._1, (value._2, value._3)),
     destId
   )
@@ -52,7 +52,7 @@ private[storm] object Edges {
   ): Topology.Edge[Sharded[K, V], Item[(K, V)]] = Topology.Edge(
     sourceId,
     EdgeFormats.sharded[K, V],
-    EdgeGrouping.shuffle(withLocal),
+    if (withLocal) EdgeGrouping.LocalOrShuffle else EdgeGrouping.Shuffle,
     sharded => (sharded._3._1, (sharded._2._1, sharded._3._2)),
     destId
   )

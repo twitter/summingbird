@@ -28,6 +28,4 @@ private[summingbird] object EdgeGrouping {
     override def apply(declarer: BoltDeclarer, parent: Topology.EmittingId[_]): Unit =
       declarer.fieldsGrouping(parent.id, new StormFields(ListBuffer(fields: _*).asJava))
   }
-
-  def shuffle(withLocal: Boolean): EdgeGrouping = if (withLocal) LocalOrShuffle else Shuffle
 }

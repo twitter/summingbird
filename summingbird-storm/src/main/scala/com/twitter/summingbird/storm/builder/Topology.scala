@@ -162,6 +162,7 @@ private[summingbird] object Topology {
 
   /**
    * Base trait for all components with parallelism and metrics.
+   * `O` represent type of values emitted by this component.
    */
   sealed trait Component[+O] {
     def parallelism: Int
@@ -172,7 +173,7 @@ private[summingbird] object Topology {
    * Base trait for spouts.
    * There are two implementations: raw tormenta spout and key value spout.
    */
-  trait Spout[+O] extends Component[O]
+  sealed trait Spout[+O] extends Component[O]
 
   case class RawSpout[+O](
     parallelism: Int,

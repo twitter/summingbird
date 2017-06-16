@@ -10,18 +10,16 @@ import scala.collection.mutable.ListBuffer
  * Trait to specify storm's format for emitted values.
  * Contains storm's tuple's fields and injection from `T` to storm's `Values` (which are java arrays).
  */
-private[storm] case class OutputFormat[T](fields: List[String], injection: Injection[T, JList[AnyRef]]) {
+private[storm] sealed case class OutputFormat[T](fields: List[String], injection: Injection[T, JList[AnyRef]]) {
   def asStormFields: Fields = new Fields(ListBuffer(fields: _*).asJava)
 }
 
 private[storm] object OutputFormat {
-  def get[T](outgoingEdges: Traversable[Topology.Edge[T, _]]): Option[OutputFormat[T]] = {
-    if (outgoingEdges.isEmpty) None else {
-      val format = outgoingEdges.head.format
+  def get[T](outgoingEdges: Iterable[Topology.Edge[T, _]]): Option[OutputFormat[T]] =
+    outgoingEdges.headOption.map { head =>
       assert(
-        outgoingEdges.forall(edge => edge.format == format),
+        outgoingEdges.forall(edge => edge.format == head.format),
         s"Outgoing edges should have same format $outgoingEdges")
-      Some(format)
+      head.format
     }
-  }
 }

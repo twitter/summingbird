@@ -25,12 +25,8 @@ private[storm] case class SummerBoltProvider(
 ) extends ComponentProvider {
   import SummerBoltProvider._
 
-  override def createSingle[T, O](fn: Item[T] => O): Topology.Component[O] = {
-    def create[K, V](fn: Item[(K, (Option[V], V))] => O): Topology.Component[O] =
-      bolt[K, V, O](fn)
-    // This is a legitimate conversion because we now that summer emits (K, (Option[V], V)).
-    create[Any, Any](fn.asInstanceOf[Item[(Any, (Option[Any], Any))] => O])
-  }
+  override def createSingle[T, O](fn: Item[T] => O): Topology.Component[O] =
+    bolt[Any, Any, O](fn.asInstanceOf[Item[(Any, (Option[Any], Any))] => O])
 
   override def createAggregated[K, V](
     batcher: Batcher,

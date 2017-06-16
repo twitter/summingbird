@@ -41,13 +41,13 @@ private[builder] object FormattedSpout {
       taskId: Int,
       streamId: String,
       tuple: JList[AnyRef],
-      messageId: scala.AnyRef
+      messageId: AnyRef
     ): Unit = in.emitDirect(taskId, streamId, transform(tuple), messageId)
 
     override def emit(
       streamId: String,
       tuple: JList[AnyRef],
-      messageId: scala.AnyRef
+      messageId: AnyRef
     ): JList[Integer] = in.emit(streamId, transform(tuple), messageId)
 
     private def transform(tuple: JList[AnyRef]): JList[AnyRef] = {
