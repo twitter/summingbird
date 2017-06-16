@@ -30,11 +30,6 @@ import com.twitter.summingbird.storm.planner._
 import org.slf4j.LoggerFactory
 import scala.reflect.ClassTag
 
-/**
- * These are helper functions for building a bolt from a Node[Storm] element.
- * There are two main codepaths here, for intermediate flat maps and final flat maps.
- * The primary difference between those two being the the presents of map side aggreagtion in a final flatmap.
- */
 private[storm] object FlatMapBoltProvider {
   @transient private val logger = LoggerFactory.getLogger(FlatMapBoltProvider.getClass)
   private def wrapTimeBatchIDKV[T, K, V](existingOp: FlatMapOperation[T, (K, V)])(
