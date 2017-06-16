@@ -16,12 +16,22 @@ import scala.reflect.ClassTag
 import scala.collection.{ Map => CMap }
 
 /**
- * Emitted values are Item[T], KeyValue[K, V], Aggregated[K, V] and Sharded[K, V].
- * `Edges` corresponds to this values.
- * Source spouts can emit all types of values.
- *
- * FlatMap bolts accepts `Item[_]` as inputs.
- * Summer bolts accepts `SummerInput[_, _]` as inputs.
+ * This class contains main logic on how to build storm topology out of planned DAG.
+ * `DAG` contains three types of nodes: Source, FlatMap and Summer.
+ * Built topology has next properties:
+ * 1. separate `Topology` `Component`s corresponds to separate DAG nodes
+ * 2. each `Component` emit values only of one type
+ * 3.a. `FlatMap` components accept tuples of type `Item[T]`
+ *      (and corresponds to `Producer[Storm, T]`)
+ * 3.b. `Summer` components accept tuples of type `SummerInput[K, V]`
+ *      (and corresponds to `KeyedProducer[Storm, K, V]`)
+ * 4. All components emit some of those: `Item[T]`, `KeyValue[K, V]`, `Aggregated[K, V]` or `Sharded[K, V]`.
+ * 4.a. If corresponding to `Component` `Producer` is not `Keyed` then `Component` emits `Item[T]`
+ * 4.b. Otherwise if `Component` emits only to `Summer` nodes it emits `Aggregated[K, V]`
+ * 4.c. Otherwise if `Component` emits to both `Summer` and non `Summer` nodes it emits `Sharded[K, V]`
+ *      which can be both grouped in the same way as `Aggregated` and shuffled in the same way as `Item[T]`
+ * 4.d. If `Component` emits `Keyed` values but there aren't downstream `Summer` nodes it emits `Item[T]`,
+ *      but this will be changed to `KeyValue[K, V]` with grouped `leftJoin` feature.
  */
 private[storm] object StormTopologyBuilder {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
