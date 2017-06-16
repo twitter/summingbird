@@ -6,6 +6,10 @@ import org.apache.storm.tuple.Fields
 import scala.collection.JavaConverters.bufferAsJavaListConverter
 import scala.collection.mutable.ListBuffer
 
+/**
+ * Trait to specify storm's format for emitted values.
+ * Contains storm's tuple's fields and injection from `T` to storm's `Values` (which are java arrays).
+ */
 private[storm] case class OutputFormat[T](fields: List[String], injection: Injection[T, JList[AnyRef]]) {
   def asStormFields: Fields = new Fields(ListBuffer(fields: _*).asJava)
 }

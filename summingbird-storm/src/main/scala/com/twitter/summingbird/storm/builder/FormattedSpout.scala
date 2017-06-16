@@ -7,6 +7,9 @@ import org.apache.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
 import java.util.{ List => JList, Map => JMap }
 import org.apache.storm.testing.CompletableSpout
 
+/**
+ * `Spout` wrapper which gives an ability to specify `OutputFormat`.
+ */
 private[builder] class FormattedSpout[T](
   protected val self: IRichSpout,
   format: OutputFormat[T]
