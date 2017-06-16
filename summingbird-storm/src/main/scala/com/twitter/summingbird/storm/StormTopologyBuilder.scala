@@ -25,19 +25,16 @@ import scala.collection.{ Map => CMap }
  *      (and corresponds to `Producer[Storm, T]`)
  * 3.b. `Summer` components accept tuples of type `SummerInput[K, V]`
  *      (and corresponds to `KeyedProducer[Storm, K, V]`)
- * 4. All components emit some of those: `Item[T]`, `KeyValue[K, V]`, `Aggregated[K, V]` or `Sharded[K, V]`.
+ * 4. All components emit some of those: `Item[T]`, `Aggregated[K, V]` or `Sharded[K, V]`.
  * 4.a. If corresponding to `Component` `Producer` is not `Keyed` then `Component` emits `Item[T]`
  * 4.b. Otherwise if `Component` emits only to `Summer` nodes it emits `Aggregated[K, V]`
  * 4.c. Otherwise if `Component` emits to both `Summer` and non `Summer` nodes it emits `Sharded[K, V]`
  *      which can be both grouped in the same way as `Aggregated` and shuffled in the same way as `Item[T]`
- * 4.d. If `Component` emits `Keyed` values but there aren't downstream `Summer` nodes it emits `Item[T]`,
- *      but this will be changed to `KeyValue[K, V]` with grouped `leftJoin` feature.
  */
 private[storm] object StormTopologyBuilder {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
 
   type Item[T] = (Timestamp, T)
-  type KeyValue[K, V] = (Timestamp, K, V)
 
   type AggregateKey[K] = (K, BatchID)
   type AggregateValue[V] = (Timestamp, V)
@@ -55,9 +52,6 @@ private[storm] object StormTopologyBuilder {
     semigroup: Semigroup[_],
     shards: KeyValueShards
   )
-
-  private def wrapKeyValue[K, V](tuple: Item[(K, V)]): KeyValue[K, V] =
-    (tuple._1, tuple._2._1, tuple._2._2)
 
   private def wrapSharded[K, V](
     batcher: Batcher,
@@ -124,10 +118,8 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     case Some(props) =>
       registerShardedKeyValue[K, V](topology, node, provider, props.batcher, props.shards)
     case None =>
-      // There is no outgoing summers - use plain key value edge.
-      val component = provider.createSingle[(K, V), KeyValue[K, V]](wrapKeyValue)
-      val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
-      registerKeyValueEdges[K, V](topologyWithComponent, node, componentId)
+      throw new IllegalStateException("Shouldn't happen, trying to register component which emits " +
+        "keyed values and don't have downstream summers.")
   }
 
   private def registerShardedKeyValue[K, V](
@@ -155,22 +147,6 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
       ))
     case (_, downstreamNode: SummerNode[Storm]) =>
       throw new Exception(s"Impossible to create item edge to summer node: " +
-        s"$sourceId -> ${getNodeName(downstreamNode)}")
-  }
-
-  private def registerKeyValueEdges[K, V](
-    topology: Topology,
-    source: StormNode,
-    sourceId: Topology.EmittingId[KeyValue[K, V]]
-  ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
-    case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
-      currentTopology.withEdge(Edges.shuffleKeyValueToItem[K, V](
-        sourceId,
-        getFMBoltId[(K, V)](downstreamNode),
-        withLocalGrouping(downstreamNode)
-      ))
-    case (_, downstreamNode: SummerNode[Storm]) =>
-      throw new Exception(s"Impossible to create key value edge to summer node: " +
         s"$sourceId -> ${getNodeName(downstreamNode)}")
   }
 

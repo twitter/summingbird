@@ -22,18 +22,6 @@ private[storm] object Edges {
     destId
   )
 
-  def shuffleKeyValueToItem[K, V](
-    sourceId: Topology.EmittingId[KeyValue[K, V]],
-    destId: Topology.ReceivingId[Item[(K, V)]],
-    withLocal: Boolean
-  ): Topology.Edge[KeyValue[K, V], Item[(K, V)]] = Topology.Edge(
-    sourceId,
-    EdgeFormats.keyValue[K, V],
-    if (withLocal) EdgeGrouping.LocalOrShuffle else EdgeGrouping.Shuffle,
-    value => (value._1, (value._2, value._3)),
-    destId
-  )
-
   def groupedAggregatedToSummer[K, V](
     sourceId: Topology.EmittingId[Aggregated[K, V]],
     destId: Topology.ReceivingId[SummerInput[K, V]]
@@ -79,8 +67,6 @@ private object EdgeFormats {
     OutputFormat(List("timestamp", "value"), EdgeInjections.Pair())
   def aggregated[K, V]: OutputFormat[Aggregated[K, V]] =
     OutputFormat(List(shardKey, "aggregated"), EdgeInjections.Pair())
-  def keyValue[K, V]: OutputFormat[KeyValue[K, V]] =
-    OutputFormat(List("timestamp", "key", "value"), EdgeInjections.Triple())
   def sharded[K, V]: OutputFormat[Sharded[K, V]] =
     OutputFormat(List(shardKey, "keyWithBatch", "valueWithTimestamp"), EdgeInjections.Triple())
 }
