@@ -22,9 +22,9 @@ import scala.collection.{ Map => CMap }
  * 1. separate `Topology` `Component`s corresponds to separate DAG nodes
  * 2. each `Component` emit values only of one type
  * 3.a. `FlatMap` components accept tuples of type `Item[T]`
- *      (and corresponds to `Producer[Storm, T]`)
+ *      (and correspond to `Producer[Storm, T]`)
  * 3.b. `Summer` components accept tuples of type `SummerInput[K, V]`
- *      (and corresponds to `KeyedProducer[Storm, K, V]`)
+ *      (and correspond to `KeyedProducer[Storm, K, V]`)
  * 4. All components emit some of those: `Item[T]`, `Aggregated[K, V]` or `Sharded[K, V]`.
  * 4.a. If corresponding to `Component` `Producer` is not `Keyed` then `Component` emits `Item[T]`
  * 4.b. Otherwise if `Component` emits only to `Summer` nodes it emits `Aggregated[K, V]`
@@ -105,9 +105,12 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     provider: ComponentProvider
   ): Topology = outgoingSummersProps(node) match {
     case Some(props) if props.allSummers =>
-      // Use Aggregated if possible.
-      provider.createAggregated[K, V](props.batcher, props.shards, props.semigroup
-        .asInstanceOf[Semigroup[V]]) match {
+      // Use `Aggregated[K, V]` if possible.
+      provider.createAggregated[K, V](
+        props.batcher,
+        props.shards,
+        props.semigroup.asInstanceOf[Semigroup[V]]
+      ) match {
         case Some(component) =>
           val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
           registerAggregatedEdges[K, V](topologyWithComponent, node, componentId)

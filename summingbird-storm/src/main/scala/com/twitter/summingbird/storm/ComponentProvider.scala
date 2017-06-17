@@ -6,7 +6,8 @@ import com.twitter.summingbird.online.executor.KeyValueShards
 import com.twitter.summingbird.storm.builder.Topology
 
 /**
- * This trait describes how to build topology component which corresponds to `Producer`s chain.
+ * This trait describes how to build topology component which corresponds to
+ * `Producer`s chain (like `flatMap().flatMap()` or `sumByKey()` or even `Source().flatMap()`).
  */
 private[storm] trait ComponentProvider {
   import StormTopologyBuilder._
