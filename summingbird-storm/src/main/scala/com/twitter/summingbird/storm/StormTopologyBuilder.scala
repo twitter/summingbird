@@ -162,7 +162,7 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
         withLocalGrouping(downstreamNode)
       ))
     case (_, downstreamNode: SummerNode[Storm]) =>
-      throw new Exception(s"Impossible to create item edge to summer node: " +
+      throw new IllegalStateException(s"Impossible to create item edge to summer node: " +
         s"$sourceId -> ${getNodeName(downstreamNode)}")
   }
 
@@ -172,7 +172,7 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     sourceId: Topology.EmittingId[Aggregated[K, V]]
   ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
     case (_, downstreamNode: FlatMapNode[Storm]) =>
-      throw new Exception(s"Impossible to create aggregated edge to flat map node: " +
+      throw new IllegalStateException(s"Impossible to create aggregated edge to flat map node: " +
         s"$sourceId -> ${ getNodeName(downstreamNode) }")
     case (currentTopology, downstreamNode: SummerNode[Storm]) =>
       currentTopology.withEdge(Edges.groupedAggregatedToSummer[K, V](

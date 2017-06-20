@@ -28,7 +28,7 @@ private[storm] object Edges {
   ): Topology.Edge[Aggregated[K, V], SummerInput[K, V]] = Topology.Edge(
     sourceId,
     EdgeFormats.aggregated[K, V],
-    EdgeGrouping.Fields(List(EdgeFormats.shardKey)),
+    EdgeGrouping.Fields(List(EdgeFormats.ShardKey)),
     aggregatedToSummerInput[K, V],
     destId
   )
@@ -51,7 +51,7 @@ private[storm] object Edges {
   ): Topology.Edge[Sharded[K, V], SummerInput[K, V]] = Topology.Edge(
     sourceId,
     EdgeFormats.sharded[K, V],
-    EdgeGrouping.Fields(List(EdgeFormats.shardKey)),
+    EdgeGrouping.Fields(List(EdgeFormats.ShardKey)),
     shardedToSummerInput[K, V],
     destId
   )
@@ -61,14 +61,14 @@ private[storm] object Edges {
  * This companion object contains all `OutputFormat`s used by Summingbird's storm topology.
  */
 private object EdgeFormats {
-  val shardKey = "shard"
+  val ShardKey = "shard"
 
   def item[T]: OutputFormat[Item[T]] =
     OutputFormat(List("timestamp", "value"), EdgeInjections.Pair())
   def aggregated[K, V]: OutputFormat[Aggregated[K, V]] =
-    OutputFormat(List(shardKey, "aggregated"), EdgeInjections.Pair())
+    OutputFormat(List(ShardKey, "aggregated"), EdgeInjections.Pair())
   def sharded[K, V]: OutputFormat[Sharded[K, V]] =
-    OutputFormat(List(shardKey, "keyWithBatch", "valueWithTimestamp"), EdgeInjections.Triple())
+    OutputFormat(List(ShardKey, "keyWithBatch", "valueWithTimestamp"), EdgeInjections.Triple())
 }
 
 private object EdgeInjections {
