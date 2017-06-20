@@ -45,10 +45,13 @@ private[storm] object FlatMapBoltProvider {
         }
     })
 
-  def wrapTime[T, U](existingOp: FlatMapOperation[T, U]): FlatMapOperation[Item[T], Item[U]] = {
+  def wrapTime[T, U, O](
+    existingOp: FlatMapOperation[T, U],
+    finalTransform: (Item[U]) => O
+  ): FlatMapOperation[Item[T], O] = {
     FlatMapOperation.generic({ x: (Timestamp, T) =>
       existingOp.apply(x._2).map { vals =>
-        vals.map((x._1, _))
+        vals.map(finalTransform(x._1, _))
       }
     })
   }
@@ -129,7 +132,7 @@ private[storm] case class FlatMapBoltProvider(
 
   private def itemBolt[T, U, O](finalTransform: (Item[U]) => O): Topology.Bolt[Item[T], O] = {
     val operation = foldOperations[T, U](node.members.reverse)
-    val wrappedOperation = wrapTime(operation).map(finalTransform)
+    val wrappedOperation = wrapTime(operation, finalTransform)
 
     Topology.Bolt(
       parallelism.parHint,
