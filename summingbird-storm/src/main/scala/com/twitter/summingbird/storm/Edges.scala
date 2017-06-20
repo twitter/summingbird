@@ -64,7 +64,7 @@ private object EdgeFormats {
   val ShardKey = "shard"
 
   def item[T]: OutputFormat[Item[T]] =
-    OutputFormat(List("timestamp", "value"), EdgeInjections.Pair())
+    OutputFormat(List("timestampWithValue"), EdgeInjections.Single())
   def aggregated[K, V]: OutputFormat[Aggregated[K, V]] =
     OutputFormat(List(ShardKey, "aggregated"), EdgeInjections.Pair())
   def sharded[K, V]: OutputFormat[Sharded[K, V]] =
@@ -72,6 +72,18 @@ private object EdgeFormats {
 }
 
 private object EdgeInjections {
+  case class Single[T]() extends Injection[T, JList[AnyRef]] {
+    override def apply(tuple: T): JAList[AnyRef] = {
+      val list = new JAList[AnyRef](1)
+      list.add(tuple.asInstanceOf[AnyRef])
+      list
+    }
+
+    override def invert(valueIn: JList[AnyRef]): Try[T] = Inversion.attempt(valueIn) { input =>
+      input.get(0).asInstanceOf[T]
+    }
+  }
+
   case class Pair[T1, T2]() extends Injection[(T1, T2), JList[AnyRef]] {
     override def apply(tuple: (T1, T2)): JAList[AnyRef] = {
       val list = new JAList[AnyRef](2)
