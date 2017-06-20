@@ -26,7 +26,7 @@ private[storm] case class SummerBoltProvider(
   import SummerBoltProvider._
 
   override def createSingle[T, O](fn: Item[T] => O): Topology.Component[O] =
-    // This is a legitimate conversion because we now that summer emits (K, (Option[V], V)).
+    // This is a legitimate conversion because we know that summer emits `(K, (Option[V], V))`.
     bolt[Any, Any, O](fn.asInstanceOf[Item[(Any, (Option[Any], Any))] => O])
 
   override def createAggregated[K, V](

@@ -32,8 +32,8 @@ import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success }
 
 /**
-  * This class is used as an implementation for Storm's `Bolt`s.
-  * We avoid `List`s as a parameters because they cause Scala serialization issues
+  * This class is used as an implementation for Storm's Bolts.
+  * We avoid [[List]]'s as a parameters because they cause Scala serialization issues
   * see (https://stackoverflow.com/questions/40607954/scala-case-class-serialization).
   *
   * @param jobId of current topology, used for metrics.
@@ -48,8 +48,8 @@ import scala.util.{ Failure, Success }
   * @param outputEdges vector of edges outgoing from this bolt.
   * @param executor `OperationContainer` which represents operation for this `Bolt`,
   *                 for example it can be summing or flat mapping.
-  * @tparam I type of input tuples for this `Bolt`s executor.
-  * @tparam O type of output tuples for this `Bolt`s executor.
+  * @tparam I type of input tuples for this Bolts executor.
+  * @tparam O type of output tuples for this Bolts executor.
   */
 private[builder] case class BaseBolt[I, O](
   jobId: JobId,
@@ -82,6 +82,8 @@ private[builder] case class BaseBolt[I, O](
   private[this] val deltaPerPeriod: Long = if (rampPeriods > 0) (upperBound - lowerBound) / rampPeriods else 0
 
   private[this] val inputEdgesMap: Map[String, Topology.Edge[_, I]] =
+    // We forbid more than one edge between each pair of components, therefore there is only on edge
+    // per each `edge.source.id`.
     inputEdges.map(edge => (edge.source.id, edge)).toMap
 
   private[this] val outputFormat: Option[OutputFormat[O]] = OutputFormat.get(outputEdges)

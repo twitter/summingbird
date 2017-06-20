@@ -130,7 +130,8 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
           val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
           registerAggregatedEdges[K, V](topologyWithComponent, node, componentId)
         case None =>
-          // Fallback to `Sharded`.
+          // Fallback to `Sharded`, this happens if component doesn't support aggregation on emitted values,
+          // for example in case of [[SummerBoltProvider]].
           registerShardedKeyValue[K, V](topology, node, provider, props.batcher, props.shards)
       }
     case Some(props) =>

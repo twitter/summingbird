@@ -11,7 +11,10 @@ import scala.collection.mutable.ListBuffer
  * Contains storm's tuple's fields and injection from [[T]] to
  * storm's [[org.apache.storm.tuple.Values]] (which are java arrays).
  */
-private[storm] sealed case class OutputFormat[T](fields: List[String], injection: Injection[T, JList[AnyRef]]) {
+private[storm] sealed case class OutputFormat[T](
+  fields: List[String],
+  injection: Injection[T, JList[AnyRef]]
+) {
   def asStormFields: Fields = new Fields(ListBuffer(fields: _*).asJava)
 }
 
