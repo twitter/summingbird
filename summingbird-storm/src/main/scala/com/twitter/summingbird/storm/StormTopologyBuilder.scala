@@ -36,15 +36,22 @@ import scala.collection.{ Map => CMap }
 private[storm] object StormTopologyBuilder {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
 
+  // Type to represent simplest values storm components emit.
+  // Corresponds to plain `Producer[Storm, T]` case.
   type Item[T] = (Timestamp, T)
 
+  // Types to represent aggregate keys and values components emit in case of partial aggregation.
   type AggregateKey[K] = (K, BatchID)
   type AggregateValue[V] = (Timestamp, V)
   type Aggregated[K, V] = (Int, CMap[AggregateKey[K], AggregateValue[V]])
+
+  // Type to represent key value pair, but which possible to use togetger with Aggregated.
   type Sharded[K, V] = (Int, AggregateKey[K], AggregateValue[V])
 
+  // Type to represent input for [[SummerNode]] components.
   type SummerInput[K, V] = Iterable[(AggregateKey[K], AggregateValue[V])]
 
+  // Types to represent ids of bolts corresponding to [[FlatMapNode]] and [[SummerNode]].
   type FlatMapBoltId[T] = Topology.BoltId[Item[T], _]
   type SummerBoltId[K, V] = Topology.BoltId[SummerInput[K, V], _]
 
