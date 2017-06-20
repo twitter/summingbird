@@ -46,22 +46,35 @@ private[storm] object StormTopologyBuilder {
   type FlatMapBoltId[T] = Topology.BoltId[Item[T], _]
   type SummerBoltId[K, V] = Topology.BoltId[SummerInput[K, V], _]
 
+  def itemToSharded[K, V](
+    batcher: Batcher,
+    shards: KeyValueShards
+  ): (Item[(K, V)] => Sharded[K, V]) = {
+    case (timestamp, (key, value)) =>
+      val aggregateKey = (key, batcher.batchOf(timestamp))
+      val aggregateValue = (timestamp, value)
+      val shardId = shards.summerIdFor(aggregateKey)
+      (shardId, aggregateKey, aggregateValue)
+  }
+
+  def aggregatedToSummerInput[K, V]: (Aggregated[K, V] => SummerInput[K, V]) = {
+    case (shardId, keyValues) => keyValues
+  }
+
+  def shardedToItem[K, V]: (Sharded[K, V] => Item[(K, V)]) = {
+    case (shardId, (key, batchId), (timestamp, value)) => (timestamp, (key, value))
+  }
+
+  def shardedToSummerInput[K, V]: (Sharded[K, V] => SummerInput[K, V]) = {
+    case (shardId, aggregateKey, aggregateValue) => Some((aggregateKey, aggregateValue))
+  }
+
   private case class OutgoingSummersProps(
     allSummers: Boolean,
     batcher: Batcher,
     semigroup: Semigroup[_],
     shards: KeyValueShards
   )
-
-  private def wrapSharded[K, V](
-    batcher: Batcher,
-    shards: KeyValueShards
-  ): (Item[(K, V)] => Sharded[K, V]) = { tuple =>
-    val wrappedKey = (tuple._2._1, batcher.batchOf(tuple._1))
-    val wrappedValue = (tuple._1, tuple._2._2)
-    val shardId = shards.summerIdFor(wrappedKey)
-    (shardId, wrappedKey, wrappedValue)
-  }
 }
 
 /**
@@ -132,7 +145,7 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     batcher: Batcher,
     shards: KeyValueShards
   ): Topology = {
-    val component = provider.createSingle[(K, V), Sharded[K, V]](wrapSharded(batcher, shards))
+    val component = provider.createSingle[(K, V), Sharded[K, V]](itemToSharded(batcher, shards))
     val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
     registerShardedEdges[K, V](topologyWithComponent, node, componentId)
   }

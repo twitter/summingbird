@@ -29,7 +29,7 @@ private[storm] object Edges {
     sourceId,
     EdgeFormats.aggregated[K, V],
     EdgeGrouping.Fields(List(EdgeFormats.shardKey)),
-    _._2,
+    aggregatedToSummerInput[K, V],
     destId
   )
 
@@ -41,7 +41,7 @@ private[storm] object Edges {
     sourceId,
     EdgeFormats.sharded[K, V],
     if (withLocal) EdgeGrouping.LocalOrShuffle else EdgeGrouping.Shuffle,
-    sharded => (sharded._3._1, (sharded._2._1, sharded._3._2)),
+    shardedToItem[K, V],
     destId
   )
 
@@ -52,7 +52,7 @@ private[storm] object Edges {
     sourceId,
     EdgeFormats.sharded[K, V],
     EdgeGrouping.Fields(List(EdgeFormats.shardKey)),
-    sharded => Some((sharded._2, sharded._3)),
+    shardedToSummerInput[K, V],
     destId
   )
 }
