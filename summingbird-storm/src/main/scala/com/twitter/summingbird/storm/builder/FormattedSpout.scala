@@ -8,7 +8,7 @@ import java.util.{ List => JList, Map => JMap }
 import org.apache.storm.testing.CompletableSpout
 
 /**
- * `Spout` wrapper which gives an ability to specify `OutputFormat`.
+ * [[IRichSpout]] wrapper which gives an ability to specify [[OutputFormat]].
  */
 private[builder] class FormattedSpout[T](
   protected val self: IRichSpout,
@@ -25,6 +25,9 @@ private[builder] class FormattedSpout[T](
     super.open(conf, topologyContext, new FormattedSpout.OutputCollector[T](outputCollector, format))
 }
 
+/**
+ * Same as [[FormattedSpout]] but with [[CompletableSpout]] support, which is used for testing.
+ */
 private[builder] class CompletableFormattedSpout[T](
   inner: IRichSpout with CompletableSpout,
   format: OutputFormat[T]

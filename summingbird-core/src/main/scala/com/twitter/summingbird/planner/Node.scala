@@ -24,7 +24,7 @@ case class NodeIdentifier(identifier: String) {
 
 sealed trait Node[P <: Platform[P]] {
   /**
-   * Members are in reverse order, i.e. if you have leftJoin().flatMap()
+   * Members are in reverse order, i.e. if you have `leftJoin(...).flatMap(...)`
    * first element in members will correspond to flatMap and second to leftJoin.
    */
   val members: List[Producer[P, _]] = List()

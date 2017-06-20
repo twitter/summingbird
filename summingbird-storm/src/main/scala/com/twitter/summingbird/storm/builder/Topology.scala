@@ -96,7 +96,7 @@ private[summingbird] case class Topology(
       ).addConfigurations(tickConfig)
 
       incomingEdges(boltId).foreach { edge =>
-        edge.grouping.apply(declarer, edge.source)
+        edge.grouping.register(declarer, edge.source)
       }
     }
 
@@ -124,27 +124,39 @@ private[summingbird] object Topology {
   }
 
   /**
-   * Represents id of topology's component which receives tuples with type `I`.
+   * Represents id of topology's component which receives tuples.
+   * @tparam I represents type of received tuples by this component.
    */
   trait ReceivingId[-I] extends ComponentId
 
   /**
-   * Represents id of topology's component which emits tuples with type `O`.
+   * Represents id of topology's component which emits tuples.
+   * @tparam O represents type of emitted tuples by this component.
    */
   trait EmittingId[+O] extends ComponentId
 
   /**
-   * Represents id of topology's spout which emits tuples with type `O`.
+   * Represents id of topology's spout.
+   * @tparam O represents type of emitted tuples by this spout.
    */
   case class SpoutId[+O](override val id: String) extends EmittingId[O]
 
   /**
-   * Represents id of topology's bolt which receives tuples with type `I` and emits tuples with type `O`.
+   * Represents id of topology's bolt.
+   * @tparam I represents type on received tuples by this bolt.
+   * @tparam O represents type of emitted tuples by this bolt.
    */
   case class BoltId[-I, +O](override val id: String) extends ReceivingId[I] with EmittingId[O]
 
   /**
-   * Represents topology's edge with source and destination node's ids and edge type.
+   * Represents topology's edge which links two components.
+   * @param source id of source component.
+   * @param format of tuples going through this edge.
+   * @param grouping of tuples going through this edge, should be consistent with format.
+   * @param onReceiveTransform will be applied on receiving side for each tuple.
+   * @param dest id of destination component.
+   * @tparam I type of tuples emitted by source.
+   * @tparam O type of tuples received by destination.
    */
   case class Edge[I, O](
     source: EmittingId[I],
@@ -162,7 +174,7 @@ private[summingbird] object Topology {
 
   /**
    * Base trait for all components with parallelism and metrics.
-   * `O` represent type of values emitted by this component.
+   * @tparam O represent type of values emitted by this component.
    */
   sealed trait Component[+O] {
     def parallelism: Int

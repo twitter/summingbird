@@ -8,7 +8,7 @@ import java.lang.{ Iterable => JIterable }
 import scala.collection.JavaConverters.asJavaIterableConverter
 
 /**
- * This is custom wrapping `Scheme` class which is a way to customize Scheme's format.
+ * This is custom wrapping [[Scheme]] class which is a way to customize Scheme's [[OutputFormat]].
  */
 private[builder] sealed class FormattedScheme[T](scheme: Scheme[T], format: OutputFormat[T]) extends Scheme[T] {
   override lazy val getOutputFields: Fields = format.asStormFields

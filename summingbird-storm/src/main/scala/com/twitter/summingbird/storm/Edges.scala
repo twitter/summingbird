@@ -7,7 +7,8 @@ import java.util.{ ArrayList => JAList, List => JList }
 import StormTopologyBuilder._
 
 /**
- * This companion object contains all `Edge`s types used by Summingbird's storm topology.
+ * This companion object contains all [[com.twitter.summingbird.storm.builder.Topology.Edge]]'s
+ * types used by Summingbird's storm topology.
  */
 private[storm] object Edges {
   def shuffleItemToItem[T](

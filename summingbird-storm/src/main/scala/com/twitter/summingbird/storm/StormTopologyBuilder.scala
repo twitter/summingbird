@@ -17,19 +17,21 @@ import scala.collection.{ Map => CMap }
 
 /**
  * This class contains main logic on how to build storm topology out of planned DAG.
- * `DAG` contains three types of nodes: Source, FlatMap and Summer.
+ * DAG contains three types of nodes: [[SourceNode]], [[FlatMapNode]] and [[SummerNode]].
  * Built topology has next properties:
- * 1. separate `Topology` `Component`s corresponds to separate DAG nodes
- * 2. each `Component` emit values only of one type
- * 3.a. `FlatMap` components accept tuples of type `Item[T]`
+ * 1. separate [[Topology.Component]]'s corresponds to separate DAG nodes
+ * 2. each [[Topology.Component]] emit values only of one type
+ * 3.a. [[FlatMapNode]] components accept tuples of type `Item[T]`
  *      (and correspond to `Producer[Storm, T]`)
- * 3.b. `Summer` components accept tuples of type `SummerInput[K, V]`
+ * 3.b. [[SummerNode]] components accept tuples of type `SummerInput[K, V]`
  *      (and correspond to `KeyedProducer[Storm, K, V]`)
- * 4. All components emit some of those: `Item[T]`, `Aggregated[K, V]` or `Sharded[K, V]`.
- * 4.a. If corresponding to `Component` `Producer` is not `Keyed` then `Component` emits `Item[T]`
- * 4.b. Otherwise if `Component` emits only to `Summer` nodes it emits `Aggregated[K, V]`
- * 4.c. Otherwise if `Component` emits to both `Summer` and non `Summer` nodes it emits `Sharded[K, V]`
- *      which can be both grouped in the same way as `Aggregated` and shuffled in the same way as `Item[T]`
+ * 4. All components emit some of those: `Item[T]`, `Aggregated[K, V]` or `Sharded[K, V]`
+ * 4.a. If corresponding to [[Topology.Component]] [[com.twitter.summingbird.Producer]] is not
+ *      [[com.twitter.summingbird.KeyedProducer]] then [[Topology.Component]] emits `Item[T]`
+ * 4.b. Otherwise if [[Topology.Component]] emits only to [[SummerNode]] nodes it emits `Aggregated[K, V]`
+ * 4.c. Otherwise if [[Topology.Component]] emits to both [[SummerNode]] and [[FlatMapNode]] nodes
+ *      it emits `Sharded[K, V]` which can be both grouped in the same way as `Aggregated` and shuffled
+ *      in the same way as `Item[T]`.
  */
 private[storm] object StormTopologyBuilder {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
@@ -78,7 +80,7 @@ private[storm] object StormTopologyBuilder {
 }
 
 /**
- * This class encapsulates logic how to build `StormTopology` from DAG of the job, jobId and options.
+ * This class encapsulates logic how to build [[StormTopology]] from DAG of the job, jobId and options.
  */
 private[storm] case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
   import StormTopologyBuilder._
@@ -128,7 +130,7 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
           val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
           registerAggregatedEdges[K, V](topologyWithComponent, node, componentId)
         case None =>
-          // Fallback to Sharded.
+          // Fallback to `Sharded`.
           registerShardedKeyValue[K, V](topology, node, provider, props.batcher, props.shards)
       }
     case Some(props) =>

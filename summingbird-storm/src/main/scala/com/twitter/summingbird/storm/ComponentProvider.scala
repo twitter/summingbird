@@ -7,15 +7,16 @@ import com.twitter.summingbird.storm.builder.Topology
 
 /**
  * This trait describes how to build topology component which corresponds to
- * `Producer`s chain (like `flatMap().flatMap()` or `sumByKey()` or even `Source().flatMap()`).
+ * [[com.twitter.summingbird.Producer]]'s chain (like `flatMap(...).flatMap(...)` or
+ * `sumByKey(...)` or even `Source(...).flatMap(...)`).
  */
 private[storm] trait ComponentProvider {
   import StormTopologyBuilder._
 
   /**
    * Assuming this component corresponds to `Producer[Storm, T]` (which means it emits `Item[T]`)
-   * and function from `Item[T]` to `O` this method should return
-   * Topology's component which emits `O` tuples.
+   * and function from `Item[T]` to [[O]] this method should return
+   * Topology's component which emits [[O]] tuples.
    */
   def createSingle[T, O](fn: Item[T] => O): Topology.Component[O]
 
