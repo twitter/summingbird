@@ -5,6 +5,7 @@ import com.twitter.summingbird.storm.builder.{ EdgeGrouping, OutputFormat, Topol
 import scala.util.Try
 import java.util.{ ArrayList => JAList, List => JList }
 import StormTopologyBuilder._
+import com.twitter.summingbird.batch.Timestamp
 
 /**
  * This companion object contains all [[Topology.Edge]]'s
@@ -21,6 +22,29 @@ private[storm] object Edges {
     sourceId,
     EdgeFormats.item[T],
     if (withLocal) EdgeGrouping.LocalOrShuffle else EdgeGrouping.Shuffle,
+    identity,
+    destId
+  )
+
+  def shuffleKeyValueToItem[K, V](
+    sourceId: Topology.EmittingId[KeyValue[K, V]],
+    destId: Topology.ReceivingId[Item[(K, V)]],
+    withLocal: Boolean
+  ): Topology.Edge[KeyValue[K, V], Item[(K, V)]] = Topology.Edge(
+    sourceId,
+    EdgeFormats.item[(K, V)],
+    if (withLocal) EdgeGrouping.LocalOrShuffle else EdgeGrouping.Shuffle,
+    identity,
+    destId
+  )
+
+  def groupedKeyValueToItem[K, V](
+    sourceId: Topology.EmittingId[KeyValue[K, V]],
+    destId: Topology.ReceivingId[Item[(K, V)]]
+  ): Topology.Edge[KeyValue[K, V], Item[(K, V)]] = Topology.Edge(
+    sourceId,
+    EdgeFormats.keyValue[K, V],
+    EdgeGrouping.Fields(List(EdgeFormats.Key)),
     identity,
     destId
   )
@@ -64,12 +88,15 @@ private[storm] object Edges {
  * This companion object contains all `OutputFormat`s used by Summingbird's storm topology.
  */
 private object EdgeFormats {
+  val Key = "key"
   val ShardKey = "shard"
 
   def item[T]: OutputFormat[Item[T]] =
     OutputFormat(List("timestampWithValue"), EdgeInjections.Single())
   def aggregated[K, V]: OutputFormat[Aggregated[K, V]] =
     OutputFormat(List(ShardKey, "aggregated"), EdgeInjections.Pair())
+  def keyValue[K, V]: OutputFormat[KeyValue[K, V]] =
+    OutputFormat(List("timestamp", Key, "value"), EdgeInjections.KeyValueInjection())
   def sharded[K, V]: OutputFormat[Sharded[K, V]] =
     OutputFormat(List(ShardKey, "keyWithBatch", "valueWithTimestamp"), EdgeInjections.Triple())
 }
@@ -111,6 +138,21 @@ private object EdgeInjections {
 
     override def invert(valueIn: JList[AnyRef]): Try[(T1, T2, T3)] = Inversion.attempt(valueIn) { input =>
       (input.get(0).asInstanceOf[T1], input.get(1).asInstanceOf[T2], input.get(2).asInstanceOf[T3])
+    }
+  }
+
+  case class KeyValueInjection[K, V]() extends Injection[KeyValue[K, V], JList[AnyRef]] {
+    override def apply(tuple: KeyValue[K, V]): JList[AnyRef] = {
+      val list = new JAList[AnyRef](3)
+      list.add(tuple._1.asInstanceOf[AnyRef])
+      list.add(tuple._2._1.asInstanceOf[AnyRef])
+      list.add(tuple._2._2.asInstanceOf[AnyRef])
+      list
+    }
+
+    override def invert(valueIn: JList[AnyRef]): Try[KeyValue[K, V]] = Inversion.attempt(valueIn) { input =>
+      (input.get(0).asInstanceOf[Timestamp],
+        (input.get(1).asInstanceOf[K], input.get(2).asInstanceOf[V]))
     }
   }
 }

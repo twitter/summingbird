@@ -39,6 +39,7 @@ private[storm] object StormTopologyBuilder {
   // Type to represent simplest values storm components emit.
   // Corresponds to plain [[ Producer[Storm, T] ]] case.
   type Item[T] = (Timestamp, T)
+  type KeyValue[K, V] = Item[(K, V)]
 
   // Types to represent aggregate keys and values components emit in case of partial aggregation.
   type AggregateKey[K] = (K, BatchID)
