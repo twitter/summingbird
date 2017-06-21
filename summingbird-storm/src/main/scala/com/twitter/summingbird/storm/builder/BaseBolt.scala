@@ -46,7 +46,7 @@ import scala.util.{ Failure, Success }
   *                         Used for rate limiting.
   * @param inputEdges vector of edges incoming to this bolt.
   * @param outputEdges vector of edges outgoing from this bolt.
-  * @param executor `OperationContainer` which represents operation for this `Bolt`,
+  * @param executor [[OperationContainer]] which represents operation for this bolt,
   *                 for example it can be summing or flat mapping.
   * @tparam I type of input tuples for this Bolts executor.
   * @tparam O type of output tuples for this Bolts executor.

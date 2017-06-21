@@ -21,23 +21,23 @@ import scala.collection.{ Map => CMap }
  * Built topology has next properties:
  * 1. separate [[Topology.Component]]'s corresponds to separate DAG nodes
  * 2. each [[Topology.Component]] emit values only of one type
- * 3.a. [[FlatMapNode]] components accept tuples of type `Item[T]`
- *      (and correspond to `Producer[Storm, T]`)
- * 3.b. [[SummerNode]] components accept tuples of type `SummerInput[K, V]`
- *      (and correspond to `KeyedProducer[Storm, K, V]`)
- * 4. All components emit some of those: `Item[T]`, `Aggregated[K, V]` or `Sharded[K, V]`
+ * 3.a. [[FlatMapNode]] components accept tuples of type [[ Item[T] ]]
+ *      (and correspond to [[ Producer[Storm, T] ]])
+ * 3.b. [[SummerNode]] components accept tuples of type [[ SummerInput[K, V] ]]
+ *      (and correspond to [[ KeyedProducer[Storm, K, V] ]])
+ * 4. All components emit some of those: [[ Item[T] ]], [[ Aggregated[K, V] ]] or [[ Sharded[K, V] ]]
  * 4.a. If corresponding to [[Topology.Component]] [[com.twitter.summingbird.Producer]] is not
- *      [[com.twitter.summingbird.KeyedProducer]] then [[Topology.Component]] emits `Item[T]`
- * 4.b. Otherwise if [[Topology.Component]] emits only to [[SummerNode]] nodes it emits `Aggregated[K, V]`
+ *      [[com.twitter.summingbird.KeyedProducer]] then [[Topology.Component]] emits [[ Item[T] ]]
+ * 4.b. Otherwise if [[Topology.Component]] emits only to [[SummerNode]] nodes it emits [[ Aggregated[K, V] ]]
  * 4.c. Otherwise if [[Topology.Component]] emits to both [[SummerNode]] and [[FlatMapNode]] nodes
- *      it emits `Sharded[K, V]` which can be both grouped in the same way as `Aggregated` and shuffled
- *      in the same way as `Item[T]`.
+ *      it emits [[ Sharded[K, V] ]] which can be both grouped in the same way as [[ Aggregated[K, V] ]]
+ *      and shuffled in the same way as [[ Item[T] ]].
  */
 private[storm] object StormTopologyBuilder {
   @transient private val logger = LoggerFactory.getLogger(classOf[StormTopologyBuilder])
 
   // Type to represent simplest values storm components emit.
-  // Corresponds to plain `Producer[Storm, T]` case.
+  // Corresponds to plain [[ Producer[Storm, T] ]] case.
   type Item[T] = (Timestamp, T)
 
   // Types to represent aggregate keys and values components emit in case of partial aggregation.
@@ -127,7 +127,7 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     provider: ComponentProvider
   ): Topology = outgoingSummersProps(node) match {
     case Some(props) if props.allSummers =>
-      // Use `Aggregated[K, V]` if possible.
+      // Use [[Aggregated]] if possible.
       provider.createAggregated[K, V](
         props.batcher,
         props.shards,
@@ -137,7 +137,7 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
           val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
           registerAggregatedEdges[K, V](topologyWithComponent, node, componentId)
         case None =>
-          // Fallback to `Sharded`, this happens if component doesn't support aggregation on emitted values,
+          // Fallback to [[Sharded]], this happens if component doesn't support aggregation on emitted values,
           // for example in case of [[SummerBoltProvider]].
           registerShardedKeyValue[K, V](topology, node, provider, props.batcher, props.shards)
       }

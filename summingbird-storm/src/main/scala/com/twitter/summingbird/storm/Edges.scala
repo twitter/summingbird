@@ -7,7 +7,7 @@ import java.util.{ ArrayList => JAList, List => JList }
 import StormTopologyBuilder._
 
 /**
- * This companion object contains all [[com.twitter.summingbird.storm.builder.Topology.Edge]]'s
+ * This companion object contains all [[Topology.Edge]]'s
  * types used by Summingbird's storm topology.
  *
  * @see [[StormTopologyBuilder]] for different types of values used here.
