@@ -9,6 +9,8 @@ import StormTopologyBuilder._
 /**
  * This companion object contains all [[com.twitter.summingbird.storm.builder.Topology.Edge]]'s
  * types used by Summingbird's storm topology.
+ *
+ * @see [[StormTopologyBuilder]] for different types of values used here.
  */
 private[storm] object Edges {
   def shuffleItemToItem[T](

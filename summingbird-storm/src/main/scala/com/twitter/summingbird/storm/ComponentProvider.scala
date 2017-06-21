@@ -14,9 +14,9 @@ private[storm] trait ComponentProvider {
   import StormTopologyBuilder._
 
   /**
-   * Assuming this component corresponds to `Producer[Storm, T]` (which means it emits `Item[T]`)
-   * and function from `Item[T]` to [[O]] this method should return
-   * Topology's component which emits [[O]] tuples.
+   * Create [[Topology.Component]] which emits single events of corresponding type, i.e.
+   * if your component corresponds to [[ Producer[Storm, T] ]] and passed function was `identity`
+   * your component should emit [[ Item[T] ]] values.
    */
   def createSingle[T, O](fn: Item[T] => O): Topology.Component[O]
 
@@ -25,6 +25,11 @@ private[storm] trait ComponentProvider {
    * and it emits tuples to `sumByKey` with `batcher`, `shards` and `semigroup` parameters
    * this method should return Topology's component which emits aggregated over this parameters
    * `(K, V)` tuples if possible.
+   */
+  /**
+   * Create [[Topology.Component]] which emits aggregated key value events of corresponding type, i.e.
+   * if your component corresponds to [[ Summer[Storm, K, V] ]] it will emit [[ Aggregated[K, V] ]].
+   * Return [[None]] in case if this operation is unsupported (i.e. component cannot return aggregated values).
    */
   def createAggregated[K, V](
     batcher: Batcher,

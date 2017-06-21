@@ -82,7 +82,7 @@ private[builder] case class BaseBolt[I, O](
   private[this] val deltaPerPeriod: Long = if (rampPeriods > 0) (upperBound - lowerBound) / rampPeriods else 0
 
   private[this] val inputEdgesMap: Map[String, Topology.Edge[_, I]] =
-    // We forbid more than one edge between each pair of components, therefore there is only on edge
+    // We forbid more than one edge between each pair of components, therefore there is only one edge
     // per each `edge.source.id`.
     inputEdges.map(edge => (edge.source.id, edge)).toMap
 
