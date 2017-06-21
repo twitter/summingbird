@@ -178,6 +178,14 @@ class StormLaws extends WordSpec {
       TestPlatform.service(serviceFn), TestPlatform.store("store"), fn1, fn2, fn3, preJoinFn, postJoinFn))
   }
 
+  "StormPlatform should be able to handle two sumByKey's" in {
+    testProducer(TestPlatform
+      .source[Int](sample[List[Int]])
+      .map((_, 1))
+      .sumByKey(TestPlatform.store[Int, Int]("store1"))
+      .sumByKey(TestPlatform.store[Int, (Option[Int], Int)]("store2")))
+  }
+
   "StormPlatform should be able to handle AlsoProducer with Summer and FlatMap in different branches" in {
     val original = sample[List[(Int, Int)]]
     val branchFlatMap = sample[((Int, Int)) => List[(Int, Int)]]
@@ -189,15 +197,13 @@ class StormLaws extends WordSpec {
       ))
     }
 
-//    Fails, see https://github.com/twitter/summingbird/issues/725 for details.
-//    {
-//      val source = TestPlatform.source(original).flatMap(e => List(e))
-//      testProducer(source.sumByKey(TestPlatform.store("store1")).also(
-//        source.flatMap(branchFlatMap).sumByKey(TestPlatform.store("store2"))
-//      ))
-//    }
+    {
+      val source = TestPlatform.source(original).flatMap(e => List(e))
+      testProducer(source.sumByKey(TestPlatform.store("store1")).also(
+        source.flatMap(branchFlatMap).sumByKey(TestPlatform.store("store2"))
+      ))
+    }
 
-//    Workaround
     {
       val source = TestPlatform.source(original).flatMap(e => List(e))
       testProducer(source.map(identity).sumByKey(TestPlatform.store("store1")).also(
@@ -205,15 +211,13 @@ class StormLaws extends WordSpec {
       ))
     }
 
-//    This also fails, see https://github.com/twitter/summingbird/issues/725 for details.
-//    {
-//      val source = TestPlatform.source(original)
-//        .sumByKey(TestPlatform.store("tmpStore")).map({ case (key, (_, value)) => (key, value) })
-//
-//      testProducer(source.sumByKey(TestPlatform.store("store1")).also(
-//        source.flatMap(branchFlatMap).sumByKey(TestPlatform.store("store2"))
-//      ))
-//    }
+    {
+      val source = TestPlatform.source(original)
+        .sumByKey(TestPlatform.store("tmpStore")).map({ case (key, (_, value)) => (key, value) })
+      testProducer(source.sumByKey(TestPlatform.store("store1")).also(
+        source.flatMap(branchFlatMap).sumByKey(TestPlatform.store("store2"))
+      ))
+    }
   }
 
   def testProducer[T](producer: TailProducer[TestPlatform, T])(implicit storm: Storm): Unit = {

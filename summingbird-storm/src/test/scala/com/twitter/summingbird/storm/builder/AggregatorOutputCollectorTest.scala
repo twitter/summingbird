@@ -5,10 +5,12 @@ import org.apache.storm.tuple.Values
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.AsyncSummer
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
+import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, SummerBuilder }
+import com.twitter.summingbird.storm.EdgeInjections
 import com.twitter.util.Future
 import org.scalatest.WordSpec
 import scala.collection.mutable.{ Set => MSet }
+import scala.collection.{ Map => CMap }
 
 class TestAsyncSummer(state: Iterator[Object]) extends AsyncSummer[(Int, (Iterator[Object], Int)), Iterable[(Int, (Iterator[Object], Int))]] {
   override def flush: Future[Iterable[(Int, (Iterator[Object], Int))]] = Future.Nil
@@ -28,13 +30,14 @@ class AggregatorOutputCollectorTest extends WordSpec {
         (new TestAsyncSummer(state)).asInstanceOf[AsyncSummer[(K, V), Map[K, V]]]
     }
 
-    val aggregatorCollector = new AggregatorOutputCollector(
+    val aggregatorCollector = new AggregatorOutputCollector[Any, Int](
       validatingCollector,
       summerBuilder,
       MaxEmitPerExecute(100),
       KeyValueShards(10),
       Counter("flush"),
-      Counter("execTime")
+      Counter("execTime"),
+      OutputFormat[(Int, CMap[Any, Int])](List("field1", "field2"), EdgeInjections.Pair())
     )(Semigroup.intSemigroup)
 
     (aggregatorCollector, validatingCollector)

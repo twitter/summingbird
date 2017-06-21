@@ -8,6 +8,7 @@ import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute 
 import com.twitter.tormenta.spout.{ BaseSpout, Spout }
 import com.twitter.util.Duration
 import com.twitter.summingbird.batch.{ BatchID, Timestamp }
+import com.twitter.summingbird.storm.EdgeFormats
 import java.util.{ List => JList }
 import org.scalatest.WordSpec
 import scala.collection.mutable.{ Set => MSet }
@@ -45,7 +46,8 @@ class TestKeyValueSpout extends WordSpec {
       MaxEmitPerExecute(10),
       KeyValueShards(1),
       flushCounter,
-      execCounter
+      execCounter,
+      EdgeFormats.aggregated[Int, Int]
     )
     val myCollector = new TestAggregateOutpoutCollector(outputCollector, expected)
     testSpout.open(null, null, myCollector)

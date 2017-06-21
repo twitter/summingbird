@@ -17,24 +17,23 @@ limitations under the License.
 package com.twitter.summingbird.storm.builder
 
 import chain.Chain
-import com.twitter.bijection.Injection
 import com.twitter.summingbird.online.Externalizer
 import com.twitter.summingbird.online.executor.{ InputState, OperationContainer }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.storm.{ StormMetric, StormStatProvider }
 import com.twitter.summingbird.storm.option.{ AckOnEntry, AnchorTuples, MaxExecutePerSecond }
 import com.twitter.summingbird.{ Group, JobCounters, Name, SummingbirdRuntimeStats }
-import java.util.{ Map => JMap, List => JList }
+import java.util.{ Map => JMap }
 import org.apache.storm.task.{ OutputCollector, TopologyContext }
 import org.apache.storm.topology.{ IRichBolt, OutputFieldsDeclarer }
-import org.apache.storm.tuple.{ Fields, Tuple, TupleImpl }
+import org.apache.storm.tuple.{ Tuple, TupleImpl }
 import org.slf4j.{ Logger, LoggerFactory }
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success }
 
 /**
-  * This class is used as an implementation for Storm's `Bolt`s.
-  * We avoid `List`s as a parameters because they cause Scala serialization issues
+  * This class is used as an implementation for Storm's Bolts.
+  * We avoid [[List]]'s as a parameters because they cause Scala serialization issues
   * see (https://stackoverflow.com/questions/40607954/scala-case-class-serialization).
   *
   * @param jobId of current topology, used for metrics.
@@ -47,10 +46,10 @@ import scala.util.{ Failure, Success }
   *                         Used for rate limiting.
   * @param inputEdges vector of edges incoming to this bolt.
   * @param outputEdges vector of edges outgoing from this bolt.
-  * @param executor `OperationContainer` which represents operation for this `Bolt`,
+  * @param executor [[OperationContainer]] which represents operation for this bolt,
   *                 for example it can be summing or flat mapping.
-  * @tparam I type of input tuples for this `Bolt`s executor.
-  * @tparam O type of output tuples for this `Bolt`s executor.
+  * @tparam I type of input tuples for this Bolts executor.
+  * @tparam O type of output tuples for this Bolts executor.
   */
 private[builder] case class BaseBolt[I, O](
   jobId: JobId,
@@ -59,8 +58,8 @@ private[builder] case class BaseBolt[I, O](
   anchorTuples: AnchorTuples,
   ackOnEntry: AckOnEntry,
   maxExecutePerSec: MaxExecutePerSecond,
-  inputEdges: Vector[Topology.Edge[I]],
-  outputEdges: Vector[Topology.Edge[O]],
+  inputEdges: Vector[Topology.Edge[_, I]],
+  outputEdges: Vector[Topology.Edge[O, _]],
   executor: OperationContainer[I, O, InputState[Tuple]]
 ) extends IRichBolt {
 
@@ -82,19 +81,12 @@ private[builder] case class BaseBolt[I, O](
   private[this] val rampPeriods = maxExecutePerSec.rampUptimeMS / PERIOD_LENGTH_MS
   private[this] val deltaPerPeriod: Long = if (rampPeriods > 0) (upperBound - lowerBound) / rampPeriods else 0
 
-  private[this] val outputFields: Option[Fields] =
-    outputEdges.headOption.map(_.edgeType.fields)
-  assert(
-    outputEdges.forall(edge => outputFields.map(_.toList) == Some(edge.edgeType.fields.toList)),
-    s"$boltId: Output edges should have same `Fields` $outputEdges")
+  private[this] val inputEdgesMap: Map[String, Topology.Edge[_, I]] =
+    // We forbid more than one edge between each pair of components, therefore there is only one edge
+    // per each `edge.source.id`.
+    inputEdges.map(edge => (edge.source.id, edge)).toMap
 
-  private[this] val outputInjection: Option[Injection[O, JList[AnyRef]]] =
-    outputEdges.headOption.map(_.edgeType.injection)
-  assert(
-    outputEdges.forall(edge => outputInjection == Some(edge.edgeType.injection)),
-    s"$boltId: Output edges should have same `Injection` $outputEdges.")
-
-  private[this] val inputInjections = inputEdges.map(edge => (edge.source.id, edge.edgeType.injection)).toMap
+  private[this] val outputFormat: Option[OutputFormat[O]] = OutputFormat.get(outputEdges)
 
   private[this] lazy val startPeriod = System.currentTimeMillis / PERIOD_LENGTH_MS
   private[this] lazy val endRampPeriod = startPeriod + rampPeriods
@@ -157,8 +149,8 @@ private[builder] case class BaseBolt[I, O](
      * System ticks come with a fixed stream id
      */
     val curResults = if (!tuple.getSourceStreamId.equals("__tick")) {
-      val tsIn = inputInjections.get(tuple.getSourceComponent) match {
-        case Some(inputFormat) => inputFormat.invert(tuple.getValues).get
+      val tsIn = inputEdgesMap.get(tuple.getSourceComponent) match {
+        case Some(edge) => edge.deserialize(tuple.getValues).get
         case None => throw new Exception("Unrecognized source component: " +
           tuple.getSourceComponent+", current bolt: " + boltId.id)
       }
@@ -182,16 +174,16 @@ private[builder] case class BaseBolt[I, O](
 
   private def finish(inputs: Chain[InputState[Tuple]], results: TraversableOnce[O]) {
     var emitCount = 0
-    outputInjection.foreach { injection =>
+    outputFormat.foreach { format =>
       if (anchorTuples.anchor) {
         val states = inputs.iterator.map(_.state).toList.asJava
         results.foreach { result =>
-          collector.emit(states, injection(result))
+          collector.emit(states, format.injection(result))
           emitCount += 1
         }
       } else { // don't anchor
         results.foreach { result =>
-          collector.emit(injection(result))
+          collector.emit(format.injection(result))
           emitCount += 1
         }
       }
@@ -214,7 +206,7 @@ private[builder] case class BaseBolt[I, O](
   }
 
   override def declareOutputFields(declarer: OutputFieldsDeclarer) {
-   outputFields.foreach(declarer.declare)
+   outputFormat.foreach(format => declarer.declare(format.asStormFields))
   }
 
   override val getComponentConfiguration = null

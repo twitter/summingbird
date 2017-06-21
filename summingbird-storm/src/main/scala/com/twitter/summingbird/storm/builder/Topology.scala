@@ -2,7 +2,7 @@ package com.twitter.summingbird.storm.builder
 
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
-import com.twitter.summingbird.online.executor.{ InputState, OperationContainer }
+import com.twitter.summingbird.online.executor.{ InputState, KeyValueShards, OperationContainer }
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, SummerBuilder }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.storm.StormMetric
@@ -13,11 +13,12 @@ import org.apache.storm.topology.{ IRichBolt, TopologyBuilder }
 import org.apache.storm.{ Config => BacktypeStormConfig }
 import org.apache.storm.tuple.Tuple
 import scala.collection.{ Map => CMap }
+import scala.util.Try
 
 private[summingbird] case class Topology(
   spouts: Map[Topology.SpoutId[_], Topology.Spout[_]],
   bolts: Map[Topology.BoltId[_, _], Topology.Bolt[_, _]],
-  edges: List[Topology.Edge[_]]
+  edges: List[Topology.Edge[_, _]]
 ) {
   def withSpout[O](id: String, spout: Topology.Spout[O]): (Topology.SpoutId[O], Topology) = {
     val spoutId = Topology.SpoutId[O](id)
@@ -31,8 +32,14 @@ private[summingbird] case class Topology(
     (boltId, Topology(spouts, bolts.updated(boltId, bolt), edges))
   }
 
-  def withEdge[T](edge: Topology.Edge[T]): Topology = {
-    assert(contains(edge.source) && contains(edge.dest))
+  def withComponent[O](id: String, component: Topology.Component[O]): (Topology.EmittingId[O], Topology) = {
+    component match {
+      case bolt: Topology.Bolt[_, O] => withBolt(id, bolt)
+      case spout: Topology.Spout[O] => withSpout(id, spout)
+    }
+  }
+
+  def withEdge[I, O](edge: Topology.Edge[I, O]): Topology = {
     assert(edge.source != edge.dest)
     assert(edges.forall { !edge.sameEndPoints(_) })
 
@@ -44,17 +51,19 @@ private[summingbird] case class Topology(
     case boltId: Topology.BoltId[_, _] => bolts.contains(boltId)
   }
 
-  def incomingEdges[T](id: Topology.ReceivingId[T]): List[Topology.Edge[T]] = {
+  def incomingEdges[O](id: Topology.ReceivingId[O]): List[Topology.Edge[_, O]] = {
     assert(contains(id))
-    edges.filter(_.dest == id).asInstanceOf[List[Topology.Edge[T]]]
+    edges.filter(_.dest == id).asInstanceOf[List[Topology.Edge[_, O]]]
   }
 
-  def outgoingEdges[T](id: Topology.EmittingId[T]): List[Topology.Edge[T]] = {
+  def outgoingEdges[I](id: Topology.EmittingId[I]): List[Topology.Edge[I, _]] = {
     assert(contains(id))
-    edges.filter(_.source == id).asInstanceOf[List[Topology.Edge[T]]]
+    edges.filter(_.source == id).asInstanceOf[List[Topology.Edge[I, _]]]
   }
 
   def build(jobId: JobId): StormTopology = {
+    edges.foreach(edge => assert(contains(edge.source) && contains(edge.dest)))
+
     val builder = new TopologyBuilder
 
     spouts.foreach { case (spoutId: Topology.SpoutId[Any], spout: Topology.Spout[Any]) =>
@@ -87,7 +96,7 @@ private[summingbird] case class Topology(
       ).addConfigurations(tickConfig)
 
       incomingEdges(boltId).foreach { edge =>
-        edge.edgeType.grouping.apply(declarer, edge.source)
+        edge.grouping.register(declarer, edge.source)
       }
     }
 
@@ -115,37 +124,59 @@ private[summingbird] object Topology {
   }
 
   /**
-   * Represents id of topology's component which receives tuples with type `I`.
+   * Represents id of topology's component which receives tuples.
+   * @tparam I represents type of received tuples by this component.
    */
   trait ReceivingId[-I] extends ComponentId
 
   /**
-   * Represents id of topology's component which emits tuples with type `O`.
+   * Represents id of topology's component which emits tuples.
+   * @tparam O represents type of emitted tuples by this component.
    */
   trait EmittingId[+O] extends ComponentId
 
   /**
-   * Represents id of topology's spout which emits tuples with type `O`.
+   * Represents id of topology's spout.
+   * @tparam O represents type of emitted tuples by this spout.
    */
   case class SpoutId[+O](override val id: String) extends EmittingId[O]
 
   /**
-   * Represents id of topology's bolt which receives tuples with type `I` and emits tuples with type `O`.
+   * Represents id of topology's bolt.
+   * @tparam I represents type on received tuples by this bolt.
+   * @tparam O represents type of emitted tuples by this bolt.
    */
   case class BoltId[-I, +O](override val id: String) extends ReceivingId[I] with EmittingId[O]
 
   /**
-   * Represents topology's edge with source and destination node's ids and edge type.
+   * Represents topology's edge which links two components.
+   * @param source id of source component.
+   * @param format of tuples going through this edge.
+   * @param grouping of tuples going through this edge, should be consistent with format.
+   * @param onReceiveTransform will be applied on receiving side for each tuple.
+   * @param dest id of destination component.
+   * @tparam I type of tuples emitted by source.
+   * @tparam O type of tuples received by destination.
    */
-  case class Edge[T](source: EmittingId[T], edgeType: EdgeType[T], dest: ReceivingId[T]) {
-    def sameEndPoints(another: Edge[_]): Boolean =
+  case class Edge[I, O](
+    source: EmittingId[I],
+    format: OutputFormat[I],
+    grouping: EdgeGrouping,
+    onReceiveTransform: I => O,
+    dest: ReceivingId[O]
+  ) {
+    def sameEndPoints(another: Edge[_, _]): Boolean =
       source == another.source && dest == another.dest
+
+    def deserialize(serialized: java.util.List[AnyRef]): Try[O] =
+      format.injection.invert(serialized).map(onReceiveTransform)
   }
 
   /**
    * Base trait for all components with parallelism and metrics.
+   * @tparam O represent type of values emitted by this component.
    */
-  sealed trait Component {
+  sealed trait Component[+O] {
     def parallelism: Int
     def metrics: () => TraversableOnce[StormMetric[_]]
   }
@@ -154,7 +185,7 @@ private[summingbird] object Topology {
    * Base trait for spouts.
    * There are two implementations: raw tormenta spout and key value spout.
    */
-  trait Spout[+O] extends Component
+  sealed trait Spout[+O] extends Component[O]
 
   case class RawSpout[+O](
     parallelism: Int,
@@ -166,6 +197,7 @@ private[summingbird] object Topology {
     parallelism: Int,
     metrics: () => TraversableOnce[StormMetric[_]],
     spout: TormentaSpout[(K, V)],
+    shards: KeyValueShards,
     summerBuilder: SummerBuilder,
     maxEmitPerExec: MaxEmitPerExecute,
     flushExecTimeCounter: Incrementor,
@@ -184,5 +216,5 @@ private[summingbird] object Topology {
     ackOnEntry: AckOnEntry,
     maxExecutePerSec: MaxExecutePerSecond,
     executor: OperationContainer[I, O, InputState[Tuple]]
-  ) extends Component
+  ) extends Component[O]
 }
