@@ -67,6 +67,7 @@ class StormTopologyBuilderTests extends WordSpec {
       leftJoinName -> Options().set(LeftJoinGrouping.Grouped)
     ))
     assert(topologyWithGrouping.spouts.size == 1)
+    // Can be two if we will be able to merge `leftJoin`, `mapValues` and `sumByKey`.
     assert(topologyWithGrouping.bolts.size == 3)
     assert(topologyWithGrouping.edges.map(_.grouping).exists { grouping =>
       grouping == EdgeGrouping.Fields(List(EdgeFormats.Key))
