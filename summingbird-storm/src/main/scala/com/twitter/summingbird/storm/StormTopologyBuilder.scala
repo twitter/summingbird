@@ -93,16 +93,13 @@ private[storm] object StormTopologyBuilder {
 private[storm] case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
   import StormTopologyBuilder._
 
-  def build: StormTopology = {
-    val topology = stormDag.nodes.foldLeft(Topology.empty) {
-      case (currentTopology, node: SummerNode[Storm]) =>
-        register(currentTopology, node, SummerBoltProvider(this, node))
-      case (currentTopology, node: FlatMapNode[Storm]) =>
-        register(currentTopology, node, FlatMapBoltProvider(this, node))
-      case (currentTopology, node: SourceNode[Storm]) =>
-        register(currentTopology, node, SpoutProvider(this, node))
-    }
-    topology.build(jobId)
+  def build: Topology = stormDag.nodes.foldLeft(Topology.empty) {
+    case (currentTopology, node: SummerNode[Storm]) =>
+      register(currentTopology, node, SummerBoltProvider(this, node))
+    case (currentTopology, node: FlatMapNode[Storm]) =>
+      register(currentTopology, node, FlatMapBoltProvider(this, node))
+    case (currentTopology, node: SourceNode[Storm]) =>
+      register(currentTopology, node, SpoutProvider(this, node))
   }
 
   private def register(topology: Topology, node: StormNode, provider: ComponentProvider): Topology =

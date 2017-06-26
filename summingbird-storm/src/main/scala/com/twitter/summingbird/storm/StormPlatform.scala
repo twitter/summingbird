@@ -162,13 +162,7 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
   def withConfigUpdater(fn: SummingbirdConfig => SummingbirdConfig): Storm
 
   def plan[T](tail: TailProducer[Storm, T]): PlannedTopology = {
-    /*
-     * TODO: storm does not yet know about ValueFlatMapped, so remove it before
-     * planning
-     */
-    val dagOptimizer = new DagOptimizer[Storm] {}
-    val stormTail = dagOptimizer.optimize(tail, dagOptimizer.ValueFlatMapToFlatMap)
-    val stormDag = OnlinePlan(stormTail.asInstanceOf[TailProducer[Storm, T]], options)
+    val stormDag = planDag(tail)
     val config = genConfig(stormDag)
     val jobId = {
       val stormJobId = config.get("storm.job.uniqueId").asInstanceOf[String]
@@ -179,10 +173,21 @@ abstract class Storm(options: Map[String, Options], transformConfig: Summingbird
       }
     }
 
-    PlannedTopology(config, StormTopologyBuilder(options, jobId, stormDag).build)
+    val topology = StormTopologyBuilder(options, jobId, stormDag).build
+    PlannedTopology(config, topology.build(jobId))
   }
   def run(tail: TailProducer[Storm, _], jobName: String): Unit = run(plan(tail), jobName)
   def run(plannedTopology: PlannedTopology, jobName: String): Unit
+
+  private[storm] def planDag[T](tail: TailProducer[Storm, T]): Dag[Storm] = {
+    /*
+     * TODO: storm does not yet know about ValueFlatMapped, so remove it before
+     * planning
+     */
+    val dagOptimizer = new DagOptimizer[Storm] {}
+    val stormTail = dagOptimizer.optimize(tail, dagOptimizer.ValueFlatMapToFlatMap)
+    OnlinePlan(stormTail.asInstanceOf[TailProducer[Storm, T]], options)
+  }
 }
 
 class RemoteStorm(options: Map[String, Options], transformConfig: SummingbirdConfig => SummingbirdConfig, passedRegistrars: List[IKryoRegistrar]) extends Storm(options, transformConfig, passedRegistrars) {
