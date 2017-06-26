@@ -1,10 +1,11 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
-import com.twitter.summingbird.{ Options, Summer }
+import com.twitter.summingbird.{ LeftJoinedProducer, Options, Summer }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.executor.KeyValueShards
+import com.twitter.summingbird.online.option.LeftJoinGrouping
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, FlatMapNode, SourceNode, SummerNode }
 import com.twitter.summingbird.storm.Constants._
@@ -145,8 +146,38 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     case Some(props) =>
       registerShardedKeyValue[K, V](topology, node, provider, props.batcher, props.shards)
     case None =>
-      throw new IllegalStateException("Shouldn't happen, trying to register component which emits " +
-        "keyed values and don't have downstream summers.")
+      registerKeyValue[K, V](topology, node, provider)
+  }
+
+  private def registerKeyValue[K, V](
+    topology: Topology,
+    node: StormNode,
+    provider: ComponentProvider
+  ): Topology = {
+    val component = provider.createSingle[(K, V), KeyValue[K, V]](identity)
+    val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
+    registerKeyValueEdges(topologyWithComponent, node, componentId)
+  }
+
+  private def registerKeyValueEdges[K, V](
+    topology: Topology,
+    source: StormNode,
+    sourceId: Topology.EmittingId[KeyValue[K, V]]
+  ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
+    case (currentTopology, downstreamNode: FlatMapNode[Storm]) if isGroupedLeftJoinNode(downstreamNode) =>
+      currentTopology.withEdge(Edges.groupedKeyValueToItem[K, V](
+        sourceId,
+        getFMBoltId[(K, V)](downstreamNode)
+      ))
+    case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
+      currentTopology.withEdge(Edges.shuffleItemToItem[(K, V)](
+        sourceId,
+        getFMBoltId[(K, V)](downstreamNode),
+        withLocalGrouping(downstreamNode)
+      ))
+    case (_, downstreamNode: SummerNode[Storm]) =>
+      throw new IllegalStateException(s"Impossible to create key value edge to summer node: " +
+        s"$sourceId -> ${getNodeName(downstreamNode)}")
   }
 
   private def registerShardedKeyValue[K, V](
@@ -197,6 +228,11 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     source: StormNode,
     sourceId: Topology.EmittingId[Sharded[K, V]]
   ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
+    case (currentTopology, downstreamNode: FlatMapNode[Storm]) if isGroupedLeftJoinNode(downstreamNode) =>
+      currentTopology.withEdge(Edges.groupedShardedToItem[K, V](
+        sourceId,
+        getFMBoltId[(K, V)](downstreamNode)
+      ))
     case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
       currentTopology.withEdge(Edges.shuffleShardedToItem[K, V](
         sourceId,
@@ -217,13 +253,22 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     Topology.BoltId(getNodeName(node))
 
   private def shouldEmitKeyValues(node: StormNode): Boolean =
-    stormDag.dependantsOf(node).exists(_.isInstanceOf[SummerNode[_]])
+    stormDag.dependantsOf(node).exists {
+      case flatMapNode: FlatMapNode[Storm] => isGroupedLeftJoinNode(flatMapNode)
+      case summerNode: SummerNode[Storm] => true
+    }
 
   private def withLocalGrouping(node: FlatMapNode[Storm]): Boolean = {
     val usePreferLocalDependency = getOrElse(node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
     logger.info(s"[${getNodeName(node)}] usePreferLocalDependency: ${usePreferLocalDependency.get}")
     usePreferLocalDependency.get
   }
+
+  private def isGroupedLeftJoinNode(node: FlatMapNode[Storm]): Boolean =
+    node.members.last.isInstanceOf[LeftJoinedProducer[Storm, _, _, _]] &&
+      get[LeftJoinGrouping](node).map { case (_, leftJoinGrouping) =>
+        leftJoinGrouping.get
+      } == Some(LeftJoinGrouping.Grouped)
 
   private def outgoingSummersProps(node: StormNode): Option[OutgoingSummersProps] = {
     val dependants = stormDag.dependantsOf(node)

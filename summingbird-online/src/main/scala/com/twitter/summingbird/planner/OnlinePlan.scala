@@ -83,14 +83,13 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
   private def dependsOnSummerProducer(p: Prod[_]): Boolean =
     Producer.dependenciesOf(p).collect { case s: Summer[_, _, _] => s }.headOption.isDefined
 
-  private def isGroupedLeftJoin(p: Prod[_]): Boolean =
-    p match {
-      case LeftJoinedProducer(_, _) =>
-        get[LeftJoinGrouping](p).map { case (_, leftJoinGrouping) =>
-          leftJoinGrouping.get
-        } == Some(LeftJoinGrouping.Grouped)
-      case _ => false
-    }
+  private def isGroupedLeftJoin(p: Prod[_]): Boolean = p match {
+    case LeftJoinedProducer(_, _) =>
+      get[LeftJoinGrouping](p).map { case (_, leftJoinGrouping) =>
+        leftJoinGrouping.get
+      } == Some(LeftJoinGrouping.Grouped)
+    case _ => false
+  }
 
   /*
    * Note that this is transitive: we check on p, then we call this fn

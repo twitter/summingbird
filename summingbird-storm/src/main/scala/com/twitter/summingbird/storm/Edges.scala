@@ -26,18 +26,6 @@ private[storm] object Edges {
     destId
   )
 
-  def shuffleKeyValueToItem[K, V](
-    sourceId: Topology.EmittingId[KeyValue[K, V]],
-    destId: Topology.ReceivingId[Item[(K, V)]],
-    withLocal: Boolean
-  ): Topology.Edge[KeyValue[K, V], Item[(K, V)]] = Topology.Edge(
-    sourceId,
-    EdgeFormats.item[(K, V)],
-    if (withLocal) EdgeGrouping.LocalOrShuffle else EdgeGrouping.Shuffle,
-    identity,
-    destId
-  )
-
   def groupedKeyValueToItem[K, V](
     sourceId: Topology.EmittingId[KeyValue[K, V]],
     destId: Topology.ReceivingId[Item[(K, V)]]
@@ -68,6 +56,17 @@ private[storm] object Edges {
     sourceId,
     EdgeFormats.sharded[K, V],
     if (withLocal) EdgeGrouping.LocalOrShuffle else EdgeGrouping.Shuffle,
+    shardedToItem[K, V],
+    destId
+  )
+
+  def groupedShardedToItem[K, V](
+    sourceId: Topology.EmittingId[Sharded[K, V]],
+    destId: Topology.ReceivingId[Item[(K, V)]]
+  ): Topology.Edge[Sharded[K, V], Item[(K, V)]] = Topology.Edge(
+    sourceId,
+    EdgeFormats.sharded[K, V],
+    EdgeGrouping.Fields(List(EdgeFormats.ShardKey)),
     shardedToItem[K, V],
     destId
   )
