@@ -23,6 +23,7 @@ import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.batch.Batcher
 import com.twitter.summingbird.online.ReadableServiceFactory
 import com.twitter.summingbird.option.JobId
+import com.twitter.summingbird.planner.OnlinePlan
 import com.twitter.summingbird.storm.builder.{EdgeGrouping, Topology}
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import org.scalatest.WordSpec
@@ -347,7 +348,7 @@ class TopologyTests extends WordSpec {
 
   private def buildTopology(producer: TailProducer[Storm, _], options: Map[String, Options] = Map()): Topology = {
     val storm = Storm.local(options)
-    val dag = storm.planDag(producer)
+    val dag = OnlinePlan(producer, options)
     StormTopologyBuilder(options, JobId("test"), dag).build
   }
 }

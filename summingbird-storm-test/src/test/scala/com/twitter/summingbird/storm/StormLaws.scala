@@ -238,6 +238,12 @@ class StormLaws extends WordSpec {
     )))
   }
 
+  "StormPlatform should work with mapValues" in {
+    testProducer(TestPlatform.source(sample[List[(Int, Int)]])
+      .mapValues(identity)
+      .sumByKey(TestPlatform.store("store")))
+  }
+
   def testProducer[T](producer: TailProducer[TestPlatform, T])(implicit storm: Storm): Unit = {
     val memoryResult = MemoryTestExecutor(producer)
     val stormResult = StormTestExecutor(producer, storm)
