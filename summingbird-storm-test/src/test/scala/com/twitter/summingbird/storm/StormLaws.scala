@@ -18,6 +18,7 @@ package com.twitter.summingbird.storm
 
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
+import com.twitter.summingbird.online.option.LeftJoinGrouping
 import org.scalatest.WordSpec
 import org.scalacheck._
 
@@ -218,6 +219,23 @@ class StormLaws extends WordSpec {
         source.flatMap(branchFlatMap).sumByKey(TestPlatform.store("store2"))
       ))
     }
+  }
+
+  "StormPlatform should work with grouped leftJoin" in {
+    val leftJoinName = "leftJoin"
+    val producer = TestPlatform.source(sample[List[Int]])
+      .map(sample[(Int) => (Int, Int)])
+      .leftJoin(TestPlatform.service(v => Some(v))).name("leftJoin")
+      .map(v => (v._1, v._2._1))
+      .sumByKey(TestPlatform.store("store"))
+
+    // Test without grouped left join:
+    testProducer(producer)
+
+    // And with:
+    testProducer(producer)(Storm.local(Map(
+      leftJoinName -> Options().set(LeftJoinGrouping.Grouped)
+    )))
   }
 
   def testProducer[T](producer: TailProducer[TestPlatform, T])(implicit storm: Storm): Unit = {
