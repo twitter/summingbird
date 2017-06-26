@@ -28,7 +28,6 @@ import chain.Chain
 
 // These CMaps we generate in the FFM, we use it as an immutable wrapper around
 // a mutable map.
-import scala.collection.{ Map => CMap }
 import scala.util.control.NonFatal
 
 /**
@@ -63,11 +62,12 @@ class Summer[Key, Value: Semigroup, Event, S](
   maxWaitingFutures: MaxWaitingFutures,
   maxWaitingTime: MaxFutureWaitTime,
   maxEmitPerExec: MaxEmitPerExecute,
-  includeSuccessHandler: IncludeSuccessHandler) extends AsyncBase[(Int, CMap[Key, Value]), Event, InputState[S]](
+  includeSuccessHandler: IncludeSuccessHandler
+) extends AsyncBase[Iterable[(Key, Value)], Event, InputState[S]](
   maxWaitingFutures,
   maxWaitingTime,
-  maxEmitPerExec) {
-
+  maxEmitPerExec
+) {
   val lockedOp = Externalizer(flatMapOp)
 
   val storeBox = Externalizer(storeSupplier)
@@ -105,11 +105,9 @@ class Summer[Key, Value: Semigroup, Event, S](
 
   override def tick = sSummer.tick.map(handleResult(_))
 
-  override def apply(state: InputState[S],
-    tupList: (Int, CMap[Key, Value])) = {
+  override def apply(state: InputState[S], innerTuples: Iterable[(Key, Value)]) = {
     try {
-      val (_, innerTuples) = tupList
-      assert(innerTuples.size > 0, "Maps coming in must not be empty")
+      assert(innerTuples.nonEmpty, "Maps coming in must not be empty")
       state.fanOut(innerTuples.size)
       val cacheEntries = innerTuples.map {
         case (k, v) =>

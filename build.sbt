@@ -11,6 +11,9 @@ def scalaBinaryVersion(scalaVersion: String) = scalaVersion match {
 
 def isScala210x(scalaVersion: String) = scalaBinaryVersion(scalaVersion) == "2.10"
 
+def sequentialExecution: Boolean =
+  Option(System.getProperty("sequentialExecution")).map(_.toBoolean).getOrElse(false)
+
 val algebirdVersion = "0.13.0"
 val bijectionVersion = "0.9.5"
 val chillVersion = "0.8.4"
@@ -31,7 +34,18 @@ val chainVersion = "0.2.0"
 
 val extraSettings = mimaDefaultSettings
 
-val sharedSettings = extraSettings ++ Seq(
+val executionSettings = if (sequentialExecution) {
+//  Looks like this is the only way of running tests sequentially:
+//  https://github.com/sbt/sbt/issues/882
+  Seq(
+    parallelExecution in Global := false,
+    parallelExecution in Compile := true
+  )
+} else {
+  Seq(parallelExecution in Test := true)
+}
+
+val sharedSettings = extraSettings ++ executionSettings ++ Seq(
   organization := "com.twitter",
   scalaVersion := "2.11.11",
   crossScalaVersions := Seq("2.11.11", "2.12.2"),
@@ -62,8 +76,6 @@ val sharedSettings = extraSettings ++ Seq(
     "Conjars Repository" at "http://conjars.org/repo",
     "Twitter Maven" at "http://maven.twttr.com"
   ),
-
-  parallelExecution in Test := true,
 
   scalacOptions ++= Seq(
     "-unchecked",

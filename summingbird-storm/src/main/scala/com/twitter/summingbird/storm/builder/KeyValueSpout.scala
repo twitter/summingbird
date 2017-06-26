@@ -1,38 +1,38 @@
-package com.twitter.summingbird.storm.spout
+package com.twitter.summingbird.storm.builder
 
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.{ SummerBuilder, MaxEmitPerExecute }
-import com.twitter.summingbird.storm.Constants._
+import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, SummerBuilder }
 import com.twitter.tormenta.spout.SpoutProxy
-import com.twitter.summingbird.storm.collector.AggregatorOutputCollector
 import com.twitter.util.{ Duration, Time }
+import java.util.{ Map => JMap }
 import org.apache.storm.spout.SpoutOutputCollector
 import org.apache.storm.task.TopologyContext
 import org.apache.storm.topology.{ IRichSpout, OutputFieldsDeclarer }
-import org.apache.storm.tuple.Fields
-import java.util.{ Map => JMap }
+import scala.collection.{ Map => CMap }
 
 /**
  * This is a spout used when the spout is being followed by summer.
  * It uses a AggregatorOutputCollector on open.
  */
-class KeyValueSpout[K, V: Semigroup](
-    protected val self: IRichSpout,
-    summerBuilder: SummerBuilder,
-    maxEmitPerExec: MaxEmitPerExecute,
-    summerShards: KeyValueShards,
-    flushExecTimeCounter: Incrementor,
-    executeTimeCounter: Incrementor) extends SpoutProxy {
+private[builder] class KeyValueSpout[K, V: Semigroup](
+  protected val self: IRichSpout,
+  summerBuilder: SummerBuilder,
+  maxEmitPerExec: MaxEmitPerExecute,
+  summerShards: KeyValueShards,
+  flushExecTimeCounter: Incrementor,
+  executeTimeCounter: Incrementor,
+  format: OutputFormat[(Int, CMap[K, V])]
+) extends SpoutProxy {
 
-  private final val tickFrequency = Duration.fromMilliseconds(1000)
+  private val tickFrequency = Duration.fromMilliseconds(1000)
+
   private var adapterCollector: AggregatorOutputCollector[K, V] = _
   var lastDump = Time.now
 
-  override def declareOutputFields(declarer: OutputFieldsDeclarer) = {
-    declarer.declare(new Fields(AGG_KEY, AGG_VALUE))
-  }
+  override def declareOutputFields(declarer: OutputFieldsDeclarer): Unit =
+    declarer.declare(format.asStormFields)
 
   /**
    * On open the outputCollector is wrapped with AggregateOutputCollector and fed to the KeyValueSpout.
@@ -46,7 +46,8 @@ class KeyValueSpout[K, V: Semigroup](
       maxEmitPerExec,
       summerShards,
       flushExecTimeCounter,
-      executeTimeCounter
+      executeTimeCounter,
+      format
     )
     super.open(conf, topologyContext, adapterCollector)
   }
