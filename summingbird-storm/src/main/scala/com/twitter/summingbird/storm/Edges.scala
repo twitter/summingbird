@@ -26,10 +26,10 @@ private[storm] object Edges {
     destId
   )
 
-  def groupedKeyValueToItem[K, V](
-    sourceId: Topology.EmittingId[KeyValue[K, V]],
+  def groupedKeyValueItemToItem[K, V](
+    sourceId: Topology.EmittingId[Item[(K, V)]],
     destId: Topology.ReceivingId[Item[(K, V)]]
-  ): Topology.Edge[KeyValue[K, V], Item[(K, V)]] = Topology.Edge(
+  ): Topology.Edge[Item[(K, V)], Item[(K, V)]] = Topology.Edge(
     sourceId,
     EdgeFormats.keyValue[K, V],
     EdgeGrouping.Fields(List(EdgeFormats.Key)),
@@ -94,7 +94,7 @@ private object EdgeFormats {
     OutputFormat(List("timestampWithValue"), EdgeInjections.Single())
   def aggregated[K, V]: OutputFormat[Aggregated[K, V]] =
     OutputFormat(List(ShardKey, "aggregated"), EdgeInjections.Pair())
-  def keyValue[K, V]: OutputFormat[KeyValue[K, V]] =
+  def keyValue[K, V]: OutputFormat[Item[(K, V)]] =
     OutputFormat(List("timestamp", Key, "value"), EdgeInjections.KeyValueInjection())
   def sharded[K, V]: OutputFormat[Sharded[K, V]] =
     OutputFormat(List(ShardKey, "keyWithBatch", "valueWithTimestamp"), EdgeInjections.Triple())
@@ -140,8 +140,8 @@ private object EdgeInjections {
     }
   }
 
-  case class KeyValueInjection[K, V]() extends Injection[KeyValue[K, V], JList[AnyRef]] {
-    override def apply(tuple: KeyValue[K, V]): JList[AnyRef] = {
+  case class KeyValueInjection[K, V]() extends Injection[Item[(K, V)], JList[AnyRef]] {
+    override def apply(tuple: Item[(K, V)]): JList[AnyRef] = {
       val list = new JAList[AnyRef](3)
       list.add(tuple._1.asInstanceOf[AnyRef])
       list.add(tuple._2._1.asInstanceOf[AnyRef])
@@ -149,7 +149,7 @@ private object EdgeInjections {
       list
     }
 
-    override def invert(valueIn: JList[AnyRef]): Try[KeyValue[K, V]] = Inversion.attempt(valueIn) { input =>
+    override def invert(valueIn: JList[AnyRef]): Try[Item[(K, V)]] = Inversion.attempt(valueIn) { input =>
       (input.get(0).asInstanceOf[Timestamp],
         (input.get(1).asInstanceOf[K], input.get(2).asInstanceOf[V]))
     }

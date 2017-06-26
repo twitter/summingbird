@@ -40,7 +40,6 @@ private[storm] object StormTopologyBuilder {
   // Type to represent simplest values storm components emit.
   // Corresponds to plain [[ Producer[Storm, T] ]] case.
   type Item[T] = (Timestamp, T)
-  type KeyValue[K, V] = Item[(K, V)]
 
   // Types to represent aggregate keys and values components emit in case of partial aggregation.
   type AggregateKey[K] = (K, BatchID)
@@ -154,27 +153,24 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     node: StormNode,
     provider: ComponentProvider
   ): Topology = {
-    val component = provider.createSingle[(K, V), KeyValue[K, V]](identity)
+    val component = provider.createSingle[(K, V), Item[(K, V)]](identity)
     val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
-    registerKeyValueEdges(topologyWithComponent, node, componentId)
+    registerKeyValueItemEdges(topologyWithComponent, node, componentId)
   }
 
-  private def registerKeyValueEdges[K, V](
+  private def registerKeyValueItemEdges[K, V](
     topology: Topology,
     source: StormNode,
-    sourceId: Topology.EmittingId[KeyValue[K, V]]
+    sourceId: Topology.EmittingId[Item[(K, V)]]
   ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
-    case (currentTopology, downstreamNode: FlatMapNode[Storm]) if isGroupedLeftJoinNode(downstreamNode) =>
-      currentTopology.withEdge(Edges.groupedKeyValueToItem[K, V](
-        sourceId,
-        getFMBoltId[(K, V)](downstreamNode)
-      ))
     case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
-      currentTopology.withEdge(Edges.shuffleItemToItem[(K, V)](
-        sourceId,
-        getFMBoltId[(K, V)](downstreamNode),
-        withLocalGrouping(downstreamNode)
-      ))
+      val destId = getFMBoltId[(K, V)](downstreamNode)
+      val edge = if (isGroupedLeftJoinNode(downstreamNode)) {
+        Edges.groupedKeyValueItemToItem[K, V](sourceId, destId)
+      } else {
+        Edges.shuffleItemToItem[(K, V)](sourceId, destId, withLocalGrouping(downstreamNode))
+      }
+      currentTopology.withEdge(edge)
     case (_, downstreamNode: SummerNode[Storm]) =>
       throw new IllegalStateException(s"Impossible to create key value edge to summer node: " +
         s"$sourceId -> ${getNodeName(downstreamNode)}")
@@ -228,17 +224,14 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     source: StormNode,
     sourceId: Topology.EmittingId[Sharded[K, V]]
   ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
-    case (currentTopology, downstreamNode: FlatMapNode[Storm]) if isGroupedLeftJoinNode(downstreamNode) =>
-      currentTopology.withEdge(Edges.groupedShardedToItem[K, V](
-        sourceId,
-        getFMBoltId[(K, V)](downstreamNode)
-      ))
     case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
-      currentTopology.withEdge(Edges.shuffleShardedToItem[K, V](
-        sourceId,
-        getFMBoltId[(K, V)](downstreamNode),
-        withLocalGrouping(downstreamNode)
-      ))
+      val destId = getFMBoltId[(K, V)](downstreamNode)
+      val edge = if (isGroupedLeftJoinNode(downstreamNode)) {
+        Edges.groupedShardedToItem[K, V](sourceId, destId)
+      } else {
+        Edges.shuffleShardedToItem[K, V](sourceId, destId, withLocalGrouping(downstreamNode))
+      }
+      currentTopology.withEdge(edge)
     case (currentTopology, downstreamNode: SummerNode[Storm]) =>
       currentTopology.withEdge(Edges.groupedShardedToSummer[K, V](
         sourceId,
