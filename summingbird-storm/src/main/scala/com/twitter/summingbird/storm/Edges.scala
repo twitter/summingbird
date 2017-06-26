@@ -151,8 +151,10 @@ private object EdgeInjections {
     }
 
     override def invert(valueIn: JList[AnyRef]): Try[Item[(K, V)]] = Inversion.attempt(valueIn) { input =>
-      val (timestamp, key, value) = (input.get(0), input.get(1), input.get(2))
-      (timestamp.asInstanceOf[Timestamp], (key.asInstanceOf[K], value.asInstanceOf[V]))
+      val timestamp = input.get(0).asInstanceOf[Timestamp]
+      val key = input.get(1).asInstanceOf[K]
+      val value = input.get(2).asInstanceOf[V]
+      (timestamp, (key, value))
     }
   }
 }

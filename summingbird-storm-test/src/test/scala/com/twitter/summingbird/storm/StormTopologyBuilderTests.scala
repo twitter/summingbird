@@ -52,7 +52,7 @@ class StormTopologyBuilderTests extends WordSpec {
         .leftJoin(
           ReadableServiceFactory[Int, Int](() => ReadableStore.fromFn(v => Some(v)))
         ).name(leftJoinName)
-        .map { case (key, (value, optPrevValue)) => (key, value) }
+        .mapValues { case (value, _) => value }
         .sumByKey(TestStore.createStore[Int, Int]()._2)
 
     val topologyWithoutGrouping = buildTopology(producer)
