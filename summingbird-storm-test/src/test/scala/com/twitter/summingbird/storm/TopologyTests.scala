@@ -17,10 +17,13 @@
 package com.twitter.summingbird.storm
 
 import org.apache.storm.generated.StormTopology
-import com.twitter.algebird.MapAlgebra
+import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.batch.Batcher
+import com.twitter.summingbird.online.ReadableServiceFactory
+import com.twitter.summingbird.option.JobId
+import com.twitter.summingbird.storm.builder.{EdgeGrouping, Topology}
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import org.scalatest.WordSpec
 import org.scalacheck._
@@ -311,5 +314,40 @@ class TopologyTests extends WordSpec {
     val TDistMap = bolts.map { case (k, v) => (k.split("-").size - 1, v) }
 
     assert(TDistMap(0).get_common.get_parallelism_hint == 5)
+  }
+
+  "Grouped leftJoin creates fields grouping" in {
+    val leftJoinName = "leftJoin"
+    val producer: TailProducer[Storm, _] =
+      Storm.source(TraversableSpout(sample[List[Int]]))
+        .flatMap(testFn)
+        .leftJoin(
+          ReadableServiceFactory[Int, Int](() => ReadableStore.fromFn(v => Some(v)))
+        ).name(leftJoinName)
+        .map(v => (v._1, v._2._1))
+        .sumByKey(TestStore.createStore[Int, Int]()._2)
+
+    val topologyWithoutGrouping = buildTopology(producer)
+    assert(topologyWithoutGrouping.spouts.size == 1)
+    assert(topologyWithoutGrouping.bolts.size == 2)
+    assert(topologyWithoutGrouping.edges.map(_.grouping).forall { grouping =>
+      grouping == EdgeGrouping.Shuffle ||
+        grouping == EdgeGrouping.Fields(List(EdgeFormats.ShardKey))
+    })
+
+    val topologyWithGrouping = buildTopology(producer, Map[String, Options](
+      leftJoinName -> Options().set(LeftJoinGrouping.Grouped)
+    ))
+    assert(topologyWithGrouping.spouts.size == 1)
+    assert(topologyWithGrouping.bolts.size == 3)
+    assert(topologyWithGrouping.edges.map(_.grouping).exists { grouping =>
+      grouping == EdgeGrouping.Fields(List(EdgeFormats.Key))
+    })
+  }
+
+  private def buildTopology(producer: TailProducer[Storm, _], options: Map[String, Options] = Map()): Topology = {
+    val storm = Storm.local(options)
+    val dag = storm.planDag(producer)
+    StormTopologyBuilder(options, JobId("test"), dag).build
   }
 }
