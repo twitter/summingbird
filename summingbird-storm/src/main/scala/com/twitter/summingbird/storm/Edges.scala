@@ -141,17 +141,18 @@ private object EdgeInjections {
   }
 
   case class KeyValueInjection[K, V]() extends Injection[Item[(K, V)], JList[AnyRef]] {
-    override def apply(tuple: Item[(K, V)]): JList[AnyRef] = {
-      val list = new JAList[AnyRef](3)
-      list.add(tuple._1.asInstanceOf[AnyRef])
-      list.add(tuple._2._1.asInstanceOf[AnyRef])
-      list.add(tuple._2._2.asInstanceOf[AnyRef])
-      list
+    override def apply(tuple: Item[(K, V)]): JList[AnyRef] = tuple match {
+      case (timestamp, (key, value)) =>
+        val list = new JAList[AnyRef](3)
+        list.add(timestamp.asInstanceOf[AnyRef])
+        list.add(key.asInstanceOf[AnyRef])
+        list.add(value.asInstanceOf[AnyRef])
+        list
     }
 
     override def invert(valueIn: JList[AnyRef]): Try[Item[(K, V)]] = Inversion.attempt(valueIn) { input =>
-      (input.get(0).asInstanceOf[Timestamp],
-        (input.get(1).asInstanceOf[K], input.get(2).asInstanceOf[V]))
+      val (timestamp, key, value) = (input.get(0), input.get(1), input.get(2))
+      (timestamp.asInstanceOf[Timestamp], (key.asInstanceOf[K], value.asInstanceOf[V]))
     }
   }
 }

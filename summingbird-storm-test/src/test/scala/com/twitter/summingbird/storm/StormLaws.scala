@@ -224,7 +224,7 @@ class StormLaws extends WordSpec {
   "StormPlatform should work with grouped leftJoin" in {
     val leftJoinName = "leftJoin"
     val producer = TestPlatform.source(sample[List[Int]])
-      .map(sample[(Int) => (Int, Int)])
+      .map(sample[Int => (Int, Int)])
       .leftJoin(TestPlatform.service(v => Some(v))).name("leftJoin")
       .map(v => (v._1, v._2._1))
       .sumByKey(TestPlatform.store("store"))

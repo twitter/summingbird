@@ -324,7 +324,7 @@ class TopologyTests extends WordSpec {
         .leftJoin(
           ReadableServiceFactory[Int, Int](() => ReadableStore.fromFn(v => Some(v)))
         ).name(leftJoinName)
-        .map(v => (v._1, v._2._1))
+        .map { case (key, (value, optPrevValue)) => (key, value) }
         .sumByKey(TestStore.createStore[Int, Int]()._2)
 
     val topologyWithoutGrouping = buildTopology(producer)
