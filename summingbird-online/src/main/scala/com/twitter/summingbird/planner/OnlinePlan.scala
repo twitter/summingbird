@@ -19,7 +19,7 @@ package com.twitter.summingbird.planner
 import com.twitter.summingbird._
 import scala.reflect.ClassTag
 import com.twitter.summingbird.online.OnlineDefaultConstants
-import com.twitter.summingbird.online.option.LeftJoinGrouping
+import com.twitter.summingbird.online.option.{ Grouping, LeftJoinGrouping }
 
 class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Producer[P, _], List[String]], options: Map[String, Options]) {
   private type Prod[T] = Producer[P, T]
@@ -87,7 +87,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
     case LeftJoinedProducer(_, _) =>
       get[LeftJoinGrouping](p).map { case (_, leftJoinGrouping) =>
         leftJoinGrouping.get
-      } == Some(LeftJoinGrouping.Grouped)
+      } == Some(Grouping.Group)
     case _ => false
   }
 

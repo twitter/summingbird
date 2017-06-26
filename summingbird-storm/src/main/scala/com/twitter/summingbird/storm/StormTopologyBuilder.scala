@@ -5,7 +5,7 @@ import com.twitter.summingbird.{ LeftJoinedProducer, Options, Summer }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.option.LeftJoinGrouping
+import com.twitter.summingbird.online.option.{ Grouping, LeftJoinGrouping }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, FlatMapNode, SourceNode, SummerNode }
 import com.twitter.summingbird.storm.Constants._
@@ -261,7 +261,7 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     node.members.last.isInstanceOf[LeftJoinedProducer[Storm, _, _, _]] &&
       get[LeftJoinGrouping](node).map { case (_, leftJoinGrouping) =>
         leftJoinGrouping.get
-      } == Some(LeftJoinGrouping.Grouped)
+      } == Some(Grouping.Group)
 
   private def outgoingSummersProps(node: StormNode): Option[OutgoingSummersProps] = {
     val dependants = stormDag.dependantsOf(node)
