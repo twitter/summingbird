@@ -255,10 +255,12 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
   }
 
   private def isGroupedLeftJoinNode(node: FlatMapNode[Storm]): Boolean =
-    node.firstProducer.get.isInstanceOf[LeftJoinedProducer[Storm, _, _, _]] &&
-      get[LeftJoinGrouping](node).map { case (_, leftJoinGrouping) =>
-        leftJoinGrouping.get
-      } == Some(Grouping.Group)
+    node.firstProducer.map { producer =>
+      producer.isInstanceOf[LeftJoinedProducer[Storm, _, _, _]] &&
+        get[LeftJoinGrouping](node).map { case (_, leftJoinGrouping) =>
+          leftJoinGrouping.get
+        } == Some(Grouping.Group)
+    }.getOrElse(false)
 
   private def outgoingSummersProps(node: StormNode): Option[OutgoingSummersProps] = {
     val dependants = stormDag.dependantsOf(node)
@@ -306,10 +308,10 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
         option
     }
 
-  private[storm] def get[T <: AnyRef: ClassTag](node: StormNode): Option[(String, T)] = {
-    val producer = node.firstProducer.get
-    Options.getFirst[T](options, stormDag.producerToPriorityNames(producer))
-  }
+  private[storm] def get[T <: AnyRef: ClassTag](node: StormNode): Option[(String, T)] =
+    node.firstProducer.flatMap { producer =>
+      Options.getFirst[T](options, stormDag.producerToPriorityNames(producer))
+    }
 
   private[storm] def getNodeName(node: StormNode) = stormDag.getNodeName(node)
 }
