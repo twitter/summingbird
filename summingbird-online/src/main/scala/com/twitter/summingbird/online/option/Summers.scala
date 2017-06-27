@@ -2,7 +2,7 @@ package com.twitter.summingbird.online.option
 
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer._
-import com.twitter.summingbird.Name
+import com.twitter.summingbird.{ Counter, Name }
 import com.twitter.summingbird.online.OnlineDefaultConstants._
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.util.{ Future, FuturePool }
@@ -36,10 +36,10 @@ object Summers {
     cacheSize, flushFrequency, softMemoryFlushPercent, asyncPoolSize, compactValues, valueCombinerCacheSize
   ))
 
-  private object NullConstructor extends (SummerConstructor.Context => SummerBuilder) {
-    override def apply(ctx: SummerConstructor.Context): SummerBuilder = {
-      val tuplesIn = ctx.counter(TuplesInCounterName)
-      val tuplesOut = ctx.counter(TuplesOutCounterName)
+  private case object NullConstructor extends SummerConstructorSpec {
+    override def builder(counter: (Name) => Counter with Incrementor): SummerBuilder = {
+      val tuplesIn = counter(TuplesInCounterName)
+      val tuplesOut = counter(TuplesOutCounterName)
       new SummerBuilder {
         override def getSummer[K, V: Semigroup]: AsyncSummer[(K, V), Map[K, V]] =
           new com.twitter.algebird.util.summer.NullSummer[K, V](tuplesIn, tuplesOut)
@@ -51,14 +51,14 @@ object Summers {
     cacheSize: CacheSize,
     flushFrequency: FlushFrequency,
     softMemoryFlushPercent: SoftMemoryFlushPercent
-  ) extends (SummerConstructor.Context => SummerBuilder) {
-    override def apply(ctx: SummerConstructor.Context): SummerBuilder = {
-      val memoryCounter = ctx.counter(MemoryCounterName)
-      val timeoutCounter = ctx.counter(TimeoutCounterName)
-      val sizeCounter = ctx.counter(SizeCounterName)
-      val tupleInCounter = ctx.counter(TuplesInCounterName)
-      val tupleOutCounter = ctx.counter(TuplesOutCounterName)
-      val insertCounter = ctx.counter(InsertCounterName)
+  ) extends SummerConstructorSpec {
+    override def builder(counter: (Name) => Counter with Incrementor): SummerBuilder = {
+      val memoryCounter = counter(MemoryCounterName)
+      val timeoutCounter = counter(TimeoutCounterName)
+      val sizeCounter = counter(SizeCounterName)
+      val tupleInCounter = counter(TuplesInCounterName)
+      val tupleOutCounter = counter(TuplesOutCounterName)
+      val insertCounter = counter(InsertCounterName)
 
       new SummerBuilder {
         def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {
@@ -84,15 +84,15 @@ object Summers {
     asyncPoolSize: AsyncPoolSize,
     compactValues: CompactValues,
     valueCombinerCacheSize: ValueCombinerCacheSize
-  ) extends (SummerConstructor.Context => SummerBuilder) {
-    override def apply(ctx: SummerConstructor.Context): SummerBuilder = {
-      val memoryCounter = ctx.counter(MemoryCounterName)
-      val timeoutCounter = ctx.counter(TimeoutCounterName)
-      val sizeCounter = ctx.counter(SizeCounterName)
-      val tupleInCounter = ctx.counter(TuplesInCounterName)
-      val tupleOutCounter = ctx.counter(TuplesOutCounterName)
-      val insertCounter = ctx.counter(InsertCounterName)
-      val insertFailCounter = ctx.counter(InsertFailCounterName)
+  ) extends SummerConstructorSpec {
+    override def builder(counter: (Name) => Counter with Incrementor): SummerBuilder = {
+      val memoryCounter = counter(MemoryCounterName)
+      val timeoutCounter = counter(TimeoutCounterName)
+      val sizeCounter = counter(SizeCounterName)
+      val tupleInCounter = counter(TuplesInCounterName)
+      val tupleOutCounter = counter(TuplesOutCounterName)
+      val insertCounter = counter(InsertCounterName)
+      val insertFailCounter = counter(InsertFailCounterName)
 
       new SummerBuilder {
         def getSummer[K, V: Semigroup]: com.twitter.algebird.util.summer.AsyncSummer[(K, V), Map[K, V]] = {

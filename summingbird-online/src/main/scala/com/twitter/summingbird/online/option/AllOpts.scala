@@ -101,13 +101,18 @@ trait SummerBuilder extends Serializable {
  * The SummerConstructor option, set this instead of CacheSize, AsyncPoolSize, etc.. to provide how to construct the aggregation for this bolt
  * @see [[Summers]] for useful [[SummerConstructor]]s.
  */
-case class SummerConstructor(get: SummerConstructor.Context => SummerBuilder)
+case class SummerConstructor(get: SummerConstructorSpec)
+
+trait SummerConstructorSpec {
+  def builder(counter: Name => Counter with Incrementor): SummerBuilder
+}
 
 object SummerConstructor {
-  def apply(get: SummerBuilder): SummerConstructor = SummerConstructor(_ => get)
+  def apply(get: SummerBuilder): SummerConstructor =
+    SummerConstructor(DeprecatedSummerConstructorSpec(get))
 
-  trait Context {
-    def counter(name: Name): Counter with Incrementor
+  private case class DeprecatedSummerConstructorSpec(get: SummerBuilder) extends SummerConstructorSpec {
+    override def builder(counter: (Name) => Counter with Incrementor): SummerBuilder = get
   }
 }
 

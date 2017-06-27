@@ -18,7 +18,7 @@ package com.twitter.summingbird.storm
 
 import com.twitter.algebird.util.summer._
 import com.twitter.summingbird.online.OnlineDefaultConstants._
-import com.twitter.summingbird.{ Counter, Group, Name }
+import com.twitter.summingbird.{ Counter, Group }
 import com.twitter.summingbird.online.option.{ CompactValues, SummerBuilder, SummerConstructor, Summers }
 import com.twitter.summingbird.storm.planner.StormNode
 import org.slf4j.LoggerFactory
@@ -33,14 +33,17 @@ private[storm] object BuildSummer {
   @transient private[storm] val logger = LoggerFactory.getLogger(BuildSummer.getClass)
 
   def apply(builder: StormTopologyBuilder, node: StormNode): SummerBuilder = {
-    val summerConstructor = builder.get[SummerConstructor](node)
+    val summerConstructorSpec = builder.get[SummerConstructor](node)
       .map { case (_, constructor) => constructor }.getOrElse {
-      logger.debug(s"Node (${builder.getNodeName(node)}): Use legacy way of getting summer constructor.")
+      logger.info(s"[${builder.getNodeName(node)}] use legacy way of getting summer constructor")
       legacySummerConstructor(builder, node)
-    }
+    }.get
 
-    logger.debug(s"Node (${builder.getNodeName(node)}): Use $summerConstructor as summer constructor.")
-    summerConstructor.get.apply(NodeContext(builder, node))
+    logger.info(s"[${builder.getNodeName(node)}] summer constructor spec: $summerConstructorSpec")
+    summerConstructorSpec.builder { counterName =>
+      require(builder.jobId.get != null, "Unable to register metrics with no job id present in the config updater")
+      new Counter(Group("summingbird." + builder.getNodeName(node)), counterName)(builder.jobId) with Incrementor
+    }
   }
 
   private def legacySummerConstructor(builder: StormTopologyBuilder, node: StormNode): SummerConstructor = {
@@ -65,13 +68,6 @@ private[storm] object BuildSummer {
           cacheSize, flushFrequency, softMemoryFlush, asyncPoolSize, doCompact, valueCombinerCrushSize
         )
       }
-    }
-  }
-
-  private case class NodeContext(builder: StormTopologyBuilder, node: StormNode) extends SummerConstructor.Context {
-    override def counter(name: Name): Counter with Incrementor = {
-      require(builder.jobId.get != null, "Unable to register metrics with no job id present in the config updater")
-      new Counter(Group("summingbird." + builder.getNodeName(node)), name)(builder.jobId) with Incrementor
     }
   }
 }
