@@ -19,6 +19,7 @@ package com.twitter.summingbird.planner
 import com.twitter.summingbird._
 import scala.reflect.ClassTag
 import com.twitter.summingbird.online.OnlineDefaultConstants
+import com.twitter.summingbird.online.option.{ Grouping, LeftJoinGrouping }
 
 class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Producer[P, _], List[String]], options: Map[String, Options]) {
   private type Prod[T] = Producer[P, T]
@@ -81,6 +82,14 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
 
   private def dependsOnSummerProducer(p: Prod[_]): Boolean =
     Producer.dependenciesOf(p).collect { case s: Summer[_, _, _] => s }.headOption.isDefined
+
+  private def isGroupedLeftJoin(p: Prod[_]): Boolean = p match {
+    case LeftJoinedProducer(_, _) =>
+      get[LeftJoinGrouping](p).map { case (_, leftJoinGrouping) =>
+        leftJoinGrouping.get
+      } == Some(Grouping.Group)
+    case _ => false
+  }
 
   /*
    * Note that this is transitive: we check on p, then we call this fn
@@ -169,6 +178,7 @@ class OnlinePlan[P <: Platform[P], V](tail: Producer[P, V], nameMap: Map[Produce
            * then split now.
            */
           case _ if ((!mergableWithSource(currentProducer)) && allTransDepsMergeableWithSource(dep)) => true
+          case _ if isGroupedLeftJoin(currentProducer) => true
           case _ => false
         }
         // Note the currentProducer is *ALREADY* a part of activeBolt

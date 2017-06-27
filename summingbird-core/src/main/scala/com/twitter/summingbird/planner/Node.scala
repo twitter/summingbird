@@ -29,6 +29,12 @@ sealed trait Node[P <: Platform[P]] {
    */
   val members: List[Producer[P, _]] = List()
 
+  /**
+   * @return first producer in producers chain which corresponds to this node,
+   *         i.e. if you have `leftJoin(...).flatMap(...)` on node it returns `leftJoin`.
+   */
+  def firstProducer: Option[Producer[P, _]] = members.lastOption
+
   def toSource: SourceNode[P] = SourceNode(this.members)
 
   def toSummer: SummerNode[P] = SummerNode(this.members)

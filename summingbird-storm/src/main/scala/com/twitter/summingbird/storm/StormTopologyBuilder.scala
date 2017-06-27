@@ -1,10 +1,11 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
-import com.twitter.summingbird.{ Options, Summer }
+import com.twitter.summingbird.{ LeftJoinedProducer, Options, Summer }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.executor.KeyValueShards
+import com.twitter.summingbird.online.option.{ Grouping, LeftJoinGrouping }
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.{ Dag, FlatMapNode, SourceNode, SummerNode }
 import com.twitter.summingbird.storm.Constants._
@@ -92,16 +93,13 @@ private[storm] object StormTopologyBuilder {
 private[storm] case class StormTopologyBuilder(options: Map[String, Options], jobId: JobId, stormDag: Dag[Storm]) {
   import StormTopologyBuilder._
 
-  def build: StormTopology = {
-    val topology = stormDag.nodes.foldLeft(Topology.empty) {
-      case (currentTopology, node: SummerNode[Storm]) =>
-        register(currentTopology, node, SummerBoltProvider(this, node))
-      case (currentTopology, node: FlatMapNode[Storm]) =>
-        register(currentTopology, node, FlatMapBoltProvider(this, node))
-      case (currentTopology, node: SourceNode[Storm]) =>
-        register(currentTopology, node, SpoutProvider(this, node))
-    }
-    topology.build(jobId)
+  def build: Topology = stormDag.nodes.foldLeft(Topology.empty) {
+    case (currentTopology, node: SummerNode[Storm]) =>
+      register(currentTopology, node, SummerBoltProvider(this, node))
+    case (currentTopology, node: FlatMapNode[Storm]) =>
+      register(currentTopology, node, FlatMapBoltProvider(this, node))
+    case (currentTopology, node: SourceNode[Storm]) =>
+      register(currentTopology, node, SpoutProvider(this, node))
   }
 
   private def register(topology: Topology, node: StormNode, provider: ComponentProvider): Topology =
@@ -144,8 +142,35 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     case Some(props) =>
       registerShardedKeyValue[K, V](topology, node, provider, props.batcher, props.shards)
     case None =>
-      throw new IllegalStateException("Shouldn't happen, trying to register component which emits " +
-        "keyed values and don't have downstream summers.")
+      registerKeyValue[K, V](topology, node, provider)
+  }
+
+  private def registerKeyValue[K, V](
+    topology: Topology,
+    node: StormNode,
+    provider: ComponentProvider
+  ): Topology = {
+    val component = provider.createSingle[(K, V), Item[(K, V)]](identity)
+    val (componentId, topologyWithComponent) = topology.withComponent(getNodeName(node), component)
+    registerKeyValueItemEdges(topologyWithComponent, node, componentId)
+  }
+
+  private def registerKeyValueItemEdges[K, V](
+    topology: Topology,
+    source: StormNode,
+    sourceId: Topology.EmittingId[Item[(K, V)]]
+  ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
+    case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
+      val destId = getFMBoltId[(K, V)](downstreamNode)
+      val edge = if (isGroupedLeftJoinNode(downstreamNode)) {
+        Edges.groupedKeyValueItemToItem[K, V](sourceId, destId)
+      } else {
+        Edges.shuffleItemToItem[(K, V)](sourceId, destId, withLocalGrouping(downstreamNode))
+      }
+      currentTopology.withEdge(edge)
+    case (_, downstreamNode: SummerNode[Storm]) =>
+      throw new IllegalStateException(s"Impossible to create key value edge to summer node: " +
+        s"$sourceId -> ${getNodeName(downstreamNode)}")
   }
 
   private def registerShardedKeyValue[K, V](
@@ -197,11 +222,13 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     sourceId: Topology.EmittingId[Sharded[K, V]]
   ): Topology = stormDag.dependantsOf(source).foldLeft(topology) {
     case (currentTopology, downstreamNode: FlatMapNode[Storm]) =>
-      currentTopology.withEdge(Edges.shuffleShardedToItem[K, V](
-        sourceId,
-        getFMBoltId[(K, V)](downstreamNode),
-        withLocalGrouping(downstreamNode)
-      ))
+      val destId = getFMBoltId[(K, V)](downstreamNode)
+      val edge = if (isGroupedLeftJoinNode(downstreamNode)) {
+        Edges.groupedShardedToItem[K, V](sourceId, destId)
+      } else {
+        Edges.shuffleShardedToItem[K, V](sourceId, destId, withLocalGrouping(downstreamNode))
+      }
+      currentTopology.withEdge(edge)
     case (currentTopology, downstreamNode: SummerNode[Storm]) =>
       currentTopology.withEdge(Edges.groupedShardedToSummer[K, V](
         sourceId,
@@ -216,13 +243,24 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     Topology.BoltId(getNodeName(node))
 
   private def shouldEmitKeyValues(node: StormNode): Boolean =
-    stormDag.dependantsOf(node).exists(_.isInstanceOf[SummerNode[_]])
+    stormDag.dependantsOf(node).exists {
+      case flatMapNode: FlatMapNode[Storm] => isGroupedLeftJoinNode(flatMapNode)
+      case summerNode: SummerNode[Storm] => true
+    }
 
   private def withLocalGrouping(node: FlatMapNode[Storm]): Boolean = {
     val usePreferLocalDependency = getOrElse(node, DEFAULT_FM_PREFER_LOCAL_DEPENDENCY)
     logger.info(s"[${getNodeName(node)}] usePreferLocalDependency: ${usePreferLocalDependency.get}")
     usePreferLocalDependency.get
   }
+
+  private def isGroupedLeftJoinNode(node: FlatMapNode[Storm]): Boolean =
+    node.firstProducer.map { producer =>
+      producer.isInstanceOf[LeftJoinedProducer[Storm, _, _, _]] &&
+        get[LeftJoinGrouping](node).map { case (_, leftJoinGrouping) =>
+          leftJoinGrouping.get
+        } == Some(Grouping.Group)
+    }.getOrElse(false)
 
   private def outgoingSummersProps(node: StormNode): Option[OutgoingSummersProps] = {
     val dependants = stormDag.dependantsOf(node)
@@ -270,10 +308,10 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
         option
     }
 
-  private[storm] def get[T <: AnyRef: ClassTag](node: StormNode): Option[(String, T)] = {
-    val producer = node.members.last
-    Options.getFirst[T](options, stormDag.producerToPriorityNames(producer))
-  }
+  private[storm] def get[T <: AnyRef: ClassTag](node: StormNode): Option[(String, T)] =
+    node.firstProducer.flatMap { producer =>
+      Options.getFirst[T](options, stormDag.producerToPriorityNames(producer))
+    }
 
   private[storm] def getNodeName(node: StormNode) = stormDag.getNodeName(node)
 }
