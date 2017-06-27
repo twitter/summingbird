@@ -5,6 +5,7 @@ import com.twitter.summingbird.storm.builder.{ EdgeGrouping, OutputFormat, Topol
 import scala.util.Try
 import java.util.{ ArrayList => JAList, List => JList }
 import StormTopologyBuilder._
+import com.twitter.summingbird.batch.Timestamp
 
 /**
  * This companion object contains all [[Topology.Edge]]'s
@@ -21,6 +22,17 @@ private[storm] object Edges {
     sourceId,
     EdgeFormats.item[T],
     if (withLocal) EdgeGrouping.LocalOrShuffle else EdgeGrouping.Shuffle,
+    identity,
+    destId
+  )
+
+  def groupedKeyValueItemToItem[K, V](
+    sourceId: Topology.EmittingId[Item[(K, V)]],
+    destId: Topology.ReceivingId[Item[(K, V)]]
+  ): Topology.Edge[Item[(K, V)], Item[(K, V)]] = Topology.Edge(
+    sourceId,
+    EdgeFormats.keyValue[K, V],
+    EdgeGrouping.Fields(List(EdgeFormats.Key)),
     identity,
     destId
   )
@@ -48,6 +60,17 @@ private[storm] object Edges {
     destId
   )
 
+  def groupedShardedToItem[K, V](
+    sourceId: Topology.EmittingId[Sharded[K, V]],
+    destId: Topology.ReceivingId[Item[(K, V)]]
+  ): Topology.Edge[Sharded[K, V], Item[(K, V)]] = Topology.Edge(
+    sourceId,
+    EdgeFormats.sharded[K, V],
+    EdgeGrouping.Fields(List(EdgeFormats.ShardKey)),
+    shardedToItem[K, V],
+    destId
+  )
+
   def groupedShardedToSummer[K, V](
     sourceId: Topology.EmittingId[Sharded[K, V]],
     destId: Topology.ReceivingId[SummerInput[K, V]]
@@ -64,12 +87,15 @@ private[storm] object Edges {
  * This companion object contains all `OutputFormat`s used by Summingbird's storm topology.
  */
 private object EdgeFormats {
+  val Key = "key"
   val ShardKey = "shard"
 
   def item[T]: OutputFormat[Item[T]] =
     OutputFormat(List("timestampWithValue"), EdgeInjections.Single())
   def aggregated[K, V]: OutputFormat[Aggregated[K, V]] =
     OutputFormat(List(ShardKey, "aggregated"), EdgeInjections.Pair())
+  def keyValue[K, V]: OutputFormat[Item[(K, V)]] =
+    OutputFormat(List("timestamp", Key, "value"), EdgeInjections.KeyValueInjection())
   def sharded[K, V]: OutputFormat[Sharded[K, V]] =
     OutputFormat(List(ShardKey, "keyWithBatch", "valueWithTimestamp"), EdgeInjections.Triple())
 }
@@ -111,6 +137,24 @@ private object EdgeInjections {
 
     override def invert(valueIn: JList[AnyRef]): Try[(T1, T2, T3)] = Inversion.attempt(valueIn) { input =>
       (input.get(0).asInstanceOf[T1], input.get(1).asInstanceOf[T2], input.get(2).asInstanceOf[T3])
+    }
+  }
+
+  case class KeyValueInjection[K, V]() extends Injection[Item[(K, V)], JList[AnyRef]] {
+    override def apply(tuple: Item[(K, V)]): JList[AnyRef] = tuple match {
+      case (timestamp, (key, value)) =>
+        val list = new JAList[AnyRef](3)
+        list.add(timestamp.asInstanceOf[AnyRef])
+        list.add(key.asInstanceOf[AnyRef])
+        list.add(value.asInstanceOf[AnyRef])
+        list
+    }
+
+    override def invert(valueIn: JList[AnyRef]): Try[Item[(K, V)]] = Inversion.attempt(valueIn) { input =>
+      val timestamp = input.get(0).asInstanceOf[Timestamp]
+      val key = input.get(1).asInstanceOf[K]
+      val value = input.get(2).asInstanceOf[V]
+      (timestamp, (key, value))
     }
   }
 }

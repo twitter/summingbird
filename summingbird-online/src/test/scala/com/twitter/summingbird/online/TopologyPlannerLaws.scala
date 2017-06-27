@@ -98,7 +98,7 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
 
   property("The first producer in a online node cannot be a NamedProducer") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall { n =>
-      val inError = n.members.last.isInstanceOf[NamedProducer[_, _]]
+      val inError = n.firstProducer.get.isInstanceOf[NamedProducer[_, _]]
       if (inError) dumpGraph(dag)
       !inError
     }
@@ -156,8 +156,7 @@ object TopologyPlannerLaws extends Properties("Online Dag") {
 
   property("Prior to a summer the Node should be a FlatMap Node") = forAll { (dag: MemoryDag) =>
     dag.nodes.forall { n =>
-      val firstP = n.members.last
-      val success = firstP match {
+      val success = n.firstProducer.get match {
         case Summer(_, _, _) =>
           dag.dependenciesOf(n).size > 0 && dag.dependenciesOf(n).forall { otherN =>
             otherN.isInstanceOf[FlatMapNode[_]]

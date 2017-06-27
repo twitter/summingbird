@@ -132,3 +132,16 @@ object FMMergeableWithSource {
   val default: FMMergeableWithSource = FMMergeableWithSource(false)
 }
 
+case class LeftJoinGrouping(get: Grouping)
+
+object LeftJoinGrouping {
+  val Grouped: LeftJoinGrouping = LeftJoinGrouping(Grouping.Group)
+  val Shuffled: LeftJoinGrouping = LeftJoinGrouping(Grouping.Shuffle)
+}
+
+sealed trait Grouping
+
+object Grouping {
+  case object Shuffle extends Grouping
+  case object Group extends Grouping
+}
