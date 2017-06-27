@@ -17,27 +17,8 @@ object Summers {
   val InsertCounterName = Name("inserts")
   val InsertFailCounterName = Name("insertFail")
 
-  val Null = new SummerConstructor(NullConstructor)
-
-  def sync(
-    cacheSize: CacheSize = DEFAULT_FM_CACHE,
-    flushFrequency: FlushFrequency = DEFAULT_FLUSH_FREQUENCY,
-    softMemoryFlushPercent: SoftMemoryFlushPercent = DEFAULT_SOFT_MEMORY_FLUSH_PERCENT
-  ): SummerConstructor = new SummerConstructor(SyncConstructor(cacheSize, flushFrequency, softMemoryFlushPercent))
-
-  def async(
-    cacheSize: CacheSize = DEFAULT_FM_CACHE,
-    flushFrequency: FlushFrequency = DEFAULT_FLUSH_FREQUENCY,
-    softMemoryFlushPercent: SoftMemoryFlushPercent = DEFAULT_SOFT_MEMORY_FLUSH_PERCENT,
-    asyncPoolSize: AsyncPoolSize = DEFAULT_ASYNC_POOL_SIZE,
-    compactValues: CompactValues = CompactValues.default,
-    valueCombinerCacheSize: ValueCombinerCacheSize = DEFAULT_VALUE_COMBINER_CACHE_SIZE
-  ): SummerConstructor = new SummerConstructor(AsyncConstructor(
-    cacheSize, flushFrequency, softMemoryFlushPercent, asyncPoolSize, compactValues, valueCombinerCacheSize
-  ))
-
-  private case object NullConstructor extends SummerConstructorSpec {
-    override def builder(counter: (Name) => Counter with Incrementor): SummerBuilder = {
+  case object Null extends SummerWithCountersBuilder {
+    override def create(counter: (Name) => Counter with Incrementor): SummerBuilder = {
       val tuplesIn = counter(TuplesInCounterName)
       val tuplesOut = counter(TuplesOutCounterName)
       new SummerBuilder {
@@ -47,12 +28,12 @@ object Summers {
     }
   }
 
-  private case class SyncConstructor(
-    cacheSize: CacheSize,
-    flushFrequency: FlushFrequency,
-    softMemoryFlushPercent: SoftMemoryFlushPercent
-  ) extends SummerConstructorSpec {
-    override def builder(counter: (Name) => Counter with Incrementor): SummerBuilder = {
+  case class Sync(
+    cacheSize: CacheSize = DEFAULT_FM_CACHE,
+    flushFrequency: FlushFrequency = DEFAULT_FLUSH_FREQUENCY,
+    softMemoryFlushPercent: SoftMemoryFlushPercent = DEFAULT_SOFT_MEMORY_FLUSH_PERCENT
+  ) extends SummerWithCountersBuilder {
+    override def create(counter: (Name) => Counter with Incrementor): SummerBuilder = {
       val memoryCounter = counter(MemoryCounterName)
       val timeoutCounter = counter(TimeoutCounterName)
       val sizeCounter = counter(SizeCounterName)
@@ -77,15 +58,15 @@ object Summers {
     }
   }
 
-  private case class AsyncConstructor(
-    cacheSize: CacheSize,
-    flushFrequency: FlushFrequency,
-    softMemoryFlushPercent: SoftMemoryFlushPercent,
-    asyncPoolSize: AsyncPoolSize,
-    compactValues: CompactValues,
-    valueCombinerCacheSize: ValueCombinerCacheSize
-  ) extends SummerConstructorSpec {
-    override def builder(counter: (Name) => Counter with Incrementor): SummerBuilder = {
+  case class Async(
+    cacheSize: CacheSize = DEFAULT_FM_CACHE,
+    flushFrequency: FlushFrequency = DEFAULT_FLUSH_FREQUENCY,
+    softMemoryFlushPercent: SoftMemoryFlushPercent = DEFAULT_SOFT_MEMORY_FLUSH_PERCENT,
+    asyncPoolSize: AsyncPoolSize = DEFAULT_ASYNC_POOL_SIZE,
+    compactValues: CompactValues = CompactValues.default,
+    valueCombinerCacheSize: ValueCombinerCacheSize = DEFAULT_VALUE_COMBINER_CACHE_SIZE
+  ) extends SummerWithCountersBuilder {
+    override def create(counter: (Name) => Counter with Incrementor): SummerBuilder = {
       val memoryCounter = counter(MemoryCounterName)
       val timeoutCounter = counter(TimeoutCounterName)
       val sizeCounter = counter(SizeCounterName)

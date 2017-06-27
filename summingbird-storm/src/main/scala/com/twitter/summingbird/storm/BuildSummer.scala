@@ -19,7 +19,7 @@ package com.twitter.summingbird.storm
 import com.twitter.algebird.util.summer._
 import com.twitter.summingbird.online.OnlineDefaultConstants._
 import com.twitter.summingbird.{ Counter, Group }
-import com.twitter.summingbird.online.option.{ CompactValues, SummerBuilder, SummerConstructor, Summers }
+import com.twitter.summingbird.online.option._
 import com.twitter.summingbird.storm.planner.StormNode
 import org.slf4j.LoggerFactory
 import scala.reflect.ClassTag
@@ -33,20 +33,20 @@ private[storm] object BuildSummer {
   @transient private[storm] val logger = LoggerFactory.getLogger(BuildSummer.getClass)
 
   def apply(builder: StormTopologyBuilder, node: StormNode): SummerBuilder = {
-    val summerConstructorSpec = builder.get[SummerConstructor](node)
-      .map { case (_, constructor) => constructor }.getOrElse {
-      logger.info(s"[${builder.getNodeName(node)}] use legacy way of getting summer constructor")
-      legacySummerConstructor(builder, node)
-    }.get
+    val summerBuilder = builder.get[SummerConstructor](node)
+      .map { case (_, constructor) => constructor.get }.getOrElse {
+      logger.info(s"[${builder.getNodeName(node)}] use legacy way of getting summer builder")
+      legacySummerBuilder(builder, node)
+    }
 
-    logger.info(s"[${builder.getNodeName(node)}] summer constructor spec: $summerConstructorSpec")
-    summerConstructorSpec.builder { counterName =>
+    logger.info(s"[${builder.getNodeName(node)}] summer builder: $summerBuilder")
+    summerBuilder.create { counterName =>
       require(builder.jobId.get != null, "Unable to register metrics with no job id present in the config updater")
       new Counter(Group("summingbird." + builder.getNodeName(node)), counterName)(builder.jobId) with Incrementor
     }
   }
 
-  private def legacySummerConstructor(builder: StormTopologyBuilder, node: StormNode): SummerConstructor = {
+  private def legacySummerBuilder(builder: StormTopologyBuilder, node: StormNode): SummerWithCountersBuilder = {
     def option[T <: AnyRef: ClassTag](default: T): T = builder.getOrElse[T](node, default)
 
     val cacheSize = option(DEFAULT_FM_CACHE)
@@ -59,12 +59,12 @@ private[storm] object BuildSummer {
       val useAsyncCache = option(DEFAULT_USE_ASYNC_CACHE)
 
       if (!useAsyncCache.get) {
-        Summers.sync(cacheSize, flushFrequency, softMemoryFlush)
+        Summers.Sync(cacheSize, flushFrequency, softMemoryFlush)
       } else {
         val asyncPoolSize = option(DEFAULT_ASYNC_POOL_SIZE)
         val valueCombinerCrushSize = option(DEFAULT_VALUE_COMBINER_CACHE_SIZE)
         val doCompact = option(CompactValues.default)
-        Summers.async(
+        Summers.Async(
           cacheSize, flushFrequency, softMemoryFlush, asyncPoolSize, doCompact, valueCombinerCrushSize
         )
       }
