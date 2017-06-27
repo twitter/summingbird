@@ -2,7 +2,8 @@ package com.twitter.summingbird.online.option
 
 import com.twitter.util.Duration
 import com.twitter.algebird.Semigroup
-import com.twitter.algebird.util.summer.AsyncSummer
+import com.twitter.algebird.util.summer.{ AsyncSummer, Incrementor }
+import com.twitter.summingbird.{ Counter, Name }
 
 case class OnlineSuccessHandler(handlerFn: Unit => Unit)
 
@@ -98,8 +99,17 @@ trait SummerBuilder extends Serializable {
 
 /**
  * The SummerConstructor option, set this instead of CacheSize, AsyncPoolSize, etc.. to provide how to construct the aggregation for this bolt
+ * @see [[Summers]] for useful [[SummerConstructor]]s.
  */
-case class SummerConstructor(get: SummerBuilder)
+case class SummerConstructor(get: SummerConstructor.Context => SummerBuilder)
+
+object SummerConstructor {
+  def apply(get: SummerBuilder): SummerConstructor = SummerConstructor(_ => get)
+
+  trait Context {
+    def counter(name: Name): Counter with Incrementor
+  }
+}
 
 /**
  * How many instances/tasks of this flatmap task should be spawned in the environment
