@@ -226,7 +226,7 @@ class StormLaws extends WordSpec {
     val producer = TestPlatform.source(sample[List[Int]])
       .map(sample[Int => (Int, Int)])
       .leftJoin(TestPlatform.service(v => Some(v))).name("leftJoin")
-      .map(v => (v._1, v._2._1))
+      .mapValues { case (v, _) => v }
       .sumByKey(TestPlatform.store("store"))
 
     // Test without grouped left join:
@@ -235,6 +235,21 @@ class StormLaws extends WordSpec {
     // And with:
     testProducer(producer)(Storm.local(Map(
       leftJoinName -> Options().set(LeftJoinGrouping.Grouped)
+    )))
+  }
+
+  "StormPlatform should work with grouped leftJoin and summer" in {
+    val source = TestPlatform.source(sample[List[Int]])
+      .map(sample[Int => (Int, Int)])
+
+    val producer1 = source
+      .leftJoin(TestPlatform.service(v => Some(v)))
+      .mapValues { case (v, _) => v }
+      .sumByKey(TestPlatform.store("store1"))
+    val producer2 = source.sumByKey(TestPlatform.store("store2"))
+
+    testProducer(producer1.also(producer2))(Storm.local(Map(
+      "DEFAULT" -> Options().set(LeftJoinGrouping.Grouped)
     )))
   }
 
