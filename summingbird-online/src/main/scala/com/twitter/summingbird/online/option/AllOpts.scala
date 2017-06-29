@@ -103,8 +103,12 @@ trait SummerBuilder extends Serializable {
  */
 case class SummerConstructor(get: SummerWithCountersBuilder)
 
+/**
+ * Returned [[SummerBuilder]] should be [[Serializable]], while [[SummerWithCountersBuilder]]
+ * should be used only on submitter node.
+ */
 trait SummerWithCountersBuilder {
-  def create(counter: Name => Counter with Incrementor): SummerBuilder
+  def create(counter: Name => Incrementor): SummerBuilder
 }
 
 object SummerConstructor {
@@ -112,7 +116,7 @@ object SummerConstructor {
     SummerConstructor(DeprecatedSummerConstructorSpec(get))
 
   private case class DeprecatedSummerConstructorSpec(get: SummerBuilder) extends SummerWithCountersBuilder {
-    override def create(counter: (Name) => Counter with Incrementor): SummerBuilder = get
+    override def create(counter: (Name) => Incrementor): SummerBuilder = get
   }
 }
 

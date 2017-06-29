@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.storm
 
-import com.twitter.algebird.util.summer._
+import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird.online.OnlineDefaultConstants._
 import com.twitter.summingbird.{ Counter, Group }
 import com.twitter.summingbird.online.option._
@@ -34,10 +34,11 @@ private[storm] object BuildSummer {
 
   def apply(builder: StormTopologyBuilder, node: StormNode): SummerBuilder = {
     val summerBuilder = builder.get[SummerConstructor](node)
-      .map { case (_, constructor) => constructor.get }.getOrElse {
-      logger.info(s"[${builder.getNodeName(node)}] use legacy way of getting summer builder")
-      legacySummerBuilder(builder, node)
-    }
+      .map { case (_, constructor) => constructor.get }
+      .getOrElse {
+        logger.info(s"[${builder.getNodeName(node)}] use legacy way of getting summer builder")
+        legacySummerBuilder(builder, node)
+      }
 
     logger.info(s"[${builder.getNodeName(node)}] summer builder: $summerBuilder")
     summerBuilder.create { counterName =>
@@ -65,7 +66,12 @@ private[storm] object BuildSummer {
         val valueCombinerCrushSize = option(DEFAULT_VALUE_COMBINER_CACHE_SIZE)
         val doCompact = option(CompactValues.default)
         Summers.Async(
-          cacheSize, flushFrequency, softMemoryFlush, asyncPoolSize, doCompact, valueCombinerCrushSize
+          cacheSize,
+          flushFrequency,
+          softMemoryFlush,
+          asyncPoolSize,
+          doCompact,
+          valueCombinerCrushSize
         )
       }
     }

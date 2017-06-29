@@ -2,7 +2,7 @@ package com.twitter.summingbird.online.option
 
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer._
-import com.twitter.summingbird.{ Counter, Name }
+import com.twitter.summingbird.Name
 import com.twitter.summingbird.online.OnlineDefaultConstants._
 import com.twitter.summingbird.option.CacheSize
 import com.twitter.util.{ Future, FuturePool }
@@ -18,7 +18,7 @@ object Summers {
   val InsertFailCounterName = Name("insertFail")
 
   case object Null extends SummerWithCountersBuilder {
-    override def create(counter: (Name) => Counter with Incrementor): SummerBuilder = {
+    override def create(counter: (Name) => Incrementor): SummerBuilder = {
       val tuplesIn = counter(TuplesInCounterName)
       val tuplesOut = counter(TuplesOutCounterName)
       new SummerBuilder {
@@ -33,7 +33,7 @@ object Summers {
     flushFrequency: FlushFrequency = DEFAULT_FLUSH_FREQUENCY,
     softMemoryFlushPercent: SoftMemoryFlushPercent = DEFAULT_SOFT_MEMORY_FLUSH_PERCENT
   ) extends SummerWithCountersBuilder {
-    override def create(counter: (Name) => Counter with Incrementor): SummerBuilder = {
+    override def create(counter: (Name) => Incrementor): SummerBuilder = {
       val memoryCounter = counter(MemoryCounterName)
       val timeoutCounter = counter(TimeoutCounterName)
       val sizeCounter = counter(SizeCounterName)
@@ -66,7 +66,7 @@ object Summers {
     compactValues: CompactValues = CompactValues.default,
     valueCombinerCacheSize: ValueCombinerCacheSize = DEFAULT_VALUE_COMBINER_CACHE_SIZE
   ) extends SummerWithCountersBuilder {
-    override def create(counter: (Name) => Counter with Incrementor): SummerBuilder = {
+    override def create(counter: (Name) => Incrementor): SummerBuilder = {
       val memoryCounter = counter(MemoryCounterName)
       val timeoutCounter = counter(TimeoutCounterName)
       val sizeCounter = counter(SizeCounterName)
