@@ -1,7 +1,7 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
-import com.twitter.summingbird.{ IdentityKeyedProducer, LeftJoinedProducer, Options, Summer }
+import com.twitter.summingbird.{ LeftJoinedProducer, Options, Summer }
 import com.twitter.summingbird.batch.{ BatchID, Batcher, Timestamp }
 import com.twitter.summingbird.online.executor
 import com.twitter.summingbird.online.executor.KeyValueShards
@@ -309,11 +309,9 @@ private[storm] case class StormTopologyBuilder(options: Map[String, Options], jo
     }
 
   private[storm] def get[T <: AnyRef: ClassTag](node: StormNode): Option[(String, T)] =
-    node.members
-      .find(!_.isInstanceOf[IdentityKeyedProducer[_, _, _]])
-      .flatMap { producer =>
-        Options.getFirst[T](options, stormDag.producerToPriorityNames(producer))
-      }
+    node.firstProducer.flatMap { producer =>
+      Options.getFirst[T](options, stormDag.producerToPriorityNames(producer))
+    }
 
   private[storm] def getNodeName(node: StormNode) = stormDag.getNodeName(node)
 }
