@@ -18,9 +18,8 @@ package com.twitter.summingbird.storm
 
 import com.twitter.algebird.util.summer.Incrementor
 import com.twitter.summingbird.online.OnlineDefaultConstants._
-import com.twitter.summingbird.{ Counter, Group }
+import com.twitter.summingbird.{ Counter, Group, Producer }
 import com.twitter.summingbird.online.option._
-import com.twitter.summingbird.storm.planner.StormNode
 import org.slf4j.LoggerFactory
 import scala.reflect.ClassTag
 
@@ -32,23 +31,27 @@ import scala.reflect.ClassTag
 private[storm] object BuildSummer {
   @transient private[storm] val logger = LoggerFactory.getLogger(BuildSummer.getClass)
 
-  def apply(builder: StormTopologyBuilder, node: StormNode): SummerBuilder = {
-    val summerBuilder = builder.get[SummerConstructor](node)
+  /**
+   * @param producer to use to get options for this [[SummerBuilder]].
+   */
+  def apply(builder: StormTopologyBuilder, nodeName: String, producer: Producer[Storm, _]): SummerBuilder = {
+    val summerBuilder = builder.get[SummerConstructor](producer)
       .map { case (_, constructor) => constructor.get }
       .getOrElse {
-        logger.info(s"[${builder.getNodeName(node)}] use legacy way of getting summer builder")
-        legacySummerBuilder(builder, node)
+        logger.info(s"[$nodeName] use legacy way of getting summer builder")
+        legacySummerBuilder(builder, producer)
       }
 
-    logger.info(s"[${builder.getNodeName(node)}] summer builder: $summerBuilder")
+    logger.info(s"[$nodeName] summer builder: $summerBuilder")
     summerBuilder.create { counterName =>
       require(builder.jobId.get != null, "Unable to register metrics with no job id present in the config updater")
-      new Counter(Group("summingbird." + builder.getNodeName(node)), counterName)(builder.jobId) with Incrementor
+      new Counter(Group("summingbird." + nodeName), counterName)(builder.jobId) with Incrementor
     }
   }
 
-  private def legacySummerBuilder(builder: StormTopologyBuilder, node: StormNode): SummerWithCountersBuilder = {
-    def option[T <: AnyRef: ClassTag](default: T): T = builder.getOrElse[T](node, default)
+  private def legacySummerBuilder(builder: StormTopologyBuilder, producer: Producer[Storm, _]): SummerWithCountersBuilder = {
+    def option[T <: AnyRef: ClassTag](default: T): T =
+      builder.get[T](producer).map(_._2).getOrElse(default)
 
     val cacheSize = option(DEFAULT_FM_CACHE)
 
