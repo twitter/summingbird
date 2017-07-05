@@ -63,7 +63,7 @@ private[storm] case class SummerBoltProvider(
     val parallelism = getOrElse(DEFAULT_SUMMER_PARALLELISM).parHint
     logger.info(s"[$nodeName] parallelism : $parallelism")
 
-    val summerBuilder = BuildSummer(builder, node)
+    val summerBuilder = BuildSummer(builder, nodeName, summer)
     val storeBaseFMOp: ((AggregateKey[K], (Option[Item[V]], Item[V]))) => TraversableOnce[O] = {
       case ((key, batchID), (optPrevExecutorValue, (timestamp, value))) =>
         val optPrevValue = optPrevExecutorValue.map(_._2)

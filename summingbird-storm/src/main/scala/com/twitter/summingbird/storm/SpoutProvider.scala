@@ -30,8 +30,8 @@ private[storm] case class SpoutProvider(
     semigroup: Semigroup[V]
   ): Option[Topology.Component[Aggregated[K, V]]] = {
     val (tormentaSpout, parallelism) = getTormentaSpoutAndParallelism[(K, V)]
-    val summerBuilder = BuildSummer(builder, node)
     val nodeName = builder.getNodeName(node)
+    val summerBuilder = BuildSummer(builder, nodeName, node.lastProducer.get)
     val flushExecTimeCounter = counter(Group(nodeName), Name("spoutFlushExecTime"))
     val executeTimeCounter = counter(Group(nodeName), Name("spoutEmitExecTime"))
 

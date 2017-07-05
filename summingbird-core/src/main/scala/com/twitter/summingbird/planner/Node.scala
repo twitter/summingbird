@@ -35,6 +35,12 @@ sealed trait Node[P <: Platform[P]] {
    */
   def firstProducer: Option[Producer[P, _]] = members.lastOption
 
+  /**
+   * @return last producer in producers chain which corresponds to this node,
+   *         i.e. if you have `leftJoin(...).flatMap(...)` on node it returns `flatMap`.
+   */
+  def lastProducer:  Option[Producer[P, _]] = members.headOption
+
   def toSource: SourceNode[P] = SourceNode(this.members)
 
   def toSummer: SummerNode[P] = SummerNode(this.members)
