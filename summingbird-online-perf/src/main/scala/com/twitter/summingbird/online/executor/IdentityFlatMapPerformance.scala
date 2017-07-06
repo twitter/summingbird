@@ -13,7 +13,7 @@ import org.openjdk.jmh.infra.Blackhole
  *
  * Benchmark                                                   Mode  Cnt    Score    Error  Units
  * IdentityFlatMapPerformance.measureDirect                    avgt   10   42.184 ±  3.518  ms/op
- * IdentityFlatMapPerformance.measureDirectOperationContainer  avgt   10   87.605 ±  3.843  ms/op
+ * IdentityFlatMapPerformance.measureDirectOperationContainer  avgt   10  101.944 ±  3.956  ms/op
  * IdentityFlatMapPerformance.measureOperationContainer        avgt   10  817.659 ± 36.591  ms/op
  */
 @State(Scope.Thread)

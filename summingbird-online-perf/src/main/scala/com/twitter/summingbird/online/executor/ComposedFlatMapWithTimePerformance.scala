@@ -14,7 +14,7 @@ import org.openjdk.jmh.infra.Blackhole
  *
  * Benchmark                                                                            Mode  Cnt     Score    Error  Units
  * ComposedFlatMapWithTimePerformance.measureDirectComplex                              avgt   10   340.341 ±  4.343  ms/op
- * ComposedFlatMapWithTimePerformance.measureDirectOperationContainer                   avgt   10   396.599 ±  9.106  ms/op
+ * ComposedFlatMapWithTimePerformance.measureDirectOperationContainer                   avgt   10   386.593 ±  6.474  ms/op
  * ComposedFlatMapWithTimePerformance.measureDirectSimple                               avgt   10   279.628 ±  6.175  ms/op
  * ComposedFlatMapWithTimePerformance.measureOperationContainerComposeThroughOperation  avgt   10  2978.141 ± 75.213  ms/op
  * ComposedFlatMapWithTimePerformance.measureOperationContainerDirectCompose            avgt   10  1198.601 ± 54.871  ms/op
