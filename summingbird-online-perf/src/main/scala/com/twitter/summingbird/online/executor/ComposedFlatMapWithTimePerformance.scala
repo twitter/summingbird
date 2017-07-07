@@ -3,9 +3,9 @@ package com.twitter.summingbird.online.executor
 import com.twitter.conversions.time.longToTimeableNumber
 import com.twitter.summingbird.batch.Timestamp
 import com.twitter.summingbird.online.FlatMapOperation
-import com.twitter.summingbird.online.option.{MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures}
+import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
 import java.util.concurrent.TimeUnit
-import org.openjdk.jmh.annotations.{Benchmark, BenchmarkMode, Mode, OutputTimeUnit, Scope, State}
+import org.openjdk.jmh.annotations.{ Benchmark, BenchmarkMode, Mode, OutputTimeUnit, Scope, State }
 import org.openjdk.jmh.infra.Blackhole
 
 /**
