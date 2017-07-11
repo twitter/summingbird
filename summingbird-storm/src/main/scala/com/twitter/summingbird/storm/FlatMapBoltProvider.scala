@@ -111,7 +111,7 @@ private[storm] case class FlatMapBoltProvider(
     val operation = foldOperations[T, (K, V)](node.members.reverse)
     val wrappedOperation = wrapTimeBatchIDKV(operation)(batcher)
 
-    val summerBuilder = BuildSummer(builder, node)
+    val summerBuilder = BuildSummer(builder, nodeName, node.lastProducer.get)
 
     Topology.Bolt(
       parallelism.parHint,

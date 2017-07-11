@@ -16,14 +16,17 @@
 
 package com.twitter.summingbird.storm
 
+import com.twitter.algebird.util.summer.{ NullSummer, SyncSummingQueue }
 import com.twitter.storehaus.ReadableStore
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
-import com.twitter.summingbird.online.ReadableServiceFactory
+import com.twitter.summingbird.online.{ ReadableServiceFactory, executor }
+import com.twitter.summingbird.online.executor.FinalFlatMap
 import com.twitter.summingbird.online.option._
-import com.twitter.summingbird.option.JobId
+import com.twitter.summingbird.option.{ CacheSize, JobId }
 import com.twitter.summingbird.planner.OnlinePlan
-import com.twitter.summingbird.storm.builder.{EdgeGrouping, Topology}
+import com.twitter.summingbird.storm.builder.Topology.BoltId
+import com.twitter.summingbird.storm.builder.{ EdgeGrouping, Topology }
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import org.scalacheck._
 import org.scalatest.WordSpec
@@ -72,6 +75,30 @@ class StormTopologyBuilderTests extends WordSpec {
     assert(topologyWithGrouping.edges.map(_.grouping).exists { grouping =>
       grouping == EdgeGrouping.Fields(List(EdgeFormats.Key))
     })
+  }
+
+  "Summer built in a right way" in {
+    val flatMapNode1Name = "flatMap1"
+    val flatMapNode2Name = "flatMap2"
+    val summerNodeName = "summer"
+    val p = Storm.source(TraversableSpout(sample[List[Int]]))
+      .flatMap(testFn).name(flatMapNode1Name)
+      .map(identity).name(flatMapNode2Name)
+      .sumByKey(TestStore.createStore[Int, Int]()._2).name(summerNodeName)
+
+    val opts = Map(
+      flatMapNode1Name -> Options().set(CacheSize(100)),
+      flatMapNode2Name -> Options().set(CacheSize(0)),
+      summerNodeName -> Options().set(CacheSize(50))
+    )
+    val topology = buildTopology(p, opts)
+    val flatMapBolt = topology.bolts(BoltId("Tail-FlatMap"))
+    val summerBolt = topology.bolts(BoltId("Tail"))
+    val flatMapSummer = flatMapBolt.executor.asInstanceOf[FinalFlatMap[_, _, _, _]].sCache
+    val summerSummer = summerBolt.executor.asInstanceOf[executor.Summer[_, _, _, _]].sSummer
+    assert(flatMapSummer.isInstanceOf[NullSummer[_, _]])
+    assert(summerSummer.isInstanceOf[SyncSummingQueue[_, _]])
+    assert(summerSummer.asInstanceOf[SyncSummingQueue[_, _]].bufferSize.v == 50)
   }
 
   private def buildTopology(producer: TailProducer[Storm, _], options: Map[String, Options] = Map()): Topology = {
