@@ -24,7 +24,8 @@ import com.twitter.summingbird.SummingbirdRuntimeStats
 
 import com.twitter.scalding.{ Test => TestMode, _ }
 
-import org.scalacheck._
+import org.scalacheck.Arbitrary
+import org.scalacheck.Cogen
 
 import org.apache.hadoop.conf.Configuration
 
