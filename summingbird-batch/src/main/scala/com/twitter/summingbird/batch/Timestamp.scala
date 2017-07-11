@@ -53,7 +53,8 @@ object Timestamp {
   implicit val timestamp2Long: Bijection[Timestamp, Long] =
     Bijection.build[Timestamp, Long] { _.milliSinceEpoch } { Timestamp(_) }
 
-  implicit val timestampSuccessible: Successible[Timestamp] = new Successible[Timestamp] {
+  // Workaround for https://github.com/twitter/algebird/issues/635
+  implicit val timestampSuccessible: Successible[Timestamp] = new Successible[Timestamp] with Serializable {
     def next(old: Timestamp) = if (old.milliSinceEpoch != Long.MaxValue) Some(old.next) else None
     def ordering: Ordering[Timestamp] = Timestamp.orderingOnTimestamp
   }
