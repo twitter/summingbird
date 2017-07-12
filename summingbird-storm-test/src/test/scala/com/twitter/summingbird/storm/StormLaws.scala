@@ -20,7 +20,8 @@ import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
 import com.twitter.summingbird.online.option.LeftJoinGrouping
 import org.scalatest.WordSpec
-import org.scalacheck._
+import org.scalacheck.Arbitrary
+import com.twitter.summingbird.ArbitraryWorkaround._
 
 /**
  * Tests for Summingbird's Storm planner.
