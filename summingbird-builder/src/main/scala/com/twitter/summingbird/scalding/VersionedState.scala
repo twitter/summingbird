@@ -81,7 +81,7 @@ private[scalding] class VersionedState(meta: HDFSMetadata, startDate: Option[Tim
       Interval.leftClosedRightOpen(
         batcher.earliestTimeOf(beginning),
         batcher.earliestTimeOf(end)
-      ).right.get
+      )
     }
 
     def willAccept(available: Interval[Timestamp]) =

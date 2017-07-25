@@ -27,7 +27,8 @@ import java.io.File
 
 import com.twitter.scalding._
 
-import org.scalacheck._
+import org.scalacheck.Arbitrary
+import com.twitter.summingbird.ArbitraryWorkaround._
 
 import org.scalatest.WordSpec
 

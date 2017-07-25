@@ -23,7 +23,7 @@ import com.twitter.summingbird.batch.Batcher
 import com.twitter.summingbird.storm.spout.TraversableSpout
 import org.scalatest.WordSpec
 import org.scalacheck._
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 /**
  * Tests for Summingbird's Storm planner.
  */
@@ -102,9 +102,9 @@ class TopologyTests extends WordSpec {
     val bolts = stormTopo.get_bolts
     val spouts = stormTopo.get_spouts
     assert(bolts.size == 1 && spouts.size == 1)
-    assert(bolts("Tail").get_common.get_parallelism_hint == 7)
+    assert(bolts.get("Tail").get_common.get_parallelism_hint == 7)
 
-    val spout = spouts.head._2
+    val spout = spouts.asScala.head._2
     assert(spout.get_common.get_parallelism_hint == 10)
   }
 
@@ -132,8 +132,8 @@ class TopologyTests extends WordSpec {
     val spouts = stormTopo.get_spouts
 
     assert(stormTopo.get_bolts_size == 1 && stormTopo.get_spouts_size == 1)
-    assert(spouts.head._2.get_common.get_parallelism_hint == 10)
-    assert(bolts("Tail").get_common.get_parallelism_hint == 7)
+    assert(spouts.asScala.head._2.get_common.get_parallelism_hint == 10)
+    assert(bolts.get("Tail").get_common.get_parallelism_hint == 7)
   }
 
   /*
@@ -229,7 +229,7 @@ class TopologyTests extends WordSpec {
     val bolts = stormTopo.get_bolts
 
     // Tail will have 1 -, distance from there should be onwards
-    val TDistMap = bolts.map { case (k, v) => (k.split("-").size - 1, v) }
+    val TDistMap = bolts.asScala.map { case (k, v) => (k.split("-").size - 1, v) }
 
     assert(TDistMap(1).get_common.get_parallelism_hint == 50)
   }
@@ -250,7 +250,7 @@ class TopologyTests extends WordSpec {
     val bolts = stormTopo.get_bolts
 
     // Tail will have 1 -, distance from there should be onwards
-    val TDistMap = bolts.map { case (k, v) => (k.split("-").size - 1, v) }
+    val TDistMap = bolts.asScala.map { case (k, v) => (k.split("-").size - 1, v) }
 
     assert(TDistMap(1).get_common.get_parallelism_hint == 50)
   }
@@ -270,7 +270,7 @@ class TopologyTests extends WordSpec {
     val bolts = stormTopo.get_bolts
 
     // Tail will have 1 -, distance from there should be onwards
-    val TDistMap = bolts.map { case (k, v) => (k.split("-").size - 1, v) }
+    val TDistMap = bolts.asScala.map { case (k, v) => (k.split("-").size - 1, v) }
 
     assert(TDistMap(1).get_common.get_parallelism_hint == 50)
   }
@@ -286,7 +286,7 @@ class TopologyTests extends WordSpec {
     val stormTopo = storm.plan(p).topology
     // Source producer
     val bolts = stormTopo.get_bolts
-    val spouts = stormTopo.get_spouts
+    val spouts = stormTopo.get_spouts.asScala
     val spout = spouts.head._2
 
     assert(spout.get_common.get_parallelism_hint == 30)
@@ -307,7 +307,7 @@ class TopologyTests extends WordSpec {
     val bolts = stormTopo.get_bolts
 
     // Tail will have 1 -, distance from there should be onwards
-    val TDistMap = bolts.map { case (k, v) => (k.split("-").size - 1, v) }
+    val TDistMap = bolts.asScala.map { case (k, v) => (k.split("-").size - 1, v) }
 
     assert(TDistMap(0).get_common.get_parallelism_hint == 5)
   }

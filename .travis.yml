@@ -7,15 +7,15 @@ env:
 
 matrix:
   include:
-    - scala: 2.10.6
-      jdk: oraclejdk8
-      script: ./sbt -Dlog4j.configuration=$LOG4J -DsequentialExecution=true ++$TRAVIS_SCALA_VERSION test mimaReportBinaryIssues
-
-    - scala: 2.11.8
+    - scala: 2.11.11
       jdk: oraclejdk8
       script: ./sbt -Dlog4j.configuration=$LOG4J -DsequentialExecution=true ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
       after_success:
         - bash <(curl -s https://codecov.io/bash)
+
+    - scala: 2.12.2
+      jdk: oraclejdk8
+      script: ./sbt -Dlog4j.configuration=$LOG4J -DsequentialExecution=true ++$TRAVIS_SCALA_VERSION clean test
 
 cache:
   directories:
