@@ -355,6 +355,9 @@ trait Rule[N[_]] { self =>
     def apply[T](on: ExpressionDag[N]) = { n =>
       self.apply(on)(n).orElse(that.apply(on)(n))
     }
+
+    override def toString: String =
+      s"$self.orElse($that)"
   }
 }
 
