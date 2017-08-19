@@ -19,7 +19,7 @@ class DagOptimizerTest extends FunSuite {
   implicit def sink1: Memory#Sink[Int] = ((_) => Unit)
   implicit def sink2: Memory#Sink[(Int, Int)] = ((_) => Unit)
 
-  implicit def genProducer: Arbitrary[Producer[Memory, _]] = Arbitrary(oneOf(genProd1, genProd2, summed))
+  def genProducer: Gen[Producer[Memory, _]] = oneOf(genProd1, genProd2, summed)
 
   test("DagOptimizer round trips") {
     forAll { p: Producer[Memory, Int] =>
@@ -30,7 +30,7 @@ class DagOptimizerTest extends FunSuite {
   }
 
   test("ExpressionDag fanOut matches DependantGraph") {
-    forAll { p: Producer[Memory, Int] =>
+    forAll(genProducer) { p: Producer[Memory, _] =>
       val dagOpt = new DagOptimizer[Memory] { }
 
       val expDag = dagOpt.expressionDag(p)._1
