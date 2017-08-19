@@ -1,6 +1,7 @@
 package com.twitter.summingbird.planner
 
 import com.twitter.summingbird._
+import com.twitter.summingbird.graph.Rule
 import com.twitter.summingbird.memory._
 
 import org.scalatest.FunSuite
@@ -11,6 +12,9 @@ import scala.collection.mutable
 import org.scalatest.prop.GeneratorDrivenPropertyChecks._
 
 class DagOptimizerTest extends FunSuite {
+
+  implicit val generatorDrivenConfig =
+    PropertyCheckConfig(minSuccessful = 10000)
 
   import TestGraphGenerators._
   import MemoryArbitraries._
@@ -44,5 +48,37 @@ class DagOptimizerTest extends FunSuite {
         }
       }
     }
+  }
+
+  test("Rules are idempotent") {
+    val dagOpt = new DagOptimizer[Memory] { }
+    import dagOpt._
+
+    val allRules = List(RemoveNames,
+      RemoveIdentityKeyed,
+      FlatMapFusion,
+      OptionMapFusion,
+      OptionToFlatMap,
+      KeyFlatMapToFlatMap,
+      FlatMapKeyFusion,
+      ValueFlatMapToFlatMap,
+      FlatMapValuesFusion,
+      FlatThenOptionFusion,
+      DiamondToFlatMap,
+      MergePullUp,
+      AlsoPullUp)
+
+    val genRule: Gen[Rule[Prod]] =
+      for {
+        n <- Gen.choose(1, allRules.size)
+        rs <- Gen.pick(n, allRules) // get n randomly selected
+      } yield rs.reduce(_.orElse(_))
+
+    forAll(genProducer, genRule) { (p, r) =>
+      val once = optimize(p, r)
+      val twice = optimize(once, r)
+      assert(once == twice)
+    }
+
   }
 }
