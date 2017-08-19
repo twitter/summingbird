@@ -28,4 +28,21 @@ class DagOptimizerTest extends FunSuite {
       assert(dagOpt.toLiteral(p).evaluate == p)
     }
   }
+
+  test("ExpressionDag fanOut matches DependantGraph") {
+    forAll { p: Producer[Memory, Int] =>
+      val dagOpt = new DagOptimizer[Memory] { }
+
+      val expDag = dagOpt.expressionDag(p)._1
+
+      val deps = Dependants(p)
+
+      deps.nodes.foreach { n =>
+        deps.fanOut(n) match {
+          case Some(fo) => assert(expDag.fanOut(n) == fo)
+          case None => fail(s"node $n has no fanOut value")
+        }
+      }
+    }
+  }
 }
