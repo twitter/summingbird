@@ -55,8 +55,7 @@ package object graph {
           innerg + (parent -> (child :: innerg.getOrElse(parent, Nil)))
         }
       }
-      // make sure the values are sets, not .mapValues is lazy in scala
-      .map { case (k, v) => (k, v.distinct) };
+      // note, we don't distinct the nodes, since we want fanOut(a) in (a ++ a) to be 2
     graph.getOrElse(_, Nil)
   }
 

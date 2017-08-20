@@ -1,7 +1,7 @@
 package com.twitter.summingbird.planner
 
 import com.twitter.summingbird._
-import com.twitter.summingbird.graph.Rule
+import com.twitter.summingbird.graph.{DependantGraph, Rule}
 import com.twitter.summingbird.memory._
 
 import org.scalatest.FunSuite
@@ -33,13 +33,19 @@ class DagOptimizerTest extends FunSuite {
     }
   }
 
+  val dagOpt = new DagOptimizer[Memory] { }
+
   test("ExpressionDag fanOut matches DependantGraph") {
     forAll(genProducer) { p: Producer[Memory, _] =>
-      val dagOpt = new DagOptimizer[Memory] { }
-
       val expDag = dagOpt.expressionDag(p)._1
 
-      val deps = Dependants(p)
+      // the expression considers an also a fanout, so
+      // we can't use the standard Dependants, we need to
+      // us parentsOf as the edge function
+      val deps = new DependantGraph[Producer[Memory, Any]] {
+        override lazy val nodes: List[Producer[Memory, Any]] = Producer.entireGraphOf(p)
+        override def dependenciesOf(p: Producer[Memory, Any]) = Producer.parentsOf(p)
+      }
 
       deps.nodes.foreach { n =>
         deps.fanOut(n) match {
@@ -50,11 +56,11 @@ class DagOptimizerTest extends FunSuite {
     }
   }
 
-  test("Rules are idempotent") {
-    val dagOpt = new DagOptimizer[Memory] { }
+
+  val allRules = {
     import dagOpt._
 
-    val allRules = List(RemoveNames,
+    List(RemoveNames,
       RemoveIdentityKeyed,
       FlatMapFusion,
       OptionMapFusion,
@@ -67,17 +73,43 @@ class DagOptimizerTest extends FunSuite {
       DiamondToFlatMap,
       MergePullUp,
       AlsoPullUp)
+  }
 
-    val genRule: Gen[Rule[Prod]] =
-      for {
-        n <- Gen.choose(1, allRules.size)
-        rs <- Gen.pick(n, allRules) // get n randomly selected
-      } yield rs.reduce(_.orElse(_))
+  val genRule: Gen[Rule[dagOpt.Prod]] =
+    for {
+      n <- Gen.choose(1, allRules.size)
+      rs <- Gen.pick(n, allRules) // get n randomly selected
+    } yield rs.reduce(_.orElse(_))
+
+  test("Rules are idempotent") {
+    forAll(genProducer, genRule) { (p, r) =>
+      val once = dagOpt.optimize(p, r)
+      val twice = dagOpt.optimize(once, r)
+      assert(once == twice)
+    }
+  }
+
+  test("fanOut matches after optimization") {
 
     forAll(genProducer, genRule) { (p, r) =>
-      val once = optimize(p, r)
-      val twice = optimize(once, r)
-      assert(once == twice)
+
+      val once = dagOpt.optimize(p, r)
+
+      val expDag = dagOpt.expressionDag(once)._1
+      // the expression considers an also a fanout, so
+      // we can't use the standard Dependants, we need to
+      // us parentsOf as the edge function
+      val deps = new DependantGraph[Producer[Memory, Any]] {
+        override lazy val nodes: List[Producer[Memory, Any]] = Producer.entireGraphOf(once)
+        override def dependenciesOf(p: Producer[Memory, Any]) = Producer.parentsOf(p)
+      }
+
+      deps.nodes.foreach { n =>
+        deps.fanOut(n) match {
+          case Some(fo) => assert(expDag.fanOut(n) == fo, s"node: $n, in optimized: $once")
+          case None => fail(s"node $n has no fanOut value")
+        }
+      }
     }
 
   }
