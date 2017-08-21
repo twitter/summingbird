@@ -15,7 +15,7 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks._
 class DagOptimizerTest extends FunSuite {
 
   implicit val generatorDrivenConfig =
-    PropertyCheckConfig(minSuccessful = 10000, maxDiscarded = 1000) // the producer generator uses filter, I think
+    PropertyCheckConfig(minSuccessful = 1000, maxDiscarded = 1000) // the producer generator uses filter, I think
     //PropertyCheckConfig(minSuccessful = 100, maxDiscarded = 1000) // the producer generator uses filter, I think
 
   import TestGraphGenerators._
