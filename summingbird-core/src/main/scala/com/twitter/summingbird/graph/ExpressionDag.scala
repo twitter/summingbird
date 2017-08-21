@@ -126,6 +126,7 @@ sealed trait ExpressionDag[N[_]] { self =>
         }
       }
       // Note this Stream must always be non-empty as long as roots are
+      // TODO: we don't need to use collect here, just .get on each id in s
       idToExp.collect[IdSet](partial)
         .reduce(_ ++ _)
     }
@@ -162,12 +163,6 @@ sealed trait ExpressionDag[N[_]] { self =>
     curr
   }
 
-  protected def toExpr[T](n: N[T]): (ExpressionDag[N], Expr[T, N]) = {
-    val (dag, id) = ensure(n)
-    val exp = dag.idToExp(id)
-    (dag, exp)
-  }
-
   /**
    * Convert a N[T] to a Literal[T, N]
    */
@@ -182,10 +177,19 @@ sealed trait ExpressionDag[N[_]] { self =>
       def apply[U] = {
         val fn = rule.apply[U](self)
 
+        def ruleApplies(id: Id[U]): Boolean = {
+          val n = evaluate(id)
+          fn(n) match {
+            case Some(n1) => n != n1
+            case None => false
+          }
+        }
+
+
         {
-          case (id, exp) if fn(exp.evaluate(idToExp)).isDefined =>
+          case (id, _) if ruleApplies(id) =>
             // Sucks to have to call fn, twice, but oh well
-            (id, fn(exp.evaluate(idToExp)).get)
+            (id, fn(evaluate(id)).get)
         }
       }
     }
@@ -193,21 +197,37 @@ sealed trait ExpressionDag[N[_]] { self =>
       case None => this
       case Some(tup) =>
         // some type hand holding
-        def act[T](in: HMap[Id, N]#Pair[T]) = {
+        def act[T](in: HMap[Id, N]#Pair[T]): ExpressionDag[N] = {
+          /*
+           * We can't delete Ids which may have been shared
+           * publicly, and the ids may be embedded in many
+           * nodes. Instead we remap this i to be a pointer
+           * to the newid.
+           */
           val (i, n) = in
-          val oldNode = evaluate(i)
-          val (dag, exp) = toExpr(n)
-          dag.copy(id2Exp = dag.idToExp + (i -> exp))
+          val (dag, newId) = ensure(n)
+          dag.copy(id2Exp = dag.idToExp + (i -> Var[T, N](newId)))
         }
         // This cast should not be needed
         act(tup.asInstanceOf[HMap[Id, N]#Pair[Any]]).gc
     }
   }
 
-  // This is only called by ensure
+  /**
+   * This is only called by ensure
+   *
+   * Note, Expr must never be a Var
+   */
   private def addExp[T](node: N[T], exp: Expr[T, N]): (ExpressionDag[N], Id[T]) = {
-    val nodeId = Id[T](nextId)
-    (copy(id2Exp = idToExp + (nodeId -> exp), id = nextId + 1), nodeId)
+    require(!exp.isInstanceOf[Var[T, N]])
+
+    find(node) match {
+      case None =>
+        val nodeId = Id[T](nextId)
+        (copy(id2Exp = idToExp + (nodeId -> exp), id = nextId + 1), nodeId)
+      case Some(id) =>
+        (this, id)
+    }
   }
 
   /**
@@ -216,9 +236,18 @@ sealed trait ExpressionDag[N[_]] { self =>
    */
   def find[T](node: N[T]): Option[Id[T]] = nodeToId.getOrElseUpdate(node, {
     val partial = new GenPartial[HMap[Id, E]#Pair, Id] {
-      def apply[T1] = { case (thisId, expr) if node == expr.evaluate(idToExp) => thisId }
+      def apply[T1] = {
+        // Make sure to return the original Id, not a Id -> Var -> Expr
+        case (thisId, expr) if !expr.isInstanceOf[Var[_, N]] && node == expr.evaluate(idToExp) => thisId
+      }
     }
-    idToExp.collect(partial).headOption.asInstanceOf[Option[Id[T]]]
+    idToExp.collect(partial).toList match {
+      case Nil => None
+      case id :: Nil =>
+        // this cast is safe if node == expr.evaluate(idToExp) implies types match
+        Some(id).asInstanceOf[Option[Id[T]]]
+      case others => None//sys.error(s"logic error, should only be one mapping: $node -> $others")
+    }
   })
 
   /**
@@ -247,7 +276,7 @@ sealed trait ExpressionDag[N[_]] { self =>
              * Since the code is not performance critical, but correctness critical, and we can't
              * check this property with the typesystem easily, check it here
              */
-            assert(n == node,
+            require(n == node,
               "Equality or nodeToLiteral is incorrect: nodeToLit(%s) = ConstLit(%s)".format(node, n))
             addExp(node, Const(n))
           case UnaryLit(prev, fn) =>
@@ -272,10 +301,7 @@ sealed trait ExpressionDag[N[_]] { self =>
 
   def evaluateOption[T](id: Id[T]): Option[N[T]] =
     idToN.getOrElseUpdate(id, {
-      val partial = new GenPartial[HMap[Id, E]#Pair, N] {
-        def apply[T1] = { case (thisId, expr) if (id == thisId) => expr.evaluate(idToExp) }
-      }
-      idToExp.collect(partial).headOption.asInstanceOf[Option[N[T]]]
+      idToExp.get(id).map(_.evaluate(idToExp))
     })
 
   /**
@@ -284,25 +310,31 @@ sealed trait ExpressionDag[N[_]] { self =>
    * We need to garbage collect nodes that are
    * no longer reachable from the root
    */
-  def fanOut(id: Id[_]): Int = {
-    // We make a fake IntT[T] which is just Int
-    val partial = new GenPartial[E, ({ type IntT[T] = Int })#IntT] {
-      def apply[T] = {
-        case Var(id1) if (id1 == id) => 1
-        case Unary(id1, fn) if (id1 == id) => 1
-        case Binary(id1, id2, fn) if (id1 == id) && (id2 == id) => 2
-        case Binary(id1, id2, fn) if (id1 == id) || (id2 == id) => 1
-        case _ => 0
-      }
-    }
-    idToExp.collectValues[({ type IntT[T] = Int })#IntT](partial).sum
+  def fanOut(id: Id[_]): Int =
+    evaluateOption(id)
+      .map(fanOut)
+      .getOrElse(0)
+
+  @annotation.tailrec
+  private def dependsOn(expr: Expr[_, N], node: N[_]): Boolean = expr match {
+    case Const(_) => false
+    case Var(id) => dependsOn(idToExp(id), node)
+    case Unary(id, _) => evaluate(id) == node
+    case Binary(id0, id1, _) => evaluate(id0) == node || evaluate(id1) == node
   }
 
   /**
    * Returns 0 if the node is absent, which is true
    * use .contains(n) to check for containment
    */
-  def fanOut(node: N[_]): Int = find(node).map(fanOut(_)).getOrElse(0)
+  def fanOut(node: N[_]): Int = {
+    val pointsToNode = new GenPartial[HMap[Id, E]#Pair, N] {
+      def apply[T] = {
+        case (id, expr) if dependsOn(expr, node) => evaluate(id)
+      }
+    }
+    idToExp.collect[N](pointsToNode).toSet.size
+  }
   def contains(node: N[_]): Boolean = find(node).isDefined
 }
 

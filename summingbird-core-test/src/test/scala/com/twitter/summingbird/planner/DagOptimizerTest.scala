@@ -1,5 +1,6 @@
 package com.twitter.summingbird.planner
 
+import com.twitter.algebird.Semigroup
 import com.twitter.summingbird._
 import com.twitter.summingbird.graph.{DependantGraph, Rule}
 import com.twitter.summingbird.memory._
@@ -15,6 +16,7 @@ class DagOptimizerTest extends FunSuite {
 
   implicit val generatorDrivenConfig =
     PropertyCheckConfig(minSuccessful = 10000, maxDiscarded = 1000) // the producer generator uses filter, I think
+    //PropertyCheckConfig(minSuccessful = 100, maxDiscarded = 1000) // the producer generator uses filter, I think
 
   import TestGraphGenerators._
   import MemoryArbitraries._
@@ -112,5 +114,40 @@ class DagOptimizerTest extends FunSuite {
       }
     }
 
+  }
+
+  test("test some idempotency specific past failures") {
+    val list = List(-483916215)
+    val list2 = list
+
+    val map1 = new MemoryService[Int, Int] {
+      val map = Map(1122506458 -> -422595330)
+      def get(i: Int) = map.get(i)
+    }
+
+    val fn1 = { (i: Int) => List((i, i)) }
+    val fn2 = { (tup: (Int, Int)) => Option(tup) }
+    val fn3 = { i: (Int, (Int, Option[Int])) => List((i._1, i._2._1)) }
+    val fn4 = fn1
+    val fn5 = fn2
+    val mmap: Memory#Store[Int, Int] = collection.mutable.Map.empty[Int, Int]
+
+    val arg0: Producer[Memory, (Int, (Option[Int], Int))] =
+      Summer[Memory, Int, Int](IdentityKeyedProducer(NamedProducer(IdentityKeyedProducer(MergedProducer(IdentityKeyedProducer(FlatMappedProducer(LeftJoinedProducer[Memory, Int, Int, Int](IdentityKeyedProducer(NamedProducer(IdentityKeyedProducer(NamedProducer(IdentityKeyedProducer(OptionMappedProducer(IdentityKeyedProducer(FlatMappedProducer(Source[Memory, Int](list), fn1)), fn2)),"tjiposzOlkplcu")),"tvpwpdyScehGnwcaVjjWvlfuwxatxhdjhozscucpbq")), map1), fn3)),IdentityKeyedProducer(OptionMappedProducer(IdentityKeyedProducer(FlatMappedProducer(Source[Memory, Int](list2), fn4)),fn5)))),"ncn")),mmap, implicitly[Semigroup[Int]])
+
+    val dagOpt = new DagOptimizer[Memory] { }
+
+    val rule = {
+      import dagOpt._
+      List[Rule[Prod]](
+        RemoveNames,
+        RemoveIdentityKeyed,
+        FlatMapFusion,
+        OptionToFlatMap
+        ).reduce(_ orElse _)
+    }
+    val once = dagOpt.optimize(arg0, rule)
+    val twice = dagOpt.optimize(once, rule)
+    assert(twice == once)
   }
 }
