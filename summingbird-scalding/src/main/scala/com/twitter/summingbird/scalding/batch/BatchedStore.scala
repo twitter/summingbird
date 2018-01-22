@@ -16,13 +16,10 @@
 
 package com.twitter.summingbird.scalding.batch
 
-import com.twitter.algebird.bijection.BijectedSemigroup
-import com.twitter.algebird.{ Monoid, Semigroup }
-import com.twitter.algebird.{ Universe, Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
+import com.twitter.algebird.Semigroup
+import com.twitter.algebird.{ Empty, Interval, Intersection, InclusiveLower, ExclusiveUpper, InclusiveUpper }
 import com.twitter.algebird.monad.{ StateWithError, Reader }
-import com.twitter.bijection.{ Bijection, ImplicitBijection }
-import com.twitter.scalding.{ Dsl, Mode, TypedPipe, IterableSource, MapsideReduce, TupleSetter, TupleConverter }
-import com.twitter.scalding.typed.Grouped
+import com.twitter.scalding.{ Mode, TypedPipe }
 import com.twitter.summingbird.scalding._
 import com.twitter.summingbird.scalding
 import com.twitter.summingbird._

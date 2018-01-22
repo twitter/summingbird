@@ -11,7 +11,6 @@ import com.twitter.summingbird.planner.{ Dag, FlatMapNode, SourceNode, SummerNod
 import com.twitter.summingbird.storm.Constants._
 import com.twitter.summingbird.storm.builder.Topology
 import com.twitter.summingbird.storm.planner.StormNode
-import org.apache.storm.generated.StormTopology
 import org.slf4j.LoggerFactory
 import scala.reflect.ClassTag
 import scala.collection.{ Map => CMap }
