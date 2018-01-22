@@ -17,7 +17,6 @@ limitations under the License.
 package com.twitter.summingbird.store
 
 import com.twitter.algebird.{ MapMonoid, Monoid, Semigroup }
-import com.twitter.algebird.util.UtilAlgebras._
 import com.twitter.storehaus.{ FutureCollector, FutureOps, ReadableStore }
 import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.summingbird.batch.{ BatchID, Batcher }

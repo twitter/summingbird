@@ -3,7 +3,7 @@ package com.twitter.summingbird.online.option
 import com.twitter.util.Duration
 import com.twitter.algebird.Semigroup
 import com.twitter.algebird.util.summer.{ AsyncSummer, Incrementor }
-import com.twitter.summingbird.{ Counter, Name }
+import com.twitter.summingbird.Name
 
 case class OnlineSuccessHandler(handlerFn: Unit => Unit)
 

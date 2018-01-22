@@ -19,8 +19,7 @@ package com.twitter.summingbird.batch.state
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
 
-import scala.collection.JavaConverters._
-import scala.util.{ Try, Success, Failure }
+import scala.util.{ Try, Success }
 
 import org.slf4j.LoggerFactory
 
