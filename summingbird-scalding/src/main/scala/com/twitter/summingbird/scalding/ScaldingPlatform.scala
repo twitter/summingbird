@@ -17,18 +17,16 @@
 package com.twitter.summingbird.scalding
 
 import cascading.flow.Flow
-import com.twitter.algebird.{ Monoid, Semigroup, Monad }
 import com.twitter.algebird.{
-  Universe,
-  Empty,
   Interval,
   Intersection,
   InclusiveLower,
   ExclusiveLower,
   ExclusiveUpper,
-  InclusiveUpper
+  InclusiveUpper,
+  Semigroup
 }
-import cascading.flow.{ FlowDef, Flow, FlowProcess }
+import cascading.flow.{ FlowDef, Flow }
 import com.twitter.algebird.monad.{ StateWithError, Reader }
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.{ AbstractInjection, Injection }
@@ -36,20 +34,14 @@ import com.twitter.chill.IKryoRegistrar
 import com.twitter.chill.java.IterableRegistrar
 import com.twitter.scalding.Config
 import com.twitter.scalding.Mode
-import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _ }
+import com.twitter.scalding.{ Source => SSource, TimePathedSource => STPS, _ }
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
-import com.twitter.summingbird.chill._
 import com.twitter.summingbird.option._
 import com.twitter.summingbird.scalding.batch.BatchedStore
 import com.twitter.summingbird.scalding.source.{ TimePathedSource => BTimePathedSource }
-import java.util.{ HashMap => JHashMap, Map => JMap, TimeZone }
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.Path
-import org.apache.hadoop.io.serializer.{ Serialization => HSerialization }
-import org.apache.hadoop.util.GenericOptionsParser
-import org.apache.hadoop.util.ToolRunner
 import org.slf4j.LoggerFactory
 import scala.util.{ Success, Try => STry, Failure }
 import scala.reflect.ClassTag

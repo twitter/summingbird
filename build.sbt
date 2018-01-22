@@ -47,8 +47,8 @@ val executionSettings = if (sequentialExecution) {
 
 val sharedSettings = extraSettings ++ executionSettings ++ Seq(
   organization := "com.twitter",
-  scalaVersion := "2.11.11",
-  crossScalaVersions := Seq("2.11.11", "2.12.2"),
+  scalaVersion := "2.11.12",
+  crossScalaVersions := Seq("2.11.12", "2.12.4"),
   // To support hadoop 1.x
   javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
@@ -81,7 +81,8 @@ val sharedSettings = extraSettings ++ executionSettings ++ Seq(
     "-unchecked",
     "-deprecation",
     "-Xlint",
-    "-Yresolve-term-conflict:package"
+    "-Yresolve-term-conflict:package",
+    "-Ywarn-unused-import"
   ),
 
   // Publishing options:

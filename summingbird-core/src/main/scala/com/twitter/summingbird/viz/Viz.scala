@@ -17,7 +17,7 @@
 package com.twitter.summingbird.viz
 
 import java.io.Writer
-import com.twitter.summingbird.{ Platform, Producer, Dependants, NamedProducer, IdentityKeyedProducer }
+import com.twitter.summingbird.{ Platform, Producer }
 import com.twitter.summingbird.planner._
 
 object VizGraph {
