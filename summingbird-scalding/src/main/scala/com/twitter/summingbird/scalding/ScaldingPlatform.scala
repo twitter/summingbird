@@ -252,6 +252,24 @@ object Scalding {
   def also[L, R](ensure: FlowToPipe[L], result: FlowToPipe[R]): FlowToPipe[R] =
     joinFP(ensure, result).map { case (_, r) => r }
 
+  def memoizePlan[A](pf: PlannerOutput[A]): PlannerOutput[A] = {
+    val memo = new Memo[FactoryInput, (FactoryInput, A)]
+    StateWithError
+      .getState
+      .flatMap { input =>
+        memo.get(input) match {
+          case None =>
+            for {
+              a <- pf
+              state <- StateWithError.getState[FactoryInput]
+              _ = memo.set(input, (state, a))
+            } yield a
+          case Some((out, a)) =>
+            StateWithError.putState(out).map(_ => a)
+        }
+      }
+  }
+
   /**
    * Memoize the inner reader
    *  This is not a performance optimization, but a correctness one applicable
@@ -262,10 +280,20 @@ object Scalding {
    *  If we memoize with this function, it guarantees that the PipeFactory
    *  is idempotent.
    */
-  def memoize[T](pf: PipeFactory[T]): PipeFactory[T] = {
-    val memo = new Memo[T]
-    pf.map { rdr =>
-      Reader({ i => memo.getOrElseUpdate(i, rdr) })
+  def memoize[T](pf: PlannerOutput[FlowProducer[T]]): PlannerOutput[FlowProducer[T]] = {
+    val memo = new Memo[FlowInput, T]
+    memoizePlan(pf).map { rdr =>
+      Reader[FlowInput, Option[T]](memo.get(_))
+        .flatMap {
+          case None =>
+            for {
+              input <- Reader[FlowInput, FlowInput](fi => fi)
+              t <- rdr
+              _ = memo.set(input, t)
+            } yield t
+          case Some(t) =>
+            Reader.const(t)
+        }
     }
   }
 
@@ -649,11 +677,22 @@ object Scalding {
   }
 }
 
-// Jank to get around serialization issues
-class Memo[T] extends java.io.Serializable {
-  @transient private val mmap = scala.collection.mutable.Map[(FlowDef, Mode), TimedPipe[T]]()
-  def getOrElseUpdate(in: (FlowDef, Mode), rdr: Reader[(FlowDef, Mode), TimedPipe[T]]): TimedPipe[T] =
-    mmap.getOrElseUpdate(in, rdr(in))
+class Memo[A, B] extends java.io.Serializable {
+  // Jank to get around serialization issues
+  @transient private[this] var mmap = Map.empty[A, B]
+  def getOrElseUpdate(a: A, b: => B): B =
+    mmap.get(a) match {
+      case Some(b) => b
+      case None =>
+        val res = b
+        mmap = mmap.updated(a, res)
+        res
+    }
+
+  def get(a: A): Option[B] = mmap.get(a)
+  def set(a: A, b: B): Unit = {
+    mmap = mmap.updated(a, b)
+  }
 }
 
 /**
