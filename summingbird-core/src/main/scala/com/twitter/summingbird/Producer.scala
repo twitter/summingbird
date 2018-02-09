@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird
 
-import com.twitter.algebird.Semigroup
+import com.twitter.algebird.{ Aggregator, Semigroup }
 
 object Producer {
 
@@ -265,6 +265,23 @@ case class Summer[P <: Platform[P], K, V](
  * to attempt the most efficient run of your code.
  */
 sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
+
+  /**
+   * This applies an Aggregator to the values. The result type is similar to sumByKey with
+   * a crucial difference: the tuple is Option(previous aggregated value), current aggregated value
+   * in sumByKey you get previous and the delta, but after agg.present, the delta cannot be combined
+   * and is not meaningful in the general case.
+   */
+  def aggregate[V1, V2](store: P#Store[K, V1], agg: Aggregator[V, V1, V2]): KeyedProducer[P, K, (Option[V2], V2)] = {
+    val sg = agg.semigroup
+    mapValues(agg.prepare)
+      .sumByKey(store)(sg)
+      .mapValues {
+        case (optv1, v1) =>
+          val resultv1 = if (optv1.isDefined) sg.plus(optv1.get, v1) else v1
+          (optv1.map(agg.present), agg.present(resultv1))
+      }
+  }
 
   /** Builds a new KeyedProvider by applying a partial function to keys of elements of this one on which the function is defined.*/
   def collectKeys[K2](pf: PartialFunction[K, K2]): KeyedProducer[P, K2, V] =

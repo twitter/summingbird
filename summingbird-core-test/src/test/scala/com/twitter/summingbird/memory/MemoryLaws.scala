@@ -16,7 +16,7 @@ limitations under the License.
 
 package com.twitter.summingbird.memory
 
-import com.twitter.algebird.{ MapAlgebra, Monoid, Semigroup }
+import com.twitter.algebird.{ Aggregator, MapAlgebra, Monoid, Semigroup }
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
 import org.scalacheck.{ Arbitrary, _ }
@@ -163,6 +163,32 @@ class MemoryLaws extends WordSpec {
       mem.run(mem.plan(prod))
       assert(store1.toMap == ((0 to 100).groupBy(_ % 3).mapValues(_.sum)))
       assert(store2.toMap == ((0 to 100).groupBy(_ % 3).mapValues(_.sum)))
+    }
+    "aggregate should work" in {
+      val source = Memory.toSource((0 to 100).reverse)
+      val store = MutableMap.empty[Int, Int]
+      val buf = MutableMap.empty[Int, List[(Option[Int], Int)]]
+      val prod = source.map { t => (t % 2, t) }
+        .aggregate(store, Aggregator.max[Int].andThenPresent(_ * 2).composePrepare(_ / 2))
+        .write { kv =>
+          val (k, vs) = kv
+          buf(k) = vs :: buf.getOrElse(k, Nil)
+        }
+      val mem = new Memory
+      mem.run(mem.plan(prod))
+
+      assert(store.keySet == Set(0, 1))
+      assert(store(0) == (0 to 100).filter(_ % 2 == 0).map(_ / 2).max)
+      assert(store(1) == (0 to 100).filter(_ % 2 == 1).map(_ / 2).max)
+      assert(buf.keySet == Set(0, 1))
+      assert(buf(0).map(_._2) ==
+        (0 to 100).reverse.filter(_ % 2 == 0).map { t => (t / 2) * 2 }.toList)
+      assert(buf(0).map(_._1) ==
+        (None :: ((0 to 100).reverse.filter(_ % 2 == 0).map { t => Some((t / 2)*2) }.toList)))
+      assert(buf(1).map(_._2) ==
+        (0 to 100).reverse.filter(_ % 2 == 1).map { t => (t / 2) * 2 }.toList)
+      assert(buf(1).map(_._1) ==
+        (None :: ((0 to 100).reverse.filter(_ % 2 == 1).map { t => Some((t / 2)*2) }.toList)))
     }
 
     "self also shouldn't duplicate work" in {
