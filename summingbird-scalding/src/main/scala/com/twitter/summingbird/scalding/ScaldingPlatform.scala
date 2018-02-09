@@ -252,8 +252,12 @@ object Scalding {
   def also[L, R](ensure: FlowToPipe[L], result: FlowToPipe[R]): FlowToPipe[R] =
     joinFP(ensure, result).map { case (_, r) => r }
 
-  def memoizePlan[A](pf: PlannerOutput[A]): PlannerOutput[A] = {
-    val memo = new Memo[FactoryInput, (FactoryInput, A)]
+  /**
+   * This memoizes the result of the function on success (not on failure since
+   * StateWithError has no recover ability)
+   */
+  def memoizeState[S, E, A](pf: StateWithError[S, E, A]): StateWithError[S, E, A] = {
+    val memo = new Memo[S, (S, A)]
     StateWithError
       .getState
       .flatMap { input =>
@@ -261,7 +265,7 @@ object Scalding {
           case None =>
             for {
               a <- pf
-              state <- StateWithError.getState[FactoryInput]
+              state <- StateWithError.getState[S]
               _ = memo.set(input, (state, a))
             } yield a
           case Some((out, a)) =>
@@ -282,7 +286,7 @@ object Scalding {
    */
   def memoize[T](pf: PlannerOutput[FlowProducer[T]]): PlannerOutput[FlowProducer[T]] = {
     val memo = new Memo[FlowInput, T]
-    memoizePlan(pf).map { rdr =>
+    memoizeState(pf).map { rdr =>
       Reader[FlowInput, Option[T]](memo.get(_))
         .flatMap {
           case None =>
@@ -680,14 +684,6 @@ object Scalding {
 class Memo[A, B] extends java.io.Serializable {
   // Jank to get around serialization issues
   @transient private[this] var mmap = Map.empty[A, B]
-  def getOrElseUpdate(a: A, b: => B): B =
-    mmap.get(a) match {
-      case Some(b) => b
-      case None =>
-        val res = b
-        mmap = mmap.updated(a, res)
-        res
-    }
 
   def get(a: A): Option[B] = mmap.get(a)
   def set(a: A, b: B): Unit = {
