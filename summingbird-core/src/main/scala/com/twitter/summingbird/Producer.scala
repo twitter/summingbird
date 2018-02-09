@@ -212,13 +212,21 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
   override def name(id: String): TailProducer[P, T] = new TPNamedProducer[P, T](this, id)
 }
 
-class AlsoTailProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], result: TailProducer[P, R]) extends AlsoProducer[P, T, R](ensure, result) with TailProducer[P, R]
+class AlsoTailProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], result: TailProducer[P, R]) extends AlsoProducer[P, T, R](ensure, result) with TailProducer[P, R] {
+  // if we don't cache the hashCode here, it can become exponentially complex to do so,
+  // due to the merging when left and right overlap
+  override val hashCode = (getClass, ensure, result).hashCode
+}
 
 /**
  * This is a special node that ensures that the first argument is planned, but produces values
  * equivalent to the result.
  */
-case class AlsoProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], result: Producer[P, R]) extends Producer[P, R]
+case class AlsoProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], result: Producer[P, R]) extends Producer[P, R] {
+  // if we don't cache the hashCode here, it can become exponentially complex to do so,
+  // due to the merging when left and right overlap
+  override val hashCode = (getClass, ensure, result).hashCode
+}
 
 case class NamedProducer[P <: Platform[P], +T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
@@ -234,14 +242,21 @@ case class OptionMappedProducer[P <: Platform[P], T, +U](producer: Producer[P, T
 case class FlatMappedProducer[P <: Platform[P], T, +U](producer: Producer[P, T], fn: T => TraversableOnce[U])
   extends Producer[P, U]
 
-case class MergedProducer[P <: Platform[P], +T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
+case class MergedProducer[P <: Platform[P], +T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T] {
+  // if we don't cache the hashCode here, it can become exponentially complex to do so,
+  // due to the merging when left and right overlap
+  override val hashCode = (getClass, left, right).hashCode
+}
 
 case class WrittenProducer[P <: Platform[P], T, U >: T](producer: Producer[P, T], sink: P#Sink[U]) extends TailProducer[P, T]
 
 case class Summer[P <: Platform[P], K, V](
-  producer: Producer[P, (K, V)],
-  store: P#Store[K, V],
-  semigroup: Semigroup[V]) extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))]
+    producer: Producer[P, (K, V)],
+    store: P#Store[K, V],
+    semigroup: Semigroup[V]) extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))] {
+
+  override val hashCode = (getClass, producer, store, semigroup).hashCode
+}
 
 /**
  * This has the methods on Key-Value streams.
