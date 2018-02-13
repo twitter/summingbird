@@ -27,7 +27,7 @@ val log4jVersion = "1.2.16"
 val novocodeJunitVersion = "0.10"
 val scalaCheckVersion = "1.12.2"
 val scalatestVersion = "2.2.4"
-val scaldingVersion = "0.16.1-RC3"
+val scaldingVersion = "0.16.0-RC3"
 val slf4jVersion = "1.6.6"
 val storehausVersion = "0.13.0"
 val stormDep = "storm" % "storm" % "0.9.0-wip15" //This project also compiles with the latest storm, which is in fact required to run the example
@@ -189,7 +189,16 @@ def module(name: String) = {
   val id = "summingbird-" + name
   Project(id = id, base = file(id), settings = sharedSettings ++ Seq(
     Keys.name := id,
-    mimaPreviousArtifacts := previousCompatible(name))
+    mimaPreviousArtifacts := previousCompatible(name),
+    mimaBinaryIssueFilters ++= {
+      import com.typesafe.tools.mima.core._
+      import com.typesafe.tools.mima.core.ProblemFilters._
+      Seq(
+        // this class should only be used internally, so deleting between RC2 -> final should be
+        // okay
+        exclude[DirectMissingMethodProblem]("com.twitter.summingbird.scalding.Memo.getOrElseUpdate")
+      )
+    })
   )
 }
 
