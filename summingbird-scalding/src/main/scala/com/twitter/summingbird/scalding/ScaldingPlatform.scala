@@ -58,6 +58,8 @@ import scala.util.control.NonFatal
 object Scalding {
   @transient private val logger = LoggerFactory.getLogger(classOf[Scalding])
 
+  case class PlanningException(errorMessages: List[String]) extends Exception(errorMessages.toString)
+
   def apply(jobName: String, options: Map[String, Options] = Map.empty) = {
     new Scalding(jobName, options, identity, List())
   }
@@ -259,6 +261,28 @@ object Scalding {
     joinFP(ensure, result).map { case (_, r) => r }
 
   /**
+   * This memoizes the result of the function on success (not on failure since
+   * StateWithError has no recover ability)
+   */
+  def memoizeState[S, E, A](pf: StateWithError[S, E, A]): StateWithError[S, E, A] = {
+    val memo = new Memo[S, (S, A)]
+    StateWithError
+      .getState
+      .flatMap { input =>
+        memo.get(input) match {
+          case None =>
+            for {
+              a <- pf
+              state <- StateWithError.getState[S]
+              _ = memo.set(input, (state, a))
+            } yield a
+          case Some((out, a)) =>
+            StateWithError.putState(out).map(_ => a)
+        }
+      }
+  }
+
+  /**
    * Memoize the inner reader
    *  This is not a performance optimization, but a correctness one applicable
    *  to some cases (namely any function that mutates the FlowDef or does IO).
@@ -268,10 +292,20 @@ object Scalding {
    *  If we memoize with this function, it guarantees that the PipeFactory
    *  is idempotent.
    */
-  def memoize[T](pf: PipeFactory[T]): PipeFactory[T] = {
-    val memo = new Memo[T]
-    pf.map { rdr =>
-      Reader({ i => memo.getOrElseUpdate(i, rdr) })
+  def memoize[T](pf: PlannerOutput[FlowProducer[T]]): PlannerOutput[FlowProducer[T]] = {
+    val memo = new Memo[FlowInput, T]
+    memoizeState(pf).map { rdr =>
+      Reader[FlowInput, Option[T]](memo.get(_))
+        .flatMap {
+          case None =>
+            for {
+              input <- Reader[FlowInput, FlowInput](fi => fi)
+              t <- rdr
+              _ = memo.set(input, t)
+            } yield t
+          case Some(t) =>
+            Reader.const(t)
+        }
     }
   }
 
@@ -285,7 +319,7 @@ object Scalding {
         default
       case Some((id, opt)) =>
         logger.info(
-          s"Producer (${producer.getClass.getName}) Using $opt found via NamedProducer ${'"'}$id${'"'}")
+          s"""Producer (${producer.getClass.getName}) Using $opt found via NamedProducer "$id" """)
         opt
     }
 
@@ -299,8 +333,6 @@ object Scalding {
     dependants: Dependants[Scalding],
     built: Map[Producer[Scalding, _], PipeFactory[_]],
     forceFanOut: Boolean = false): (PipeFactory[T], Map[Producer[Scalding, _], PipeFactory[_]]) = {
-
-    val names = dependants.namesOf(producer).map(_.id)
 
     def recurse[U](p: Producer[Scalding, U],
       built: Map[Producer[Scalding, _], PipeFactory[_]] = built,
@@ -337,6 +369,9 @@ object Scalding {
     built.get(producer) match {
       case Some(pf) => (pf.asInstanceOf[PipeFactory[T]], built)
       case None =>
+        // make sure not to compute names unless we need them because it
+        // is somewhat expensive especially for large graphs
+        lazy val names = dependants.namesOf(producer).map(_.id)
         val (pf, m) = producer match {
           case Source(src) => {
             val shards = getOrElse(options, names, producer, FlatMapShards.default).count
@@ -564,6 +599,44 @@ object Scalding {
   }
 
   /**
+   * like toPipeExact, but using Execution
+   */
+  def toExecutionExact[T](
+    dr: DateRange,
+    prod: Producer[Scalding, T],
+    options: Map[String, Options] = Map.empty): Execution[TypedPipe[(Timestamp, T)]] =
+
+    Execution.getMode.flatMap { mode =>
+      val fd = new FlowDef
+      toPipeExact(dr, prod, options)(fd, mode) match {
+        case Right(_) =>
+          /**
+           * We plan twice. The first time we plan to see what new
+           * writes we do, the second time we only read, we do not
+           * do any new writes.
+           */
+          Execution.fromFn { (_, _) => fd }
+            .flatMap { _ =>
+              // Now plan again and use summingbird's built in support
+              // to minimize work by reading existing on-disk data:
+              val reads = new FlowDef
+              toPipeExact(dr, prod, options)(reads, mode) match {
+                case Right(pipe) =>
+                  /*
+                   * Note that we discard "reads", any writes there
+                   * will not be performed
+                   */
+                  Execution.from(pipe)
+                case Left(msgs) =>
+                  //Left should never happen, since we planned before.
+                  Execution.failed(PlanningException(msgs))
+              }
+            }
+        case Left(msgs) => Execution.failed(PlanningException(msgs))
+      }
+    }
+
+  /**
    * Use this method to interop with existing scalding code
    * Note this may return a smaller DateRange than you ask for
    * If you need an exact DateRange see toPipeExact.
@@ -616,11 +689,14 @@ object Scalding {
   }
 }
 
-// Jank to get around serialization issues
-class Memo[T] extends java.io.Serializable {
-  @transient private val mmap = scala.collection.mutable.Map[(FlowDef, Mode), TimedPipe[T]]()
-  def getOrElseUpdate(in: (FlowDef, Mode), rdr: Reader[(FlowDef, Mode), TimedPipe[T]]): TimedPipe[T] =
-    mmap.getOrElseUpdate(in, rdr(in))
+class Memo[A, B] extends java.io.Serializable {
+  // Jank to get around serialization issues
+  @transient private[this] var mmap = Map.empty[A, B]
+
+  def get(a: A): Option[B] = mmap.get(a)
+  def set(a: A, b: B): Unit = {
+    mmap = mmap.updated(a, b)
+  }
 }
 
 /**
@@ -659,10 +735,12 @@ class Scalding(
   def withConfigUpdater(fn: Config => Config) =
     new Scalding(jobName, options, transformConfig.andThen(fn), passedRegistrars)
 
-  def configProvider(hConf: Configuration): Config = {
+  def configProvider(hConf: Configuration): Config =
+    withKryo(Config.hadoopWithDefaults(hConf))
+
+  private def withKryo(conf: Config): Config = {
     import com.twitter.scalding._
     import com.twitter.chill.config.ScalaMapConfig
-    val conf = Config.hadoopWithDefaults(hConf)
 
     if (passedRegistrars.isEmpty) {
       conf.setSerialization(Right(classOf[serialization.KryoHadoop]))
@@ -681,16 +759,17 @@ class Scalding(
   }
 
   final def buildConfig(hConf: Configuration): Config = {
-    val config = transformConfig(configProvider(hConf))
-
-    // Store the options used:
-    val postConfig = config.+("summingbird.options" -> options.toString)
-      .+("summingbird.jobname" -> jobName)
-      .+("summingbird.submitted.timestamp" -> System.currentTimeMillis.toString)
-
+    val postConfig = finalTransform(Config.hadoopWithDefaults(hConf))
     postConfig.toMap.foreach { case (k, v) => hConf.set(k, v) }
     postConfig
   }
+
+  private def finalTransform(c: Config): Config =
+    transformConfig(withKryo(c))
+      // Store the options used:
+      .+("summingbird.options" -> options.toString)
+      .+("summingbird.jobname" -> jobName)
+      .+("summingbird.submitted.timestamp" -> System.currentTimeMillis.toString)
 
   // This is a side-effect-free computation that is called by run
   def toFlow(config: Config, timeSpan: Interval[Timestamp], mode: Mode, pf: PipeFactory[_]): Try[(Interval[Timestamp], Option[Flow[_]])] = {

@@ -1,7 +1,6 @@
 import AssemblyKeys._
 import ReleaseTransformations._
 import com.typesafe.sbt.SbtScalariform._
-import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbtassembly.Plugin._
 import scalariform.formatter.preferences._
@@ -39,8 +38,8 @@ val extraSettings = Project.defaultSettings ++ mimaDefaultSettings ++ scalarifor
 
 val sharedSettings = extraSettings ++ Seq(
   organization := "com.twitter",
-  scalaVersion := "2.10.5",
-  crossScalaVersions := Seq("2.10.5", "2.11.7"),
+  scalaVersion := "2.11.11",
+  crossScalaVersions := Seq("2.10.7", "2.11.11"),
   // To support hadoop 1.x
   javacOptions ++= Seq("-source", "1.6", "-target", "1.6"),
 
@@ -66,7 +65,7 @@ val sharedSettings = extraSettings ++ Seq(
     Opts.resolver.sonatypeReleases,
     "Clojars Repository" at "http://clojars.org/repo",
     "Conjars Repository" at "http://conjars.org/repo",
-    "Twitter Maven" at "http://maven.twttr.com"
+    "Twitter Maven" at "https://maven.twttr.com"
   ),
 
   parallelExecution in Test := true,
@@ -100,7 +99,8 @@ val sharedSettings = extraSettings ++ Seq(
     ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
     pushChanges),
 
-  publishTo <<= version { v =>
+  publishTo := {
+    val v = version.value
     Some(
       if (v.trim.toUpperCase.endsWith("SNAPSHOT"))
         Opts.resolver.sonatypeSnapshots
@@ -175,21 +175,30 @@ lazy val summingbird = Project(
 )
 
 /**
-  * This returns the youngest jar we released that is compatible with
+  * This returns the previous jar we released that is compatible with
   * the current.
   */
 val unreleasedModules = Set[String]()
 
-def youngestForwardCompatible(subProj: String) =
-  Some(subProj)
+def previousCompatible(subProj: String) =
+  Set(subProj)
     .filterNot(unreleasedModules.contains(_))
-    .map { s => "com.twitter" % ("summingbird-" + s + "_2.10") % "0.9.0" }
+    .map { s => "com.twitter" %% ("summingbird-" + s) % "0.10.0-RC2" }
 
 def module(name: String) = {
-  val id = "summingbird-%s".format(name)
+  val id = "summingbird-" + name
   Project(id = id, base = file(id), settings = sharedSettings ++ Seq(
     Keys.name := id,
-    previousArtifact := youngestForwardCompatible(name))
+    mimaPreviousArtifacts := previousCompatible(name),
+    mimaBinaryIssueFilters ++= {
+      import com.typesafe.tools.mima.core._
+      import com.typesafe.tools.mima.core.ProblemFilters._
+      Seq(
+        // this class should only be used internally, so deleting between RC2 -> final should be
+        // okay
+        exclude[DirectMissingMethodProblem]("com.twitter.summingbird.scalding.Memo.getOrElseUpdate")
+      )
+    })
   )
 }
 

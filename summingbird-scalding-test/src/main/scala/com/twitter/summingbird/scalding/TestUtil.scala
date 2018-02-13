@@ -41,6 +41,12 @@ object TestUtil {
       println("producer extra keys: " + (produced.keySet -- inMemory.keySet))
       println("producer missing keys: " + (inMemory.keySet -- produced.keySet))
       println("Difference: " + diffMap)
+      if (produced.isEmpty) println("produced isEmpty")
+      val correct = (inMemory.keySet ++ produced.keySet).foldLeft(produced) { (m, k) =>
+        if (inMemory.get(k) == produced.get(k)) m - k
+        else m
+      }
+      println("correct keys: " + correct)
     }
     !wrong
   }
@@ -59,6 +65,12 @@ object TestUtil {
       println("written batches: " + testStore.writtenBatches)
       println("earliest unwritten time: " + testStore.batcher.earliestTimeOf(testStore.writtenBatches.max.next))
       println("Difference: " + diffMap)
+      if (produced.isEmpty) println("produced isEmpty")
+      val correct = (inMemory.keySet ++ produced.keySet).foldLeft(produced) { (m, k) =>
+        if (inMemory.get(k) == produced.get(k)) m - k
+        else m
+      }
+      println("correct keys: " + correct)
     }
     !wrong
   }
