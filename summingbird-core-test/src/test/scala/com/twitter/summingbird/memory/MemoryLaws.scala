@@ -16,13 +16,13 @@ limitations under the License.
 
 package com.twitter.summingbird.memory
 
-import com.twitter.algebird.{ MapAlgebra, Monoid, Semigroup }
+import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
 import org.scalacheck.{ Arbitrary, _ }
 import org.scalatest.WordSpec
 
-import scala.collection.mutable.{ HashMap => MutableHashMap, ListBuffer, Map => MutableMap }
+import scala.collection.mutable.{ ListBuffer, Map => MutableMap }
 /**
  * Tests for Summingbird's in-memory planner.
  */
