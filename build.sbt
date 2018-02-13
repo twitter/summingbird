@@ -65,7 +65,7 @@ val sharedSettings = extraSettings ++ Seq(
     Opts.resolver.sonatypeReleases,
     "Clojars Repository" at "http://clojars.org/repo",
     "Conjars Repository" at "http://conjars.org/repo",
-    "Twitter Maven" at "http://maven.twttr.com"
+    "Twitter Maven" at "https://maven.twttr.com"
   ),
 
   parallelExecution in Test := true,
