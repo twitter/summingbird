@@ -22,7 +22,6 @@ import org.scalacheck._
 import Gen._
 import org.scalacheck.Arbitrary._
 import org.scalacheck.Prop._
-import scala.util.Random
 
 import scala.collection.mutable.{ Map => MMap, HashMap => MHashMap }
 
