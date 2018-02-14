@@ -16,13 +16,12 @@
 
 package com.twitter.summingbird.memory
 
-import com.twitter.summingbird.graph._
-
 import com.twitter.summingbird.planner.DagOptimizer
 
 import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
+import com.stripe.dagon.HMap
 import scala.concurrent.{ ExecutionContext, Future }
 import java.util.concurrent.{ BlockingQueue, ConcurrentHashMap }
 
