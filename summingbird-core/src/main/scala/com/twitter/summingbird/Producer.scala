@@ -17,6 +17,7 @@
 package com.twitter.summingbird
 
 import com.twitter.algebird.Semigroup
+import scala.util.hashing.MurmurHash3
 
 object Producer {
 
@@ -119,6 +120,15 @@ object Producer {
     val nfn = dependenciesOf[P](_)
     graph.depthFirstOf(p)(nfn)
   }
+
+  private case class RefPair[+A <: AnyRef, +B <: AnyRef](_1: A, _2: B) {
+    override val hashCode: Int = MurmurHash3.productHash(this)
+    override def equals(that: Any): Boolean = that match {
+      case (thatRef: RefPair[_, _]) =>
+        (thatRef._1 eq _1) && (thatRef._2 eq _2)
+      case _ => false
+    }
+  }
 }
 
 /**
@@ -126,7 +136,87 @@ object Producer {
  * have operations applied to it. In Storm, this might be an
  * in-progress TopologyBuilder.
  */
-sealed trait Producer[P <: Platform[P], +T] {
+sealed trait Producer[P <: Platform[P], +T] { self: Product =>
+
+  /**
+   * Producers are always immutable, and used in Sets/Maps so
+   * we need to memoize hashCode to avoid exponentially slow
+   * hashCode on Dags that have a lot overlapping mergeds/alsos
+   */
+  override val hashCode: Int = MurmurHash3.productHash(this)
+
+  /**
+   * Equality on dags is tricky. Since they can loop back on themselves
+   * (consider MergedProducer(a, a)), you can create exponential complexity
+   * by using naive equality checks.
+   *
+   * Here we make sure we aren't in an easy case (referentially equal
+   * or hashCode is different), and then memoize the checks we have
+   * done to make sure we don't repeatedly check equality on large
+   * graphs
+   */
+  override def equals(that: Any): Boolean =
+    that match {
+      case thatP: Producer[_, _] =>
+        if (this eq thatP) true
+        else if (hashCode != thatP.hashCode) false
+        else {
+          /**
+           * This is only hit when we are referentially different,
+           * but have the same hashCode. Except for collisions
+           * we should assume the rest of the code will tend
+           * to find equality, so there is no reason to check
+           * hashCodes in the below
+           */
+          val memo = new java.util.HashMap[Producer.RefPair[Producer[P, Any], Producer[P, Any]], Boolean]()
+
+          def loop(a: Producer[P, Any], b: Producer[P, Any]): Boolean = {
+            val refPair = Producer.RefPair(a, b)
+            Option(memo.get(refPair)) match {
+              case Some(res) => res
+              case None =>
+                val res =
+                  if (a eq b) true
+                  else {
+                    (a, b) match {
+                      case (Source(sA), Source(sB)) => sA == sB
+                      case (AlsoProducer(lA, rA), AlsoProducer(lB, rB)) =>
+                        loop(lA, lB) && loop(rA, rB)
+                      case (NamedProducer(pA, nA), NamedProducer(pB, nB)) =>
+                        (nA == nB) && loop(pA, pB)
+                      case (IdentityKeyedProducer(pA), IdentityKeyedProducer(pB)) =>
+                        loop(pA, pB)
+                      case (OptionMappedProducer(pA, fA), OptionMappedProducer(pB, fB)) =>
+                          (fA == fB) && loop(pA, pB)
+                      case (FlatMappedProducer(pA, fA), FlatMappedProducer(pB, fB)) =>
+                          (fA == fB) && loop(pA, pB)
+                      case (KeyFlatMappedProducer(pA, fA), KeyFlatMappedProducer(pB, fB)) =>
+                          (fA == fB) && loop(pA, pB)
+                      case (ValueFlatMappedProducer(pA, fA), ValueFlatMappedProducer(pB, fB)) =>
+                          (fA == fB) && loop(pA, pB)
+                      case (WrittenProducer(pA, sA), WrittenProducer(pB, sB)) =>
+                          (sA == sB) && loop(pA, pB)
+                      case (LeftJoinedProducer(pA, sA), LeftJoinedProducer(pB, sB)) =>
+                          (sA == sB) && loop(pA, pB)
+                      case (Summer(pA, stA, sgA), Summer(pB, stB, sgB)) =>
+                        (stA == stB) && (sgA == sgB) && loop(pA, pB)
+                      case (MergedProducer(lA, rA), MergedProducer(lB, rB)) =>
+                        loop(lA, lB) && loop(rA, rB)
+                      case (_, _) => false
+                    }
+                  }
+              memo.put(refPair, res)
+              res
+            }
+          }
+
+          // We are casting to P, but only using universal equality
+          // in the loop. Without this cast, the P <: Platform[P] causes
+          // problems
+          loop(this, thatP.asInstanceOf[Producer[P, Any]])
+        }
+      case _ => false
+    }
 
   /** Exactly the same as merge. Here by analogy with the scala.collections API */
   def ++[U >: T](r: Producer[P, U]): Producer[P, U] = MergedProducer(this, r)
@@ -197,7 +287,7 @@ case class Source[P <: Platform[P], T](source: P#Source[T])
   extends Producer[P, T]
 
 /** Only TailProducers can be planned. There is nothing after a tail */
-sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
+sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] { self: Product =>
   /**
    * Ensure this is scheduled, but return something equivalent to the argument
    * like the function `par` in Haskell.
@@ -212,21 +302,13 @@ sealed trait TailProducer[P <: Platform[P], +T] extends Producer[P, T] {
   override def name(id: String): TailProducer[P, T] = new TPNamedProducer[P, T](this, id)
 }
 
-class AlsoTailProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], result: TailProducer[P, R]) extends AlsoProducer[P, T, R](ensure, result) with TailProducer[P, R] {
-  // if we don't cache the hashCode here, it can become exponentially complex to do so,
-  // due to the merging when left and right overlap
-  override val hashCode = (getClass, ensure, result).hashCode
-}
+class AlsoTailProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], result: TailProducer[P, R]) extends AlsoProducer[P, T, R](ensure, result) with TailProducer[P, R]
 
 /**
  * This is a special node that ensures that the first argument is planned, but produces values
  * equivalent to the result.
  */
-case class AlsoProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], result: Producer[P, R]) extends Producer[P, R] {
-  // if we don't cache the hashCode here, it can become exponentially complex to do so,
-  // due to the merging when left and right overlap
-  override val hashCode = (getClass, ensure, result).hashCode
-}
+case class AlsoProducer[P <: Platform[P], +T, +R](ensure: TailProducer[P, T], result: Producer[P, R]) extends Producer[P, R]
 
 case class NamedProducer[P <: Platform[P], +T](producer: Producer[P, T], id: String) extends Producer[P, T]
 
@@ -242,21 +324,14 @@ case class OptionMappedProducer[P <: Platform[P], T, +U](producer: Producer[P, T
 case class FlatMappedProducer[P <: Platform[P], T, +U](producer: Producer[P, T], fn: T => TraversableOnce[U])
   extends Producer[P, U]
 
-case class MergedProducer[P <: Platform[P], +T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T] {
-  // if we don't cache the hashCode here, it can become exponentially complex to do so,
-  // due to the merging when left and right overlap
-  override val hashCode = (getClass, left, right).hashCode
-}
+case class MergedProducer[P <: Platform[P], +T](left: Producer[P, T], right: Producer[P, T]) extends Producer[P, T]
 
 case class WrittenProducer[P <: Platform[P], T, U >: T](producer: Producer[P, T], sink: P#Sink[U]) extends TailProducer[P, T]
 
 case class Summer[P <: Platform[P], K, V](
     producer: Producer[P, (K, V)],
     store: P#Store[K, V],
-    semigroup: Semigroup[V]) extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))] {
-
-  override val hashCode = (getClass, producer, store, semigroup).hashCode
-}
+    semigroup: Semigroup[V]) extends KeyedProducer[P, K, (Option[V], V)] with TailProducer[P, (K, (Option[V], V))]
 
 /**
  * This has the methods on Key-Value streams.
@@ -264,7 +339,7 @@ case class Summer[P <: Platform[P], K, V](
  * do it! This is how you communicate structure to Summingbird and it uses these hints
  * to attempt the most efficient run of your code.
  */
-sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] {
+sealed trait KeyedProducer[P <: Platform[P], K, V] extends Producer[P, (K, V)] { self: Product =>
 
   /** Builds a new KeyedProvider by applying a partial function to keys of elements of this one on which the function is defined.*/
   def collectKeys[K2](pf: PartialFunction[K, K2]): KeyedProducer[P, K2, V] =
