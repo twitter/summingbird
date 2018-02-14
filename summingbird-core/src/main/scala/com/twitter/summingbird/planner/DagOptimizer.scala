@@ -156,6 +156,19 @@ class DagOptimizer[P <: Platform[P]] extends Serializable {
   }
 
   /**
+   * a.flatMapKeys(fn).flatMapKeys(fn2) can be written as a.flatMapKeys(compose(fn, fn2))
+   */
+  object FlatMapKeyFusion extends PartialRule[Prod] {
+    def applyWhere[T](on: DagonDag[Prod]) = {
+      //Can't fuse flatMaps when on fanout
+      case KeyFlatMappedProducer(in1 @ KeyFlatMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
+        // we know that (K, V) <: T due to the case match, but scala can't see it
+        def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
+        cast(KeyFlatMappedProducer(in0, ComposedFlatMap(fn0, fn1)))
+    }
+  }
+
+  /**
    * a.flatMapValues(fn).flatMapValues(fn2) can be written as a.flatMapValues(compose(fn, fn2))
    */
   object FlatMapValuesFusion extends PartialRule[Prod] {
@@ -318,6 +331,7 @@ class DagOptimizer[P <: Platform[P]] extends Serializable {
     .orElse(MergePullUp)
     .orElse(OptionMapFusion)
     .orElse(FlatMapFusion)
+    .orElse(FlatMapKeyFusion)
     .orElse(FlatMapValuesFusion)
     .orElse(FlatThenOptionFusion)
     .orElse(OptionThenFlatFusion)
