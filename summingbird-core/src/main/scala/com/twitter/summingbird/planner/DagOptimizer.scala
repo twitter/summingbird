@@ -155,6 +155,19 @@ class DagOptimizer[P <: Platform[P]] extends Serializable {
     }
   }
 
+  /**
+   * a.flatMapValues(fn).flatMapValues(fn2) can be written as a.flatMapValues(compose(fn, fn2))
+   */
+  object FlatMapValuesFusion extends PartialRule[Prod] {
+    def applyWhere[T](on: DagonDag[Prod]) = {
+      //Can't fuse flatMaps when on fanout
+      case ValueFlatMappedProducer(in1 @ ValueFlatMappedProducer(in0, fn0), fn1) if (on.fanOut(in1) == 1) =>
+        // we know that (K, V) <: T due to the case match, but scala can't see it
+        def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
+        cast(ValueFlatMappedProducer(in0, ComposedFlatMap(fn0, fn1)))
+    }
+  }
+
   // a.optionMap(b).optionMap(c) == a.optionMap(compose(b, c))
   object OptionMapFusion extends Rule[Prod] {
     def apply[T](on: DagonDag[Prod]) = {
@@ -196,11 +209,10 @@ class DagOptimizer[P <: Platform[P]] extends Serializable {
    */
   object KeyFlatMapToFlatMap extends PartialRule[Prod] {
     def applyWhere[T](on: DagonDag[Prod]) = {
-      // TODO: we need to case class here to not lose the irreducible which may be named
       case KeyFlatMappedProducer(in, fn) =>
         // we know that (K, V) <: T due to the case match, but scala can't see it
         def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
-        cast(in.flatMap { case (k, v) => fn(k).map((_, v)) })
+        cast(in.flatMap(KeyFlatMapFunction(fn)))
     }
   }
 
@@ -209,11 +221,10 @@ class DagOptimizer[P <: Platform[P]] extends Serializable {
    */
   object ValueFlatMapToFlatMap extends PartialRule[Prod] {
     def applyWhere[T](on: DagonDag[Prod]) = {
-      // TODO: we need to case class here to not lose the irreducible which may be named
       case ValueFlatMappedProducer(in, fn) =>
         // we know that (K, V) <: T due to the case match, but scala can't see it
         def cast[K, V](p: Prod[(K, V)]): Prod[T] = p.asInstanceOf[Prod[T]]
-        cast(in.flatMap { case (k, v) => fn(v).map((k, _)) })
+        cast(in.flatMap(ValueFlatMapFunction(fn)))
     }
   }
 
@@ -307,6 +318,7 @@ class DagOptimizer[P <: Platform[P]] extends Serializable {
     .orElse(MergePullUp)
     .orElse(OptionMapFusion)
     .orElse(FlatMapFusion)
+    .orElse(FlatMapValuesFusion)
     .orElse(FlatThenOptionFusion)
     .orElse(OptionThenFlatFusion)
     .orElse(DiamondToFlatMap)
