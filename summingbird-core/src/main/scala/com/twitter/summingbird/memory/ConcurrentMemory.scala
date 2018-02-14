@@ -132,7 +132,10 @@ object PhysicalNode {
 }
 
 class ConcurrentMemory(implicit jobID: JobId = JobId("default.concurrent.memory.jobId"))
-    extends Platform[ConcurrentMemory] with DagOptimizer[ConcurrentMemory] {
+    extends Platform[ConcurrentMemory] {
+
+  private[this] val optimizer = DagOptimizer[ConcurrentMemory]
+  import optimizer._
 
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = ConcurrentHashMap[K, V]
@@ -142,7 +145,7 @@ class ConcurrentMemory(implicit jobID: JobId = JobId("default.concurrent.memory.
 
   import PhysicalNode._
 
-  type ProdCons[T] = Prod[Any]
+  private type ProdCons[T] = Prod[Any]
 
   def counter(group: Group, name: Name): Option[Long] =
     MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }

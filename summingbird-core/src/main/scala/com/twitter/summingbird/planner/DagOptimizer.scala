@@ -3,8 +3,9 @@ package com.twitter.summingbird.planner
 import com.twitter.summingbird._
 import com.twitter.algebird.Semigroup
 import com.stripe.dagon.{Dag => DagonDag, _}
+import java.io.Serializable
 
-trait DagOptimizer[P <: Platform[P]] {
+class DagOptimizer[P <: Platform[P]] extends Serializable {
 
   type Prod[T] = Producer[P, T]
 
@@ -312,5 +313,5 @@ trait DagOptimizer[P <: Platform[P]] {
 }
 
 object DagOptimizer {
-  def apply[P <: Platform[P]]: DagOptimizer[P] = new DagOptimizer[P] { }
+  def apply[P <: Platform[P]]: DagOptimizer[P] = new DagOptimizer[P]
 }
