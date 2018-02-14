@@ -56,7 +56,8 @@ package object graph {
         }
       }
       // make sure the values are sets, not .mapValues is lazy in scala
-      .map { case (k, v) => (k, v.distinct) };
+      .map { case (k, v) => (k, v.distinct) }
+
     graph.getOrElse(_, Nil)
   }
 

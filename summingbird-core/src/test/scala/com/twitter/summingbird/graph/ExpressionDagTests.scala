@@ -177,6 +177,7 @@ object ExpressionDagTests extends Properties("ExpressionDag") {
   } yield Inc(chain, by)
 
   def genChain: Gen[Formula[Int]] = Gen.frequency((1, genConst), (3, genChainInc))
+
   property("CombineInc compresses linear Inc chains") = forAll(genChain) { chain =>
     ExpressionDag.applyRule(chain, toLiteral, CombineInc) match {
       case Constant(n) => true
