@@ -16,13 +16,12 @@
 
 package com.twitter.summingbird.memory
 
-import com.twitter.summingbird.graph._
-
 import com.twitter.summingbird.planner.DagOptimizer
 
 import com.twitter.algebird.{ Monoid, Semigroup }
 import com.twitter.summingbird._
 import com.twitter.summingbird.option.JobId
+import com.stripe.dagon.HMap
 import scala.concurrent.{ ExecutionContext, Future }
 import java.util.concurrent.{ BlockingQueue, ConcurrentHashMap }
 
@@ -133,7 +132,10 @@ object PhysicalNode {
 }
 
 class ConcurrentMemory(implicit jobID: JobId = JobId("default.concurrent.memory.jobId"))
-    extends Platform[ConcurrentMemory] with DagOptimizer[ConcurrentMemory] {
+    extends Platform[ConcurrentMemory] {
+
+  private[this] val optimizer = DagOptimizer[ConcurrentMemory]
+  import optimizer._
 
   type Source[T] = TraversableOnce[T]
   type Store[K, V] = ConcurrentHashMap[K, V]
@@ -143,7 +145,7 @@ class ConcurrentMemory(implicit jobID: JobId = JobId("default.concurrent.memory.
 
   import PhysicalNode._
 
-  type ProdCons[T] = Prod[Any]
+  private type ProdCons[T] = Prod[Any]
 
   def counter(group: Group, name: Name): Option[Long] =
     MemoryStatProvider.getCountersForJob(jobID).flatMap { _.get(group.getString + "/" + name.getString).map { _.get } }

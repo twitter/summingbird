@@ -18,6 +18,7 @@ val algebirdVersion = "0.13.0"
 val bijectionVersion = "0.9.5"
 val chillVersion = "0.8.4"
 val commonsLangVersion = "2.6"
+val dagonVersion = "0.3.0"
 val hadoopVersion = "1.2.1"
 val junitVersion = "4.11"
 val log4jVersion = "1.2.16"
@@ -289,7 +290,9 @@ lazy val summingbirdClient = module("client").settings(
 ).dependsOn(summingbirdBatch)
 
 lazy val summingbirdCore = module("core").settings(
-  libraryDependencies += "com.twitter" %% "algebird-core" % algebirdVersion
+  libraryDependencies ++= Seq(
+    "com.twitter" %% "algebird-core" % algebirdVersion,
+    "com.stripe" %% "dagon-core" % dagonVersion)
 )
 
 lazy val summingbirdOnline = module("online").settings(
