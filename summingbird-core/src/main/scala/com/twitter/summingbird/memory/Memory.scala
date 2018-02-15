@@ -16,8 +16,8 @@
 
 package com.twitter.summingbird.memory
 
+import com.stripe.dagon.HMap
 import com.twitter.summingbird._
-import com.twitter.summingbird.graph.HMap
 import com.twitter.summingbird.option.JobId
 import com.twitter.summingbird.planner.DagOptimizer
 import collection.mutable.{ Map => MutableMap }

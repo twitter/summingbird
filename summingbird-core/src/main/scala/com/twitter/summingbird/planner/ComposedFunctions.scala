@@ -111,3 +111,19 @@ case class MergeResults[A, B](left: A => TraversableOnce[B], right: A => Travers
   def apply(a: A) = (left(a).toIterator) ++ (right(a).toIterator)
   def irreducibles = IrreducibleContainer.flatten(left, right)
 }
+
+/**
+ * flatMapping keys can be done by a normal flatmap
+ */
+case class KeyFlatMapFunction[K1, K2, V](fn: K1 => TraversableOnce[K2]) extends (Tuple2[K1, V] => TraversableOnce[(K2, V)]) with IrreducibleContainer {
+  def apply(kv: (K1, V)) = fn(kv._1).map((_, kv._2))
+  def irreducibles = IrreducibleContainer.flatten(fn)
+}
+
+/**
+ * flatMapping values can be done by a normal flatmap
+ */
+case class ValueFlatMapFunction[K, V1, V2](fn: V1 => TraversableOnce[V2]) extends (Tuple2[K, V1] => TraversableOnce[(K, V2)]) with IrreducibleContainer {
+  def apply(kv: (K, V1)) = fn(kv._2).map((kv._1, _))
+  def irreducibles = IrreducibleContainer.flatten(fn)
+}
