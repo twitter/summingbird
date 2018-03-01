@@ -48,6 +48,14 @@ case class LTuple2[T, U](_1: T, _2: U) {
 
 }
 
+case class WriteFilter[K, V](batchID: BatchID, latestTime: Timestamp, pruning: PrunedSpace[(K, V)]) extends Function1[(BatchID, (K, V)), Boolean] {
+  def apply(bkv: (BatchID, (K, V))) = {
+    val b = bkv._1
+    val kv = bkv._2
+    (b == batchID) && !pruning.prune(kv, latestTime)
+  }
+}
+
 trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
   /** The batcher for this store */
   def batcher: Batcher
@@ -96,10 +104,9 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
         // make sure we checkpoint to disk to avoid double computation:
         val checked = if (batches.size > 1) lastVals.forceToDisk else lastVals
         batches.foreach { batchID =>
-          val thisBatch = checked.filter {
-            case (b, kv) =>
-              (b == batchID) && !pruning.prune(kv, batcher.latestTimeOf(b))
-          }
+          // closures are the devil
+          val filterFn = WriteFilter(batchID, batcher.latestTimeOf(batchID), pruning)
+          val thisBatch = checked.filter(filterFn)
           writeLast(batchID, thisBatch.values)(flow, mode)
         }
     }
@@ -204,18 +211,16 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
         .toTypedPipe
     }
 
-    /**
-     * There is no flatten on Option, this adds it
-     */
-    def flatOpt[T](optopt: Option[Option[T]]): Option[T] = optopt.flatMap(identity)
-
     // This builds the format we write to disk, which is the total sum
-    def toLastFormat(res: TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))]): TypedPipe[(BatchID, (K, V))] =
+    def toLastFormat(res: TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))]): TypedPipe[(BatchID, (K, V))] = {
+      val optSg = implicitly[Semigroup[Option[(Timestamp, V)]]]
       res.flatMap {
-        case (k, (batchid, (prev, v))) =>
-          val totalSum = Semigroup.plus[Option[(Timestamp, V)]](flatOpt(prev), v)
-          totalSum.map { case (_, sumv) => (batchid, (k, sumv)) }
+        case (k, (batchid, (None, v))) =>
+          v.map { case (_, sumv) => (batchid, (k, sumv)) }
+        case (k, (batchid, (Some(pv), v))) =>
+          optSg.plus(pv, v).map { case (_, sumv) => (batchid, (k, sumv)) }
       }
+    }
 
     // This builds the format we send to consumer nodes
     def toOutputFormat(res: TypedPipe[(K, (BatchID, (Option[Option[(Timestamp, V)]], Option[(Timestamp, V)])))]): TypedPipe[(Timestamp, (K, (Option[V], V)))] =
@@ -223,7 +228,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
         case (k, (batchid, (optopt, opt))) =>
           opt.map {
             case (ts, v) =>
-              val prev = flatOpt(optopt).map(_._2)
+              val prev = optopt.flatMap(_.map(_._2))
               (ts, (k, (prev, v)))
           }
       }
