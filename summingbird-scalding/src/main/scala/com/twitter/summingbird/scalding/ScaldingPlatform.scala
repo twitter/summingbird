@@ -37,6 +37,7 @@ import com.twitter.chill.java.IterableRegistrar
 import com.twitter.scalding.Config
 import com.twitter.scalding.Mode
 import com.twitter.scalding.{ Tool => STool, Source => SSource, TimePathedSource => STPS, _ }
+import com.twitter.scalding.typed.cascading_backend.CascadingBackend
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch._
 import com.twitter.summingbird.batch.option.{ FlatMapShards, Reducers }
@@ -582,6 +583,7 @@ object Scalding {
            * writes we do, the second time we only read, we do not
            * do any new writes.
            */
+          CascadingBackend.planTypedWrites(fd, mode)
           Execution.fromFn { (_, _) => fd }
             .flatMap { _ =>
               // Now plan again and use summingbird's built in support
@@ -744,6 +746,7 @@ class Scalding(
       .flatMap {
         case (ts, pipe) =>
           // Now we have a populated flowDef, time to let Cascading do it's thing:
+          CascadingBackend.planTypedWrites(fd, mode)
           try {
             if (flowDef.getSinks.isEmpty) {
               Right((ts, None))
