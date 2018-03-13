@@ -746,7 +746,7 @@ class Scalding(
       .flatMap {
         case (ts, pipe) =>
           // Now we have a populated flowDef, time to let Cascading do it's thing:
-          CascadingBackend.planTypedWrites(fd, mode)
+          CascadingBackend.planTypedWrites(flowDef, mode)
           try {
             if (flowDef.getSinks.isEmpty) {
               Right((ts, None))
