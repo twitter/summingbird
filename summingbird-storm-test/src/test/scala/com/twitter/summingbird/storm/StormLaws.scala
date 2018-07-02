@@ -16,6 +16,7 @@
 
 package com.twitter.summingbird.storm
 
+import com.twitter.algebird.Monoid
 import com.twitter.summingbird._
 import com.twitter.summingbird.batch.Batcher
 import com.twitter.summingbird.online.option.LeftJoinGrouping
@@ -260,6 +261,11 @@ class StormLaws extends WordSpec {
       .sumByKey(TestPlatform.store("store")))
   }
 
+  "StormPlatform should serialize monoid through kryo" in {
+    testProducer(TestPlatform.source(sample[List[(Int, Int)]])
+      .sumByKey(TestPlatform.store("store"))(KryoSerializableJavaNonSerializableMonoid))
+  }
+
   def testProducer[T](producer: TailProducer[TestPlatform, T])(implicit storm: Storm): Unit = {
     val memoryResult = MemoryTestExecutor(producer)
     val stormResult = StormTestExecutor(producer, storm)
@@ -278,5 +284,13 @@ class StormLaws extends WordSpec {
 
   def assertEquiv[T](expected: T, returned: T)(implicit equiv: Equiv[T]): Unit = {
     assert(equiv.equiv(expected, returned), (expected.toString, returned.toString))
+  }
+
+  object KryoSerializableJavaNonSerializableMonoid extends Monoid[Int] {
+    private val obj = new Object()
+
+    override def zero: Int = 0
+
+    override def plus(x: Int, y: Int): Int = x + y
   }
 }
