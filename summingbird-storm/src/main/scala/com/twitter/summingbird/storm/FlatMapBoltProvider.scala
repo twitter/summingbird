@@ -104,8 +104,6 @@ private[storm] case class FlatMapBoltProvider(
     shards: KeyValueShards,
     semigroup: Semigroup[V]
   ): Topology.Bolt[Item[T], Aggregated[K, V]] = {
-    // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
-    // The monoid we use in aggregation is timestamp max.
     implicit val valueMonoid: Semigroup[V] = semigroup
 
     val operation = foldOperations[T, (K, V)](node.members.reverse)
@@ -120,13 +118,16 @@ private[storm] case class FlatMapBoltProvider(
       ackOnEntry,
       maxExecutePerSec,
       new executor.FinalFlatMap(
+        // When emitting tuples between the Final Flat Map and the summer we encode the timestamp in the value
+        // The monoid we use in aggregation is timestamp max.
+        implicitly[Semigroup[AggregateValue[V]]],
         wrappedOperation,
         summerBuilder,
         maxWaiting,
         maxWaitTime,
         maxEmitPerExecute,
         shards
-      )(implicitly[Semigroup[AggregateValue[V]]])
+      )
     )
   }
 

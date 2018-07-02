@@ -51,7 +51,8 @@ private[summingbird] case class KeyValueShards(get: Int) {
     math.abs(k.hashCode % get)
 }
 
-class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_]](
+class FinalFlatMap[Event, Key, Value, S <: InputState[_]](
+  @transient semigroup: Semigroup[Value],
   @transient flatMapOp: FlatMapOperation[Event, (Key, Value)],
   summerBuilder: SummerBuilder,
   maxWaitingFutures: MaxWaitingFutures,
@@ -65,12 +66,16 @@ class FinalFlatMap[Event, Key, Value: Semigroup, S <: InputState[_]](
   type InS = S
   type OutputElement = (Int, CMap[Key, Value])
 
+  val lockedSemigroup = Externalizer(semigroup)
   val lockedOp = Externalizer(flatMapOp)
 
   type SummerK = Key
   type SummerV = (Chain[S], Value)
 
-  lazy val sCache = summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(Chain[S], Value)]])
+  lazy val sCache = {
+    implicit val valueSemigroup: Semigroup[Value] = lockedSemigroup.get
+    summerBuilder.getSummer[SummerK, SummerV](implicitly[Semigroup[(Chain[S], Value)]])
+  }
 
   // Lazy transient as const futures are not serializable
   @transient private[this] lazy val noData = List(
