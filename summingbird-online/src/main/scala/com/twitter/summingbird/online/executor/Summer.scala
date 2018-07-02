@@ -53,7 +53,8 @@ import scala.util.control.NonFatal
  * @author Ashu Singhal
  */
 
-class Summer[Key, Value: Semigroup, Event, S](
+class Summer[Key, Value, Event, S](
+  @transient semigroup: Semigroup[Value],
   @transient storeSupplier: () => Mergeable[Key, Value],
   @transient flatMapOp: FlatMapOperation[(Key, (Option[Value], Value)), Event],
   @transient successHandler: OnlineSuccessHandler,
@@ -68,22 +69,25 @@ class Summer[Key, Value: Semigroup, Event, S](
   maxWaitingTime,
   maxEmitPerExec
 ) {
-  val lockedOp = Externalizer(flatMapOp)
+  val semigroupBox = Externalizer(semigroup)
+  val flatMapOpBox = Externalizer(flatMapOp)
+  val storeSupplierBox = Externalizer(storeSupplier)
+  val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
+  val successHandlerBox = Externalizer(successHandler)
 
-  val storeBox = Externalizer(storeSupplier)
   lazy val storePromise = Promise[Mergeable[Key, Value]]
   lazy val store = Await.result(storePromise)
 
-  lazy val sSummer: AsyncSummer[(Key, (Chain[InputState[S]], Value)), Map[Key, (Chain[InputState[S]], Value)]] =
+  lazy val sSummer: AsyncSummer[(Key, (Chain[InputState[S]], Value)), Map[Key, (Chain[InputState[S]], Value)]] = {
+    implicit val valueSemigroup: Semigroup[Value] = semigroupBox.get
     summerBuilder.getSummer[Key, (Chain[InputState[S]], Value)](implicitly[Semigroup[(Chain[InputState[S]], Value)]])
+  }
 
-  val exceptionHandlerBox = Externalizer(exceptionHandler.handlerFn.lift)
-  val successHandlerBox = Externalizer(successHandler)
   var successHandlerOpt: Option[OnlineSuccessHandler] = null
 
   override def init(): Unit = {
     super.init()
-    storePromise.setValue(storeBox.get())
+    storePromise.setValue(storeSupplierBox.get())
     store.toString // Do the lazy evaluation now so we can connect before tuples arrive.
 
     successHandlerOpt = if (includeSuccessHandler.get) Some(successHandlerBox.get) else None
@@ -99,7 +103,7 @@ class Summer[Key, Value: Semigroup, Event, S](
       case (k, beforeF) =>
         val (tups, delta) = kvs(k)
         (tups, beforeF.flatMap { before =>
-          lockedOp.get.apply((k, (before, delta)))
+          flatMapOpBox.get.apply((k, (before, delta)))
         }.onSuccess { _ => successHandlerOpt.get.handlerFn.apply(()) })
     }.toList
 
