@@ -1,10 +1,11 @@
 package com.twitter.summingbird.storm
 
 import com.twitter.algebird.Semigroup
+import com.twitter.storehaus.algebra.Mergeable
 import com.twitter.summingbird.Summer
 import com.twitter.summingbird.batch.Batcher
 import com.twitter.summingbird.online.executor.KeyValueShards
-import com.twitter.summingbird.online.{ FlatMapOperation, MergeableStoreFactory, WrappedTSInMergeable, executor }
+import com.twitter.summingbird.online.{Externalizer, FlatMapOperation, MergeableStoreFactory, WrappedTSInMergeable, executor}
 import com.twitter.summingbird.online.option.IncludeSuccessHandler
 import com.twitter.summingbird.planner.SummerNode
 import com.twitter.summingbird.storm.Constants._
@@ -17,6 +18,17 @@ import scala.reflect.ClassTag
 
 private[storm] case object SummerBoltProvider {
   @transient private val logger = LoggerFactory.getLogger(SummerBoltProvider.getClass)
+
+  case class MergeableSupplier[K, V](
+    @transient supplier: MergeableStoreFactory[AggregateKey[K], V],
+    @transient semigroup: Semigroup[V]
+  ) extends (() => Mergeable[AggregateKey[K], AggregateValue[V]]) {
+    val supplierBox = Externalizer(supplier)
+    val semigroupBox = Externalizer(semigroup)
+
+    override def apply(): Mergeable[AggregateKey[K], AggregateValue[V]] =
+      new WrappedTSInMergeable(supplierBox.get.mergeableStore(semigroupBox.get))
+  }
 }
 
 private[storm] case class SummerBoltProvider(
@@ -72,8 +84,6 @@ private[storm] case class SummerBoltProvider(
     val flatmapOp: FlatMapOperation[(AggregateKey[K], (Option[Item[V]], Item[V])), O] =
       FlatMapOperation.apply(storeBaseFMOp)
 
-    val supplier: MergeableStoreFactory[AggregateKey[K], V] = summer.store
-
     Topology.Bolt(
       parallelism,
       metrics.metrics,
@@ -81,7 +91,8 @@ private[storm] case class SummerBoltProvider(
       ackOnEntry,
       maxExecutePerSec,
       new executor.Summer(
-        () => new WrappedTSInMergeable(supplier.mergeableStore(semigroup)),
+        implicitly[Semigroup[AggregateValue[V]]],
+        MergeableSupplier(summer.store, summer.semigroup),
         flatmapOp,
         getOrElse(DEFAULT_ONLINE_SUCCESS_HANDLER),
         getOrElse(DEFAULT_ONLINE_EXCEPTION_HANDLER),
