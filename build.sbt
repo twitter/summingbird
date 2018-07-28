@@ -73,9 +73,9 @@ val sharedSettings = extraSettings ++ executionSettings ++ Seq(
   resolvers ++= Seq(
     Opts.resolver.sonatypeSnapshots,
     Opts.resolver.sonatypeReleases,
-    "Clojars Repository" at "http://clojars.org/repo",
-    "Conjars Repository" at "http://conjars.org/repo",
-    "Twitter Maven" at "http://maven.twttr.com"
+    "Clojars Repository" at "https://clojars.org/repo",
+    "Conjars Repository" at "https://conjars.org/repo",
+    "Twitter Maven" at "https://maven.twttr.com"
   ),
 
   scalacOptions ++= Seq(
