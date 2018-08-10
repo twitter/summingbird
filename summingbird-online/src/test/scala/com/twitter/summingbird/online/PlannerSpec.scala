@@ -118,7 +118,7 @@ class PlannerSpec extends WordSpec {
   }
 
   /*
-   * Tests the alsoProducer case for two seperate sub-topologies.
+   * Tests the alsoProducer case for two separate sub-topologies.
    * Asserts : There are two sourceNodes
    *           Each SourceNode has a single dependant.
    *           Each SourceNode has a summer as dependant.
