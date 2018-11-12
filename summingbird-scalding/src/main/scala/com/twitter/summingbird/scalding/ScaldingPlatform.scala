@@ -776,8 +776,7 @@ class Scalding(
             // Scalding has a lot of extra stuff it does to produce
             // a flow, we have to use this method to do it correctly
             ExecutionContext.newContext(config)(flowDef, mode).buildFlow match {
-              case Success(Some(f)) => Right((ts, Some(f)))
-              case Success(None) => Right((ts, None))
+              case Success(optFlow) => Right((ts, optFlow))
               case Failure(e) => toTry(e)
             }
           } catch {
