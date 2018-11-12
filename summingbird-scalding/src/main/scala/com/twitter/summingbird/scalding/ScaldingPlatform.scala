@@ -773,15 +773,12 @@ class Scalding(
         case (ts, pipe) =>
           // Now we have a populated flowDef, time to let Cascading do it's thing:
           try {
-            if (flowDef.getSinks.isEmpty) {
-              Right((ts, None))
-            } else {
-              // Scalding has a lot of extra stuff it does to produce
-              // a flow, we have to use this method to do it correctly
-              ExecutionContext.newContext(config)(flowDef, mode).buildFlow match {
-                case Success(f) => Right((ts, Some(f)))
-                case Failure(e) => toTry(e)
-              }
+            // Scalding has a lot of extra stuff it does to produce
+            // a flow, we have to use this method to do it correctly
+            ExecutionContext.newContext(config)(flowDef, mode).buildFlow match {
+              case Success(Some(f)) => Right((ts, Some(f)))
+              case Success(None) => Right((ts, None))
+              case Failure(e) => toTry(e)
             }
           } catch {
             case NonFatal(e) => toTry(e)
