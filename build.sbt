@@ -24,7 +24,7 @@ val log4jVersion = "1.2.16"
 val novocodeJunitVersion = "0.10"
 val scalaCheckVersion = "1.13.4"
 val scalatestVersion = "3.0.1"
-val scaldingVersion = "0.17.2"
+val scaldingVersion = "0.18.0-RC1"
 val slf4jVersion = "1.6.6"
 val storehausVersion = "0.15.0"
 val stormDep = "org.apache.storm" % "storm-core" % "1.0.2"
@@ -72,9 +72,9 @@ val sharedSettings = extraSettings ++ executionSettings ++ Seq(
   resolvers ++= Seq(
     Opts.resolver.sonatypeSnapshots,
     Opts.resolver.sonatypeReleases,
-    "Clojars Repository" at "http://clojars.org/repo",
-    "Conjars Repository" at "http://conjars.org/repo",
-    "Twitter Maven" at "http://maven.twttr.com"
+    "Clojars Repository" at "https://clojars.org/repo",
+    "Conjars Repository" at "https://conjars.org/repo",
+    "Twitter Maven" at "https://maven.twttr.com"
   ),
 
   scalacOptions ++= Seq(
