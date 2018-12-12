@@ -18,14 +18,14 @@ val algebirdVersion = "0.13.0"
 val bijectionVersion = "0.9.5"
 val chillVersion = "0.8.4"
 val commonsLangVersion = "2.6"
-val dagonVersion = "0.3.0"
+val dagonVersion = "0.3.1"
 val hadoopVersion = "1.2.1"
 val junitVersion = "4.11"
 val log4jVersion = "1.2.16"
 val novocodeJunitVersion = "0.10"
 val scalaCheckVersion = "1.13.4"
 val scalatestVersion = "3.0.1"
-val scaldingVersion = "0.17.2"
+val scaldingVersion = "0.18.0-RC1"
 val slf4jVersion = "1.6.6"
 val storehausVersion = "0.15.0"
 val stormDep = "org.apache.storm" % "storm-core" % "1.0.2"
@@ -73,9 +73,9 @@ val sharedSettings = extraSettings ++ executionSettings ++ Seq(
   resolvers ++= Seq(
     Opts.resolver.sonatypeSnapshots,
     Opts.resolver.sonatypeReleases,
-    "Clojars Repository" at "http://clojars.org/repo",
-    "Conjars Repository" at "http://conjars.org/repo",
-    "Twitter Maven" at "http://maven.twttr.com"
+    "Clojars Repository" at "https://clojars.org/repo",
+    "Conjars Repository" at "https://conjars.org/repo",
+    "Twitter Maven" at "https://maven.twttr.com"
   ),
 
   scalacOptions ++= Seq(
