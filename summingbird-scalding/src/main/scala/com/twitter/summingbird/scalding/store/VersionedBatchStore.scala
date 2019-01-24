@@ -135,7 +135,7 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
 
     if (!target.sinkExists(mode)) {
       logger.info(s"Versioned batched store version for $this @ $newVersion doesn't exist. Will write out.")
-      modifyBeforeWrite(lastVals).map(pack(batchID, _))
+      modifyBeforeWrite(lastVals, newVersion).map(pack(batchID, _))
         .write(target)
     } else {
       logger.warn(s"Versioned batched store version for $this @ $newVersion already exists! Will skip adding to plan.")
@@ -152,5 +152,6 @@ class VersionedBatchStore[K, V, K2, V2](rootPath: String, versionsToKeep: Int, o
       .map(unpack)
   }
 
-  protected def modifyBeforeWrite(lastVals: TypedPipe[(K, V)]): TypedPipe[(K, V)] = lastVals
+  protected def modifyBeforeWrite(lastVals: TypedPipe[(K, V)], newVersion: Long): TypedPipe[(K, V)] =
+    lastVals
 }
