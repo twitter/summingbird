@@ -16,10 +16,9 @@
 
 package com.twitter.summingbird.online.executor
 
-import com.twitter.conversions.DurationOps._
 import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
-import com.twitter.util.{ Await, Future, Promise }
+import com.twitter.util.{ Await, Duration, Future, Promise }
 import chain.Chain
 import org.scalatest.WordSpec
 import scala.util.Try
@@ -33,7 +32,7 @@ class AsyncBaseSpec extends WordSpec {
 
   class TestFutureQueue extends FutureQueue[Chain[Int], TraversableOnce[Int]](
     MaxWaitingFutures(100),
-    MaxFutureWaitTime(1.minute)
+    MaxFutureWaitTime(Duration.fromSeconds(60))
   ) {
     var added = false
     var addedData: (Chain[Int], Future[TraversableOnce[Int]]) = _
@@ -67,7 +66,7 @@ class AsyncBaseSpec extends WordSpec {
     tickData: => Future[TraversableOnce[(Chain[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented"),
     applyData: => Future[TraversableOnce[(Chain[Int], Future[TraversableOnce[Int]])]] = throw new RuntimeException("not implemented")) extends AsyncBase[Int, Int, Int](
     MaxWaitingFutures(100),
-    MaxFutureWaitTime(1.minute),
+    MaxFutureWaitTime(Duration.fromSeconds(60)),
     MaxEmitPerExecute(57)
   ) {
     override lazy val futureQueue = queue

@@ -17,7 +17,6 @@
 package com.twitter.summingbird.online
 
 import com.twitter.bijection.twitter_util.UtilBijections
-import com.twitter.conversions.DurationOps._
 import com.twitter.summingbird.online.option.{ MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util._
 import org.scalacheck._
@@ -74,7 +73,7 @@ class FutureQueueLaws extends Properties("FutureQueue") with Eventually {
     forAll { (futuresCount: NonNegativeShort, slackSpace: NonNegativeShort) =>
       val fq = new FutureQueue[Unit, Unit](
         MaxWaitingFutures(futuresCount.get + slackSpace.get),
-        MaxFutureWaitTime(20.seconds)
+        MaxFutureWaitTime(Duration.fromSeconds(20))
       )
       fq.addAll((0 until futuresCount.get).map { _ =>
         () -> Promise[Unit]
@@ -83,7 +82,7 @@ class FutureQueueLaws extends Properties("FutureQueue") with Eventually {
       val res = fq.dequeue(futuresCount.get)
       val end = Time.now
       res.isEmpty &&
-        (end - start < 15.seconds)
+        (end - start < Duration.fromSeconds(15))
       fq.numPendingOutstandingFutures.get == futuresCount.get
     }
 
@@ -92,7 +91,7 @@ class FutureQueueLaws extends Properties("FutureQueue") with Eventually {
       val count = inputs.size
       val fq = new FutureQueue[String, String](
         MaxWaitingFutures(count + 1),
-        MaxFutureWaitTime(20.seconds)
+        MaxFutureWaitTime(Duration.fromSeconds(20))
       )
       fq.addAll(inputs.map {
         case (state, t) =>
@@ -109,7 +108,7 @@ class FutureQueueLaws extends Properties("FutureQueue") with Eventually {
       val count = inputs.size
       val fq = new FutureQueue[String, String](
         MaxWaitingFutures(count + 1),
-        MaxFutureWaitTime(20.seconds)
+        MaxFutureWaitTime(Duration.fromSeconds(20))
       )
       inputs.foreach {
         case (state, t) =>
@@ -131,7 +130,7 @@ class FutureQueueLaws extends Properties("FutureQueue") with Eventually {
 
       val fq = new FutureQueue[Unit, Unit](
         MaxWaitingFutures(1),
-        MaxFutureWaitTime(20.seconds)
+        MaxFutureWaitTime(Duration.fromSeconds(20))
       )
       fq.addAll(mixedFutures.map { () -> _ })
 
