@@ -17,7 +17,7 @@
 package com.twitter.summingbird.online
 
 import com.twitter.bijection.twitter_util.UtilBijections
-import com.twitter.conversions.time._
+import com.twitter.conversions.DurationOps._
 import com.twitter.summingbird.online.option.{ MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util._
 import org.scalacheck._

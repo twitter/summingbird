@@ -16,7 +16,7 @@
 
 package com.twitter.summingbird.online.executor
 
-import com.twitter.conversions.time._
+import com.twitter.conversions.DurationOps._
 import com.twitter.summingbird.online.FutureQueue
 import com.twitter.summingbird.online.option.{ MaxEmitPerExecute, MaxFutureWaitTime, MaxWaitingFutures }
 import com.twitter.util.{ Await, Future, Promise }
