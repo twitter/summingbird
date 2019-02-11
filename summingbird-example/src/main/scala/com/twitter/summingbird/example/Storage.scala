@@ -19,7 +19,7 @@ package com.twitter.summingbird.example
 import com.twitter.algebird.Monoid
 import com.twitter.bijection.{ Base64String, Bijection, Codec, Injection }
 import com.twitter.bijection.netty.Implicits._
-import com.twitter.conversions.time._
+import com.twitter.conversions.DurationOps._
 import com.twitter.finagle.builder.ClientBuilder
 import com.twitter.finagle.memcached.KetamaClientBuilder
 import com.twitter.finagle.memcached.protocol.text.Memcached
