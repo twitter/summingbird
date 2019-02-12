@@ -1,0 +1,18 @@
+container:
+  image: bigtruedata/sbt:latest
+  cpu: 4
+  memory: 12G
+
+test_task:
+  env:
+    LOG4J: file://$CIRRUS_WORKING_DIR/project/travis-log4j.properties
+    matrix:
+      TRAVIS_SCALA_VERSION: 2.12.4
+      TRAVIS_SCALA_VERSION: 2.11.12
+  ivy_cache:
+    folder: $HOME/.ivy2/cache
+    fingerprint_script: echo $TRAVIS_SCALA_VERSION
+  sbt_cache:
+    folder: $HOME/.sbt
+    fingerprint_script: echo $TRAVIS_SCALA_VERSION
+  test_script: ./sbt -Dlog4j.configuration=$LOG4J -DsequentialExecution=true ++$TRAVIS_SCALA_VERSION clean coverage test coverageReport mimaReportBinaryIssues
