@@ -77,7 +77,7 @@ abstract class VersionedBatchStoreBase[K, V](val rootPath: String) extends Batch
    *
    * The version numbers are the exclusive upper-bound of time
    * covered by this store, while the batchIDs are the inclusive
-   * upper bound. Put another way, all events that occured before the
+   * upper bound. Put another way, all events that occurred before the
    * version are included in this store.
    */
   def batchIDToVersion(b: BatchID): Long = batcher.earliestTimeOf(b.next).milliSinceEpoch
