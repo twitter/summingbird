@@ -153,6 +153,8 @@ sealed trait Producer[P <: Platform[P], +T] {
     // Enforce using the OptionMapped here:
     optionMap(Some(_).filter(fn))
 
+  def withFilter(fn: T => Boolean): Producer[P, T] = filter(fn)
+  
   /**
    * This is identical to a certain leftJoin:
    * map((_, ())).leftJoin(srv).mapValues{case (_, v) => v}
