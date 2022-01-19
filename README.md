@@ -1,5 +1,6 @@
 ## Summingbird
 
+[![status: retired](https://opensource.twitter.dev/status/retired.svg)](https://opensource.twitter.dev/status/#retired)
 [![Build Status](https://secure.travis-ci.org/twitter/summingbird.png)](http://travis-ci.org/twitter/summingbird)
 [![Codecov branch](https://img.shields.io/codecov/c/github/twitter/summingbird/develop.svg?maxAge=3600)](https://codecov.io/github/twitter/summingbird)
 [![Latest version](https://index.scala-lang.org/twitter/summingbird/summingbird-core/latest.svg?color=orange)](https://index.scala-lang.org/twitter/summingbird/summingbird-core)
