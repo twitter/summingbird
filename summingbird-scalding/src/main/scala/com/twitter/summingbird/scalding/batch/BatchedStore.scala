@@ -154,7 +154,7 @@ trait BatchedStore[K, V] extends scalding.Store[K, V] { self =>
    * we are guaranteed to have sufficient input and deltas to cover these batches
    * and that the batches are given in order
    */
-  private def mergeBatched(inBatch: BatchID,
+  protected def mergeBatched(inBatch: BatchID,
     input: FlowProducer[TypedPipe[(K, V)]],
     deltas: FlowToPipe[(K, V)],
     readTimespan: Interval[Timestamp],
